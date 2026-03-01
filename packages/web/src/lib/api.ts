@@ -43,7 +43,7 @@ export interface NewsItem {
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
   getNewsDigest: (city: string) => fetchJson<NewsDigest>(`${BASE}/${city}/news/digest`),
-  getNewsSummary: (city: string) => fetchJson<{ briefing: string; generatedAt: string }>(`${BASE}/${city}/news/summary`),
+  getNewsSummary: (city: string) => fetchJson<{ briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean }>(`${BASE}/${city}/news/summary`),
   getWeather: (city: string) => fetchJson<WeatherData>(`${BASE}/${city}/weather`),
   getTransit: (city: string) => fetchJson<unknown[]>(`${BASE}/${city}/transit`),
   getEvents: (city: string) => fetchJson<unknown[]>(`${BASE}/${city}/events`),

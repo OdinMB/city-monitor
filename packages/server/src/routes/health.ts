@@ -7,6 +7,7 @@ import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
 import type { Scheduler } from '../lib/scheduler.js';
 import { getActiveCities } from '../config/index.js';
+import { getUsageStats } from '../lib/openai.js';
 
 export function createHealthRouter(cache: Cache, scheduler: Scheduler) {
   const router = Router();
@@ -23,6 +24,7 @@ export function createHealthRouter(cache: Cache, scheduler: Scheduler) {
           lastRun: j.lastRun?.toISOString() ?? null,
         })),
       },
+      ai: getUsageStats(),
     });
   });
 

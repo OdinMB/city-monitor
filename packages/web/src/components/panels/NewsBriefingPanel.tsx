@@ -8,6 +8,7 @@ import { Panel } from '../layout/Panel.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
+import { useNewsSummary } from '../../hooks/useNewsSummary.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
 import type { NewsItem } from '../../lib/api.js';
 
@@ -29,6 +30,7 @@ const MAX_ITEMS = 20;
 export function NewsBriefingPanel() {
   const { id: cityId } = useCityConfig();
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useNewsDigest(cityId);
+  const { data: summary } = useNewsSummary(cityId);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const items = data?.items ?? [];
@@ -72,6 +74,12 @@ export function NewsBriefingPanel() {
 
   return (
     <Panel title="News" lastUpdated={lastUpdated}>
+      {summary?.briefing && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+          {summary.briefing}
+        </div>
+      )}
+
       <div role="tablist" className="flex gap-1 overflow-x-auto pb-2 mb-3 -mx-1 px-1">
         {availableCategories.map((cat) => (
           <button

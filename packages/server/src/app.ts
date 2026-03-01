@@ -12,6 +12,7 @@ import { createNewsRouter } from './routes/news.js';
 import { createWeatherRouter } from './routes/weather.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
+import { createSummarization } from './cron/summarize.js';
 
 export function createApp(options?: { skipScheduler?: boolean }) {
   const app = express();
@@ -21,10 +22,11 @@ export function createApp(options?: { skipScheduler?: boolean }) {
   const cache = createCache();
   const ingestFeeds = createFeedIngestion(cache);
   const ingestWeather = createWeatherIngestion(cache);
+  const summarizeNews = createSummarization(cache);
 
   const jobs: ScheduledJob[] = [
     { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds, runOnStart: true },
-    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: async () => {} },
+    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews },
     { name: 'ingest-weather', schedule: '*/30 * * * *', handler: ingestWeather, runOnStart: true },
     { name: 'ingest-transit', schedule: '*/5 * * * *', handler: async () => {}, runOnStart: true },
     { name: 'ingest-events', schedule: '0 */6 * * *', handler: async () => {} },

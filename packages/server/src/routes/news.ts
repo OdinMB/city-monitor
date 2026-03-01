@@ -7,6 +7,7 @@ import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
 import { getCityConfig } from '../config/index.js';
 import type { NewsDigest } from '../cron/ingest-feeds.js';
+import type { NewsSummary } from '../cron/summarize.js';
 
 export function createNewsRouter(cache: Cache) {
   const router = Router();
@@ -25,6 +26,22 @@ export function createNewsRouter(cache: Cache) {
     }
 
     res.json(digest);
+  });
+
+  router.get('/:city/news/summary', (req, res) => {
+    const city = getCityConfig(req.params.city);
+    if (!city) {
+      res.status(404).json({ error: 'City not found' });
+      return;
+    }
+
+    const summary = cache.get<NewsSummary>(`${city.id}:news:summary`);
+    if (!summary) {
+      res.json({ briefing: null, generatedAt: null, headlineCount: 0, cached: false });
+      return;
+    }
+
+    res.json(summary);
   });
 
   router.get('/:city/bootstrap', (req, res) => {
