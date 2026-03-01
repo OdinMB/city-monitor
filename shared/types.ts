@@ -48,3 +48,46 @@ export interface CityDataSources {
   police?: { provider: 'rss'; url: string };
   openData?: { provider: 'ckan'; baseUrl: string };
 }
+
+// Weather data types (shared between server ingestion and web UI)
+
+export interface CurrentWeather {
+  temp: number;
+  feelsLike: number;
+  humidity: number;
+  precipitation: number;
+  weatherCode: number;
+  windSpeed: number;
+  windDirection: number;
+}
+
+export interface HourlyForecast {
+  time: string;
+  temp: number;
+  precipProb: number;
+  weatherCode: number;
+}
+
+export interface DailyForecast {
+  date: string;
+  high: number;
+  low: number;
+  weatherCode: number;
+  precip: number;
+  sunrise: string;
+  sunset: string;
+}
+
+export interface WeatherAlert {
+  headline: string;
+  severity: string;
+  description: string;
+  validUntil: string;
+}
+
+export interface WeatherData {
+  current: CurrentWeather;
+  hourly: HourlyForecast[];
+  daily: DailyForecast[];
+  alerts: WeatherAlert[];
+}

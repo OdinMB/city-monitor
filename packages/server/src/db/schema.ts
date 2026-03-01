@@ -6,5 +6,15 @@
  * Tables are added incrementally by each milestone.
  */
 
-// Schema tables will be added in milestone 02+
-export {};
+import { pgTable, serial, text, timestamp, jsonb } from 'drizzle-orm/pg-core';
+
+// Milestone 06 — Weather
+export const weatherSnapshots = pgTable('weather_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+  current: jsonb('current').notNull(),
+  hourly: jsonb('hourly').notNull(),
+  daily: jsonb('daily').notNull(),
+  alerts: jsonb('alerts'),
+});
