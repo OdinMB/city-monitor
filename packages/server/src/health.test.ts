@@ -12,7 +12,7 @@ describe('GET /api/health', () => {
   let baseUrl: string;
 
   beforeAll(async () => {
-    const app = createApp();
+    const { app } = createApp({ skipScheduler: true });
     await new Promise<void>((resolve) => {
       server = app.listen(0, () => {
         const addr = server.address();
@@ -29,10 +29,14 @@ describe('GET /api/health', () => {
     });
   });
 
-  it('returns status ok', async () => {
+  it('returns status ok with expected fields', async () => {
     const response = await fetch(`${baseUrl}/api/health`);
     const body = await response.json();
     expect(response.status).toBe(200);
-    expect(body).toEqual({ status: 'ok' });
+    expect(body.status).toBe('ok');
+    expect(body.uptime).toBeTypeOf('number');
+    expect(body.activeCities).toContain('berlin');
+    expect(body.cache).toBeDefined();
+    expect(body.scheduler).toBeDefined();
   });
 });
