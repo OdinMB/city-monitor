@@ -3,10 +3,56 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-export function App() {
+import { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { CityProvider } from './hooks/useCityConfig.js';
+import { useTheme } from './hooks/useTheme.js';
+import { Shell } from './components/layout/Shell.js';
+import { PanelGrid } from './components/layout/PanelGrid.js';
+import { NewsBriefingPanel } from './components/panels/NewsBriefingPanel.js';
+import { WeatherPanel } from './components/panels/WeatherPanel.js';
+import { TransitPanel } from './components/panels/TransitPanel.js';
+import { EventsPanel } from './components/panels/EventsPanel.js';
+import { MapPanel } from './components/panels/MapPanel.js';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+      refetchOnWindowFocus: true,
+      retry: 2,
+    },
+  },
+});
+
+function Dashboard() {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <h1 className="text-2xl font-bold p-4">City Monitor</h1>
-    </div>
+    <Shell>
+      <PanelGrid>
+        <NewsBriefingPanel />
+        <WeatherPanel />
+        <TransitPanel />
+        <EventsPanel />
+        <MapPanel />
+      </PanelGrid>
+    </Shell>
+  );
+}
+
+export function App() {
+  const theme = useTheme((s) => s.theme);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.documentElement.setAttribute('data-city', 'berlin');
+  }, [theme]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <CityProvider>
+        <Dashboard />
+      </CityProvider>
+    </QueryClientProvider>
   );
 }

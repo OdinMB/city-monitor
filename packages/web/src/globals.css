@@ -1,1 +1,13 @@
 @import 'tailwindcss';
+
+:root {
+  --accent: #3b82f6;
+}
+
+[data-city='berlin'] {
+  --accent: #e2001a;
+}
+
+[data-city='hamburg'] {
+  --accent: #004b93;
+}

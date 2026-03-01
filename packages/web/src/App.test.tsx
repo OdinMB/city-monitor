@@ -5,11 +5,31 @@
 
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { App } from './App';
+import { App } from './App.js';
 
 describe('App', () => {
-  it('renders the title', () => {
+  it('renders the city name', () => {
     render(<App />);
-    expect(screen.getByText('City Monitor')).toBeDefined();
+    expect(screen.getByText('Berlin')).toBeDefined();
+  });
+
+  it('renders placeholder panels', () => {
+    render(<App />);
+    expect(screen.getByText('News')).toBeDefined();
+    expect(screen.getByText('Weather')).toBeDefined();
+    expect(screen.getByText('Transit')).toBeDefined();
+    expect(screen.getByText('Events')).toBeDefined();
+    expect(screen.getByText('Map')).toBeDefined();
+  });
+
+  it('renders theme toggle button', () => {
+    render(<App />);
+    expect(screen.getByRole('button', { name: /toggle theme/i })).toBeDefined();
+  });
+
+  it('renders footer with source code link', () => {
+    render(<App />);
+    expect(screen.getByText('Source Code')).toBeDefined();
+    expect(screen.getByText('AGPL-3.0')).toBeDefined();
   });
 });
