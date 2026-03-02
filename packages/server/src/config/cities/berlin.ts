@@ -39,6 +39,7 @@ export const berlin: CityConfig = {
   dataSources: {
     weather: { provider: 'open-meteo', lat: 52.52, lon: 13.405 },
     transit: { provider: 'hafas', operatorId: 'VBB' },
+    events: { provider: 'api', url: 'https://api-v2.kulturdaten.berlin/api/events' },
     police: { provider: 'rss', url: 'https://www.berlin.de/polizei/polizeimeldungen/index/feed/rss' },
   },
 };

@@ -29,30 +29,39 @@ Currently hardcoded to Berlin districts (Mitte, Kreuzberg, etc.). When adding a 
 
 ## Events
 
-### Current State
+### Data Flow
 
-Events infrastructure is in place but **ingestion is a placeholder** — no Berlin events source is configured yet. The `dataSources.events` field in city config controls whether ingestion runs.
+1. **Ingestion** (`packages/server/src/cron/ingest-events.ts`) — Runs every 6 hours. Fetches upcoming events (next 7 days) from the kulturdaten.berlin API (Technologiestiftung Berlin). Filters to published events, classifies categories from German keywords in the title, writes `CityEvent[]` to cache key `{cityId}:events:upcoming` (TTL 6h).
+
+2. **API** (`packages/server/src/routes/events.ts`) — `GET /api/:city/events` returns cached events or `[]`.
+
+3. **Frontend** (`packages/web/src/components/panels/EventsPanel.tsx`) — Displays events with category icons, venue, date, and "Free" badges.
+
+### Data Source
+
+**kulturdaten.berlin API** (free, no API key required):
+- Endpoint: `https://api-v2.kulturdaten.berlin/api/events`
+- Provides ~13,000+ events from Berlin district calendars (Bezirkskalender)
+- JSON response with attractions (title), locations (venue), schedule, admission info
+- Swagger docs: `https://api-v2.kulturdaten.berlin/api/docs/`
 
 ### Key Types
 
 ```typescript
 interface CityEvent {
-  id: string;
-  title: string;
-  venue?: string;
-  date: string;
+  id: string;           // kulturdaten.berlin identifier (e.g. "E_ABC123")
+  title: string;        // From attractions[0].referenceLabel.de
+  venue?: string;       // From locations[0].referenceLabel.de
+  date: string;         // ISO date+time from schedule
   category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'other';
-  url: string;
-  description?: string;
-  free?: boolean;
+  url: string;          // Link to kulturdaten.berlin event page
+  free?: boolean;       // From admission.ticketType === 'ticketType.freeOfCharge'
 }
 ```
 
-### To Activate
+### Category Classification
 
-1. Find a suitable Berlin events RSS/API source
-2. Add `events: { provider: 'rss', url: '...' }` to `packages/server/src/config/cities/berlin.ts`
-3. Implement `ingestCityEvents()` in `packages/server/src/cron/ingest-events.ts`
+German keywords in event title determine category: Konzert/Musik -> music, Ausstellung/Galerie -> art, Theater/Bühne -> theater, Markt/Flohmarkt -> market, Food/Essen -> food, Sport/Lauf -> sport, Workshop/Treff -> community, default -> other.
 
 ## DB Schema
 

@@ -17,5 +17,4 @@ _None yet._
 
 ## Implementation Issues
 
-1. **Milestone 10** — Events ingestion is a placeholder. No Berlin events RSS/API source has been configured. The infrastructure is ready; once a source URL is added to `berlin.ts` config (`dataSources.events`), the `ingestCityEvents` function needs a real implementation.
-2. **Milestone 10** — District extraction in safety ingestion is hardcoded to Berlin districts. When adding a second city, move districts into city config or add per-city district lists.
+1. **Milestone 10** — District extraction in safety ingestion is hardcoded to Berlin districts. When adding a second city, move districts into city config or add per-city district lists.
