@@ -6,7 +6,7 @@
  * Tables are added incrementally by each milestone.
  */
 
-import { pgTable, serial, text, timestamp, jsonb, integer, boolean, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, jsonb, integer, boolean, real, index } from 'drizzle-orm/pg-core';
 
 // Milestone 06 — Weather
 export const weatherSnapshots = pgTable('weather_snapshots', {
@@ -30,6 +30,10 @@ export const transitDisruptions = pgTable('transit_disruptions', {
   type: text('type').notNull(),
   severity: text('severity').notNull(),
   message: text('message').notNull(),
+  detail: text('detail'),
+  station: text('station'),
+  lat: real('lat'),
+  lon: real('lon'),
   affectedStops: jsonb('affected_stops'),
   validFrom: timestamp('valid_from'),
   validUntil: timestamp('valid_until'),

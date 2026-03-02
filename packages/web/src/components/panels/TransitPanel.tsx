@@ -62,6 +62,11 @@ export function TransitPanel() {
                   {alert.type.replace('-', ' ')}
                 </span>
               </div>
+              {alert.station && (
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-0.5">
+                  {alert.station}
+                </p>
+              )}
               <p className="text-gray-800 dark:text-gray-200">{alert.message}</p>
               {alert.affectedStops.length > 0 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

@@ -63,7 +63,7 @@ describe('DB reads', () => {
 
   it('loadTransitAlerts maps rows to TransitAlert[]', async () => {
     const db = createMockDb([
-      { id: 1, externalId: 'ext1', line: 'U2', type: 'disruption', severity: 'high', message: 'Test', affectedStops: ['A', 'B'] },
+      { id: 1, externalId: 'ext1', line: 'U2', type: 'disruption', severity: 'high', message: 'Test', detail: 'Test detail', station: 'Alexanderplatz', lat: 52.52, lon: 13.41, affectedStops: ['A', 'B'] },
     ]);
     const result = await loadTransitAlerts(db, 'berlin');
     expect(result).toHaveLength(1);

@@ -50,6 +50,9 @@ export async function loadTransitAlerts(db: Db, cityId: string): Promise<Transit
     type: row.type as TransitAlert['type'],
     severity: row.severity as TransitAlert['severity'],
     message: row.message,
+    detail: row.detail ?? row.message,
+    station: row.station ?? '',
+    location: row.lat != null && row.lon != null ? { lat: row.lat, lon: row.lon } : null,
     affectedStops: (row.affectedStops as string[]) ?? [],
   }));
 }

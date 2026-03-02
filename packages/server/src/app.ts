@@ -48,7 +48,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds, runOnStart: true },
     { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, runOnStart: true },
     { name: 'ingest-weather', schedule: '*/30 * * * *', handler: ingestWeather, runOnStart: true },
-    { name: 'ingest-transit', schedule: '*/5 * * * *', handler: ingestTransit, runOnStart: true },
+    { name: 'ingest-transit', schedule: '*/15 * * * *', handler: ingestTransit, runOnStart: true },
     { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: true },
     { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety, runOnStart: true },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },

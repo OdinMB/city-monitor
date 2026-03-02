@@ -42,6 +42,10 @@ export async function saveTransitAlerts(db: Db, cityId: string, alerts: TransitA
         type: a.type,
         severity: a.severity,
         message: a.message,
+        detail: a.detail,
+        station: a.station,
+        lat: a.location?.lat ?? null,
+        lon: a.location?.lon ?? null,
         affectedStops: a.affectedStops,
       })),
     );

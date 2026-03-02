@@ -25,7 +25,7 @@ export async function warmCache(db: Db, cache: Cache): Promise<void> {
 
     try {
       const alerts = await loadTransitAlerts(db, city.id);
-      if (alerts) cache.set(`${city.id}:transit:alerts`, alerts, 300);
+      if (alerts) cache.set(`${city.id}:transit:alerts`, alerts, 1200);
     } catch (err) {
       log.error(`${city.id} transit failed`, err);
     }

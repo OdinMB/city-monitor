@@ -28,13 +28,14 @@ App
           Dashboard
             Shell
               TopBar (city name link, weather, language switcher, theme toggle)
-              PanelGrid (responsive CSS grid)
-                NewsBriefingPanel
-                WeatherPanel
-                TransitPanel
-                EventsPanel
-                SafetyPanel
-                MapPanel
+              CommandLayout
+                Sidebar (time range selector, data layer toggles) — hidden < lg
+                CityMap (full viewport height, transit markers)
+                BriefingStrip (AI summary)
+                NewsStrip (category filter + headlines)
+                EventsStrip (compact event cards)
+                SafetyStrip (compact report cards)
+                TransitStrip (line badges + expandable alert cards)
               Footer (AGPL source link)
 ```
 
@@ -112,6 +113,7 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 - Theme-aware: swaps map style on dark/light toggle via `map.setStyle()` with `isFirstRender` ref to prevent race condition on mount
 - District boundaries: GeoJSON overlay with fill, line (dashed), and label layers per city (`DISTRICT_URLS` config)
 - Hover effect: feature-state-based fill opacity change + cursor pointer on district polygons (`setupDistrictHover()`)
+- Transit markers: GeoJSON point source from `TransitAlert[]` with severity-colored circles (red/amber/gray) + line label below. Click popup shows line, type, station, message. Updated from map `load` handler and `styledata` handler using refs to bridge async map events with React state.
 - Vite config requires `target: 'esnext'` (both `build.target` and `optimizeDeps.esbuildOptions.target`) to prevent MapLibre's GeoJSON web worker crash (`__publicField is not defined`)
 
 ## Frontend Utilities

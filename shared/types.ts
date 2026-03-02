@@ -43,7 +43,12 @@ export interface CityMapLayer {
 
 export interface CityDataSources {
   weather: { provider: 'open-meteo'; lat: number; lon: number };
-  transit?: { provider: 'hafas'; operatorId: string; endpoint?: string };
+  transit?: {
+    provider: 'hafas';
+    operatorId: string;
+    endpoint?: string;
+    stations?: Array<{ id: string; name: string }>;
+  };
   events?: { provider: 'rss' | 'api'; url: string };
   police?: { provider: 'rss'; url: string };
   openData?: { provider: 'ckan'; baseUrl: string };

@@ -47,6 +47,9 @@ export interface TransitAlert {
   type: 'delay' | 'disruption' | 'cancellation' | 'planned-work';
   severity: 'low' | 'medium' | 'high';
   message: string;
+  detail: string;
+  station: string;
+  location: { lat: number; lon: number } | null;
   affectedStops: string[];
 }
 

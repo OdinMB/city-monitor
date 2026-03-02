@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTransit } from '../../hooks/useTransit.js';
@@ -22,6 +23,45 @@ function getSeverityColor(severity: TransitAlert['severity']): string {
   if (severity === 'high') return 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950';
   if (severity === 'medium') return 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950';
   return 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900';
+}
+
+function AlertCard({ alert }: { alert: TransitAlert }) {
+  const hasDetail = alert.detail && alert.detail !== alert.message;
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div
+      className={`p-2 rounded border text-sm ${getSeverityColor(alert.severity)} ${hasDetail ? 'cursor-pointer' : ''}`}
+      onClick={hasDetail ? () => setExpanded((v) => !v) : undefined}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold ${getLineBadgeColor(alert.line)}`}>
+          {alert.line}
+        </span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+          {alert.type.replace('-', ' ')}
+        </span>
+      </div>
+      {alert.station && (
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-0.5">
+          {alert.station}
+        </p>
+      )}
+      <p className={`text-gray-800 dark:text-gray-200 ${expanded ? '' : 'line-clamp-2'}`}>
+        {expanded ? alert.detail : alert.message}
+      </p>
+      {alert.affectedStops.length > 0 && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+          {alert.affectedStops.join(' — ')}
+        </p>
+      )}
+      {hasDetail && (
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          {expanded ? '▲' : '▼ details'}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function TransitStrip() {
@@ -47,25 +87,7 @@ export function TransitStrip() {
       ) : (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {sorted.map((alert) => (
-            <div
-              key={alert.id}
-              className={`p-2 rounded border text-sm ${getSeverityColor(alert.severity)}`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold ${getLineBadgeColor(alert.line)}`}>
-                  {alert.line}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                  {alert.type.replace('-', ' ')}
-                </span>
-              </div>
-              <p className="text-gray-800 dark:text-gray-200 line-clamp-2">{alert.message}</p>
-              {alert.affectedStops.length > 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                  {alert.affectedStops.join(' — ')}
-                </p>
-              )}
-            </div>
+            <AlertCard key={alert.id} alert={alert} />
           ))}
         </div>
       )}

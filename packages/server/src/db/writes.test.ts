@@ -47,7 +47,7 @@ describe('DB writes', () => {
 
   it('saveTransitAlerts calls transaction with delete + batch insert', async () => {
     const alerts = [
-      { id: '1', line: 'U2', type: 'disruption', severity: 'high', message: 'Test', affectedStops: [] },
+      { id: '1', line: 'U2', type: 'disruption', severity: 'high', message: 'Test', detail: 'Test detail', station: 'Alexanderplatz', location: { lat: 52.52, lon: 13.41 }, affectedStops: [] },
     ];
 
     await saveTransitAlerts(db, 'berlin', alerts as any);

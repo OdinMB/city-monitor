@@ -12,8 +12,8 @@ import { TransitPanel } from './TransitPanel.js';
 import type { TransitAlert } from '../../lib/api.js';
 
 const mockAlerts: TransitAlert[] = [
-  { id: '1', line: 'U2', type: 'disruption', severity: 'high', message: 'Störung Alexanderplatz – Ruhleben', affectedStops: ['Alexanderplatz', 'Ruhleben'] },
-  { id: '2', line: 'S1', type: 'delay', severity: 'medium', message: 'Verspätungen S1', affectedStops: [] },
+  { id: '1', line: 'U2', type: 'disruption', severity: 'high', message: 'Störung Alexanderplatz – Ruhleben', detail: 'Wegen einer Signalstörung zwischen Alexanderplatz und Ruhleben.', station: 'Alexanderplatz', location: { lat: 52.52, lon: 13.41 }, affectedStops: ['Alexanderplatz', 'Ruhleben'] },
+  { id: '2', line: 'S1', type: 'delay', severity: 'medium', message: 'Verspätungen S1', detail: 'Verspätungen S1', station: 'Friedrichstraße', location: { lat: 52.52, lon: 13.39 }, affectedStops: [] },
 ];
 
 function createWrapper(alerts?: TransitAlert[]) {

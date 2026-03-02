@@ -42,16 +42,24 @@ vi.mock('maplibre-gl', () => {
     addLayer: vi.fn(),
     setFeatureState: vi.fn(),
     getCanvas: vi.fn().mockReturnValue({ style: {} }),
+    isStyleLoaded: vi.fn().mockReturnValue(true),
+  }));
+  const MockPopup = vi.fn().mockImplementation(() => ({
+    setLngLat: vi.fn().mockReturnThis(),
+    setHTML: vi.fn().mockReturnThis(),
+    addTo: vi.fn().mockReturnThis(),
   }));
   return {
     default: {
       Map: MockMap,
       NavigationControl: vi.fn(),
       AttributionControl: vi.fn(),
+      Popup: MockPopup,
     },
     Map: MockMap,
     NavigationControl: vi.fn(),
     AttributionControl: vi.fn(),
+    Popup: MockPopup,
   };
 });
 

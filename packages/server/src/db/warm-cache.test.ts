@@ -9,7 +9,7 @@ import { createCache } from '../lib/cache.js';
 
 vi.mock('./reads.js', () => ({
   loadWeather: vi.fn().mockResolvedValue({ current: { temp: 10 }, hourly: [], daily: [], alerts: [] }),
-  loadTransitAlerts: vi.fn().mockResolvedValue([{ id: '1', line: 'U2', type: 'disruption', severity: 'high', message: 'Test', affectedStops: [] }]),
+  loadTransitAlerts: vi.fn().mockResolvedValue([{ id: '1', line: 'U2', type: 'disruption', severity: 'high', message: 'Test', detail: 'Test detail', station: 'Alexanderplatz', location: { lat: 52.52, lon: 13.41 }, affectedStops: [] }]),
   loadEvents: vi.fn().mockResolvedValue([{ id: '1', title: 'Event', date: '2026-03-03', category: 'other', url: '' }]),
   loadSafetyReports: vi.fn().mockResolvedValue([{ id: '1', title: 'Report', description: '', publishedAt: '', url: '' }]),
   loadSummary: vi.fn().mockResolvedValue({ briefing: 'Test', generatedAt: '2026-03-02', headlineCount: 5, cached: true, headlineHash: 'abc' }),

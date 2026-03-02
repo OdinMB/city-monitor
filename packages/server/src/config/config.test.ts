@@ -52,7 +52,8 @@ describe('City config', () => {
     const config = getCityConfig('hamburg');
     expect(config!.feeds.length).toBeGreaterThan(0);
     expect(config!.dataSources.weather.provider).toBe('open-meteo');
-    expect(config!.dataSources.transit?.provider).toBe('hafas');
+    // Hamburg transit not supported — HVV transport.rest API is offline
+    expect(config!.dataSources.transit).toBeUndefined();
   });
 
   it('supports multiple active cities', () => {

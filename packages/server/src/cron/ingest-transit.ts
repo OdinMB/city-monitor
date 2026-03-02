@@ -5,6 +5,7 @@
 
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
+import type { CityConfig } from '@city-monitor/shared';
 import { saveTransitAlerts } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { hashString } from '../lib/hash.js';
@@ -18,20 +19,19 @@ export interface TransitAlert {
   type: 'delay' | 'disruption' | 'cancellation' | 'planned-work';
   severity: 'low' | 'medium' | 'high';
   message: string;
+  detail: string;
+  station: string;
+  location: { lat: number; lon: number } | null;
   affectedStops: string[];
 }
 
 const TRANSIT_TIMEOUT_MS = 15_000;
-
-// Major Berlin stations to poll for disruption remarks
-const BERLIN_STATIONS = [
-  '900100003', // Alexanderplatz
-  '900003201', // Hauptbahnhof
-  '900120005', // Zoologischer Garten
-];
+const DEFAULT_ENDPOINT = 'https://v6.vbb.transport.rest';
+const STATION_DELAY_MS = 1_500;
 
 interface VbbDeparture {
   line?: { name?: string; product?: string };
+  stop?: { name?: string; location?: { latitude?: number; longitude?: number } };
   remarks?: Array<{ type?: string; summary?: string; text?: string }>;
 }
 
@@ -39,13 +39,20 @@ interface VbbResponse {
   departures?: VbbDeparture[];
 }
 
+type TransitConfig = NonNullable<CityConfig['dataSources']['transit']>;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function createTransitIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestTransit(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
-      if (!city.dataSources.transit) continue;
+      const transit = city.dataSources.transit;
+      if (!transit?.stations?.length) continue;
       try {
-        await ingestCityTransit(city.id, cache, db);
+        await ingestCityTransit(city.id, transit, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -53,14 +60,28 @@ export function createTransitIngestion(cache: Cache, db: Db | null = null) {
   };
 }
 
-async function ingestCityTransit(cityId: string, cache: Cache, db: Db | null): Promise<void> {
+async function ingestCityTransit(
+  cityId: string,
+  transit: TransitConfig,
+  cache: Cache,
+  db: Db | null,
+): Promise<void> {
+  const endpoint = transit.endpoint ?? DEFAULT_ENDPOINT;
+  const stations = transit.stations ?? [];
+  if (stations.length === 0) return;
+
   const allAlerts: TransitAlert[] = [];
   const seen = new Set<string>();
   let anySuccess = false;
 
-  for (const stationId of BERLIN_STATIONS) {
+  for (let i = 0; i < stations.length; i++) {
+    const station = stations[i];
+
+    // Delay between stations to avoid overwhelming the API
+    if (i > 0) await sleep(STATION_DELAY_MS);
+
     try {
-      const url = `https://v6.vbb.transport.rest/stops/${stationId}/departures?duration=30&remarks=true&results=50`;
+      const url = `${endpoint}/stops/${station.id}/departures?duration=30&remarks=true&results=20`;
       const response = await log.fetch(url, {
         signal: AbortSignal.timeout(TRANSIT_TIMEOUT_MS),
         headers: { 'User-Agent': 'CityMonitor/1.0' },
@@ -82,18 +103,27 @@ async function ingestCityTransit(cityId: string, cache: Cache, db: Db | null): P
           if (seen.has(dedupeKey)) continue;
           seen.add(dedupeKey);
 
+          const stopName = dep.stop?.name ?? station.name;
+          const stopLoc = dep.stop?.location;
+          const detail = remark.text?.trim() || remark.summary;
+
           allAlerts.push({
             id: hashString(dedupeKey),
             line: dep.line.name,
             type: classifyDisruption(remark.summary),
             severity: classifySeverity(remark.summary),
             message: remark.summary,
+            detail,
+            station: stopName,
+            location: stopLoc?.latitude && stopLoc?.longitude
+              ? { lat: stopLoc.latitude, lon: stopLoc.longitude }
+              : null,
             affectedStops: extractStops(remark.summary),
           });
         }
       }
     } catch (err) {
-      log.warn(`station ${stationId} failed`);
+      log.warn(`station ${station.id} failed`);
     }
   }
 
@@ -102,7 +132,7 @@ async function ingestCityTransit(cityId: string, cache: Cache, db: Db | null): P
     return;
   }
 
-  cache.set(`${cityId}:transit:alerts`, allAlerts, 300);
+  cache.set(`${cityId}:transit:alerts`, allAlerts, 1200);
 
   if (db) {
     try {
@@ -132,11 +162,15 @@ function classifySeverity(summary: string): TransitAlert['severity'] {
 }
 
 function extractStops(summary: string): string[] {
-  // Extract stop names from patterns like "zwischen X und Y"
-  const match = summary.match(/zwischen\s+(.+?)\s+und\s+(.+?)(?:\.|$)/i);
-  if (match) {
-    return [match[1].trim(), match[2].trim()].filter(Boolean);
+  // Pattern 1: "zwischen X und Y"
+  const zwischen = summary.match(/zwischen\s+(.+?)\s+und\s+(.+?)(?:\.|$)/i);
+  if (zwischen) {
+    return [zwischen[1].trim(), zwischen[2].trim()].filter(Boolean);
+  }
+  // Pattern 2: "X – Y" or "X - Y" (em-dash or hyphen range)
+  const dash = summary.match(/:\s*(.+?)\s+[–\-]\s+(.+?)(?:\.|,|$)/);
+  if (dash) {
+    return [dash[1].trim(), dash[2].trim()].filter(Boolean);
   }
   return [];
 }
-
