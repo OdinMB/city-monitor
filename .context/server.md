@@ -11,11 +11,23 @@
 3. Create DB connection if `DATABASE_URL` set (returns `null` otherwise)
 4. Warm cache from Postgres if DB connected
 5. Create ingestion functions (feed, weather, transit, events, safety, summarize) — each receives cache and optionally db
-6. Create scheduler with 6 cron jobs (all `runOnStart: true`)
-7. Mount routers under `/api`: health, news, weather, transit, events, safety
+6. Create scheduler with 7 cron jobs (all `runOnStart: true` except data-retention)
+7. Mount routers under `/api` with per-route Cache-Control headers
 8. Return `{ app, cache, db, scheduler }`
 
 Entry point (`index.ts`) calls `createApp()` and listens on `PORT` (default 3001).
+
+### Cache-Control Headers
+
+Applied via middleware per route tier:
+
+| Route | max-age | Rationale |
+|---|---|---|
+| `/api/:city/news/*` | 300s (5 min) | Feeds update every 10 min |
+| `/api/:city/weather` | 300s (5 min) | Weather updates every 30 min |
+| `/api/:city/transit` | 120s (2 min) | Transit updates every 5 min |
+| `/api/:city/events` | 1800s (30 min) | Events update every 6h |
+| `/api/:city/safety` | 300s (5 min) | Safety updates every 10 min |
 
 ## Scheduler (`packages/server/src/lib/scheduler.ts`)
 
@@ -30,9 +42,10 @@ Wrapper around `node-cron` with job metadata tracking.
 | `ingest-weather` | `*/30 * * * *` | Open-Meteo + DWD alerts |
 | `ingest-transit` | `*/5 * * * *` | VBB departure disruptions |
 | `ingest-events` | `0 */6 * * *` | kulturdaten.berlin events |
-| `ingest-safety` | `*/10 * * * *` | Berlin police RSS |
+| `ingest-safety` | `*/10 * * * *` | Police RSS |
+| `data-retention` | `0 3 * * *` | Prune old data (nightly) |
 
-All jobs have `runOnStart: true`. Startup jobs run sequentially in definition order so later jobs can depend on data from earlier ones (e.g. summarize needs feeds).
+All ingestion jobs have `runOnStart: true`. Data-retention runs only at 3am.
 
 ### API
 
@@ -56,7 +69,7 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 {
   "status": "ok",
   "uptime": 12345.67,
-  "activeCities": ["berlin"],
+  "activeCities": ["berlin", "hamburg"],
   "cache": { "entries": 42 },
   "scheduler": { "jobs": [{ "name": "...", "lastRun": "..." }] },
   "ai": { "berlin": { "input": 5000, "output": 250, "calls": 5, "estimatedCostUsd": 0.0049 } }
@@ -70,9 +83,10 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 ## City Configuration (`packages/server/src/config/`)
 
 - `index.ts` — `getActiveCities()` reads `ACTIVE_CITIES` env var (comma-separated IDs, default "berlin"), returns matching `CityConfig[]`. `getCityConfig(id)` for single lookup.
-- `cities/berlin.ts` — Berlin config with coordinates, bounding box, timezone, languages, map settings, theme accent color, 10 RSS feeds, and data source URLs (weather lat/lon, transit provider, events API, police RSS).
+- `cities/berlin.ts` — Berlin config with 10 RSS feeds, weather (Open-Meteo), transit (VBB), events (kulturdaten.berlin), police (berlin.de RSS).
+- `cities/hamburg.ts` — Hamburg config with 4 RSS feeds (NDR, Abendblatt, MOPO, hamburg.de), weather (Open-Meteo), transit (HVV via HAFAS), police (presseportal.de RSS).
 
-Adding a city = adding a config file + adding to `ALL_CITIES` dict + setting `ACTIVE_CITIES` env var.
+Adding a city = adding a config file + registering in `ALL_CITIES` + setting `ACTIVE_CITIES` env var.
 
 ## Environment Variables
 

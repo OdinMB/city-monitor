@@ -2,25 +2,40 @@
 
 ## Stack
 
-React 19, TypeScript, Vite 6 (dev + build), Tailwind v4, Zustand (theme state), React Query (data fetching + polling). Client-rendered SPA — no SSR.
+React 19, TypeScript, Vite 6 (dev + build), Tailwind v4, Zustand (theme state), React Query (data fetching + polling), react-router-dom (client routing), react-i18next (translations). Client-rendered SPA — no SSR.
+
+## Routing
+
+react-router-dom with `BrowserRouter` in `main.tsx`. Routes defined in `App.tsx`:
+
+| Path | Component | Description |
+|---|---|---|
+| `/` | `CityPicker` | Grid of city cards linking to `/:cityId` |
+| `/:cityId` | `CityRoute` → `Dashboard` | City dashboard with all panels |
+| `*` | redirect to `/` | Unknown paths redirect to city picker |
+
+`CityRoute` validates the `cityId` param against `getCityConfig()`. Unknown cities redirect to `/`.
 
 ## Component Tree
 
 ```
 App
   QueryClientProvider
-    CityProvider (context: CityConfig)
-      Dashboard
-        Shell
-          TopBar (city name, theme toggle)
-          PanelGrid (responsive CSS grid)
-            NewsBriefingPanel
-            WeatherPanel
-            TransitPanel
-            EventsPanel
-            SafetyPanel
-            MapPanel
-          Footer (AGPL source link)
+    Routes
+      / → CityPicker (city cards grid)
+      /:cityId → CityRoute
+        CityProvider (context: CityConfig from URL param)
+          Dashboard
+            Shell
+              TopBar (city name link, weather, language switcher, theme toggle)
+              PanelGrid (responsive CSS grid)
+                NewsBriefingPanel
+                WeatherPanel
+                TransitPanel
+                EventsPanel
+                SafetyPanel
+                MapPanel
+              Footer (AGPL source link)
 ```
 
 ## Data Fetching
@@ -62,8 +77,12 @@ Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `Safety
 
 - **Shell** — Full-height flex column: TopBar, main content, Footer. Dark mode via Tailwind `dark:` classes.
 - **PanelGrid** — `grid-cols-[repeat(auto-fill,minmax(320px,1fr))]` with 4px gap. Responsive: 1 column on mobile, 2-3 on desktop.
-- **TopBar** — City name, theme toggle button.
+- **TopBar** — City name (link back to `/`), current weather, language switcher (DE/EN/TR/AR), theme toggle.
 - **Footer** — AGPL-required source code link (Section 13 compliance).
+
+## Internationalization (i18n)
+
+See [i18n.md](i18n.md) for details. 4 languages supported: German, English, Turkish, Arabic. All UI strings use `useTranslation()` hook with translation keys from JSON files.
 
 ## Theme System
 
@@ -71,20 +90,25 @@ Zustand store in `useTheme.ts`:
 - State: `{ theme: 'light' | 'dark', toggle() }`
 - Initial: reads `localStorage.theme`, falls back to `prefers-color-scheme` media query
 - Persistence: writes to `localStorage` on toggle
-- Effect: `App` component toggles `dark` class on `<html>` element for Tailwind dark mode
+- Effect: `App` component toggles `dark` class on `<html>` element
+
+Tailwind v4 dark mode requires `@custom-variant dark (&:where(.dark, .dark *));` in `globals.css` for class-based toggling (v4 defaults to `prefers-color-scheme` media query). Smooth 150ms transitions on `background-color`, `color`, and `border-color`.
+
+City accent colors are set via CSS custom property `--accent` with `[data-city='berlin']` / `[data-city='hamburg']` selectors.
 
 ## City Context
 
-`CityProvider` wraps the app, provides `useCityConfig()` hook that returns the active `CityConfig` object. Default city: `berlin`. Config loaded from `packages/web/src/config/` (mirrors server config structure).
+`CityProvider` wraps each city dashboard, provides `useCityConfig()` hook that returns the active `CityConfig` object. City ID comes from the URL `:cityId` param. Config loaded from `packages/web/src/config/` (mirrors server config structure).
+
+`getAllCities()` returns all registered city configs (used by CityPicker). `getDefaultCityId()` returns `'berlin'`.
 
 ## Map (`packages/web/src/components/map/CityMap.tsx`)
 
-- MapLibre GL JS (open-source Mapbox fork)
+- MapLibre GL JS (open-source Mapbox fork), lazy-loaded via `React.lazy`
 - CARTO basemaps: dark-matter (dark theme), positron (light theme) — free, no API key
 - Initialized from city config: center, zoom, minZoom, maxZoom, maxBounds
 - Controls: NavigationControl (zoom only, no compass), AttributionControl (compact)
 - Theme-aware: swaps map style on dark/light toggle via `map.setStyle()`
-- No data overlays yet — ready for event/safety markers in future milestones
 
 ## Frontend Utilities
 
@@ -92,3 +116,9 @@ Zustand store in `useTheme.ts`:
 |---|---|
 | `lib/format-time.ts` | `formatRelativeTime(iso)` — "just now", "5 min ago", "2h ago", "3d ago" |
 | `lib/weather-codes.ts` | WMO code to emoji + label mapping |
+
+## SEO & PWA
+
+- `index.html` — meta description, Open Graph tags, noscript fallback
+- `public/manifest.json` — PWA manifest for installability
+- `public/favicon.svg` — SVG favicon

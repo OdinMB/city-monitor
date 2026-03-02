@@ -36,4 +36,4 @@ Alerts are deduped by `${line}:${summary}` — the same disruption reported acro
 
 ### DB Schema
 
-`transitDisruptions` table is defined in `schema.ts` but not yet wired to runtime — cache-only for now, same as weather and AI summaries. Will be persisted when DB connection is established.
+`transitDisruptions` table — cityId, line, type, severity, message, affectedStops (JSONB), resolved. Indexed by `transit_city_idx(cityId)`. Persisted via `saveTransitAlerts()` in `writes.ts` on every ingestion run (if DB connected). Data retention: resolved alerts older than 48 hours are pruned nightly.

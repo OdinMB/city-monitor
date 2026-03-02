@@ -25,7 +25,14 @@ interface SafetyReport {
 
 ### District Extraction
 
-Currently hardcoded to Berlin districts (Mitte, Kreuzberg, etc.). When adding a second city, move district lists into city config or add per-city district detection.
+Currently hardcoded to Berlin districts (Mitte, Kreuzberg, etc.). Hamburg uses presseportal.de RSS (no district extraction yet).
+
+### Data Sources
+
+- **Berlin:** `https://www.berlin.de/polizei/polizeimeldungen/index.php/rss`
+- **Hamburg:** `https://www.presseportal.de/rss/dienststelle_6013.rss2`
+
+Source URL configured per city in `dataSources.police.url`.
 
 ## Events
 
@@ -65,4 +72,5 @@ German keywords in event title determine category: Konzert/Musik -> music, Ausst
 
 ## DB Schema
 
-`events` and `safetyReports` tables are defined in `schema.ts` but not yet wired to runtime — cache-only for now (same pattern as weather, transit, AI summaries).
+- `events` table — cityId, title, venue, date, category, url, free, hash. Indexed by `events_city_date_idx(cityId, date)`. Persisted via `saveEvents()` on every ingestion run.
+- `safetyReports` table — cityId, title, description, publishedAt, url, district, hash. Indexed by `safety_city_published_idx(cityId, publishedAt)`. Persisted via `saveSafetyReports()`. Data retention: reports older than 7 days are pruned nightly.

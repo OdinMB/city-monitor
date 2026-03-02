@@ -41,15 +41,15 @@ ORM: Drizzle (schema-as-code, no code generation). Driver: `postgres` (node-post
 
 ### Schema (`schema.ts`)
 
-5 tables, added incrementally by milestone:
+5 tables with indices for query performance:
 
-| Table | Milestone | Key Columns |
+| Table | Key Columns | Index |
 |---|---|---|
-| `weatherSnapshots` | 06 | cityId, current/hourly/daily (JSONB), alerts (JSONB) |
-| `transitDisruptions` | 09 | cityId, line, type, severity, message, affectedStops (JSONB), resolved |
-| `events` | 10 | cityId, title, venue, date, category, url, free, hash |
-| `safetyReports` | 10 | cityId, title, description, publishedAt, url, district, hash |
-| `aiSummaries` | 07 | cityId, headlineHash, summary, model, inputTokens, outputTokens |
+| `weatherSnapshots` | cityId, current/hourly/daily (JSONB), alerts (JSONB) | `weather_city_idx(cityId)` |
+| `transitDisruptions` | cityId, line, type, severity, message, affectedStops (JSONB), resolved | `transit_city_idx(cityId)` |
+| `events` | cityId, title, venue, date, category, url, free, hash | `events_city_date_idx(cityId, date)` |
+| `safetyReports` | cityId, title, description, publishedAt, url, district, hash | `safety_city_published_idx(cityId, publishedAt)` |
+| `aiSummaries` | cityId, headlineHash, summary, model, inputTokens, outputTokens | `summaries_city_generated_idx(cityId, generatedAt)` |
 
 All tables have `id` (serial PK), `cityId` (text), and `fetchedAt` (timestamp, default now).
 
@@ -75,9 +75,21 @@ All use transactions with delete-then-insert (full refresh per city, not upsert)
 
 Runs on server start if DB is connected. Loads all 5 data types for all active cities from Postgres into cache with their standard TTLs. Errors are logged but don't block startup — each domain is independent.
 
+### Data Retention (`cron/data-retention.ts`)
+
+Nightly cron (3am) prunes old data to keep DB size manageable:
+
+| Table | Retention |
+|---|---|
+| `weatherSnapshots` | 30 days |
+| `transitDisruptions` (resolved) | 48 hours |
+| `safetyReports` | 7 days |
+| `aiSummaries` | 30 days |
+
 ## Patterns
 
 - **Cache-first reads:** Route handlers check cache, then DB, then return empty defaults. No writes to cache on DB-fallback reads (cache is populated by cron).
 - **Dual writes:** Cron jobs write to cache immediately, then attempt DB write (errors caught, logged, non-fatal).
 - **Full refresh:** DB writes delete all rows for a city then insert fresh data in a transaction. Simple and correct for small per-city datasets.
 - **Optional DB:** Everything works without `DATABASE_URL` — cache-only mode with no persistence across restarts.
+- **City isolation:** All cache keys and DB queries are prefixed/filtered by `cityId`. No cross-city data leaks.

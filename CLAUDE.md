@@ -1,10 +1,10 @@
 # City Monitor
 
-Real-time city dashboard, starting with Berlin. Extracts proven patterns from the [worldmonitor](https://github.com/ellie-xyb/worldmonitor) repo into a focused, single-city product.
+Real-time multi-city dashboard (Berlin, Hamburg). Extracts proven patterns from the [worldmonitor](https://github.com/ellie-xyb/worldmonitor) repo into a focused city monitoring product.
 
 ## Stack
 
-- **Frontend:** React 19 + TypeScript + Vite 6 + Tailwind v4 + Zustand + React Query
+- **Frontend:** React 19 + TypeScript + Vite 6 + Tailwind v4 + Zustand + React Query + react-router + react-i18next
 - **Backend:** Node + Express, single process with `node-cron` for scheduled data ingestion
 - **Database:** PostgreSQL (Render) + Drizzle ORM (schema-as-code, no code generation)
 - **Cache:** In-memory Map with TTL — hot read layer in front of Postgres
@@ -29,22 +29,20 @@ shared/         — Shared TypeScript types
 
 The server runs cron jobs that fetch external data, classify/process it, write to PostgreSQL (source of truth), and update the in-memory cache. The React SPA reads pre-built JSON via REST endpoints. API reads hit the memory cache first; on miss, query Postgres. A bootstrap endpoint (`GET /api/:city/bootstrap`) returns all city data in one response for fast initial load. On server start, the cache warms from Postgres.
 
-Adding a city = adding a config file + setting `ACTIVE_CITIES` env var.
-
-## Milestone Plans
-
-Plans live in `.plans/` and are version-tracked. MVP = milestones 01-05 (scaffolding → news UI). The `.worldmonitor/` directory is the reference for porting patterns — each plan references specific files in it.
+Adding a city = adding a config file (server + web) + registering in `ALL_CITIES` + setting `ACTIVE_CITIES` env var.
 
 ## Context Files
 
 - [`.context/licensing.md`](.context/licensing.md) — AGPL-3.0 per-file header templates, adapted component list, and Section 13 footer requirements.
-- [`.context/server.md`](.context/server.md) — App factory, startup sequence, scheduler/cron jobs, logging system, health & bootstrap endpoints, city config, env vars, utility libraries.
-- [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (5 tables), read/write patterns, cache warming.
+- [`.context/server.md`](.context/server.md) — App factory, startup sequence, 7 cron jobs, logging system, health & bootstrap endpoints, multi-city config, env vars, utility libraries.
+- [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (5 tables with indices), read/write patterns, cache warming, data retention.
 - [`.context/weather.md`](.context/weather.md) — Open-Meteo forecast ingestion, DWD severe weather alerts for German cities, WMO weather codes.
-- [`.context/news.md`](.context/news.md) — RSS feed ingestion (10 Berlin feeds, 3 tiers), headline classifier, AI summarization via OpenAI (gpt-5-mini), cost tracking.
+- [`.context/news.md`](.context/news.md) — RSS feed ingestion (10 Berlin + 4 Hamburg feeds), headline classifier, AI summarization via OpenAI (gpt-5-mini), cost tracking.
 - [`.context/transit.md`](.context/transit.md) — VBB transport.rest integration, line+summary deduplication, German keyword classification of disruption type/severity.
-- [`.context/events-safety.md`](.context/events-safety.md) — kulturdaten.berlin events API, berlin.de police RSS with district extraction, category classification.
-- [`.context/frontend.md`](.context/frontend.md) — React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
+- [`.context/events-safety.md`](.context/events-safety.md) — kulturdaten.berlin events API, police RSS (Berlin + Hamburg) with district extraction, category classification.
+- [`.context/frontend.md`](.context/frontend.md) — react-router routing (city picker + /:cityId), React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
+- [`.context/i18n.md`](.context/i18n.md) — react-i18next setup, 4 languages (DE/EN/TR/AR), translation key structure, language detection, testing setup.
+- [`.context/deployment.md`](.context/deployment.md) — Render.com blueprint (render.yaml), GitHub Actions CI, environment variables, domain setup, monitoring.
 
 ## Key Conventions
 
