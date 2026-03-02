@@ -10,14 +10,25 @@ import {
   transitDisruptions,
   events,
   safetyReports,
+  newsItems,
   aiSummaries,
   ninaWarnings,
+  geocodeLookups,
 } from './schema.js';
 import type { NinaWarning } from '@city-monitor/shared';
+import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
+import type { NewsItem } from '../cron/ingest-feeds.js';
+
+export interface NewsItemAssessment {
+  relevant?: boolean;
+  confidence?: number;
+}
+
+export type PersistedNewsItem = NewsItem & { assessment?: NewsItemAssessment };
 
 export async function saveWeather(db: Db, cityId: string, data: WeatherData): Promise<void> {
   await db.transaction(async (tx) => {
@@ -96,6 +107,33 @@ export async function saveSafetyReports(db: Db, cityId: string, reports: SafetyR
   });
 }
 
+export async function saveNewsItems(db: Db, cityId: string, items: PersistedNewsItem[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(newsItems).where(eq(newsItems.cityId, cityId));
+    if (items.length === 0) return;
+    await tx.insert(newsItems).values(
+      items.map((item) => ({
+        cityId,
+        hash: item.id,
+        title: item.title,
+        url: item.url,
+        publishedAt: item.publishedAt ? new Date(item.publishedAt) : null,
+        sourceName: item.sourceName,
+        sourceUrl: item.sourceUrl,
+        description: item.description ?? null,
+        category: item.category,
+        tier: item.tier,
+        lang: item.lang,
+        relevant: item.assessment?.relevant ?? null,
+        confidence: item.assessment?.confidence ?? null,
+        lat: item.location?.lat ?? null,
+        lon: item.location?.lon ?? null,
+        locationLabel: item.location?.label ?? null,
+      })),
+    );
+  });
+}
+
 export async function saveSummary(
   db: Db,
   cityId: string,
@@ -136,4 +174,22 @@ export async function saveNinaWarnings(db: Db, cityId: string, warnings: NinaWar
       })),
     );
   });
+}
+
+export async function saveGeocodeLookup(
+  db: Db,
+  query: string,
+  result: GeocodeResult,
+  provider: string,
+): Promise<void> {
+  await db
+    .insert(geocodeLookups)
+    .values({
+      query,
+      lat: result.lat,
+      lon: result.lon,
+      displayName: result.displayName,
+      provider,
+    })
+    .onConflictDoNothing({ target: geocodeLookups.query });
 }

@@ -10,15 +10,20 @@ import {
   transitDisruptions,
   events,
   safetyReports,
+  newsItems,
   aiSummaries,
   ninaWarnings,
+  geocodeLookups,
 } from './schema.js';
 import type { NinaWarning } from '@city-monitor/shared';
+import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
+import type { NewsItem } from '../cron/ingest-feeds.js';
 import type { NewsSummary } from '../cron/summarize.js';
+import type { PersistedNewsItem } from './writes.js';
 
 export async function loadWeather(db: Db, cityId: string): Promise<WeatherData | null> {
   const rows = await db
@@ -103,6 +108,35 @@ export async function loadSafetyReports(db: Db, cityId: string): Promise<SafetyR
   }));
 }
 
+export async function loadNewsItems(db: Db, cityId: string): Promise<PersistedNewsItem[] | null> {
+  const rows = await db
+    .select()
+    .from(newsItems)
+    .where(eq(newsItems.cityId, cityId))
+    .orderBy(desc(newsItems.publishedAt));
+
+  if (rows.length === 0) return null;
+
+  return rows.map((row) => ({
+    id: row.hash,
+    title: row.title,
+    url: row.url,
+    publishedAt: row.publishedAt?.toISOString() ?? '',
+    sourceName: row.sourceName,
+    sourceUrl: row.sourceUrl,
+    description: row.description ?? undefined,
+    category: row.category,
+    tier: row.tier,
+    lang: row.lang,
+    location: row.lat != null && row.lon != null
+      ? { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined }
+      : undefined,
+    assessment: row.relevant != null
+      ? { relevant: row.relevant, confidence: row.confidence ?? undefined }
+      : undefined,
+  }));
+}
+
 export async function loadSummary(db: Db, cityId: string): Promise<(NewsSummary & { headlineHash: string }) | null> {
   const rows = await db
     .select()
@@ -147,3 +181,38 @@ export async function loadNinaWarnings(db: Db, cityId: string): Promise<NinaWarn
     area: (row.area as NinaWarning['area']) ?? undefined,
   }));
 }
+
+export interface GeocodeLookupRow extends GeocodeResult {
+  provider: string;
+}
+
+export async function loadGeocodeLookup(db: Db, query: string): Promise<GeocodeLookupRow | null> {
+  const rows = await db
+    .select()
+    .from(geocodeLookups)
+    .where(eq(geocodeLookups.query, query))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+
+  const row = rows[0];
+  return {
+    lat: row.lat,
+    lon: row.lon,
+    displayName: row.displayName,
+    provider: row.provider,
+  };
+}
+
+export async function loadAllGeocodeLookups(db: Db): Promise<(GeocodeLookupRow & { query: string })[]> {
+  const rows = await db.select().from(geocodeLookups);
+  return rows.map((row) => ({
+    query: row.query,
+    lat: row.lat,
+    lon: row.lon,
+    displayName: row.displayName,
+    provider: row.provider,
+  }));
+}
+
+export type { GeocodeResult };

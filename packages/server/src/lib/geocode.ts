@@ -4,8 +4,20 @@
  */
 
 import { createLogger } from './logger.js';
+import type { Db } from '../db/index.js';
+import { loadGeocodeLookup } from '../db/reads.js';
+import { saveGeocodeLookup } from '../db/writes.js';
 
 const log = createLogger('geocode');
+
+// ---------------------------------------------------------------------------
+// DB reference — set once at startup via initGeocodeDb()
+// ---------------------------------------------------------------------------
+let _db: Db | null = null;
+
+export function initGeocodeDb(db: Db): void {
+  _db = db;
+}
 
 const TIMEOUT_MS = 5_000;
 const USER_AGENT = 'CityMonitor/1.0 (https://github.com/OdinMB/city-monitor)';
@@ -94,6 +106,20 @@ async function geocodeLocationIQ(query: string): Promise<GeocodeResult | null> {
 }
 
 // ---------------------------------------------------------------------------
+// In-process cache — location names are stable landmarks, cache indefinitely
+// ---------------------------------------------------------------------------
+const geocodeCache = new Map<string, GeocodeResult | null>();
+
+export function clearGeocodeCache(): void {
+  geocodeCache.clear();
+}
+
+/** Populate the in-process Map from DB rows (used by warm-cache). */
+export function setGeocodeCacheEntry(key: string, result: GeocodeResult): void {
+  geocodeCache.set(key, result);
+}
+
+// ---------------------------------------------------------------------------
 // Shared
 // ---------------------------------------------------------------------------
 export interface GeocodeResult {
@@ -126,25 +152,66 @@ export async function geocode(
   cityName: string,
 ): Promise<GeocodeResult | null> {
   const query = `${location}, ${cityName}`;
+  const cacheKey = query.toLowerCase();
 
+  // Layer 1: In-process Map
+  if (geocodeCache.has(cacheKey)) {
+    return geocodeCache.get(cacheKey) ?? null;
+  }
+
+  // Layer 2: DB lookup (survives restarts)
+  if (_db) {
+    try {
+      const dbRow = await loadGeocodeLookup(_db, cacheKey);
+      if (dbRow) {
+        const result: GeocodeResult = { lat: dbRow.lat, lon: dbRow.lon, displayName: dbRow.displayName };
+        geocodeCache.set(cacheKey, result);
+        return result;
+      }
+    } catch (err) {
+      log.warn(`DB lookup failed for "${cacheKey}"`);
+    }
+  }
+
+  // Layer 3: External API
   try {
+    let result: GeocodeResult | null;
+    let provider: string;
+
     // Nominatim slot available — use it
     if (nominatimAvailable()) {
-      return await geocodeNominatim(query);
+      result = await geocodeNominatim(query);
+      provider = 'nominatim';
+    } else if (LOCATIONIQ_TOKEN) {
+      // Nominatim busy — try LocationIQ if available
+      result = await geocodeLocationIQ(query);
+      provider = 'locationiq';
+      if (!result) {
+        // LocationIQ failed — fall through to wait for Nominatim
+        await waitForNominatim();
+        result = await geocodeNominatim(query);
+        provider = 'nominatim';
+      }
+    } else {
+      // Wait for Nominatim
+      await waitForNominatim();
+      result = await geocodeNominatim(query);
+      provider = 'nominatim';
     }
 
-    // Nominatim busy — try LocationIQ if available
-    if (LOCATIONIQ_TOKEN) {
-      const result = await geocodeLocationIQ(query);
-      if (result) return result;
-      // LocationIQ failed — fall through to wait for Nominatim
+    geocodeCache.set(cacheKey, result);
+
+    // Persist successful results to DB (failed lookups stay in-process only)
+    if (result && _db) {
+      saveGeocodeLookup(_db, cacheKey, result, provider).catch((err) => {
+        log.warn(`DB write failed for "${cacheKey}"`);
+      });
     }
 
-    // Wait for Nominatim
-    await waitForNominatim();
-    return await geocodeNominatim(query);
+    return result;
   } catch (err) {
     log.warn(`geocode failed for "${query}"`);
+    // Don't cache — transient errors should be retried on next call
     return null;
   }
 }

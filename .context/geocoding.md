@@ -47,10 +47,50 @@ const result = await geocode('Alexanderplatz', 'Berlin');
 - **Returns** `GeocodeResult | null` — coordinates + display name, or null on failure
 - All queries scoped to `countrycodes=de` (Germany only)
 
+## Caching
+
+Three layers prevent redundant geocoding calls:
+
+### Layer 1: In-process Map (`geocode.ts`)
+
+Module-level `Map<string, GeocodeResult | null>` keyed by lowercase query string. Location names are stable landmarks — cached indefinitely within a process lifetime. Legitimate "not found" results (empty API response) are cached as `null`; transient network errors are **not** cached so they can be retried.
+
+```typescript
+import { clearGeocodeCache } from './geocode.js';
+clearGeocodeCache(); // reset in tests
+```
+
+### Layer 2: Postgres `geocode_lookups` table
+
+Persistent lookup table that survives server restarts. Schema:
+
+```
+geocode_lookups
+├── id: serial PK
+├── query: text NOT NULL UNIQUE  ← lowercase "alexanderplatz, berlin"
+├── lat: real NOT NULL
+├── lon: real NOT NULL
+├── displayName: text NOT NULL
+├── provider: text NOT NULL      ← "nominatim" | "locationiq"
+└── createdAt: timestamp DEFAULT now()
+```
+
+Only successful results (lat/lon found) are stored. Failed lookups (`null`) stay in Layer 1 only — they can be retried after a restart in case data has been added to Nominatim.
+
+**Initialization:** `initGeocodeDb(db)` is called once at startup in `app.ts`, storing a module-level DB reference. The `geocode()` function signature is unchanged.
+
+**Cache warming:** On startup, `warm-cache.ts` loads all rows and populates the in-process Map before any cron jobs run.
+
+**Lookup order:** Map (~0ms) → DB (~5ms) → External API (~500–1100ms). On hit at any layer, all faster layers above are populated.
+
+### Layer 3: Safety-cron coordinate reuse (`ingest-safety.ts`)
+
+Before calling the LLM+geocoder pipeline, the safety cron loads existing reports from Postgres and carries over stored `lat`/`lon`/`label` for items whose hash already exists with coordinates. This avoids redundant **LLM** calls (a different concern than geocoding persistence).
+
 ## Callers
 
-- `lib/openai.ts → filterAndLocateHeadlines()` — geocodes news items after LLM location extraction
-- `lib/openai.ts → geolocateSafetyReports()` — geocodes police reports after LLM location extraction
+- `lib/openai.ts → filterAndGeolocateNews()` — geocodes news items after LLM location extraction
+- `lib/openai.ts → geolocateReports()` — geocodes police reports after LLM location extraction
 
 Both call `geocode()` in a sequential loop (one item at a time), so the rate limiter naturally throttles the batch.
 

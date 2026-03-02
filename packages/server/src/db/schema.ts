@@ -6,7 +6,7 @@
  * Tables are added incrementally by each milestone.
  */
 
-import { pgTable, serial, text, timestamp, jsonb, integer, boolean, real, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, jsonb, integer, boolean, real, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
 // Milestone 06 — Weather
 export const weatherSnapshots = pgTable('weather_snapshots', {
@@ -96,6 +96,43 @@ export const ninaWarnings = pgTable('nina_warnings', {
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [
   index('nina_city_idx').on(table.cityId, table.startDate),
+]);
+
+// News items with LLM assessments
+export const newsItems = pgTable('news_items', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  hash: text('hash').notNull(),
+  title: text('title').notNull(),
+  url: text('url').notNull(),
+  publishedAt: timestamp('published_at'),
+  sourceName: text('source_name').notNull(),
+  sourceUrl: text('source_url').notNull(),
+  description: text('description'),
+  category: text('category').notNull(),
+  tier: integer('tier').notNull(),
+  lang: text('lang').notNull(),
+  relevant: boolean('relevant'),
+  confidence: real('confidence'),
+  lat: real('lat'),
+  lon: real('lon'),
+  locationLabel: text('location_label'),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('news_city_idx').on(table.cityId),
+]);
+
+// Geocode lookup table — persistent cache for geocoding results
+export const geocodeLookups = pgTable('geocode_lookups', {
+  id: serial('id').primaryKey(),
+  query: text('query').notNull(),
+  lat: real('lat').notNull(),
+  lon: real('lon').notNull(),
+  displayName: text('display_name').notNull(),
+  provider: text('provider').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('geocode_query_idx').on(table.query),
 ]);
 
 // Milestone 07 — AI Summaries

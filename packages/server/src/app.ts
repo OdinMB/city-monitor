@@ -31,6 +31,8 @@ import { createDataRetention } from './cron/data-retention.js';
 import { createPharmacyIngestion } from './cron/ingest-pharmacies.js';
 import { createTrafficIngestion } from './cron/ingest-traffic.js';
 import { createPoliticalIngestion } from './cron/ingest-political.js';
+import { createAirQualityGridIngestion } from './cron/ingest-air-quality-grid.js';
+import { initGeocodeDb } from './lib/geocode.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
   const app = express();
@@ -41,10 +43,11 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const db = createDb();
 
   if (db) {
+    initGeocodeDb(db);
     await warmCache(db, cache);
   }
 
-  const ingestFeeds = createFeedIngestion(cache);
+  const ingestFeeds = createFeedIngestion(cache, db);
   const ingestWeather = createWeatherIngestion(cache, db);
   const summarizeNews = createSummarization(cache, db);
   const ingestTransit = createTransitIngestion(cache, db);
@@ -54,6 +57,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestPharmacies = createPharmacyIngestion(cache);
   const ingestTraffic = createTrafficIngestion(cache);
   const ingestPolitical = createPoliticalIngestion(cache);
+  const ingestAqGrid = createAirQualityGridIngestion(cache);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -68,6 +72,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-pharmacies', schedule: '0 */6 * * *', handler: ingestPharmacies, runOnStart: true },
     { name: 'ingest-traffic', schedule: '*/5 * * * *', handler: ingestTraffic, runOnStart: true },
     { name: 'ingest-political', schedule: '0 4 * * 1', handler: ingestPolitical, runOnStart: true },
+    { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid, runOnStart: true },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
