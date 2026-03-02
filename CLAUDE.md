@@ -43,6 +43,7 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/frontend.md`](.context/frontend.md) — react-router routing (city picker + /:cityId), React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
 - [`.context/i18n.md`](.context/i18n.md) — react-i18next setup, 4 languages (DE/EN/TR/AR), translation key structure, language detection, testing setup.
 - [`.context/deployment.md`](.context/deployment.md) — Render.com blueprint (render.yaml), GitHub Actions CI, environment variables, domain setup, monitoring.
+- [`.context/geocoding.md`](.context/geocoding.md) — Nominatim-first geocoding with LocationIQ fallback, rate limiting strategy, API usage, callers.
 
 ## Key Conventions
 

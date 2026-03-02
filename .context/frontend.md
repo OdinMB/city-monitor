@@ -113,7 +113,9 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 - Theme-aware: swaps map style on dark/light toggle via `map.setStyle()` with `isFirstRender` ref to prevent race condition on mount
 - District boundaries: GeoJSON overlay with fill, line (dashed), and label layers per city (`DISTRICT_URLS` config)
 - Hover effect: feature-state-based fill opacity change + cursor pointer on district polygons (`setupDistrictHover()`)
-- Transit markers: GeoJSON point source from `TransitAlert[]` with severity-colored circles (red/amber/gray) + line label below. Click popup shows line, type, station, message. Updated from map `load` handler and `styledata` handler using refs to bridge async map events with React state.
+- Map icons: `lib/map-icons.ts` renders Lucide SVG icons onto canvas via `Path2D` (synchronous, no async image loading). `registerAllMapIcons(map, isDark)` pre-registers 14 icon variants (rounded-square background + white Lucide glyph): 3 transit (TrainFront × severity), 8 news (Newspaper × category), 1 safety (ShieldAlert), 1 pharmacy (Pill). Called once on `load` and `styledata`, before any marker updates. Exports `SEVERITY_COLORS` and `NEWS_CATEGORY_COLORS` used by both map-icons and CityMap.
+- Point markers: All 4 point data layers use `symbol` layers with pre-registered icon images. Transit uses severity-based `match` expression; news uses category-based `match`; safety and pharmacy use fixed icon IDs. Click popups and hover cursors on each layer.
+- Transit markers: GeoJSON point source from `TransitAlert[]` with severity-colored icons (red/amber/gray) + line label below. Click popup shows line, type, station, message. Updated from map `load` handler and `styledata` handler using refs to bridge async map events with React state.
 - Vite config requires `target: 'esnext'` (both `build.target` and `optimizeDeps.esbuildOptions.target`) to prevent MapLibre's GeoJSON web worker crash (`__publicField is not defined`)
 
 ## Frontend Utilities
@@ -121,6 +123,7 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 | File | Purpose |
 |---|---|
 | `lib/format-time.ts` | `formatRelativeTime(iso)` — "just now", "5 min ago", "2h ago", "3d ago" |
+| `lib/map-icons.ts` | Lucide-to-canvas icon renderer, `registerAllMapIcons()`, color maps |
 | `lib/weather-codes.ts` | WMO code to emoji + label mapping |
 
 ## SEO & PWA

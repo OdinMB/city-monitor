@@ -3,52 +3,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWeather } from '../../hooks/useWeather.js';
-import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { Skeleton } from './Skeleton.js';
 
 export function WeatherPopover() {
-  const weatherExpanded = useCommandCenter((s) => s.weatherExpanded);
-  const setWeatherExpanded = useCommandCenter((s) => s.setWeatherExpanded);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!weatherExpanded) return;
-
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setWeatherExpanded(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [weatherExpanded, setWeatherExpanded]);
-
-  if (!weatherExpanded) return null;
-
-  return (
-    <div
-      ref={ref}
-      className="absolute top-full right-0 mt-1 w-80 max-h-[70vh] overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50"
-      data-testid="weather-popover"
-    >
-      <WeatherContent />
-    </div>
-  );
-}
-
-function WeatherContent() {
   const { id: cityId } = useCityConfig();
   const { data, isLoading } = useWeather(cityId);
   const { t, i18n } = useTranslation();
 
   if (isLoading) {
-    return <div className="p-4"><Skeleton lines={6} /></div>;
+    return <div className="p-4 w-72"><Skeleton lines={6} /></div>;
   }
 
   const current = data?.current;
@@ -63,8 +30,12 @@ function WeatherContent() {
   const weatherInfo = getWeatherInfo(current.weatherCode);
   const locale = i18n.language === 'de' ? 'de' : 'en';
 
+  const futureHourly = hourly
+    .filter((h) => h.time >= new Date().toISOString().slice(0, 16))
+    .slice(0, 12);
+
   return (
-    <div className="p-4">
+    <div className="p-4 w-[min(calc(100vw-2rem),36rem)]">
       {alerts.length > 0 && (
         <div className="mb-3 space-y-2">
           {alerts.map((alert, i) => (
@@ -78,6 +49,7 @@ function WeatherContent() {
         </div>
       )}
 
+      {/* Current conditions */}
       <div className="flex items-start gap-4 mb-4">
         <div>
           <div className="text-4xl font-light text-gray-900 dark:text-gray-100">
@@ -99,13 +71,14 @@ function WeatherContent() {
         {current.precipitation > 0 && <span>Precip {current.precipitation} mm</span>}
       </div>
 
-      {hourly.length > 0 && (
+      {/* Hourly — horizontal scroll */}
+      {futureHourly.length > 0 && (
         <div className="mb-4">
           <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
             {t('panel.weather.hourly')}
           </h3>
           <div className="flex gap-3 overflow-x-auto pb-1">
-            {hourly.filter((h) => h.time >= new Date().toISOString().slice(0, 16)).slice(0, 12).map((h) => {
+            {futureHourly.map((h) => {
               const hour = h.time.split('T')[1]?.slice(0, 5) ?? h.time;
               const info = getWeatherInfo(h.weatherCode);
               return (
@@ -120,12 +93,34 @@ function WeatherContent() {
         </div>
       )}
 
+      {/* Daily — horizontal on desktop, vertical list on mobile */}
       {daily.length > 0 && (
         <div>
           <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
             {t('panel.weather.daily')}
           </h3>
-          <div className="space-y-1.5">
+
+          {/* Desktop: horizontal columns */}
+          <div className="hidden sm:flex gap-3 overflow-x-auto pb-1">
+            {daily.map((d) => {
+              const dayName = formatDayName(d.date, locale);
+              const info = getWeatherInfo(d.weatherCode);
+              return (
+                <div key={d.date} className="shrink-0 text-center text-xs min-w-[3rem]">
+                  <div className="text-gray-500 dark:text-gray-400 mb-0.5">{dayName}</div>
+                  <div>{info.icon}</div>
+                  <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(d.high)}°</div>
+                  <div className="text-gray-400">{Math.round(d.low)}°</div>
+                  {d.precip > 0 && (
+                    <div className="text-blue-500 mt-0.5">{d.precip}mm</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mobile: vertical list */}
+          <div className="sm:hidden space-y-1.5">
             {daily.map((d) => {
               const dayName = formatDayName(d.date, locale);
               const info = getWeatherInfo(d.weatherCode);

@@ -3,14 +3,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useWeather } from '../../hooks/useWeather.js';
-import { useCommandCenter } from '../../hooks/useCommandCenter.js';
+import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
+import { getAqiLevel } from '../../lib/aqi.js';
+import { Popover } from './Popover.js';
 import { WeatherPopover } from './WeatherPopover.js';
+import { AqiTooltip } from './AqiTooltip.js';
 
 const LANGUAGES = [
   { code: 'de', label: 'DE' },
@@ -23,34 +27,72 @@ export function TopBar() {
   const city = useCityConfig();
   const { theme, toggle } = useTheme();
   const { data: weather } = useWeather(city.id);
+  const { data: airQuality } = useAirQuality(city.id);
   const { t, i18n } = useTranslation();
-  const weatherExpanded = useCommandCenter((s) => s.weatherExpanded);
-  const setWeatherExpanded = useCommandCenter((s) => s.setWeatherExpanded);
+  const [weatherOpen, setWeatherOpen] = useState(false);
+  const [aqiOpen, setAqiOpen] = useState(false);
 
   const current = weather?.current;
   const weatherInfo = current ? getWeatherInfo(current.weatherCode) : null;
+  const aqiLevel = airQuality?.current
+    ? getAqiLevel(airQuality.current.europeanAqi)
+    : null;
 
   return (
     <header className="flex items-center justify-between px-4 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <Link
           to="/"
-          className="text-sm font-bold hover:opacity-80"
+          className="text-lg font-bold mr-1 hover:opacity-80"
           style={{ color: city.theme.accent }}
         >
-          {city.name}
+          {city.name.toUpperCase()}
         </Link>
         {current && weatherInfo && (
-          <div className="relative">
-            <button
-              onClick={() => setWeatherExpanded(!weatherExpanded)}
-              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer"
-              aria-label={t('panel.weather.title')}
-            >
-              {weatherInfo.icon} {Math.round(current.temp)}°
-            </button>
+          <Popover
+            open={weatherOpen}
+            onOpenChange={setWeatherOpen}
+            hover
+            renderTrigger={(ref, props) => (
+              <button
+                ref={ref as React.Ref<HTMLButtonElement>}
+                {...props}
+                className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                aria-label={t('panel.weather.title')}
+              >
+                {weatherInfo.icon} {Math.round(current.temp)}°
+              </button>
+            )}
+            className="max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"
+          >
             <WeatherPopover />
-          </div>
+          </Popover>
+        )}
+        {airQuality?.current && aqiLevel && (
+          <Popover
+            open={aqiOpen}
+            onOpenChange={setAqiOpen}
+            hover
+            renderTrigger={(ref, props) => (
+              <button
+                ref={ref as React.Ref<HTMLButtonElement>}
+                {...props}
+                className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                aria-label={t('panel.airQuality.title')}
+              >
+                <span className="font-semibold" style={{ color: aqiLevel.color }}>
+                  {Math.round(airQuality.current.europeanAqi)}
+                </span>
+                {' '}
+                <span className="text-gray-500 dark:text-gray-400">
+                  AQI · {t(`panel.airQuality.level.${aqiLevel.label}`)}
+                </span>
+              </button>
+            )}
+            className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"
+          >
+            <AqiTooltip />
+          </Popover>
         )}
       </div>
       <div className="flex items-center gap-2">

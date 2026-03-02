@@ -17,13 +17,12 @@ import { useTransit } from '../../hooks/useTransit.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useSafety } from '../../hooks/useSafety.js';
 import { useNina } from '../../hooks/useNina.js';
-import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { usePharmacies } from '../../hooks/usePharmacies.js';
 import { useTrafficIncidents } from '../../hooks/useTraffic.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
-import { getAqiLevel } from '../strips/AirQualityStrip.js';
 import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, PoliticalDistrict } from '../../lib/api.js';
+import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, registerAllMapIcons } from '../../lib/map-icons.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -66,12 +65,6 @@ const PARTY_COLORS: Record<string, string> = {
 function getPartyColor(party: string): string {
   return PARTY_COLORS[party] ?? '#808080';
 }
-
-const SEVERITY_COLORS: Record<string, string> = {
-  high: '#ef4444',
-  medium: '#f59e0b',
-  low: '#6b7280',
-};
 
 function simplifyMap(map: maplibregl.Map) {
   const style = map.getStyle();
@@ -356,17 +349,6 @@ function buildPopupHtml(props: Record<string, unknown>): string {
   return parts.join('');
 }
 
-const NEWS_CATEGORY_COLORS: Record<string, string> = {
-  transit: '#3b82f6',
-  politics: '#8b5cf6',
-  culture: '#ec4899',
-  crime: '#ef4444',
-  weather: '#06b6d4',
-  economy: '#10b981',
-  sports: '#f59e0b',
-  local: '#6366f1',
-};
-
 function newsToGeoJSON(items: NewsItem[]): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = [];
   for (const item of items) {
@@ -405,10 +387,10 @@ function safetyToGeoJSON(reports: SafetyReport[]): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features };
 }
 
-function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], isDark: boolean) {
+function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: boolean) {
   const geojson = newsToGeoJSON(items);
 
-  for (const id of ['news-marker-label', 'news-marker-circle']) {
+  for (const id of ['news-marker-label', 'news-marker-circle', 'news-marker-icon']) {
     if (map.getLayer(id)) map.removeLayer(id);
   }
   if (map.getSource('news-markers')) map.removeSource('news-markers');
@@ -417,19 +399,26 @@ function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], isDark: boole
 
   map.addSource('news-markers', { type: 'geojson', data: geojson });
 
+  // Build a match expression: category → news-icon-{category}
+  const iconMatch: unknown[] = ['match', ['get', 'category']];
+  for (const cat of Object.keys(NEWS_CATEGORY_COLORS)) {
+    iconMatch.push(cat, `news-icon-${cat}`);
+  }
+  iconMatch.push('news-icon-local'); // fallback
+
   map.addLayer({
-    id: 'news-marker-circle',
-    type: 'circle',
+    id: 'news-marker-icon',
+    type: 'symbol',
     source: 'news-markers',
-    paint: {
-      'circle-radius': 6,
-      'circle-color': ['get', 'color'],
-      'circle-stroke-width': 2,
-      'circle-stroke-color': isDark ? '#1f2937' : '#ffffff',
+    layout: {
+      'icon-image': iconMatch as maplibregl.ExpressionSpecification,
+      'icon-size': 0.85,
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
     },
   });
 
-  map.on('click', 'news-marker-circle', (e) => {
+  map.on('click', 'news-marker-icon', (e) => {
     if (!e.features?.length) return;
     const props = e.features[0].properties!;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
@@ -442,14 +431,14 @@ function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], isDark: boole
     new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(coords).setHTML(html).addTo(map);
   });
 
-  map.on('mouseenter', 'news-marker-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
-  map.on('mouseleave', 'news-marker-circle', () => { map.getCanvas().style.cursor = ''; });
+  map.on('mouseenter', 'news-marker-icon', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'news-marker-icon', () => { map.getCanvas().style.cursor = ''; });
 }
 
-function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], isDark: boolean) {
+function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDark: boolean) {
   const geojson = safetyToGeoJSON(reports);
 
-  for (const id of ['safety-marker-label', 'safety-marker-circle']) {
+  for (const id of ['safety-marker-label', 'safety-marker-circle', 'safety-marker-icon']) {
     if (map.getLayer(id)) map.removeLayer(id);
   }
   if (map.getSource('safety-markers')) map.removeSource('safety-markers');
@@ -459,18 +448,18 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], isDar
   map.addSource('safety-markers', { type: 'geojson', data: geojson });
 
   map.addLayer({
-    id: 'safety-marker-circle',
-    type: 'circle',
+    id: 'safety-marker-icon',
+    type: 'symbol',
     source: 'safety-markers',
-    paint: {
-      'circle-radius': 6,
-      'circle-color': '#f97316',
-      'circle-stroke-width': 2,
-      'circle-stroke-color': isDark ? '#1f2937' : '#ffffff',
+    layout: {
+      'icon-image': 'safety-icon',
+      'icon-size': 0.85,
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
     },
   });
 
-  map.on('click', 'safety-marker-circle', (e) => {
+  map.on('click', 'safety-marker-icon', (e) => {
     if (!e.features?.length) return;
     const props = e.features[0].properties!;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
@@ -483,8 +472,8 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], isDar
     new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(coords).setHTML(html).addTo(map);
   });
 
-  map.on('mouseenter', 'safety-marker-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
-  map.on('mouseleave', 'safety-marker-circle', () => { map.getCanvas().style.cursor = ''; });
+  map.on('mouseenter', 'safety-marker-icon', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'safety-marker-icon', () => { map.getCanvas().style.cursor = ''; });
 }
 
 const NINA_SEVERITY_COLORS: Record<string, string> = {
@@ -673,10 +662,10 @@ function updateTrafficLayers(map: maplibregl.Map, incidents: TrafficIncident[], 
   map.on('mouseleave', 'traffic-line', () => { map.getCanvas().style.cursor = ''; });
 }
 
-function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmacy[], isDark: boolean) {
+function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmacy[], _isDark: boolean) {
   const geojson = pharmaciesToGeoJSON(pharmacies);
 
-  for (const id of ['pharmacy-marker-label', 'pharmacy-marker-circle']) {
+  for (const id of ['pharmacy-marker-label', 'pharmacy-marker-circle', 'pharmacy-marker-icon']) {
     if (map.getLayer(id)) map.removeLayer(id);
   }
   if (map.getSource('pharmacy-markers')) map.removeSource('pharmacy-markers');
@@ -686,34 +675,18 @@ function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmac
   map.addSource('pharmacy-markers', { type: 'geojson', data: geojson });
 
   map.addLayer({
-    id: 'pharmacy-marker-circle',
-    type: 'circle',
-    source: 'pharmacy-markers',
-    paint: {
-      'circle-radius': 7,
-      'circle-color': '#22c55e',
-      'circle-stroke-width': 2,
-      'circle-stroke-color': isDark ? '#1f2937' : '#ffffff',
-    },
-  });
-
-  map.addLayer({
-    id: 'pharmacy-marker-label',
+    id: 'pharmacy-marker-icon',
     type: 'symbol',
     source: 'pharmacy-markers',
     layout: {
-      'text-field': '+',
-      'text-size': 11,
-      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-      'text-anchor': 'center',
-      'text-allow-overlap': true,
-    },
-    paint: {
-      'text-color': '#ffffff',
+      'icon-image': 'pharmacy-icon',
+      'icon-size': 0.85,
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
     },
   });
 
-  map.on('click', 'pharmacy-marker-circle', (e) => {
+  map.on('click', 'pharmacy-marker-icon', (e) => {
     if (!e.features?.length) return;
     const props = e.features[0].properties!;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
@@ -726,8 +699,8 @@ function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmac
     new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(coords).setHTML(html).addTo(map);
   });
 
-  map.on('mouseenter', 'pharmacy-marker-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
-  map.on('mouseleave', 'pharmacy-marker-circle', () => { map.getCanvas().style.cursor = ''; });
+  map.on('mouseenter', 'pharmacy-marker-icon', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'pharmacy-marker-icon', () => { map.getCanvas().style.cursor = ''; });
 }
 
 function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDark: boolean) {
@@ -735,7 +708,7 @@ function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDar
 
   // Remove existing layers/source — clean re-creation each time to avoid
   // stale event listeners accumulating on style swaps.
-  for (const id of ['transit-marker-label', 'transit-marker-circle']) {
+  for (const id of ['transit-marker-label', 'transit-marker-icon']) {
     if (map.getLayer(id)) map.removeLayer(id);
   }
   if (map.getSource('transit-markers')) map.removeSource('transit-markers');
@@ -748,19 +721,24 @@ function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDar
   });
 
   map.addLayer({
-    id: 'transit-marker-circle',
-    type: 'circle',
+    id: 'transit-marker-icon',
+    type: 'symbol',
     source: 'transit-markers',
-    paint: {
-      'circle-radius': [
-        'case',
-        ['>=', ['get', 'count'], 4], 12,
-        ['>=', ['get', 'count'], 2], 10,
-        7,
+    layout: {
+      'icon-image': [
+        'match', ['get', 'severity'],
+        'high', 'transit-icon-high',
+        'medium', 'transit-icon-medium',
+        'transit-icon-low',
       ],
-      'circle-color': ['get', 'color'],
-      'circle-stroke-width': 2,
-      'circle-stroke-color': isDark ? '#1f2937' : '#ffffff',
+      'icon-size': [
+        'case',
+        ['>=', ['get', 'count'], 4], 1.2,
+        ['>=', ['get', 'count'], 2], 1.0,
+        0.85,
+      ],
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
     },
   });
 
@@ -772,7 +750,7 @@ function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDar
       'text-field': ['get', 'label'],
       'text-size': 9,
       'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-      'text-offset': [0, 1.8],
+      'text-offset': [0, 2.8],
       'text-anchor': 'top',
       'text-allow-overlap': true,
     },
@@ -784,7 +762,7 @@ function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDar
   });
 
   // Click handler for popups
-  map.on('click', 'transit-marker-circle', (e) => {
+  map.on('click', 'transit-marker-icon', (e) => {
     if (!e.features?.length) return;
     const props = e.features[0].properties;
     if (!props) return;
@@ -796,10 +774,10 @@ function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDar
       .addTo(map);
   });
 
-  map.on('mouseenter', 'transit-marker-circle', () => {
+  map.on('mouseenter', 'transit-marker-icon', () => {
     map.getCanvas().style.cursor = 'pointer';
   });
-  map.on('mouseleave', 'transit-marker-circle', () => {
+  map.on('mouseleave', 'transit-marker-icon', () => {
     map.getCanvas().style.cursor = '';
   });
 }
@@ -811,7 +789,6 @@ export function CityMap() {
   const { data: newsDigest } = useNewsDigest(city.id);
   const { data: safetyReports } = useSafety(city.id);
   const { data: ninaWarnings } = useNina(city.id);
-  const { data: airQuality } = useAirQuality(city.id);
   const { data: pharmacyList } = usePharmacies(city.id);
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
   const mapMode = useCommandCenter((s) => s.mapMode);
@@ -825,6 +802,7 @@ export function CityMap() {
   const isDark = theme === 'dark';
   const mapConfig = city.map;
 
+  const transitItems = activeLayers.has('transit') ? (transitAlerts ?? []) : [];
   const newsItems = activeLayers.has('news') ? (newsDigest?.items ?? []) : [];
   const safetyItems = activeLayers.has('safety') ? (safetyReports ?? []) : [];
   const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
@@ -836,8 +814,8 @@ export function CityMap() {
   isDarkRef.current = isDark;
   const cityIdRef = useRef(city.id);
   cityIdRef.current = city.id;
-  const transitAlertsRef = useRef(transitAlerts);
-  transitAlertsRef.current = transitAlerts;
+  const transitItemsRef = useRef(transitItems);
+  transitItemsRef.current = transitItems;
   const newsItemsRef = useRef(newsItems);
   newsItemsRef.current = newsItems;
   const safetyItemsRef = useRef(safetyItems);
@@ -874,9 +852,10 @@ export function CityMap() {
 
     map.on('load', () => {
       simplifyMap(map);
+      registerAllMapIcons(map, isDarkRef.current);
       addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
       setupDistrictHover(map);
-      updateTransitMarkers(map, transitAlertsRef.current ?? [], isDarkRef.current);
+      updateTransitMarkers(map, transitItemsRef.current ?? [], isDarkRef.current);
       updateNewsMarkers(map, newsItemsRef.current, isDarkRef.current);
       updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
       updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
@@ -911,8 +890,9 @@ export function CityMap() {
     map.setStyle(isDark ? DARK_STYLE : LIGHT_STYLE);
     map.once('styledata', () => {
       simplifyMap(map);
+      registerAllMapIcons(map, isDark);
       addDistrictLayer(map, city.id, isDark);
-      updateTransitMarkers(map, transitAlertsRef.current ?? [], isDark);
+      updateTransitMarkers(map, transitItemsRef.current ?? [], isDark);
       updateNewsMarkers(map, newsItemsRef.current, isDark);
       updateSafetyMarkers(map, safetyItemsRef.current, isDark);
       updateWarningPolygons(map, warningItemsRef.current, isDark);
@@ -921,13 +901,13 @@ export function CityMap() {
     });
   }, [isDark, city.id]);
 
-  // Update transit markers when alerts change (theme handled by style-swap above)
+  // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
-    updateTransitMarkers(map, transitAlerts ?? [], isDarkRef.current);
+    updateTransitMarkers(map, transitItems, isDarkRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transitAlerts]);
+  }, [transitItems]);
 
   // Update news markers when data or layer toggle changes
   useEffect(() => {
@@ -1002,9 +982,6 @@ export function CityMap() {
     return () => { map.off('click', 'district-fill', handler); };
   }, [mapMode, politicalData]);
 
-  const showAqi = activeLayers.has('air-quality') && airQuality?.current;
-  const aqiLevel = showAqi ? getAqiLevel(airQuality!.current.europeanAqi) : null;
-
   return (
     <div className="relative w-full h-full min-h-[300px]">
       <div
@@ -1012,22 +989,6 @@ export function CityMap() {
         data-testid="map-container"
         className="w-full h-full"
       />
-      {showAqi && aqiLevel && (
-        <div
-          className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/90 dark:bg-gray-900/90 shadow-md backdrop-blur-sm pointer-events-auto"
-          title={`AQI: ${Math.round(airQuality!.current.europeanAqi)}`}
-        >
-          <span
-            className="text-lg font-bold leading-none"
-            style={{ color: aqiLevel.color }}
-          >
-            {Math.round(airQuality!.current.europeanAqi)}
-          </span>
-          <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 leading-tight">
-            AQI
-          </span>
-        </div>
-      )}
     </div>
   );
 }

@@ -27,7 +27,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getByText('Berlin')).toBeDefined();
+      expect(screen.getByText('BERLIN')).toBeDefined();
     });
     expect(screen.getAllByText('News').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Briefing')).toBeDefined();
@@ -40,7 +40,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getByText('Hamburg')).toBeDefined();
+      expect(screen.getByText('HAMBURG')).toBeDefined();
     });
   });
 
