@@ -23,9 +23,12 @@ Thumbs.db
 # Worldmonitor reference (local only, never committed)
 .worldmonitor/
 
-# Plans — tracked, not gitignored
-# .plans/
-
 # Logs
 *.log
 npm-debug.log*
+
+# AI dev artifacts
+.claude/settings.local.json
+.playwright-mcp/
+nul
+NUL
