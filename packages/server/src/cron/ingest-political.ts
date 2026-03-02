@@ -18,21 +18,24 @@ const TTL_SECONDS = 604800; // 7 days
 
 /**
  * Parliament IDs on abgeordnetenwatch.de.
- * Key = cityId, value = { bundestag parliament period, state parliament period }.
- * These need updating after each election.
+ * Key = cityId, value = { bundestag parliament ID, state parliament ID }.
+ * Period IDs are fetched dynamically (most recent period for each parliament).
  */
 interface ParliamentConfig {
-  bundestag: { periodId: number; role: string };
+  bundestag: { parliamentId: number; role: string };
   state: { parliamentId: number; role: string; label: string };
 }
 
+/** Bundestag parliament ID on abgeordnetenwatch.de */
+const BUNDESTAG_PARLIAMENT_ID = 5;
+
 const PARLIAMENT_CONFIG: Record<string, ParliamentConfig> = {
   berlin: {
-    bundestag: { periodId: 161, role: 'MdB' },
+    bundestag: { parliamentId: BUNDESTAG_PARLIAMENT_ID, role: 'MdB' },
     state: { parliamentId: 2, role: 'MdA', label: 'Abgeordnetenhaus' },
   },
   hamburg: {
-    bundestag: { periodId: 161, role: 'MdB' },
+    bundestag: { parliamentId: BUNDESTAG_PARLIAMENT_ID, role: 'MdB' },
     state: { parliamentId: 3, role: 'MdHB', label: 'Bürgerschaft' },
   },
 };
@@ -111,7 +114,7 @@ async function fetchMandates(periodId: number): Promise<AW_Mandate[]> {
   return mandates;
 }
 
-async function fetchCurrentStatePeriod(parliamentId: number): Promise<number | null> {
+async function fetchCurrentPeriod(parliamentId: number): Promise<number | null> {
   const url = `${API_BASE}/parliament-periods`
     + `?parliament=${parliamentId}`
     + `&sort_by=start_date_period`
@@ -170,8 +173,14 @@ async function ingestCityPolitical(
   config: ParliamentConfig,
   cache: Cache,
 ): Promise<void> {
-  // Bundestag mandates for this city
-  const allBundestag = await fetchMandates(config.bundestag.periodId);
+  // Fetch current Bundestag period dynamically
+  const bundestagPeriodId = await fetchCurrentPeriod(config.bundestag.parliamentId);
+  if (!bundestagPeriodId) {
+    log.warn(`${city.id}: could not determine current Bundestag period`);
+    return;
+  }
+
+  const allBundestag = await fetchMandates(bundestagPeriodId);
   const cityBundestag = filterBundestagForCity(allBundestag, city.name);
 
   const bundestagDistricts: PoliticalDistrict[] = [];
@@ -198,7 +207,7 @@ async function ingestCityPolitical(
   log.info(`${city.id}: ${bundestagDistricts.length} Bundestag constituencies, ${cityBundestag.length} MdBs`);
 
   // State parliament mandates
-  const statePeriodId = await fetchCurrentStatePeriod(config.state.parliamentId);
+  const statePeriodId = await fetchCurrentPeriod(config.state.parliamentId);
   if (statePeriodId) {
     const stateMandates = await fetchMandates(statePeriodId);
     const stateReps = stateMandates.map((m) =>

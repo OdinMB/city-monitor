@@ -135,7 +135,7 @@ export interface SafetyReport {
 
 ## Decisions
 
-- **Model**: `gpt-5-nano` (cheapest, sufficient for classification + geolocation)
+- **Model**: `gpt-5-nano` (cheapest, sufficient for classification + location extraction)
 - **Filtering threshold**: `confidence >= 0.7` to drop irrelevant items. Can tune up later.
 - **Fallback when OpenAI is unavailable**: Fall back to showing all items (current behavior) — no silent stale data.
-- **Geolocation accuracy**: LLM-only for MVP. Approximate pins (~100-500m) are fine for a city dashboard. No geocoding API needed.
+- **Geolocation**: LLM+Nominatim hybrid. LLM extracts location names from headlines/reports, then OpenStreetMap Nominatim resolves to precise coordinates. Added `packages/server/src/lib/nominatim.ts` with rate-limited geocoding (1 req/sec per Nominatim policy).

@@ -108,6 +108,13 @@ export interface FilteredItem {
   locationLabel?: string;
 }
 
+interface LlmFilterResult {
+  index: number;
+  relevant: boolean;
+  confidence: number;
+  locationLabel?: string;
+}
+
 export async function filterAndGeolocateNews(
   cityId: string,
   cityName: string,
@@ -135,10 +142,10 @@ export async function filterAndGeolocateNews(
           content: `You are a local news editor for ${cityName}. For each headline below, determine:
 1. Is this news item specifically about ${cityName} or its immediate region? (relevant: true/false)
 2. How confident are you? (confidence: 0.0–1.0)
-3. If the item mentions a specific location in ${cityName}, provide approximate coordinates and a label.
+3. If the item mentions a specific location in ${cityName}, extract the location name (street, landmark, neighborhood). Do NOT generate coordinates.
 
 National/international news should be marked relevant:false UNLESS it has a concrete local angle.
-Respond ONLY with JSON: {"items":[{"index":0,"relevant":true,"confidence":0.9,"lat":52.52,"lon":13.405,"locationLabel":"Alexanderplatz, Mitte"},...]}`
+Respond ONLY with JSON: {"items":[{"index":0,"relevant":true,"confidence":0.9,"locationLabel":"Alexanderplatz, Mitte"},...]}`
         },
         { role: 'user', content: itemList },
       ],
@@ -157,8 +164,32 @@ Respond ONLY with JSON: {"items":[{"index":0,"relevant":true,"confidence":0.9,"l
     usage[cityKey].calls += 1;
 
     const content = response.choices[0]?.message?.content?.trim() ?? '';
-    const parsed = JSON.parse(content) as { items: FilteredItem[] };
-    return parsed.items ?? [];
+    const parsed = JSON.parse(content) as { items: LlmFilterResult[] };
+    const llmItems = parsed.items ?? [];
+
+    // Resolve location names to coordinates via Nominatim
+    const { geocode } = await import('./nominatim.js');
+    const results: FilteredItem[] = [];
+    for (const item of llmItems) {
+      const result: FilteredItem = {
+        index: item.index,
+        relevant: item.relevant,
+        confidence: item.confidence,
+        locationLabel: item.locationLabel,
+      };
+
+      if (item.locationLabel) {
+        const geo = await geocode(item.locationLabel, cityName);
+        if (geo) {
+          result.lat = geo.lat;
+          result.lon = geo.lon;
+        }
+      }
+
+      results.push(result);
+    }
+
+    return results;
   } catch (err) {
     log.error(`filter failed for ${cityName}`, err);
     return null;
@@ -196,8 +227,8 @@ export async function geolocateReports(
       messages: [
         {
           role: 'system',
-          content: `You are a geocoder for ${cityName}. For each police report, extract the most specific location mentioned and provide approximate coordinates. If no location is identifiable, return null for lat/lon.
-Respond ONLY with JSON: {"items":[{"index":0,"lat":52.52,"lon":13.405,"locationLabel":"Alexanderplatz, Mitte"},...]}`
+          content: `You are a location extractor for ${cityName}. For each police report, extract the most specific location name mentioned (street, intersection, landmark, neighborhood). Do NOT generate coordinates — only extract the location text. If no location is identifiable, return null for locationLabel.
+Respond ONLY with JSON: {"items":[{"index":0,"locationLabel":"Alexanderplatz, Mitte"},...]}`
         },
         { role: 'user', content: reportList },
       ],
@@ -215,8 +246,30 @@ Respond ONLY with JSON: {"items":[{"index":0,"lat":52.52,"lon":13.405,"locationL
     usage[cityKey].calls += 1;
 
     const content = response.choices[0]?.message?.content?.trim() ?? '';
-    const parsed = JSON.parse(content) as { items: GeolocatedReport[] };
-    return parsed.items ?? [];
+    const parsed = JSON.parse(content) as { items: Array<{ index: number; locationLabel?: string }> };
+    const llmItems = parsed.items ?? [];
+
+    // Resolve location names to coordinates via Nominatim
+    const { geocode } = await import('./nominatim.js');
+    const results: GeolocatedReport[] = [];
+    for (const item of llmItems) {
+      const result: GeolocatedReport = {
+        index: item.index,
+        locationLabel: item.locationLabel,
+      };
+
+      if (item.locationLabel) {
+        const geo = await geocode(item.locationLabel, cityName);
+        if (geo) {
+          result.lat = geo.lat;
+          result.lon = geo.lon;
+        }
+      }
+
+      results.push(result);
+    }
+
+    return results;
   } catch (err) {
     log.error(`geocode failed for ${cityName}`, err);
     return null;

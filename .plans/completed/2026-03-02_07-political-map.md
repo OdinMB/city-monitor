@@ -188,5 +188,6 @@ Need to convert Bundestag and state constituency shapefiles to GeoJSON:
 
 - **Data approach**: Server-side weekly cron fetching abgeordnetenwatch API. Handles mid-term changes without manual intervention.
 - **Political levels**: All three — Bezirke + Bundestag + Landesparlament. Same pattern, different data.
-- **GeoJSON sourcing**: Included in this plan. Download from bundeswahlleiterin.de + daten.berlin.de + transparenz.hamburg.de, convert to GeoJSON, simplify geometry.
+- **GeoJSON sourcing**: Deferred to separate plan (`.plans/08-geojson-boundaries.md`). Currently using existing Bezirke polygons as interim.
 - **Scope of representatives**: Both Direktmandat and party-list (Zweitstimme) where available. Party-list MdBs still represent the state.
+- **Parliament period IDs**: All period IDs (Bundestag + state) are now fetched dynamically via `fetchCurrentPeriod()` — no hardcoded IDs that need manual updates after elections.
