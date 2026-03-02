@@ -25,6 +25,7 @@ export function useBootstrap(cityId: string) {
     if (data.weather) queryClient.setQueryData(['weather', cityId], data.weather);
     if (data.transit) queryClient.setQueryData(['transit', cityId], data.transit);
     if (data.events) queryClient.setQueryData(['events', cityId], data.events);
+    if (data.safety) queryClient.setQueryData(['safety', cityId], data.safety);
   }, [query.data, cityId, queryClient]);
 
   return query;

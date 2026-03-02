@@ -14,6 +14,7 @@ import { NewsBriefingPanel } from './components/panels/NewsBriefingPanel.js';
 import { WeatherPanel } from './components/panels/WeatherPanel.js';
 import { TransitPanel } from './components/panels/TransitPanel.js';
 import { EventsPanel } from './components/panels/EventsPanel.js';
+import { SafetyPanel } from './components/panels/SafetyPanel.js';
 import { MapPanel } from './components/panels/MapPanel.js';
 
 const queryClient = new QueryClient({
@@ -42,6 +43,7 @@ function Dashboard() {
         <WeatherPanel />
         <TransitPanel />
         <EventsPanel />
+        <SafetyPanel />
         <MapPanel />
       </PanelGrid>
     </Shell>

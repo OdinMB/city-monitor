@@ -21,6 +21,7 @@ export interface BootstrapData {
   weather: WeatherData | null;
   transit: unknown | null;
   events: unknown | null;
+  safety: unknown | null;
 }
 
 export interface NewsDigest {
@@ -49,11 +50,33 @@ export interface TransitAlert {
   affectedStops: string[];
 }
 
+export interface CityEvent {
+  id: string;
+  title: string;
+  venue?: string;
+  date: string;
+  endDate?: string;
+  category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'other';
+  url: string;
+  description?: string;
+  free?: boolean;
+}
+
+export interface SafetyReport {
+  id: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  url: string;
+  district?: string;
+}
+
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
   getNewsDigest: (city: string) => fetchJson<NewsDigest>(`${BASE}/${city}/news/digest`),
   getNewsSummary: (city: string) => fetchJson<{ briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean }>(`${BASE}/${city}/news/summary`),
   getWeather: (city: string) => fetchJson<WeatherData>(`${BASE}/${city}/weather`),
   getTransit: (city: string) => fetchJson<TransitAlert[]>(`${BASE}/${city}/transit`),
-  getEvents: (city: string) => fetchJson<unknown[]>(`${BASE}/${city}/events`),
+  getEvents: (city: string) => fetchJson<CityEvent[]>(`${BASE}/${city}/events`),
+  getSafety: (city: string) => fetchJson<SafetyReport[]>(`${BASE}/${city}/safety`),
 };

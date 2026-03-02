@@ -35,6 +35,35 @@ export const transitDisruptions = pgTable('transit_disruptions', {
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 });
 
+// Milestone 10 — Events
+export const events = pgTable('events', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  title: text('title').notNull(),
+  venue: text('venue'),
+  date: timestamp('date').notNull(),
+  endDate: timestamp('end_date'),
+  category: text('category'),
+  url: text('url'),
+  description: text('description'),
+  free: boolean('free'),
+  hash: text('hash').notNull(),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+});
+
+// Milestone 10 — Safety Reports
+export const safetyReports = pgTable('safety_reports', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  publishedAt: timestamp('published_at'),
+  url: text('url'),
+  district: text('district'),
+  hash: text('hash').notNull(),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+});
+
 // Milestone 07 — AI Summaries
 export const aiSummaries = pgTable('ai_summaries', {
   id: serial('id').primaryKey(),
