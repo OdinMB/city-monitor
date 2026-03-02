@@ -6,7 +6,7 @@
  * Tables are added incrementally by each milestone.
  */
 
-import { pgTable, serial, text, timestamp, jsonb, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, jsonb, integer, boolean } from 'drizzle-orm/pg-core';
 
 // Milestone 06 — Weather
 export const weatherSnapshots = pgTable('weather_snapshots', {
@@ -17,6 +17,22 @@ export const weatherSnapshots = pgTable('weather_snapshots', {
   hourly: jsonb('hourly').notNull(),
   daily: jsonb('daily').notNull(),
   alerts: jsonb('alerts'),
+});
+
+// Milestone 09 — Transit
+export const transitDisruptions = pgTable('transit_disruptions', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  externalId: text('external_id'),
+  line: text('line').notNull(),
+  type: text('type').notNull(),
+  severity: text('severity').notNull(),
+  message: text('message').notNull(),
+  affectedStops: jsonb('affected_stops'),
+  validFrom: timestamp('valid_from'),
+  validUntil: timestamp('valid_until'),
+  resolved: boolean('resolved').default(false),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 });
 
 // Milestone 07 — AI Summaries

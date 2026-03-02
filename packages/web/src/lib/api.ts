@@ -40,11 +40,20 @@ export interface NewsItem {
   description?: string;
 }
 
+export interface TransitAlert {
+  id: string;
+  line: string;
+  type: 'delay' | 'disruption' | 'cancellation' | 'planned-work';
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+  affectedStops: string[];
+}
+
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
   getNewsDigest: (city: string) => fetchJson<NewsDigest>(`${BASE}/${city}/news/digest`),
   getNewsSummary: (city: string) => fetchJson<{ briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean }>(`${BASE}/${city}/news/summary`),
   getWeather: (city: string) => fetchJson<WeatherData>(`${BASE}/${city}/weather`),
-  getTransit: (city: string) => fetchJson<unknown[]>(`${BASE}/${city}/transit`),
+  getTransit: (city: string) => fetchJson<TransitAlert[]>(`${BASE}/${city}/transit`),
   getEvents: (city: string) => fetchJson<unknown[]>(`${BASE}/${city}/events`),
 };

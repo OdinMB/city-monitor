@@ -38,6 +38,7 @@ Plans live in `.plans/` and are version-tracked. MVP = milestones 01-05 (scaffol
 ## Context Files
 
 - [`.context/licensing.md`](.context/licensing.md) — Every file must have the correct attribution header depending on whether it adapts worldmonitor code or is entirely new. Details the AGPL-3.0 per-file header templates, the full list of adapted components, and Section 13 footer requirements.
+- [`.context/transit.md`](.context/transit.md) — Transit alerts are deduped by line+summary and classified by German keywords. Details the VBB transport.rest integration, alert types/severity, and the ingestion-to-UI data flow.
 
 ## Key Conventions
 

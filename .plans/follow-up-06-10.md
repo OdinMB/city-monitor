@@ -8,6 +8,7 @@
 
 1. **Milestone 06** — `weatherSnapshots` table defined in `schema.ts` but not written to at runtime. Weather data is cache-only (same pattern as news in milestones 01-05). Postgres persistence and cache warmup will be wired when DB connection is established.
 2. **Milestone 07** — `aiSummaries` table defined in `schema.ts` but not written to at runtime. Same cache-only pattern.
+3. **Milestone 09** — `transitDisruptions` table defined in `schema.ts` but not written to at runtime. Same cache-only pattern.
 
 ## Files to Be Deleted
 
