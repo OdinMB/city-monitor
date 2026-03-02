@@ -16,6 +16,7 @@ const log = createLogger('ingest-transit');
 export interface TransitAlert {
   id: string;
   line: string;
+  lines: string[];
   type: 'delay' | 'disruption' | 'cancellation' | 'planned-work';
   severity: 'low' | 'medium' | 'high';
   message: string;
@@ -70,8 +71,9 @@ async function ingestCityTransit(
   const stations = transit.stations ?? [];
   if (stations.length === 0) return;
 
-  const allAlerts: TransitAlert[] = [];
-  const seen = new Set<string>();
+  // Group alerts by message+station so the same disruption affecting multiple
+  // lines (e.g. S41 + S42) becomes a single card with a combined line list.
+  const alertMap = new Map<string, TransitAlert>();
   let anySuccess = false;
 
   for (let i = 0; i < stations.length; i++) {
@@ -99,17 +101,25 @@ async function ingestCityTransit(
         for (const remark of dep.remarks) {
           if (remark.type !== 'warning' || !remark.summary) continue;
 
-          const dedupeKey = `${dep.line.name}:${remark.summary}`;
-          if (seen.has(dedupeKey)) continue;
-          seen.add(dedupeKey);
-
           const stopName = dep.stop?.name ?? station.name;
           const stopLoc = dep.stop?.location;
           const detail = remark.text?.trim() || remark.summary;
+          const dedupeKey = `${remark.summary}:${stopName}`;
 
-          allAlerts.push({
+          const existing = alertMap.get(dedupeKey);
+          if (existing) {
+            // Same disruption at same station — add the line if not already listed
+            if (!existing.lines.includes(dep.line.name)) {
+              existing.lines.push(dep.line.name);
+              existing.line = existing.lines.join(', ');
+            }
+            continue;
+          }
+
+          const alert: TransitAlert = {
             id: hashString(dedupeKey),
             line: dep.line.name,
+            lines: [dep.line.name],
             type: classifyDisruption(remark.summary),
             severity: classifySeverity(remark.summary),
             message: remark.summary,
@@ -119,13 +129,16 @@ async function ingestCityTransit(
               ? { lat: stopLoc.latitude, lon: stopLoc.longitude }
               : null,
             affectedStops: extractStops(remark.summary),
-          });
+          };
+          alertMap.set(dedupeKey, alert);
         }
       }
-    } catch (err) {
+    } catch (_err) {
       log.warn(`station ${station.id} failed`);
     }
   }
+
+  const allAlerts = [...alertMap.values()];
 
   if (!anySuccess) {
     log.warn(`${cityId}: all stations failed, skipping cache update`);
@@ -168,7 +181,7 @@ function extractStops(summary: string): string[] {
     return [zwischen[1].trim(), zwischen[2].trim()].filter(Boolean);
   }
   // Pattern 2: "X – Y" or "X - Y" (em-dash or hyphen range)
-  const dash = summary.match(/:\s*(.+?)\s+[–\-]\s+(.+?)(?:\.|,|$)/);
+  const dash = summary.match(/:\s*(.+?)\s+[–-]\s+(.+?)(?:\.|,|$)/);
   if (dash) {
     return [dash[1].trim(), dash[2].trim()].filter(Boolean);
   }

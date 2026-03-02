@@ -34,10 +34,12 @@ function AlertCard({ alert }: { alert: TransitAlert }) {
       className={`p-2 rounded border text-sm ${getSeverityColor(alert.severity)} ${hasDetail ? 'cursor-pointer' : ''}`}
       onClick={hasDetail ? () => setExpanded((v) => !v) : undefined}
     >
-      <div className="flex items-center gap-2 mb-1">
-        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold ${getLineBadgeColor(alert.line)}`}>
-          {alert.line}
-        </span>
+      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+        {(alert.lines ?? [alert.line]).map((ln) => (
+          <span key={ln} className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold ${getLineBadgeColor(ln)}`}>
+            {ln}
+          </span>
+        ))}
         <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
           {alert.type.replace('-', ' ')}
         </span>
@@ -74,23 +76,15 @@ export function TransitStrip() {
     (a, b) => (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3),
   );
 
-  return (
-    <section className="border-b border-gray-200 dark:border-gray-800 px-4 py-4">
-      <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
-        {t('panel.transit.title')}
-      </h2>
-
-      {isLoading ? (
-        <Skeleton lines={4} />
-      ) : sorted.length === 0 ? (
-        <p className="text-sm text-gray-400 py-2 text-center">{t('panel.transit.empty')}</p>
-      ) : (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {sorted.map((alert) => (
-            <AlertCard key={alert.id} alert={alert} />
-          ))}
-        </div>
-      )}
-    </section>
+  return isLoading ? (
+    <Skeleton lines={4} />
+  ) : sorted.length === 0 ? (
+    <p className="text-sm text-gray-400 py-2 text-center">{t('panel.transit.empty')}</p>
+  ) : (
+    <div className="grid gap-2 @xs:grid-cols-2 @lg:grid-cols-3">
+      {sorted.map((alert) => (
+        <AlertCard key={alert.id} alert={alert} />
+      ))}
+    </div>
   );
 }

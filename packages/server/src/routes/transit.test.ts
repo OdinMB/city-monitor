@@ -40,7 +40,7 @@ describe('Transit API', () => {
 
   it('GET /api/berlin/transit returns cached alerts', async () => {
     const mockAlerts: TransitAlert[] = [
-      { id: '1', line: 'U2', type: 'disruption', severity: 'high', message: 'Test', detail: 'Test detail', station: 'Alexanderplatz', location: { lat: 52.52, lon: 13.41 }, affectedStops: [] },
+      { id: '1', line: 'U2', lines: ['U2'], type: 'disruption', severity: 'high', message: 'Test', detail: 'Test detail', station: 'Alexanderplatz', location: { lat: 52.52, lon: 13.41 }, affectedStops: [] },
     ];
     appContext.cache.set('berlin:transit:alerts', mockAlerts, 60);
 

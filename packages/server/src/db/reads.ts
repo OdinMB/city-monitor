@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { eq, desc } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
   weatherSnapshots,
@@ -14,15 +14,17 @@ import {
   aiSummaries,
   ninaWarnings,
   geocodeLookups,
+  airQualityGrid,
+  politicalDistricts,
 } from './schema.js';
-import type { NinaWarning } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
-import type { NewsItem } from '../cron/ingest-feeds.js';
 import type { NewsSummary } from '../cron/summarize.js';
+import type { AirQualityGridPoint } from '@city-monitor/shared';
 import type { PersistedNewsItem } from './writes.js';
 
 export async function loadWeather(db: Db, cityId: string): Promise<WeatherData | null> {
@@ -54,6 +56,7 @@ export async function loadTransitAlerts(db: Db, cityId: string): Promise<Transit
   return rows.map((row) => ({
     id: row.externalId ?? String(row.id),
     line: row.line,
+    lines: row.line.split(', '),
     type: row.type as TransitAlert['type'],
     severity: row.severity as TransitAlert['severity'],
     message: row.message,
@@ -179,6 +182,41 @@ export async function loadNinaWarnings(db: Db, cityId: string): Promise<NinaWarn
     description: row.description ?? undefined,
     instruction: row.instruction ?? undefined,
     area: (row.area as NinaWarning['area']) ?? undefined,
+  }));
+}
+
+export async function loadPoliticalDistricts(
+  db: Db,
+  cityId: string,
+  level: string,
+): Promise<PoliticalDistrict[] | null> {
+  const rows = await db
+    .select()
+    .from(politicalDistricts)
+    .where(and(
+      eq(politicalDistricts.cityId, cityId),
+      eq(politicalDistricts.level, level),
+    ))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].districts as PoliticalDistrict[];
+}
+
+export async function loadAirQualityGrid(db: Db, cityId: string): Promise<AirQualityGridPoint[] | null> {
+  const rows = await db
+    .select()
+    .from(airQualityGrid)
+    .where(eq(airQualityGrid.cityId, cityId));
+
+  if (rows.length === 0) return null;
+
+  return rows.map((row) => ({
+    lat: row.lat,
+    lon: row.lon,
+    europeanAqi: row.europeanAqi,
+    station: row.station,
+    url: row.url ?? undefined,
   }));
 }
 

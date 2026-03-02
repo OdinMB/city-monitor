@@ -20,12 +20,16 @@ import { useNina } from '../../hooks/useNina.js';
 import { usePharmacies } from '../../hooks/usePharmacies.js';
 import { useTrafficIncidents } from '../../hooks/useTraffic.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
+import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
-import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, PoliticalDistrict } from '../../lib/api.js';
-import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, registerAllMapIcons } from '../../lib/map-icons.js';
+import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, PoliticalDistrict, AirQualityGridPoint } from '../../lib/api.js';
+import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, registerAllMapIcons } from '../../lib/map-icons.js';
+import { getAqiLevel } from '../../lib/aqi.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
+
+const EMPTY_AQ: AirQualityGridPoint[] = [];
 
 // Layers to KEEP — everything else gets hidden
 const KEEP_LAYERS = new Set([
@@ -47,6 +51,16 @@ const DISTRICT_URLS: Record<string, { url: string; nameField: string }> = {
   hamburg: {
     url: new URL('../../data/districts/hamburg-bezirke.geojson', import.meta.url).href,
     nameField: 'bezirk_name',
+  },
+};
+
+// Constituency GeoJSON per city + political layer (bezirke uses DISTRICT_URLS)
+const CONSTITUENCY_URLS: Record<string, Record<string, { url: string; nameField: string }>> = {
+  berlin: {
+    bundestag: {
+      url: new URL('../../data/districts/berlin-bundestag.geojson', import.meta.url).href,
+      nameField: 'name',
+    },
   },
 };
 
@@ -78,7 +92,8 @@ function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('safety-') &&
       !layer.id.startsWith('warning-') &&
       !layer.id.startsWith('pharmacy-') &&
-      !layer.id.startsWith('traffic-')
+      !layer.id.startsWith('traffic-') &&
+      !layer.id.startsWith('aq-')
     ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
@@ -159,6 +174,7 @@ function applyPoliticalStyling(
   map: maplibregl.Map,
   districts: PoliticalDistrict[],
   isDark: boolean,
+  nameField: string,
 ) {
   if (!map.getLayer('district-fill') || !map.getSource('districts')) return;
 
@@ -173,12 +189,7 @@ function applyPoliticalStyling(
 
   // If we have political data, apply party-colored fill
   if (colorMap.size > 0) {
-    // Get district features to build a match expression
-    const source = map.getSource('districts') as maplibregl.GeoJSONSource;
-    if (!source) return;
-
-    // Use a property-based approach — if district names match
-    const matchExpr: unknown[] = ['match', ['downcase', ['get', 'name']]];
+    const matchExpr: unknown[] = ['match', ['downcase', ['get', nameField]]];
     for (const [name, color] of colorMap) {
       matchExpr.push(name, color);
     }
@@ -258,6 +269,89 @@ function setupDistrictHover(map: maplibregl.Map) {
     map.getCanvas().style.cursor = '';
   });
 }
+
+// --- Shared popup helpers ---------------------------------------------------
+
+let _hoverPopup: maplibregl.Popup | null = null;
+let _hoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+function _clearHoverTimer() {
+  if (_hoverTimer) { clearTimeout(_hoverTimer); _hoverTimer = null; }
+}
+
+function _closeHoverPopup() {
+  _clearHoverTimer();
+  if (_hoverPopup) { _hoverPopup.remove(); _hoverPopup = null; }
+}
+
+function showMapPopup(
+  map: maplibregl.Map,
+  lngLat: maplibregl.LngLatLike,
+  html: string,
+  opts: { offset?: number; maxWidth?: string; sticky?: boolean } = {},
+): maplibregl.Popup {
+  const { offset = 10, maxWidth = '300px', sticky = false } = opts;
+  _closeHoverPopup();
+
+  const popup = new maplibregl.Popup({
+    offset,
+    maxWidth,
+    closeButton: sticky,
+    closeOnClick: sticky,
+  })
+    .setLngLat(lngLat)
+    .setHTML(html)
+    .addTo(map);
+
+  if (!sticky) {
+    _hoverPopup = popup;
+    const el = popup.getElement();
+    // Allow the entire popup container to receive pointer events so the mouse
+    // can travel from the map feature through the tip into the content area
+    // without triggering the close timer.
+    el.style.pointerEvents = 'auto';
+    el.addEventListener('mouseenter', _clearHoverTimer);
+    el.addEventListener('mouseleave', () => {
+      if (_hoverPopup === popup) _closeHoverPopup();
+    });
+  }
+
+  popup.on('close', () => {
+    if (_hoverPopup === popup) _hoverPopup = null;
+  });
+
+  return popup;
+}
+
+type MapLayerEvent = maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] };
+type PopupContentFn = (e: MapLayerEvent) => { html: string; lngLat: [number, number] } | null;
+
+/** Register hover (desktop) + click (mobile/pin) popup handlers for a layer. */
+function registerPopupHandlers(
+  map: maplibregl.Map,
+  layerId: string,
+  getContent: PopupContentFn,
+  opts?: { offset?: number; maxWidth?: string },
+) {
+  map.on('mouseenter', layerId, (e) => {
+    map.getCanvas().style.cursor = 'pointer';
+    const c = getContent(e as MapLayerEvent);
+    if (c) showMapPopup(map, c.lngLat, c.html, { ...opts, sticky: false });
+  });
+
+  map.on('mouseleave', layerId, () => {
+    map.getCanvas().style.cursor = '';
+    _clearHoverTimer();
+    _hoverTimer = setTimeout(_closeHoverPopup, 300);
+  });
+
+  map.on('click', layerId, (e) => {
+    const c = getContent(e as MapLayerEvent);
+    if (c) showMapPopup(map, c.lngLat, c.html, { ...opts, sticky: true });
+  });
+}
+
+// ---------------------------------------------------------------------------
 
 interface StationGroup {
   station: string;
@@ -418,8 +512,8 @@ function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: bool
     },
   });
 
-  map.on('click', 'news-marker-icon', (e) => {
-    if (!e.features?.length) return;
+  registerPopupHandlers(map, 'news-marker-icon', (e) => {
+    if (!e.features?.length) return null;
     const props = e.features[0].properties!;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
     const html = `<div style="font-size:13px;max-width:280px">
@@ -428,11 +522,8 @@ function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: bool
       ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
       <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Read more →</a>
     </div>`;
-    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(coords).setHTML(html).addTo(map);
+    return { html, lngLat: coords };
   });
-
-  map.on('mouseenter', 'news-marker-icon', () => { map.getCanvas().style.cursor = 'pointer'; });
-  map.on('mouseleave', 'news-marker-icon', () => { map.getCanvas().style.cursor = ''; });
 }
 
 function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDark: boolean) {
@@ -459,8 +550,8 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDa
     },
   });
 
-  map.on('click', 'safety-marker-icon', (e) => {
-    if (!e.features?.length) return;
+  registerPopupHandlers(map, 'safety-marker-icon', (e) => {
+    if (!e.features?.length) return null;
     const props = e.features[0].properties!;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
     const html = `<div style="font-size:13px;max-width:280px">
@@ -469,11 +560,8 @@ function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], _isDa
       ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
       <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Details →</a>
     </div>`;
-    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(coords).setHTML(html).addTo(map);
+    return { html, lngLat: coords };
   });
-
-  map.on('mouseenter', 'safety-marker-icon', () => { map.getCanvas().style.cursor = 'pointer'; });
-  map.on('mouseleave', 'safety-marker-icon', () => { map.getCanvas().style.cursor = ''; });
 }
 
 const NINA_SEVERITY_COLORS: Record<string, string> = {
@@ -550,14 +638,14 @@ function updateWarningPolygons(map: maplibregl.Map, warnings: NinaWarning[], _is
     },
   });
 
-  map.on('click', 'warning-fill', (e) => {
-    if (!e.features?.length) return;
+  registerPopupHandlers(map, 'warning-fill', (e) => {
+    if (!e.features?.length) return null;
     const props = e.features[0].properties!;
     const html = `<div style="font-size:13px;max-width:280px">
       <div style="font-weight:600;margin-bottom:4px">${props.headline}</div>
       <div style="opacity:0.6;font-size:11px">${props.severity}</div>
     </div>`;
-    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(e.lngLat).setHTML(html).addTo(map);
+    return { html, lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
   });
 }
 
@@ -645,8 +733,8 @@ function updateTrafficLayers(map: maplibregl.Map, incidents: TrafficIncident[], 
     },
   });
 
-  map.on('click', 'traffic-line', (e) => {
-    if (!e.features?.length) return;
+  registerPopupHandlers(map, 'traffic-line', (e) => {
+    if (!e.features?.length) return null;
     const props = e.features[0].properties!;
     const delayMin = props.delay ? Math.round(Number(props.delay) / 60) : 0;
     const html = `<div style="font-size:13px;max-width:280px">
@@ -655,11 +743,96 @@ function updateTrafficLayers(map: maplibregl.Map, incidents: TrafficIncident[], 
       ${props.from && props.to ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${props.from} → ${props.to}</div>` : ''}
       ${delayMin > 0 ? `<div style="font-size:11px;margin-top:2px">Delay: ~${delayMin} min</div>` : ''}
     </div>`;
-    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(e.lngLat).setHTML(html).addTo(map);
+    return { html, lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
+  });
+}
+
+function aqGridToGeoJSON(points: AirQualityGridPoint[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (const p of points) {
+    const level = getAqiLevel(p.europeanAqi);
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+      properties: {
+        aqi: p.europeanAqi,
+        station: p.station,
+        color: level.color,
+        level: level.label,
+        label: String(p.europeanAqi),
+        url: p.url ?? '',
+      },
+    });
+  }
+  return { type: 'FeatureCollection', features };
+}
+
+function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoint[], isDark: boolean) {
+  const geojson = aqGridToGeoJSON(points);
+
+  for (const id of ['aq-marker-label', 'aq-marker-icon']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('aq-grid')) map.removeSource('aq-grid');
+
+  if (geojson.features.length === 0) return;
+
+  map.addSource('aq-grid', { type: 'geojson', data: geojson });
+
+  // Build match expression: AQI level → aq-icon-{level}
+  const iconMatch: unknown[] = ['match', ['get', 'level']];
+  for (const level of Object.keys(AQI_LEVEL_COLORS)) {
+    iconMatch.push(level, `aq-icon-${level}`);
+  }
+  iconMatch.push('aq-icon-good'); // fallback
+
+  map.addLayer({
+    id: 'aq-marker-icon',
+    type: 'symbol',
+    source: 'aq-grid',
+    layout: {
+      'icon-image': iconMatch as maplibregl.ExpressionSpecification,
+      'icon-size': 0.85,
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
+    },
   });
 
-  map.on('mouseenter', 'traffic-line', () => { map.getCanvas().style.cursor = 'pointer'; });
-  map.on('mouseleave', 'traffic-line', () => { map.getCanvas().style.cursor = ''; });
+  map.addLayer({
+    id: 'aq-marker-label',
+    type: 'symbol',
+    source: 'aq-grid',
+    layout: {
+      'text-field': ['get', 'label'],
+      'text-size': 9,
+      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+      'text-offset': [0, 2.8],
+      'text-anchor': 'top',
+      'text-allow-overlap': true,
+    },
+    paint: {
+      'text-color': isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)',
+      'text-halo-color': isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
+      'text-halo-width': 1,
+    },
+  });
+
+  const getAqContent: PopupContentFn = (e) => {
+    if (!e.features?.length) return null;
+    const props = e.features[0].properties!;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const level = getAqiLevel(Number(props.aqi));
+    const linkIcon = props.url
+      ? ` <a href="${props.url}" target="_blank" rel="noopener" style="color:#3b82f6;text-decoration:none;vertical-align:middle"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`
+      : '';
+    const html = `<div style="font-size:13px;max-width:240px">
+      <div style="font-weight:600;margin-bottom:4px">${props.station}${linkIcon}</div>
+      <div style="font-size:12px">AQI: <strong style="color:${level.color}">${props.aqi}</strong> (${level.label})</div>
+    </div>`;
+    return { html, lngLat: coords };
+  };
+  registerPopupHandlers(map, 'aq-marker-icon', getAqContent, { offset: 12, maxWidth: '260px' });
+  registerPopupHandlers(map, 'aq-marker-label', getAqContent, { offset: 12, maxWidth: '260px' });
 }
 
 function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmacy[], _isDark: boolean) {
@@ -686,8 +859,8 @@ function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmac
     },
   });
 
-  map.on('click', 'pharmacy-marker-icon', (e) => {
-    if (!e.features?.length) return;
+  registerPopupHandlers(map, 'pharmacy-marker-icon', (e) => {
+    if (!e.features?.length) return null;
     const props = e.features[0].properties!;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
     const html = `<div style="font-size:13px;max-width:280px">
@@ -696,11 +869,8 @@ function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmac
       ${props.phone ? `<div style="font-size:12px;margin-top:2px">Tel: ${props.phone}</div>` : ''}
       <div style="font-size:11px;opacity:0.6;margin-top:4px">${props.validFrom} – ${props.validUntil}</div>
     </div>`;
-    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(coords).setHTML(html).addTo(map);
+    return { html, lngLat: coords };
   });
-
-  map.on('mouseenter', 'pharmacy-marker-icon', () => { map.getCanvas().style.cursor = 'pointer'; });
-  map.on('mouseleave', 'pharmacy-marker-icon', () => { map.getCanvas().style.cursor = ''; });
 }
 
 function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDark: boolean) {
@@ -733,8 +903,8 @@ function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDar
       ],
       'icon-size': [
         'case',
-        ['>=', ['get', 'count'], 4], 1.2,
-        ['>=', ['get', 'count'], 2], 1.0,
+        ['==', ['get', 'severity'], 'high'], 1.15,
+        ['==', ['get', 'severity'], 'medium'], 1.0,
         0.85,
       ],
       'icon-allow-overlap': true,
@@ -761,25 +931,17 @@ function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDar
     },
   });
 
-  // Click handler for popups
-  map.on('click', 'transit-marker-icon', (e) => {
-    if (!e.features?.length) return;
+  const getTransitContent: PopupContentFn = (e) => {
+    if (!e.features?.length) return null;
     const props = e.features[0].properties;
-    if (!props) return;
+    if (!props) return null;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-
-    new maplibregl.Popup({ offset: 12, maxWidth: '300px' })
-      .setLngLat(coords)
-      .setHTML(buildPopupHtml(props))
-      .addTo(map);
-  });
-
-  map.on('mouseenter', 'transit-marker-icon', () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-  map.on('mouseleave', 'transit-marker-icon', () => {
-    map.getCanvas().style.cursor = '';
-  });
+    const html = buildPopupHtml(props);
+    if (!html) return null;
+    return { html, lngLat: coords };
+  };
+  registerPopupHandlers(map, 'transit-marker-icon', getTransitContent, { offset: 12 });
+  registerPopupHandlers(map, 'transit-marker-label', getTransitContent, { offset: 12 });
 }
 
 export function CityMap() {
@@ -791,11 +953,13 @@ export function CityMap() {
   const { data: ninaWarnings } = useNina(city.id);
   const { data: pharmacyList } = usePharmacies(city.id);
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
-  const mapMode = useCommandCenter((s) => s.mapMode);
+  const { data: aqGrid } = useAirQualityGrid(city.id);
   const politicalLayer = useCommandCenter((s) => s.politicalLayer);
-  const { data: bundestagData } = usePolitical(city.id, 'bundestag');
-  const { data: stateData } = usePolitical(city.id, 'state');
   const activeLayers = useCommandCenter((s) => s.activeLayers);
+  const politicalActive = activeLayers.has('political');
+  const { data: bezirkeData } = usePolitical(city.id, 'bezirke');
+  const { data: bundestagData } = usePolitical(city.id, 'bundestag');
+  const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke');
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
 
@@ -808,6 +972,7 @@ export function CityMap() {
   const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
   const pharmacyItems = activeLayers.has('pharmacies') ? (pharmacyList ?? []) : [];
   const trafficItems = activeLayers.has('traffic') ? (trafficIncidents ?? []) : [];
+  const aqGridItems = activeLayers.has('air-quality') ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -826,6 +991,12 @@ export function CityMap() {
   pharmacyItemsRef.current = pharmacyItems;
   const trafficItemsRef = useRef(trafficItems);
   trafficItemsRef.current = trafficItems;
+  const aqGridItemsRef = useRef(aqGridItems);
+  aqGridItemsRef.current = aqGridItems;
+  const politicalActiveRef = useRef(politicalActive);
+  politicalActiveRef.current = politicalActive;
+  const politicalLayerRef = useRef(politicalLayer);
+  politicalLayerRef.current = politicalLayer;
 
   // Create map once
   useEffect(() => {
@@ -861,6 +1032,7 @@ export function CityMap() {
       updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
       updateTrafficLayers(map, trafficItemsRef.current, isDarkRef.current);
+      updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
 
       // Collapse the attribution control (MapLibre opens it by default)
       containerRef.current
@@ -891,13 +1063,52 @@ export function CityMap() {
     map.once('styledata', () => {
       simplifyMap(map);
       registerAllMapIcons(map, isDark);
-      addDistrictLayer(map, city.id, isDark);
+
+      // Restore the correct political/district GeoJSON after style swap
+      if (politicalActiveRef.current) {
+        const pl = politicalLayerRef.current;
+        const resolved = CONSTITUENCY_URLS[city.id]?.[pl] ?? DISTRICT_URLS[city.id];
+        if (resolved) {
+          fetch(resolved.url)
+            .then((r) => r.json())
+            .then((geojson: GeoJSON.FeatureCollection) => {
+              if (map.getSource('districts')) return; // already added
+              map.addSource('districts', { type: 'geojson', data: geojson, generateId: true });
+              map.addLayer({
+                id: 'district-fill', type: 'fill', source: 'districts',
+                paint: {
+                  'fill-color': isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                  'fill-opacity': 0.35,
+                },
+              });
+              map.addLayer({
+                id: 'district-line', type: 'line', source: 'districts',
+                paint: { 'line-color': isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)', 'line-width': 1.5, 'line-dasharray': [4, 2] },
+              });
+              map.addLayer({
+                id: 'district-label', type: 'symbol', source: 'districts',
+                layout: { 'text-field': ['get', resolved.nameField], 'text-size': 14, 'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'], 'text-anchor': 'center', 'text-allow-overlap': false },
+                paint: { 'text-color': isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)', 'text-halo-color': isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)', 'text-halo-width': 1.5 },
+              });
+              activeNameFieldRef.current = resolved.nameField;
+              const freshData = politicalDataRef.current;
+              if (freshData) applyPoliticalStyling(map, freshData, isDark, resolved.nameField);
+            })
+            .catch(() => { /* GeoJSON fetch failed — fall back to default districts */ addDistrictLayer(map, city.id, isDark); });
+        } else {
+          addDistrictLayer(map, city.id, isDark);
+        }
+      } else {
+        addDistrictLayer(map, city.id, isDark);
+      }
+
       updateTransitMarkers(map, transitItemsRef.current ?? [], isDark);
       updateNewsMarkers(map, newsItemsRef.current, isDark);
       updateSafetyMarkers(map, safetyItemsRef.current, isDark);
       updateWarningPolygons(map, warningItemsRef.current, isDark);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
       updateTrafficLayers(map, trafficItemsRef.current, isDark);
+      updateAqGridLayer(map, aqGridItemsRef.current, isDark);
     });
   }, [isDark, city.id]);
 
@@ -949,18 +1160,116 @@ export function CityMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trafficItems]);
 
-  // Political mode: apply/reset district styling
-  const politicalData = politicalLayer === 'bundestag' ? bundestagData : stateData;
+  // Update air quality grid circles
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    updateAqGridLayer(map, aqGridItems, isDarkRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aqGridItems]);
+
+  // Political layer: swap GeoJSON source + apply/reset styling
+  const politicalData = politicalLayer === 'bundestag'
+    ? bundestagData
+    : politicalLayer === 'bezirke'
+      ? bezirkeData
+      : stateBezirkeData;
+  const politicalDataRef = useRef(politicalData);
+  politicalDataRef.current = politicalData;
+  const activeNameFieldRef = useRef('name');
+
+  // Effect 1: swap GeoJSON source when political layer changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    if (mapMode === 'political' && politicalData) {
-      applyPoliticalStyling(map, politicalData, isDarkRef.current);
-    } else {
-      resetDistrictStyling(map, isDarkRef.current);
+    if (!politicalActive) {
+      // Political off — restore default Bezirke GeoJSON
+      addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
+      activeNameFieldRef.current = DISTRICT_URLS[cityIdRef.current]?.nameField ?? 'name';
+      return;
     }
-  }, [mapMode, politicalLayer, politicalData]);
+
+    // Determine which GeoJSON to load based on politicalLayer
+    const resolved = CONSTITUENCY_URLS[cityIdRef.current]?.[politicalLayer]
+      ?? DISTRICT_URLS[cityIdRef.current];
+    if (!resolved) return;
+
+    activeNameFieldRef.current = resolved.nameField;
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch(resolved.url, { signal: controller.signal });
+        const geojson: GeoJSON.FeatureCollection = await res.json();
+        if (controller.signal.aborted) return;
+
+        // Remove existing layers/source
+        for (const id of ['district-label', 'district-line', 'district-fill']) {
+          if (map.getLayer(id)) map.removeLayer(id);
+        }
+        if (map.getSource('districts')) map.removeSource('districts');
+
+        map.addSource('districts', { type: 'geojson', data: geojson, generateId: true });
+        map.addLayer({
+          id: 'district-fill',
+          type: 'fill',
+          source: 'districts',
+          paint: {
+            'fill-color': isDarkRef.current ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+            'fill-opacity': 0.35,
+          },
+        });
+        map.addLayer({
+          id: 'district-line',
+          type: 'line',
+          source: 'districts',
+          paint: {
+            'line-color': isDarkRef.current ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)',
+            'line-width': 1.5,
+            'line-dasharray': [4, 2],
+          },
+        });
+        map.addLayer({
+          id: 'district-label',
+          type: 'symbol',
+          source: 'districts',
+          layout: {
+            'text-field': ['get', resolved.nameField],
+            'text-size': 14,
+            'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+            'text-anchor': 'center',
+            'text-allow-overlap': false,
+          },
+          paint: {
+            'text-color': isDarkRef.current ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)',
+            'text-halo-color': isDarkRef.current ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)',
+            'text-halo-width': 1.5,
+          },
+        });
+
+        // Apply party colors if data is already available
+        const freshData = politicalDataRef.current;
+        if (freshData) {
+          applyPoliticalStyling(map, freshData, isDarkRef.current, resolved.nameField);
+        }
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === 'AbortError') return;
+        console.error('[political] GeoJSON swap error:', e);
+      }
+    })();
+
+    return () => { controller.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [politicalActive, politicalLayer]);
+
+  // Effect 2: apply party colors when political data arrives/changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded() || !politicalActive || !politicalData) return;
+    applyPoliticalStyling(map, politicalData, isDarkRef.current, activeNameFieldRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [politicalData]);
 
   // Political popup on district click
   useEffect(() => {
@@ -968,19 +1277,19 @@ export function CityMap() {
     if (!map) return;
 
     const handler = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
-      if (mapMode !== 'political' || !e.features?.length || !politicalData?.length) return;
-      const name = e.features[0].properties?.name ?? e.features[0].properties?.bezirk_name ?? '';
+      if (!politicalActive || !e.features?.length) return;
+      const data = politicalDataRef.current;
+      if (!data?.length) return;
+      const nameField = activeNameFieldRef.current;
+      const name = e.features[0].properties?.[nameField] ?? '';
       if (!name) return;
-      const html = buildPoliticalPopupHtml(name, politicalData);
-      new maplibregl.Popup({ offset: 10, maxWidth: '320px' })
-        .setLngLat(e.lngLat)
-        .setHTML(html)
-        .addTo(map);
+      const html = buildPoliticalPopupHtml(name, data);
+      showMapPopup(map, e.lngLat, html, { maxWidth: '320px', sticky: true });
     };
 
     map.on('click', 'district-fill', handler);
     return () => { map.off('click', 'district-fill', handler); };
-  }, [mapMode, politicalData]);
+  }, [politicalActive]);
 
   return (
     <div className="relative w-full h-full min-h-[300px]">

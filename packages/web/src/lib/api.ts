@@ -6,7 +6,7 @@
 const BASE = '/api';
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
     throw new Error(`API error: ${response.status} ${response.statusText}`);
   }
@@ -46,6 +46,7 @@ export interface NewsItem {
 export interface TransitAlert {
   id: string;
   line: string;
+  lines?: string[];
   type: 'delay' | 'disruption' | 'cancellation' | 'planned-work';
   severity: 'low' | 'medium' | 'high';
   message: string;
@@ -152,6 +153,9 @@ export interface EmergencyPharmacy {
   distance?: number;
 }
 
+export type { AirQualityGridPoint } from '@city-monitor/shared';
+import type { AirQualityGridPoint } from '@city-monitor/shared';
+
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
   getNewsDigest: (city: string) => fetchJson<NewsDigest>(`${BASE}/${city}/news/digest`),
@@ -162,7 +166,8 @@ export const api = {
   getSafety: (city: string) => fetchJson<SafetyReport[]>(`${BASE}/${city}/safety`),
   getNina: (city: string) => fetchJson<NinaWarning[]>(`${BASE}/${city}/nina`),
   getAirQuality: (city: string) => fetchJson<AirQuality | null>(`${BASE}/${city}/air-quality`),
+  getAirQualityGrid: (city: string) => fetchJson<AirQualityGridPoint[]>(`${BASE}/${city}/air-quality/grid`),
   getPharmacies: (city: string) => fetchJson<EmergencyPharmacy[]>(`${BASE}/${city}/pharmacies`),
   getTraffic: (city: string) => fetchJson<TrafficIncident[]>(`${BASE}/${city}/traffic`),
-  getPolitical: (city: string, level: 'bundestag' | 'state') => fetchJson<PoliticalDistrict[]>(`${BASE}/${city}/political/${level}`),
+  getPolitical: (city: string, level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke') => fetchJson<PoliticalDistrict[]>(`${BASE}/${city}/political/${level}`),
 };
