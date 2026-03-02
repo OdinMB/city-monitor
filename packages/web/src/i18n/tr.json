@@ -44,7 +44,13 @@
       "free": "Ücretsiz",
       "today": "Bugün",
       "tomorrow": "Yarın",
-      "all": "Tümü"
+      "all": "Tümü",
+      "source": {
+        "community": "Topluluk",
+        "tickets": "Biletler",
+        "museums": "Müzeler"
+      },
+      "moreInfo": "Daha fazla"
     },
     "safety": {
       "title": "Güvenlik",
@@ -89,7 +95,8 @@
     "market": "Pazar",
     "sport": "Spor",
     "community": "Topluluk",
-    "other": "Diğer"
+    "other": "Diğer",
+    "museum": "Müze"
   },
   "time": {
     "justNow": "az önce",

@@ -56,9 +56,12 @@ export const events = pgTable('events', {
   description: text('description'),
   free: boolean('free'),
   hash: text('hash').notNull(),
+  source: text('source').notNull().default('kulturdaten'),
+  price: text('price'),
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [
   index('events_city_date_idx').on(table.cityId, table.date),
+  index('events_city_source_idx').on(table.cityId, table.source, table.date),
 ]);
 
 // Milestone 10 — Safety Reports
@@ -133,6 +136,31 @@ export const geocodeLookups = pgTable('geocode_lookups', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
   uniqueIndex('geocode_query_idx').on(table.query),
+]);
+
+// Air quality grid (WAQI + Open-Meteo supplement stations)
+export const airQualityGrid = pgTable('air_quality_grid', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  lat: real('lat').notNull(),
+  lon: real('lon').notNull(),
+  europeanAqi: integer('european_aqi').notNull(),
+  station: text('station').notNull(),
+  url: text('url'),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('aq_grid_city_idx').on(table.cityId),
+]);
+
+// Political districts (Bezirke, Bundestag, state parliament)
+export const politicalDistricts = pgTable('political_districts', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  level: text('level').notNull(), // 'bezirke' | 'bundestag' | 'state' | 'state-bezirke'
+  districts: jsonb('districts').notNull(), // PoliticalDistrict[]
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('political_city_level_idx').on(table.cityId, table.level),
 ]);
 
 // Milestone 07 — AI Summaries

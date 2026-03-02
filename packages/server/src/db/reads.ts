@@ -86,6 +86,8 @@ export async function loadEvents(db: Db, cityId: string): Promise<CityEvent[] | 
     url: row.url ?? '',
     description: row.description ?? undefined,
     free: row.free ?? undefined,
+    source: (row.source as CityEvent['source']) ?? 'kulturdaten',
+    price: row.price ?? undefined,
   }));
 }
 

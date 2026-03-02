@@ -62,10 +62,12 @@ export interface CityEvent {
   venue?: string;
   date: string;
   endDate?: string;
-  category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'other';
+  category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'museum' | 'other';
   url: string;
   description?: string;
   free?: boolean;
+  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
+  price?: string;
 }
 
 export interface SafetyReport {

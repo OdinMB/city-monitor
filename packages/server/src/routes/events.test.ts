@@ -40,7 +40,7 @@ describe('Events API', () => {
 
   it('GET /api/berlin/events returns cached events', async () => {
     const mockEvents: CityEvent[] = [
-      { id: '1', title: 'Test Event', venue: 'Philharmonie', date: '2026-03-03T19:00:00Z', category: 'music', url: 'https://example.com' },
+      { id: '1', title: 'Test Event', venue: 'Philharmonie', date: '2026-03-03T19:00:00Z', category: 'music', url: 'https://example.com', source: 'kulturdaten' },
     ];
     appContext.cache.set('berlin:events:upcoming', mockEvents, 60);
 

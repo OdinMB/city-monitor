@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
   weatherSnapshots,
@@ -14,14 +14,17 @@ import {
   aiSummaries,
   ninaWarnings,
   geocodeLookups,
+  airQualityGrid,
+  politicalDistricts,
 } from './schema.js';
-import type { NinaWarning } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
 import type { NewsItem } from '../cron/ingest-feeds.js';
+import type { AirQualityGridPoint } from '@city-monitor/shared';
 
 export interface NewsItemAssessment {
   relevant?: boolean;
@@ -65,9 +68,9 @@ export async function saveTransitAlerts(db: Db, cityId: string, alerts: TransitA
   });
 }
 
-export async function saveEvents(db: Db, cityId: string, items: CityEvent[]): Promise<void> {
+export async function saveEvents(db: Db, cityId: string, source: string, items: CityEvent[]): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.delete(events).where(eq(events.cityId, cityId));
+    await tx.delete(events).where(and(eq(events.cityId, cityId), eq(events.source, source)));
     if (items.length === 0) return;
     await tx.insert(events).values(
       items.map((e) => ({
@@ -81,6 +84,8 @@ export async function saveEvents(db: Db, cityId: string, items: CityEvent[]): Pr
         description: e.description ?? null,
         free: e.free ?? null,
         hash: e.id,
+        source: e.source,
+        price: e.price ?? null,
       })),
     );
   });
@@ -174,6 +179,38 @@ export async function saveNinaWarnings(db: Db, cityId: string, warnings: NinaWar
       })),
     );
   });
+}
+
+export async function saveAirQualityGrid(db: Db, cityId: string, points: AirQualityGridPoint[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(airQualityGrid).where(eq(airQualityGrid.cityId, cityId));
+    if (points.length === 0) return;
+    await tx.insert(airQualityGrid).values(
+      points.map((p) => ({
+        cityId,
+        lat: p.lat,
+        lon: p.lon,
+        europeanAqi: p.europeanAqi,
+        station: p.station,
+        url: p.url ?? null,
+      })),
+    );
+  });
+}
+
+export async function savePoliticalDistricts(
+  db: Db,
+  cityId: string,
+  level: string,
+  districts: PoliticalDistrict[],
+): Promise<void> {
+  await db
+    .insert(politicalDistricts)
+    .values({ cityId, level, districts })
+    .onConflictDoUpdate({
+      target: [politicalDistricts.cityId, politicalDistricts.level],
+      set: { districts, fetchedAt: new Date() },
+    });
 }
 
 export async function saveGeocodeLookup(

@@ -4,9 +4,10 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadSummary } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadSummary, loadAirQualityGrid } from './reads.js';
+import type { Db } from './index.js';
 
-function createMockDb(rows: any[] = []) {
+function createMockDb(rows: Record<string, unknown>[] = []) {
   const chain = {
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
@@ -20,11 +21,11 @@ function createMockDb(rows: any[] = []) {
       orderBy: vi.fn().mockImplementation(() => {
         const orderNext = { limit: vi.fn().mockResolvedValue(rows) };
         // Also resolve as array directly (for queries without limit)
-        Object.assign(orderNext, { then: (resolve: any) => resolve(rows) });
+        Object.assign(orderNext, { then: (resolve: (v: unknown) => void) => resolve(rows) });
         return orderNext;
       }),
       limit: vi.fn().mockResolvedValue(rows),
-      then: (resolve: any) => resolve(rows),
+      then: (resolve: (v: unknown) => void) => resolve(rows),
     };
     return next;
   });
@@ -33,7 +34,7 @@ function createMockDb(rows: any[] = []) {
     select: vi.fn().mockReturnValue(chain),
   };
 
-  return db as any;
+  return db as unknown as Db;
 }
 
 describe('DB reads', () => {
@@ -79,12 +80,14 @@ describe('DB reads', () => {
 
   it('loadEvents maps rows to CityEvent[]', async () => {
     const db = createMockDb([
-      { hash: 'h1', title: 'Concert', venue: 'Hall', date: new Date('2026-03-03'), endDate: null, category: 'music', url: 'https://x.com', description: null, free: true },
+      { hash: 'h1', title: 'Concert', venue: 'Hall', date: new Date('2026-03-03'), endDate: null, category: 'music', url: 'https://x.com', description: null, free: true, source: 'ticketmaster', price: '29–89 EUR' },
     ]);
     const result = await loadEvents(db, 'berlin');
     expect(result).toHaveLength(1);
     expect(result![0].title).toBe('Concert');
     expect(result![0].id).toBe('h1');
+    expect(result![0].source).toBe('ticketmaster');
+    expect(result![0].price).toBe('29–89 EUR');
   });
 
   it('loadSafetyReports returns null when no rows', async () => {
@@ -117,5 +120,24 @@ describe('DB reads', () => {
     expect(result!.briefing).toBe('Briefing text');
     expect(result!.cached).toBe(true);
     expect(result!.headlineHash).toBe('abc');
+  });
+
+  it('loadAirQualityGrid returns null when no rows', async () => {
+    const db = createMockDb([]);
+    const result = await loadAirQualityGrid(db, 'berlin');
+    expect(result).toBeNull();
+  });
+
+  it('loadAirQualityGrid maps rows to AirQualityGridPoint[]', async () => {
+    const db = createMockDb([
+      { lat: 52.52, lon: 13.41, europeanAqi: 42, station: 'Berlin Mitte', url: 'https://example.com' },
+      { lat: 52.48, lon: 13.35, europeanAqi: 35, station: 'Steglitz', url: null },
+    ]);
+    const result = await loadAirQualityGrid(db, 'berlin');
+    expect(result).toHaveLength(2);
+    expect(result![0].europeanAqi).toBe(42);
+    expect(result![0].station).toBe('Berlin Mitte');
+    expect(result![0].url).toBe('https://example.com');
+    expect(result![1].url).toBeUndefined();
   });
 });

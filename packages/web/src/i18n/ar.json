@@ -44,7 +44,13 @@
       "free": "مجاني",
       "today": "اليوم",
       "tomorrow": "غداً",
-      "all": "الكل"
+      "all": "الكل",
+      "source": {
+        "community": "مجتمع",
+        "tickets": "تذاكر",
+        "museums": "متاحف"
+      },
+      "moreInfo": "المزيد"
     },
     "safety": {
       "title": "السلامة",
@@ -89,7 +95,8 @@
     "market": "سوق",
     "sport": "رياضة",
     "community": "مجتمع",
-    "other": "أخرى"
+    "other": "أخرى",
+    "museum": "متحف"
   },
   "time": {
     "justNow": "الآن",

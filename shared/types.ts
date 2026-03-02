@@ -41,15 +41,23 @@ export interface CityMapLayer {
   style?: Record<string, unknown>;
 }
 
+export interface EventSourceConfig {
+  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
+  url: string;
+}
+
 export interface CityDataSources {
   weather: { provider: 'open-meteo'; lat: number; lon: number };
+  airQuality?: {
+    sensorCommunityStations?: Array<{ sensorId: number; name: string }>;
+  };
   transit?: {
     provider: 'hafas';
     operatorId: string;
     endpoint?: string;
     stations?: Array<{ id: string; name: string }>;
   };
-  events?: { provider: 'rss' | 'api'; url: string };
+  events?: EventSourceConfig[];
   police?: { provider: 'rss'; url: string };
   nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings
   openData?: { provider: 'ckan'; baseUrl: string };
@@ -142,6 +150,16 @@ export interface EmergencyPharmacy {
   validFrom: string;
   validUntil: string;
   distance?: number;
+}
+
+// Air quality grid (WAQI stations + Open-Meteo supplements)
+export interface AirQualityGridPoint {
+  lat: number;
+  lon: number;
+  europeanAqi: number;
+  station: string;
+  /** Link to station detail page */
+  url?: string;
 }
 
 // NINA civil protection warnings

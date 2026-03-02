@@ -44,7 +44,13 @@
       "free": "Kostenlos",
       "today": "Heute",
       "tomorrow": "Morgen",
-      "all": "Alle"
+      "all": "Alle",
+      "source": {
+        "community": "Community",
+        "tickets": "Tickets",
+        "museums": "Museen"
+      },
+      "moreInfo": "Mehr Infos"
     },
     "safety": {
       "title": "Sicherheit",
@@ -89,7 +95,8 @@
     "market": "Markt",
     "sport": "Sport",
     "community": "Gemeinschaft",
-    "other": "Sonstiges"
+    "other": "Sonstiges",
+    "museum": "Museum"
   },
   "time": {
     "justNow": "gerade eben",
