@@ -41,7 +41,10 @@
     "events": {
       "title": "Events",
       "empty": "No events this week",
-      "free": "Free"
+      "free": "Free",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "week": "This Week"
     },
     "safety": {
       "title": "Safety",
@@ -74,6 +77,23 @@
     "minutesAgo": "{{count}} min ago",
     "hoursAgo": "{{count}}h ago",
     "daysAgo": "{{count}}d ago"
+  },
+  "sidebar": {
+    "timeRange": {
+      "label": "Time Range",
+      "1h": "1h",
+      "6h": "6h",
+      "24h": "24h",
+      "48h": "48h",
+      "7d": "7d",
+      "all": "All"
+    },
+    "layers": {
+      "label": "Data Layers",
+      "transit": "Transit",
+      "events": "Events",
+      "weather": "Weather"
+    }
   },
   "footer": {
     "sourceCode": "Source Code",

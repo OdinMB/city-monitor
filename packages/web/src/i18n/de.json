@@ -41,7 +41,10 @@
     "events": {
       "title": "Veranstaltungen",
       "empty": "Keine Veranstaltungen diese Woche",
-      "free": "Kostenlos"
+      "free": "Kostenlos",
+      "today": "Heute",
+      "tomorrow": "Morgen",
+      "week": "Diese Woche"
     },
     "safety": {
       "title": "Sicherheit",
@@ -74,6 +77,23 @@
     "minutesAgo": "vor {{count}} Min.",
     "hoursAgo": "vor {{count}} Std.",
     "daysAgo": "vor {{count}} T."
+  },
+  "sidebar": {
+    "timeRange": {
+      "label": "Zeitraum",
+      "1h": "1h",
+      "6h": "6h",
+      "24h": "24h",
+      "48h": "48h",
+      "7d": "7T",
+      "all": "Alle"
+    },
+    "layers": {
+      "label": "Datenebenen",
+      "transit": "Nahverkehr",
+      "events": "Veranstaltungen",
+      "weather": "Wetter"
+    }
   },
   "footer": {
     "sourceCode": "Quellcode",

@@ -105,10 +105,14 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 ## Map (`packages/web/src/components/map/CityMap.tsx`)
 
 - MapLibre GL JS (open-source Mapbox fork), lazy-loaded via `React.lazy`
-- CARTO basemaps: dark-matter (dark theme), positron (light theme) — free, no API key
-- Initialized from city config: center, zoom, minZoom, maxZoom, maxBounds
-- Controls: NavigationControl (zoom only, no compass), AttributionControl (compact)
-- Theme-aware: swaps map style on dark/light toggle via `map.setStyle()`
+- CARTO basemaps: dark-matter-nolabels (dark theme), positron-nolabels (light theme) — free, no API key
+- Minimal style: only keeps background, landcover, parks, and boundary layers (water, roads, labels hidden via `simplifyMap()`)
+- Initialized from city config: `bounds` (auto-fit to show full city), minZoom, maxZoom, maxBounds
+- Controls: NavigationControl (zoom only, no compass), AttributionControl (compact, collapsed on load)
+- Theme-aware: swaps map style on dark/light toggle via `map.setStyle()` with `isFirstRender` ref to prevent race condition on mount
+- District boundaries: GeoJSON overlay with fill, line (dashed), and label layers per city (`DISTRICT_URLS` config)
+- Hover effect: feature-state-based fill opacity change + cursor pointer on district polygons (`setupDistrictHover()`)
+- Vite config requires `target: 'esnext'` (both `build.target` and `optimizeDeps.esbuildOptions.target`) to prevent MapLibre's GeoJSON web worker crash (`__publicField is not defined`)
 
 ## Frontend Utilities
 

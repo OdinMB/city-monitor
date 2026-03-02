@@ -41,7 +41,10 @@
     "events": {
       "title": "Etkinlikler",
       "empty": "Bu hafta etkinlik yok",
-      "free": "Ücretsiz"
+      "free": "Ücretsiz",
+      "today": "Bugün",
+      "tomorrow": "Yarın",
+      "week": "Bu Hafta"
     },
     "safety": {
       "title": "Güvenlik",
@@ -74,6 +77,23 @@
     "minutesAgo": "{{count}} dk önce",
     "hoursAgo": "{{count}} sa önce",
     "daysAgo": "{{count}} gün önce"
+  },
+  "sidebar": {
+    "timeRange": {
+      "label": "Zaman Aralığı",
+      "1h": "1s",
+      "6h": "6s",
+      "24h": "24s",
+      "48h": "48s",
+      "7d": "7g",
+      "all": "Tümü"
+    },
+    "layers": {
+      "label": "Veri Katmanları",
+      "transit": "Ulaşım",
+      "events": "Etkinlikler",
+      "weather": "Hava"
+    }
   },
   "footer": {
     "sourceCode": "Kaynak Kodu",

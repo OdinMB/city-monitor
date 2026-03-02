@@ -10,13 +10,7 @@ import { CityProvider, useCityConfig } from './hooks/useCityConfig.js';
 import { useTheme } from './hooks/useTheme.js';
 import { useBootstrap } from './hooks/useBootstrap.js';
 import { Shell } from './components/layout/Shell.js';
-import { PanelGrid } from './components/layout/PanelGrid.js';
-import { NewsBriefingPanel } from './components/panels/NewsBriefingPanel.js';
-import { WeatherPanel } from './components/panels/WeatherPanel.js';
-import { TransitPanel } from './components/panels/TransitPanel.js';
-import { EventsPanel } from './components/panels/EventsPanel.js';
-import { SafetyPanel } from './components/panels/SafetyPanel.js';
-import { MapPanel } from './components/panels/MapPanel.js';
+import { CommandLayout } from './components/layout/CommandLayout.js';
 import { CityPicker } from './components/pages/CityPicker.js';
 import { getCityConfig, getDefaultCityId } from './config/index.js';
 
@@ -41,14 +35,7 @@ function Dashboard() {
 
   return (
     <Shell>
-      <PanelGrid>
-        <NewsBriefingPanel />
-        <WeatherPanel />
-        <TransitPanel />
-        <EventsPanel />
-        <SafetyPanel />
-        <MapPanel />
-      </PanelGrid>
+      <CommandLayout />
     </Shell>
   );
 }

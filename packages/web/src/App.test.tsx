@@ -30,7 +30,7 @@ describe('App', () => {
       expect(screen.getByText('Berlin')).toBeDefined();
     });
     expect(screen.getByText('News')).toBeDefined();
-    expect(screen.getByText('Weather')).toBeDefined();
+    expect(screen.getByText('Briefing')).toBeDefined();
   });
 
   it('renders Hamburg dashboard at /hamburg', async () => {
