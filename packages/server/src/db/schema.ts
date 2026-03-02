@@ -70,6 +70,9 @@ export const safetyReports = pgTable('safety_reports', {
   publishedAt: timestamp('published_at'),
   url: text('url'),
   district: text('district'),
+  lat: real('lat'),
+  lon: real('lon'),
+  locationLabel: text('location_label'),
   hash: text('hash').notNull(),
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [

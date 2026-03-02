@@ -95,6 +95,9 @@ export async function loadSafetyReports(db: Db, cityId: string): Promise<SafetyR
     publishedAt: row.publishedAt?.toISOString() ?? '',
     url: row.url ?? '',
     district: row.district ?? undefined,
+    location: row.lat != null && row.lon != null
+      ? { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined }
+      : undefined,
   }));
 }
 

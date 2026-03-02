@@ -92,7 +92,9 @@
       "label": "Veri Katmanları",
       "transit": "Ulaşım",
       "events": "Etkinlikler",
-      "weather": "Hava"
+      "weather": "Hava",
+      "news": "Haberler",
+      "safety": "Güvenlik"
     }
   },
   "footer": {

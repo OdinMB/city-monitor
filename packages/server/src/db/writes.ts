@@ -85,6 +85,9 @@ export async function saveSafetyReports(db: Db, cityId: string, reports: SafetyR
         publishedAt: r.publishedAt ? new Date(r.publishedAt) : null,
         url: r.url,
         district: r.district ?? null,
+        lat: r.location?.lat ?? null,
+        lon: r.location?.lon ?? null,
+        locationLabel: r.location?.label ?? null,
         hash: r.id,
       })),
     );

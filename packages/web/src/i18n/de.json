@@ -92,7 +92,9 @@
       "label": "Datenebenen",
       "transit": "Nahverkehr",
       "events": "Veranstaltungen",
-      "weather": "Wetter"
+      "weather": "Wetter",
+      "news": "Nachrichten",
+      "safety": "Sicherheit"
     }
   },
   "footer": {

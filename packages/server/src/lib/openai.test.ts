@@ -26,4 +26,18 @@ describe('openai', () => {
     const stats = getUsageStats();
     expect(stats).toEqual({});
   });
+
+  it('filterAndGeolocateNews returns null when not configured', async () => {
+    vi.stubEnv('OPENAI_API_KEY', '');
+    const { filterAndGeolocateNews } = await import('./openai.js');
+    const result = await filterAndGeolocateNews('berlin', 'Berlin', []);
+    expect(result).toBeNull();
+  });
+
+  it('geolocateReports returns null when not configured', async () => {
+    vi.stubEnv('OPENAI_API_KEY', '');
+    const { geolocateReports } = await import('./openai.js');
+    const result = await geolocateReports('berlin', 'Berlin', []);
+    expect(result).toBeNull();
+  });
 });

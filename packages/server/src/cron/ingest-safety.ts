@@ -10,6 +10,7 @@ import { parseFeed } from '../lib/rss-parser.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { geolocateReports } from '../lib/openai.js';
 
 const log = createLogger('ingest-safety');
 
@@ -20,6 +21,7 @@ export interface SafetyReport {
   publishedAt: string;
   url: string;
   district?: string;
+  location?: { lat: number; lon: number; label?: string };
 }
 
 const SAFETY_TIMEOUT_MS = 10_000;
@@ -38,7 +40,7 @@ export function createSafetyIngestion(cache: Cache, db: Db | null = null) {
     for (const city of cities) {
       if (!city.dataSources.police) continue;
       try {
-        await ingestCitySafety(city.id, city.dataSources.police.url, cache, db);
+        await ingestCitySafety(city.id, city.name, city.dataSources.police.url, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -46,7 +48,7 @@ export function createSafetyIngestion(cache: Cache, db: Db | null = null) {
   };
 }
 
-async function ingestCitySafety(cityId: string, feedUrl: string, cache: Cache, db: Db | null): Promise<void> {
+async function ingestCitySafety(cityId: string, cityName: string, feedUrl: string, cache: Cache, db: Db | null): Promise<void> {
   const response = await log.fetch(feedUrl, {
     signal: AbortSignal.timeout(SAFETY_TIMEOUT_MS),
     headers: { 'User-Agent': 'CityMonitor/1.0' },
@@ -65,6 +67,27 @@ async function ingestCitySafety(cityId: string, feedUrl: string, cache: Cache, d
     url: item.url,
     district: extractDistrict(item.title),
   }));
+
+  // LLM geolocation for police reports
+  try {
+    const geoResults = await geolocateReports(
+      cityId,
+      cityName,
+      reports.map((r) => ({ title: r.title, description: r.description })),
+    );
+    if (geoResults) {
+      for (const geo of geoResults) {
+        if (geo.lat != null && geo.lon != null && reports[geo.index]) {
+          reports[geo.index] = {
+            ...reports[geo.index],
+            location: { lat: geo.lat, lon: geo.lon, label: geo.locationLabel },
+          };
+        }
+      }
+    }
+  } catch (err) {
+    log.warn(`${cityId} geolocation failed, continuing without`);
+  }
 
   // Sort by most recent first
   reports.sort((a, b) =>

@@ -39,6 +39,7 @@ export interface NewsItem {
   category: string;
   tier: number;
   description?: string;
+  location?: { lat: number; lon: number; label?: string };
 }
 
 export interface TransitAlert {
@@ -72,6 +73,7 @@ export interface SafetyReport {
   publishedAt: string;
   url: string;
   district?: string;
+  location?: { lat: number; lon: number; label?: string };
 }
 
 export const api = {

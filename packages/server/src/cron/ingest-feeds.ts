@@ -19,6 +19,7 @@ import { classifyHeadline } from '../lib/classifier.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { filterAndGeolocateNews, type FilteredItem } from '../lib/openai.js';
 
 const log = createLogger('ingest-feeds');
 
@@ -37,6 +38,7 @@ export interface NewsItem {
   category: string;
   tier: number;
   lang: string;
+  location?: { lat: number; lon: number; label?: string };
 }
 
 export interface NewsDigest {
@@ -92,9 +94,12 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache): Promise<void> {
     return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
   });
 
+  // LLM-based relevance filtering + geolocation
+  const filtered = await applyLlmFilter(city, deduped);
+
   // Build digest
   const categories: Record<string, NewsItem[]> = {};
-  for (const item of deduped) {
+  for (const item of filtered) {
     if (!categories[item.category]) {
       categories[item.category] = [];
     }
@@ -102,7 +107,7 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache): Promise<void> {
   }
 
   const digest: NewsDigest = {
-    items: deduped,
+    items: filtered,
     categories,
     updatedAt: new Date().toISOString(),
   };
@@ -113,7 +118,61 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache): Promise<void> {
     cache.set(`${city.id}:news:${cat}`, items, 900);
   }
 
-  log.info(`${city.id}: ${deduped.length} articles from ${city.feeds.length} feeds`);
+  log.info(`${city.id}: ${filtered.length} articles (${deduped.length - filtered.length} filtered) from ${city.feeds.length} feeds`);
+}
+
+async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<NewsItem[]> {
+  try {
+    const result = await filterAndGeolocateNews(
+      city.id,
+      city.name,
+      items.map((item) => ({
+        title: item.title,
+        description: item.description,
+        sourceName: item.sourceName,
+      })),
+    );
+
+    if (!result) return items; // Fallback: return all items when OpenAI is unavailable
+
+    const filtered: NewsItem[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const verdict = result.find((r) => r.index === i);
+      if (!verdict) {
+        // No verdict — keep the item
+        filtered.push(items[i]);
+        continue;
+      }
+
+      // Drop items where LLM is confident they're irrelevant
+      // But keep tier-1 items if confidence is below 0.7 (benefit of the doubt)
+      if (!verdict.relevant && verdict.confidence >= 0.7 && items[i].tier > 1) {
+        continue;
+      }
+      if (!verdict.relevant && verdict.confidence >= 0.9) {
+        continue; // Drop even tier-1 if confidence is very high
+      }
+
+      // Attach location if provided
+      if (verdict.lat != null && verdict.lon != null) {
+        items[i] = {
+          ...items[i],
+          location: {
+            lat: verdict.lat,
+            lon: verdict.lon,
+            label: verdict.locationLabel,
+          },
+        };
+      }
+
+      filtered.push(items[i]);
+    }
+
+    return filtered;
+  } catch (err) {
+    log.error(`${city.id} LLM filter failed, using unfiltered items`, err);
+    return items;
+  }
 }
 
 async function fetchAndParseFeed(

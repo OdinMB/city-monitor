@@ -14,7 +14,10 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useTransit } from '../../hooks/useTransit.js';
-import type { TransitAlert } from '../../lib/api.js';
+import { useNewsDigest } from '../../hooks/useNewsDigest.js';
+import { useSafety } from '../../hooks/useSafety.js';
+import { useCommandCenter } from '../../hooks/useCommandCenter.js';
+import type { TransitAlert, NewsItem, SafetyReport } from '../../lib/api.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -52,7 +55,13 @@ function simplifyMap(map: maplibregl.Map) {
   const style = map.getStyle();
   if (!style?.layers) return;
   for (const layer of style.layers) {
-    if (!KEEP_LAYERS.has(layer.id) && !layer.id.startsWith('district-') && !layer.id.startsWith('transit-')) {
+    if (
+      !KEEP_LAYERS.has(layer.id) &&
+      !layer.id.startsWith('district-') &&
+      !layer.id.startsWith('transit-') &&
+      !layer.id.startsWith('news-') &&
+      !layer.id.startsWith('safety-')
+    ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
   }
@@ -243,6 +252,137 @@ function buildPopupHtml(props: Record<string, unknown>): string {
   return parts.join('');
 }
 
+const NEWS_CATEGORY_COLORS: Record<string, string> = {
+  transit: '#3b82f6',
+  politics: '#8b5cf6',
+  culture: '#ec4899',
+  crime: '#ef4444',
+  weather: '#06b6d4',
+  economy: '#10b981',
+  sports: '#f59e0b',
+  local: '#6366f1',
+};
+
+function newsToGeoJSON(items: NewsItem[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (const item of items) {
+    if (!item.location) continue;
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [item.location.lon, item.location.lat] },
+      properties: {
+        title: item.title,
+        category: item.category,
+        sourceName: item.sourceName,
+        url: item.url,
+        color: NEWS_CATEGORY_COLORS[item.category] ?? '#6366f1',
+        locationLabel: item.location.label ?? '',
+      },
+    });
+  }
+  return { type: 'FeatureCollection', features };
+}
+
+function safetyToGeoJSON(reports: SafetyReport[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (const report of reports) {
+    if (!report.location) continue;
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [report.location.lon, report.location.lat] },
+      properties: {
+        title: report.title,
+        district: report.district ?? '',
+        url: report.url,
+        locationLabel: report.location.label ?? '',
+      },
+    });
+  }
+  return { type: 'FeatureCollection', features };
+}
+
+function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], isDark: boolean) {
+  const geojson = newsToGeoJSON(items);
+
+  for (const id of ['news-marker-label', 'news-marker-circle']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('news-markers')) map.removeSource('news-markers');
+
+  if (geojson.features.length === 0) return;
+
+  map.addSource('news-markers', { type: 'geojson', data: geojson });
+
+  map.addLayer({
+    id: 'news-marker-circle',
+    type: 'circle',
+    source: 'news-markers',
+    paint: {
+      'circle-radius': 6,
+      'circle-color': ['get', 'color'],
+      'circle-stroke-width': 2,
+      'circle-stroke-color': isDark ? '#1f2937' : '#ffffff',
+    },
+  });
+
+  map.on('click', 'news-marker-circle', (e) => {
+    if (!e.features?.length) return;
+    const props = e.features[0].properties!;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const html = `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
+      <div style="opacity:0.6;font-size:11px">${props.sourceName} · ${props.category}</div>
+      ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
+      <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Read more →</a>
+    </div>`;
+    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(coords).setHTML(html).addTo(map);
+  });
+
+  map.on('mouseenter', 'news-marker-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'news-marker-circle', () => { map.getCanvas().style.cursor = ''; });
+}
+
+function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[], isDark: boolean) {
+  const geojson = safetyToGeoJSON(reports);
+
+  for (const id of ['safety-marker-label', 'safety-marker-circle']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('safety-markers')) map.removeSource('safety-markers');
+
+  if (geojson.features.length === 0) return;
+
+  map.addSource('safety-markers', { type: 'geojson', data: geojson });
+
+  map.addLayer({
+    id: 'safety-marker-circle',
+    type: 'circle',
+    source: 'safety-markers',
+    paint: {
+      'circle-radius': 6,
+      'circle-color': '#f97316',
+      'circle-stroke-width': 2,
+      'circle-stroke-color': isDark ? '#1f2937' : '#ffffff',
+    },
+  });
+
+  map.on('click', 'safety-marker-circle', (e) => {
+    if (!e.features?.length) return;
+    const props = e.features[0].properties!;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const html = `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
+      ${props.district ? `<div style="opacity:0.6;font-size:11px">${props.district}</div>` : ''}
+      ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
+      <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Details →</a>
+    </div>`;
+    new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat(coords).setHTML(html).addTo(map);
+  });
+
+  map.on('mouseenter', 'safety-marker-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'safety-marker-circle', () => { map.getCanvas().style.cursor = ''; });
+}
+
 function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[], isDark: boolean) {
   const geojson = alertsToGeoJSON(alerts);
 
@@ -321,11 +461,17 @@ export function CityMap() {
   const city = useCityConfig();
   const { theme } = useTheme();
   const { data: transitAlerts } = useTransit(city.id);
+  const { data: newsDigest } = useNewsDigest(city.id);
+  const { data: safetyReports } = useSafety(city.id);
+  const activeLayers = useCommandCenter((s) => s.activeLayers);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
 
   const isDark = theme === 'dark';
   const mapConfig = city.map;
+
+  const newsItems = activeLayers.has('news') ? (newsDigest?.items ?? []) : [];
+  const safetyItems = activeLayers.has('safety') ? (safetyReports ?? []) : [];
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -334,6 +480,10 @@ export function CityMap() {
   cityIdRef.current = city.id;
   const transitAlertsRef = useRef(transitAlerts);
   transitAlertsRef.current = transitAlerts;
+  const newsItemsRef = useRef(newsItems);
+  newsItemsRef.current = newsItems;
+  const safetyItemsRef = useRef(safetyItems);
+  safetyItemsRef.current = safetyItems;
 
   // Create map once
   useEffect(() => {
@@ -363,6 +513,8 @@ export function CityMap() {
       addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
       setupDistrictHover(map);
       updateTransitMarkers(map, transitAlertsRef.current ?? [], isDarkRef.current);
+      updateNewsMarkers(map, newsItemsRef.current, isDarkRef.current);
+      updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
 
       // Collapse the attribution control (MapLibre opens it by default)
       containerRef.current
@@ -394,6 +546,8 @@ export function CityMap() {
       simplifyMap(map);
       addDistrictLayer(map, city.id, isDark);
       updateTransitMarkers(map, transitAlertsRef.current ?? [], isDark);
+      updateNewsMarkers(map, newsItemsRef.current, isDark);
+      updateSafetyMarkers(map, safetyItemsRef.current, isDark);
     });
   }, [isDark, city.id]);
 
@@ -404,6 +558,22 @@ export function CityMap() {
     updateTransitMarkers(map, transitAlerts ?? [], isDarkRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transitAlerts]);
+
+  // Update news markers when data or layer toggle changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    updateNewsMarkers(map, newsItems, isDarkRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newsItems]);
+
+  // Update safety markers when data or layer toggle changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    updateSafetyMarkers(map, safetyItems, isDarkRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safetyItems]);
 
   return (
     <div
