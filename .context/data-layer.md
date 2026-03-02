@@ -1,0 +1,83 @@
+# Data Layer: Database & Cache
+
+## Architecture
+
+Postgres is the source of truth. An in-memory Map is the hot read layer in front of it. API reads hit the cache first; on miss, query Postgres; on miss, return empty defaults. Cron jobs write to both cache and DB.
+
+## In-Memory Cache (`packages/server/src/lib/cache.ts`)
+
+Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's Redis cache — replaced Redis with a plain `Map<string, CacheEntry>`.
+
+### API
+
+| Method | Description |
+|---|---|
+| `get<T>(key)` | Synchronous. Returns null if expired or missing. |
+| `set(key, data, ttlSeconds)` | Stores with absolute expiry timestamp. |
+| `delete(key)` | Removes entry. |
+| `fetch<T>(key, ttl, fetcher, negTtl?)` | Async lazy-load with in-flight coalescing. Concurrent calls for the same key share a single promise. Failed fetches are negative-cached for `negTtl` seconds (default 120s) to avoid thundering herd. |
+| `getBatch(keys)` | Returns `Record<key, value>` for all non-null entries. Used by bootstrap endpoint. |
+| `size()` | Entry count (for health endpoint). |
+| `clear()` | Empties store and in-flight map. Used in tests. |
+
+### Cache Keys & TTLs
+
+| Key pattern | TTL | Writer |
+|---|---|---|
+| `{cityId}:weather` | 1800s (30 min) | ingest-weather |
+| `{cityId}:transit:alerts` | 300s (5 min) | ingest-transit |
+| `{cityId}:events:upcoming` | 21600s (6h) | ingest-events |
+| `{cityId}:safety:recent` | 900s (15 min) | ingest-safety |
+| `{cityId}:news:digest` | 900s (15 min) | ingest-feeds |
+| `{cityId}:news:{category}` | 900s (15 min) | ingest-feeds |
+| `{cityId}:news:summary` | 86400s (24h) | summarize |
+| `feed:{hash}` | 600s (10 min) | ingest-feeds (raw feed XML) |
+
+## Database (`packages/server/src/db/`)
+
+### Setup (`index.ts`)
+
+ORM: Drizzle (schema-as-code, no code generation). Driver: `postgres` (node-postgres). Connection from `DATABASE_URL` env var. Returns `null` if not set — server runs in cache-only mode.
+
+### Schema (`schema.ts`)
+
+5 tables, added incrementally by milestone:
+
+| Table | Milestone | Key Columns |
+|---|---|---|
+| `weatherSnapshots` | 06 | cityId, current/hourly/daily (JSONB), alerts (JSONB) |
+| `transitDisruptions` | 09 | cityId, line, type, severity, message, affectedStops (JSONB), resolved |
+| `events` | 10 | cityId, title, venue, date, category, url, free, hash |
+| `safetyReports` | 10 | cityId, title, description, publishedAt, url, district, hash |
+| `aiSummaries` | 07 | cityId, headlineHash, summary, model, inputTokens, outputTokens |
+
+All tables have `id` (serial PK), `cityId` (text), and `fetchedAt` (timestamp, default now).
+
+### Reads (`reads.ts`)
+
+Query functions that return typed objects or `null`. Each loads the most recent data for a city:
+- `loadWeather(db, cityId)` — latest snapshot, maps JSONB to `WeatherData`
+- `loadTransitAlerts(db, cityId)` — all rows, maps to `TransitAlert[]`
+- `loadEvents(db, cityId)` — sorted by date ascending, maps to `CityEvent[]`
+- `loadSafetyReports(db, cityId)` — sorted by publishedAt descending
+- `loadSummary(db, cityId)` — latest by generatedAt, includes headlineHash
+
+### Writes (`writes.ts`)
+
+All use transactions with delete-then-insert (full refresh per city, not upsert):
+- `saveWeather(db, cityId, data)`
+- `saveTransitAlerts(db, cityId, alerts)`
+- `saveEvents(db, cityId, events)`
+- `saveSafetyReports(db, cityId, reports)`
+- `saveSummary(db, cityId, summary, model, tokens)`
+
+### Cache Warming (`warm-cache.ts`)
+
+Runs on server start if DB is connected. Loads all 5 data types for all active cities from Postgres into cache with their standard TTLs. Errors are logged but don't block startup — each domain is independent.
+
+## Patterns
+
+- **Cache-first reads:** Route handlers check cache, then DB, then return empty defaults. No writes to cache on DB-fallback reads (cache is populated by cron).
+- **Dual writes:** Cron jobs write to cache immediately, then attempt DB write (errors caught, logged, non-fatal).
+- **Full refresh:** DB writes delete all rows for a city then insert fresh data in a transaction. Simple and correct for small per-city datasets.
+- **Optional DB:** Everything works without `DATABASE_URL` — cache-only mode with no persistence across restarts.

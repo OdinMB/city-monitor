@@ -37,9 +37,14 @@ Plans live in `.plans/` and are version-tracked. MVP = milestones 01-05 (scaffol
 
 ## Context Files
 
-- [`.context/licensing.md`](.context/licensing.md) — Every file must have the correct attribution header depending on whether it adapts worldmonitor code or is entirely new. Details the AGPL-3.0 per-file header templates, the full list of adapted components, and Section 13 footer requirements.
-- [`.context/transit.md`](.context/transit.md) — Transit alerts are deduped by line+summary and classified by German keywords. Details the VBB transport.rest integration, alert types/severity, and the ingestion-to-UI data flow.
-- [`.context/events-safety.md`](.context/events-safety.md) — Safety reports come from berlin.de police RSS with district extraction; events infrastructure is ready but needs a source URL. Details the types, activation steps, and DB schema status.
+- [`.context/licensing.md`](.context/licensing.md) — AGPL-3.0 per-file header templates, adapted component list, and Section 13 footer requirements.
+- [`.context/server.md`](.context/server.md) — App factory, startup sequence, scheduler/cron jobs, logging system, health & bootstrap endpoints, city config, env vars, utility libraries.
+- [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (5 tables), read/write patterns, cache warming.
+- [`.context/weather.md`](.context/weather.md) — Open-Meteo forecast ingestion, DWD severe weather alerts for German cities, WMO weather codes.
+- [`.context/news.md`](.context/news.md) — RSS feed ingestion (10 Berlin feeds, 3 tiers), headline classifier, AI summarization via OpenAI (gpt-5-mini), cost tracking.
+- [`.context/transit.md`](.context/transit.md) — VBB transport.rest integration, line+summary deduplication, German keyword classification of disruption type/severity.
+- [`.context/events-safety.md`](.context/events-safety.md) — kulturdaten.berlin events API, berlin.de police RSS with district extraction, category classification.
+- [`.context/frontend.md`](.context/frontend.md) — React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
 
 ## Key Conventions
 
