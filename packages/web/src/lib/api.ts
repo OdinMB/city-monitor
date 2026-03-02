@@ -109,6 +109,22 @@ export interface AirQuality {
   }>;
 }
 
+export interface Representative {
+  name: string;
+  party: string;
+  role: string;
+  photoUrl?: string;
+  profileUrl?: string;
+  constituency?: string;
+}
+
+export interface PoliticalDistrict {
+  id: string;
+  name: string;
+  level: 'bezirk' | 'bundestag' | 'landesparlament';
+  representatives: Representative[];
+}
+
 export interface TrafficIncident {
   id: string;
   type: 'jam' | 'closure' | 'construction' | 'accident' | 'other';
@@ -148,4 +164,5 @@ export const api = {
   getAirQuality: (city: string) => fetchJson<AirQuality | null>(`${BASE}/${city}/air-quality`),
   getPharmacies: (city: string) => fetchJson<EmergencyPharmacy[]>(`${BASE}/${city}/pharmacies`),
   getTraffic: (city: string) => fetchJson<TrafficIncident[]>(`${BASE}/${city}/traffic`),
+  getPolitical: (city: string, level: 'bundestag' | 'state') => fetchJson<PoliticalDistrict[]>(`${BASE}/${city}/political/${level}`),
 };

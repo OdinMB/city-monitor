@@ -98,6 +98,23 @@ export interface WeatherData {
   alerts: WeatherAlert[];
 }
 
+// Political data
+export interface Representative {
+  name: string;
+  party: string;
+  role: string;
+  photoUrl?: string;
+  profileUrl?: string;
+  constituency?: string;
+}
+
+export interface PoliticalDistrict {
+  id: string;
+  name: string;
+  level: 'bezirk' | 'bundestag' | 'landesparlament';
+  representatives: Representative[];
+}
+
 // Traffic incidents
 export interface TrafficIncident {
   id: string;

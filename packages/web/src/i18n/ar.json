@@ -111,6 +111,16 @@
       "air-quality": "جودة الهواء",
       "pharmacies": "صيدليات",
       "traffic": "حركة المرور"
+    },
+    "mapMode": {
+      "label": "وضع الخريطة",
+      "default": "افتراضي",
+      "political": "سياسي"
+    },
+    "political": {
+      "bezirke": "الأحياء",
+      "bundestag": "البوندستاغ",
+      "landesparlament": "برلمان الولاية"
     }
   },
   "nina": {

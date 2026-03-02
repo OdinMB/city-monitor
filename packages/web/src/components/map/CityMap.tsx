@@ -20,9 +20,10 @@ import { useNina } from '../../hooks/useNina.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { usePharmacies } from '../../hooks/usePharmacies.js';
 import { useTrafficIncidents } from '../../hooks/useTraffic.js';
+import { usePolitical } from '../../hooks/usePolitical.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { getAqiLevel } from '../strips/AirQualityStrip.js';
-import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident } from '../../lib/api.js';
+import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, PoliticalDistrict } from '../../lib/api.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -49,6 +50,22 @@ const DISTRICT_URLS: Record<string, { url: string; nameField: string }> = {
     nameField: 'bezirk_name',
   },
 };
+
+const PARTY_COLORS: Record<string, string> = {
+  'SPD': '#E3000F',
+  'CDU': '#000000',
+  'CSU': '#008AC5',
+  'Grüne': '#64A12D',
+  'FDP': '#FFED00',
+  'Die Linke': '#BE3075',
+  'BSW': '#732048',
+  'AfD': '#009EE0',
+  'Parteilos': '#808080',
+};
+
+function getPartyColor(party: string): string {
+  return PARTY_COLORS[party] ?? '#808080';
+}
 
 const SEVERITY_COLORS: Record<string, string> = {
   high: '#ef4444',
@@ -143,6 +160,85 @@ async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDark: boo
       'text-halo-width': 1.5,
     },
   });
+}
+
+function applyPoliticalStyling(
+  map: maplibregl.Map,
+  districts: PoliticalDistrict[],
+  isDark: boolean,
+) {
+  if (!map.getLayer('district-fill') || !map.getSource('districts')) return;
+
+  // Build a color mapping: district name → party color
+  const colorMap = new Map<string, string>();
+  for (const d of districts) {
+    const leadParty = d.representatives[0]?.party;
+    if (leadParty) {
+      colorMap.set(d.name.toLowerCase(), getPartyColor(leadParty));
+    }
+  }
+
+  // If we have political data, apply party-colored fill
+  if (colorMap.size > 0) {
+    // Get district features to build a match expression
+    const source = map.getSource('districts') as maplibregl.GeoJSONSource;
+    if (!source) return;
+
+    // Use a property-based approach — if district names match
+    const matchExpr: unknown[] = ['match', ['downcase', ['get', 'name']]];
+    for (const [name, color] of colorMap) {
+      matchExpr.push(name, color);
+    }
+    matchExpr.push(isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'); // fallback
+
+    map.setPaintProperty('district-fill', 'fill-color', matchExpr as maplibregl.ExpressionSpecification);
+    map.setPaintProperty('district-fill', 'fill-opacity', 0.35);
+  }
+}
+
+function resetDistrictStyling(map: maplibregl.Map, isDark: boolean) {
+  if (!map.getLayer('district-fill')) return;
+  map.setPaintProperty(
+    'district-fill',
+    'fill-color',
+    isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+  );
+  map.setPaintProperty('district-fill', 'fill-opacity', [
+    'case',
+    ['boolean', ['feature-state', 'hover'], false],
+    isDark ? 0.12 : 0.08,
+    1,
+  ]);
+}
+
+function buildPoliticalPopupHtml(districtName: string, districts: PoliticalDistrict[]): string {
+  const match = districts.find(
+    (d) => d.name.toLowerCase() === districtName.toLowerCase(),
+  );
+  if (!match || match.representatives.length === 0) {
+    return `<div style="font-size:13px"><strong>${districtName}</strong><br><em>No data available</em></div>`;
+  }
+
+  const parts = [`<div style="font-size:13px;max-height:300px;overflow-y:auto">`];
+  parts.push(`<div style="font-weight:600;margin-bottom:6px">${districtName}</div>`);
+
+  for (const rep of match.representatives.slice(0, 5)) {
+    const color = getPartyColor(rep.party);
+    parts.push(
+      `<div style="border-left:3px solid ${color};padding-left:8px;margin-bottom:6px">` +
+      `<strong>${rep.name}</strong> <span style="opacity:0.6;font-size:11px">${rep.party}</span><br>` +
+      `<span style="font-size:11px;opacity:0.7">${rep.role}${rep.constituency ? ` — ${rep.constituency}` : ''}</span>` +
+      (rep.profileUrl ? `<br><a href="${rep.profileUrl}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Profile →</a>` : '') +
+      `</div>`,
+    );
+  }
+
+  if (match.representatives.length > 5) {
+    parts.push(`<div style="font-size:11px;opacity:0.6">+${match.representatives.length - 5} more</div>`);
+  }
+
+  parts.push(`</div>`);
+  return parts.join('');
 }
 
 function setupDistrictHover(map: maplibregl.Map) {
@@ -718,6 +814,10 @@ export function CityMap() {
   const { data: airQuality } = useAirQuality(city.id);
   const { data: pharmacyList } = usePharmacies(city.id);
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
+  const mapMode = useCommandCenter((s) => s.mapMode);
+  const politicalLayer = useCommandCenter((s) => s.politicalLayer);
+  const { data: bundestagData } = usePolitical(city.id, 'bundestag');
+  const { data: stateData } = usePolitical(city.id, 'state');
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -868,6 +968,39 @@ export function CityMap() {
     updateTrafficLayers(map, trafficItems, isDarkRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trafficItems]);
+
+  // Political mode: apply/reset district styling
+  const politicalData = politicalLayer === 'bundestag' ? bundestagData : stateData;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    if (mapMode === 'political' && politicalData) {
+      applyPoliticalStyling(map, politicalData, isDarkRef.current);
+    } else {
+      resetDistrictStyling(map, isDarkRef.current);
+    }
+  }, [mapMode, politicalLayer, politicalData]);
+
+  // Political popup on district click
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const handler = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+      if (mapMode !== 'political' || !e.features?.length || !politicalData?.length) return;
+      const name = e.features[0].properties?.name ?? e.features[0].properties?.bezirk_name ?? '';
+      if (!name) return;
+      const html = buildPoliticalPopupHtml(name, politicalData);
+      new maplibregl.Popup({ offset: 10, maxWidth: '320px' })
+        .setLngLat(e.lngLat)
+        .setHTML(html)
+        .addTo(map);
+    };
+
+    map.on('click', 'district-fill', handler);
+    return () => { map.off('click', 'district-fill', handler); };
+  }, [mapMode, politicalData]);
 
   const showAqi = activeLayers.has('air-quality') && airQuality?.current;
   const aqiLevel = showAqi ? getAqiLevel(airQuality!.current.europeanAqi) : null;

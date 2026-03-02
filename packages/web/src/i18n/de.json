@@ -111,6 +111,16 @@
       "air-quality": "Luftqualit\u00e4t",
       "pharmacies": "Apotheken",
       "traffic": "Verkehr"
+    },
+    "mapMode": {
+      "label": "Kartenmodus",
+      "default": "Standard",
+      "political": "Politik"
+    },
+    "political": {
+      "bezirke": "Bezirke",
+      "bundestag": "Bundestag",
+      "landesparlament": "Landesparlament"
     }
   },
   "nina": {

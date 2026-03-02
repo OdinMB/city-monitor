@@ -111,6 +111,16 @@
       "air-quality": "Hava Kalitesi",
       "pharmacies": "Eczaneler",
       "traffic": "Trafik"
+    },
+    "mapMode": {
+      "label": "Harita Modu",
+      "default": "Varsay\u0131lan",
+      "political": "Siyasi"
+    },
+    "political": {
+      "bezirke": "\u0130l\u00e7eler",
+      "bundestag": "Bundestag",
+      "landesparlament": "Eyalet Parlamentosu"
     }
   },
   "nina": {

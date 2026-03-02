@@ -111,6 +111,16 @@
       "air-quality": "Air Quality",
       "pharmacies": "Pharmacies",
       "traffic": "Traffic"
+    },
+    "mapMode": {
+      "label": "Map Mode",
+      "default": "Default",
+      "political": "Political"
+    },
+    "political": {
+      "bezirke": "Districts",
+      "bundestag": "Bundestag",
+      "landesparlament": "State Parliament"
     }
   },
   "nina": {
