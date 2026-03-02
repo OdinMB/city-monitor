@@ -1,7 +1,17 @@
 @import 'tailwindcss';
 
+/* Use .dark class on <html> instead of prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --accent: #3b82f6;
+}
+
+/* Smooth 150ms transitions when toggling dark/light theme */
+*,
+*::before,
+*::after {
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 
 [data-city='berlin'] {

@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Panel } from '../layout/Panel.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
@@ -31,6 +32,7 @@ export function NewsBriefingPanel() {
   const { id: cityId } = useCityConfig();
   const { data, isLoading, isError, refetch, dataUpdatedAt } = useNewsDigest(cityId);
   const { data: summary } = useNewsSummary(cityId);
+  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const items = data?.items ?? [];
@@ -48,19 +50,19 @@ export function NewsBriefingPanel() {
     : null;
 
   if (isLoading) {
-    return <Panel title="News"><Skeleton lines={8} /></Panel>;
+    return <Panel title={t('panel.news.title')}><Skeleton lines={8} /></Panel>;
   }
 
   if (isError) {
     return (
-      <Panel title="News">
+      <Panel title={t('panel.news.title')}>
         <div className="text-center py-4">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Failed to load news</p>
           <button
             onClick={() => refetch()}
             className="text-sm px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
           >
-            Retry
+            {t('panel.news.retry')}
           </button>
         </div>
       </Panel>
@@ -73,7 +75,7 @@ export function NewsBriefingPanel() {
   );
 
   return (
-    <Panel title="News" lastUpdated={lastUpdated}>
+    <Panel title={t('panel.news.title')} lastUpdated={lastUpdated}>
       {summary?.briefing && (
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg text-sm leading-relaxed text-gray-700 dark:text-gray-300">
           {summary.briefing}
@@ -87,19 +89,19 @@ export function NewsBriefingPanel() {
             role="tab"
             aria-selected={resolvedCategory === cat}
             onClick={() => setActiveCategory(cat)}
-            className={`shrink-0 px-2.5 py-1 text-xs rounded-full capitalize transition-colors ${
+            className={`shrink-0 px-2.5 py-1 text-xs rounded-full transition-colors ${
               resolvedCategory === cat
                 ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
                 : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >
-            {cat}
+            {cat === 'all' ? t('panel.news.all') : t(`category.${cat}`, cat)}
           </button>
         ))}
       </div>
 
       {filteredItems.length === 0 ? (
-        <p className="text-sm text-gray-400 py-4 text-center">No articles</p>
+        <p className="text-sm text-gray-400 py-4 text-center">{t('panel.news.empty')}</p>
       ) : (
         <ul className="divide-y divide-gray-100 dark:divide-gray-800">
           {filteredItems.map((item) => (
@@ -112,6 +114,7 @@ export function NewsBriefingPanel() {
 }
 
 function NewsItemRow({ item }: { item: NewsItem }) {
+  const { t } = useTranslation();
   const colorClass = CATEGORY_COLORS[item.category] ?? CATEGORY_COLORS.local;
 
   return (
@@ -133,8 +136,8 @@ function NewsItemRow({ item }: { item: NewsItem }) {
             T1
           </span>
         )}
-        <span className={`px-1.5 py-0.5 rounded text-[10px] capitalize ${colorClass}`}>
-          {item.category}
+        <span className={`px-1.5 py-0.5 rounded text-[10px] ${colorClass}`}>
+          {t(`category.${item.category}`, item.category)}
         </span>
         <span className="ml-auto">{formatRelativeTime(item.publishedAt)}</span>
       </div>

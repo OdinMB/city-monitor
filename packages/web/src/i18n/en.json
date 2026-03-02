@@ -1,0 +1,83 @@
+{
+  "app": {
+    "title": "City Monitor",
+    "noscript": "This site requires JavaScript."
+  },
+  "topbar": {
+    "language": "Language",
+    "theme": {
+      "light": "Light",
+      "dark": "Dark"
+    }
+  },
+  "panel": {
+    "news": {
+      "title": "News",
+      "briefing": "Briefing",
+      "headlines": "Headlines",
+      "empty": "No articles available",
+      "generatedAgo": "Generated {{time}}",
+      "headlines_count": "{{count}} headlines",
+      "all": "All",
+      "retry": "Retry"
+    },
+    "weather": {
+      "title": "Weather",
+      "humidity": "Humidity",
+      "wind": "Wind",
+      "feelsLike": "Feels like",
+      "hourly": "Hourly",
+      "daily": "Daily",
+      "high": "H",
+      "low": "L",
+      "alerts": "Alerts",
+      "validUntil": "Valid until {{time}}"
+    },
+    "transit": {
+      "title": "Transit",
+      "empty": "All clear — no disruptions",
+      "affectedStops": "Affected stops"
+    },
+    "events": {
+      "title": "Events",
+      "empty": "No events this week",
+      "free": "Free"
+    },
+    "safety": {
+      "title": "Safety",
+      "empty": "No recent reports"
+    },
+    "map": {
+      "title": "Map"
+    }
+  },
+  "category": {
+    "transit": "Transit",
+    "politics": "Politics",
+    "culture": "Culture",
+    "crime": "Crime",
+    "weather": "Weather",
+    "economy": "Economy",
+    "sports": "Sports",
+    "local": "Local",
+    "music": "Music",
+    "art": "Art",
+    "theater": "Theater",
+    "food": "Food",
+    "market": "Market",
+    "sport": "Sport",
+    "community": "Community",
+    "other": "Other"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}} min ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
+  "footer": {
+    "sourceCode": "Source Code",
+    "basedOn": "Based on World Monitor by Elie Habib",
+    "license": "AGPL-3.0"
+  }
+}

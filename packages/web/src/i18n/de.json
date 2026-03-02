@@ -1,0 +1,83 @@
+{
+  "app": {
+    "title": "City Monitor",
+    "noscript": "Diese Seite benötigt JavaScript."
+  },
+  "topbar": {
+    "language": "Sprache",
+    "theme": {
+      "light": "Hell",
+      "dark": "Dunkel"
+    }
+  },
+  "panel": {
+    "news": {
+      "title": "Nachrichten",
+      "briefing": "Briefing",
+      "headlines": "Schlagzeilen",
+      "empty": "Keine Artikel verfügbar",
+      "generatedAgo": "Erstellt {{time}}",
+      "headlines_count": "{{count}} Schlagzeilen",
+      "all": "Alle",
+      "retry": "Erneut versuchen"
+    },
+    "weather": {
+      "title": "Wetter",
+      "humidity": "Luftfeuchtigkeit",
+      "wind": "Wind",
+      "feelsLike": "Gefühlt",
+      "hourly": "Stündlich",
+      "daily": "Täglich",
+      "high": "H",
+      "low": "T",
+      "alerts": "Warnungen",
+      "validUntil": "Gültig bis {{time}}"
+    },
+    "transit": {
+      "title": "Nahverkehr",
+      "empty": "Alles in Ordnung — keine Störungen",
+      "affectedStops": "Betroffene Haltestellen"
+    },
+    "events": {
+      "title": "Veranstaltungen",
+      "empty": "Keine Veranstaltungen diese Woche",
+      "free": "Kostenlos"
+    },
+    "safety": {
+      "title": "Sicherheit",
+      "empty": "Keine aktuellen Meldungen"
+    },
+    "map": {
+      "title": "Karte"
+    }
+  },
+  "category": {
+    "transit": "Verkehr",
+    "politics": "Politik",
+    "culture": "Kultur",
+    "crime": "Kriminalität",
+    "weather": "Wetter",
+    "economy": "Wirtschaft",
+    "sports": "Sport",
+    "local": "Lokales",
+    "music": "Musik",
+    "art": "Kunst",
+    "theater": "Theater",
+    "food": "Essen",
+    "market": "Markt",
+    "sport": "Sport",
+    "community": "Gemeinschaft",
+    "other": "Sonstiges"
+  },
+  "time": {
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {{count}} Min.",
+    "hoursAgo": "vor {{count}} Std.",
+    "daysAgo": "vor {{count}} T."
+  },
+  "footer": {
+    "sourceCode": "Quellcode",
+    "basedOn": "Basiert auf World Monitor von Elie Habib",
+    "license": "AGPL-3.0"
+  }
+}

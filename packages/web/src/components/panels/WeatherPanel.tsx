@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { useTranslation } from 'react-i18next';
 import { Panel } from '../layout/Panel.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
@@ -12,9 +13,10 @@ import { getWeatherInfo } from '../../lib/weather-codes.js';
 export function WeatherPanel() {
   const { id: cityId } = useCityConfig();
   const { data, isLoading } = useWeather(cityId);
+  const { t, i18n } = useTranslation();
 
   if (isLoading) {
-    return <Panel title="Weather"><Skeleton lines={6} /></Panel>;
+    return <Panel title={t('panel.weather.title')}><Skeleton lines={6} /></Panel>;
   }
 
   const current = data?.current;
@@ -24,16 +26,17 @@ export function WeatherPanel() {
 
   if (!current) {
     return (
-      <Panel title="Weather">
+      <Panel title={t('panel.weather.title')}>
         <p className="text-sm text-gray-400 py-4 text-center">No weather data</p>
       </Panel>
     );
   }
 
   const weatherInfo = getWeatherInfo(current.weatherCode);
+  const locale = i18n.language === 'de' ? 'de' : 'en';
 
   return (
-    <Panel title="Weather">
+    <Panel title={t('panel.weather.title')}>
       {alerts.length > 0 && (
         <div className="mb-3 space-y-2">
           {alerts.map((alert, i) => (
@@ -53,7 +56,7 @@ export function WeatherPanel() {
             {Math.round(current.temp * 10) / 10}°
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Feels like {Math.round(current.feelsLike)}°
+            {t('panel.weather.feelsLike')} {Math.round(current.feelsLike)}°
           </div>
         </div>
         <div className="text-right">
@@ -63,14 +66,14 @@ export function WeatherPanel() {
       </div>
 
       <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400 mb-4">
-        <span>Humidity {current.humidity}%</span>
-        <span>Wind {Math.round(current.windSpeed)} km/h</span>
+        <span>{t('panel.weather.humidity')} {current.humidity}%</span>
+        <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
         {current.precipitation > 0 && <span>Precip {current.precipitation} mm</span>}
       </div>
 
       {hourly.length > 0 && (
         <div className="mb-4">
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Hourly</h3>
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">{t('panel.weather.hourly')}</h3>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {hourly.filter((h) => h.time >= new Date().toISOString().slice(0, 16)).slice(0, 24).map((h) => {
               const hour = h.time.split('T')[1]?.slice(0, 5) ?? h.time;
@@ -89,10 +92,10 @@ export function WeatherPanel() {
 
       {daily.length > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Forecast</h3>
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">{t('panel.weather.daily')}</h3>
           <div className="space-y-1.5">
             {daily.map((d) => {
-              const dayName = formatDayName(d.date);
+              const dayName = formatDayName(d.date, locale);
               const info = getWeatherInfo(d.weatherCode);
               return (
                 <div key={d.date} className="flex items-center gap-2 text-sm">
@@ -113,17 +116,17 @@ export function WeatherPanel() {
   );
 }
 
-function formatDayName(dateStr: string): string {
+function formatDayName(dateStr: string, locale: string): string {
   try {
     const date = new Date(dateStr + 'T00:00:00Z');
     const now = new Date();
     const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 
     const diff = (date.getTime() - todayUtc) / 86400_000;
-    if (diff >= 0 && diff < 1) return 'Today';
-    if (diff >= 1 && diff < 2) return 'Tmrw';
+    if (diff >= 0 && diff < 1) return locale === 'de' ? 'Heute' : 'Today';
+    if (diff >= 1 && diff < 2) return locale === 'de' ? 'Morgen' : 'Tmrw';
 
-    return date.toLocaleDateString('en', { weekday: 'short', timeZone: 'UTC' });
+    return date.toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' });
   } catch {
     return dateStr;
   }

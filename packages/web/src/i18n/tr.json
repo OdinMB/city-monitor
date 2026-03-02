@@ -1,0 +1,83 @@
+{
+  "app": {
+    "title": "City Monitor",
+    "noscript": "Bu site JavaScript gerektirir."
+  },
+  "topbar": {
+    "language": "Dil",
+    "theme": {
+      "light": "Açık",
+      "dark": "Koyu"
+    }
+  },
+  "panel": {
+    "news": {
+      "title": "Haberler",
+      "briefing": "Özet",
+      "headlines": "Başlıklar",
+      "empty": "Makale bulunamadı",
+      "generatedAgo": "{{time}} önce oluşturuldu",
+      "headlines_count": "{{count}} başlık",
+      "all": "Tümü",
+      "retry": "Tekrar dene"
+    },
+    "weather": {
+      "title": "Hava Durumu",
+      "humidity": "Nem",
+      "wind": "Rüzgar",
+      "feelsLike": "Hissedilen",
+      "hourly": "Saatlik",
+      "daily": "Günlük",
+      "high": "Y",
+      "low": "D",
+      "alerts": "Uyarılar",
+      "validUntil": "{{time}} tarihine kadar geçerli"
+    },
+    "transit": {
+      "title": "Toplu Taşıma",
+      "empty": "Her şey yolunda — aksama yok",
+      "affectedStops": "Etkilenen duraklar"
+    },
+    "events": {
+      "title": "Etkinlikler",
+      "empty": "Bu hafta etkinlik yok",
+      "free": "Ücretsiz"
+    },
+    "safety": {
+      "title": "Güvenlik",
+      "empty": "Güncel rapor yok"
+    },
+    "map": {
+      "title": "Harita"
+    }
+  },
+  "category": {
+    "transit": "Ulaşım",
+    "politics": "Siyaset",
+    "culture": "Kültür",
+    "crime": "Suç",
+    "weather": "Hava",
+    "economy": "Ekonomi",
+    "sports": "Spor",
+    "local": "Yerel",
+    "music": "Müzik",
+    "art": "Sanat",
+    "theater": "Tiyatro",
+    "food": "Yemek",
+    "market": "Pazar",
+    "sport": "Spor",
+    "community": "Topluluk",
+    "other": "Diğer"
+  },
+  "time": {
+    "justNow": "az önce",
+    "minutesAgo": "{{count}} dk önce",
+    "hoursAgo": "{{count}} sa önce",
+    "daysAgo": "{{count}} gün önce"
+  },
+  "footer": {
+    "sourceCode": "Kaynak Kodu",
+    "basedOn": "Elie Habib tarafından World Monitor'e dayanmaktadır",
+    "license": "AGPL-3.0"
+  }
+}

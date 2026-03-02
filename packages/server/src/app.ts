@@ -21,6 +21,7 @@ import { createSummarization } from './cron/summarize.js';
 import { createTransitIngestion } from './cron/ingest-transit.js';
 import { createEventsIngestion } from './cron/ingest-events.js';
 import { createSafetyIngestion } from './cron/ingest-safety.js';
+import { createDataRetention } from './cron/data-retention.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
   const app = express();
@@ -41,6 +42,8 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestEvents = createEventsIngestion(cache, db);
   const ingestSafety = createSafetyIngestion(cache, db);
 
+  const retainData = db ? createDataRetention(db) : async () => {};
+
   const jobs: ScheduledJob[] = [
     { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds, runOnStart: true },
     { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, runOnStart: true },
@@ -48,18 +51,23 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-transit', schedule: '*/5 * * * *', handler: ingestTransit, runOnStart: true },
     { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: true },
     { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety, runOnStart: true },
+    { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
   const scheduler = options?.skipScheduler
     ? { getJobs: () => [], stop: () => {} }
     : createScheduler(jobs);
 
+  // Cache-Control per route tier (max-age < cron interval)
+  const cacheFor = (seconds: number): express.RequestHandler =>
+    (_req, res, next) => { res.set('Cache-Control', `public, max-age=${seconds}`); next(); };
+
   app.use('/api', createHealthRouter(cache, scheduler as any));
-  app.use('/api', createNewsRouter(cache, db));
-  app.use('/api', createWeatherRouter(cache, db));
-  app.use('/api', createTransitRouter(cache, db));
-  app.use('/api', createEventsRouter(cache, db));
-  app.use('/api', createSafetyRouter(cache, db));
+  app.use('/api', cacheFor(300), createNewsRouter(cache, db));
+  app.use('/api', cacheFor(300), createWeatherRouter(cache, db));
+  app.use('/api', cacheFor(120), createTransitRouter(cache, db));
+  app.use('/api', cacheFor(1800), createEventsRouter(cache, db));
+  app.use('/api', cacheFor(300), createSafetyRouter(cache, db));
 
   return { app, cache, db, scheduler };
 }

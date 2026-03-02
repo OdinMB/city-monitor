@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { useTranslation } from 'react-i18next';
 import { Panel } from '../layout/Panel.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
@@ -12,18 +13,19 @@ import { formatRelativeTime } from '../../lib/format-time.js';
 export function SafetyPanel() {
   const { id: cityId } = useCityConfig();
   const { data, isLoading } = useSafety(cityId);
+  const { t } = useTranslation();
 
   if (isLoading) {
-    return <Panel title="Safety"><Skeleton lines={4} /></Panel>;
+    return <Panel title={t('panel.safety.title')}><Skeleton lines={4} /></Panel>;
   }
 
   const reports = data ?? [];
 
   return (
-    <Panel title="Safety">
+    <Panel title={t('panel.safety.title')}>
       {reports.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
-          No recent reports
+          {t('panel.safety.empty')}
         </p>
       ) : (
         <div className="space-y-2">

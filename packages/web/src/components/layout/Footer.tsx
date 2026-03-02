@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { useTranslation } from 'react-i18next';
+
 export function Footer() {
+  const { t } = useTranslation();
+
   return (
     <footer className="px-4 py-3 text-xs text-gray-400 border-t border-gray-200 dark:border-gray-800 flex gap-4 flex-wrap">
       <a
@@ -12,21 +16,17 @@ export function Footer() {
         rel="noopener noreferrer"
         className="hover:underline"
       >
-        Source Code
+        {t('footer.sourceCode')}
       </a>
-      <span>
-        Based on{' '}
-        <a
-          href="https://github.com/ellie-xyb/worldmonitor"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:underline"
-        >
-          World Monitor
-        </a>{' '}
-        by Elie Habib
-      </span>
-      <span>AGPL-3.0</span>
+      <a
+        href="https://github.com/ellie-xyb/worldmonitor"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:underline"
+      >
+        {t('footer.basedOn')}
+      </a>
+      <span>{t('footer.license')}</span>
     </footer>
   );
 }

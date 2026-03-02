@@ -1,0 +1,83 @@
+{
+  "app": {
+    "title": "City Monitor",
+    "noscript": "يتطلب هذا الموقع JavaScript."
+  },
+  "topbar": {
+    "language": "اللغة",
+    "theme": {
+      "light": "فاتح",
+      "dark": "داكن"
+    }
+  },
+  "panel": {
+    "news": {
+      "title": "الأخبار",
+      "briefing": "ملخص",
+      "headlines": "العناوين",
+      "empty": "لا توجد مقالات",
+      "generatedAgo": "تم الإنشاء {{time}}",
+      "headlines_count": "{{count}} عناوين",
+      "all": "الكل",
+      "retry": "إعادة المحاولة"
+    },
+    "weather": {
+      "title": "الطقس",
+      "humidity": "الرطوبة",
+      "wind": "الرياح",
+      "feelsLike": "الإحساس",
+      "hourly": "كل ساعة",
+      "daily": "يومي",
+      "high": "أعلى",
+      "low": "أدنى",
+      "alerts": "تنبيهات",
+      "validUntil": "صالح حتى {{time}}"
+    },
+    "transit": {
+      "title": "المواصلات",
+      "empty": "كل شيء على ما يرام — لا اضطرابات",
+      "affectedStops": "المحطات المتأثرة"
+    },
+    "events": {
+      "title": "الفعاليات",
+      "empty": "لا توجد فعاليات هذا الأسبوع",
+      "free": "مجاني"
+    },
+    "safety": {
+      "title": "السلامة",
+      "empty": "لا توجد تقارير حديثة"
+    },
+    "map": {
+      "title": "الخريطة"
+    }
+  },
+  "category": {
+    "transit": "مواصلات",
+    "politics": "سياسة",
+    "culture": "ثقافة",
+    "crime": "جريمة",
+    "weather": "طقس",
+    "economy": "اقتصاد",
+    "sports": "رياضة",
+    "local": "محلي",
+    "music": "موسيقى",
+    "art": "فن",
+    "theater": "مسرح",
+    "food": "طعام",
+    "market": "سوق",
+    "sport": "رياضة",
+    "community": "مجتمع",
+    "other": "أخرى"
+  },
+  "time": {
+    "justNow": "الآن",
+    "minutesAgo": "منذ {{count}} دقيقة",
+    "hoursAgo": "منذ {{count}} ساعة",
+    "daysAgo": "منذ {{count}} يوم"
+  },
+  "footer": {
+    "sourceCode": "الكود المصدري",
+    "basedOn": "مبني على World Monitor بواسطة Elie Habib",
+    "license": "AGPL-3.0"
+  }
+}

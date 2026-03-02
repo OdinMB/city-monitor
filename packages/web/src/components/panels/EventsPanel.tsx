@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { useTranslation } from 'react-i18next';
 import { Panel } from '../layout/Panel.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useEvents } from '../../hooks/useEvents.js';
-import type { CityEvent } from '../../lib/api.js';
 
 const CATEGORY_ICONS: Record<string, string> = {
   music: '🎵',
@@ -20,7 +20,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   other: '📅',
 };
 
-function formatEventDate(dateStr: string): string {
+function formatEventDate(dateStr: string, locale: string): string {
   try {
     const date = new Date(dateStr);
     const now = new Date();
@@ -29,11 +29,11 @@ function formatEventDate(dateStr: string): string {
     const diffDays = Math.floor((eventDate - todayUtc) / 86400_000);
 
     let dayLabel: string;
-    if (diffDays === 0) dayLabel = 'Today';
-    else if (diffDays === 1) dayLabel = 'Tomorrow';
-    else dayLabel = date.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+    if (diffDays === 0) dayLabel = locale === 'de' ? 'Heute' : 'Today';
+    else if (diffDays === 1) dayLabel = locale === 'de' ? 'Morgen' : 'Tomorrow';
+    else dayLabel = date.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-    const time = date.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
+    const time = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
     return `${dayLabel}, ${time}`;
   } catch {
     return dateStr;
@@ -43,18 +43,21 @@ function formatEventDate(dateStr: string): string {
 export function EventsPanel() {
   const { id: cityId } = useCityConfig();
   const { data, isLoading } = useEvents(cityId);
+  const { t, i18n } = useTranslation();
+
+  const locale = i18n.language === 'de' ? 'de' : 'en';
 
   if (isLoading) {
-    return <Panel title="Events"><Skeleton lines={4} /></Panel>;
+    return <Panel title={t('panel.events.title')}><Skeleton lines={4} /></Panel>;
   }
 
   const events = data ?? [];
 
   return (
-    <Panel title="Events">
+    <Panel title={t('panel.events.title')}>
       {events.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
-          No upcoming events
+          {t('panel.events.empty')}
         </p>
       ) : (
         <div className="space-y-3">
@@ -76,11 +79,11 @@ export function EventsPanel() {
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {event.venue && <span>{event.venue} · </span>}
-                    {formatEventDate(event.date)}
+                    {formatEventDate(event.date, locale)}
                   </div>
                   {event.free && (
                     <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
-                      Free
+                      {t('panel.events.free')}
                     </span>
                   )}
                 </div>

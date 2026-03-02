@@ -55,7 +55,7 @@ describe('EventsPanel', () => {
 
   it('shows "no upcoming events" when empty', () => {
     render(<EventsPanel />, { wrapper: createWrapper([]) });
-    expect(screen.getByText(/no upcoming events/i)).toBeTruthy();
+    expect(screen.getByText(/no events this week/i)).toBeTruthy();
   });
 
   it('shows skeleton when loading', () => {

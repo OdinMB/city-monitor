@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { CityProvider } from '../../hooks/useCityConfig.js';
@@ -29,8 +29,10 @@ describe('MapPanel', () => {
     expect(screen.getByText('Map')).toBeTruthy();
   });
 
-  it('renders a map container element', () => {
+  it('renders a map container element', async () => {
     render(<MapPanel />, { wrapper: createWrapper() });
-    expect(document.querySelector('[data-testid="map-container"]')).toBeTruthy();
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="map-container"]')).toBeTruthy();
+    });
   });
 });

@@ -56,8 +56,7 @@ describe('WeatherPanel', () => {
 
   it('renders daily forecast section', () => {
     render(<WeatherPanel />, { wrapper: createWrapper(mockWeather) });
-    expect(screen.getByText('Forecast')).toBeTruthy();
-    // Should render daily entries (weather icons appear for each day)
+    expect(screen.getByText('Daily')).toBeTruthy();
     expect(screen.getByText('Hourly')).toBeTruthy();
   });
 

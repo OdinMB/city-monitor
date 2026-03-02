@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { useTranslation } from 'react-i18next';
 import { Panel } from '../layout/Panel.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
@@ -27,9 +28,10 @@ function getSeverityColor(severity: TransitAlert['severity']): string {
 export function TransitPanel() {
   const { id: cityId } = useCityConfig();
   const { data, isLoading } = useTransit(cityId);
+  const { t } = useTranslation();
 
   if (isLoading) {
-    return <Panel title="Transit"><Skeleton lines={4} /></Panel>;
+    return <Panel title={t('panel.transit.title')}><Skeleton lines={4} /></Panel>;
   }
 
   const alerts = data ?? [];
@@ -38,10 +40,10 @@ export function TransitPanel() {
   );
 
   return (
-    <Panel title="Transit">
+    <Panel title={t('panel.transit.title')}>
       {sorted.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
-          All clear — no disruptions
+          {t('panel.transit.empty')}
         </p>
       ) : (
         <div className="space-y-2">

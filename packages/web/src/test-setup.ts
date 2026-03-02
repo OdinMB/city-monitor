@@ -3,6 +3,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+// Initialize i18n with English translations for tests
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import en from './i18n/en.json';
+
+i18n.use(initReactI18next).init({
+  resources: { en: { translation: en } },
+  lng: 'en',
+  fallbackLng: 'en',
+  interpolation: { escapeValue: false },
+});
+
 // Mock URL.createObjectURL/revokeObjectURL for maplibre-gl in jsdom
 window.URL.createObjectURL = window.URL.createObjectURL || (() => '');
 window.URL.revokeObjectURL = window.URL.revokeObjectURL || (() => {});

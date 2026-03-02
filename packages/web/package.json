@@ -14,9 +14,12 @@
   "dependencies": {
     "@city-monitor/shared": "*",
     "@tanstack/react-query": "^5",
+    "i18next": "^25.8.13",
+    "i18next-browser-languagedetector": "^8.2.1",
     "maplibre-gl": "^5.19.0",
     "react": "^19",
     "react-dom": "^19",
+    "react-i18next": "^16.5.4",
     "zustand": "^5"
   },
   "devDependencies": {

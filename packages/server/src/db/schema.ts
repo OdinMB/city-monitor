@@ -6,7 +6,7 @@
  * Tables are added incrementally by each milestone.
  */
 
-import { pgTable, serial, text, timestamp, jsonb, integer, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, jsonb, integer, boolean, index } from 'drizzle-orm/pg-core';
 
 // Milestone 06 — Weather
 export const weatherSnapshots = pgTable('weather_snapshots', {
@@ -17,7 +17,9 @@ export const weatherSnapshots = pgTable('weather_snapshots', {
   hourly: jsonb('hourly').notNull(),
   daily: jsonb('daily').notNull(),
   alerts: jsonb('alerts'),
-});
+}, (table) => [
+  index('weather_city_idx').on(table.cityId),
+]);
 
 // Milestone 09 — Transit
 export const transitDisruptions = pgTable('transit_disruptions', {
@@ -33,7 +35,9 @@ export const transitDisruptions = pgTable('transit_disruptions', {
   validUntil: timestamp('valid_until'),
   resolved: boolean('resolved').default(false),
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('transit_city_idx').on(table.cityId),
+]);
 
 // Milestone 10 — Events
 export const events = pgTable('events', {
@@ -49,7 +53,9 @@ export const events = pgTable('events', {
   free: boolean('free'),
   hash: text('hash').notNull(),
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('events_city_date_idx').on(table.cityId, table.date),
+]);
 
 // Milestone 10 — Safety Reports
 export const safetyReports = pgTable('safety_reports', {
@@ -62,7 +68,9 @@ export const safetyReports = pgTable('safety_reports', {
   district: text('district'),
   hash: text('hash').notNull(),
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('safety_city_published_idx').on(table.cityId, table.publishedAt),
+]);
 
 // Milestone 07 — AI Summaries
 export const aiSummaries = pgTable('ai_summaries', {
@@ -74,4 +82,6 @@ export const aiSummaries = pgTable('ai_summaries', {
   inputTokens: integer('input_tokens'),
   outputTokens: integer('output_tokens'),
   generatedAt: timestamp('generated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('summaries_city_generated_idx').on(table.cityId, table.generatedAt),
+]);

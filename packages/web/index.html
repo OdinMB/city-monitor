@@ -3,10 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>City Monitor</title>
+    <title>City Monitor — Berlin</title>
+    <meta name="description" content="Real-time dashboard for Berlin: news, weather, transit, events, and safety." />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="City Monitor — Berlin" />
+    <meta property="og:description" content="Real-time dashboard for Berlin: news, weather, transit, events, and safety." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="de_DE" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#E2001A" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>City Monitor — Berlin</h1>
+      <p>Real-time dashboard for Berlin: news, weather, transit, events, and safety.</p>
+      <p>This site requires JavaScript.</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
