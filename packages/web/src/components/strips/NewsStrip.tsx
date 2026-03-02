@@ -24,6 +24,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   sports: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
 };
 
+const FAVICON_DOMAINS: Record<string, string> = {
+  rbb24: 'www.rbb24.de',
+  Tagesspiegel: 'www.tagesspiegel.de',
+  'Berliner Morgenpost': 'www.morgenpost.de',
+  'BZ Berlin': 'www.bz-berlin.de',
+  'Berlin.de News': 'www.berlin.de',
+  'Berliner Zeitung': 'www.berliner-zeitung.de',
+  'taz Berlin': 'taz.de',
+  'RBB Polizei': 'www.berlin.de',
+  Exberliner: 'www.exberliner.com',
+};
+
 const MAX_ITEMS = 10;
 
 export function NewsStrip() {
@@ -45,6 +57,11 @@ export function NewsStrip() {
     (cat) => cat === 'all' || items.some((item) => item.category === cat),
   );
 
+  const categoryCounts: Record<string, number> = {};
+  for (const item of items) {
+    categoryCounts[item.category] = (categoryCounts[item.category] ?? 0) + 1;
+  }
+
   return (
     <section className="border-b border-gray-200 dark:border-gray-800 px-4 py-4">
       <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -56,21 +73,25 @@ export function NewsStrip() {
       ) : (
         <>
           <div role="tablist" className="flex gap-1 overflow-x-auto pb-2 mb-3">
-            {availableCategories.map((cat) => (
-              <button
-                key={cat}
-                role="tab"
-                aria-selected={resolvedCategory === cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`shrink-0 px-2.5 py-1 text-xs rounded-full transition-colors ${
-                  resolvedCategory === cat
-                    ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-              >
-                {cat === 'all' ? t('panel.news.all') : t(`category.${cat}`, cat)}
-              </button>
-            ))}
+            {availableCategories.map((cat) => {
+              const count = cat === 'all' ? items.length : (categoryCounts[cat] ?? 0);
+              return (
+                <button
+                  key={cat}
+                  role="tab"
+                  aria-selected={resolvedCategory === cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full transition-colors ${
+                    resolvedCategory === cat
+                      ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span>{cat === 'all' ? t('panel.news.all') : t(`category.${cat}`, cat)}</span>
+                  <span className="text-[10px] opacity-50">{count}</span>
+                </button>
+              );
+            })}
           </div>
 
           {filteredItems.length === 0 ? (
@@ -91,6 +112,8 @@ export function NewsStrip() {
 function CompactNewsItem({ item }: { item: NewsItem }) {
   const { t } = useTranslation();
   const colorClass = CATEGORY_COLORS[item.category] ?? CATEGORY_COLORS.local;
+  const domain = FAVICON_DOMAINS[item.sourceName];
+  const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=16` : null;
 
   return (
     <li className="py-2 first:pt-0 last:pb-0">
@@ -100,6 +123,9 @@ function CompactNewsItem({ item }: { item: NewsItem }) {
         </span>
       </a>
       <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+        {faviconUrl && (
+          <img src={faviconUrl} alt="" width={14} height={14} className="inline-block" loading="lazy" />
+        )}
         <span>{item.sourceName}</span>
         {item.tier === 1 && (
           <span className="px-1 py-0.5 rounded text-[10px] font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
@@ -109,6 +135,9 @@ function CompactNewsItem({ item }: { item: NewsItem }) {
         <span className={`px-1.5 py-0.5 rounded text-[10px] ${colorClass}`}>
           {t(`category.${item.category}`, item.category)}
         </span>
+        {item.location && (
+          <span className="text-blue-500 dark:text-blue-400">{'📍'}</span>
+        )}
         <span className="ml-auto">{formatRelativeTime(item.publishedAt)}</span>
       </div>
     </li>

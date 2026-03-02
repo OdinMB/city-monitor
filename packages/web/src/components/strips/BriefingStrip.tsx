@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsSummary } from '../../hooks/useNewsSummary.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
+import { formatRelativeTime } from '../../lib/format-time.js';
 import { Skeleton } from '../layout/Skeleton.js';
 
 export function BriefingStrip() {
@@ -16,6 +17,9 @@ export function BriefingStrip() {
   const { t } = useTranslation();
 
   const headlineCount = digest?.items?.length ?? 0;
+  const isFresh = summary?.generatedAt
+    ? Date.now() - new Date(summary.generatedAt).getTime() < 15 * 60_000
+    : false;
 
   return (
     <section className="border-b border-gray-200 dark:border-gray-800 px-4 py-4">
@@ -23,6 +27,9 @@ export function BriefingStrip() {
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {t('panel.news.briefing')}
         </h2>
+        {isFresh && (
+          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+        )}
         {headlineCount > 0 && (
           <span className="text-xs text-gray-400">
             {t('panel.news.headlines_count', { count: headlineCount })}
@@ -32,9 +39,16 @@ export function BriefingStrip() {
       {summaryLoading ? (
         <Skeleton lines={2} />
       ) : summary?.briefing ? (
-        <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-          {summary.briefing}
-        </p>
+        <>
+          <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+            {summary.briefing}
+          </p>
+          {summary.generatedAt && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              {t('panel.news.generatedAgo', { time: formatRelativeTime(summary.generatedAt) })}
+            </p>
+          )}
+        </>
       ) : (
         <p className="text-sm text-gray-400">{t('panel.news.empty')}</p>
       )}

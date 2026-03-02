@@ -29,7 +29,7 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByText('Berlin')).toBeDefined();
     });
-    expect(screen.getByText('News')).toBeDefined();
+    expect(screen.getAllByText('News').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Briefing')).toBeDefined();
   });
 
