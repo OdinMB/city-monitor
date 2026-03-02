@@ -14,6 +14,7 @@
   "dependencies": {
     "@city-monitor/shared": "*",
     "@tanstack/react-query": "^5",
+    "maplibre-gl": "^5.19.0",
     "react": "^19",
     "react-dom": "^19",
     "zustand": "^5"
