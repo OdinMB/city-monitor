@@ -77,6 +77,21 @@
       "representatives": "representatives",
       "districtMayors": "district mayors",
       "seats": "seats"
+    },
+    "waterLevels": {
+      "title": "Water Levels",
+      "state": {
+        "low": "Low",
+        "normal": "Normal",
+        "high": "High",
+        "veryHigh": "Very High",
+        "unknown": "Unknown"
+      },
+      "allNormal": "All stations normal",
+      "stationsHigh": "{{count}} station(s) elevated",
+      "level": "Level",
+      "meanWater": "MW",
+      "tidal": "Tidal"
     }
   },
   "category": {
@@ -113,14 +128,20 @@
       "label": "Layers",
       "transit": "Transit",
       "events": "Events",
-      "weather": "Weather",
+      "weather": "Rain Radar",
       "news": "News",
       "safety": "Safety",
       "warnings": "Warnings",
       "air-quality": "Air Quality",
-      "pharmacies": "Pharmacies",
+      "emergencies": "Emergencies",
       "traffic": "Traffic",
+      "construction": "Roadworks",
+      "water-levels": "Water Levels",
       "political": "Representation"
+    },
+    "emergencies": {
+      "pharmacies": "Pharmacies",
+      "aeds": "AEDs"
     },
     "political": {
       "bezirke": "Districts",
@@ -140,6 +161,7 @@
   "footer": {
     "sourceCode": "Source Code",
     "basedOn": "Based on World Monitor by Elie Habib",
-    "license": "AGPL-3.0"
+    "license": "AGPL-3.0",
+    "weatherTiles": "Weather data \u00a9 OpenWeatherMap"
   }
 }

@@ -6,7 +6,7 @@
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { createLogger } from '../lib/logger.js';
@@ -80,6 +80,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const grid = await loadAirQualityGrid(db, cityId);
       if (grid) cache.set(`${cityId}:air-quality:grid`, grid, 1800);
     })().catch((err) => log.error(`${cityId} aq grid failed`, err)),
+
+    (async () => {
+      const waterLevels = await loadWaterLevels(db, cityId);
+      if (waterLevels) cache.set(`${cityId}:water-levels`, waterLevels, 900);
+    })().catch((err) => log.error(`${cityId} water levels failed`, err)),
 
     ...(['bezirke', 'bundestag', 'state', 'state-bezirke'] as const).map((level) =>
       (async () => {

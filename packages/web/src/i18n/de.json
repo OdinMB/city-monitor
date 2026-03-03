@@ -77,6 +77,21 @@
       "representatives": "Abgeordnete",
       "districtMayors": "Bezirksbürgermeister",
       "seats": "Sitze"
+    },
+    "waterLevels": {
+      "title": "Pegelstände",
+      "state": {
+        "low": "Niedrig",
+        "normal": "Normal",
+        "high": "Hoch",
+        "veryHigh": "Sehr hoch",
+        "unknown": "Unbekannt"
+      },
+      "allNormal": "Alle Stationen normal",
+      "stationsHigh": "{{count}} Station(en) erhöht",
+      "level": "Pegel",
+      "meanWater": "MW",
+      "tidal": "Tide"
     }
   },
   "category": {
@@ -113,14 +128,20 @@
       "label": "Ebenen",
       "transit": "Nahverkehr",
       "events": "Veranstaltungen",
-      "weather": "Wetter",
+      "weather": "Regenradar",
       "news": "Nachrichten",
       "safety": "Sicherheit",
       "warnings": "Warnungen",
       "air-quality": "Luftqualit\u00e4t",
-      "pharmacies": "Apotheken",
+      "emergencies": "Notfall",
       "traffic": "Verkehr",
+      "construction": "Baustellen",
+      "water-levels": "Pegelstände",
       "political": "Vertretung"
+    },
+    "emergencies": {
+      "pharmacies": "Apotheken",
+      "aeds": "Defibrillatoren"
     },
     "political": {
       "bezirke": "Bezirke",
@@ -140,6 +161,7 @@
   "footer": {
     "sourceCode": "Quellcode",
     "basedOn": "Basiert auf World Monitor von Elie Habib",
-    "license": "AGPL-3.0"
+    "license": "AGPL-3.0",
+    "weatherTiles": "Wetterdaten \u00a9 OpenWeatherMap"
   }
 }

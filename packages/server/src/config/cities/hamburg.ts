@@ -35,5 +35,13 @@ export const hamburg: CityConfig = {
     // HVV transport.rest API is deprecated and offline (March 2026) — no free alternative
     police: { provider: 'rss', url: 'https://www.presseportal.de/rss/dienststelle_6013.rss2' },
     nina: { ars: '020000000000' },
+    waterLevels: {
+      provider: 'pegelonline',
+      stations: [
+        { uuid: 'd488c5cc-4de9-4631-8ce1-0db0e700b546', name: 'St. Pauli', waterBody: 'Elbe', tidal: true },
+        { uuid: 'ae1b91d0-e746-4f65-9f64-2d2e23603a82', name: 'Bunthaus', waterBody: 'Elbe', tidal: true },
+        { uuid: '816affba-0118-4668-887f-fb882ed573b2', name: 'Seemannshöft', waterBody: 'Elbe', tidal: true },
+      ],
+    },
   },
 };

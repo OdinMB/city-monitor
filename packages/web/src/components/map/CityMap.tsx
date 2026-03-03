@@ -18,12 +18,15 @@ import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useSafety } from '../../hooks/useSafety.js';
 import { useNina } from '../../hooks/useNina.js';
 import { usePharmacies } from '../../hooks/usePharmacies.js';
+import { useAeds } from '../../hooks/useAeds.js';
 import { useTrafficIncidents } from '../../hooks/useTraffic.js';
+import { useConstruction } from '../../hooks/useConstruction.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
+import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
-import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, PoliticalDistrict, AirQualityGridPoint } from '../../lib/api.js';
-import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, registerAllMapIcons } from '../../lib/map-icons.js';
+import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharmacy, TrafficIncident, ConstructionSite, PoliticalDistrict, AirQualityGridPoint, AedLocation, WaterLevelStation } from '../../lib/api.js';
+import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, CONSTRUCTION_SUBTYPE_COLORS, WATER_STATE_COLORS, registerAllMapIcons } from '../../lib/map-icons.js';
 import { getAqiLevel } from '../../lib/aqi.js';
 import { getPartyColor, getMajorityParty } from '../../lib/party-colors.js';
 
@@ -31,6 +34,7 @@ const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-sty
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
 const EMPTY_AQ: AirQualityGridPoint[] = [];
+const EMPTY_WL: WaterLevelStation[] = [];
 
 // Layers to KEEP — everything else gets hidden
 const KEEP_LAYERS = new Set([
@@ -62,6 +66,9 @@ const TRAFFIC_ROAD_LAYERS: { id: string; width: number }[] = [
 ];
 const ROAD_LAYER_IDS = new Set(TRAFFIC_ROAD_LAYERS.map((l) => l.id));
 
+// Water body layers from CARTO style — shown when the water-levels data layer is active.
+const WATER_LAYER_IDS = new Set(['water', 'water_shadow', 'waterway']);
+
 const DISTRICT_URLS: Record<string, { url: string; nameField: string }> = {
   berlin: {
     url: new URL('../../data/districts/berlin-bezirke.geojson', import.meta.url).href,
@@ -91,14 +98,19 @@ function simplifyMap(map: maplibregl.Map) {
     if (
       !KEEP_LAYERS.has(layer.id) &&
       !ROAD_LAYER_IDS.has(layer.id) &&
+      !WATER_LAYER_IDS.has(layer.id) &&
       !layer.id.startsWith('district-') &&
       !layer.id.startsWith('transit-') &&
       !layer.id.startsWith('news-') &&
       !layer.id.startsWith('safety-') &&
       !layer.id.startsWith('warning-') &&
       !layer.id.startsWith('pharmacy-') &&
+      !layer.id.startsWith('aed-') &&
       !layer.id.startsWith('traffic-') &&
-      !layer.id.startsWith('aq-')
+      !layer.id.startsWith('construction-') &&
+      !layer.id.startsWith('aq-') &&
+      !layer.id.startsWith('wl-') &&
+      !layer.id.startsWith('weather-')
     ) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
@@ -117,6 +129,52 @@ function setTrafficRoadVisibility(map: maplibregl.Map, visible: boolean, isDark:
       // Reset to near-invisible defaults so roads blend into background
       map.setPaintProperty(id, 'line-opacity', 0);
     }
+  }
+}
+
+function setWaterAreaVisibility(map: maplibregl.Map, visible: boolean, isDark: boolean) {
+  for (const id of WATER_LAYER_IDS) {
+    if (!map.getLayer(id)) continue;
+    if (id === 'waterway') {
+      map.setPaintProperty(id, 'line-opacity', visible ? 1 : 0);
+      if (visible) {
+        map.setPaintProperty(id, 'line-color', isDark ? 'rgba(96,165,250,0.5)' : 'rgba(59,130,246,0.35)');
+      }
+    } else {
+      map.setPaintProperty(id, 'fill-opacity', visible ? (isDark ? 0.4 : 0.25) : 0);
+      if (visible) {
+        map.setPaintProperty(id, 'fill-color', isDark ? 'rgba(59,130,246,0.5)' : 'rgba(96,165,250,0.4)');
+      }
+    }
+  }
+}
+
+const WEATHER_SOURCE = 'weather-precip';
+const WEATHER_LAYER = 'weather-precip-layer';
+
+function setWeatherOverlay(map: maplibregl.Map, visible: boolean) {
+  if (visible) {
+    if (!map.getSource(WEATHER_SOURCE)) {
+      map.addSource(WEATHER_SOURCE, {
+        type: 'raster',
+        tiles: ['/api/weather-tiles/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        attribution: '&copy; <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a>',
+      });
+    }
+    if (!map.getLayer(WEATHER_LAYER)) {
+      map.addLayer({
+        id: WEATHER_LAYER,
+        type: 'raster',
+        source: WEATHER_SOURCE,
+        paint: {
+          'raster-opacity': 0.65,
+        },
+      });
+    }
+  } else {
+    if (map.getLayer(WEATHER_LAYER)) map.removeLayer(WEATHER_LAYER);
+    if (map.getSource(WEATHER_SOURCE)) map.removeSource(WEATHER_SOURCE);
   }
 }
 
@@ -717,6 +775,25 @@ function pharmaciesToGeoJSON(pharmacies: EmergencyPharmacy[]): GeoJSON.FeatureCo
   return { type: 'FeatureCollection', features };
 }
 
+function aedsToGeoJSON(aeds: AedLocation[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (const a of aeds) {
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [a.lon, a.lat] },
+      properties: {
+        id: a.id,
+        indoor: a.indoor,
+        description: a.description ?? '',
+        operator: a.operator ?? '',
+        openingHours: a.openingHours ?? '',
+        access: a.access ?? '',
+      },
+    });
+  }
+  return { type: 'FeatureCollection', features };
+}
+
 const TRAFFIC_SEVERITY_COLORS: Record<string, string> = {
   critical: '#dc2626',
   major: '#f97316',
@@ -796,6 +873,126 @@ function updateTrafficLayers(map: maplibregl.Map, incidents: TrafficIncident[], 
     return { html, lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
   });
 }
+
+// --------------- Construction / Roadworks ---------------
+
+function constructionToGeoJSON(sites: ConstructionSite[]): { lines: GeoJSON.FeatureCollection; points: GeoJSON.FeatureCollection } {
+  const lines: GeoJSON.Feature[] = [];
+  const points: GeoJSON.Feature[] = [];
+  for (const site of sites) {
+    const color = CONSTRUCTION_SUBTYPE_COLORS[site.subtype] ?? CONSTRUCTION_SUBTYPE_COLORS.construction;
+    const props = {
+      id: site.id,
+      subtype: site.subtype,
+      street: site.street,
+      section: site.section ?? '',
+      description: site.description,
+      direction: site.direction ?? '',
+      validFrom: site.validFrom ?? '',
+      validUntil: site.validUntil ?? '',
+      color,
+      iconImage: `construction-icon-${site.subtype}`,
+    };
+
+    const geomType = site.geometry?.type;
+    if (geomType === 'LineString' || geomType === 'MultiLineString') {
+      lines.push({ type: 'Feature', geometry: site.geometry as GeoJSON.Geometry, properties: props });
+    } else if (geomType === 'Point') {
+      points.push({ type: 'Feature', geometry: site.geometry as GeoJSON.Geometry, properties: props });
+    } else if (geomType === 'GeometryCollection') {
+      // VIZ sometimes returns GeometryCollection with Point + LineStrings
+      const gc = site.geometry as unknown as { geometries: GeoJSON.Geometry[] };
+      for (const g of gc.geometries ?? []) {
+        if (g.type === 'LineString' || g.type === 'MultiLineString') {
+          lines.push({ type: 'Feature', geometry: g, properties: props });
+        } else if (g.type === 'Point') {
+          points.push({ type: 'Feature', geometry: g, properties: props });
+        }
+      }
+    }
+  }
+  return {
+    lines: { type: 'FeatureCollection', features: lines },
+    points: { type: 'FeatureCollection', features: points },
+  };
+}
+
+function updateConstructionLayers(map: maplibregl.Map, sites: ConstructionSite[], _isDark: boolean) {
+  const { lines, points } = constructionToGeoJSON(sites);
+
+  for (const id of ['construction-line', 'construction-line-casing', 'construction-points']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('construction-lines')) map.removeSource('construction-lines');
+  if (map.getSource('construction-points')) map.removeSource('construction-points');
+
+  if (lines.features.length === 0 && points.features.length === 0) return;
+
+  if (lines.features.length > 0) {
+    map.addSource('construction-lines', { type: 'geojson', data: lines });
+
+    map.addLayer({
+      id: 'construction-line-casing',
+      type: 'line',
+      source: 'construction-lines',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#000000', 'line-width': 6, 'line-opacity': 0.25 },
+    });
+
+    map.addLayer({
+      id: 'construction-line',
+      type: 'line',
+      source: 'construction-lines',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': ['get', 'color'],
+        'line-width': 4,
+        'line-opacity': 0.8,
+        'line-dasharray': [4, 3],
+      },
+    });
+
+    registerPopupHandlers(map, 'construction-line', (e) => {
+      if (!e.features?.length) return null;
+      const p = e.features[0].properties!;
+      return { html: constructionPopupHtml(p), lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
+    });
+  }
+
+  if (points.features.length > 0) {
+    map.addSource('construction-points', { type: 'geojson', data: points });
+
+    map.addLayer({
+      id: 'construction-points',
+      type: 'symbol',
+      source: 'construction-points',
+      layout: {
+        'icon-image': ['get', 'iconImage'],
+        'icon-size': 0.9,
+        'icon-allow-overlap': true,
+      },
+    });
+
+    registerPopupHandlers(map, 'construction-points', (e) => {
+      if (!e.features?.length) return null;
+      const p = e.features[0].properties!;
+      return { html: constructionPopupHtml(p), lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
+    });
+  }
+}
+
+function constructionPopupHtml(p: Record<string, unknown>): string {
+  const subtypeLabel = String(p.subtype ?? '').replace(/^./, (c: string) => c.toUpperCase());
+  return `<div style="font-size:13px;max-width:280px">
+    <div style="font-weight:600;margin-bottom:4px">${subtypeLabel}: ${p.street}</div>
+    ${p.section ? `<div style="font-size:12px;opacity:0.7">${p.section}</div>` : ''}
+    ${p.description ? `<div style="font-size:12px;margin-top:2px">${p.description}</div>` : ''}
+    ${p.validFrom ? `<div style="font-size:11px;opacity:0.6;margin-top:4px">${p.validFrom}${p.validUntil ? ` – ${p.validUntil}` : ''}</div>` : ''}
+    ${p.direction ? `<div style="font-size:11px;opacity:0.6">${p.direction}</div>` : ''}
+  </div>`;
+}
+
+// --------------- Air Quality Grid ---------------
 
 function aqGridToGeoJSON(points: AirQualityGridPoint[]): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = [];
@@ -885,6 +1082,92 @@ function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoint[], i
   registerPopupHandlers(map, 'aq-marker-label', getAqContent, { offset: 12, maxWidth: '260px' });
 }
 
+function waterLevelsToGeoJSON(stations: WaterLevelStation[]): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: stations
+      .filter((s) => s.lat && s.lon)
+      .map((s) => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [s.lon, s.lat] },
+        properties: {
+          uuid: s.uuid,
+          name: s.name,
+          waterBody: s.waterBody,
+          currentLevel: s.currentLevel,
+          state: s.state,
+          tidal: s.tidal,
+        },
+      })),
+  };
+}
+
+function updateWaterLevelMarkers(map: maplibregl.Map, stations: WaterLevelStation[], isDark: boolean) {
+  const geojson = waterLevelsToGeoJSON(stations);
+
+  for (const id of ['wl-marker-label', 'wl-marker-icon']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('wl-markers')) map.removeSource('wl-markers');
+
+  if (geojson.features.length === 0) return;
+
+  map.addSource('wl-markers', { type: 'geojson', data: geojson });
+
+  // Icon colored by water level state
+  const iconMatch: unknown[] = ['match', ['get', 'state']];
+  for (const state of Object.keys(WATER_STATE_COLORS)) {
+    iconMatch.push(state, `wl-icon-${state}`);
+  }
+  iconMatch.push('wl-icon-unknown'); // fallback
+
+  map.addLayer({
+    id: 'wl-marker-icon',
+    type: 'symbol',
+    source: 'wl-markers',
+    layout: {
+      'icon-image': iconMatch as maplibregl.ExpressionSpecification,
+      'icon-size': 0.95,
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
+    },
+  });
+
+  map.addLayer({
+    id: 'wl-marker-label',
+    type: 'symbol',
+    source: 'wl-markers',
+    layout: {
+      'text-field': ['concat', ['to-string', ['get', 'currentLevel']], ' cm'],
+      'text-size': 10,
+      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+      'text-offset': [0, 2.5],
+      'text-anchor': 'top',
+      'text-allow-overlap': true,
+    },
+    paint: {
+      'text-color': isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)',
+      'text-halo-color': isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
+      'text-halo-width': 1,
+    },
+  });
+
+  registerPopupHandlers(map, 'wl-marker-icon', (e) => {
+    if (!e.features?.length) return null;
+    const props = e.features[0].properties!;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const stateColor = WATER_STATE_COLORS[props.state as string] ?? WATER_STATE_COLORS.unknown;
+    const stateLabel = (props.state as string).replace('_', ' ');
+    const html = `<div style="font-size:13px;max-width:240px">
+      <div style="font-weight:600;margin-bottom:4px">${props.name}</div>
+      <div style="font-size:12px;opacity:0.7">${props.waterBody}${props.tidal === 'true' || props.tidal === true ? ' (tidal)' : ''}</div>
+      <div style="font-size:12px;margin-top:4px">Level: <strong style="color:${stateColor}">${props.currentLevel} cm</strong></div>
+      <div style="font-size:11px;margin-top:2px;text-transform:capitalize;color:${stateColor}">${stateLabel}</div>
+    </div>`;
+    return { html, lngLat: coords };
+  });
+}
+
 function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmacy[], _isDark: boolean) {
   const geojson = pharmaciesToGeoJSON(pharmacies);
 
@@ -921,6 +1204,52 @@ function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmac
       <div style="font-size:12px">${props.address}</div>
       ${props.phone ? `<div style="font-size:12px;margin-top:2px">Tel: ${props.phone}</div>` : ''}
       <div style="font-size:11px;opacity:0.6;margin-top:4px">${dutyLabel}</div>
+      <a href="${osmUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">Directions ↗</a>
+    </div>`;
+    return { html, lngLat: coords };
+  });
+}
+
+function updateAedMarkers(map: maplibregl.Map, aeds: AedLocation[], _isDark: boolean) {
+  const geojson = aedsToGeoJSON(aeds);
+
+  for (const id of ['aed-marker-icon']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('aed-markers')) map.removeSource('aed-markers');
+
+  if (geojson.features.length === 0) return;
+
+  map.addSource('aed-markers', { type: 'geojson', data: geojson });
+
+  map.addLayer({
+    id: 'aed-marker-icon',
+    type: 'symbol',
+    source: 'aed-markers',
+    layout: {
+      'icon-image': 'aed-icon',
+      'icon-size': 0.85,
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
+    },
+  });
+
+  registerPopupHandlers(map, 'aed-marker-icon', (e) => {
+    if (!e.features?.length) return null;
+    const props = e.features[0].properties!;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    const [lon, lat] = coords;
+    const indoorBadge = props.indoor === true || props.indoor === 'true'
+      ? '<span style="display:inline-block;background:#dbeafe;color:#1e40af;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">Indoor</span>'
+      : '<span style="display:inline-block;background:#dcfce7;color:#166534;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">Outdoor</span>';
+    const accessLabel = props.access ? `<div style="font-size:11px;opacity:0.6">Access: ${props.access}</div>` : '';
+    const osmUrl = `https://www.openstreetmap.org/directions?route=;${lat},${lon}`;
+    const html = `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">AED / Defibrillator${indoorBadge}</div>
+      ${props.description ? `<div style="font-size:12px">${props.description}</div>` : ''}
+      ${props.operator ? `<div style="font-size:12px;margin-top:2px">${props.operator}</div>` : ''}
+      ${props.openingHours ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${props.openingHours}</div>` : ''}
+      ${accessLabel}
       <a href="${osmUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">Directions ↗</a>
     </div>`;
     return { html, lngLat: coords };
@@ -1006,12 +1335,20 @@ export function CityMap() {
   const { data: safetyReports } = useSafety(city.id);
   const { data: ninaWarnings } = useNina(city.id);
   const { data: pharmacyList } = usePharmacies(city.id);
+  const { data: aedList } = useAeds(city.id);
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
+  const { data: constructionSites } = useConstruction(city.id);
   const { data: aqGrid } = useAirQualityGrid(city.id);
+  const { data: waterLevelData } = useWaterLevels(city.id);
   const politicalLayer = useCommandCenter((s) => s.politicalLayer);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
+  const emergencySubLayers = useCommandCenter((s) => s.emergencySubLayers);
   const politicalActive = activeLayers.has('political');
   const trafficActive = activeLayers.has('traffic');
+  const constructionActive = activeLayers.has('construction');
+  const roadsActive = trafficActive || constructionActive;
+  const weatherActive = activeLayers.has('weather');
+  const waterLevelsActive = activeLayers.has('water-levels');
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke');
   const { data: bundestagData } = usePolitical(city.id, 'bundestag');
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke');
@@ -1025,9 +1362,13 @@ export function CityMap() {
   const newsItems = activeLayers.has('news') ? (newsDigest?.items ?? []) : [];
   const safetyItems = activeLayers.has('safety') ? (safetyReports ?? []) : [];
   const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
-  const pharmacyItems = activeLayers.has('pharmacies') ? (pharmacyList ?? []) : [];
+  const emergencyActive = activeLayers.has('emergencies');
+  const pharmacyItems = (emergencyActive && emergencySubLayers.has('pharmacies')) ? (pharmacyList ?? []) : [];
+  const aedItems = (emergencyActive && emergencySubLayers.has('aeds')) ? (aedList ?? []) : [];
   const trafficItems = activeLayers.has('traffic') ? (trafficIncidents ?? []) : [];
+  const constructionItems = activeLayers.has('construction') ? (constructionSites ?? []) : [];
   const aqGridItems = activeLayers.has('air-quality') ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
+  const waterLevelItems = activeLayers.has('water-levels') ? (waterLevelData?.stations ?? EMPTY_WL) : EMPTY_WL;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -1044,12 +1385,22 @@ export function CityMap() {
   warningItemsRef.current = warningItems;
   const pharmacyItemsRef = useRef(pharmacyItems);
   pharmacyItemsRef.current = pharmacyItems;
+  const aedItemsRef = useRef(aedItems);
+  aedItemsRef.current = aedItems;
   const trafficItemsRef = useRef(trafficItems);
   trafficItemsRef.current = trafficItems;
+  const constructionItemsRef = useRef(constructionItems);
+  constructionItemsRef.current = constructionItems;
   const aqGridItemsRef = useRef(aqGridItems);
   aqGridItemsRef.current = aqGridItems;
-  const trafficActiveRef = useRef(trafficActive);
-  trafficActiveRef.current = trafficActive;
+  const waterLevelItemsRef = useRef(waterLevelItems);
+  waterLevelItemsRef.current = waterLevelItems;
+  const roadsActiveRef = useRef(roadsActive);
+  roadsActiveRef.current = roadsActive;
+  const weatherActiveRef = useRef(weatherActive);
+  weatherActiveRef.current = weatherActive;
+  const waterLevelsActiveRef = useRef(waterLevelsActive);
+  waterLevelsActiveRef.current = waterLevelsActive;
   const politicalActiveRef = useRef(politicalActive);
   politicalActiveRef.current = politicalActive;
   const politicalLayerRef = useRef(politicalLayer);
@@ -1080,7 +1431,8 @@ export function CityMap() {
 
     map.on('load', () => {
       simplifyMap(map);
-      setTrafficRoadVisibility(map, trafficActiveRef.current, isDarkRef.current);
+      setTrafficRoadVisibility(map, roadsActiveRef.current, isDarkRef.current);
+      setWaterAreaVisibility(map, waterLevelsActiveRef.current, isDarkRef.current);
       registerAllMapIcons(map, isDarkRef.current);
       addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
       setupDistrictHover(map);
@@ -1089,8 +1441,12 @@ export function CityMap() {
       updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
       updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
+      updateAedMarkers(map, aedItemsRef.current, isDarkRef.current);
       updateTrafficLayers(map, trafficItemsRef.current, isDarkRef.current);
+      updateConstructionLayers(map, constructionItemsRef.current, isDarkRef.current);
       updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
+      updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
+      setWeatherOverlay(map, weatherActiveRef.current);
 
       // Collapse the attribution control (MapLibre opens it by default)
       containerRef.current
@@ -1120,7 +1476,8 @@ export function CityMap() {
     map.setStyle(isDark ? DARK_STYLE : LIGHT_STYLE);
     map.once('styledata', () => {
       simplifyMap(map);
-      setTrafficRoadVisibility(map, trafficActiveRef.current, isDark);
+      setTrafficRoadVisibility(map, roadsActiveRef.current, isDark);
+      setWaterAreaVisibility(map, waterLevelsActiveRef.current, isDark);
       registerAllMapIcons(map, isDark);
 
       // Restore the correct political/district GeoJSON after style swap
@@ -1166,10 +1523,27 @@ export function CityMap() {
       updateSafetyMarkers(map, safetyItemsRef.current, isDark);
       updateWarningPolygons(map, warningItemsRef.current, isDark);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
+      updateAedMarkers(map, aedItemsRef.current, isDark);
       updateTrafficLayers(map, trafficItemsRef.current, isDark);
+      updateConstructionLayers(map, constructionItemsRef.current, isDark);
       updateAqGridLayer(map, aqGridItemsRef.current, isDark);
+      updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
+      setWeatherOverlay(map, weatherActiveRef.current);
     });
   }, [isDark, city.id]);
+
+  // Show/hide weather precipitation overlay when layer is toggled
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setWeatherOverlay(map, weatherActive);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [weatherActive]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -1211,6 +1585,14 @@ export function CityMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pharmacyItems]);
 
+  // Update AED markers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    updateAedMarkers(map, aedItems, isDarkRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aedItems]);
+
   // Update traffic incident layers
   useEffect(() => {
     const map = mapRef.current;
@@ -1219,11 +1601,19 @@ export function CityMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trafficItems]);
 
-  // Show/hide major road layers when traffic data layer is toggled
+  // Update construction layers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    updateConstructionLayers(map, constructionItems, isDarkRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [constructionItems]);
+
+  // Show/hide major road layers when traffic or construction data layer is toggled
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => setTrafficRoadVisibility(map, trafficActive, isDarkRef.current);
+    const apply = () => setTrafficRoadVisibility(map, roadsActive, isDarkRef.current);
     if (map.isStyleLoaded()) {
       apply();
       return;
@@ -1231,7 +1621,20 @@ export function CityMap() {
     // Style not loaded yet — defer until idle, but clean up on re-render/unmount
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [trafficActive]);
+  }, [roadsActive]);
+
+  // Show/hide water area layers when water-levels data layer is toggled
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setWaterAreaVisibility(map, waterLevelsActive, isDarkRef.current);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [waterLevelsActive]);
 
   // Update air quality grid circles
   useEffect(() => {
@@ -1240,6 +1643,14 @@ export function CityMap() {
     updateAqGridLayer(map, aqGridItems, isDarkRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aqGridItems]);
+
+  // Update water level markers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    updateWaterLevelMarkers(map, waterLevelItems, isDarkRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waterLevelItems]);
 
   // Political layer: swap GeoJSON source + apply/reset styling
   const politicalData = politicalLayer === 'bundestag'

@@ -77,6 +77,21 @@
       "representatives": "ممثلين",
       "districtMayors": "رؤساء الأحياء",
       "seats": "مقاعد"
+    },
+    "waterLevels": {
+      "title": "مناسيب المياه",
+      "state": {
+        "low": "منخفض",
+        "normal": "طبيعي",
+        "high": "مرتفع",
+        "veryHigh": "مرتفع جداً",
+        "unknown": "غير معروف"
+      },
+      "allNormal": "جميع المحطات طبيعية",
+      "stationsHigh": "{{count}} محطة مرتفعة",
+      "level": "المنسوب",
+      "meanWater": "MW",
+      "tidal": "مد وجزر"
     }
   },
   "category": {
@@ -113,14 +128,20 @@
       "label": "الطبقات",
       "transit": "المواصلات",
       "events": "الفعاليات",
-      "weather": "الطقس",
+      "weather": "رادار المطر",
       "news": "الأخبار",
       "safety": "السلامة",
       "warnings": "تحذيرات",
       "air-quality": "جودة الهواء",
-      "pharmacies": "صيدليات",
+      "emergencies": "طوارئ",
       "traffic": "حركة المرور",
+      "construction": "أعمال الطرق",
+      "water-levels": "مناسيب المياه",
       "political": "تمثيل"
+    },
+    "emergencies": {
+      "pharmacies": "صيدليات",
+      "aeds": "أجهزة إزالة الرجفان"
     },
     "political": {
       "bezirke": "الأحياء",
@@ -140,6 +161,7 @@
   "footer": {
     "sourceCode": "الكود المصدري",
     "basedOn": "مبني على World Monitor بواسطة Elie Habib",
-    "license": "AGPL-3.0"
+    "license": "AGPL-3.0",
+    "weatherTiles": "\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0637\u0642\u0633 \u00a9 OpenWeatherMap"
   }
 }

@@ -82,5 +82,16 @@ export const berlin: CityConfig = {
     ],
     police: { provider: 'rss', url: 'https://www.berlin.de/polizei/polizeimeldungen/index.php/rss' },
     nina: { ars: '110000000000' },
+    roadworks: { url: 'https://api.viz.berlin.de/daten/baustellen_sperrungen.json' },
+    waterLevels: {
+      provider: 'pegelonline',
+      stations: [
+        { uuid: '09e15cf6-f155-4b76-b92f-6c260839121c', name: 'Mühlendamm', waterBody: 'Spree' },
+        { uuid: 'd89eb759-58c4-43f4-9fe4-e6a21af23f5c', name: 'Charlottenburg', waterBody: 'Spree' },
+        { uuid: '47d3e815-c556-4e1b-93de-9fe07329fb00', name: 'Köpenick', waterBody: 'Spree' },
+        { uuid: '2c68509c-bf1e-4866-9ec4-b26b231e5e04', name: 'Spandau', waterBody: 'Havel' },
+        { uuid: '6b595707-8c47-4bc7-a803-dbc327775c26', name: 'Schmöckwitz', waterBody: 'Dahme' },
+      ],
+    },
   },
 };

@@ -77,6 +77,21 @@
       "representatives": "temsilci",
       "districtMayors": "ilçe başkanları",
       "seats": "sandalye"
+    },
+    "waterLevels": {
+      "title": "Su Seviyeleri",
+      "state": {
+        "low": "Düşük",
+        "normal": "Normal",
+        "high": "Yüksek",
+        "veryHigh": "Çok Yüksek",
+        "unknown": "Bilinmiyor"
+      },
+      "allNormal": "Tüm istasyonlar normal",
+      "stationsHigh": "{{count}} istasyon yüksek",
+      "level": "Seviye",
+      "meanWater": "MW",
+      "tidal": "Gelgit"
     }
   },
   "category": {
@@ -113,14 +128,20 @@
       "label": "Katmanlar",
       "transit": "Ulaşım",
       "events": "Etkinlikler",
-      "weather": "Hava",
+      "weather": "Yağış Radarı",
       "news": "Haberler",
       "safety": "Güvenlik",
       "warnings": "Uyarılar",
       "air-quality": "Hava Kalitesi",
-      "pharmacies": "Eczaneler",
+      "emergencies": "Acil Durum",
       "traffic": "Trafik",
+      "construction": "Yol Çalışmaları",
+      "water-levels": "Su Seviyeleri",
       "political": "Temsil"
+    },
+    "emergencies": {
+      "pharmacies": "Eczaneler",
+      "aeds": "Defibrilatörler"
     },
     "political": {
       "bezirke": "Bezirke",
@@ -140,6 +161,7 @@
   "footer": {
     "sourceCode": "Kaynak Kodu",
     "basedOn": "Elie Habib tarafından World Monitor'e dayanmaktadır",
-    "license": "AGPL-3.0"
+    "license": "AGPL-3.0",
+    "weatherTiles": "Hava durumu verileri \u00a9 OpenWeatherMap"
   }
 }

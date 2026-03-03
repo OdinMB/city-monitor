@@ -20,6 +20,10 @@ import { createAirQualityRouter } from './routes/air-quality.js';
 import { createPharmaciesRouter } from './routes/pharmacies.js';
 import { createTrafficRouter } from './routes/traffic.js';
 import { createPoliticalRouter } from './routes/political.js';
+import { createWeatherTilesRouter } from './routes/weather-tiles.js';
+import { createConstructionRouter } from './routes/construction.js';
+import { createAedsRouter } from './routes/aeds.js';
+import { createWaterLevelsRouter } from './routes/water-levels.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -32,6 +36,9 @@ import { createPharmacyIngestion } from './cron/ingest-pharmacies.js';
 import { createTrafficIngestion } from './cron/ingest-traffic.js';
 import { createPoliticalIngestion, preCacheBezirke } from './cron/ingest-political.js';
 import { createAirQualityGridIngestion } from './cron/ingest-air-quality-grid.js';
+import { createConstructionIngestion } from './cron/ingest-construction.js';
+import { createAedIngestion } from './cron/ingest-aeds.js';
+import { createWaterLevelIngestion } from './cron/ingest-water-levels.js';
 import { initGeocodeDb } from './lib/geocode.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
@@ -61,6 +68,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestTraffic = createTrafficIngestion(cache);
   const ingestPolitical = createPoliticalIngestion(cache, db);
   const ingestAqGrid = createAirQualityGridIngestion(cache, db);
+  const ingestConstruction = createConstructionIngestion(cache);
+  const ingestAeds = createAedIngestion(cache);
+  const ingestWaterLevels = createWaterLevelIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -76,6 +86,9 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-traffic', schedule: '*/5 * * * *', handler: ingestTraffic, runOnStart: true },
     { name: 'ingest-political', schedule: '0 4 * * 1', handler: ingestPolitical, runOnStart: true },
     { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid, runOnStart: true },
+    { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction, runOnStart: true },
+    { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: true },
+    { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: true },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -97,7 +110,11 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(600), createAirQualityRouter(cache, db));
   app.use('/api', cacheFor(3600), createPharmaciesRouter(cache));
   app.use('/api', cacheFor(120), createTrafficRouter(cache));
+  app.use('/api', cacheFor(900), createConstructionRouter(cache));
+  app.use('/api', cacheFor(43200), createAedsRouter(cache));
+  app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache));
+  app.use('/api', cacheFor(600), createWeatherTilesRouter());
 
   return { app, cache, db, scheduler };
 }

@@ -6,7 +6,7 @@
  * Draws crisp SVG-based icons onto ImageData via Path2D (synchronous).
  */
 
-import { TrainFront, Newspaper, ShieldAlert, Pill, Wind } from 'lucide';
+import { TrainFront, Newspaper, ShieldAlert, Pill, HeartPulse, Wind, Construction, Droplets } from 'lucide';
 import type maplibregl from 'maplibre-gl';
 
 export type IconNode = [tag: string, attrs: Record<string, string | number>][];
@@ -28,6 +28,12 @@ export const NEWS_CATEGORY_COLORS: Record<string, string> = {
   local: '#6366f1',
 };
 
+export const CONSTRUCTION_SUBTYPE_COLORS: Record<string, string> = {
+  construction: '#d97706',
+  closure: '#ef4444',
+  disruption: '#f97316',
+};
+
 export const AQI_LEVEL_COLORS: Record<string, string> = {
   good: '#50C878',
   fair: '#FFD700',
@@ -35,6 +41,14 @@ export const AQI_LEVEL_COLORS: Record<string, string> = {
   poor: '#FF4444',
   veryPoor: '#8B008B',
   extremelyPoor: '#800000',
+};
+
+export const WATER_STATE_COLORS: Record<string, string> = {
+  low: '#60a5fa',
+  normal: '#22c55e',
+  high: '#f59e0b',
+  very_high: '#ef4444',
+  unknown: '#9ca3af',
 };
 
 const ICON_SIZE = 36;
@@ -171,10 +185,29 @@ export function registerAllMapIcons(map: maplibregl.Map, isDark: boolean) {
   if (map.hasImage(pharmacyId)) map.removeImage(pharmacyId);
   map.addImage(pharmacyId, createMapIcon(Pill as IconNode, '#22c55e', stroke));
 
+  // AED: HeartPulse, red
+  const aedId = 'aed-icon';
+  if (map.hasImage(aedId)) map.removeImage(aedId);
+  map.addImage(aedId, createMapIcon(HeartPulse as IconNode, '#ef4444', stroke));
+
+  // Construction: Construction × 3 subtype colors
+  for (const [subtype, color] of Object.entries(CONSTRUCTION_SUBTYPE_COLORS)) {
+    const id = `construction-icon-${subtype}`;
+    if (map.hasImage(id)) map.removeImage(id);
+    map.addImage(id, createMapIcon(Construction as IconNode, color, stroke));
+  }
+
   // Air quality: Wind × 6 AQI level colors
   for (const [level, color] of Object.entries(AQI_LEVEL_COLORS)) {
     const id = `aq-icon-${level}`;
     if (map.hasImage(id)) map.removeImage(id);
     map.addImage(id, createMapIcon(Wind as IconNode, color, stroke));
+  }
+
+  // Water levels: Droplets × 5 state colors
+  for (const [state, color] of Object.entries(WATER_STATE_COLORS)) {
+    const id = `wl-icon-${state}`;
+    if (map.hasImage(id)) map.removeImage(id);
+    map.addImage(id, createMapIcon(Droplets as IconNode, color, stroke));
   }
 }

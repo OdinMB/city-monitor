@@ -36,8 +36,8 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 ## Context Files
 
 - [`.context/licensing.md`](.context/licensing.md) — AGPL-3.0 per-file header templates, adapted component list, and Section 13 footer requirements.
-- [`.context/server.md`](.context/server.md) — App factory, startup sequence, 7 cron jobs, logging system, health & bootstrap endpoints, multi-city config, env vars, utility libraries.
-- [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (5 tables with indices), read/write patterns, cache warming, data retention.
+- [`.context/server.md`](.context/server.md) — App factory, startup sequence, 14 cron jobs, logging system, health & bootstrap endpoints, multi-city config, env vars, utility libraries.
+- [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (10 tables with indices), read/write patterns, cache warming, data retention.
 - [`.context/weather.md`](.context/weather.md) — Open-Meteo forecast ingestion, DWD severe weather alerts for German cities, WMO weather codes.
 - [`.context/news.md`](.context/news.md) — RSS feed ingestion (10 Berlin + 4 Hamburg feeds), headline classifier, AI summarization via OpenAI (gpt-5-mini), cost tracking.
 - [`.context/transit.md`](.context/transit.md) — VBB transport.rest integration, line+summary deduplication, German keyword classification of disruption type/severity.
@@ -46,6 +46,8 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/i18n.md`](.context/i18n.md) — react-i18next setup, 4 languages (DE/EN/TR/AR), translation key structure, language detection, testing setup.
 - [`.context/deployment.md`](.context/deployment.md) — Render.com blueprint (render.yaml), GitHub Actions CI, environment variables, domain setup, monitoring.
 - [`.context/geocoding.md`](.context/geocoding.md) — Nominatim-first geocoding with LocationIQ fallback, rate limiting strategy, API usage, callers.
+- [`.context/water-levels.md`](.context/water-levels.md) — PEGELONLINE river gauge ingestion, state derivation logic, gauge bar UI. Water level data must use existing state derivation (MHW check → stateMnwMhw mapping) and the shared WaterLevelStation type.
+- [`.context/new-data-sources.md`](.context/new-data-sources.md) — Research on potential Berlin data sources (fire dept, utilities, emergency doctors, hospitals, water levels, AEDs, crisis hotlines, construction). Priority ranking and API details for future development.
 
 ## Key Conventions
 

@@ -13,6 +13,7 @@ import {
   aiSummaries,
   airQualityGrid,
   politicalDistricts,
+  waterLevelSnapshots,
 } from '../db/schema.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -29,6 +30,7 @@ const DAY_MS = 86_400_000;
  * - ai_summaries older than 30 days
  * - air_quality_grid older than 48 hours
  * - political_districts older than 30 days
+ * - water_level_snapshots older than 7 days
  */
 export function createDataRetention(db: Db) {
   return async () => {
@@ -58,6 +60,9 @@ export function createDataRetention(db: Db) {
 
       await db.delete(politicalDistricts)
         .where(lt(politicalDistricts.fetchedAt, new Date(now - 30 * DAY_MS)));
+
+      await db.delete(waterLevelSnapshots)
+        .where(lt(waterLevelSnapshots.fetchedAt, new Date(now - 7 * DAY_MS)));
 
       log.info('data retention complete');
     } catch (err) {

@@ -38,6 +38,7 @@ App
                   Tile(span=2) → NewsStrip (category filter + headlines)
                   Tile(span=2) → EventsStrip (day/time-of-day/category filters, 2-col grid, future-only)
                   Tile(span=2) → TransitStrip (line badges + expandable alert cards, container queries)
+                  Tile(span=1) → WaterLevelStrip (gauge bars with MNW–MHW range)
               Footer (AGPL source link)
 ```
 
@@ -60,6 +61,8 @@ Each panel has a dedicated hook that polls its endpoint independently after boot
 | `useTransit` | `['transit', cityId]` | 5 min | 2 min |
 | `useEvents` | `['events', cityId]` | 60 min | 2 min |
 | `useSafety` | `['safety', cityId]` | 10 min | 2 min |
+| `useConstruction` | `['construction', cityId]` | 15 min | 10 min |
+| `useWaterLevels` | `['water-levels', cityId]` | 15 min | 5 min |
 
 All hooks use `keepPreviousData` as placeholder during refetch, `retry: 2`, and `refetchIntervalInBackground: false`.
 
@@ -119,9 +122,11 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 - District boundaries: GeoJSON overlay with fill, line (dashed), and label layers per city (`DISTRICT_URLS` config). Constituency-level GeoJSON (`CONSTITUENCY_URLS`) used when political layer selects bundestag or landesparlament — source is swapped via fetch + remove/re-add pattern with AbortController for race protection
 - Political layer: data layer toggle (not a separate map mode) with mutually exclusive sub-options (bezirke/bundestag/landesparlament). Party colors from `PARTY_COLORS` map applied via MapLibre `match` expression on `district-fill`. Click popups show representatives from abgeordnetenwatch API. Available GeoJSON: Berlin bezirke + bundestag; Hamburg bezirke only. Berlin AGH and Hamburg bundestag/buergerschaft deferred
 - Hover effect: feature-state-based fill opacity change + cursor pointer on district polygons (`setupDistrictHover()`)
-- Map icons: `lib/map-icons.ts` renders Lucide SVG icons onto canvas via `Path2D` (synchronous, no async image loading). `registerAllMapIcons(map, isDark)` pre-registers 14 icon variants (rounded-square background + white Lucide glyph): 3 transit (TrainFront × severity), 8 news (Newspaper × category), 1 safety (ShieldAlert), 1 pharmacy (Pill). Called once on `load` and `styledata`, before any marker updates. Exports `SEVERITY_COLORS` and `NEWS_CATEGORY_COLORS` used by both map-icons and CityMap.
+- Map icons: `lib/map-icons.ts` renders Lucide SVG icons onto canvas via `Path2D` (synchronous, no async image loading). `registerAllMapIcons(map, isDark)` pre-registers icon variants (rounded-square background + white Lucide glyph): 3 transit (TrainFront × severity), 8 news (Newspaper × category), 1 safety (ShieldAlert), 1 pharmacy (Pill), 3 construction (Construction × subtype), 5 water levels (Droplets × state). Called once on `load` and `styledata`, before any marker updates. Exports `SEVERITY_COLORS`, `NEWS_CATEGORY_COLORS`, `CONSTRUCTION_SUBTYPE_COLORS`, and `WATER_STATE_COLORS` used by both map-icons and CityMap.
+- Construction layer: VIZ Berlin roadworks data rendered as dashed amber/red/orange lines (LineString) + point icons (Point) with subtype-based coloring (construction=amber, closure=red, disruption=orange). GeometryCollection geometries are split into separate line/point features. Click popups show street, section, description, validity dates, and direction.
 - Point markers: All 4 point data layers use `symbol` layers with pre-registered icon images. Transit uses severity-based `match` expression; news uses category-based `match`; safety and pharmacy use fixed icon IDs. Click popups and hover cursors on each layer.
 - Transit markers: GeoJSON point source from `TransitAlert[]` with severity-colored icons (red/amber/gray) + line label below. Click popup shows line, type, station, message. Updated from map `load` handler and `styledata` handler using refs to bridge async map events with React state.
+- Weather overlay: raster tile layer (`type: 'raster'`) sourced from `/api/weather-tiles/{z}/{x}/{y}.png` — server-side proxy to OpenWeatherMap `clouds_new` tiles (API key hidden). Added/removed via `setWeatherOverlay()` based on `activeLayers.has('weather')`. Uses `raster-opacity: 0.65` for semi-transparent overlay. Sidebar label: "Rain Radar" / "Regenradar". Requires `OPENWEATHERMAP_API_KEY` env var on the server.
 - Vite config requires `target: 'esnext'` (both `build.target` and `optimizeDeps.esbuildOptions.target`) to prevent MapLibre's GeoJSON web worker crash (`__publicField is not defined`)
 
 ## Frontend Utilities

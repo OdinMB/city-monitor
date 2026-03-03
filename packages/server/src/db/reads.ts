@@ -16,8 +16,9 @@ import {
   geocodeLookups,
   airQualityGrid,
   politicalDistricts,
+  waterLevelSnapshots,
 } from './schema.js';
-import type { NinaWarning, PoliticalDistrict } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
@@ -271,6 +272,22 @@ export async function loadAllGeocodeLookups(db: Db): Promise<(GeocodeLookupRow &
     displayName: row.displayName,
     provider: row.provider,
   }));
+}
+
+export async function loadWaterLevels(db: Db, cityId: string): Promise<WaterLevelData | null> {
+  const rows = await db
+    .select()
+    .from(waterLevelSnapshots)
+    .where(eq(waterLevelSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+
+  const row = rows[0];
+  return {
+    stations: row.stations as WaterLevelData['stations'],
+    fetchedAt: row.fetchedAt.toISOString(),
+  };
 }
 
 export type { GeocodeResult };

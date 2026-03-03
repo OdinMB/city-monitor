@@ -60,7 +60,12 @@ export interface CityDataSources {
   events?: EventSourceConfig[];
   police?: { provider: 'rss'; url: string };
   nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings
+  roadworks?: { url: string };
   openData?: { provider: 'ckan'; baseUrl: string };
+  waterLevels?: {
+    provider: 'pegelonline';
+    stations: Array<{ uuid: string; name: string; waterBody: string; tidal?: boolean }>;
+  };
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -160,6 +165,54 @@ export interface AirQualityGridPoint {
   station: string;
   /** Link to station detail page */
   url?: string;
+}
+
+// Construction / roadworks (VIZ Berlin)
+export interface ConstructionSite {
+  id: string;
+  subtype: 'construction' | 'closure' | 'disruption';
+  street: string;
+  section?: string;
+  description: string;
+  direction?: string;
+  validFrom?: string;
+  validUntil?: string;
+  isFuture: boolean;
+  geometry: { type: string; coordinates: number[] | number[][] | Array<{ type: string; coordinates: number[] | number[][] }> };
+}
+
+// AED / defibrillator locations (OpenStreetMap Overpass)
+export interface AedLocation {
+  id: string;
+  lat: number;
+  lon: number;
+  indoor: boolean;
+  description?: string;
+  operator?: string;
+  openingHours?: string;
+  access?: string;
+}
+
+// Water levels (PEGELONLINE)
+export interface WaterLevelStation {
+  uuid: string;
+  name: string;
+  waterBody: string;
+  lat: number;
+  lon: number;
+  currentLevel: number;
+  timestamp: string;
+  state: 'low' | 'normal' | 'high' | 'very_high' | 'unknown';
+  tidal: boolean;
+  characteristicValues?: {
+    shortname: string;
+    value: number;
+  }[];
+}
+
+export interface WaterLevelData {
+  stations: WaterLevelStation[];
+  fetchedAt: string;
 }
 
 // NINA civil protection warnings

@@ -32,6 +32,8 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:news:{category}` | 900s (15 min) | ingest-feeds |
 | `{cityId}:news:summary` | 86400s (24h) | summarize |
 | `{cityId}:air-quality:grid` | 1800s (30 min) | ingest-aq-grid |
+| `{cityId}:construction:sites` | 1800s (30 min) | ingest-construction |
+| `{cityId}:water-levels` | 900s (15 min) | ingest-water-levels |
 | `{cityId}:political:{level}` | 604800s (7 days) | ingest-political |
 | `feed:{hash}` | 600s (10 min) | ingest-feeds (raw feed XML) |
 
@@ -54,6 +56,7 @@ ORM: Drizzle (schema-as-code, no code generation). Driver: `postgres` (node-post
 | `newsItems` | cityId, hash, title, url, publishedAt, category, tier, relevant, confidence, lat/lon | `news_city_idx(cityId)` |
 | `airQualityGrid` | cityId, lat, lon, europeanAqi, station, url | `aq_grid_city_idx(cityId)` |
 | `geocodeLookups` | query, lat, lon, displayName, provider | `geocode_query_idx(query)` (unique) |
+| `waterLevelSnapshots` | cityId, stations (JSONB) | `water_level_city_idx(cityId)` |
 | `politicalDistricts` | cityId, level, districts (JSONB) | `political_city_level_idx(cityId, level)` (unique) |
 | `aiSummaries` | cityId, headlineHash, summary, model, inputTokens, outputTokens | `summaries_city_generated_idx(cityId, generatedAt)` |
 
@@ -69,6 +72,7 @@ Query functions that return typed objects or `null`. Each loads the most recent 
 - `loadNewsItems(db, cityId)` — sorted by publishedAt descending, includes LLM assessment
 - `loadSummary(db, cityId)` — latest by generatedAt, includes headlineHash
 - `loadAirQualityGrid(db, cityId)` — all rows, maps to `AirQualityGridPoint[]`
+- `loadWaterLevels(db, cityId)` — latest snapshot, maps to `WaterLevelData`
 - `loadPoliticalDistricts(db, cityId, level)` — JSONB blob, maps to `PoliticalDistrict[]`
 
 ### Writes (`writes.ts`)
@@ -81,6 +85,7 @@ All use transactions with delete-then-insert (full refresh per city, not upsert)
 - `saveNewsItems(db, cityId, items)` — persists items with LLM assessments and geo data
 - `saveSummary(db, cityId, summary, model, tokens)`
 - `saveAirQualityGrid(db, cityId, points)`
+- `saveWaterLevels(db, cityId, data)` — delete + insert for full refresh
 - `savePoliticalDistricts(db, cityId, level, districts)` — upsert on (cityId, level)
 
 ### Cache Warming (`warm-cache.ts`)
@@ -98,6 +103,7 @@ Nightly cron (3am) prunes old data to keep DB size manageable:
 | `safetyReports` | 7 days |
 | `newsItems` | 7 days |
 | `airQualityGrid` | 48 hours |
+| `waterLevelSnapshots` | 7 days |
 | `politicalDistricts` | 30 days |
 | `aiSummaries` | 30 days |
 

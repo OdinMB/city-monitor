@@ -163,6 +163,16 @@ export const politicalDistricts = pgTable('political_districts', {
   uniqueIndex('political_city_level_idx').on(table.cityId, table.level),
 ]);
 
+// Water level snapshots (PEGELONLINE)
+export const waterLevelSnapshots = pgTable('water_level_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  stations: jsonb('stations').notNull(), // WaterLevelStation[]
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('water_level_city_idx').on(table.cityId),
+]);
+
 // Milestone 07 — AI Summaries
 export const aiSummaries = pgTable('ai_summaries', {
   id: serial('id').primaryKey(),
