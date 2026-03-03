@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { loadWeather } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 
 const log = createLogger('route:weather');
@@ -23,7 +24,7 @@ export function createWeatherRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<WeatherData>(`${city.id}:weather`);
+    const cached = cache.getWithMeta<WeatherData>(CK.weather(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createWeatherRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbData = await loadWeather(db, city.id);
         if (dbData) {
-          cache.set(`${city.id}:weather`, dbData, 1800);
+          cache.set(CK.weather(city.id), dbData, 1800);
           res.json({ data: dbData, fetchedAt: new Date().toISOString() });
           return;
         }

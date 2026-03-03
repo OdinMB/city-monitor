@@ -10,6 +10,7 @@ import { loadWastewater } from '../db/reads.js';
 import type { WastewaterSummary } from '@city-monitor/shared';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:wastewater');
 
@@ -23,7 +24,7 @@ export function createWastewaterRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<WastewaterSummary>(`${city.id}:wastewater:summary`);
+    const cached = cache.getWithMeta<WastewaterSummary>(CK.wastewaterSummary(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createWastewaterRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadWastewater(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:wastewater:summary`, stored, 604800);
+          cache.set(CK.wastewaterSummary(city.id), stored, 604800);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

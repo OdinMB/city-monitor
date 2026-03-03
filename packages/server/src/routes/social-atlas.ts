@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { loadSocialAtlas } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:social-atlas');
 
@@ -22,7 +23,7 @@ export function createSocialAtlasRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<unknown>(`${city.id}:social-atlas:geojson`);
+    const cached = cache.getWithMeta<unknown>(CK.socialAtlasGeojson(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -32,7 +33,7 @@ export function createSocialAtlasRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadSocialAtlas(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:social-atlas:geojson`, stored, 604800);
+          cache.set(CK.socialAtlasGeojson(city.id), stored, 604800);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

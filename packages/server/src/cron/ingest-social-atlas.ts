@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveSocialAtlas } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-social-atlas');
 
@@ -124,7 +125,7 @@ async function ingestCitySocialAtlas(cityId: string, wfsUrl: string, cache: Cach
     features,
   };
 
-  cache.set(`${cityId}:social-atlas:geojson`, geojson, SOCIAL_ATLAS_TTL_SECONDS);
+  cache.set(CK.socialAtlasGeojson(cityId), geojson, SOCIAL_ATLAS_TTL_SECONDS);
 
   if (db) {
     try {

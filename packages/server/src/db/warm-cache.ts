@@ -11,6 +11,7 @@ import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNews
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('warm-cache');
 
@@ -38,112 +39,112 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
   const tasks = [
     (async () => {
       const weather = await loadWeather(db, cityId);
-      if (weather) cache.set(`${cityId}:weather`, weather, 2160);      // 30min cron + 20%
+      if (weather) cache.set(CK.weather(cityId), weather, 2160);      // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} weather failed`, err)),
 
     (async () => {
       const alerts = await loadTransitAlerts(db, cityId);
-      if (alerts) cache.set(`${cityId}:transit:alerts`, alerts, 1080);  // 15min cron + 20%
+      if (alerts) cache.set(CK.transitAlerts(cityId), alerts, 1080);  // 15min cron + 20%
     })().catch((err) => log.error(`${cityId} transit failed`, err)),
 
     (async () => {
       const items = await loadEvents(db, cityId);
-      if (items) cache.set(`${cityId}:events:upcoming`, items, 25920);  // 6h cron + 20%
+      if (items) cache.set(CK.eventsUpcoming(cityId), items, 25920);  // 6h cron + 20%
     })().catch((err) => log.error(`${cityId} events failed`, err)),
 
     (async () => {
       const reports = await loadSafetyReports(db, cityId);
-      if (reports) cache.set(`${cityId}:safety:recent`, reports, 720);  // 10min cron + 20%
+      if (reports) cache.set(CK.safetyRecent(cityId), reports, 720);  // 10min cron + 20%
     })().catch((err) => log.error(`${cityId} safety failed`, err)),
 
     (async () => {
       const items = await loadNewsItems(db, cityId);
       if (items && items.length > 0) {
         const digest = buildDigestFromItems(items);
-        cache.set(`${cityId}:news:digest`, digest, 720);               // 10min cron + 20%
+        cache.set(CK.newsDigest(cityId), digest, 720);               // 10min cron + 20%
         for (const [cat, catItems] of Object.entries(digest.categories)) {
-          cache.set(`${cityId}:news:${cat}`, catItems, 720);
+          cache.set(CK.newsCategory(cityId, cat), catItems, 720);
         }
       }
     })().catch((err) => log.error(`${cityId} news failed`, err)),
 
     (async () => {
       const summary = await loadSummary(db, cityId);
-      if (summary) cache.set(`${cityId}:news:summary`, summary, 86400);
+      if (summary) cache.set(CK.newsSummary(cityId), summary, 86400);
     })().catch((err) => log.error(`${cityId} summary failed`, err)),
 
     (async () => {
       const warnings = await loadNinaWarnings(db, cityId);
-      if (warnings) cache.set(`${cityId}:nina:warnings`, warnings, 360);  // 5min cron + 20%
+      if (warnings) cache.set(CK.ninaWarnings(cityId), warnings, 360);  // 5min cron + 20%
     })().catch((err) => log.error(`${cityId} nina failed`, err)),
 
     (async () => {
       const grid = await loadAirQualityGrid(db, cityId);
-      if (grid) cache.set(`${cityId}:air-quality:grid`, grid, 2160);   // 30min cron + 20%
+      if (grid) cache.set(CK.airQualityGrid(cityId), grid, 2160);   // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} aq grid failed`, err)),
 
     (async () => {
       const waterLevels = await loadWaterLevels(db, cityId);
-      if (waterLevels) cache.set(`${cityId}:water-levels`, waterLevels, 1080);  // 15min cron + 20%
+      if (waterLevels) cache.set(CK.waterLevels(cityId), waterLevels, 1080);  // 15min cron + 20%
     })().catch((err) => log.error(`${cityId} water levels failed`, err)),
 
     (async () => {
       const appointments = await loadAppointments(db, cityId);
-      if (appointments) cache.set(`${cityId}:appointments`, appointments, 25920);  // 6h cron + 20%
+      if (appointments) cache.set(CK.appointments(cityId), appointments, 25920);  // 6h cron + 20%
     })().catch((err) => log.error(`${cityId} appointments failed`, err)),
 
     ...(['bezirke', 'bundestag', 'state', 'state-bezirke'] as const).map((level) =>
       (async () => {
         const districts = await loadPoliticalDistricts(db, cityId, level);
-        if (districts) cache.set(`${cityId}:political:${level}`, districts, 604800);
+        if (districts) cache.set(CK.political(cityId, level), districts, 604800);
       })().catch((err) => log.error(`${cityId} political:${level} failed`, err)),
     ),
 
     (async () => {
       const budget = await loadBudget(db, cityId);
-      if (budget) cache.set(`${cityId}:budget`, budget, 86400);
+      if (budget) cache.set(CK.budget(cityId), budget, 86400);
     })().catch((err) => log.error(`${cityId} budget failed`, err)),
 
     (async () => {
       const sites = await loadConstructionSites(db, cityId);
-      if (sites) cache.set(`${cityId}:construction:sites`, sites, 2160);   // 30min cron + 20%
+      if (sites) cache.set(CK.constructionSites(cityId), sites, 2160);   // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} construction failed`, err)),
 
     (async () => {
       const incidents = await loadTrafficIncidents(db, cityId);
-      if (incidents) cache.set(`${cityId}:traffic:incidents`, incidents, 360);  // 5min cron + 20%
+      if (incidents) cache.set(CK.trafficIncidents(cityId), incidents, 360);  // 5min cron + 20%
     })().catch((err) => log.error(`${cityId} traffic failed`, err)),
 
     (async () => {
       const pharmacies = await loadPharmacies(db, cityId);
-      if (pharmacies) cache.set(`${cityId}:pharmacies:emergency`, pharmacies, 25920);  // 6h cron + 20%
+      if (pharmacies) cache.set(CK.pharmacies(cityId), pharmacies, 25920);  // 6h cron + 20%
     })().catch((err) => log.error(`${cityId} pharmacies failed`, err)),
 
     (async () => {
       const aeds = await loadAeds(db, cityId);
-      if (aeds) cache.set(`${cityId}:aed:locations`, aeds, 86400);
+      if (aeds) cache.set(CK.aedLocations(cityId), aeds, 86400);
     })().catch((err) => log.error(`${cityId} aeds failed`, err)),
 
     (async () => {
       const geojson = await loadSocialAtlas(db, cityId);
-      if (geojson) cache.set(`${cityId}:social-atlas:geojson`, geojson, 604800);
+      if (geojson) cache.set(CK.socialAtlasGeojson(cityId), geojson, 604800);
     })().catch((err) => log.error(`${cityId} social-atlas failed`, err)),
 
     // Wastewater, bathing, and labor market are Berlin-only data sources
     ...(cityId === 'berlin' ? [
       (async () => {
         const wastewater = await loadWastewater(db, 'berlin');
-        if (wastewater) cache.set('berlin:wastewater:summary', wastewater, 604800);
+        if (wastewater) cache.set(CK.wastewaterSummary('berlin'), wastewater, 604800);
       })().catch((err) => log.error('wastewater failed', err)),
 
       (async () => {
         const spots = await loadBathingSpots(db, 'berlin');
-        if (spots) cache.set('berlin:bathing:spots', spots, 86400);
+        if (spots) cache.set(CK.bathingSpots('berlin'), spots, 86400);
       })().catch((err) => log.error('bathing failed', err)),
 
       (async () => {
         const laborMarket = await loadLaborMarket(db, 'berlin');
-        if (laborMarket) cache.set('berlin:labor-market', laborMarket, 86400);
+        if (laborMarket) cache.set(CK.laborMarket('berlin'), laborMarket, 86400);
       })().catch((err) => log.error('labor-market failed', err)),
     ] : []),
   ];
@@ -171,9 +172,9 @@ export async function findStaleJobs(db: Db, specs: FreshnessSpec[]): Promise<Set
       const result = await db.execute(
         sql`SELECT fetched_at FROM ${sql.identifier(spec.tableName)} ORDER BY fetched_at DESC LIMIT 1`
       );
-      const rows = result as unknown as Array<{ fetched_at: string | Date }>;
-      const row = rows[0];
-      if (!row) {
+      const rows = Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? [];
+      const row = rows[0] as { fetched_at?: string | Date } | undefined;
+      if (!row || !row.fetched_at) {
         stale.add(spec.jobName);
         return;
       }

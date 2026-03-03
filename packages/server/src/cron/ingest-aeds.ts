@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveAeds } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-aeds');
 
@@ -94,7 +95,7 @@ async function ingestCityAeds(cityId: string, cityName: string, cache: Cache, db
     });
   }
 
-  cache.set(`${cityId}:aed:locations`, aeds, AED_TTL_SECONDS);
+  cache.set(CK.aedLocations(cityId), aeds, AED_TTL_SECONDS);
 
   if (db) {
     try {

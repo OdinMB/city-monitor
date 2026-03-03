@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { loadTransitAlerts } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
 
 const log = createLogger('route:transit');
@@ -23,7 +24,7 @@ export function createTransitRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<TransitAlert[]>(`${city.id}:transit:alerts`);
+    const cached = cache.getWithMeta<TransitAlert[]>(CK.transitAlerts(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createTransitRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbAlerts = await loadTransitAlerts(db, city.id);
         if (dbAlerts) {
-          cache.set(`${city.id}:transit:alerts`, dbAlerts, 1200);
+          cache.set(CK.transitAlerts(city.id), dbAlerts, 1200);
           res.json({ data: dbAlerts, fetchedAt: new Date().toISOString() });
           return;
         }

@@ -12,6 +12,7 @@ import { parseFeed } from '../lib/rss-parser.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 import { filterAndGeolocateNews } from '../lib/openai.js';
 
 const log = createLogger('ingest-feeds');
@@ -118,9 +119,9 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache, db: Db | null): P
   const digest: NewsDigest = { items: visible, categories, updatedAt: new Date().toISOString() };
 
   // 8. Write to cache
-  cache.set(`${city.id}:news:digest`, digest, 900);
+  cache.set(CK.newsDigest(city.id), digest, 900);
   for (const [cat, items] of Object.entries(categories)) {
-    cache.set(`${city.id}:news:${cat}`, items, 900);
+    cache.set(CK.newsCategory(city.id, cat), items, 900);
   }
 
   // 9. Persist to DB

@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveWeather } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-weather');
 
@@ -87,7 +88,7 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
     }
   }
 
-  cache.set(`${city.id}:weather`, data, 1800);
+  cache.set(CK.weather(city.id), data, 1800);
 
   if (db) {
     try {
@@ -176,7 +177,7 @@ export async function ingestCityAirQuality(city: CityConfig, cache: Cache): Prom
     })),
   };
 
-  cache.set(`${city.id}:air-quality`, airQuality, 1800);
+  cache.set(CK.airQuality(city.id), airQuality, 1800);
   log.info(`${city.id}: air quality updated (AQI: ${airQuality.current.europeanAqi})`);
 }
 

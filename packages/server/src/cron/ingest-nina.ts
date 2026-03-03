@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveNinaWarnings } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-nina');
 
@@ -106,7 +107,7 @@ async function ingestCityNina(cityId: string, ars: string, cache: Cache, db: Db 
     return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
   });
 
-  cache.set(`${cityId}:nina:warnings`, warnings, 600);
+  cache.set(CK.ninaWarnings(cityId), warnings, 600);
 
   if (db && warnings.length > 0) {
     try {

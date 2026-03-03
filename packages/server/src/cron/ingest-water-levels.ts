@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveWaterLevels } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-water-levels');
 
@@ -132,7 +133,7 @@ async function ingestCityWaterLevels(
     fetchedAt: new Date().toISOString(),
   };
 
-  cache.set(`${city.id}:water-levels`, data, CACHE_TTL);
+  cache.set(CK.waterLevels(city.id), data, CACHE_TTL);
   log.info(`${city.id}: ${stations.length} water level station(s) updated`);
 
   if (db) {

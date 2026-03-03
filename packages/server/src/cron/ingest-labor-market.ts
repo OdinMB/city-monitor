@@ -8,12 +8,13 @@ import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveLaborMarket } from '../db/writes.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-labor-market');
 
 const BA_URL = 'https://statistik-dr.arbeitsagentur.de/bifrontend/bids-api/ct/v1/tableFetch/csv/EckwerteTabelleALOBL?Bundesland=Berlin';
 const FETCH_TIMEOUT_MS = 30_000;
-const CACHE_KEY = 'berlin:labor-market';
+const CACHE_KEY = CK.laborMarket('berlin');
 const TTL_SECONDS = 86400; // 1 day
 
 /** German month names → 1-based month number */

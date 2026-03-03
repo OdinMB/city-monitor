@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { loadEvents } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 
 const log = createLogger('route:events');
@@ -26,7 +27,7 @@ export function createEventsRouter(cache: Cache, db: Db | null = null) {
     const nowIso = new Date().toISOString();
     const filterFuture = (items: CityEvent[]) => items.filter((e) => e.date >= nowIso);
 
-    const cached = cache.getWithMeta<CityEvent[]>(`${city.id}:events:upcoming`);
+    const cached = cache.getWithMeta<CityEvent[]>(CK.eventsUpcoming(city.id));
     if (cached) {
       res.json({ data: filterFuture(cached.data), fetchedAt: cached.fetchedAt });
       return;
@@ -36,7 +37,7 @@ export function createEventsRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbEvents = await loadEvents(db, city.id);
         if (dbEvents) {
-          cache.set(`${city.id}:events:upcoming`, dbEvents, 21600);
+          cache.set(CK.eventsUpcoming(city.id), dbEvents, 21600);
           res.json({ data: filterFuture(dbEvents), fetchedAt: new Date().toISOString() });
           return;
         }

@@ -12,6 +12,7 @@ import type { AirQualityGridPoint } from '../cron/ingest-air-quality-grid.js';
 import { ingestCityAirQualityGrid } from '../cron/ingest-air-quality-grid.js';
 import { loadAirQualityGrid } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
+import { CK } from '../lib/cache-keys.js';
 
 export function createAirQualityRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
@@ -23,13 +24,13 @@ export function createAirQualityRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    let cached = cache.getWithMeta<AirQuality>(`${city.id}:air-quality`);
+    let cached = cache.getWithMeta<AirQuality>(CK.airQuality(city.id));
 
     // Cache miss — fetch immediately instead of waiting for the next cron cycle
     if (!cached) {
       try {
         await ingestCityAirQuality(city, cache);
-        cached = cache.getWithMeta<AirQuality>(`${city.id}:air-quality`);
+        cached = cache.getWithMeta<AirQuality>(CK.airQuality(city.id));
       } catch {
         // Fall through — return null
       }
@@ -45,15 +46,15 @@ export function createAirQualityRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    let cached = cache.getWithMeta<AirQualityGridPoint[]>(`${city.id}:air-quality:grid`);
+    let cached = cache.getWithMeta<AirQualityGridPoint[]>(CK.airQualityGrid(city.id));
 
     // Cache miss — try DB before live fetch (cache → DB → API)
     if (!cached && db) {
       try {
         const rows = await loadAirQualityGrid(db, city.id);
         if (rows) {
-          cache.set(`${city.id}:air-quality:grid`, rows, 1800);
-          cached = cache.getWithMeta<AirQualityGridPoint[]>(`${city.id}:air-quality:grid`);
+          cache.set(CK.airQualityGrid(city.id), rows, 1800);
+          cached = cache.getWithMeta<AirQualityGridPoint[]>(CK.airQualityGrid(city.id));
         }
       } catch {
         // Fall through to live fetch
@@ -64,7 +65,7 @@ export function createAirQualityRouter(cache: Cache, db: Db | null = null) {
     if (!cached) {
       try {
         await ingestCityAirQualityGrid(city, cache, db);
-        cached = cache.getWithMeta<AirQualityGridPoint[]>(`${city.id}:air-quality:grid`);
+        cached = cache.getWithMeta<AirQualityGridPoint[]>(CK.airQualityGrid(city.id));
       } catch {
         // Fall through — return empty
       }

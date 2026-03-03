@@ -10,6 +10,7 @@ import { savePoliticalDistricts } from '../db/writes.js';
 import { loadPoliticalFetchedAt } from '../db/reads.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-political');
 
@@ -112,7 +113,7 @@ export function preCacheBezirke(cache: Cache): void {
   for (const city of getActiveCities()) {
     const bmData = BEZIRKSBUERGERMEISTER[city.id];
     if (bmData) {
-      cache.set(`${city.id}:political:bezirke`, bmData, TTL_SECONDS);
+      cache.set(CK.political(city.id, 'bezirke'), bmData, TTL_SECONDS);
     }
   }
 }
@@ -285,7 +286,7 @@ async function ingestCityPolitical(
   // Cache hardcoded Bezirksbürgermeister data
   const bmData = BEZIRKSBUERGERMEISTER[city.id];
   if (bmData) {
-    cache.set(`${city.id}:political:bezirke`, bmData, TTL_SECONDS);
+    cache.set(CK.political(city.id, 'bezirke'), bmData, TTL_SECONDS);
     await persistToDb('bezirke', bmData);
     log.info(`${city.id}: ${bmData.length} Bezirksbürgermeister cached`);
   }
@@ -333,7 +334,7 @@ async function ingestCityPolitical(
     });
   }
 
-  cache.set(`${city.id}:political:bundestag`, bundestagDistricts, TTL_SECONDS);
+  cache.set(CK.political(city.id, 'bundestag'), bundestagDistricts, TTL_SECONDS);
   await persistToDb('bundestag', bundestagDistricts);
   log.info(`${city.id}: ${bundestagDistricts.length} Bundestag constituencies, ${cityBundestag.length} MdBs`);
 
@@ -364,7 +365,7 @@ async function ingestCityPolitical(
       });
     }
 
-    cache.set(`${city.id}:political:state`, stateDistricts, TTL_SECONDS);
+    cache.set(CK.political(city.id, 'state'), stateDistricts, TTL_SECONDS);
     await persistToDb('state', stateDistricts);
     log.info(`${city.id}: ${stateDistricts.length} state constituencies, ${stateReps.length} ${config.state.role}s`);
 
@@ -390,7 +391,7 @@ async function ingestCityPolitical(
         });
       }
 
-      cache.set(`${city.id}:political:state-bezirke`, stateBezirke, TTL_SECONDS);
+      cache.set(CK.political(city.id, 'state-bezirke'), stateBezirke, TTL_SECONDS);
       await persistToDb('state-bezirke', stateBezirke);
       log.info(`${city.id}: ${stateBezirke.length} Bezirke with aggregated ${config.state.role}s`);
     }

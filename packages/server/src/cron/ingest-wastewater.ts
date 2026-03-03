@@ -8,13 +8,14 @@ import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveWastewater } from '../db/writes.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-wastewater');
 
 const CSV_URL = 'https://data.lageso.de/infektionsschutz/opendata/abwassermonitoring/BEWAC_abwassermonitoring_berlin.csv';
 const FETCH_TIMEOUT_MS = 30_000;
 const WASTEWATER_TTL_SECONDS = 604800; // 7 days
-const CACHE_KEY = 'berlin:wastewater:summary';
+const CACHE_KEY = CK.wastewaterSummary('berlin');
 
 const RISING_THRESHOLD = 1.5;
 const FALLING_THRESHOLD = 0.67;

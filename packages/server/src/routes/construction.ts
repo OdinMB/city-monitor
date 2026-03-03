@@ -10,6 +10,7 @@ import { loadConstructionSites } from '../db/reads.js';
 import type { ConstructionSite } from '../cron/ingest-construction.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:construction');
 
@@ -23,7 +24,7 @@ export function createConstructionRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<ConstructionSite[]>(`${city.id}:construction:sites`);
+    const cached = cache.getWithMeta<ConstructionSite[]>(CK.constructionSites(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createConstructionRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadConstructionSites(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:construction:sites`, stored, 1800);
+          cache.set(CK.constructionSites(city.id), stored, 1800);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

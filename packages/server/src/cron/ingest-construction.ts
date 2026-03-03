@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveConstructionSites } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-construction');
 
@@ -101,7 +102,7 @@ async function ingestCityConstruction(cityId: string, url: string, cache: Cache,
     });
   }
 
-  cache.set(`${cityId}:construction:sites`, sites, 1800);
+  cache.set(CK.constructionSites(cityId), sites, 1800);
 
   if (db) {
     try {

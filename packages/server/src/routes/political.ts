@@ -7,6 +7,7 @@ import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
 import type { PoliticalDistrict } from '../cron/ingest-political.js';
 import { getCityConfig } from '../config/index.js';
+import { CK } from '../lib/cache-keys.js';
 
 export function createPoliticalRouter(cache: Cache) {
   const router = Router();
@@ -25,7 +26,7 @@ export function createPoliticalRouter(cache: Cache) {
       return;
     }
 
-    const cached = cache.getWithMeta<PoliticalDistrict[]>(`${city.id}:political:${level}`);
+    const cached = cache.getWithMeta<PoliticalDistrict[]>(CK.political(city.id, level));
     res.json(cached ?? { data: [], fetchedAt: null });
   });
 

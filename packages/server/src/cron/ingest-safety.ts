@@ -11,6 +11,7 @@ import { parseFeed } from '../lib/rss-parser.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 import { geolocateReports } from '../lib/openai.js';
 
 const log = createLogger('ingest-safety');
@@ -115,7 +116,7 @@ async function ingestCitySafety(cityId: string, cityName: string, feedUrl: strin
     new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
   );
 
-  cache.set(`${cityId}:safety:recent`, reports, 900);
+  cache.set(CK.safetyRecent(cityId), reports, 900);
 
   if (db) {
     try {

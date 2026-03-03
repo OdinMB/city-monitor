@@ -10,6 +10,7 @@ import { loadAppointments } from '../db/reads.js';
 import type { BuergeramtData } from '../cron/ingest-appointments.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:appointments');
 
@@ -29,7 +30,7 @@ export function createAppointmentsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<BuergeramtData>(`${city.id}:appointments`);
+    const cached = cache.getWithMeta<BuergeramtData>(CK.appointments(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -39,7 +40,7 @@ export function createAppointmentsRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadAppointments(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:appointments`, stored, 21600);
+          cache.set(CK.appointments(city.id), stored, 21600);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

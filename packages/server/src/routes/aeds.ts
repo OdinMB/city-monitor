@@ -10,6 +10,7 @@ import { loadAeds } from '../db/reads.js';
 import type { AedLocation } from '../cron/ingest-aeds.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:aeds');
 
@@ -23,7 +24,7 @@ export function createAedsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<AedLocation[]>(`${city.id}:aed:locations`);
+    const cached = cache.getWithMeta<AedLocation[]>(CK.aedLocations(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createAedsRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadAeds(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:aed:locations`, stored, 86400);
+          cache.set(CK.aedLocations(city.id), stored, 86400);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

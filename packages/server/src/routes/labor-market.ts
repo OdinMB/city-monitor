@@ -10,6 +10,7 @@ import { loadLaborMarket } from '../db/reads.js';
 import type { LaborMarketSummary } from '@city-monitor/shared';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:labor-market');
 
@@ -23,7 +24,7 @@ export function createLaborMarketRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<LaborMarketSummary>(`${city.id}:labor-market`);
+    const cached = cache.getWithMeta<LaborMarketSummary>(CK.laborMarket(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createLaborMarketRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadLaborMarket(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:labor-market`, stored, 86400);
+          cache.set(CK.laborMarket(city.id), stored, 86400);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

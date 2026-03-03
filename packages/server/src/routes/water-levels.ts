@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { loadWaterLevels } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 import type { WaterLevelData } from '@city-monitor/shared';
 
 const log = createLogger('route:water-levels');
@@ -23,7 +24,7 @@ export function createWaterLevelsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<WaterLevelData>(`${city.id}:water-levels`);
+    const cached = cache.getWithMeta<WaterLevelData>(CK.waterLevels(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createWaterLevelsRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbData = await loadWaterLevels(db, city.id);
         if (dbData) {
-          cache.set(`${city.id}:water-levels`, dbData, 900);
+          cache.set(CK.waterLevels(city.id), dbData, 900);
           res.json({ data: dbData, fetchedAt: new Date().toISOString() });
           return;
         }

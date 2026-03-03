@@ -10,6 +10,7 @@ import { saveTransitAlerts } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { hashString } from '../lib/hash.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-transit');
 
@@ -145,7 +146,7 @@ async function ingestCityTransit(
     return;
   }
 
-  cache.set(`${cityId}:transit:alerts`, allAlerts, 1200);
+  cache.set(CK.transitAlerts(cityId), allAlerts, 1200);
 
   if (db) {
     try {

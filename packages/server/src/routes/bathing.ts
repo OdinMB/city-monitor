@@ -10,6 +10,7 @@ import { loadBathingSpots } from '../db/reads.js';
 import type { BathingSpot } from '../cron/ingest-bathing.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:bathing');
 
@@ -23,7 +24,7 @@ export function createBathingRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<BathingSpot[]>(`${city.id}:bathing:spots`);
+    const cached = cache.getWithMeta<BathingSpot[]>(CK.bathingSpots(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createBathingRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadBathingSpots(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:bathing:spots`, stored, 86400);
+          cache.set(CK.bathingSpots(city.id), stored, 86400);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

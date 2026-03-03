@@ -10,6 +10,7 @@ import { loadTrafficIncidents } from '../db/reads.js';
 import type { TrafficIncident } from '../cron/ingest-traffic.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:traffic');
 
@@ -23,7 +24,7 @@ export function createTrafficRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<TrafficIncident[]>(`${city.id}:traffic:incidents`);
+    const cached = cache.getWithMeta<TrafficIncident[]>(CK.trafficIncidents(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createTrafficRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadTrafficIncidents(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:traffic:incidents`, stored, 300);
+          cache.set(CK.trafficIncidents(city.id), stored, 300);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

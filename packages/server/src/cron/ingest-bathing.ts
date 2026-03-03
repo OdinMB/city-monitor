@@ -8,6 +8,7 @@ import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveBathingSpots } from '../db/writes.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 export type { BathingSpot };
 
@@ -103,7 +104,7 @@ export function createBathingIngestion(cache: Cache, db: Db | null = null) {
       const text = await response.text();
       const spots = parseCsv(text);
 
-      cache.set('berlin:bathing:spots', spots, BATHING_TTL_SECONDS);
+      cache.set(CK.bathingSpots('berlin'), spots, BATHING_TTL_SECONDS);
 
       if (db) {
         try {

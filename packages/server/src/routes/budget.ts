@@ -10,6 +10,7 @@ import { loadBudget } from '../db/reads.js';
 import type { BudgetSummary } from '@city-monitor/shared';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:budget');
 
@@ -23,7 +24,7 @@ export function createBudgetRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<BudgetSummary>(`${city.id}:budget`);
+    const cached = cache.getWithMeta<BudgetSummary>(CK.budget(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createBudgetRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadBudget(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:budget`, stored, 86400);
+          cache.set(CK.budget(city.id), stored, 86400);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

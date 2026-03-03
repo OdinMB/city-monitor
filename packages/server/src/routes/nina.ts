@@ -10,6 +10,7 @@ import type { Db } from '../db/index.js';
 import { loadNinaWarnings } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:nina');
 
@@ -29,7 +30,7 @@ export function createNinaRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<NinaWarning[]>(`${city.id}:nina:warnings`);
+    const cached = cache.getWithMeta<NinaWarning[]>(CK.ninaWarnings(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -39,7 +40,7 @@ export function createNinaRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbWarnings = await loadNinaWarnings(db, city.id);
         if (dbWarnings) {
-          cache.set(`${city.id}:nina:warnings`, dbWarnings, 600);
+          cache.set(CK.ninaWarnings(city.id), dbWarnings, 600);
           res.json({ data: dbWarnings, fetchedAt: new Date().toISOString() });
           return;
         }

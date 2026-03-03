@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { loadSafetyReports } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
 
 const log = createLogger('route:safety');
@@ -23,7 +24,7 @@ export function createSafetyRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<SafetyReport[]>(`${city.id}:safety:recent`);
+    const cached = cache.getWithMeta<SafetyReport[]>(CK.safetyRecent(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createSafetyRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbReports = await loadSafetyReports(db, city.id);
         if (dbReports) {
-          cache.set(`${city.id}:safety:recent`, dbReports, 900);
+          cache.set(CK.safetyRecent(city.id), dbReports, 900);
           res.json({ data: dbReports, fetchedAt: new Date().toISOString() });
           return;
         }

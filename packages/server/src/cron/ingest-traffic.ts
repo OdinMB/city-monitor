@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveTrafficIncidents } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-traffic');
 
@@ -134,7 +135,7 @@ async function ingestCityTraffic(city: CityConfig, cache: Cache, db: Db | null):
     };
   });
 
-  cache.set(`${city.id}:traffic:incidents`, incidents, 300);
+  cache.set(CK.trafficIncidents(city.id), incidents, 300);
 
   if (db) {
     try {

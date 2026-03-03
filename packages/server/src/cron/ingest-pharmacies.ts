@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { savePharmacies } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-pharmacies');
 
@@ -112,7 +113,7 @@ async function ingestCityPharmacies(city: CityConfig, cache: Cache, db: Db | nul
       distance: p.distanz ? parseFloat(p.distanz) : undefined,
     }));
 
-  cache.set(`${city.id}:pharmacies:emergency`, pharmacies, 21600);
+  cache.set(CK.pharmacies(city.id), pharmacies, 21600);
 
   if (db) {
     try {

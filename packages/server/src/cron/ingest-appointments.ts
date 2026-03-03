@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveAppointments } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 export type { BuergeramtData };
 
@@ -161,7 +162,7 @@ async function ingestCityAppointments(
     bookingUrl: BOOKING_URL,
   };
 
-  cache.set(`${cityId}:appointments`, data, 21600); // 6h TTL
+  cache.set(CK.appointments(cityId), data, 21600); // 6h TTL
 
   if (db) {
     try {

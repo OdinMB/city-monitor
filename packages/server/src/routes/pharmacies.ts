@@ -10,6 +10,7 @@ import { loadPharmacies } from '../db/reads.js';
 import type { EmergencyPharmacy } from '../cron/ingest-pharmacies.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:pharmacies');
 
@@ -23,7 +24,7 @@ export function createPharmaciesRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<EmergencyPharmacy[]>(`${city.id}:pharmacies:emergency`);
+    const cached = cache.getWithMeta<EmergencyPharmacy[]>(CK.pharmacies(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -33,7 +34,7 @@ export function createPharmaciesRouter(cache: Cache, db: Db | null = null) {
       try {
         const stored = await loadPharmacies(db, city.id);
         if (stored) {
-          cache.set(`${city.id}:pharmacies:emergency`, stored, 21600);
+          cache.set(CK.pharmacies(city.id), stored, 21600);
           res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }

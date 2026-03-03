@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveBudget } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-budget');
 
@@ -245,7 +246,7 @@ async function ingestCityBudget(cityId: string, csvUrl: string, cache: Cache, db
   }
 
   const summary = aggregateBudgetData(rows);
-  cache.set(`${cityId}:budget`, summary, CACHE_TTL);
+  cache.set(CK.budget(cityId), summary, CACHE_TTL);
 
   if (db) {
     try {

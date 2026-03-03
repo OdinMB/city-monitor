@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { loadSummary, loadNewsItems } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import type { NewsSummary } from '../cron/summarize.js';
 
@@ -24,7 +25,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.getWithMeta<NewsDigest>(`${city.id}:news:digest`);
+    const cached = cache.getWithMeta<NewsDigest>(CK.newsDigest(city.id));
     if (cached) {
       res.json(cached);
       return;
@@ -44,9 +45,9 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
           }
 
           const rebuilt: NewsDigest = { items: filtered, categories, updatedAt: new Date().toISOString() };
-          cache.set(`${city.id}:news:digest`, rebuilt, 900);
+          cache.set(CK.newsDigest(city.id), rebuilt, 900);
           for (const [cat, catItems] of Object.entries(categories)) {
-            cache.set(`${city.id}:news:${cat}`, catItems, 900);
+            cache.set(CK.newsCategory(city.id, cat), catItems, 900);
           }
           res.json({ data: rebuilt, fetchedAt: new Date().toISOString() });
           return;
@@ -66,7 +67,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cachedSummary = cache.getWithMeta<NewsSummary>(`${city.id}:news:summary`);
+    const cachedSummary = cache.getWithMeta<NewsSummary>(CK.newsSummary(city.id));
     if (cachedSummary) {
       res.json(cachedSummary);
       return;
@@ -76,7 +77,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbSummary = await loadSummary(db, city.id);
         if (dbSummary) {
-          cache.set(`${city.id}:news:summary`, dbSummary, 86400);
+          cache.set(CK.newsSummary(city.id), dbSummary, 86400);
           res.json({ data: dbSummary, fetchedAt: new Date().toISOString() });
           return;
         }
@@ -95,40 +96,24 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const data = cache.getBatchWithMeta([
-      `${city.id}:news:digest`,
-      `${city.id}:weather`,
-      `${city.id}:transit:alerts`,
-      `${city.id}:events:upcoming`,
-      `${city.id}:safety:recent`,
-      `${city.id}:nina:warnings`,
-      `${city.id}:air-quality`,
-      `${city.id}:pharmacies:emergency`,
-      `${city.id}:traffic:incidents`,
-      `${city.id}:construction:sites`,
-      `${city.id}:water-levels`,
-      `${city.id}:budget`,
-      `${city.id}:appointments`,
-      `${city.id}:labor-market`,
-      `${city.id}:wastewater:summary`,
-    ]);
+    const data = cache.getBatchWithMeta(CK.bootstrapKeys(city.id));
 
     res.json({
-      news: data[`${city.id}:news:digest`] ?? null,
-      weather: data[`${city.id}:weather`] ?? null,
-      transit: data[`${city.id}:transit:alerts`] ?? null,
-      events: data[`${city.id}:events:upcoming`] ?? null,
-      safety: data[`${city.id}:safety:recent`] ?? null,
-      nina: data[`${city.id}:nina:warnings`] ?? null,
-      airQuality: data[`${city.id}:air-quality`] ?? null,
-      pharmacies: data[`${city.id}:pharmacies:emergency`] ?? null,
-      traffic: data[`${city.id}:traffic:incidents`] ?? null,
-      construction: data[`${city.id}:construction:sites`] ?? null,
-      waterLevels: data[`${city.id}:water-levels`] ?? null,
-      budget: data[`${city.id}:budget`] ?? null,
-      appointments: data[`${city.id}:appointments`] ?? null,
-      laborMarket: data[`${city.id}:labor-market`] ?? null,
-      wastewater: data[`${city.id}:wastewater:summary`] ?? null,
+      news: data[CK.newsDigest(city.id)] ?? null,
+      weather: data[CK.weather(city.id)] ?? null,
+      transit: data[CK.transitAlerts(city.id)] ?? null,
+      events: data[CK.eventsUpcoming(city.id)] ?? null,
+      safety: data[CK.safetyRecent(city.id)] ?? null,
+      nina: data[CK.ninaWarnings(city.id)] ?? null,
+      airQuality: data[CK.airQuality(city.id)] ?? null,
+      pharmacies: data[CK.pharmacies(city.id)] ?? null,
+      traffic: data[CK.trafficIncidents(city.id)] ?? null,
+      construction: data[CK.constructionSites(city.id)] ?? null,
+      waterLevels: data[CK.waterLevels(city.id)] ?? null,
+      budget: data[CK.budget(city.id)] ?? null,
+      appointments: data[CK.appointments(city.id)] ?? null,
+      laborMarket: data[CK.laborMarket(city.id)] ?? null,
+      wastewater: data[CK.wastewaterSummary(city.id)] ?? null,
     });
   });
 

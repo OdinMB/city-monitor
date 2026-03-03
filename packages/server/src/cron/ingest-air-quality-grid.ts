@@ -9,6 +9,7 @@ import type { Db } from '../db/index.js';
 import { saveAirQualityGrid } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 export type { AirQualityGridPoint } from '@city-monitor/shared';
 
@@ -205,7 +206,7 @@ export async function ingestCityAirQualityGrid(city: CityConfig, cache: Cache, d
   }
 
   // Merge fresh SC data into per-station cache (preserves data from offline sensors)
-  const scCacheKey = `${city.id}:air-quality:sc-cache`;
+  const scCacheKey = CK.airQualityScCache(city.id);
   const scCache = cache.get<Record<string, ScCacheEntry>>(scCacheKey) ?? {};
   const now = Date.now();
 
@@ -230,7 +231,7 @@ export async function ingestCityAirQualityGrid(city: CityConfig, cache: Cache, d
     return;
   }
 
-  cache.set(`${city.id}:air-quality:grid`, grid, 1800);
+  cache.set(CK.airQualityGrid(city.id), grid, 1800);
 
   if (db) {
     try {

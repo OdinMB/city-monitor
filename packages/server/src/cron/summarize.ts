@@ -12,6 +12,7 @@ import { summarizeHeadlines, isConfigured } from '../lib/openai.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 import type { NewsDigest } from './ingest-feeds.js';
 
 const log = createLogger('summarize');
@@ -51,7 +52,7 @@ async function summarizeCityNews(
   cache: Cache,
   db: Db | null,
 ): Promise<void> {
-  const digest = cache.get<NewsDigest>(`${cityId}:news:digest`);
+  const digest = cache.get<NewsDigest>(CK.newsDigest(cityId));
   if (!digest || digest.items.length === 0) return;
 
   // Take most recent stories with importance > 0.5 (up to 25)
@@ -70,7 +71,7 @@ async function summarizeCityNews(
   const headlineHash = hashString(keyHeadlines);
 
   // Check if we already have a summary for these headlines
-  const existing = cache.get<NewsSummary & { headlineHash: string }>(`${cityId}:news:summary`);
+  const existing = cache.get<NewsSummary & { headlineHash: string }>(CK.newsSummary(cityId));
   if (existing && existing.headlineHash === headlineHash) return;
 
   const items = topItems.map((item) => ({ title: item.title, description: item.description }));
@@ -85,7 +86,7 @@ async function summarizeCityNews(
     headlineHash,
   };
 
-  cache.set(`${cityId}:news:summary`, summary, SUMMARY_TTL);
+  cache.set(CK.newsSummary(cityId), summary, SUMMARY_TTL);
 
   if (db) {
     try {

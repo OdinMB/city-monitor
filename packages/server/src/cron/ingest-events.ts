@@ -9,6 +9,7 @@ import type { EventSourceConfig } from '@city-monitor/shared';
 import { saveEvents } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-events');
 
@@ -188,7 +189,7 @@ async function ingestCityEvents(
     .slice(0, MAX_FUTURE_EVENTS);
 
   if (merged.length > 0) {
-    cache.set(`${cityId}:events:upcoming`, merged, 21600);
+    cache.set(CK.eventsUpcoming(cityId), merged, 21600);
   }
 
   log.info(`${cityId}: ${merged.length} total events from ${sources.length} source(s)`);
