@@ -60,11 +60,8 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
   const day = formatEventDay(event.date, lang);
   const showTime = time !== '00:00';
 
-  return (
-    <div
-      className={`px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 text-xs ${hasDetail ? 'cursor-pointer' : ''}`}
-      onClick={hasDetail ? () => setExpanded((v) => !v) : undefined}
-    >
+  const content = (
+    <>
       {/* Collapsed row */}
       <div className="flex items-center gap-1.5">
         <span className="shrink-0">
@@ -85,7 +82,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700 space-y-1 text-[11px] text-gray-500 dark:text-gray-400">
+        <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700 space-y-1 text-[11px] text-gray-500 dark:text-gray-400 text-left">
           {event.venue && <div>{event.venue}</div>}
           {event.description && <div className="line-clamp-3">{event.description}</div>}
           {event.endDate && (
@@ -105,13 +102,25 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
           )}
         </div>
       )}
+    </>
+  );
 
-      {/* Expand indicator */}
-      {hasDetail && (
-        <div className="text-[10px] text-gray-400 mt-0.5 text-right">
-          {expanded ? '▲' : '▼'}
-        </div>
-      )}
+  if (hasDetail) {
+    return (
+      <button
+        type="button"
+        className="w-full px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 text-xs cursor-pointer appearance-none bg-transparent text-left"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className="px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 text-xs">
+      {content}
     </div>
   );
 }

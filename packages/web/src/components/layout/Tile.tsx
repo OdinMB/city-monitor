@@ -38,14 +38,16 @@ export function Tile({ title, span = 1, height = 'auto', expandable, defaultExpa
     <div
       className={`col-span-1 ${SPAN_CLASSES[span]} flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden ${className ?? ''}`}
     >
-      <div
-        className={`px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between ${expandable ? 'cursor-pointer select-none' : ''}`}
-        onClick={expandable ? () => setExpanded((v) => !v) : undefined}
-      >
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          {title}
-        </h2>
-        {expandable && (
+      {expandable ? (
+        <button
+          type="button"
+          className="w-full px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between cursor-pointer select-none appearance-none bg-transparent text-left"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+        >
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {title}
+          </h2>
           <svg
             width={20}
             height={20}
@@ -56,11 +58,18 @@ export function Tile({ title, span = 1, height = 'auto', expandable, defaultExpa
             strokeLinecap="round"
             strokeLinejoin="round"
             className={`text-gray-400 dark:text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            aria-hidden="true"
           >
             <polyline points="6 9 12 15 18 9" />
           </svg>
-        )}
-      </div>
+        </button>
+      ) : (
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {title}
+          </h2>
+        </div>
+      )}
       <div className={`@container p-4 flex-1 flex flex-col ${HEIGHT_CLASSES[height]}`}>
         {typeof children === 'function' ? children(expanded, setExpanded) : children}
       </div>

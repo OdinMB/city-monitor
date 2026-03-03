@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { DataLayerToggles } from './DataLayerToggles.js';
 
 const PANEL_W = 200;
@@ -54,6 +54,16 @@ export function MobileLayerDrawer() {
 
   const close = useCallback(() => setOpen(false), []);
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') close();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, close]);
+
   return (
     <div className="absolute inset-y-0 left-0 z-40 lg:hidden pointer-events-none">
       {/* Backdrop */}
@@ -62,6 +72,7 @@ export function MobileLayerDrawer() {
           className="absolute inset-0 pointer-events-auto"
           style={{ backgroundColor: `rgba(0,0,0,${0.25 * progress})` }}
           onClick={close}
+          aria-hidden="true"
         />
       )}
 
@@ -77,6 +88,8 @@ export function MobileLayerDrawer() {
       >
         {/* Panel content */}
         <div
+          role="dialog"
+          aria-label="Data layers"
           className="h-full shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 p-3 overflow-y-auto space-y-4"
           style={{ width: PANEL_W }}
         >

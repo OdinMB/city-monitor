@@ -32,6 +32,7 @@ export function TopBar() {
   const [aqiOpen, setAqiOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const current = weather?.current;
   const weatherInfo = current ? getWeatherInfo(current.weatherCode) : null;
@@ -39,16 +40,27 @@ export function TopBar() {
     ? getAqiLevel(airQuality.current.europeanAqi)
     : null;
 
-  // Close hamburger menu on outside click
+  // Close hamburger menu on outside click or Escape key
   useEffect(() => {
     if (!menuOpen) return;
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
       }
     }
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [menuOpen]);
 
   return (
@@ -150,9 +162,11 @@ export function TopBar() {
       {/* Mobile: hamburger menu */}
       <div className="lg:hidden relative" ref={menuRef}>
         <button
+          ref={menuButtonRef}
           onClick={() => setMenuOpen((v) => !v)}
           className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           aria-label="Menu"
+          aria-expanded={menuOpen}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="6" x2="21" y2="6" />
@@ -161,7 +175,7 @@ export function TopBar() {
           </svg>
         </button>
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
+          <div role="menu" className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
             <div className="flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden mb-2">
               {LANGUAGES.map((lang) => (
                 <button
