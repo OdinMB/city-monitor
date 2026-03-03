@@ -120,6 +120,60 @@ describe('Scheduler', () => {
     expect(summarizeStart).toBeGreaterThan(feedsEnd);
   });
 
+  it('skips overlapping runs when previous invocation is still running', async () => {
+    let callCount = 0;
+    let resolveFirst: (() => void) | null = null;
+
+    const handler = vi.fn(async () => {
+      callCount++;
+      if (callCount === 1) {
+        // First invocation: block until manually resolved
+        await new Promise<void>((resolve) => { resolveFirst = resolve; });
+      }
+    });
+
+    const jobs: ScheduledJob[] = [
+      { name: 'slow-job', schedule: '*/10 * * * *', handler, runOnStart: true },
+    ];
+
+    const scheduler = createScheduler(jobs);
+    await new Promise((r) => setTimeout(r, 10));
+
+    // First invocation should be running
+    expect(handler).toHaveBeenCalledOnce();
+    const jobInfo = scheduler.getJobs().find((j) => j.name === 'slow-job');
+    expect(jobInfo?.running).toBe(true);
+
+    // Trigger the cron callback manually — should be skipped
+    const { default: nodeCron } = await import('node-cron');
+    const scheduleCall = vi.mocked(nodeCron.schedule).mock.calls[0];
+    const cronCallback = scheduleCall![1] as () => Promise<void>;
+    await cronCallback();
+
+    // handler should still only have been called once (overlap skipped)
+    expect(handler).toHaveBeenCalledOnce();
+
+    // Resolve the first invocation
+    resolveFirst!();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(jobInfo?.running).toBe(false);
+  });
+
+  it('tracks last failure in job info', async () => {
+    const handler = vi.fn().mockRejectedValue(new Error('boom'));
+
+    const jobs: ScheduledJob[] = [
+      { name: 'failing-job', schedule: '*/10 * * * *', handler, runOnStart: true },
+    ];
+
+    const scheduler = createScheduler(jobs);
+    await new Promise((r) => setTimeout(r, 50));
+
+    const jobInfo = scheduler.getJobs().find((j) => j.name === 'failing-job');
+    expect(jobInfo?.lastFailure).not.toBeNull();
+    expect(jobInfo?.lastRun).toBeNull(); // lastRun only updated on success
+  });
+
   it('handles errors in dependency — dependent still runs', async () => {
     const feedsHandler = vi.fn().mockRejectedValue(new Error('feeds failed'));
     const summarizeHandler = vi.fn().mockResolvedValue(undefined);

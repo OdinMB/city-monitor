@@ -7,7 +7,7 @@ import express from 'express';
 import cors from 'cors';
 import { createCache } from './lib/cache.js';
 import { createScheduler, type ScheduledJob } from './lib/scheduler.js';
-import { createDb } from './db/index.js';
+import { createDb, testConnection } from './db/index.js';
 import { warmCache, findStaleJobs, type FreshnessSpec } from './db/warm-cache.js';
 import { createHealthRouter } from './routes/health.js';
 import { createNewsRouter } from './routes/news.js';
@@ -59,9 +59,11 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use(express.json());
 
   const cache = createCache();
-  const db = createDb();
+  const dbResult = createDb();
+  const db = dbResult?.db ?? null;
 
   if (db) {
+    await testConnection(db);
     initGeocodeDb(db);
     await warmCache(db, cache);
   }

@@ -22,6 +22,8 @@ export function createHealthRouter(cache: Cache, scheduler: Scheduler) {
         jobs: scheduler.getJobs().map((j) => ({
           name: j.name,
           lastRun: j.lastRun?.toISOString() ?? null,
+          lastFailure: j.lastFailure?.toISOString() ?? null,
+          running: j.running,
         })),
       },
       ai: getUsageStats(),

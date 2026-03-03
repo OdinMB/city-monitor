@@ -21,6 +21,8 @@ export interface JobInfo {
   name: string;
   schedule: string;
   lastRun: Date | null;
+  lastFailure: Date | null;
+  running: boolean;
   nextRun: string | null;
 }
 
@@ -33,16 +35,26 @@ export function createScheduler(jobs: ScheduledJob[]) {
       name: job.name,
       schedule: job.schedule,
       lastRun: null,
+      lastFailure: null,
+      running: false,
       nextRun: job.schedule,
     };
     jobInfos.push(info);
 
     const task = cron.schedule(job.schedule, async () => {
+      if (info.running) {
+        log.warn(`${job.name}: still running, skipping overlapping invocation`);
+        return;
+      }
+      info.running = true;
       try {
         await job.handler();
         info.lastRun = new Date();
       } catch (err) {
+        info.lastFailure = new Date();
         log.error(`${job.name} failed`, err);
+      } finally {
+        info.running = false;
       }
     });
     tasks.push(task);
@@ -98,13 +110,16 @@ function runStartupJobs(jobs: ScheduledJob[], jobInfos: JobInfo[]): void {
   for (const job of startupJobs) {
     (async () => {
       await depsReady(job);
+      const info = jobInfos.find((j) => j.name === job.name);
+      if (info) info.running = true;
       try {
         await job.handler();
-        const info = jobInfos.find((j) => j.name === job.name);
         if (info) info.lastRun = new Date();
       } catch (err) {
+        if (info) info.lastFailure = new Date();
         log.error(`${job.name} (startup) failed`, err);
       } finally {
+        if (info) info.running = false;
         resolvers.get(job.name)?.();
       }
     })();
