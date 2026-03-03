@@ -22,7 +22,8 @@
       "headlines_count": "{{count}} headlines",
       "all": "All",
       "retry": "Retry",
-      "locationPin": "Has location"
+      "locationPin": "Has location",
+      "showMore": "{{count}} more"
     },
     "weather": {
       "title": "Weather",

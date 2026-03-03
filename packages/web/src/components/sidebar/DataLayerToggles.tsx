@@ -5,7 +5,7 @@
 
 import { createElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, ShieldAlert, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, MapPin, Palette, Trophy, TrendingUp, Siren } from 'lucide';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren } from 'lucide';
 import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocioeconomicLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import type { IconNode } from '../../lib/map-icons.js';
@@ -25,13 +25,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: st
 const INACTIVE_COLOR = '#9ca3af';
 
 const NEWS_SUB_META: { key: NewsSubLayer; icon: IconNode; color: string }[] = [
-  { key: 'local', icon: MapPin as IconNode, color: '#6366f1' },
-  { key: 'politics', icon: Landmark as IconNode, color: '#8b5cf6' },
-  { key: 'transit', icon: TrainFront as IconNode, color: '#3b82f6' },
-  { key: 'culture', icon: Palette as IconNode, color: '#f59e0b' },
-  { key: 'crime', icon: ShieldAlert as IconNode, color: '#ef4444' },
-  { key: 'economy', icon: TrendingUp as IconNode, color: '#22c55e' },
-  { key: 'sports', icon: Trophy as IconNode, color: '#f97316' },
+  { key: 'news', icon: Newspaper as IconNode, color: '#6366f1' },
   { key: 'police', icon: Siren as IconNode, color: '#f97316' },
 ];
 

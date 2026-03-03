@@ -8,7 +8,7 @@ import { create } from 'zustand';
 export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'water' | 'socioeconomic' | 'political';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
 export type SocioeconomicLayer = 'social-atlas' | 'rent';
-export type NewsSubLayer = 'local' | 'politics' | 'transit' | 'culture' | 'crime' | 'economy' | 'sports' | 'police';
+export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
 export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks';
@@ -30,10 +30,11 @@ interface CommandCenterState {
   toggleEmergencySubLayer: (sub: EmergencySubLayer) => void;
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
   toggleTrafficSubLayer: (sub: TrafficSubLayer) => void;
+  setActiveLayers: (layers: Set<DataLayer>) => void;
 }
 
 const DEFAULT_LAYERS: Set<DataLayer> = new Set(['warnings']);
-const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['local', 'politics', 'transit', 'culture', 'crime', 'economy', 'sports', 'police']);
+const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['news', 'police']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies', 'aeds']);
 const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
 const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
@@ -116,4 +117,5 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       }
       return { trafficSubLayers: next };
     }),
+  setActiveLayers: (layers) => set({ activeLayers: layers }),
 }));

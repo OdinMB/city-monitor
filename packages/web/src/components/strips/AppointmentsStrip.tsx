@@ -55,7 +55,11 @@ function ServiceRow({ service, t }: { service: BuergeramtService; t: (k: string,
   );
 }
 
-export function AppointmentsStrip() {
+const STATUS_PRIORITY: Record<string, number> = { none: 0, scarce: 1, unknown: 2, available: 3 };
+const COLLAPSED_SERVICES = 5;
+const EXPANDED_SERVICES = 10;
+
+export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();
   const { data, isLoading } = useAppointments(cityId);
   const { t } = useTranslation();
@@ -101,6 +105,14 @@ export function AppointmentsStrip() {
         ? 'text-amber-600 dark:text-amber-400'
         : 'text-green-600 dark:text-green-400';
 
+  const sorted = [...data.services].sort(
+    (a, b) => (STATUS_PRIORITY[a.status] ?? 9) - (STATUS_PRIORITY[b.status] ?? 9),
+  );
+
+  const limit = expanded ? EXPANDED_SERVICES : COLLAPSED_SERVICES;
+  const visible = sorted.slice(0, limit);
+  const hiddenCount = sorted.length - visible.length;
+
   return (
     <div className="space-y-2.5">
       {/* Summary */}
@@ -109,9 +121,19 @@ export function AppointmentsStrip() {
       </p>
 
       {/* Service rows */}
-      {data.services.map((service) => (
+      {visible.map((service) => (
         <ServiceRow key={service.serviceId} service={service} t={t} />
       ))}
+
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={onExpand}
+          className="w-full text-xs text-gray-400 dark:text-gray-500 text-center pt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+        >
+          +{hiddenCount} {t('panel.transit.more')}
+        </button>
+      )}
 
       {/* Booking link */}
       <div className="pt-1 text-center">

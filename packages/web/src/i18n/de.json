@@ -22,7 +22,8 @@
       "headlines_count": "{{count}} Schlagzeilen",
       "all": "Alle",
       "retry": "Erneut versuchen",
-      "locationPin": "Hat Ortsangabe"
+      "locationPin": "Hat Ortsangabe",
+      "showMore": "{{count}} weitere"
     },
     "weather": {
       "title": "Wetter",

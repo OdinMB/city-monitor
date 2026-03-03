@@ -22,7 +22,8 @@
       "headlines_count": "{{count}} عناوين",
       "all": "الكل",
       "retry": "إعادة المحاولة",
-      "locationPin": "يحتوي على موقع"
+      "locationPin": "يحتوي على موقع",
+      "showMore": "{{count}} أخرى"
     },
     "weather": {
       "title": "الطقس",

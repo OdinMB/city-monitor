@@ -39,8 +39,9 @@ const FAVICON_DOMAINS: Record<string, string> = {
 };
 
 const MAX_ITEMS = 10;
+const COLLAPSED_ITEMS = 5;
 
-export function NewsStrip() {
+export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand: () => void }) {
   const { id: cityId } = useCityConfig();
   const { data, isLoading } = useNewsDigest(cityId);
   const { t } = useTranslation();
@@ -71,9 +72,12 @@ export function NewsStrip() {
   const selectByIndex = useCallback((i: number) => setActiveCategory(availableCategories[i] as string), [availableCategories]);
   const { setTabRef, onKeyDown } = useTabKeys(availableCategories.length, activeIndex, selectByIndex);
 
-  return isLoading ? (
-    <Skeleton lines={6} />
-  ) : (
+  if (isLoading) return <Skeleton lines={6} />;
+
+  const displayItems = expanded ? filteredItems : filteredItems.slice(0, COLLAPSED_ITEMS);
+  const remaining = expanded ? 0 : filteredItems.length - displayItems.length;
+
+  return (
     <>
       <div role="tablist" className="flex gap-1 overflow-x-auto pb-2 mb-3">
         {availableCategories.map((cat, i) => {
@@ -103,14 +107,22 @@ export function NewsStrip() {
       </div>
 
       <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`}>
-        {filteredItems.length === 0 ? (
+        {displayItems.length === 0 ? (
           <p className="text-sm text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
         ) : (
           <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-            {filteredItems.map((item) => (
+            {displayItems.map((item) => (
               <CompactNewsItem key={item.id} item={item} />
             ))}
           </ul>
+        )}
+        {remaining > 0 && (
+          <button
+            onClick={onExpand}
+            className="w-full pt-2 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+          >
+            {t('panel.news.showMore', { count: remaining })}
+          </button>
         )}
       </div>
     </>
@@ -138,6 +150,9 @@ function CompactNewsItem({ item }: { item: NewsItem }) {
         <span className={`px-1.5 py-0.5 rounded text-[10px] ${colorClass}`}>
           {t(`category.${item.category}`, item.category)}
         </span>
+        {item.importance != null && item.importance > 0 && (
+          <span className="text-[10px] text-gray-400 dark:text-gray-500">{Math.round(item.importance * 100)}%</span>
+        )}
         {item.location && (
           <span className="text-blue-500 dark:text-blue-400" role="img" aria-label={t('panel.news.locationPin')}>📍</span>
         )}

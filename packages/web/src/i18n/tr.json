@@ -22,7 +22,8 @@
       "headlines_count": "{{count}} başlık",
       "all": "Tümü",
       "retry": "Tekrar dene",
-      "locationPin": "Konum bilgisi var"
+      "locationPin": "Konum bilgisi var",
+      "showMore": "{{count}} daha"
     },
     "weather": {
       "title": "Hava Durumu",

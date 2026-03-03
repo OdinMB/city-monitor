@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sidebar } from '../sidebar/Sidebar.js';
 import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
@@ -25,6 +25,8 @@ import { LaborMarketStrip } from '../strips/LaborMarketStrip.js';
 import { WastewaterStrip } from '../strips/WastewaterStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
+import { useNina } from '../../hooks/useNina.js';
+import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.js';
 
 const CityMap = lazy(() =>
   import('../map/CityMap.js').then((m) => ({ default: m.CityMap })),
@@ -35,6 +37,17 @@ export function CommandLayout() {
   const { id: cityId } = useCityConfig();
   const isDesktop = typeof window !== 'undefined'
     && window.matchMedia('(min-width: 640px)').matches;
+
+  // Once NINA data loads, switch default layer: warnings if alerts exist, news otherwise
+  const { data: ninaWarnings } = useNina(cityId);
+  const setActiveLayers = useCommandCenter((s) => s.setActiveLayers);
+  const layerInitRef = useRef(false);
+  useEffect(() => {
+    if (layerInitRef.current || ninaWarnings === undefined) return;
+    layerInitRef.current = true;
+    const layer: DataLayer = ninaWarnings.length > 0 ? 'warnings' : 'news';
+    setActiveLayers(new Set<DataLayer>([layer]));
+  }, [ninaWarnings, setActiveLayers]);
 
   return (
     <>
@@ -64,10 +77,10 @@ export function CommandLayout() {
           <Tile title={t('panel.airQuality.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <AirQualityStrip expanded={expanded} />}
           </Tile>
-          <Tile title={t('panel.news.title')} span={2}>
-            <NewsStrip />
+          <Tile title={t('panel.news.title')} span={2} expandable defaultExpanded={false}>
+            {(expanded, setExpanded) => <NewsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
-          <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={false}>
+          <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
           {cityId === 'berlin' && (
@@ -80,10 +93,10 @@ export function CommandLayout() {
               <LaborMarketStrip />
             </Tile>
           )}
-          <Tile title={t('panel.appointments.title')} span={1}>
-            <AppointmentsStrip />
+          <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
+            {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
-          <Tile title={t('panel.bathing.title')} span={1} expandable defaultExpanded>
+          <Tile title={t('panel.bathing.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <BathingStrip expanded={expanded} />}
           </Tile>
           <Tile title={t('panel.waterLevels.title')} span={1}>

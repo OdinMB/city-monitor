@@ -10,23 +10,14 @@ import { formatRelativeTime } from '../../lib/format-time.js';
 import { Skeleton } from '../layout/Skeleton.js';
 
 function BriefingContent({ text }: { text: string }) {
-  const lines = text.split('\n').filter(l => l.trim());
-  const bullets = lines.filter(l => /^[-•*]\s/.test(l.trim()));
-
-  if (bullets.length > 0) {
-    return (
-      <ul className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 list-disc list-inside space-y-1">
-        {lines.map((line, i) => (
-          <li key={i}>{line.replace(/^[-•*]\s+/, '')}</li>
-        ))}
-      </ul>
-    );
-  }
+  const paragraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
 
   return (
-    <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-      {text}
-    </p>
+    <div className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 space-y-2">
+      {paragraphs.map((p, i) => (
+        <p key={i}>{p}</p>
+      ))}
+    </div>
   );
 }
 

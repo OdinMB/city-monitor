@@ -94,26 +94,26 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
         {poorCount > 0 && <span style={{ color: QUALITY_COLORS.poor }}>{poorCount} {t('panel.bathing.quality.poor')}</span>}
       </div>
 
-      {/* Good spots */}
-      {goodDisplay.length > 0 && (
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">
-            {t('panel.bathing.best')}
-          </div>
-          <div className="space-y-2">
-            {goodDisplay.map((spot) => <SpotRow key={spot.id} spot={spot} t={t} />)}
-          </div>
-        </div>
-      )}
-
-      {/* Warnings — only when expanded */}
-      {expanded && warnDisplay.length > 0 && (
+      {/* Warnings */}
+      {warnDisplay.length > 0 && (
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">
             {t('panel.bathing.warnings')}
           </div>
           <div className="space-y-2">
             {warnDisplay.map((spot) => <SpotRow key={spot.id} spot={spot} t={t} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Good spots — only when expanded */}
+      {expanded && goodDisplay.length > 0 && (
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">
+            {t('panel.bathing.best')}
+          </div>
+          <div className="space-y-2">
+            {goodDisplay.map((spot) => <SpotRow key={spot.id} spot={spot} t={t} />)}
           </div>
         </div>
       )}
