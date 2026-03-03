@@ -126,18 +126,20 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
 
   return (
     <>
-      {/* Centered AQI number + level */}
-      <div className="flex flex-col items-center gap-2 mb-3">
-        <span className="text-3xl font-bold leading-none" style={{ color: level.color }}>
-          {aqiValue}
-        </span>
-        <span className="text-sm font-semibold" style={{ color: level.color }}>
-          {t(`panel.airQuality.level.${level.label}`)} (AQI)
-        </span>
-      </div>
+      <div className={expanded ? '' : 'flex-1 flex flex-col justify-center'}>
+        {/* Centered AQI number + level */}
+        <div className="flex flex-col items-center gap-2 mb-3">
+          <span className="text-3xl font-bold leading-none" style={{ color: level.color }}>
+            {aqiValue}
+          </span>
+          <span className="text-sm font-semibold" style={{ color: level.color }}>
+            {t(`panel.airQuality.level.${level.label}`)} (AQI)
+          </span>
+        </div>
 
-      {/* Scale bar */}
-      <AqiScale aqi={aqiValue} t={t} />
+        {/* Scale bar */}
+        <AqiScale aqi={aqiValue} t={t} />
+      </div>
 
       {/* Expanded: trend → pollutants → stations */}
       {expanded && (

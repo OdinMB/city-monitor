@@ -132,6 +132,7 @@
       "title": "İşsizlik",
       "unemployment": "İşsizlik oranı",
       "sgbII": "SGB II",
+      "total": "toplam",
       "yoy": "geçen yıla göre",
       "empty": "Veri mevcut değil"
     },
@@ -215,13 +216,12 @@
       "weather": "Yağış Radarı",
       "news": "Haberler",
       "safety": "Güvenlik",
-      "warnings": "Uyarılar",
+      "warnings": "Uyarı Bildirimleri",
       "air-quality": "Hava Kalitesi",
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
       "water": "Su",
-      "social-atlas": "Sosyal Atlas 2023",
-      "rent-map": "Kira Haritası",
+      "socioeconomic": "Toplum",
       "political": "Temsil"
     },
     "traffic": {
@@ -236,6 +236,10 @@
     "water": {
       "levels": "Su Seviyeleri",
       "bathing": "Yüzme Suyu"
+    },
+    "socioeconomic": {
+      "social-atlas": "Sosyal Atlas 2023",
+      "rent": "Kira"
     },
     "political": {
       "bezirke": "Bezirke",

@@ -6,40 +6,42 @@
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsSummary } from '../../hooks/useNewsSummary.js';
-import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
 import { Skeleton } from '../layout/Skeleton.js';
+
+function BriefingContent({ text }: { text: string }) {
+  const lines = text.split('\n').filter(l => l.trim());
+  const bullets = lines.filter(l => /^[-•*]\s/.test(l.trim()));
+
+  if (bullets.length > 0) {
+    return (
+      <ul className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 list-disc list-inside space-y-1">
+        {lines.map((line, i) => (
+          <li key={i}>{line.replace(/^[-•*]\s+/, '')}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+      {text}
+    </p>
+  );
+}
 
 export function BriefingStrip() {
   const { id: cityId } = useCityConfig();
   const { data: summary, isLoading: summaryLoading } = useNewsSummary(cityId);
-  const { data: digest } = useNewsDigest(cityId);
   const { t } = useTranslation();
-
-  const headlineCount = digest?.items?.length ?? 0;
-  const isFresh = summary?.generatedAt
-    ? Date.now() - new Date(summary.generatedAt).getTime() < 15 * 60_000
-    : false;
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-2">
-        {isFresh && (
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-        )}
-        {headlineCount > 0 && (
-          <span className="text-xs text-gray-400">
-            {t('panel.news.headlines_count', { count: headlineCount })}
-          </span>
-        )}
-      </div>
       {summaryLoading ? (
         <Skeleton lines={2} />
       ) : summary?.briefing ? (
         <>
-          <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-            {summary.briefing}
-          </p>
+          <BriefingContent text={summary.briefing} />
           {summary.generatedAt && (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
               {t('panel.news.generatedAgo', { time: formatRelativeTime(summary.generatedAt) })}

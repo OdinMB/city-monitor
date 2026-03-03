@@ -132,6 +132,7 @@
       "title": "البطالة",
       "unemployment": "معدل البطالة",
       "sgbII": "SGB II",
+      "total": "إجمالي",
       "yoy": "مقارنة بالعام الماضي",
       "empty": "لا تتوفر بيانات"
     },
@@ -215,13 +216,12 @@
       "weather": "رادار المطر",
       "news": "الأخبار",
       "safety": "السلامة",
-      "warnings": "تحذيرات",
+      "warnings": "تنبيهات",
       "air-quality": "جودة الهواء",
       "emergencies": "طوارئ",
       "traffic": "حركة المرور",
       "water": "المياه",
-      "social-atlas": "الأطلس الاجتماعي 2023",
-      "rent-map": "خريطة الإيجار",
+      "socioeconomic": "المجتمع",
       "political": "تمثيل"
     },
     "traffic": {
@@ -236,6 +236,10 @@
     "water": {
       "levels": "مناسيب المياه",
       "bathing": "مياه السباحة"
+    },
+    "socioeconomic": {
+      "social-atlas": "الأطلس الاجتماعي 2023",
+      "rent": "إيجار"
     },
     "political": {
       "bezirke": "الأحياء",

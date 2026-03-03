@@ -132,6 +132,7 @@
       "title": "Arbeitslosigkeit",
       "unemployment": "Arbeitslosenquote",
       "sgbII": "SGB II",
+      "total": "gesamt",
       "yoy": "ggü. Vorjahr",
       "empty": "Keine Daten verfügbar"
     },
@@ -215,13 +216,12 @@
       "weather": "Regenradar",
       "news": "Nachrichten",
       "safety": "Sicherheit",
-      "warnings": "Warnungen",
+      "warnings": "Warnmeldungen",
       "air-quality": "Luftqualit\u00e4t",
       "emergencies": "Notfall",
       "traffic": "Verkehr",
       "water": "Wasser",
-      "social-atlas": "Sozialatlas 2023",
-      "rent-map": "Mietspiegelkarte",
+      "socioeconomic": "Gesellschaft",
       "political": "Vertretung"
     },
     "traffic": {
@@ -236,6 +236,10 @@
     "water": {
       "levels": "Pegelstände",
       "bathing": "Badegewässer"
+    },
+    "socioeconomic": {
+      "social-atlas": "Sozialatlas 2023",
+      "rent": "Mietspiegel"
     },
     "political": {
       "bezirke": "Bezirke",

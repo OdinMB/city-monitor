@@ -132,6 +132,7 @@
       "title": "Unemployment",
       "unemployment": "Unemployment",
       "sgbII": "SGB II",
+      "total": "total",
       "yoy": "vs. last year",
       "empty": "No data available"
     },
@@ -215,13 +216,12 @@
       "weather": "Rain Radar",
       "news": "News",
       "safety": "Safety",
-      "warnings": "Warnings",
+      "warnings": "Alerts",
       "air-quality": "Air Quality",
       "emergencies": "Emergencies",
       "traffic": "Traffic",
       "water": "Water",
-      "social-atlas": "Social Atlas 2023",
-      "rent-map": "Rent Map",
+      "socioeconomic": "Society",
       "political": "Representation"
     },
     "traffic": {
@@ -236,6 +236,10 @@
     "water": {
       "levels": "Water Levels",
       "bathing": "Bathing Water"
+    },
+    "socioeconomic": {
+      "social-atlas": "Social Atlas 2023",
+      "rent": "Rent"
     },
     "political": {
       "bezirke": "Districts",

@@ -30,6 +30,8 @@ export function useBootstrap(cityId: string) {
     if (data.waterLevels) queryClient.setQueryData(['water-levels', cityId], data.waterLevels);
     if (data.budget) queryClient.setQueryData(['budget', cityId], data.budget);
     if (data.appointments) queryClient.setQueryData(['appointments', cityId], data.appointments);
+    if (data.laborMarket) queryClient.setQueryData(['labor-market', cityId], data.laborMarket);
+    if (data.wastewater) queryClient.setQueryData(['wastewater', cityId], data.wastewater);
   }, [query.data, cityId, queryClient]);
 
   return query;

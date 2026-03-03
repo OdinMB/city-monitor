@@ -29,6 +29,7 @@ import { createWaterLevelsRouter } from './routes/water-levels.js';
 import { createBudgetRouter } from './routes/budget.js';
 import { createBathingRouter } from './routes/bathing.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
+import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -49,6 +50,7 @@ import { createBudgetIngestion } from './cron/ingest-budget.js';
 import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
+import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { initGeocodeDb } from './lib/geocode.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
@@ -83,9 +85,10 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestSocialAtlas = createSocialAtlasIngestion(cache);
   const ingestWaterLevels = createWaterLevelIngestion(cache, db);
   const ingestBudget = createBudgetIngestion(cache);
-  const ingestAppointments = createAppointmentIngestion(cache);
+  const ingestAppointments = createAppointmentIngestion(cache, db);
   const ingestBathing = createBathingIngestion(cache);
   const ingestWastewater = createWastewaterIngestion(cache);
+  const ingestLaborMarket = createLaborMarketIngestion(cache);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -109,6 +112,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-appointments', schedule: '0 */6 * * *', handler: ingestAppointments, runOnStart: true },
     { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing, runOnStart: true },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: true },
+    { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: true },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -136,9 +140,10 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache));
   app.use('/api', cacheFor(3600), createBudgetRouter(cache));
-  app.use('/api', cacheFor(3600), createAppointmentsRouter(cache));
+  app.use('/api', cacheFor(3600), createAppointmentsRouter(cache, db));
   app.use('/api', cacheFor(43200), createBathingRouter(cache));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache));
+  app.use('/api', cacheFor(3600), createLaborMarketRouter(cache));
   app.use('/api', cacheFor(600), createWeatherTilesRouter());
 
   return { app, cache, db, scheduler };

@@ -313,12 +313,17 @@ export interface SocialAtlasFeatureProps {
   childPoverty: number;      // s4: %
 }
 
-export interface SocialAtlasSummary {
-  avgUnemployment: number;
-  avgWelfare: number;
-  areasLowStatus: number;    // count where statusIndex >= 3
-  totalAreas: number;
-  dataYear: string;
+// Labor market (Bundesagentur für Arbeit monthly)
+export interface LaborMarketSummary {
+  unemploymentRate: number;       // Arbeitslosenquote (%)
+  totalUnemployed: number;        // Arbeitslose insgesamt
+  yoyChangeAbsolute: number;      // total unemployed YoY absolute change
+  yoyChangePercent: number;       // total unemployed YoY percent change
+  sgbIIRate: number;              // SGB II unemployment rate (%)
+  sgbIICount: number;             // SGB II unemployed count
+  sgbIIYoyAbsolute: number;       // SGB II YoY absolute change
+  sgbIIYoyPercent: number;        // SGB II YoY percent change
+  reportMonth: string;            // ISO month "2026-02"
 }
 
 // Wastewater monitoring (Lageso Berlin)

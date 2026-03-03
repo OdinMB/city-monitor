@@ -27,7 +27,7 @@ export interface BootstrapData {
   waterLevels: WaterLevelData | null;
   budget: BudgetSummary | null;
   appointments: BuergeramtData | null;
-  socialAtlasSummary: SocialAtlasSummary | null;
+  laborMarket: LaborMarketSummary | null;
   wastewater: WastewaterSummary | null;
 }
 
@@ -161,8 +161,8 @@ export interface EmergencyPharmacy {
   distance?: number;
 }
 
-export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, SocialAtlasSummary, WastewaterSummary, WastewaterPathogen } from '@city-monitor/shared';
-import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, SocialAtlasSummary, WastewaterSummary } from '@city-monitor/shared';
+export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, LaborMarketSummary, WastewaterSummary, WastewaterPathogen } from '@city-monitor/shared';
+import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, LaborMarketSummary, WastewaterSummary } from '@city-monitor/shared';
 
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
@@ -185,6 +185,6 @@ export const api = {
   getBudget: (city: string) => fetchJson<BudgetSummary | null>(`${BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<BuergeramtData>(`${BASE}/${city}/appointments`),
   getSocialAtlas: (city: string) => fetchJson<GeoJSON.FeatureCollection | null>(`${BASE}/${city}/social-atlas`),
-  getSocialAtlasSummary: (city: string) => fetchJson<SocialAtlasSummary | null>(`${BASE}/${city}/social-atlas/summary`),
+  getLaborMarket: (city: string) => fetchJson<LaborMarketSummary | null>(`${BASE}/${city}/labor-market`),
   getWastewater: (city: string) => fetchJson<WastewaterSummary | null>(`${BASE}/${city}/wastewater`),
 };

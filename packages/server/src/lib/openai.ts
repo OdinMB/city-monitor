@@ -52,7 +52,7 @@ export async function summarizeHeadlines(
       messages: [
         {
           role: 'system',
-          content: `You are a local news editor for ${cityName}. From the headlines below, pick ONLY those that directly affect ${cityName} or its immediate region. National or international news should only be included if it has a concrete local impact on ${cityName} residents (e.g. a federal policy affecting the city). Ignore general sports results from other cities, generic national politics, and events in other regions. Summarize the locally relevant headlines into 2-3 sentences focused on what affects daily life — transit, weather, local politics, safety, cultural events. Be factual and concise. Write in ${language}. If no headlines are relevant to ${cityName}, respond with a single dash: -`,
+          content: `You are a local news editor writing a brief daily digest for ${cityName}. From the headlines below, write 4-5 bullet points (use "- " prefix) covering the most important local developments. Focus on what directly affects daily life in ${cityName} — transit, weather, safety, local politics. Aim for ~80 words total. Write in ${language}. If nothing is locally relevant, respond with a single dash: -`,
         },
         {
           role: 'user',

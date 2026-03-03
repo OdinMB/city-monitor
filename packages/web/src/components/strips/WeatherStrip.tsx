@@ -79,40 +79,42 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
 
   return (
     <>
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="mb-3 space-y-1">
-          {alerts.map((alert, i) => (
-            <div
-              key={i}
-              className="p-2 rounded text-xs bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200"
-            >
-              <span className="font-semibold">{alert.headline}</span>
+      <div className={expanded ? '' : 'flex-1 flex flex-col justify-center'}>
+        {/* Alerts */}
+        {alerts.length > 0 && (
+          <div className="mb-3 space-y-1">
+            {alerts.map((alert, i) => (
+              <div
+                key={i}
+                className="p-2 rounded text-xs bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200"
+              >
+                <span className="font-semibold">{alert.headline}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Current conditions — 2×2 aligned grid */}
+        <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-col items-center">
+            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
+              {Math.round(current.temp)}°
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Current conditions — 2×2 aligned grid */}
-      <div className="flex items-center justify-center gap-4">
-        <div className="flex flex-col items-center">
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
-            {Math.round(current.temp)}°
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {t('panel.weather.feelsLike')} {Math.round(current.feelsLike)}°
+            </div>
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {t('panel.weather.feelsLike')} {Math.round(current.feelsLike)}°
+          <div className="flex flex-col items-center">
+            <div className="text-3xl leading-tight">{weatherInfo.icon}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{weatherInfo.label}</div>
           </div>
         </div>
-        <div className="flex flex-col items-center">
-          <div className="text-3xl leading-tight">{weatherInfo.icon}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{weatherInfo.label}</div>
-        </div>
-      </div>
 
-      <div className="flex justify-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-2">
-        <span>{t('panel.weather.humidity')} {current.humidity}%</span>
-        <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
-        {current.precipitation > 0 && <span>{current.precipitation} mm</span>}
+        <div className="flex justify-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-2">
+          <span>{t('panel.weather.humidity')} {current.humidity}%</span>
+          <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
+          {current.precipitation > 0 && <span>{current.precipitation} mm</span>}
+        </div>
       </div>
 
       {/* Expanded: hourly + daily (no section labels, centered) */}

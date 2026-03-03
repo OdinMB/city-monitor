@@ -94,7 +94,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
 
   if (!expanded) {
     return (
-      <div>
+      <div className="flex-1 flex flex-col justify-center">
         <div className="flex justify-around text-center">
           {data.pathogens.map((p) => (
             <div key={p.name}>

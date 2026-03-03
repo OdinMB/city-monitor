@@ -103,6 +103,8 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       `${city.id}:water-levels`,
       `${city.id}:budget`,
       `${city.id}:appointments`,
+      `${city.id}:labor-market`,
+      `${city.id}:wastewater:summary`,
     ]);
 
     res.json({
@@ -119,6 +121,8 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       waterLevels: data[`${city.id}:water-levels`] ?? null,
       budget: data[`${city.id}:budget`] ?? null,
       appointments: data[`${city.id}:appointments`] ?? null,
+      laborMarket: data[`${city.id}:labor-market`] ?? null,
+      wastewater: data[`${city.id}:wastewater:summary`] ?? null,
     });
   });
 
