@@ -5,10 +5,11 @@
 
 import { create } from 'zustand';
 
-export type DataLayer = 'transit' | 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'construction' | 'water' | 'social-atlas' | 'political' | 'rent-map';
+export type DataLayer = 'weather' | 'news' | 'safety' | 'warnings' | 'air-quality' | 'emergencies' | 'traffic' | 'water' | 'social-atlas' | 'political' | 'rent-map';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
+export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks';
 
 interface CommandCenterState {
   singleView: boolean;
@@ -16,16 +17,19 @@ interface CommandCenterState {
   politicalLayer: PoliticalLayer;
   emergencySubLayers: Set<EmergencySubLayer>;
   waterSubLayers: Set<WaterSubLayer>;
+  trafficSubLayers: Set<TrafficSubLayer>;
   toggleSingleView: () => void;
   toggleLayer: (layer: DataLayer) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
   toggleEmergencySubLayer: (sub: EmergencySubLayer) => void;
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
+  toggleTrafficSubLayer: (sub: TrafficSubLayer) => void;
 }
 
-const DEFAULT_LAYERS: Set<DataLayer> = new Set(['transit']);
+const DEFAULT_LAYERS: Set<DataLayer> = new Set(['traffic']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies', 'aeds']);
 const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
+const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: true,
@@ -33,6 +37,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   politicalLayer: 'bezirke',
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
   waterSubLayers: new Set(ALL_WATER_SUBS),
+  trafficSubLayers: new Set(ALL_TRAFFIC_SUBS),
   toggleSingleView: () =>
     set((state) => {
       const singleView = !state.singleView;
@@ -80,5 +85,15 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
         next.add(sub);
       }
       return { waterSubLayers: next };
+    }),
+  toggleTrafficSubLayer: (sub) =>
+    set((state) => {
+      const next = new Set(state.trafficSubLayers);
+      if (next.has(sub)) {
+        if (next.size > 1) next.delete(sub);
+      } else {
+        next.add(sub);
+      }
+      return { trafficSubLayers: next };
     }),
 }));

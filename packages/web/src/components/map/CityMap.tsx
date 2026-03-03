@@ -1171,7 +1171,7 @@ function updateConstructionLayers(map: maplibregl.Map, sites: ConstructionSite[]
       type: 'line',
       source: 'construction-lines',
       layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#000000', 'line-width': 6, 'line-opacity': 0.25 },
+      paint: { 'line-color': '#000000', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1, 13, 3, 15, 5, 17, 8], 'line-opacity': 0.2 },
     });
 
     map.addLayer({
@@ -1181,8 +1181,8 @@ function updateConstructionLayers(map: maplibregl.Map, sites: ConstructionSite[]
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': ['get', 'color'],
-        'line-width': 4,
-        'line-opacity': 0.8,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.5, 13, 2, 15, 3.5, 17, 6],
+        'line-opacity': 0.7,
         'line-dasharray': [4, 3],
       },
     });
@@ -1203,7 +1203,7 @@ function updateConstructionLayers(map: maplibregl.Map, sites: ConstructionSite[]
       source: 'construction-points',
       layout: {
         'icon-image': ['get', 'iconImage'],
-        'icon-size': 0.9,
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 10, 0.15, 13, 0.45, 15, 0.8, 17, 1.2],
         'icon-allow-overlap': true,
       },
     });
@@ -1671,8 +1671,9 @@ export function CityMap() {
   const activeLayers = useCommandCenter((s) => s.activeLayers);
   const emergencySubLayers = useCommandCenter((s) => s.emergencySubLayers);
   const politicalActive = activeLayers.has('political');
-  const trafficActive = activeLayers.has('traffic');
-  const constructionActive = activeLayers.has('construction');
+  const trafficSubLayers = useCommandCenter((s) => s.trafficSubLayers);
+  const trafficActive = activeLayers.has('traffic') && trafficSubLayers.has('incidents');
+  const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
   const roadsActive = trafficActive || constructionActive;
   const weatherActive = activeLayers.has('weather');
   const rentMapActive = activeLayers.has('rent-map') && city.id === 'berlin';
@@ -1689,15 +1690,15 @@ export function CityMap() {
   const isDark = theme === 'dark';
   const mapConfig = city.map;
 
-  const transitItems = activeLayers.has('transit') ? (transitAlerts ?? []) : [];
+  const transitItems = (activeLayers.has('traffic') && trafficSubLayers.has('public-transport')) ? (transitAlerts ?? []) : [];
   const newsItems = activeLayers.has('news') ? (newsDigest?.items ?? []) : [];
   const safetyItems = activeLayers.has('safety') ? (safetyReports ?? []) : [];
   const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
   const emergencyActive = activeLayers.has('emergencies');
   const pharmacyItems = (emergencyActive && emergencySubLayers.has('pharmacies')) ? (pharmacyList ?? []) : [];
   const aedItems = (emergencyActive && emergencySubLayers.has('aeds')) ? (aedList ?? []) : [];
-  const trafficItems = activeLayers.has('traffic') ? (trafficIncidents ?? []) : [];
-  const constructionItems = activeLayers.has('construction') ? (constructionSites ?? []) : [];
+  const trafficItems = trafficActive ? (trafficIncidents ?? []) : [];
+  const constructionItems = constructionActive ? (constructionSites ?? []) : [];
   const aqGridItems = activeLayers.has('air-quality') ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
   const waterLevelItems = (waterActive && waterSubLayers.has('levels')) ? (waterLevelData?.stations ?? EMPTY_WL) : EMPTY_WL;
   const bathingItems = (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [];
@@ -1775,14 +1776,14 @@ export function CityMap() {
       registerAllMapIcons(map, isDarkRef.current);
       addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
       setupDistrictHover(map);
+      updateTrafficLayers(map, trafficItemsRef.current, isDarkRef.current);
+      updateConstructionLayers(map, constructionItemsRef.current, isDarkRef.current);
       updateTransitMarkers(map, transitItemsRef.current ?? [], isDarkRef.current);
       updateNewsMarkers(map, newsItemsRef.current, isDarkRef.current);
       updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
       updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
       updateAedMarkers(map, aedItemsRef.current, isDarkRef.current);
-      updateTrafficLayers(map, trafficItemsRef.current, isDarkRef.current);
-      updateConstructionLayers(map, constructionItemsRef.current, isDarkRef.current);
       updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
       updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
@@ -1860,14 +1861,14 @@ export function CityMap() {
         addDistrictLayer(map, city.id, isDark);
       }
 
+      updateTrafficLayers(map, trafficItemsRef.current, isDark);
+      updateConstructionLayers(map, constructionItemsRef.current, isDark);
       updateTransitMarkers(map, transitItemsRef.current ?? [], isDark);
       updateNewsMarkers(map, newsItemsRef.current, isDark);
       updateSafetyMarkers(map, safetyItemsRef.current, isDark);
       updateWarningPolygons(map, warningItemsRef.current, isDark);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
       updateAedMarkers(map, aedItemsRef.current, isDark);
-      updateTrafficLayers(map, trafficItemsRef.current, isDark);
-      updateConstructionLayers(map, constructionItemsRef.current, isDark);
       updateAqGridLayer(map, aqGridItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);

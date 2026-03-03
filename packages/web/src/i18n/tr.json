@@ -36,7 +36,8 @@
     "transit": {
       "title": "Toplu Taşıma",
       "empty": "Her şey yolunda — aksama yok",
-      "affectedStops": "Etkilenen duraklar"
+      "affectedStops": "Etkilenen duraklar",
+      "more": "daha fazla"
     },
     "events": {
       "title": "Etkinlikler",
@@ -127,12 +128,12 @@
         "121721": "Oturma İzni Parkı"
       }
     },
-    "socialAtlas": {
-      "title": "Sosyal Atlas 2023",
-      "unemployment": "İşsizlik (SGB II)",
-      "welfare": "Sosyal yardım alanlar",
-      "empty": "Veri mevcut değil",
-      "dataYear": "Veri: {{year}}"
+    "laborMarket": {
+      "title": "İşsizlik",
+      "unemployment": "İşsizlik oranı",
+      "sgbII": "SGB II",
+      "yoy": "geçen yıla göre",
+      "empty": "Veri mevcut değil"
     },
     "wastewater": {
       "title": "Atık Su",
@@ -210,7 +211,6 @@
     },
     "layers": {
       "label": "Katmanlar",
-      "transit": "Ulaşım",
       "events": "Etkinlikler",
       "weather": "Yağış Radarı",
       "news": "Haberler",
@@ -219,11 +219,15 @@
       "air-quality": "Hava Kalitesi",
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
-      "construction": "Yol Çalışmaları",
       "water": "Su",
       "social-atlas": "Sosyal Atlas 2023",
       "rent-map": "Kira Haritası",
       "political": "Temsil"
+    },
+    "traffic": {
+      "public-transport": "Toplu Taşıma",
+      "incidents": "Trafik Olayları",
+      "roadworks": "Yol Çalışmaları"
     },
     "emergencies": {
       "pharmacies": "Eczaneler",

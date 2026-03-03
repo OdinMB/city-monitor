@@ -34,9 +34,10 @@
       "validUntil": "Valid until {{time}}"
     },
     "transit": {
-      "title": "Transit",
+      "title": "Public Transport",
       "empty": "All clear — no disruptions",
-      "affectedStops": "Affected stops"
+      "affectedStops": "Affected stops",
+      "more": "more"
     },
     "events": {
       "title": "Events",
@@ -127,12 +128,12 @@
         "121721": "Parking Permit"
       }
     },
-    "socialAtlas": {
-      "title": "Social Atlas 2023",
-      "unemployment": "Unemployment (SGB II)",
-      "welfare": "Welfare recipients",
-      "empty": "No data available",
-      "dataYear": "Data: {{year}}"
+    "laborMarket": {
+      "title": "Unemployment",
+      "unemployment": "Unemployment",
+      "sgbII": "SGB II",
+      "yoy": "vs. last year",
+      "empty": "No data available"
     },
     "waterLevels": {
       "title": "Water Levels",
@@ -210,7 +211,6 @@
     },
     "layers": {
       "label": "Layers",
-      "transit": "Transit",
       "events": "Events",
       "weather": "Rain Radar",
       "news": "News",
@@ -219,11 +219,15 @@
       "air-quality": "Air Quality",
       "emergencies": "Emergencies",
       "traffic": "Traffic",
-      "construction": "Roadworks",
       "water": "Water",
       "social-atlas": "Social Atlas 2023",
       "rent-map": "Rent Map",
       "political": "Representation"
+    },
+    "traffic": {
+      "public-transport": "Public Transport",
+      "incidents": "Incidents",
+      "roadworks": "Roadworks"
     },
     "emergencies": {
       "pharmacies": "Pharmacies",

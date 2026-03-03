@@ -36,7 +36,8 @@
     "transit": {
       "title": "المواصلات",
       "empty": "كل شيء على ما يرام — لا اضطرابات",
-      "affectedStops": "المحطات المتأثرة"
+      "affectedStops": "المحطات المتأثرة",
+      "more": "المزيد"
     },
     "events": {
       "title": "الفعاليات",
@@ -127,12 +128,12 @@
         "121721": "تصريح ركن السكان"
       }
     },
-    "socialAtlas": {
-      "title": "الأطلس الاجتماعي 2023",
-      "unemployment": "البطالة (SGB II)",
-      "welfare": "متلقو الإعانات",
-      "empty": "لا تتوفر بيانات",
-      "dataYear": "بيانات: {{year}}"
+    "laborMarket": {
+      "title": "البطالة",
+      "unemployment": "معدل البطالة",
+      "sgbII": "SGB II",
+      "yoy": "مقارنة بالعام الماضي",
+      "empty": "لا تتوفر بيانات"
     },
     "wastewater": {
       "title": "مياه الصرف",
@@ -210,7 +211,6 @@
     },
     "layers": {
       "label": "الطبقات",
-      "transit": "المواصلات",
       "events": "الفعاليات",
       "weather": "رادار المطر",
       "news": "الأخبار",
@@ -219,11 +219,15 @@
       "air-quality": "جودة الهواء",
       "emergencies": "طوارئ",
       "traffic": "حركة المرور",
-      "construction": "أعمال الطرق",
       "water": "المياه",
       "social-atlas": "الأطلس الاجتماعي 2023",
       "rent-map": "خريطة الإيجار",
       "political": "تمثيل"
+    },
+    "traffic": {
+      "public-transport": "النقل العام",
+      "incidents": "حوادث المرور",
+      "roadworks": "أعمال الطرق"
     },
     "emergencies": {
       "pharmacies": "صيدليات",

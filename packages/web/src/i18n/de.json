@@ -36,7 +36,8 @@
     "transit": {
       "title": "Nahverkehr",
       "empty": "Alles in Ordnung — keine Störungen",
-      "affectedStops": "Betroffene Haltestellen"
+      "affectedStops": "Betroffene Haltestellen",
+      "more": "weitere"
     },
     "events": {
       "title": "Veranstaltungen",
@@ -127,12 +128,12 @@
         "121721": "Bewohnerparkausweis"
       }
     },
-    "socialAtlas": {
-      "title": "Sozialatlas 2023",
-      "unemployment": "Arbeitslosigkeit (SGB II)",
-      "welfare": "Transferleistungen",
-      "empty": "Keine Daten verfügbar",
-      "dataYear": "Daten: {{year}}"
+    "laborMarket": {
+      "title": "Arbeitslosigkeit",
+      "unemployment": "Arbeitslosenquote",
+      "sgbII": "SGB II",
+      "yoy": "ggü. Vorjahr",
+      "empty": "Keine Daten verfügbar"
     },
     "wastewater": {
       "title": "Abwasser",
@@ -210,7 +211,6 @@
     },
     "layers": {
       "label": "Ebenen",
-      "transit": "Nahverkehr",
       "events": "Veranstaltungen",
       "weather": "Regenradar",
       "news": "Nachrichten",
@@ -219,11 +219,15 @@
       "air-quality": "Luftqualit\u00e4t",
       "emergencies": "Notfall",
       "traffic": "Verkehr",
-      "construction": "Baustellen",
       "water": "Wasser",
       "social-atlas": "Sozialatlas 2023",
       "rent-map": "Mietspiegelkarte",
       "political": "Vertretung"
+    },
+    "traffic": {
+      "public-transport": "Nahverkehr",
+      "incidents": "Verkehrslage",
+      "roadworks": "Baustellen"
     },
     "emergencies": {
       "pharmacies": "Apotheken",
