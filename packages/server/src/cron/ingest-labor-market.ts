@@ -5,6 +5,8 @@
 
 import type { LaborMarketSummary } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveLaborMarket } from '../db/writes.js';
 import { createLogger } from '../lib/logger.js';
 
 const log = createLogger('ingest-labor-market');
@@ -72,7 +74,7 @@ function parseCsv(text: string): { reportMonth: string | null; rows: ParsedRow[]
   return { reportMonth, rows };
 }
 
-export function createLaborMarketIngestion(cache: Cache) {
+export function createLaborMarketIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestLaborMarket(): Promise<void> {
     try {
       const res = await log.fetch(BA_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
@@ -108,7 +110,10 @@ export function createLaborMarketIngestion(cache: Cache) {
       const sgbIICountRow = sgbIIRows[0];
       const sgbIIRateRow = sgbIIRows[1];
 
-      if (!totalRow || !rateRow || !sgbIICountRow || !sgbIIRateRow) {
+      const underemploymentCountRow = rows.find((r) => r.label.startsWith('Unterbeschäftigung ('));
+      const underemploymentRateRow = rows.find((r) => r.label.startsWith('Unterbeschäftigungsquote'));
+
+      if (!totalRow || !rateRow || !sgbIICountRow || !sgbIIRateRow || !underemploymentCountRow || !underemploymentRateRow) {
         log.warn('Missing expected rows in BA CSV');
         return;
       }
@@ -122,10 +127,23 @@ export function createLaborMarketIngestion(cache: Cache) {
         sgbIICount: parseGermanNumber(sgbIICountRow.currentValue),
         sgbIIYoyAbsolute: parseGermanNumber(sgbIICountRow.yoyAbsolute),
         sgbIIYoyPercent: parseGermanNumber(sgbIICountRow.yoyPercent),
+        underemploymentRate: parseGermanNumber(underemploymentRateRow.currentValue),
+        underemploymentCount: parseGermanNumber(underemploymentCountRow.currentValue),
+        underemploymentYoyAbsolute: parseGermanNumber(underemploymentCountRow.yoyAbsolute),
+        underemploymentYoyPercent: parseGermanNumber(underemploymentCountRow.yoyPercent),
         reportMonth,
       };
 
       cache.set(CACHE_KEY, summary, TTL_SECONDS);
+
+      if (db) {
+        try {
+          await saveLaborMarket(db, 'berlin', summary);
+        } catch (err) {
+          log.error('DB write failed', err);
+        }
+      }
+
       log.info(`Berlin labor market updated: ${summary.unemploymentRate}% unemployment (${reportMonth})`);
     } catch (err) {
       log.error('labor market ingestion failed', err);

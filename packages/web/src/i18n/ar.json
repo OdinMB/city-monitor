@@ -132,6 +132,7 @@
       "title": "البطالة",
       "unemployment": "معدل البطالة",
       "sgbII": "SGB II",
+      "underemployment": "العمالة الناقصة",
       "total": "إجمالي",
       "yoy": "مقارنة بالعام الماضي",
       "empty": "لا تتوفر بيانات"
@@ -215,7 +216,6 @@
       "events": "الفعاليات",
       "weather": "رادار المطر",
       "news": "الأخبار",
-      "safety": "السلامة",
       "warnings": "تنبيهات",
       "air-quality": "جودة الهواء",
       "emergencies": "طوارئ",
@@ -223,6 +223,16 @@
       "water": "المياه",
       "socioeconomic": "المجتمع",
       "political": "تمثيل"
+    },
+    "news": {
+      "local": "محلي",
+      "politics": "سياسة",
+      "transit": "مواصلات",
+      "culture": "ثقافة",
+      "crime": "جريمة",
+      "economy": "اقتصاد",
+      "sports": "رياضة",
+      "police": "شرطة"
     },
     "traffic": {
       "public-transport": "النقل العام",

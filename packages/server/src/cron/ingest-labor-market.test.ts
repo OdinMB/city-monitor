@@ -55,6 +55,10 @@ describe('ingest-labor-market', () => {
     expect(summary!.yoyChangePercent).toBe(5);
     expect(summary!.sgbIIYoyAbsolute).toBe(5000);
     expect(summary!.sgbIIYoyPercent).toBe(3);
+    expect(summary!.underemploymentRate).toBe(12.5);
+    expect(summary!.underemploymentCount).toBe(272000);
+    expect(summary!.underemploymentYoyAbsolute).toBe(5950);
+    expect(summary!.underemploymentYoyPercent).toBe(2);
   });
 
   it('extracts report month from CSV header', async () => {
@@ -135,6 +139,8 @@ describe('ingest-labor-market', () => {
     const summary = cache.get<LaborMarketSummary>('berlin:labor-market')!;
     expect(summary.unemploymentRate).toBe(9.3);
     expect(summary.sgbIIRate).toBe(6.1);
+    expect(summary.underemploymentRate).toBe(11.7);
+    expect(summary.underemploymentCount).toBe(250000);
     expect(summary.reportMonth).toBe('2026-03');
   });
 

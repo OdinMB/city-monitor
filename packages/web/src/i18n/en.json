@@ -132,6 +132,7 @@
       "title": "Unemployment",
       "unemployment": "Unemployment",
       "sgbII": "SGB II",
+      "underemployment": "Underemployment",
       "total": "total",
       "yoy": "vs. last year",
       "empty": "No data available"
@@ -215,7 +216,6 @@
       "events": "Events",
       "weather": "Rain Radar",
       "news": "News",
-      "safety": "Safety",
       "warnings": "Alerts",
       "air-quality": "Air Quality",
       "emergencies": "Emergencies",
@@ -223,6 +223,16 @@
       "water": "Water",
       "socioeconomic": "Society",
       "political": "Representation"
+    },
+    "news": {
+      "local": "Local",
+      "politics": "Politics",
+      "transit": "Transit",
+      "culture": "Culture",
+      "crime": "Crime",
+      "economy": "Economy",
+      "sports": "Sports",
+      "police": "Police"
     },
     "traffic": {
       "public-transport": "Public Transport",

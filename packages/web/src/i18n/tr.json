@@ -132,6 +132,7 @@
       "title": "İşsizlik",
       "unemployment": "İşsizlik oranı",
       "sgbII": "SGB II",
+      "underemployment": "Eksik istihdam",
       "total": "toplam",
       "yoy": "geçen yıla göre",
       "empty": "Veri mevcut değil"
@@ -215,7 +216,6 @@
       "events": "Etkinlikler",
       "weather": "Yağış Radarı",
       "news": "Haberler",
-      "safety": "Güvenlik",
       "warnings": "Uyarı Bildirimleri",
       "air-quality": "Hava Kalitesi",
       "emergencies": "Acil Durum",
@@ -223,6 +223,16 @@
       "water": "Su",
       "socioeconomic": "Toplum",
       "political": "Temsil"
+    },
+    "news": {
+      "local": "Yerel",
+      "politics": "Siyaset",
+      "transit": "Ulaşım",
+      "culture": "Kültür",
+      "crime": "Suç",
+      "economy": "Ekonomi",
+      "sports": "Spor",
+      "police": "Polis"
     },
     "traffic": {
       "public-transport": "Toplu Taşıma",

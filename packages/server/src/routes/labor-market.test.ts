@@ -48,6 +48,10 @@ describe('Labor Market API', () => {
       sgbIICount: 148600,
       sgbIIYoyAbsolute: 5000,
       sgbIIYoyPercent: 3,
+      underemploymentRate: 12.5,
+      underemploymentCount: 272000,
+      underemploymentYoyAbsolute: 5950,
+      underemploymentYoyPercent: 2,
       reportMonth: '2026-02',
     };
     appContext.cache.set('berlin:labor-market', mockSummary, 60);

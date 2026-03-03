@@ -323,6 +323,10 @@ export interface LaborMarketSummary {
   sgbIICount: number;             // SGB II unemployed count
   sgbIIYoyAbsolute: number;       // SGB II YoY absolute change
   sgbIIYoyPercent: number;        // SGB II YoY percent change
+  underemploymentRate: number;    // Unterbeschäftigungsquote (%)
+  underemploymentCount: number;   // Unterbeschäftigung (ohne Kurzarbeit) count
+  underemploymentYoyAbsolute: number; // underemployment YoY absolute change
+  underemploymentYoyPercent: number;  // underemployment YoY percent change
   reportMonth: string;            // ISO month "2026-02"
 }
 

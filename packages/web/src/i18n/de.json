@@ -132,6 +132,7 @@
       "title": "Arbeitslosigkeit",
       "unemployment": "Arbeitslosenquote",
       "sgbII": "SGB II",
+      "underemployment": "Unterbeschäftigung",
       "total": "gesamt",
       "yoy": "ggü. Vorjahr",
       "empty": "Keine Daten verfügbar"
@@ -215,7 +216,6 @@
       "events": "Veranstaltungen",
       "weather": "Regenradar",
       "news": "Nachrichten",
-      "safety": "Sicherheit",
       "warnings": "Warnmeldungen",
       "air-quality": "Luftqualit\u00e4t",
       "emergencies": "Notfall",
@@ -223,6 +223,16 @@
       "water": "Wasser",
       "socioeconomic": "Gesellschaft",
       "political": "Vertretung"
+    },
+    "news": {
+      "local": "Lokales",
+      "politics": "Politik",
+      "transit": "Nahverkehr",
+      "culture": "Kultur",
+      "crime": "Kriminalität",
+      "economy": "Wirtschaft",
+      "sports": "Sport",
+      "police": "Polizei"
     },
     "traffic": {
       "public-transport": "Nahverkehr",

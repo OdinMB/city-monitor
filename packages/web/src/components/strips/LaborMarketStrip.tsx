@@ -31,6 +31,7 @@ export function LaborMarketStrip() {
 
   const totalYoy = formatYoy(data.yoyChangePercent);
   const sgbIIYoy = formatYoy(data.sgbIIYoyPercent);
+  const underemploymentYoy = formatYoy(data.underemploymentYoyPercent);
 
   return (
     <div className="flex flex-col gap-4 py-1">
@@ -53,12 +54,31 @@ export function LaborMarketStrip() {
         </div>
       </div>
 
+      {/* Underemployment */}
+      <div className="flex flex-col items-center">
+        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          {t('panel.laborMarket.underemployment')}
+        </span>
+        <span className="text-4xl font-extrabold tabular-nums leading-none text-orange-600 dark:text-orange-400 mt-1">
+          {data.underemploymentRate.toFixed(1)}%
+        </span>
+        <div className="flex items-center gap-1.5 mt-1.5 text-xs">
+          <span className="text-gray-500 dark:text-gray-400 tabular-nums">
+            {data.underemploymentCount.toLocaleString('de-DE')}
+          </span>
+          <span className="text-gray-300 dark:text-gray-600">&middot;</span>
+          <span className={`font-medium ${underemploymentYoy.color}`}>
+            {underemploymentYoy.text} {t('panel.laborMarket.yoy')}
+          </span>
+        </div>
+      </div>
+
       {/* SGB II */}
       <div className="flex flex-col items-center">
         <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
           {t('panel.laborMarket.sgbII')}
         </span>
-        <span className="text-4xl font-extrabold tabular-nums leading-none text-orange-600 dark:text-orange-400 mt-1">
+        <span className="text-4xl font-extrabold tabular-nums leading-none text-red-600 dark:text-red-400 mt-1">
           {data.sgbIIRate.toFixed(1)}%
         </span>
         <div className="flex items-center gap-1.5 mt-1.5 text-xs">

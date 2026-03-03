@@ -56,10 +56,10 @@ Cache-only, Berlin-only (hardcoded, like wastewater).
 ### Shared Types
 
 - `SocialAtlasFeatureProps` - properties on each GeoJSON feature (map layer)
-- `LaborMarketSummary` - unemploymentRate, totalUnemployed, sgbIIRate, sgbIICount, yoyChangeAbsolute, yoyChangePercent, reportMonth
+- `LaborMarketSummary` - unemploymentRate, totalUnemployed, sgbIIRate, sgbIICount, underemploymentRate, underemploymentCount, yoyChangeAbsolute/Percent per indicator, reportMonth
 
 ### Dashboard Tile
-- `LaborMarketStrip` - 2 headline percentages: overall unemployment rate + SGB II rate, plus YoY trend and report month
+- `LaborMarketStrip` - 3 headline percentages: overall unemployment rate, SGB II rate, and underemployment rate, each with count + YoY trend, plus report month
 - Berlin-only: tile gated in `CommandLayout.tsx` (`cityId === 'berlin'`)
 - Data pre-populated from bootstrap for instant display
 
