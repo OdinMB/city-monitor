@@ -6,11 +6,12 @@
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
-import { loadWaterLevels } from '../db/reads.js';
+import { loadWaterLevels, loadWaterLevelHistory } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
-import type { WaterLevelData } from '@city-monitor/shared';
+import { parseHistoryDays } from '../lib/parse-history.js';
+import type { WaterLevelData, HistoryPoint } from '@city-monitor/shared';
 
 const log = createLogger('route:water-levels');
 
@@ -44,6 +45,28 @@ export function createWaterLevelsRouter(cache: Cache, db: Db | null = null) {
     }
 
     res.json({ data: { stations: [], fetchedAt: null }, fetchedAt: null });
+  });
+
+  router.get('/:city/water-levels/history', async (req, res) => {
+    const city = getCityConfig(req.params.city);
+    if (!city) { res.status(404).json({ error: 'City not found' }); return; }
+
+    const days = parseHistoryDays(req.query.range, 30) ?? 7;
+
+    const ck = CK.waterLevelHistory(city.id, days);
+    const cached2 = cache.get<HistoryPoint[]>(ck);
+    if (cached2) { res.json({ data: cached2 }); return; }
+
+    if (!db) { res.json({ data: [] }); return; }
+
+    try {
+      const history = await loadWaterLevelHistory(db, city.id, days);
+      cache.set(ck, history, 900);
+      res.json({ data: history });
+    } catch (err) {
+      log.error(`${city.id} water-level history failed`, err);
+      res.json({ data: [] });
+    }
   });
 
   return router;
