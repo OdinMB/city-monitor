@@ -36,7 +36,7 @@ export function Tile({ title, span = 1, height = 'auto', expandable, defaultExpa
 
   return (
     <div
-      className={`col-span-1 ${SPAN_CLASSES[span]} rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden ${className ?? ''}`}
+      className={`col-span-1 ${SPAN_CLASSES[span]} flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden ${className ?? ''}`}
     >
       <div
         className={`px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between ${expandable ? 'cursor-pointer select-none' : ''}`}
@@ -61,7 +61,7 @@ export function Tile({ title, span = 1, height = 'auto', expandable, defaultExpa
           </svg>
         )}
       </div>
-      <div className={`@container p-4 ${HEIGHT_CLASSES[height]}`}>
+      <div className={`@container p-4 flex-1 flex flex-col ${HEIGHT_CLASSES[height]}`}>
         {typeof children === 'function' ? children(expanded, setExpanded) : children}
       </div>
     </div>

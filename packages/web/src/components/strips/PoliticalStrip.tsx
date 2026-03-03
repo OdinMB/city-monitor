@@ -189,7 +189,7 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
   const totalReps = data ? data.reduce((sum, d) => sum + d.representatives.length, 0) : 0;
 
   return (
-    <>
+    <div className="flex flex-col flex-1 h-full">
       {/* View selector */}
       <div className="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
         {views.map((v) => (
@@ -213,7 +213,9 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
         </div>
       ) : view === 'state' ? (
         /* State Parliament: always show seat chart */
-        <SeatChart districts={data} seatsLabel={t('panel.political.seats')} />
+        <div className="flex-1 flex items-center justify-center">
+          <SeatChart districts={data} seatsLabel={t('panel.political.seats')} />
+        </div>
       ) : (
         /* Bezirke / Bundestag: summary + rep list */
         <>
@@ -228,6 +230,6 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
           <RepList districts={data} limit={expanded ? undefined : PREVIEW_COUNT} onExpand={onExpand} />
         </>
       )}
-    </>
+    </div>
   );
 }

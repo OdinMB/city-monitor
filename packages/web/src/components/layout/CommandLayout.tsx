@@ -21,7 +21,7 @@ import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
 import { BathingStrip } from '../strips/BathingStrip.js';
 import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
 import { BudgetStrip } from '../strips/BudgetStrip.js';
-import { SocialAtlasStrip } from '../strips/SocialAtlasStrip.js';
+import { LaborMarketStrip } from '../strips/LaborMarketStrip.js';
 import { WastewaterStrip } from '../strips/WastewaterStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
@@ -55,6 +55,9 @@ export function CommandLayout() {
           <NinaBanner />
         </div>
         <DashboardGrid>
+          <Tile title={t('panel.news.briefing')} span={1}>
+            <BriefingStrip />
+          </Tile>
           <Tile title={t('panel.weather.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <WeatherStrip expanded={expanded} />}
           </Tile>
@@ -62,21 +65,15 @@ export function CommandLayout() {
             {(expanded) => <AirQualityStrip expanded={expanded} />}
           </Tile>
           {cityId === 'berlin' && (
-            <Tile title={t('panel.wastewater.title')} span={1}>
-              <WastewaterStrip />
+            <Tile title={t('panel.wastewater.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded) => <WastewaterStrip expanded={expanded} />}
             </Tile>
           )}
-          <Tile title={t('panel.news.briefing')} span={2}>
-            <BriefingStrip />
-          </Tile>
           <Tile title={t('panel.news.title')} span={2}>
             <NewsStrip />
           </Tile>
-          <Tile title={t('panel.events.title')} span={2}>
-            <EventsStrip />
-          </Tile>
-          <Tile title={t('panel.transit.title')} span={2}>
-            <TransitStrip />
+          <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={false}>
+            {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
           <Tile title={t('panel.waterLevels.title')} span={1}>
             <WaterLevelStrip />
@@ -88,8 +85,8 @@ export function CommandLayout() {
             <AppointmentsStrip />
           </Tile>
           {cityId === 'berlin' && (
-            <Tile title={t('panel.socialAtlas.title')} span={1}>
-              <SocialAtlasStrip />
+            <Tile title={t('panel.laborMarket.title')} span={1}>
+              <LaborMarketStrip />
             </Tile>
           )}
           <Tile title={t('panel.budget.title')} span={2}>
@@ -121,8 +118,11 @@ export function CommandLayout() {
               </a>
             </div>
           </Tile>
-          <Tile title={t('sidebar.layers.political')} span={2} expandable>
+          <Tile title={t('sidebar.layers.political')} expandable>
             {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+          <Tile title={t('panel.events.title')} span={2}>
+            <EventsStrip />
           </Tile>
         </DashboardGrid>
       </div>
