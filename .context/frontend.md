@@ -39,6 +39,7 @@ App
                   Tile(span=2) → EventsStrip (day/time-of-day/category filters, 2-col grid, future-only)
                   Tile(span=2) → TransitStrip (line badges + expandable alert cards, container queries)
                   Tile(span=1) → WaterLevelStrip (gauge bars with MNW–MHW range)
+                  Tile(span=1) → AppointmentsStrip (Bürgeramt service availability)
               Footer (AGPL source link)
 ```
 
@@ -46,7 +47,7 @@ App
 
 ### Bootstrap Pattern
 
-On mount, `useBootstrap(cityId)` fetches `GET /api/:city/bootstrap` — a single request returning all 5 data types (news, weather, transit, events, safety). The response is split and injected into React Query's cache via `queryClient.setQueryData()`, so downstream hooks get instant data without their own initial fetch.
+On mount, `useBootstrap(cityId)` fetches `GET /api/:city/bootstrap` — a single request returning all data types (news, weather, transit, events, safety, warnings, air quality, pharmacies, traffic, construction, water levels, appointments). The response is split and injected into React Query's cache via `queryClient.setQueryData()`, so downstream hooks get instant data without their own initial fetch.
 
 ### Per-Domain Hooks
 
@@ -63,6 +64,7 @@ Each panel has a dedicated hook that polls its endpoint independently after boot
 | `useSafety` | `['safety', cityId]` | 10 min | 2 min |
 | `useConstruction` | `['construction', cityId]` | 15 min | 10 min |
 | `useWaterLevels` | `['water-levels', cityId]` | 15 min | 5 min |
+| `useAppointments` | `['appointments', cityId]` | 30 min | 15 min |
 
 All hooks use `keepPreviousData` as placeholder during refetch, `retry: 2`, and `refetchIntervalInBackground: false`.
 
@@ -77,7 +79,7 @@ All hooks use `keepPreviousData` as placeholder during refetch, `retry: 2`, and 
 
 Thin wrapper: `fetchJson<T>(url)` calls `fetch()`, checks `response.ok`, returns typed JSON. All endpoints under `/api`. Exports typed methods: `api.getBootstrap()`, `api.getWeather()`, `api.getNewsDigest()`, `api.getNewsSummary()`, `api.getTransit()`, `api.getEvents()`, `api.getSafety()`.
 
-Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `SafetyReport` are duplicated in `api.ts` (not imported from server — separate package boundary). `WeatherData` is imported from `@city-monitor/shared`.
+Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `SafetyReport` are duplicated in `api.ts` (not imported from server — separate package boundary). `WeatherData`, `BuergeramtData`, and `BuergeramtService` are imported from `@city-monitor/shared`.
 
 ## Layout
 
@@ -87,7 +89,7 @@ Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `Safety
 - **TopBar** — City name (link back to `/`), current weather, language switcher (DE/EN/TR/AR), theme toggle.
 - **Footer** — AGPL-required source code link (Section 13 compliance).
 
-Tile assignments: Weather (1, expandable), Air Quality (1, expandable), Briefing (2), News (2), Events (2), Transit (2). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events, Transit) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
+Tile assignments: Weather (1, expandable), Air Quality (1, expandable), Briefing (2), News (2), Events (2), Transit (2), Water Levels (1), Appointments (1). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events, Transit) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
 
 ## Internationalization (i18n)
 

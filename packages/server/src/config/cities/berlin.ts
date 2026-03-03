@@ -97,5 +97,24 @@ export const berlin: CityConfig = {
       provider: 'berlin-doppelhaushalt',
       csvUrl: 'https://www.berlin.de/sen/finanzen/service/daten/260223_doppelhaushalt_2026_2027.csv',
     },
+    socialAtlas: {
+      provider: 'mss-wfs',
+      wfsUrl: 'https://gdi.berlin.de/services/wfs/mss_2023',
+    },
+    appointments: {
+      provider: 'service-berlin',
+      services: [
+        { id: '120686', name: 'Anmeldung' },
+        { id: '121482', name: 'Personalausweis' },
+        { id: '120335', name: 'Reisepass' },
+        { id: '120926', name: 'Führungszeugnis' },
+        { id: '120702', name: 'Meldebescheinigung' },
+        { id: '120697', name: 'Ummeldung' },
+        { id: '121701', name: 'Beglaubigung' },
+        { id: '121151', name: 'Kinderreisepass' },
+        { id: '121627', name: 'Fahrerlaubnis' },
+        { id: '121721', name: 'Bewohnerparkausweis' },
+      ],
+    },
   },
 };

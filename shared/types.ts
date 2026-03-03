@@ -74,6 +74,10 @@ export interface CityDataSources {
     provider: 'service-berlin';
     services: Array<{ id: string; name: string }>;
   };
+  socialAtlas?: {
+    provider: 'mss-wfs';
+    wfsUrl: string;
+  };
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -274,4 +278,26 @@ export interface BuergeramtData {
   services: BuergeramtService[];
   fetchedAt: string;
   bookingUrl: string;
+}
+
+// Social Atlas (MSS 2023)
+export interface SocialAtlasFeatureProps {
+  plrId: string;
+  plrName: string;
+  bezId: string;
+  population: number;
+  statusIndex: number;       // si_n: 1–4
+  statusLabel: string;       // si_v: "hoch" | "mittel" | "niedrig" | "sehr niedrig"
+  unemployment: number;      // s1: %
+  singleParent: number;      // s2: %
+  welfare: number;           // s3: %
+  childPoverty: number;      // s4: %
+}
+
+export interface SocialAtlasSummary {
+  avgUnemployment: number;
+  avgWelfare: number;
+  areasLowStatus: number;    // count where statusIndex >= 3
+  totalAreas: number;
+  dataYear: string;
 }

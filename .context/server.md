@@ -10,8 +10,8 @@
 2. Create in-memory cache (always)
 3. Create DB connection if `DATABASE_URL` set (returns `null` otherwise)
 4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`
-5. Create ingestion functions (feed, weather, transit, events, safety, summarize, nina, air-quality, pharmacies, traffic, construction, water-levels, political) — each receives cache and optionally db
-6. Create scheduler with 13 cron jobs (all `runOnStart: true` except data-retention). Startup runs execute **in parallel**, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`)
+5. Create ingestion functions (feed, weather, transit, events, safety, summarize, nina, air-quality, pharmacies, traffic, construction, water-levels, political, appointments) — each receives cache and optionally db
+6. Create scheduler with 15 cron jobs (all `runOnStart: true` except data-retention). Startup runs execute **in parallel**, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`)
 7. Mount routers under `/api` with per-route Cache-Control headers
 8. Return `{ app, cache, db, scheduler }`
 
@@ -34,6 +34,7 @@ Applied via middleware per route tier:
 | `/api/:city/traffic` | 120s (2 min) | Traffic updates every 5 min |
 | `/api/:city/construction` | 900s (15 min) | Construction updates every 30 min |
 | `/api/:city/water-levels` | 300s (5 min) | Water levels update every 15 min |
+| `/api/:city/appointments` | 3600s (1h) | Appointments update every 6h |
 | `/api/:city/political/:level` | 86400s (24h) | Political data updates weekly |
 
 ## Scheduler (`packages/server/src/lib/scheduler.ts`)
@@ -56,6 +57,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-traffic` | `*/5 * * * *` | TomTom traffic incidents |
 | `ingest-construction` | `*/30 * * * *` | VIZ Berlin construction/roadworks (cache-only) |
 | `ingest-water-levels` | `*/15 * * * *` | PEGELONLINE river gauge stations |
+| `ingest-appointments` | `0 */6 * * *` | Firecrawl-scraped Bürgeramt appointment availability |
 | `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly) |
 | `data-retention` | `0 3 * * *` | Prune old data (nightly) |
 
@@ -92,7 +94,7 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 
 ## Bootstrap Endpoint
 
-`GET /api/:city/bootstrap` (in `routes/news.ts`) returns all data types in one response for fast initial page load: news digest, weather, transit alerts, events, safety reports, NINA warnings, air quality, pharmacies, traffic, construction, water levels. Uses `cache.getBatch()`.
+`GET /api/:city/bootstrap` (in `routes/news.ts`) returns all data types in one response for fast initial page load: news digest, weather, transit alerts, events, safety reports, NINA warnings, air quality, pharmacies, traffic, construction, water levels, appointments. Uses `cache.getBatch()`.
 
 ## City Configuration (`packages/server/src/config/`)
 
@@ -117,6 +119,7 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `WAQI_API_TOKEN` | No | — | WAQI air quality API token. AQ grid skipped if not set. |
 | `TOMTOM_API_KEY` | No | — | TomTom traffic API key. Traffic skipped if not set. |
 | `OPENWEATHERMAP_API_KEY` | No | — | OWM tile proxy for weather map overlay. Returns 503 if not set. |
+| `FIRECRAWL_API_KEY` | No | — | Firecrawl v2 API key for Bürgeramt appointment scraping. Appointments skipped if not set. |
 
 ## Utility Libraries
 

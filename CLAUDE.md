@@ -36,7 +36,7 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 ## Context Files
 
 - [`.context/licensing.md`](.context/licensing.md) — AGPL-3.0 per-file header templates, adapted component list, and Section 13 footer requirements.
-- [`.context/server.md`](.context/server.md) — App factory, startup sequence, 14 cron jobs, logging system, health & bootstrap endpoints, multi-city config, env vars, utility libraries.
+- [`.context/server.md`](.context/server.md) — App factory, startup sequence, 15 cron jobs, logging system, health & bootstrap endpoints, multi-city config, env vars, utility libraries. Appointments ingestion uses Firecrawl API to scrape service.berlin.de (Varnish WAF blocks plain HTTP).
 - [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (10 tables with indices), read/write patterns, cache warming, data retention.
 - [`.context/weather.md`](.context/weather.md) — Open-Meteo forecast ingestion, DWD severe weather alerts for German cities, WMO weather codes.
 - [`.context/news.md`](.context/news.md) — RSS feed ingestion (10 Berlin + 4 Hamburg feeds), headline classifier, AI summarization via OpenAI (gpt-5-mini), cost tracking.

@@ -101,6 +101,32 @@
         "8": "Finance"
       }
     },
+    "appointments": {
+      "title": "Citizen Services",
+      "empty": "No appointment data",
+      "today": "today",
+      "inDays": "in {{count}}d",
+      "noSlots": "none",
+      "bookAppointment": "Book appointment",
+      "summary": {
+        "allAvailable": "Appointments available",
+        "someScarce": "Some services scarce",
+        "someUnavailable": "Some services unavailable",
+        "unknown": "Checking availability…"
+      },
+      "service": {
+        "120686": "Registration",
+        "121482": "ID Card",
+        "120335": "Passport",
+        "120926": "Police Clearance",
+        "120702": "Reg. Certificate",
+        "120697": "Address Change",
+        "121701": "Certification",
+        "121151": "Child Passport",
+        "121627": "Driver's License",
+        "121721": "Parking Permit"
+      }
+    },
     "waterLevels": {
       "title": "Water Levels",
       "state": {

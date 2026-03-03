@@ -18,6 +18,7 @@ import { AirQualityStrip } from '../strips/AirQualityStrip.js';
 import { WeatherStrip } from '../strips/WeatherStrip.js';
 import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
+import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
 import { BudgetStrip } from '../strips/BudgetStrip.js';
 import { Skeleton } from './Skeleton.js';
 
@@ -69,6 +70,9 @@ export function CommandLayout() {
           </Tile>
           <Tile title={t('panel.waterLevels.title')} span={1}>
             <WaterLevelStrip />
+          </Tile>
+          <Tile title={t('panel.appointments.title')} span={1}>
+            <AppointmentsStrip />
           </Tile>
           <Tile title={t('panel.budget.title')} span={2}>
             <BudgetStrip />

@@ -26,6 +26,7 @@ export interface BootstrapData {
   construction: unknown | null;
   waterLevels: WaterLevelData | null;
   budget: BudgetSummary | null;
+  appointments: BuergeramtData | null;
 }
 
 export interface NewsDigest {
@@ -158,8 +159,8 @@ export interface EmergencyPharmacy {
   distance?: number;
 }
 
-export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount } from '@city-monitor/shared';
-import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BudgetSummary } from '@city-monitor/shared';
+export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService } from '@city-monitor/shared';
+import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BudgetSummary, BuergeramtData } from '@city-monitor/shared';
 
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
@@ -179,4 +180,5 @@ export const api = {
   getWaterLevels: (city: string) => fetchJson<WaterLevelData>(`${BASE}/${city}/water-levels`),
   getPolitical: (city: string, level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke') => fetchJson<PoliticalDistrict[]>(`${BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<BudgetSummary | null>(`${BASE}/${city}/budget`),
+  getAppointments: (city: string) => fetchJson<BuergeramtData>(`${BASE}/${city}/appointments`),
 };

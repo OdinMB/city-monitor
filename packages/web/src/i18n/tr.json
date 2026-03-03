@@ -101,6 +101,32 @@
         "8": "Maliye"
       }
     },
+    "appointments": {
+      "title": "Vatandaşlık Hizmetleri",
+      "empty": "Randevu verisi yok",
+      "today": "bugün",
+      "inDays": "{{count}} gün içinde",
+      "noSlots": "yok",
+      "bookAppointment": "Randevu al",
+      "summary": {
+        "allAvailable": "Randevular mevcut",
+        "someScarce": "Bazı hizmetler kısıtlı",
+        "someUnavailable": "Bazı hizmetler müsait değil",
+        "unknown": "Müsaitlik kontrol ediliyor…"
+      },
+      "service": {
+        "120686": "İkametgâh Kaydı",
+        "121482": "Kimlik Kartı",
+        "120335": "Pasaport",
+        "120926": "Sabıka Kaydı",
+        "120702": "İkametgâh Belgesi",
+        "120697": "Adres Değişikliği",
+        "121701": "Belge Onayı",
+        "121151": "Çocuk Pasaportu",
+        "121627": "Ehliyet",
+        "121721": "Oturma İzni Parkı"
+      }
+    },
     "waterLevels": {
       "title": "Su Seviyeleri",
       "state": {

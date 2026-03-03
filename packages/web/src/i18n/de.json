@@ -101,6 +101,32 @@
         "8": "Finanzwirtschaft"
       }
     },
+    "appointments": {
+      "title": "Bürgeramt",
+      "empty": "Keine Termindaten",
+      "today": "heute",
+      "inDays": "in {{count}} T.",
+      "noSlots": "keine",
+      "bookAppointment": "Termin buchen",
+      "summary": {
+        "allAvailable": "Termine verfügbar",
+        "someScarce": "Einige Dienste knapp",
+        "someUnavailable": "Einige Dienste nicht verfügbar",
+        "unknown": "Verfügbarkeit wird geprüft…"
+      },
+      "service": {
+        "120686": "Anmeldung",
+        "121482": "Personalausweis",
+        "120335": "Reisepass",
+        "120926": "Führungszeugnis",
+        "120702": "Meldebescheinigung",
+        "120697": "Ummeldung",
+        "121701": "Beglaubigung",
+        "121151": "Kinderreisepass",
+        "121627": "Fahrerlaubnis",
+        "121721": "Bewohnerparkausweis"
+      }
+    },
     "waterLevels": {
       "title": "Pegelstände",
       "state": {

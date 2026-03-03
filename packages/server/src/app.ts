@@ -23,6 +23,7 @@ import { createPoliticalRouter } from './routes/political.js';
 import { createWeatherTilesRouter } from './routes/weather-tiles.js';
 import { createConstructionRouter } from './routes/construction.js';
 import { createAedsRouter } from './routes/aeds.js';
+import { createAppointmentsRouter } from './routes/appointments.js';
 import { createWaterLevelsRouter } from './routes/water-levels.js';
 import { createBudgetRouter } from './routes/budget.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
@@ -41,6 +42,7 @@ import { createConstructionIngestion } from './cron/ingest-construction.js';
 import { createAedIngestion } from './cron/ingest-aeds.js';
 import { createWaterLevelIngestion } from './cron/ingest-water-levels.js';
 import { createBudgetIngestion } from './cron/ingest-budget.js';
+import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { initGeocodeDb } from './lib/geocode.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
@@ -74,6 +76,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestAeds = createAedIngestion(cache);
   const ingestWaterLevels = createWaterLevelIngestion(cache, db);
   const ingestBudget = createBudgetIngestion(cache);
+  const ingestAppointments = createAppointmentIngestion(cache);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -93,6 +96,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: true },
     { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: true },
     { name: 'ingest-budget', schedule: '0 6 * * *', handler: ingestBudget, runOnStart: true },
+    { name: 'ingest-appointments', schedule: '0 */6 * * *', handler: ingestAppointments, runOnStart: true },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -119,6 +123,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache));
   app.use('/api', cacheFor(3600), createBudgetRouter(cache));
+  app.use('/api', cacheFor(3600), createAppointmentsRouter(cache));
   app.use('/api', cacheFor(600), createWeatherTilesRouter());
 
   return { app, cache, db, scheduler };
