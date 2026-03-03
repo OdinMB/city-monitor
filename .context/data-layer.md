@@ -31,6 +31,8 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:news:digest` | 900s (15 min) | ingest-feeds |
 | `{cityId}:news:{category}` | 900s (15 min) | ingest-feeds |
 | `{cityId}:news:summary` | 86400s (24h) | summarize |
+| `{cityId}:air-quality:grid` | 1800s (30 min) | ingest-aq-grid |
+| `{cityId}:political:{level}` | 604800s (7 days) | ingest-political |
 | `feed:{hash}` | 600s (10 min) | ingest-feeds (raw feed XML) |
 
 ## Database (`packages/server/src/db/`)
@@ -41,7 +43,7 @@ ORM: Drizzle (schema-as-code, no code generation). Driver: `postgres` (node-post
 
 ### Schema (`schema.ts`)
 
-5 tables with indices for query performance:
+9 tables with indices for query performance:
 
 | Table | Key Columns | Index |
 |---|---|---|
@@ -49,6 +51,10 @@ ORM: Drizzle (schema-as-code, no code generation). Driver: `postgres` (node-post
 | `transitDisruptions` | cityId, line, type, severity, message, affectedStops (JSONB), resolved | `transit_city_idx(cityId)` |
 | `events` | cityId, title, venue, date, category, url, free, hash | `events_city_date_idx(cityId, date)` |
 | `safetyReports` | cityId, title, description, publishedAt, url, district, hash | `safety_city_published_idx(cityId, publishedAt)` |
+| `newsItems` | cityId, hash, title, url, publishedAt, category, tier, relevant, confidence, lat/lon | `news_city_idx(cityId)` |
+| `airQualityGrid` | cityId, lat, lon, europeanAqi, station, url | `aq_grid_city_idx(cityId)` |
+| `geocodeLookups` | query, lat, lon, displayName, provider | `geocode_query_idx(query)` (unique) |
+| `politicalDistricts` | cityId, level, districts (JSONB) | `political_city_level_idx(cityId, level)` (unique) |
 | `aiSummaries` | cityId, headlineHash, summary, model, inputTokens, outputTokens | `summaries_city_generated_idx(cityId, generatedAt)` |
 
 All tables have `id` (serial PK), `cityId` (text), and `fetchedAt` (timestamp, default now).
@@ -60,7 +66,10 @@ Query functions that return typed objects or `null`. Each loads the most recent 
 - `loadTransitAlerts(db, cityId)` — all rows, maps to `TransitAlert[]`
 - `loadEvents(db, cityId)` — sorted by date ascending, maps to `CityEvent[]`
 - `loadSafetyReports(db, cityId)` — sorted by publishedAt descending
+- `loadNewsItems(db, cityId)` — sorted by publishedAt descending, includes LLM assessment
 - `loadSummary(db, cityId)` — latest by generatedAt, includes headlineHash
+- `loadAirQualityGrid(db, cityId)` — all rows, maps to `AirQualityGridPoint[]`
+- `loadPoliticalDistricts(db, cityId, level)` — JSONB blob, maps to `PoliticalDistrict[]`
 
 ### Writes (`writes.ts`)
 
@@ -69,11 +78,14 @@ All use transactions with delete-then-insert (full refresh per city, not upsert)
 - `saveTransitAlerts(db, cityId, alerts)`
 - `saveEvents(db, cityId, events)`
 - `saveSafetyReports(db, cityId, reports)`
+- `saveNewsItems(db, cityId, items)` — persists items with LLM assessments and geo data
 - `saveSummary(db, cityId, summary, model, tokens)`
+- `saveAirQualityGrid(db, cityId, points)`
+- `savePoliticalDistricts(db, cityId, level, districts)` — upsert on (cityId, level)
 
 ### Cache Warming (`warm-cache.ts`)
 
-Runs on server start if DB is connected. Loads all 5 data types for all active cities from Postgres into cache with their standard TTLs. Errors are logged but don't block startup — each domain is independent.
+Runs on server start if DB is connected. Loads all data types (weather, transit, events, safety, news items, summaries, NINA warnings, air quality grid, political districts, geocode lookups) for all active cities from Postgres into cache with their standard TTLs. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
 
 ### Data Retention (`cron/data-retention.ts`)
 
@@ -84,6 +96,9 @@ Nightly cron (3am) prunes old data to keep DB size manageable:
 | `weatherSnapshots` | 30 days |
 | `transitDisruptions` (resolved) | 48 hours |
 | `safetyReports` | 7 days |
+| `newsItems` | 7 days |
+| `airQualityGrid` | 48 hours |
+| `politicalDistricts` | 30 days |
 | `aiSummaries` | 30 days |
 
 ## Patterns

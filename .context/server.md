@@ -9,9 +9,9 @@
 1. Create Express app with CORS + JSON middleware
 2. Create in-memory cache (always)
 3. Create DB connection if `DATABASE_URL` set (returns `null` otherwise)
-4. Warm cache from Postgres if DB connected
+4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`
 5. Create ingestion functions (feed, weather, transit, events, safety, summarize, nina, air-quality, pharmacies, traffic, political) — each receives cache and optionally db
-6. Create scheduler with 12 cron jobs (all `runOnStart: true` except data-retention and political)
+6. Create scheduler with 12 cron jobs (all `runOnStart: true` except data-retention). Startup runs execute **in parallel**, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`)
 7. Mount routers under `/api` with per-route Cache-Control headers
 8. Return `{ app, cache, db, scheduler }`
 
@@ -36,7 +36,7 @@ Applied via middleware per route tier:
 
 ## Scheduler (`packages/server/src/lib/scheduler.ts`)
 
-Wrapper around `node-cron` with job metadata tracking.
+Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: string[]` for startup ordering — jobs with unmet dependencies wait; all others run in parallel.
 
 ### Jobs (defined in app.ts)
 
@@ -49,13 +49,13 @@ Wrapper around `node-cron` with job metadata tracking.
 | `ingest-events` | `0 */6 * * *` | kulturdaten.berlin events |
 | `ingest-safety` | `*/10 * * * *` | Police RSS |
 | `ingest-nina` | `*/10 * * * *` | NINA civil protection warnings |
-| `ingest-air-quality` | `*/30 * * * *` | Open-Meteo air quality index |
+| `ingest-air-quality` | `*/30 * * * *` | WAQI stations + Sensor.Community (PM→EAQI) grid |
 | `ingest-pharmacies` | `0 */6 * * *` | aponet.de emergency pharmacies |
 | `ingest-traffic` | `*/5 * * * *` | TomTom traffic incidents |
 | `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly) |
 | `data-retention` | `0 3 * * *` | Prune old data (nightly) |
 
-All ingestion jobs have `runOnStart: true` except data-retention (3am only) and political (weekly Monday 4am).
+All ingestion jobs have `runOnStart: true` except data-retention (3am only). `summarize-news` has `dependsOn: ['ingest-feeds']`.
 
 ### API
 
@@ -110,6 +110,7 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `ACTIVE_CITIES` | No | `berlin` | Comma-separated city IDs |
 | `APONET_TOKEN` | No | _(community token)_ | aponet.de API token for emergency pharmacies |
 | `LOCATIONIQ_TOKEN` | No | — | LocationIQ geocoding token. Used as fallback when Nominatim is rate-limited. |
+| `WAQI_API_TOKEN` | No | — | WAQI air quality API token. AQ grid skipped if not set. |
 | `TOMTOM_API_KEY` | No | — | TomTom traffic API key. Traffic skipped if not set. |
 
 ## Utility Libraries

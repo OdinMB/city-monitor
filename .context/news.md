@@ -4,11 +4,11 @@
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (10 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, classifies headlines by German keywords, deduplicates by URL+title hash, sorts by tier then recency. Writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s). Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 10 min.
+1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (10 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, classifies headlines by German keywords, deduplicates by URL+title hash, sorts by tier then recency. **Before LLM filtering, loads existing assessments from DB** — only genuinely new items (hash not in DB) are sent through the LLM filter. After filtering, writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s), then persists all items with their assessments to Postgres. Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 10 min.
 
-2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/digest` returns cached digest or empty structure.
+2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/digest` returns cached digest, falls back to Postgres (with `applyDropLogic`), then empty structure.
 
-3. **Frontend** (`packages/web/src/components/panels/NewsBriefingPanel.tsx`) — Uses `useNewsDigest()` hook (refetch 5 min). Renders articles by category/tier.
+3. **Frontend** (`packages/web/src/components/strips/NewsStrip.tsx`) — Uses `useNewsDigest()` hook (refetch 5 min). Category tabs (All, Transit, Politics, Culture, Crime, Economy, Sports); "local" and "weather" categories hidden from tabs but items still shown under "All". Max 10 items per view.
 
 ### Feed Configuration
 
@@ -61,9 +61,17 @@ interface NewsItem {
   url: string;
   publishedAt: string;
   sourceName: string;
+  sourceUrl: string;
+  description?: string;
   category: string;     // From classifier or feed config override
   tier: number;         // 1 (primary) to 3 (tertiary)
   lang: string;
+  location?: { lat: number; lon: number; label?: string };
+}
+
+// Extended type with LLM assessment, used for DB persistence
+type PersistedNewsItem = NewsItem & {
+  assessment?: { relevant?: boolean; confidence?: number };
 }
 
 interface NewsDigest {
@@ -82,4 +90,9 @@ interface NewsSummary {
 
 ## DB Schema
 
-`aiSummaries` table — cityId, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. No table for news items (feeds are ephemeral, re-fetched on every cron run).
+- `newsItems` table — cityId, hash (dedup key), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevant (bool), confidence (real), lat, lon, locationLabel, fetchedAt. Full-refresh write per city. 7-day retention.
+- `aiSummaries` table — cityId, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. 30-day retention.
+
+## Drop Logic
+
+`applyDropLogic()` (exported from `ingest-feeds.ts`) filters out items the LLM assessed as irrelevant. Shared by the cron job, warm-cache, and the digest route. Drops all items where `relevant === false` regardless of confidence or tier. Items without assessment are kept.

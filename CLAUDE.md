@@ -2,6 +2,8 @@
 
 Real-time multi-city dashboard (Berlin, Hamburg). Extracts proven patterns from the [worldmonitor](https://github.com/ellie-xyb/worldmonitor) repo into a focused city monitoring product.
 
+> **Dev servers are already running.** The web app (port 5173) and API server (port 3001) are up. Do **not** start additional instances via `npm run dev` or similar.
+
 ## Stack
 
 - **Frontend:** React 19 + TypeScript + Vite 6 + Tailwind v4 + Zustand + React Query + react-router + react-i18next
