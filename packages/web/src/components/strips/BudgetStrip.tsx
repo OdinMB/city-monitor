@@ -159,13 +159,16 @@ function AreaSelect({
   areas,
   value,
   onChange,
+  label,
 }: {
   areas: BudgetAreaSummary[];
   value: number;
   onChange: (code: number) => void;
+  label: string;
 }) {
   return (
     <select
+      aria-label={label}
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
       className="w-full text-[11px] bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded px-1.5 py-1 border-none cursor-pointer"
@@ -194,19 +197,20 @@ export function BudgetStrip() {
   const effectiveLeft = leftArea ?? districts[0]?.areaCode ?? 0;
   const effectiveRight = rightArea ?? districts[1]?.areaCode ?? districts[0]?.areaCode ?? 0;
 
+  const modes: { key: Mode; label: string }[] = useMemo(() => [
+    { key: 'city', label: t('panel.budget.city') },
+    { key: 'districts', label: t('panel.budget.districts') },
+  ], [t]);
+  const modeIdx = modes.findIndex((m) => m.key === mode);
+  const selectModeByIdx = useCallback((i: number) => setMode(modes[i]!.key), [modes]);
+  const { setTabRef: setModeRef, onKeyDown: onModeKeyDown } = useTabKeys(modes.length, modeIdx, selectModeByIdx);
+
   if (isLoading) return <Skeleton lines={3} />;
   if (!data || data.areas.length === 0) {
     return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.budget.empty')}</p>;
   }
 
   const total = data.areas.find((a) => a.areaCode === -1);
-  const modes: { key: Mode; label: string }[] = [
-    { key: 'city', label: t('panel.budget.city') },
-    { key: 'districts', label: t('panel.budget.districts') },
-  ];
-  const modeIdx = modes.findIndex((m) => m.key === mode);
-  const selectModeByIdx = useCallback((i: number) => setMode(modes[i]!.key), [modes]);
-  const { setTabRef: setModeRef, onKeyDown: onModeKeyDown } = useTabKeys(modes.length, modeIdx, selectModeByIdx);
 
   return (
     <>
@@ -313,11 +317,11 @@ function DistrictView({
     <>
       <div className="flex gap-3">
         <div className="flex-1 min-w-0">
-          <AreaSelect areas={areas} value={left.areaCode} onChange={onLeftChange} />
+          <AreaSelect areas={areas} value={left.areaCode} onChange={onLeftChange} label={t('panel.budget.selectDistrict')} />
           <PieChart items={left.expenses} total={left.totalExpense} label={t('panel.budget.expenses')} t={t} />
         </div>
         <div className="flex-1 min-w-0">
-          <AreaSelect areas={areas} value={right.areaCode} onChange={onRightChange} />
+          <AreaSelect areas={areas} value={right.areaCode} onChange={onRightChange} label={t('panel.budget.selectDistrict')} />
           <PieChart items={right.expenses} total={right.totalExpense} label={t('panel.budget.expenses')} t={t} />
         </div>
       </div>
