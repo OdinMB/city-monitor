@@ -11,8 +11,10 @@ export const MAP_NEWS = {
   maxTotal: 25,
   /** Guaranteed slots per category (filled first, before importance ranking) */
   guaranteedPerCategory: 3,
+  /** Max items without a location (they all cluster at city center) */
+  maxWithoutLocation: 5,
   /** Max extra markers added to fill empty map areas */
-  spatialBonusMax: 10,
+  spatialBonusMax: 15,
   /** Grid cell size in degrees (~1 km at Berlin's latitude) */
   spatialGridSize: 0.01,
   /** Minimum importance for spatial bonus items (Phase 3, filling empty areas) */

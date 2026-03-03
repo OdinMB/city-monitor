@@ -46,21 +46,31 @@ export function filterNewsForMap(items: NewsItem[], fallback: { lat: number; lon
     }
   }
 
-  // Phase 2: fill remaining slots by importance
+  // Phase 2: fill remaining slots by importance, capping locationless items
+  // (locationless items all cluster at city center, wasting map coverage)
   const resultSet = new Set<string>();
   const result: NewsItem[] = [];
+  let noLocCount = 0;
+
+  const canAdd = (item: NewsItem): boolean => {
+    if (item.location) return true;
+    return noLocCount < MAP_NEWS.maxWithoutLocation;
+  };
+
   for (const item of byImportance) {
     if (result.length >= MAP_NEWS.maxTotal) break;
-    if (picked.has(item.id)) {
+    if (picked.has(item.id) && canAdd(item)) {
       result.push(item);
       resultSet.add(item.id);
+      if (!item.location) noLocCount++;
     }
   }
   for (const item of byImportance) {
     if (result.length >= MAP_NEWS.maxTotal) break;
-    if (!resultSet.has(item.id)) {
+    if (!resultSet.has(item.id) && canAdd(item)) {
       result.push(item);
       resultSet.add(item.id);
+      if (!item.location) noLocCount++;
     }
   }
 
