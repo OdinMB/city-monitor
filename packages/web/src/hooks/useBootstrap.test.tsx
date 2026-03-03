@@ -14,6 +14,17 @@ const mockBootstrap = {
   weather: null,
   transit: null,
   events: null,
+  safety: null,
+  nina: null,
+  airQuality: { current: { europeanAqi: 42, pm25: 10, pm10: 20, no2: 15, o3: 30, updatedAt: '2026-03-01T00:00:00Z' }, hourly: [] },
+  pharmacies: null,
+  traffic: null,
+  construction: null,
+  waterLevels: null,
+  budget: null,
+  appointments: null,
+  laborMarket: null,
+  wastewater: null,
 };
 
 function createWrapper() {
@@ -48,6 +59,22 @@ describe('useBootstrap', () => {
     await waitFor(() => {
       const newsData = queryClient.getQueryData(['news', 'digest', 'berlin']);
       expect(newsData).toEqual(mockBootstrap.news);
+    });
+  });
+
+  it('hydrates air quality data into query cache', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify(mockBootstrap), { status: 200 }),
+    );
+
+    const { wrapper, queryClient } = createWrapper();
+    const { result } = renderHook(() => useBootstrap('berlin'), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    await waitFor(() => {
+      const aqData = queryClient.getQueryData(['air-quality', 'berlin']);
+      expect(aqData).toEqual(mockBootstrap.airQuality);
     });
   });
 

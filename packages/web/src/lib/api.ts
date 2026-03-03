@@ -23,6 +23,9 @@ export interface BootstrapData {
   events: unknown | null;
   safety: unknown | null;
   nina: unknown | null;
+  airQuality: AirQuality | null;
+  pharmacies: unknown | null;
+  traffic: unknown | null;
   construction: unknown | null;
   waterLevels: WaterLevelData | null;
   budget: BudgetSummary | null;
