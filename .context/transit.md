@@ -6,7 +6,7 @@ Transit data flows from the VBB transport.rest API through a server-side cron jo
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-transit.ts`) — Runs every 5 minutes. Polls departures with disruption remarks from 12 interchange stations covering all Berlin U+S lines via `v6.vbb.transport.rest`. Extracts warning-type remarks with station name, location (lat/lon), and full detail text (`remark.text`). Deduplicates by `line:summary` key, classifies type and severity from German keywords, and writes `TransitAlert[]` to cache + DB. Skips cache write if all stations fail.
+1. **Ingestion** (`packages/server/src/cron/ingest-transit.ts`) — Runs every 15 minutes. Polls departures with disruption remarks from 12 interchange stations covering all Berlin U+S lines via `v6.vbb.transport.rest`. Extracts warning-type remarks with station name, location (lat/lon), and full detail text (`remark.text`). Deduplicates by `line:summary` key, classifies type and severity from German keywords, and writes `TransitAlert[]` to cache + DB. Skips cache write if all stations fail.
 
 2. **API** (`packages/server/src/routes/transit.ts`) — `GET /api/:city/transit` returns cached alerts or `[]`.
 

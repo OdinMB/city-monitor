@@ -26,7 +26,7 @@ Applied via middleware per route tier:
 |---|---|---|
 | `/api/:city/news/*` | 300s (5 min) | Feeds update every 10 min |
 | `/api/:city/weather` | 300s (5 min) | Weather updates every 30 min |
-| `/api/:city/transit` | 120s (2 min) | Transit updates every 5 min |
+| `/api/:city/transit` | 120s (2 min) | Transit updates every 15 min |
 | `/api/:city/events` | 1800s (30 min) | Events update every 6h |
 | `/api/:city/safety` | 300s (5 min) | Safety updates every 10 min |
 | `/api/:city/warnings` | 300s (5 min) | NINA alerts update every 10 min |
@@ -43,6 +43,10 @@ Applied via middleware per route tier:
 | `/api/:city/wastewater` | 43200s (12h) | Wastewater updates daily |
 | `/api/:city/labor-market` | 3600s (1h) | Labor market updates daily |
 | `/api/:city/political/:level` | 3600s (1h) | Political data updates weekly |
+| `/api/:city/weather/history` | 1800s (30 min) | Historical temperature (7d) |
+| `/api/:city/air-quality/history` | 1800s (30 min) | Historical AQI (30d) |
+| `/api/:city/water-levels/history` | 1800s (30 min) | Historical water levels (30d) |
+| `/api/:city/labor-market/history` | 1800s (30 min) | Historical unemployment (24mo) |
 
 ## Scheduler (`packages/server/src/lib/scheduler.ts`)
 
@@ -55,10 +59,10 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-feeds` | `*/10 * * * *` | Fetch RSS feeds, classify, cache digest |
 | `summarize-news` | `5,20,35,50 * * * *` | AI summary of top headlines |
 | `ingest-weather` | `*/30 * * * *` | Open-Meteo + DWD alerts |
-| `ingest-transit` | `*/5 * * * *` | VBB departure disruptions |
+| `ingest-transit` | `*/15 * * * *` | VBB departure disruptions |
 | `ingest-events` | `0 */6 * * *` | kulturdaten.berlin events |
 | `ingest-safety` | `*/10 * * * *` | Police RSS |
-| `ingest-nina` | `*/10 * * * *` | NINA civil protection warnings |
+| `ingest-nina` | `*/5 * * * *` | NINA civil protection warnings |
 | `ingest-air-quality` | `*/30 * * * *` | WAQI stations + Sensor.Community (PM→EAQI) grid |
 | `ingest-pharmacies` | `0 */6 * * *` | aponet.de emergency pharmacies |
 | `ingest-traffic` | `*/5 * * * *` | TomTom traffic incidents |
@@ -143,3 +147,4 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `lib/rss-parser.ts` | RSS 2.0 + Atom parser using `fast-xml-parser`. Returns `FeedItem[]`. |
 | `lib/classifier.ts` | German keyword-based headline classification into 8 categories. |
 | `lib/geocode.ts` | Nominatim-first geocoding (1 QPS, free). Falls back to LocationIQ when rate-limited and `LOCATIONIQ_TOKEN` is set. |
+| `lib/parse-history.ts` | Parses `?history=Nd` query params. Used by history endpoints. |

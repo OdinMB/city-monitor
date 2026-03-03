@@ -1,4 +1,69 @@
-# New Data Sources Research (2026-03-03)
+# Data Sources
+
+## New Data Source Checklist
+
+Follow every step when adding a new data source. Skip items marked with a surface qualifier (map/tile) if that surface doesn't apply.
+
+### Server
+
+1. **Shared types** — add data interfaces to `shared/types.ts`
+2. **Cache keys** — add typed key(s) to `packages/server/src/lib/cache-keys.ts` (`CK.*`). If the data is small and should load instantly, add to `bootstrapKeys`. If large (>50KB), exclude and lazy-fetch.
+3. **DB table** — add snapshot table to `packages/server/src/db/schema.ts` (follow INSERT-only pattern)
+4. **DB writes** — add save function to `packages/server/src/db/writes.ts`
+5. **DB reads** — add load function to `packages/server/src/db/reads.ts`
+6. **Cron job** — create `packages/server/src/cron/ingest-<name>.ts` with factory function
+7. **REST endpoint** — create `packages/server/src/routes/<name>.ts` with 3-tier read (cache → DB → null)
+8. **App registration** — in `packages/server/src/app.ts`: import + instantiate cron, add `FRESHNESS_SPECS` entry, register cron job with schedule, mount route with `cacheFor()`
+9. **Cache warming** — add to `packages/server/src/db/warm-cache.ts` (in the Berlin-only block if Berlin-only)
+10. **Bootstrap** (if included) — add field to bootstrap response in `packages/server/src/routes/news.ts`
+
+### Frontend
+
+11. **API client** — re-export types from `shared` and add `api.get*()` method in `packages/web/src/lib/api.ts`. Extend `BootstrapData` if bootstrapped.
+12. **Data hook** — create `packages/web/src/hooks/use<Name>.ts` (follow `useSocialAtlas` or `useLaborMarket` pattern)
+13. **Bootstrap seeding** (if bootstrapped) — add `setQueryData` line in `packages/web/src/hooks/useBootstrap.ts`
+14. **Zustand state** (map layer) — extend layer types in `packages/web/src/hooks/useCommandCenter.ts`
+15. **Sidebar toggles** (map layer) — add sub-layer entry in `packages/web/src/components/sidebar/DataLayerToggles.tsx`
+16. **Map rendering** (map layer) — add `update*Layer()` function + reactive wiring in `packages/web/src/components/map/CityMap.tsx`
+17. **Dashboard tile** (tile) — create strip component in `packages/web/src/components/strips/<Name>Strip.tsx`, mount in `packages/web/src/components/layout/CommandLayout.tsx`
+18. **i18n** — add translation keys in all 4 locale files (`en.json`, `de.json`, `tr.json`, `ar.json`)
+
+### Documentation & Attribution
+
+19. **Sources page** — add entry to `SHARED_SOURCES`, `BERLIN_SOURCES`, or `HAMBURG_SOURCES` in `packages/web/src/pages/SourcesPage.tsx`
+20. **Context file** — create `.context/<name>.md` documenting the data source, ingestion pipeline, cache keys, endpoint shapes
+21. **CLAUDE.md** — add a one-line reference to the new context file in the "Context Files" section
+22. **Data freshness note** — if the source uses a hardcoded URL that changes periodically (XLSX files, biennial WFS layer names, budget CSVs), add an entry to the Data Freshness Inventory below with the check schedule
+
+### Testing
+
+23. **Unit tests** — test CSV/XLSX/JSON parsing logic with mock data, test summary aggregation, test edge cases (empty data, malformed rows)
+24. **Integration test** — test REST endpoint with mock cache/DB
+
+### DB Migration (production)
+
+25. **Generate migration** — `npm run db:generate` from `packages/server`
+26. **Apply migration** — `npm run db:migrate` (or `db:push` in dev)
+
+---
+
+## Data Freshness Inventory
+
+Sources with **hardcoded URLs or version-pinned data** that need periodic manual checks. Real-time APIs with stable endpoints (Open-Meteo, PEGELONLINE, VBB, etc.) are not listed — they self-update.
+
+| Source | Current URL/Version | Update Cycle | When to Check | Notes |
+|--------|-------------------|--------------|---------------|-------|
+| **MSS Social Atlas** | WFS layer `mss_2023` | Biennial | Q1 of odd years (next: Q1 2027) | Layer name changes with each edition (e.g., `mss_2025`). Update `wfsUrl` in `berlin.ts` and WFS layer names in `ingest-social-atlas.ts`. |
+| **Berlin Budget CSV** | `260223_doppelhaushalt_2026_2027.csv` | Biennial | When new Doppelhaushalt is published (next: late 2027) | URL and filename change with each budget cycle. Update `csvUrl` in `berlin.ts`. |
+| **Berlin Rent Map WMS** | Wohnlagenkarte 2024 | Annual | Q1 each year | WMS layer name may change. Check `daten.berlin.de` for updated layer. |
+| **LAGeSo Bathing CSV** | `data.lageso.de/baden/0_letzte/letzte.csv` | Seasonal (May–Sep) | Start of each bathing season | URL is stable but data stops updating in winter. |
+| **abgeordnetenwatch** | API v2 | Per election cycle | After federal/state/local elections | Constituency IDs and parliament IDs change with redistricting. |
+| **Population XLSX (EWR)** | `SB_A01-16-00_2025h02_BE.xlsx` | Semi-annual (h01=Jun, h02=Dec) | Q1 and Q3 each year (published ~3 months after snapshot) | URL contains hash segments that change per edition. Update hardcoded URL in `ingest-population.ts`. |
+| **Bezirksbürgermeister** | Hardcoded array in `ingest-political.ts` | Per election cycle | After Berlin local elections (next: 2028) | Names, parties, and profile URLs of 12 district mayors are hardcoded. Must be manually updated after each BVV election. |
+
+---
+
+## Research: Potential New Data Sources (2026-03-03)
 
 Research into emergency and city services data availability for Berlin.
 

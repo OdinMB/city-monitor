@@ -45,6 +45,10 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:labor-market` | 86400s (24h) | ingest-labor-market (Berlin-only) |
 | `{cityId}:appointments` | 21600s (6h) | ingest-appointments |
 | `{cityId}:nina:warnings` | 600s (10 min) | ingest-nina |
+| `{cityId}:weather:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
+| `{cityId}:aqi:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
+| `{cityId}:water-levels:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
+| `{cityId}:labor-market:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
 | `feed:{hash}` | 600s (10 min) | ingest-feeds (raw feed XML) |
 
 ## Database (`packages/server/src/db/`)
@@ -92,6 +96,7 @@ All tables have `id` (serial PK), `cityId` (text), and `fetchedAt` (timestamp, d
 Query functions that return typed objects or `null`. Each loads the most recent data for a city. Snapshot tables use `ORDER BY fetchedAt DESC LIMIT 1`. Multi-row tables (transit, air quality, NINA) use `MAX(fetchedAt)` to find the latest batch, with staleness guards (30–60 min) to avoid serving stale data when the current state is empty.
 - `loadWeather`, `loadTransitAlerts`, `loadEvents`, `loadSafetyReports`, `loadNewsItems`, `loadSummary`, `loadNinaWarnings`, `loadAirQualityGrid`, `loadWaterLevels`, `loadPoliticalDistricts`, `loadAppointments`
 - `loadBudget`, `loadConstructionSites`, `loadTrafficIncidents`, `loadPharmacies`, `loadAeds`, `loadSocialAtlas`, `loadWastewater`, `loadBathingSpots`, `loadLaborMarket`
+- **Historical queries** (used by `/history` endpoints, not cron): `loadWeatherHistory`, `loadAqiHistory`, `loadWaterLevelHistory`, `loadLaborMarketHistory` — each takes `(db, cityId, sinceDays)` and returns `HistoryPoint[]`
 
 ### Writes (`writes.ts`)
 
@@ -117,9 +122,12 @@ Nightly cron (3am) prunes old data from all 20 tables. Since writes are INSERT-o
 
 | Category | Tables | Retention |
 |---|---|---|
-| Frequent | weather, transit, air quality, traffic, construction | 7 days |
-| Moderate | news, events, safety, NINA, water levels, bathing, pharmacies, appointments, wastewater | 7 days |
-| Infrequent | budget, political, social atlas, AEDs, labor market | 30 days |
+| Frequent | weather, transit, traffic, construction | 7 days |
+| Moderate | news, events, safety, NINA, bathing, pharmacies, appointments, wastewater | 7 days |
+| Air quality | air quality grid | 30 days (extended for AQI trend charts) |
+| Water levels | water level snapshots | 30 days (extended for water level trend charts) |
+| Infrequent | budget, political, social atlas, AEDs | 30 days |
+| Labor market | labor market snapshots | 730 days / ~24 months (extended for unemployment trend charts) |
 | Summaries | AI summaries | 30 days |
 
 ## Patterns

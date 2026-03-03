@@ -35,8 +35,8 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 ## Context Files
 
 - [`.context/licensing.md`](.context/licensing.md) — AGPL-3.0 per-file header templates, adapted component list, and Section 13 footer requirements.
-- [`.context/server.md`](.context/server.md) — App factory, startup sequence, 15 cron jobs, logging system, health & bootstrap endpoints, multi-city config, env vars, utility libraries. Appointments ingestion uses Firecrawl API to scrape service.berlin.de (Varnish WAF blocks plain HTTP).
-- [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (20 tables with indices), read/write patterns, cache warming, freshness-based startup checks, data retention.
+- [`.context/server.md`](.context/server.md) — App factory, startup sequence, 22 cron jobs, logging system, health & bootstrap endpoints, history endpoints, multi-city config, env vars, utility libraries. Appointments ingestion uses Firecrawl API to scrape service.berlin.de (Varnish WAF blocks plain HTTP).
+- [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (21 tables with indices), read/write patterns, cache warming, freshness-based startup checks, data retention.
 - [`.context/weather.md`](.context/weather.md) — Open-Meteo forecast ingestion, DWD severe weather alerts for German cities, WMO weather codes.
 - [`.context/news.md`](.context/news.md) — RSS feed ingestion (10 Berlin + 4 Hamburg feeds), headline classifier, AI summarization via OpenAI (gpt-5-mini), cost tracking.
 - [`.context/transit.md`](.context/transit.md) — VBB transport.rest integration, line+summary deduplication, German keyword classification of disruption type/severity.
@@ -48,7 +48,10 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/water-levels.md`](.context/water-levels.md) — Water parent layer with two sub-layers: PEGELONLINE river gauges (state derivation, gauge bar UI) and LAGeSo bathing water quality (CSV ingestion, quality mapping, seasonal badges). New water features must follow the sub-layer pattern (same as emergencies) and use the shared types.
 - [`.context/social-atlas.md`](.context/social-atlas.md) — MSS 2023 WFS choropleth map layer (biennial, lazy GeoJSON) and BA monthly unemployment dashboard tile. The dashboard tile uses the Bundesagentur fur Arbeit Statistics API (monthly CSV) for current unemployment rates; the map layer uses the separate MSS WFS for per-area social indicators.
 - [`.context/wastewater.md`](.context/wastewater.md) — Lageso Berlin wastewater viral load monitoring (Influenza A/B, RSV) from CSV open data. Wastewater data uses weekly CSV ingestion, trend computation (latest vs previous week), and a Berlin-only expandable dashboard tile (collapsed: level badges, expanded: sparkline charts with values).
-- [`.context/new-data-sources.md`](.context/new-data-sources.md) — Research on potential Berlin data sources (fire dept, utilities, emergency doctors, hospitals, water levels, AEDs, crisis hotlines, construction). Priority ranking and API details for future development.
+- [`.context/population.md`](.context/population.md) — Semi-annual EWR population demographics from Amt für Statistik (XLSX, SheetJS). Population adds 3 choropleth map sub-layers (density, elderly, foreign) under the socioeconomic parent and a Berlin-only expandable dashboard tile with age breakdown.
+- [`.context/new-data-sources.md`](.context/new-data-sources.md) — **When adding a new data source, follow the checklist in this file.** It covers all 26 integration points (server, frontend, docs, tests, migration) and includes a data freshness inventory for sources with hardcoded URLs. Also contains research on potential Berlin data sources.
+- [`.context/deploy-on-render.md`](.context/deploy-on-render.md) — Step-by-step Render.com deployment guide: Blueprint (automated) and manual setup for PostgreSQL, API web service, and static frontend. Covers env vars, rewrites, headers, custom domains, multi-city, troubleshooting, and costs.
+- [`.context/testing.md`](.context/testing.md) — Vitest setup for both packages, how to run tests (turbo vs direct), web jsdom environment, co-located test file conventions.
 
 ## Key Conventions
 
@@ -72,6 +75,27 @@ npm run db:migrate     # Apply migrations
 npm run db:push        # Push schema directly (dev only)
 npm run db:studio      # Open Drizzle Studio (DB browser)
 ```
+
+## Testing
+
+Both packages use **Vitest**. Each has its own `vitest.config.ts` with package-specific settings. Tests must be run through `turbo` (or from the package directory) so the correct config is used.
+
+```bash
+# Run ALL tests in both packages
+npx turbo run test
+
+# Run a specific test file (use turbo filter + pass file path relative to package root)
+npx turbo run test --filter=@city-monitor/web -- src/components/TrendChart.test.tsx
+npx turbo run test --filter=@city-monitor/server -- src/lib/parse-history.test.ts
+
+# Run tests with verbose output
+npx turbo run test --filter=@city-monitor/web -- --reporter=verbose
+```
+
+**Important:** Do NOT run `npx vitest run <path>` from the monorepo root — it picks the wrong config. Always use `turbo run test --filter=<package>` or run from within the package directory.
+
+- **Web** (`packages/web`): jsdom environment, `@testing-library/react`, setup file at `src/test-setup.ts`
+- **Server** (`packages/server`): Node environment, no DOM
 
 ## Repository
 

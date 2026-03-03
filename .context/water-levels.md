@@ -28,7 +28,7 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 ## Server Pipeline
 
 1. **Cron** (`*/15 * * * *`): `createWaterLevelIngestion(cache, db)` fetches PEGELONLINE batch API, derives state, writes to cache (key: `{cityId}:water-levels`, TTL: 900s) then DB
-2. **DB**: `waterLevelSnapshots` table (cityId, stations JSONB, fetchedAt). Full-refresh writes (delete + insert in transaction). 7-day retention
+2. **DB**: `waterLevelSnapshots` table (cityId, stations JSONB, fetchedAt). Full-refresh writes (delete + insert in transaction). 30-day retention (extended for trend charts)
 3. **Route** (`GET /api/:city/water-levels`): Three-tier read (cache → DB → empty `{ stations: [], fetchedAt: null }`). 300s Cache-Control
 4. **Bootstrap**: Included in `GET /api/:city/bootstrap` response as `waterLevels` field
 
@@ -40,7 +40,8 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 ## Frontend
 
 - **Hook**: `useWaterLevels(cityId)` — 15-min refetch, 5-min stale, bootstrap-seeded
-- **Dashboard tile**: `WaterLevelStrip` — gauge bars showing current level within MNW-MHW range, color-coded by state (blue=low, green=normal, amber=high, red=very_high, gray=unknown), tidal badge
+- **Dashboard tile**: `WaterLevelStrip` — gauge bars showing current level within MNW-MHW range, color-coded by state (blue=low, green=normal, amber=high, red=very_high, gray=unknown), tidal badge. Expandable — shows 7-day avg water level TrendChart when expanded
+- **History endpoint**: `GET /api/:city/water-levels/history?range=Nd` — returns `HistoryPoint[]` (avg level across stations). Max 30d. Lazy-loaded via `useWaterLevelHistory` hook when tile is expanded
 - **Map markers**: Droplets icon colored by state, label showing current level in cm, popup with name/waterBody/level/state
 - **Sidebar toggle**: `water` parent layer with sub-layers `levels` and `bathing` (same pattern as emergencies with pharmacies/AEDs)
 - **i18n**: Keys under `panel.waterLevels.*`, `sidebar.layers.water`, and `sidebar.water.*` in all 4 languages

@@ -44,8 +44,9 @@ App (HelmetProvider)
                   Tile(span=1, expandable) → AirQualityStrip (AQI gauge + pollutants)
                   Tile(span=2) → NewsStrip (category filter + headlines)
                   Tile(span=1, expandable, collapsed) → TransitStrip (severity rows, 4 collapsed / 8 expanded)
-                  Tile(span=1) → WaterLevelStrip (gauge bars with MNW–MHW range)
-                  Tile(span=1) → AppointmentsStrip (Bürgeramt service availability)
+                  Tile(span=1, expandable) → WaterLevelStrip (gauge bars + trend chart)
+                  Tile(span=1, expandable) → LaborMarketStrip (unemployment + trend chart)
+                  Tile(span=1, expandable) → AppointmentsStrip (Bürgeramt service availability)
                   ... (budget, support, political tiles)
                   Tile(span=2) → EventsStrip (day/time-of-day/category filters, 2-col grid, future-only) — last tile
               Footer (AGPL source link)
@@ -76,6 +77,17 @@ Each panel has a dedicated hook that polls its endpoint independently after boot
 
 All hooks use `keepPreviousData` as placeholder during refetch, `retry: 2`, and `refetchIntervalInBackground: false`.
 
+#### History Hooks (Lazy-loaded)
+
+Fetch historical time-series from `/api/:city/{domain}/history` endpoints. Only fire when `enabled` is true (tile expanded):
+
+| Hook | Query Key | Range | Stale Time |
+|---|---|---|---|
+| `useWeatherHistory` | `['weather-history', cityId]` | 7d | 30 min |
+| `useAqiHistory` | `['aqi-history', cityId]` | 7d | 30 min |
+| `useWaterLevelHistory` | `['water-level-history', cityId]` | 7d | 15 min |
+| `useLaborMarketHistory` | `['labor-market-history', cityId]` | 365d | 24h |
+
 ### Query Client Defaults
 
 - `staleTime`: 2 min
@@ -99,7 +111,7 @@ Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `Safety
 - **HeaderControls** — Shared language switcher (DE/EN/TR/AR) + theme toggle. Desktop: inline buttons. Mobile: hamburger menu dropdown. Used by both TopBar and PageShell.
 - **Footer** — AGPL source code link, World Monitor attribution, Ko-fi support link, internal legal links (Legal Notice, Privacy, No Tracking).
 
-Tile assignments: Briefing (1), Weather (1, expandable), Air Quality (1, expandable), News (2), Transit (1, expandable, collapsed by default — 4 rows collapsed, 8 expanded), Water Levels (1), Appointments (1), Events (2, last). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
+Tile assignments: Briefing (1), Weather (1, expandable), Air Quality (1, expandable), News (2), Transit (1, expandable, collapsed by default — 4 rows collapsed, 8 expanded), Water Levels (1, expandable), Labor Market (1, expandable, Berlin-only), Appointments (1), Events (2, last). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
 
 ## Internationalization (i18n)
 
@@ -141,6 +153,12 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 - Weather overlay: raster tile layer (`type: 'raster'`) sourced from `/api/weather-tiles/{z}/{x}/{y}.png` — server-side proxy to OpenWeatherMap `clouds_new` tiles (API key hidden). Added/removed via `setWeatherOverlay()` based on `activeLayers.has('weather')`. Uses `raster-opacity: 0.65` for semi-transparent overlay. Sidebar label: "Rain Radar" / "Regenradar". Requires `OPENWEATHERMAP_API_KEY` env var on the server.
 - Rent map overlay (Berlin only): raster WMS tile layer from Berlin Open Data (`gdi.berlin.de/services/wms/wohnlagenadr2024`). Shows Wohnlagenkarte residential quality zones (einfach/mittel/gut) that drive Mietspiegel rent ranges. Added/removed via `setRentMapOverlay()` based on `activeLayers.has('rent-map') && city.id === 'berlin'`. No server proxy needed (public WMS, no API key). Sidebar toggle hidden for non-Berlin cities via `cities` filter in `LAYER_META`. License: dl-de-zero-2.0.
 - Vite config requires `target: 'esnext'` (both `build.target` and `optimizeDeps.esbuildOptions.target`) to prevent MapLibre's GeoJSON web worker crash (`__publicField is not defined`)
+
+## Reusable Components
+
+| Component | File | Description |
+|---|---|---|
+| `TrendChart` | `components/TrendChart.tsx` | SVG sparkline for historical time-series data. Props: `data` (HistoryPoint[]), `color`, `label`, `unit`, `height`. Polyline with date labels and last value. Memo'd, renders null for < 2 points. |
 
 ## Frontend Utilities
 
