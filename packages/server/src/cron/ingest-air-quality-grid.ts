@@ -175,11 +175,23 @@ async function fetchConfiguredSensorCommunityStations(city: CityConfig): Promise
   // Fetch sequentially — SC API rate-limits concurrent requests (HTTP 500)
   const points: AirQualityGridPoint[] = [];
   for (const s of stations) {
-    try {
-      const point = await fetchSensorCommunityStation(s.sensorId, s.name);
-      if (point) points.push(point);
-    } catch {
-      log.warn(`${city.id}: SC station ${s.name} (${s.sensorId}) fetch failed`);
+    const candidates = [s.sensorId, ...(s.fallbackIds ?? [])];
+    let point: AirQualityGridPoint | null = null;
+    for (const id of candidates) {
+      try {
+        point = await fetchSensorCommunityStation(id, s.name);
+        if (point) {
+          if (id !== s.sensorId) log.info(`${city.id}: SC ${s.name} using fallback ${id}`);
+          break;
+        }
+      } catch {
+        // try next candidate
+      }
+    }
+    if (point) {
+      points.push(point);
+    } else {
+      log.warn(`${city.id}: SC station ${s.name} — all candidates failed (${candidates.join(', ')})`);
     }
   }
   return points;

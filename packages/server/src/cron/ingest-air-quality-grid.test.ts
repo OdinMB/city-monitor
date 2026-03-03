@@ -196,11 +196,14 @@ describe('createAirQualityGridIngestion', () => {
   it('skips SC stations that return no data', async () => {
     const spy = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify(mockWaqiResponse), { status: 200 }));
-    // 9 return data, 5 fail (empty or HTTP error)
+    // 9 stations succeed on primary (1 fetch each), 5 fail all 3 candidates (primary + 2 fallbacks)
     const ok = () => spy.mockResolvedValueOnce(new Response(JSON.stringify(mockScSensorResponse), { status: 200 }));
-    const empty = () => spy.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
-    const err = () => spy.mockResolvedValueOnce(new Response('error', { status: 500 }));
-    ok(); empty(); ok(); err(); ok(); ok(); empty(); ok(); ok(); err(); ok(); empty(); ok(); ok();
+    const fail3 = () => { // primary + 2 fallbacks all fail
+      spy.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
+      spy.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
+      spy.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
+    };
+    ok(); fail3(); ok(); fail3(); ok(); ok(); fail3(); ok(); ok(); fail3(); ok(); fail3(); ok(); ok();
 
     const cache = createCache();
     const ingest = createAirQualityGridIngestion(cache);
@@ -214,7 +217,8 @@ describe('createAirQualityGridIngestion', () => {
   it('continues with WAQI only when all SC fetches fail', async () => {
     const spy = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify(mockWaqiResponse), { status: 200 }));
-    for (let i = 0; i < 14; i++) {
+    // 14 stations × 3 candidates each (primary + 2 fallbacks) = 42 failures
+    for (let i = 0; i < 14 * 3; i++) {
       spy.mockRejectedValueOnce(new Error('Network error'));
     }
 
@@ -239,12 +243,12 @@ describe('createAirQualityGridIngestion', () => {
     const scAfterCycle1 = gridAfterCycle1!.filter((p) => p.url?.includes('maps.sensor.community'));
     expect(scAfterCycle1).toHaveLength(14);
 
-    // Cycle 2: only 1 SC station returns data, 13 are offline
+    // Cycle 2: only 1 SC station returns data, 13 are offline (each tries 3 candidates)
     const spy = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify(mockWaqiResponse), { status: 200 }));
-    spy.mockResolvedValueOnce(new Response(JSON.stringify(mockScSensorResponse), { status: 200 })); // Spandau
-    for (let i = 0; i < 13; i++) {
-      spy.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 })); // offline
+    spy.mockResolvedValueOnce(new Response(JSON.stringify(mockScSensorResponse), { status: 200 })); // Spandau primary OK
+    for (let i = 0; i < 13 * 3; i++) {
+      spy.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 })); // offline: primary + 2 fallbacks
     }
     await ingest();
 

@@ -117,7 +117,7 @@ const FilterResultSchema = z.object({
     relevant_to_city: z.boolean(),
     category: z.string(),
     importance: z.number(),
-    locationLabel: z.string().optional(),
+    locationLabel: z.string().nullable(),
   })),
 });
 
@@ -176,7 +176,7 @@ export async function filterAndGeolocateNews(
       const importance = Math.max(0, Math.min(1, item.importance));
 
       // Discard bare city name labels — they resolve to city center and are useless
-      let label = item.locationLabel;
+      let label = item.locationLabel ?? undefined;
       if (label) {
         const lower = label.toLowerCase().trim();
         if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {
@@ -224,7 +224,7 @@ export interface GeolocatedReport {
 const GeoResultSchema = z.object({
   items: z.array(z.object({
     index: z.number(),
-    locationLabel: z.string().optional(),
+    locationLabel: z.string().nullable(),
   })),
 });
 
@@ -268,7 +268,7 @@ export async function geolocateReports(
     const results: GeolocatedReport[] = [];
     for (const item of llmItems) {
       // Discard bare city name labels — they resolve to city center and are useless
-      let label = item.locationLabel;
+      let label = item.locationLabel ?? undefined;
       if (label) {
         const lower = label.toLowerCase().trim();
         if (lower === cityLower || lower.startsWith(cityLower + ',') || lower.startsWith(cityLower + ' (')) {

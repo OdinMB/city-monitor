@@ -9,6 +9,12 @@ export interface ApiResponse<T> {
   fetchedAt: string | null;
 }
 
+/** A single point in a historical time-series */
+export interface HistoryPoint {
+  timestamp: string;
+  value: number;
+}
+
 export interface CityConfig {
   id: string;
   name: string;
@@ -55,7 +61,7 @@ export interface EventSourceConfig {
 export interface CityDataSources {
   weather: { provider: 'open-meteo'; lat: number; lon: number };
   airQuality?: {
-    sensorCommunityStations?: Array<{ sensorId: number; name: string }>;
+    sensorCommunityStations?: Array<{ sensorId: number; name: string; fallbackIds?: number[] }>;
   };
   transit?: {
     provider: 'hafas';
@@ -350,4 +356,28 @@ export interface WastewaterSummary {
   sampleDate: string;
   pathogens: WastewaterPathogen[];
   plantCount: number;
+}
+
+// Population demographics (Amt für Statistik Berlin-Brandenburg, semi-annual)
+export interface PopulationFeatureProps {
+  plrId: string;         // 8-digit Planungsraum ID (e.g. "01100101")
+  plrName: string;       // Planungsraum name (e.g. "Stülerstraße")
+  population: number;    // total residents
+  density: number;       // people per km²
+  foreignPct: number;    // % non-German nationality
+  elderlyPct: number;    // % aged 65+
+  youthPct: number;      // % aged 0-17
+}
+
+export interface PopulationSummary {
+  total: number;
+  density: number;            // residents per km²
+  foreignTotal: number;
+  foreignPct: number;
+  elderlyPct: number;
+  youthPct: number;
+  workingAgePct: number;    // % aged 18-64
+  changeAbsolute: number;   // vs previous snapshot (0 if first)
+  changePct: number;
+  snapshotDate: string;     // "2025-12-31"
 }
