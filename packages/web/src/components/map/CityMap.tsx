@@ -8,7 +8,7 @@
  * Does NOT port worldmonitor's DeckGLMap component.
  */
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -32,7 +32,8 @@ import type { TransitAlert, NewsItem, SafetyReport, NinaWarning, EmergencyPharma
 import { SEVERITY_COLORS, NEWS_CATEGORY_COLORS, AQI_LEVEL_COLORS, CONSTRUCTION_SUBTYPE_COLORS, WATER_STATE_COLORS, BATHING_QUALITY_COLORS, registerAllMapIcons, registerPoliticalIcons } from '../../lib/map-icons.js';
 import { getAqiLevel } from '../../lib/aqi.js';
 import { getPartyColor, getMajorityParty } from '../../lib/party-colors.js';
-import { MAP_NEWS } from '../../lib/map-settings.js';
+import { MAP_NEWS, MAP_DENSITY, MAP_SAFETY } from '../../lib/map-settings.js';
+import { filterSafetyByRecency } from '../../lib/map-filters.js';
 
 const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -1809,6 +1810,7 @@ function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: EmergencyPharmac
     id: 'pharmacy-marker-icon',
     type: 'symbol',
     source: 'pharmacy-markers',
+    minzoom: MAP_DENSITY.pharmacyMinZoom,
     layout: {
       'icon-image': 'pharmacy-icon',
       'icon-size': 0.85,
@@ -1851,6 +1853,7 @@ function updateAedMarkers(map: maplibregl.Map, aeds: AedLocation[], _isDark: boo
     id: 'aed-marker-icon',
     type: 'symbol',
     source: 'aed-markers',
+    minzoom: MAP_DENSITY.aedMinZoom,
     layout: {
       'icon-image': 'aed-icon',
       'icon-size': 0.85,
@@ -2081,6 +2084,9 @@ export function CityMap() {
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke');
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  // Track whether the current zoom is above/below the safety filter threshold.
+  // We only track the boolean (above/below) to avoid unnecessary re-renders on every zoom change.
+  const [safetyZoomClose, setSafetyZoomClose] = useState(false);
 
   const isDark = theme === 'dark';
   const mapConfig = city.map;
@@ -2090,7 +2096,15 @@ export function CityMap() {
   const newsItems = (newsActive && newsSubLayers.has('news'))
     ? filterNewsForMap(newsDigest?.items ?? [], city.coordinates)
     : [];
-  const safetyItems = (newsActive && newsSubLayers.has('police')) ? (safetyReports ?? []) : [];
+  const safetyItemsRaw = (newsActive && newsSubLayers.has('police')) ? (safetyReports ?? []) : [];
+  // At city-wide zoom, show only the last 24h of safety reports; at close zoom, show all
+  const safetyItems = useMemo(
+    () => filterSafetyByRecency(
+      safetyItemsRaw,
+      safetyZoomClose ? MAP_SAFETY.zoomThreshold : MAP_SAFETY.zoomThreshold - 1,
+    ),
+    [safetyItemsRaw, safetyZoomClose],
+  );
   const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
   const emergencyActive = activeLayers.has('emergencies');
   const pharmacyItems = (emergencyActive && emergencySubLayers.has('pharmacies')) ? (pharmacyList ?? []) : [];
@@ -2197,6 +2211,12 @@ export function CityMap() {
       containerRef.current
         ?.querySelector('.maplibregl-ctrl-attrib')
         ?.classList.remove('maplibregl-compact-show');
+    });
+
+    // Track zoom threshold crossings for safety marker filtering
+    map.on('zoomend', () => {
+      const z = map.getZoom();
+      setSafetyZoomClose(z >= MAP_SAFETY.zoomThreshold);
     });
 
     mapRef.current = map;
