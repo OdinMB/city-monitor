@@ -5,6 +5,8 @@
 
 import type { BuergeramtData, BuergeramtService } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveAppointments } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -90,7 +92,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function createAppointmentIngestion(cache: Cache) {
+export function createAppointmentIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestAppointments(): Promise<void> {
     const apiKey = process.env.FIRECRAWL_API_KEY;
     if (!apiKey) {
@@ -104,7 +106,7 @@ export function createAppointmentIngestion(cache: Cache) {
       if (!config) continue;
 
       try {
-        await ingestCityAppointments(city.id, config.services, apiKey, cache);
+        await ingestCityAppointments(city.id, config.services, apiKey, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -117,6 +119,7 @@ async function ingestCityAppointments(
   services: Array<{ id: string; name: string }>,
   apiKey: string,
   cache: Cache,
+  db: Db | null,
 ): Promise<void> {
   const results: BuergeramtService[] = [];
 
@@ -159,5 +162,14 @@ async function ingestCityAppointments(
   };
 
   cache.set(`${cityId}:appointments`, data, 21600); // 6h TTL
+
+  if (db) {
+    try {
+      await saveAppointments(db, cityId, data);
+    } catch (err) {
+      log.error(`${cityId} DB write failed`, err);
+    }
+  }
+
   log.info(`${cityId}: ${results.length} services updated`);
 }

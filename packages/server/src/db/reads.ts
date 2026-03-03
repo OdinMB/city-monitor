@@ -17,8 +17,18 @@ import {
   airQualityGrid,
   politicalDistricts,
   waterLevelSnapshots,
+  appointmentSnapshots,
+  budgetSnapshots,
+  constructionSnapshots,
+  trafficSnapshots,
+  pharmacySnapshots,
+  aedSnapshots,
+  socialAtlasSnapshots,
+  wastewaterSnapshots,
+  bathingSnapshots,
+  laborMarketSnapshots,
 } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
@@ -137,8 +147,8 @@ export async function loadNewsItems(db: Db, cityId: string): Promise<PersistedNe
     location: row.lat != null && row.lon != null
       ? { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined }
       : undefined,
-    assessment: row.relevant != null
-      ? { relevant: row.relevant, confidence: row.confidence ?? undefined }
+    assessment: row.relevantToCity != null
+      ? { relevant_to_city: row.relevantToCity, importance: row.importance ?? undefined, category: row.category }
       : undefined,
   }));
 }
@@ -288,6 +298,122 @@ export async function loadWaterLevels(db: Db, cityId: string): Promise<WaterLeve
     stations: row.stations as WaterLevelData['stations'],
     fetchedAt: row.fetchedAt.toISOString(),
   };
+}
+
+export async function loadAppointments(db: Db, cityId: string): Promise<BuergeramtData | null> {
+  const rows = await db
+    .select()
+    .from(appointmentSnapshots)
+    .where(eq(appointmentSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+
+  const row = rows[0];
+  return {
+    services: row.services as BuergeramtData['services'],
+    bookingUrl: row.bookingUrl,
+    fetchedAt: row.fetchedAt.toISOString(),
+  };
+}
+
+export async function loadBudget(db: Db, cityId: string): Promise<BudgetSummary | null> {
+  const rows = await db
+    .select()
+    .from(budgetSnapshots)
+    .where(eq(budgetSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].data as BudgetSummary;
+}
+
+export async function loadConstructionSites(db: Db, cityId: string): Promise<ConstructionSite[] | null> {
+  const rows = await db
+    .select()
+    .from(constructionSnapshots)
+    .where(eq(constructionSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].sites as ConstructionSite[];
+}
+
+export async function loadTrafficIncidents(db: Db, cityId: string): Promise<TrafficIncident[] | null> {
+  const rows = await db
+    .select()
+    .from(trafficSnapshots)
+    .where(eq(trafficSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].incidents as TrafficIncident[];
+}
+
+export async function loadPharmacies(db: Db, cityId: string): Promise<EmergencyPharmacy[] | null> {
+  const rows = await db
+    .select()
+    .from(pharmacySnapshots)
+    .where(eq(pharmacySnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].pharmacies as EmergencyPharmacy[];
+}
+
+export async function loadAeds(db: Db, cityId: string): Promise<AedLocation[] | null> {
+  const rows = await db
+    .select()
+    .from(aedSnapshots)
+    .where(eq(aedSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].locations as AedLocation[];
+}
+
+export async function loadSocialAtlas(db: Db, cityId: string): Promise<unknown | null> {
+  const rows = await db
+    .select()
+    .from(socialAtlasSnapshots)
+    .where(eq(socialAtlasSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].geojson;
+}
+
+export async function loadWastewater(db: Db, cityId: string): Promise<WastewaterSummary | null> {
+  const rows = await db
+    .select()
+    .from(wastewaterSnapshots)
+    .where(eq(wastewaterSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].data as WastewaterSummary;
+}
+
+export async function loadBathingSpots(db: Db, cityId: string): Promise<BathingSpot[] | null> {
+  const rows = await db
+    .select()
+    .from(bathingSnapshots)
+    .where(eq(bathingSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].spots as BathingSpot[];
+}
+
+export async function loadLaborMarket(db: Db, cityId: string): Promise<LaborMarketSummary | null> {
+  const rows = await db
+    .select()
+    .from(laborMarketSnapshots)
+    .where(eq(laborMarketSnapshots.cityId, cityId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  return rows[0].data as LaborMarketSummary;
 }
 
 export type { GeocodeResult };

@@ -5,6 +5,8 @@
 
 import type { WastewaterPathogen, WastewaterSummary } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveWastewater } from '../db/writes.js';
 import { createLogger } from '../lib/logger.js';
 
 const log = createLogger('ingest-wastewater');
@@ -134,7 +136,7 @@ function buildSummary(rows: CsvRow[]): WastewaterSummary | null {
   };
 }
 
-export function createWastewaterIngestion(cache: Cache) {
+export function createWastewaterIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestWastewater(): Promise<void> {
     try {
       const res = await log.fetch(CSV_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
@@ -153,6 +155,15 @@ export function createWastewaterIngestion(cache: Cache) {
       }
 
       cache.set(CACHE_KEY, summary, WASTEWATER_TTL_SECONDS);
+
+      if (db) {
+        try {
+          await saveWastewater(db, 'berlin', summary);
+        } catch (err) {
+          log.error('DB write failed', err);
+        }
+      }
+
       log.info(`${summary.pathogens.length} pathogens, ${summary.plantCount} plants, sample date ${summary.sampleDate}`);
     } catch (err) {
       log.error('wastewater ingestion failed', err);

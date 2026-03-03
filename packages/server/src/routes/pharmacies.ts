@@ -5,21 +5,44 @@
 
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { loadPharmacies } from '../db/reads.js';
 import type { EmergencyPharmacy } from '../cron/ingest-pharmacies.js';
 import { getCityConfig } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
 
-export function createPharmaciesRouter(cache: Cache) {
+const log = createLogger('route:pharmacies');
+
+export function createPharmaciesRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
 
-  router.get('/:city/pharmacies', (req, res) => {
+  router.get('/:city/pharmacies', async (req, res) => {
     const city = getCityConfig(req.params.city);
     if (!city) {
       res.status(404).json({ error: 'City not found' });
       return;
     }
 
-    const data = cache.get<EmergencyPharmacy[]>(`${city.id}:pharmacies:emergency`);
-    res.json(data ?? []);
+    const cached = cache.get<EmergencyPharmacy[]>(`${city.id}:pharmacies:emergency`);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
+    if (db) {
+      try {
+        const stored = await loadPharmacies(db, city.id);
+        if (stored) {
+          cache.set(`${city.id}:pharmacies:emergency`, stored, 21600);
+          res.json(stored);
+          return;
+        }
+      } catch (err) {
+        log.error(`${city.id} DB read failed`, err);
+      }
+    }
+
+    res.json([]);
   });
 
   return router;

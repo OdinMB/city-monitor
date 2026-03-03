@@ -5,6 +5,8 @@
 
 import type { BathingSpot } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveBathingSpots } from '../db/writes.js';
 import { createLogger } from '../lib/logger.js';
 
 export type { BathingSpot };
@@ -86,7 +88,7 @@ function parseCsv(text: string): BathingSpot[] {
   return spots;
 }
 
-export function createBathingIngestion(cache: Cache) {
+export function createBathingIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestBathing(): Promise<void> {
     try {
       const response = await log.fetch(CSV_URL, {
@@ -102,6 +104,15 @@ export function createBathingIngestion(cache: Cache) {
       const spots = parseCsv(text);
 
       cache.set('berlin:bathing:spots', spots, BATHING_TTL_SECONDS);
+
+      if (db) {
+        try {
+          await saveBathingSpots(db, 'berlin', spots);
+        } catch (err) {
+          log.error('DB write failed', err);
+        }
+      }
+
       log.info(`berlin: ${spots.length} bathing spots updated`);
     } catch (err) {
       log.error('berlin bathing ingestion failed', err);

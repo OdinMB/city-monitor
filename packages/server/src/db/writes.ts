@@ -17,8 +17,18 @@ import {
   airQualityGrid,
   politicalDistricts,
   waterLevelSnapshots,
+  appointmentSnapshots,
+  budgetSnapshots,
+  constructionSnapshots,
+  trafficSnapshots,
+  pharmacySnapshots,
+  aedSnapshots,
+  socialAtlasSnapshots,
+  wastewaterSnapshots,
+  bathingSnapshots,
+  laborMarketSnapshots,
 } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
@@ -28,8 +38,9 @@ import type { NewsItem } from '../cron/ingest-feeds.js';
 import type { AirQualityGridPoint } from '@city-monitor/shared';
 
 export interface NewsItemAssessment {
-  relevant?: boolean;
-  confidence?: number;
+  relevant_to_city?: boolean;
+  importance?: number;
+  category?: string;
 }
 
 export type PersistedNewsItem = NewsItem & { assessment?: NewsItemAssessment };
@@ -130,8 +141,8 @@ export async function saveNewsItems(db: Db, cityId: string, items: PersistedNews
         category: item.category,
         tier: item.tier,
         lang: item.lang,
-        relevant: item.assessment?.relevant ?? null,
-        confidence: item.assessment?.confidence ?? null,
+        relevantToCity: item.assessment?.relevant_to_city ?? null,
+        importance: item.assessment?.importance ?? null,
         lat: item.location?.lat ?? null,
         lon: item.location?.lon ?? null,
         locationLabel: item.location?.label ?? null,
@@ -239,5 +250,79 @@ export async function saveWaterLevels(db: Db, cityId: string, data: WaterLevelDa
       cityId,
       stations: data.stations,
     });
+  });
+}
+
+export async function saveAppointments(db: Db, cityId: string, data: BuergeramtData): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(appointmentSnapshots).where(eq(appointmentSnapshots.cityId, cityId));
+    await tx.insert(appointmentSnapshots).values({
+      cityId,
+      services: data.services,
+      bookingUrl: data.bookingUrl,
+    });
+  });
+}
+
+export async function saveBudget(db: Db, cityId: string, data: BudgetSummary): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(budgetSnapshots).where(eq(budgetSnapshots.cityId, cityId));
+    await tx.insert(budgetSnapshots).values({ cityId, data });
+  });
+}
+
+export async function saveConstructionSites(db: Db, cityId: string, sites: ConstructionSite[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(constructionSnapshots).where(eq(constructionSnapshots.cityId, cityId));
+    await tx.insert(constructionSnapshots).values({ cityId, sites });
+  });
+}
+
+export async function saveTrafficIncidents(db: Db, cityId: string, incidents: TrafficIncident[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(trafficSnapshots).where(eq(trafficSnapshots.cityId, cityId));
+    await tx.insert(trafficSnapshots).values({ cityId, incidents });
+  });
+}
+
+export async function savePharmacies(db: Db, cityId: string, pharmacies: EmergencyPharmacy[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(pharmacySnapshots).where(eq(pharmacySnapshots.cityId, cityId));
+    await tx.insert(pharmacySnapshots).values({ cityId, pharmacies });
+  });
+}
+
+export async function saveAeds(db: Db, cityId: string, locations: AedLocation[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(aedSnapshots).where(eq(aedSnapshots.cityId, cityId));
+    await tx.insert(aedSnapshots).values({ cityId, locations });
+  });
+}
+
+export async function saveSocialAtlas(db: Db, cityId: string, geojson: unknown): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(socialAtlasSnapshots).where(eq(socialAtlasSnapshots.cityId, cityId));
+    await tx.insert(socialAtlasSnapshots).values({ cityId, geojson });
+  });
+}
+
+export async function saveWastewater(db: Db, cityId: string, data: WastewaterSummary): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(wastewaterSnapshots).where(eq(wastewaterSnapshots.cityId, cityId));
+    await tx.insert(wastewaterSnapshots).values({ cityId, data });
+  });
+}
+
+export async function saveBathingSpots(db: Db, cityId: string, spots: BathingSpot[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(bathingSnapshots).where(eq(bathingSnapshots.cityId, cityId));
+    await tx.insert(bathingSnapshots).values({ cityId, spots });
+  });
+}
+
+export async function saveLaborMarket(db: Db, cityId: string, data: LaborMarketSummary): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(laborMarketSnapshots).where(eq(laborMarketSnapshots.cityId, cityId));
+    await tx.insert(laborMarketSnapshots).values({ cityId, data });
   });
 }

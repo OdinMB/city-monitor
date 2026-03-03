@@ -5,6 +5,8 @@
 
 import type { CityConfig, EmergencyPharmacy } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { savePharmacies } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -36,13 +38,13 @@ interface AponetPharmacy {
   longitude?: string;
 }
 
-export function createPharmacyIngestion(cache: Cache) {
+export function createPharmacyIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestPharmacies(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       if (city.country !== 'DE') continue;
       try {
-        await ingestCityPharmacies(city, cache);
+        await ingestCityPharmacies(city, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -57,7 +59,7 @@ function formatDateDE(date: Date): string {
   return `${d}.${m}.${y}`;
 }
 
-async function ingestCityPharmacies(city: CityConfig, cache: Cache): Promise<void> {
+async function ingestCityPharmacies(city: CityConfig, cache: Cache, db: Db | null): Promise<void> {
   const { lat, lon } = city.coordinates;
   const today = formatDateDE(new Date());
 
@@ -111,6 +113,15 @@ async function ingestCityPharmacies(city: CityConfig, cache: Cache): Promise<voi
     }));
 
   cache.set(`${city.id}:pharmacies:emergency`, pharmacies, 21600);
+
+  if (db) {
+    try {
+      await savePharmacies(db, city.id, pharmacies);
+    } catch (err) {
+      log.error(`${city.id} DB write failed`, err);
+    }
+  }
+
   log.info(`${city.id}: ${pharmacies.length} emergency pharmacies updated`);
 }
 

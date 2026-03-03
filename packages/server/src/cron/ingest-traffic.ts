@@ -5,6 +5,8 @@
 
 import type { CityConfig, TrafficIncident } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveTrafficIncidents } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -47,7 +49,7 @@ function toSeverity(magnitude: number): TrafficIncident['severity'] {
   }
 }
 
-export function createTrafficIngestion(cache: Cache) {
+export function createTrafficIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestTraffic(): Promise<void> {
     if (!TOMTOM_API_KEY) {
       log.info('skipped — TOMTOM_API_KEY not set');
@@ -57,7 +59,7 @@ export function createTrafficIngestion(cache: Cache) {
     const cities = getActiveCities();
     for (const city of cities) {
       try {
-        await ingestCityTraffic(city, cache);
+        await ingestCityTraffic(city, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -83,7 +85,7 @@ interface TomTomIncident {
   };
 }
 
-async function ingestCityTraffic(city: CityConfig, cache: Cache): Promise<void> {
+async function ingestCityTraffic(city: CityConfig, cache: Cache, db: Db | null): Promise<void> {
   const { south, west, north, east } = city.boundingBox;
   const bbox = `${west},${south},${east},${north}`;
 
@@ -133,5 +135,14 @@ async function ingestCityTraffic(city: CityConfig, cache: Cache): Promise<void> 
   });
 
   cache.set(`${city.id}:traffic:incidents`, incidents, 300);
+
+  if (db) {
+    try {
+      await saveTrafficIncidents(db, city.id, incidents);
+    } catch (err) {
+      log.error(`${city.id} DB write failed`, err);
+    }
+  }
+
   log.info(`${city.id}: ${incidents.length} traffic incidents updated`);
 }

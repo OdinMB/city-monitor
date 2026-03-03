@@ -115,8 +115,8 @@ export const newsItems = pgTable('news_items', {
   category: text('category').notNull(),
   tier: integer('tier').notNull(),
   lang: text('lang').notNull(),
-  relevant: boolean('relevant'),
-  confidence: real('confidence'),
+  relevantToCity: boolean('relevant_to_city'),
+  importance: real('importance'),
   lat: real('lat'),
   lon: real('lon'),
   locationLabel: text('location_label'),
@@ -171,6 +171,107 @@ export const waterLevelSnapshots = pgTable('water_level_snapshots', {
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [
   index('water_level_city_idx').on(table.cityId),
+]);
+
+// Citizen services appointment snapshots
+export const appointmentSnapshots = pgTable('appointment_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  services: jsonb('services').notNull(), // BuergeramtService[]
+  bookingUrl: text('booking_url').notNull(),
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('appointment_city_idx').on(table.cityId),
+]);
+
+// Budget snapshots
+export const budgetSnapshots = pgTable('budget_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  data: jsonb('data').notNull(), // BudgetSummary
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('budget_city_idx').on(table.cityId),
+]);
+
+// Construction site snapshots
+export const constructionSnapshots = pgTable('construction_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  sites: jsonb('sites').notNull(), // ConstructionSite[]
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('construction_city_idx').on(table.cityId),
+]);
+
+// Traffic incident snapshots
+export const trafficSnapshots = pgTable('traffic_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  incidents: jsonb('incidents').notNull(), // TrafficIncident[]
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('traffic_city_idx').on(table.cityId),
+]);
+
+// Emergency pharmacy snapshots
+export const pharmacySnapshots = pgTable('pharmacy_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  pharmacies: jsonb('pharmacies').notNull(), // EmergencyPharmacy[]
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('pharmacy_city_idx').on(table.cityId),
+]);
+
+// AED location snapshots
+export const aedSnapshots = pgTable('aed_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  locations: jsonb('locations').notNull(), // AedLocation[]
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('aed_city_idx').on(table.cityId),
+]);
+
+// Social atlas GeoJSON snapshots
+export const socialAtlasSnapshots = pgTable('social_atlas_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  geojson: jsonb('geojson').notNull(), // GeoJSON FeatureCollection
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('social_atlas_city_idx').on(table.cityId),
+]);
+
+// Wastewater monitoring snapshots
+export const wastewaterSnapshots = pgTable('wastewater_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  data: jsonb('data').notNull(), // WastewaterSummary
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('wastewater_city_idx').on(table.cityId),
+]);
+
+// Bathing water quality snapshots
+export const bathingSnapshots = pgTable('bathing_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  spots: jsonb('spots').notNull(), // BathingSpot[]
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('bathing_city_idx').on(table.cityId),
+]);
+
+// Labor market snapshots
+export const laborMarketSnapshots = pgTable('labor_market_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  data: jsonb('data').notNull(), // LaborMarketSummary
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('labor_market_city_idx').on(table.cityId),
 ]);
 
 // Milestone 07 — AI Summaries

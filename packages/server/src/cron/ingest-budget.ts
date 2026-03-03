@@ -5,6 +5,8 @@
 
 import type { BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { saveBudget } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -209,13 +211,13 @@ function buildCategoryList(map: Map<number, { name: string; amount: number }>): 
     .sort((a, b) => b.amount - a.amount);
 }
 
-export function createBudgetIngestion(cache: Cache) {
+export function createBudgetIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestBudget(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       if (!city.dataSources.budget) continue;
       try {
-        await ingestCityBudget(city.id, city.dataSources.budget.csvUrl, cache);
+        await ingestCityBudget(city.id, city.dataSources.budget.csvUrl, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -223,7 +225,7 @@ export function createBudgetIngestion(cache: Cache) {
   };
 }
 
-async function ingestCityBudget(cityId: string, csvUrl: string, cache: Cache): Promise<void> {
+async function ingestCityBudget(cityId: string, csvUrl: string, cache: Cache, db: Db | null): Promise<void> {
   const response = await log.fetch(csvUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: { 'User-Agent': 'CityMonitor/1.0' },
@@ -244,5 +246,14 @@ async function ingestCityBudget(cityId: string, csvUrl: string, cache: Cache): P
 
   const summary = aggregateBudgetData(rows);
   cache.set(`${cityId}:budget`, summary, CACHE_TTL);
+
+  if (db) {
+    try {
+      await saveBudget(db, cityId, summary);
+    } catch (err) {
+      log.error(`${cityId} DB write failed`, err);
+    }
+  }
+
   log.info(`${cityId}: budget data updated — ${rows.length} rows, ${summary.areas.length} areas`);
 }

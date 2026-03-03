@@ -6,7 +6,7 @@
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { createLogger } from '../lib/logger.js';
@@ -86,12 +86,65 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       if (waterLevels) cache.set(`${cityId}:water-levels`, waterLevels, 900);
     })().catch((err) => log.error(`${cityId} water levels failed`, err)),
 
+    (async () => {
+      const appointments = await loadAppointments(db, cityId);
+      if (appointments) cache.set(`${cityId}:appointments`, appointments, 21600);
+    })().catch((err) => log.error(`${cityId} appointments failed`, err)),
+
     ...(['bezirke', 'bundestag', 'state', 'state-bezirke'] as const).map((level) =>
       (async () => {
         const districts = await loadPoliticalDistricts(db, cityId, level);
         if (districts) cache.set(`${cityId}:political:${level}`, districts, 604800);
       })().catch((err) => log.error(`${cityId} political:${level} failed`, err)),
     ),
+
+    (async () => {
+      const budget = await loadBudget(db, cityId);
+      if (budget) cache.set(`${cityId}:budget`, budget, 86400);
+    })().catch((err) => log.error(`${cityId} budget failed`, err)),
+
+    (async () => {
+      const sites = await loadConstructionSites(db, cityId);
+      if (sites) cache.set(`${cityId}:construction:sites`, sites, 1800);
+    })().catch((err) => log.error(`${cityId} construction failed`, err)),
+
+    (async () => {
+      const incidents = await loadTrafficIncidents(db, cityId);
+      if (incidents) cache.set(`${cityId}:traffic:incidents`, incidents, 300);
+    })().catch((err) => log.error(`${cityId} traffic failed`, err)),
+
+    (async () => {
+      const pharmacies = await loadPharmacies(db, cityId);
+      if (pharmacies) cache.set(`${cityId}:pharmacies:emergency`, pharmacies, 21600);
+    })().catch((err) => log.error(`${cityId} pharmacies failed`, err)),
+
+    (async () => {
+      const aeds = await loadAeds(db, cityId);
+      if (aeds) cache.set(`${cityId}:aed:locations`, aeds, 86400);
+    })().catch((err) => log.error(`${cityId} aeds failed`, err)),
+
+    (async () => {
+      const geojson = await loadSocialAtlas(db, cityId);
+      if (geojson) cache.set(`${cityId}:social-atlas:geojson`, geojson, 604800);
+    })().catch((err) => log.error(`${cityId} social-atlas failed`, err)),
+
+    // Wastewater, bathing, and labor market are Berlin-only data sources
+    ...(cityId === 'berlin' ? [
+      (async () => {
+        const wastewater = await loadWastewater(db, 'berlin');
+        if (wastewater) cache.set('berlin:wastewater:summary', wastewater, 604800);
+      })().catch((err) => log.error('wastewater failed', err)),
+
+      (async () => {
+        const spots = await loadBathingSpots(db, 'berlin');
+        if (spots) cache.set('berlin:bathing:spots', spots, 86400);
+      })().catch((err) => log.error('bathing failed', err)),
+
+      (async () => {
+        const laborMarket = await loadLaborMarket(db, 'berlin');
+        if (laborMarket) cache.set('berlin:labor-market', laborMarket, 86400);
+      })().catch((err) => log.error('labor-market failed', err)),
+    ] : []),
   ];
 
   await Promise.allSettled(tasks);

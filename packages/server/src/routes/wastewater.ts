@@ -5,21 +5,44 @@
 
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { loadWastewater } from '../db/reads.js';
 import type { WastewaterSummary } from '@city-monitor/shared';
 import { getCityConfig } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
 
-export function createWastewaterRouter(cache: Cache) {
+const log = createLogger('route:wastewater');
+
+export function createWastewaterRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
 
-  router.get('/:city/wastewater', (req, res) => {
+  router.get('/:city/wastewater', async (req, res) => {
     const city = getCityConfig(req.params.city);
     if (!city) {
       res.status(404).json({ error: 'City not found' });
       return;
     }
 
-    const data = cache.get<WastewaterSummary>(`${city.id}:wastewater:summary`);
-    res.json(data ?? null);
+    const cached = cache.get<WastewaterSummary>(`${city.id}:wastewater:summary`);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
+    if (db) {
+      try {
+        const stored = await loadWastewater(db, city.id);
+        if (stored) {
+          cache.set(`${city.id}:wastewater:summary`, stored, 604800);
+          res.json(stored);
+          return;
+        }
+      } catch (err) {
+        log.error(`${city.id} DB read failed`, err);
+      }
+    }
+
+    res.json(null);
   });
 
   return router;

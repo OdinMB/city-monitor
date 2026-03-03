@@ -76,43 +76,45 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestEvents = createEventsIngestion(cache, db);
   const ingestSafety = createSafetyIngestion(cache, db);
   const ingestNina = createNinaIngestion(cache, db);
-  const ingestPharmacies = createPharmacyIngestion(cache);
-  const ingestTraffic = createTrafficIngestion(cache);
+  const ingestPharmacies = createPharmacyIngestion(cache, db);
+  const ingestTraffic = createTrafficIngestion(cache, db);
   const ingestPolitical = createPoliticalIngestion(cache, db);
   const ingestAqGrid = createAirQualityGridIngestion(cache, db);
-  const ingestConstruction = createConstructionIngestion(cache);
-  const ingestAeds = createAedIngestion(cache);
-  const ingestSocialAtlas = createSocialAtlasIngestion(cache);
+  const ingestConstruction = createConstructionIngestion(cache, db);
+  const ingestAeds = createAedIngestion(cache, db);
+  const ingestSocialAtlas = createSocialAtlasIngestion(cache, db);
   const ingestWaterLevels = createWaterLevelIngestion(cache, db);
-  const ingestBudget = createBudgetIngestion(cache);
+  const ingestBudget = createBudgetIngestion(cache, db);
   const ingestAppointments = createAppointmentIngestion(cache, db);
-  const ingestBathing = createBathingIngestion(cache);
-  const ingestWastewater = createWastewaterIngestion(cache);
-  const ingestLaborMarket = createLaborMarketIngestion(cache);
+  const ingestBathing = createBathingIngestion(cache, db);
+  const ingestWastewater = createWastewaterIngestion(cache, db);
+  const ingestLaborMarket = createLaborMarketIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
+  // All domains now have DB persistence — warmCache() loads data from Postgres
+  // on startup, so runOnStart is no longer needed. Cron jobs refresh on schedule.
   const jobs: ScheduledJob[] = [
-    { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds, runOnStart: true },
-    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, runOnStart: true, dependsOn: ['ingest-feeds'] },
-    { name: 'ingest-weather', schedule: '*/30 * * * *', handler: ingestWeather, runOnStart: true },
-    { name: 'ingest-transit', schedule: '*/15 * * * *', handler: ingestTransit, runOnStart: true },
-    { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: true },
-    { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety, runOnStart: true },
-    { name: 'ingest-nina', schedule: '*/5 * * * *', handler: ingestNina, runOnStart: true },
-    { name: 'ingest-pharmacies', schedule: '0 */6 * * *', handler: ingestPharmacies, runOnStart: true },
-    { name: 'ingest-traffic', schedule: '*/5 * * * *', handler: ingestTraffic, runOnStart: true },
-    { name: 'ingest-political', schedule: '0 4 * * 1', handler: ingestPolitical, runOnStart: true },
-    { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid, runOnStart: true },
-    { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction, runOnStart: true },
-    { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: true },
-    { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: true },
-    { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: true },
-    { name: 'ingest-budget', schedule: '0 6 * * *', handler: ingestBudget, runOnStart: true },
-    { name: 'ingest-appointments', schedule: '0 */6 * * *', handler: ingestAppointments, runOnStart: true },
-    { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing, runOnStart: true },
-    { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: true },
-    { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: true },
+    { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds },
+    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, dependsOn: ['ingest-feeds'] },
+    { name: 'ingest-weather', schedule: '*/30 * * * *', handler: ingestWeather },
+    { name: 'ingest-transit', schedule: '*/15 * * * *', handler: ingestTransit },
+    { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents },
+    { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety },
+    { name: 'ingest-nina', schedule: '*/5 * * * *', handler: ingestNina },
+    { name: 'ingest-pharmacies', schedule: '0 */6 * * *', handler: ingestPharmacies },
+    { name: 'ingest-traffic', schedule: '*/5 * * * *', handler: ingestTraffic },
+    { name: 'ingest-political', schedule: '0 4 * * 1', handler: ingestPolitical },
+    { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid },
+    { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction },
+    { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds },
+    { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas },
+    { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels },
+    { name: 'ingest-budget', schedule: '0 6 * * *', handler: ingestBudget },
+    { name: 'ingest-appointments', schedule: '0 */6 * * *', handler: ingestAppointments },
+    { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing },
+    { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater },
+    { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -132,18 +134,18 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(300), createSafetyRouter(cache, db));
   app.use('/api', cacheFor(120), createNinaRouter(cache, db));
   app.use('/api', cacheFor(600), createAirQualityRouter(cache, db));
-  app.use('/api', cacheFor(3600), createPharmaciesRouter(cache));
-  app.use('/api', cacheFor(120), createTrafficRouter(cache));
-  app.use('/api', cacheFor(900), createConstructionRouter(cache));
-  app.use('/api', cacheFor(43200), createAedsRouter(cache));
-  app.use('/api', cacheFor(43200), createSocialAtlasRouter(cache));
+  app.use('/api', cacheFor(3600), createPharmaciesRouter(cache, db));
+  app.use('/api', cacheFor(120), createTrafficRouter(cache, db));
+  app.use('/api', cacheFor(900), createConstructionRouter(cache, db));
+  app.use('/api', cacheFor(43200), createAedsRouter(cache, db));
+  app.use('/api', cacheFor(43200), createSocialAtlasRouter(cache, db));
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache));
-  app.use('/api', cacheFor(3600), createBudgetRouter(cache));
+  app.use('/api', cacheFor(3600), createBudgetRouter(cache, db));
   app.use('/api', cacheFor(3600), createAppointmentsRouter(cache, db));
-  app.use('/api', cacheFor(43200), createBathingRouter(cache));
-  app.use('/api', cacheFor(43200), createWastewaterRouter(cache));
-  app.use('/api', cacheFor(3600), createLaborMarketRouter(cache));
+  app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
+  app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
+  app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
   app.use('/api', cacheFor(600), createWeatherTilesRouter());
 
   return { app, cache, db, scheduler };
