@@ -1,10 +1,10 @@
 {
-  "name": "City Monitor — Berlin",
-  "short_name": "Berlin",
-  "description": "Real-time dashboard for Berlin: news, weather, transit, events, and safety.",
+  "name": "City Monitor",
+  "short_name": "CityMonitor",
+  "description": "Real-time city dashboard: news, weather, transit, events, and safety.",
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#E2001A",
+  "theme_color": "#030712",
   "background_color": "#f9fafb",
   "icons": [
     {

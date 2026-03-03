@@ -10,24 +10,31 @@ react-router-dom with `BrowserRouter` in `main.tsx`. Routes defined in `App.tsx`
 
 | Path | Component | Description |
 |---|---|---|
-| `/` | `CityPicker` | Grid of city cards linking to `/:cityId` |
+| `/` | redirect to `/berlin` | Home redirect |
+| `/imprint` | `ImprintPage` | Legal notice / Impressum |
+| `/privacy` | `PrivacyPage` | Privacy policy |
+| `/no-ads-no-tracking` | `NoTrackingPage` | No ads, no tracking pledge |
 | `/:cityId` | `CityRoute` → `Dashboard` | City dashboard with all panels |
-| `*` | redirect to `/` | Unknown paths redirect to city picker |
+| `/:cityId/sources` | `SourcesPage` | Per-city data sources list |
+| `/:cityId/*` | redirect to `/:cityId` | Unknown sub-paths redirect to dashboard |
 
-`CityRoute` validates the `cityId` param against `getCityConfig()`. Unknown cities redirect to `/`.
+`CityRoute` validates the `cityId` param against `getCityConfig()`. Unknown cities redirect to `/`. Static pages (imprint, privacy, no-tracking) use `PageShell` layout (no city context). Sources page uses `PageShell` within `CityProvider`.
 
 ## Component Tree
 
 ```
-App
+App (HelmetProvider)
   QueryClientProvider
     Routes
-      / → CityPicker (city cards grid)
-      /:cityId → CityRoute
+      / → redirect to /berlin
+      /imprint → ImprintPage (PageShell)
+      /privacy → PrivacyPage (PageShell)
+      /no-ads-no-tracking → NoTrackingPage (PageShell)
+      /:cityId/* → CityRoute
         CityProvider (context: CityConfig from URL param)
-          Dashboard
-            Shell
-              TopBar (city name link, weather, language switcher, theme toggle)
+          Dashboard or SourcesPage
+            Shell / PageShell
+              TopBar (city name link, weather, HeaderControls)
               CommandLayout
                 Sidebar (single/multi view toggle, data layer icon toggles) — hidden < lg
                 CityMap (full viewport height, transit markers)
@@ -87,8 +94,10 @@ Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `Safety
 - **Shell** — Full-height flex column: TopBar, main content, Footer. Dark mode via Tailwind `dark:` classes.
 - **DashboardGrid** — CSS Grid: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 p-4`. No 3-column breakpoint to avoid gaps with span-2 tiles.
 - **Tile** — Card wrapper with `title`, `span` (1 | 2 | 'full'), optional `expandable` (chevron toggle in header, render-function children receiving `expanded` boolean), optional `height` ('auto' | 'sm' | 'md' | 'lg'). Rounded border, shadow, `@container` body for container queries. Maps span to `col-span-*` classes.
-- **TopBar** — City name (link back to `/`), current weather, language switcher (DE/EN/TR/AR), theme toggle.
-- **Footer** — AGPL-required source code link (Section 13 compliance).
+- **TopBar** — City name (link back to `/`), current weather + AQI popovers, `HeaderControls` (language switcher + theme toggle).
+- **PageShell** — Simplified layout for static pages (imprint, privacy, etc.). "City Monitor" logo link, `HeaderControls`, centered prose container, Footer. No city context dependency.
+- **HeaderControls** — Shared language switcher (DE/EN/TR/AR) + theme toggle. Desktop: inline buttons. Mobile: hamburger menu dropdown. Used by both TopBar and PageShell.
+- **Footer** — AGPL source code link, World Monitor attribution, Ko-fi support link, internal legal links (Legal Notice, Privacy, No Tracking).
 
 Tile assignments: Briefing (1), Weather (1, expandable), Air Quality (1, expandable), News (2), Transit (1, expandable, collapsed by default — 4 rows collapsed, 8 expanded), Water Levels (1), Appointments (1), Events (2, last). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
 
@@ -127,7 +136,7 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 - Hover effect: feature-state-based fill opacity change + cursor pointer on district polygons (`setupDistrictHover()`)
 - Map icons: `lib/map-icons.ts` renders Lucide SVG icons onto canvas via `Path2D` (synchronous, no async image loading). `registerAllMapIcons(map, isDark)` pre-registers icon variants (rounded-square background + white Lucide glyph): 3 transit (TrainFront × severity), 8 news (Newspaper × category), 1 safety (ShieldAlert), 1 pharmacy (Pill), 3 construction (Construction × subtype), 5 water levels (Droplets × state). Called once on `load` and `styledata`, before any marker updates. Exports `SEVERITY_COLORS`, `NEWS_CATEGORY_COLORS`, `CONSTRUCTION_SUBTYPE_COLORS`, and `WATER_STATE_COLORS` used by both map-icons and CityMap.
 - Construction layer: VIZ Berlin roadworks data rendered as dashed amber/red/orange lines (LineString) + point icons (Point) with subtype-based coloring (construction=amber, closure=red, disruption=orange). GeometryCollection geometries are split into separate line/point features. Click popups show street, section, description, validity dates, and direction.
-- Point markers: All 4 point data layers use `symbol` layers with pre-registered icon images. Transit uses severity-based `match` expression; news uses category-based `match`; safety and pharmacy use fixed icon IDs. Click popups and hover cursors on each layer.
+- Point markers: All 4 point data layers use `symbol` layers with pre-registered icon images. Transit uses severity-based `match` expression; news uses category-based `match`; safety and pharmacy use fixed icon IDs. Click popups and hover cursors on each layer. News and safety markers use interactive spiderfying — markers at identical coordinates are grouped with a "+N" count badge; clicking expands the group outward in an adaptive-radius circle (base 300m + 80m per item) with connecting spider legs; clicking the map background collapses the expansion. Count badges hide when expanded. Expansion state survives data refreshes if the group key persists. State managed via module-level `SpiderState` per marker type with proper handler cleanup on data updates.
 - Transit markers: GeoJSON point source from `TransitAlert[]` with severity-colored icons (red/amber/gray) + line label below. Click popup shows line, type, station, message. Updated from map `load` handler and `styledata` handler using refs to bridge async map events with React state.
 - Weather overlay: raster tile layer (`type: 'raster'`) sourced from `/api/weather-tiles/{z}/{x}/{y}.png` — server-side proxy to OpenWeatherMap `clouds_new` tiles (API key hidden). Added/removed via `setWeatherOverlay()` based on `activeLayers.has('weather')`. Uses `raster-opacity: 0.65` for semi-transparent overlay. Sidebar label: "Rain Radar" / "Regenradar". Requires `OPENWEATHERMAP_API_KEY` env var on the server.
 - Rent map overlay (Berlin only): raster WMS tile layer from Berlin Open Data (`gdi.berlin.de/services/wms/wohnlagenadr2024`). Shows Wohnlagenkarte residential quality zones (einfach/mittel/gut) that drive Mietspiegel rent ranges. Added/removed via `setRentMapOverlay()` based on `activeLayers.has('rent-map') && city.id === 'berlin'`. No server proxy needed (public WMS, no API key). Sidebar toggle hidden for non-Berlin cities via `cities` filter in `LAYER_META`. License: dl-de-zero-2.0.
@@ -143,6 +152,9 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 
 ## SEO & PWA
 
-- `index.html` — meta description, Open Graph tags, noscript fallback
+- `react-helmet-async` — dynamic `<title>` and OG meta tags per page in the browser
+- `vite-plugin-seo.ts` — build-time plugin that generates per-route HTML files with correct `<head>` meta tags (title, description, og:title, og:description, og:url, canonical) for social media crawlers that don't execute JS. Also generates `sitemap.xml` with all known routes.
+- `index.html` — generic "City Monitor" meta tags (fallback for crawlers on unregistered routes)
+- `public/robots.txt` — allows all crawlers, references sitemap
 - `public/manifest.json` — PWA manifest for installability
 - `public/favicon.svg` — SVG favicon

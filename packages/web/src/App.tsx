@@ -6,6 +6,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, useParams, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { CityProvider, useCityConfig } from './hooks/useCityConfig.js';
 import { useTheme } from './hooks/useTheme.js';
@@ -13,6 +14,10 @@ import { useBootstrap } from './hooks/useBootstrap.js';
 import { Shell } from './components/layout/Shell.js';
 import { CommandLayout } from './components/layout/CommandLayout.js';
 import { getCityConfig } from './config/index.js';
+import { ImprintPage } from './pages/ImprintPage.js';
+import { PrivacyPage } from './pages/PrivacyPage.js';
+import { NoTrackingPage } from './pages/NoTrackingPage.js';
+import { SourcesPage } from './pages/SourcesPage.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,7 +56,11 @@ function CityRoute() {
 
   return (
     <CityProvider cityId={cityId}>
-      <Dashboard />
+      <Routes>
+        <Route index element={<Dashboard />} />
+        <Route path="sources" element={<SourcesPage />} />
+        <Route path="*" element={<Navigate to={`/${cityId}`} replace />} />
+      </Routes>
     </CityProvider>
   );
 }
@@ -70,12 +79,16 @@ export function App() {
   }, [i18n.language]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Routes>
-        <Route path="/" element={<Navigate to="/berlin" replace />} />
-        <Route path="/:cityId" element={<CityRoute />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/berlin" replace />} />
+          <Route path="/imprint" element={<ImprintPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/no-ads-no-tracking" element={<NoTrackingPage />} />
+          <Route path="/:cityId/*" element={<CityRoute />} />
+        </Routes>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }

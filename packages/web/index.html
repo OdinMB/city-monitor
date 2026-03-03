@@ -3,14 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>City Monitor — Berlin</title>
-    <meta name="description" content="Real-time dashboard for Berlin: news, weather, transit, events, and safety." />
+    <title>City Monitor</title>
+    <meta name="description" content="Real-time city dashboard: news, weather, transit, events, and safety." />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="City Monitor — Berlin" />
-    <meta property="og:description" content="Real-time dashboard for Berlin: news, weather, transit, events, and safety." />
+    <meta property="og:title" content="City Monitor" />
+    <meta property="og:description" content="Real-time city dashboard: news, weather, transit, events, and safety." />
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="de_DE" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content="https://citymonitor.app/og-default.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://citymonitor.app/og-default.png" />
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
@@ -20,10 +25,12 @@
   <body>
     <div id="root"></div>
     <noscript>
-      <h1>City Monitor — Berlin</h1>
-      <p>Real-time dashboard for Berlin: news, weather, transit, events, and safety.</p>
+      <h1>City Monitor</h1>
+      <p>Real-time city dashboard: news, weather, transit, events, and safety.</p>
       <p>This site requires JavaScript.</p>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>
+    <script async defer src="https://scripts.simpleanalytics.com/latest.js"></script>
+    <noscript><img src="https://queue.simpleanalytics.com/noscript.gif" alt="" referrerpolicy="no-referrer-when-downgrade" /></noscript>
   </body>
 </html>

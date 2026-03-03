@@ -1,4 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#E2001A"/>
-  <text x="16" y="23" text-anchor="middle" font-family="system-ui,sans-serif" font-size="18" font-weight="bold" fill="white">B</text>
+  <defs>
+    <clipPath id="tl"><rect x="2" y="2" width="13" height="13" rx="2.5"/></clipPath>
+    <clipPath id="tr"><rect x="17" y="2" width="13" height="13" rx="2.5"/></clipPath>
+    <clipPath id="bl"><rect x="2" y="17" width="13" height="13" rx="2.5"/></clipPath>
+    <clipPath id="br"><rect x="17" y="17" width="13" height="13" rx="2.5"/></clipPath>
+  </defs>
+  <!-- Backgrounds -->
+  <rect x="2" y="2" width="13" height="13" rx="2.5" fill="#1f2937"/>
+  <rect x="17" y="2" width="13" height="13" rx="2.5" fill="#1f2937"/>
+  <rect x="2" y="17" width="13" height="13" rx="2.5" fill="#1f2937"/>
+  <rect x="17" y="17" width="13" height="13" rx="2.5" fill="#1f2937"/>
+  <!-- Fills clipped to rounded cells -->
+  <rect x="2" y="7" width="13" height="8" fill="#E2001A" clip-path="url(#tl)"/>
+  <rect x="17" y="2" width="13" height="13" fill="#E2001A" clip-path="url(#tr)"/>
+  <rect x="2" y="17" width="13" height="13" fill="#E2001A" clip-path="url(#bl)"/>
+  <rect x="17" y="24" width="13" height="6" fill="#E2001A" clip-path="url(#br)"/>
 </svg>
