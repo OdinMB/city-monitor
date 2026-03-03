@@ -33,6 +33,7 @@ export function createWeatherRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbData = await loadWeather(db, city.id);
         if (dbData) {
+          cache.set(`${city.id}:weather`, dbData, 1800);
           res.json(dbData);
           return;
         }

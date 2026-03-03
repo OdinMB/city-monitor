@@ -36,7 +36,7 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 
 - [`.context/licensing.md`](.context/licensing.md) — AGPL-3.0 per-file header templates, adapted component list, and Section 13 footer requirements.
 - [`.context/server.md`](.context/server.md) — App factory, startup sequence, 15 cron jobs, logging system, health & bootstrap endpoints, multi-city config, env vars, utility libraries. Appointments ingestion uses Firecrawl API to scrape service.berlin.de (Varnish WAF blocks plain HTTP).
-- [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (10 tables with indices), read/write patterns, cache warming, data retention.
+- [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (20 tables with indices), read/write patterns, cache warming, freshness-based startup checks, data retention.
 - [`.context/weather.md`](.context/weather.md) — Open-Meteo forecast ingestion, DWD severe weather alerts for German cities, WMO weather codes.
 - [`.context/news.md`](.context/news.md) — RSS feed ingestion (10 Berlin + 4 Hamburg feeds), headline classifier, AI summarization via OpenAI (gpt-5-mini), cost tracking.
 - [`.context/transit.md`](.context/transit.md) — VBB transport.rest integration, line+summary deduplication, German keyword classification of disruption type/severity.
@@ -46,8 +46,8 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/deployment.md`](.context/deployment.md) — Render.com blueprint (render.yaml), GitHub Actions CI, environment variables, domain setup, monitoring.
 - [`.context/geocoding.md`](.context/geocoding.md) — Nominatim-first geocoding with LocationIQ fallback, rate limiting strategy, API usage, callers.
 - [`.context/water-levels.md`](.context/water-levels.md) — Water parent layer with two sub-layers: PEGELONLINE river gauges (state derivation, gauge bar UI) and LAGeSo bathing water quality (CSV ingestion, quality mapping, seasonal badges). New water features must follow the sub-layer pattern (same as emergencies) and use the shared types.
-- [`.context/social-atlas.md`](.context/social-atlas.md) — MSS 2023 WFS choropleth map layer (biennial, cache-only, lazy GeoJSON) and BA monthly unemployment dashboard tile. The dashboard tile uses the Bundesagentur fur Arbeit Statistics API (monthly CSV, cache-only) for current unemployment rates; the map layer uses the separate MSS WFS for per-area social indicators.
-- [`.context/wastewater.md`](.context/wastewater.md) — Lageso Berlin wastewater viral load monitoring (Influenza A/B, RSV) from CSV open data. Wastewater data uses a cache-only pattern with weekly CSV ingestion, trend computation (latest vs previous week), and a Berlin-only expandable dashboard tile (collapsed: level badges, expanded: sparkline charts with values).
+- [`.context/social-atlas.md`](.context/social-atlas.md) — MSS 2023 WFS choropleth map layer (biennial, lazy GeoJSON) and BA monthly unemployment dashboard tile. The dashboard tile uses the Bundesagentur fur Arbeit Statistics API (monthly CSV) for current unemployment rates; the map layer uses the separate MSS WFS for per-area social indicators.
+- [`.context/wastewater.md`](.context/wastewater.md) — Lageso Berlin wastewater viral load monitoring (Influenza A/B, RSV) from CSV open data. Wastewater data uses weekly CSV ingestion, trend computation (latest vs previous week), and a Berlin-only expandable dashboard tile (collapsed: level badges, expanded: sparkline charts with values).
 - [`.context/new-data-sources.md`](.context/new-data-sources.md) — Research on potential Berlin data sources (fire dept, utilities, emergency doctors, hospitals, water levels, AEDs, crisis hotlines, construction). Priority ranking and API details for future development.
 
 ## Key Conventions

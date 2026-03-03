@@ -33,6 +33,7 @@ export function createSafetyRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbReports = await loadSafetyReports(db, city.id);
         if (dbReports) {
+          cache.set(`${city.id}:safety:recent`, dbReports, 900);
           res.json(dbReports);
           return;
         }

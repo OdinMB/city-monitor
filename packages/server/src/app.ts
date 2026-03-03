@@ -8,7 +8,7 @@ import cors from 'cors';
 import { createCache } from './lib/cache.js';
 import { createScheduler, type ScheduledJob } from './lib/scheduler.js';
 import { createDb } from './db/index.js';
-import { warmCache } from './db/warm-cache.js';
+import { warmCache, findStaleJobs, type FreshnessSpec } from './db/warm-cache.js';
 import { createHealthRouter } from './routes/health.js';
 import { createNewsRouter } from './routes/news.js';
 import { createWeatherRouter } from './routes/weather.js';
@@ -69,6 +69,35 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   // Pre-cache hardcoded political data so it's available before cron jobs finish
   preCacheBezirke(cache);
 
+  // Check which domains have stale/missing data and need a startup refresh.
+  // Max age is roughly the cron interval — data older than that is overdue.
+  const FRESHNESS_SPECS: FreshnessSpec[] = [
+    { jobName: 'ingest-feeds',        tableName: 'news_items',              maxAgeSeconds: 600 },
+    { jobName: 'summarize-news',      tableName: 'ai_summaries',            maxAgeSeconds: 1200 },
+    { jobName: 'ingest-weather',      tableName: 'weather_snapshots',       maxAgeSeconds: 1800 },
+    { jobName: 'ingest-transit',      tableName: 'transit_disruptions',     maxAgeSeconds: 900 },
+    { jobName: 'ingest-events',       tableName: 'events',                  maxAgeSeconds: 21600 },
+    { jobName: 'ingest-safety',       tableName: 'safety_reports',          maxAgeSeconds: 600 },
+    { jobName: 'ingest-nina',         tableName: 'nina_warnings',           maxAgeSeconds: 300 },
+    { jobName: 'ingest-pharmacies',   tableName: 'pharmacy_snapshots',      maxAgeSeconds: 21600 },
+    { jobName: 'ingest-traffic',      tableName: 'traffic_snapshots',       maxAgeSeconds: 300 },
+    { jobName: 'ingest-political',    tableName: 'political_districts',     maxAgeSeconds: 604800 },
+    { jobName: 'ingest-aq-grid',      tableName: 'air_quality_grid',        maxAgeSeconds: 1800 },
+    { jobName: 'ingest-construction', tableName: 'construction_snapshots',  maxAgeSeconds: 1800 },
+    { jobName: 'ingest-aeds',         tableName: 'aed_snapshots',           maxAgeSeconds: 86400 },
+    { jobName: 'ingest-social-atlas', tableName: 'social_atlas_snapshots',  maxAgeSeconds: 604800 },
+    { jobName: 'ingest-water-levels', tableName: 'water_level_snapshots',   maxAgeSeconds: 900 },
+    { jobName: 'ingest-budget',       tableName: 'budget_snapshots',        maxAgeSeconds: 86400 },
+    { jobName: 'ingest-appointments', tableName: 'appointment_snapshots',   maxAgeSeconds: 21600 },
+    { jobName: 'ingest-bathing',      tableName: 'bathing_snapshots',       maxAgeSeconds: 86400 },
+    { jobName: 'ingest-wastewater',   tableName: 'wastewater_snapshots',    maxAgeSeconds: 86400 },
+    { jobName: 'ingest-labor-market', tableName: 'labor_market_snapshots',  maxAgeSeconds: 86400 },
+  ];
+
+  const stale = db
+    ? await findStaleJobs(db, FRESHNESS_SPECS)
+    : new Set(FRESHNESS_SPECS.map((s) => s.jobName)); // no DB = refresh everything
+
   const ingestFeeds = createFeedIngestion(cache, db);
   const ingestWeather = createWeatherIngestion(cache, db);
   const summarizeNews = createSummarization(cache, db);
@@ -92,29 +121,29 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
-  // All domains now have DB persistence — warmCache() loads data from Postgres
-  // on startup, so runOnStart is no longer needed. Cron jobs refresh on schedule.
+  const s = (name: string) => stale.has(name); // shorthand for runOnStart
+
   const jobs: ScheduledJob[] = [
-    { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds },
-    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, dependsOn: ['ingest-feeds'] },
-    { name: 'ingest-weather', schedule: '*/30 * * * *', handler: ingestWeather },
-    { name: 'ingest-transit', schedule: '*/15 * * * *', handler: ingestTransit },
-    { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents },
-    { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety },
-    { name: 'ingest-nina', schedule: '*/5 * * * *', handler: ingestNina },
-    { name: 'ingest-pharmacies', schedule: '0 */6 * * *', handler: ingestPharmacies },
-    { name: 'ingest-traffic', schedule: '*/5 * * * *', handler: ingestTraffic },
-    { name: 'ingest-political', schedule: '0 4 * * 1', handler: ingestPolitical },
-    { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid },
-    { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction },
-    { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds },
-    { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas },
-    { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels },
-    { name: 'ingest-budget', schedule: '0 6 * * *', handler: ingestBudget },
-    { name: 'ingest-appointments', schedule: '0 */6 * * *', handler: ingestAppointments },
-    { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing },
-    { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater },
-    { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket },
+    { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds, runOnStart: s('ingest-feeds') },
+    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, runOnStart: s('summarize-news'), dependsOn: ['ingest-feeds'] },
+    { name: 'ingest-weather', schedule: '*/30 * * * *', handler: ingestWeather, runOnStart: s('ingest-weather') },
+    { name: 'ingest-transit', schedule: '*/15 * * * *', handler: ingestTransit, runOnStart: s('ingest-transit') },
+    { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: s('ingest-events') },
+    { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety, runOnStart: s('ingest-safety') },
+    { name: 'ingest-nina', schedule: '*/5 * * * *', handler: ingestNina, runOnStart: s('ingest-nina') },
+    { name: 'ingest-pharmacies', schedule: '0 */6 * * *', handler: ingestPharmacies, runOnStart: s('ingest-pharmacies') },
+    { name: 'ingest-traffic', schedule: '*/5 * * * *', handler: ingestTraffic, runOnStart: s('ingest-traffic') },
+    { name: 'ingest-political', schedule: '0 4 * * 1', handler: ingestPolitical, runOnStart: s('ingest-political') },
+    { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid, runOnStart: s('ingest-aq-grid') },
+    { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction, runOnStart: s('ingest-construction') },
+    { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: s('ingest-aeds') },
+    { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },
+    { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: s('ingest-water-levels') },
+    { name: 'ingest-budget', schedule: '0 6 * * *', handler: ingestBudget, runOnStart: s('ingest-budget') },
+    { name: 'ingest-appointments', schedule: '0 */6 * * *', handler: ingestAppointments, runOnStart: s('ingest-appointments') },
+    { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing, runOnStart: s('ingest-bathing') },
+    { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
+    { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 

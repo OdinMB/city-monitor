@@ -33,6 +33,7 @@ export function createWaterLevelsRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbData = await loadWaterLevels(db, city.id);
         if (dbData) {
+          cache.set(`${city.id}:water-levels`, dbData, 900);
           res.json(dbData);
           return;
         }

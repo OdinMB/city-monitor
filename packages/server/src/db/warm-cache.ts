@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { sql } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
@@ -148,6 +149,51 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
   ];
 
   await Promise.allSettled(tasks);
+}
+
+export interface FreshnessSpec {
+  jobName: string;
+  tableName: string;
+  maxAgeSeconds: number;
+}
+
+/**
+ * Check which jobs have stale or missing data in the DB.
+ * Queries the latest `fetched_at` from each table — if missing or older
+ * than `maxAgeSeconds`, the job is considered stale and needs a startup run.
+ */
+export async function findStaleJobs(db: Db, specs: FreshnessSpec[]): Promise<Set<string>> {
+  const stale = new Set<string>();
+  const now = Date.now();
+
+  await Promise.allSettled(specs.map(async (spec) => {
+    try {
+      const result = await db.execute(
+        sql`SELECT fetched_at FROM ${sql.identifier(spec.tableName)} ORDER BY fetched_at DESC LIMIT 1`
+      );
+      const rows = result as unknown as Array<{ fetched_at: string | Date }>;
+      const row = rows[0];
+      if (!row) {
+        stale.add(spec.jobName);
+        return;
+      }
+      const ageSeconds = (now - new Date(row.fetched_at).getTime()) / 1000;
+      if (ageSeconds > spec.maxAgeSeconds) {
+        stale.add(spec.jobName);
+      }
+    } catch {
+      stale.add(spec.jobName);
+    }
+  }));
+
+  const fresh = specs.length - stale.size;
+  if (stale.size > 0) {
+    log.info(`${stale.size} stale, ${fresh} fresh — will refresh: ${[...stale].join(', ')}`);
+  } else {
+    log.info(`all ${fresh} domains fresh — no startup ingestion needed`);
+  }
+
+  return stale;
 }
 
 function buildDigestFromItems(items: import('./writes.js').PersistedNewsItem[]): NewsDigest {

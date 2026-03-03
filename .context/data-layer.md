@@ -99,6 +99,10 @@ All use transactions with delete-then-insert (full refresh per city, not upsert)
 
 Runs on server start if DB is connected. Loads all data types for all active cities from Postgres into cache with their standard TTLs. Berlin-only domains (wastewater, bathing, labor market) are guarded with `cityId === 'berlin'`. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
 
+### Freshness Checks (`warm-cache.ts`)
+
+`findStaleJobs(db, specs)` determines which cron jobs need a startup run. For each `FreshnessSpec` (job name + table name + max age), it queries the latest `fetched_at` from the corresponding table. If the data is missing or older than `maxAgeSeconds`, the job is marked stale. Max ages are set to roughly the cron interval (e.g. 600s for a `*/10` job, 86400s for a daily job). The stale set is used in `app.ts` to conditionally set `runOnStart` on each job — fresh domains skip startup API calls entirely. Without a DB, all domains are marked stale to preserve cache-only behavior.
+
 ### Data Retention (`cron/data-retention.ts`)
 
 Nightly cron (3am) prunes old data to keep DB size manageable:

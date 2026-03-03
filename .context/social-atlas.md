@@ -20,9 +20,8 @@ Features with `kom !== 'gultig'` (uninhabited areas) are filtered out.
 
 ### Architecture
 
-Cache-only (no Postgres table).
-
-- **Cron:** `ingest-social-atlas` runs weekly (Sunday 5AM), `runOnStart: true`
+- **Cron:** `ingest-social-atlas` runs weekly (Sunday 5AM), conditional `runOnStart` based on DB freshness
+- **DB table:** `social_atlas_snapshots` (JSONB snapshot, one row per city)
 - **Cache key:** `${cityId}:social-atlas:geojson` (full GeoJSON ~500KB)
 - **TTL:** 604800 seconds (7 days)
 - **City config:** `dataSources.socialAtlas: { provider: 'mss-wfs', wfsUrl: string }` - Berlin only
@@ -46,9 +45,10 @@ Cache-only (no Postgres table).
 
 ### Architecture
 
-Cache-only, Berlin-only (hardcoded, like wastewater).
+Berlin-only (hardcoded, like wastewater).
 
-- **Cron:** `ingest-labor-market` runs daily (7AM), `runOnStart: true`
+- **Cron:** `ingest-labor-market` runs daily (7AM), conditional `runOnStart` based on DB freshness
+- **DB table:** `labor_market_snapshots` (JSONB snapshot, one row per city)
 - **Cache key:** `berlin:labor-market`
 - **TTL:** 86400 seconds (1 day)
 - **API:** `GET /api/:city/labor-market` - `LaborMarketSummary`

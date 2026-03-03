@@ -39,6 +39,7 @@ export function createNinaRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbWarnings = await loadNinaWarnings(db, city.id);
         if (dbWarnings) {
+          cache.set(`${city.id}:nina:warnings`, dbWarnings, 600);
           res.json(dbWarnings);
           return;
         }

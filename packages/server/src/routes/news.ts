@@ -43,7 +43,12 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
             categories[item.category]!.push(item);
           }
 
-          res.json({ items: filtered, categories, updatedAt: new Date().toISOString() });
+          const rebuilt: NewsDigest = { items: filtered, categories, updatedAt: new Date().toISOString() };
+          cache.set(`${city.id}:news:digest`, rebuilt, 900);
+          for (const [cat, catItems] of Object.entries(categories)) {
+            cache.set(`${city.id}:news:${cat}`, catItems, 900);
+          }
+          res.json(rebuilt);
           return;
         }
       } catch (err) {
@@ -71,6 +76,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbSummary = await loadSummary(db, city.id);
         if (dbSummary) {
+          cache.set(`${city.id}:news:summary`, dbSummary, 86400);
           res.json(dbSummary);
           return;
         }

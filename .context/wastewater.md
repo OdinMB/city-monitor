@@ -13,20 +13,21 @@ Berlin wastewater viral load monitoring from Lageso/Berliner Wasserbetriebe open
 
 ## Architecture
 
-Cache-only pattern (no DB table). Ingestion fetches the full CSV, parses all rows, and computes a summary comparing the latest and previous sample dates.
+Ingestion fetches the full CSV, parses all rows, and computes a summary comparing the latest and previous sample dates. Persisted to Postgres via JSONB snapshot table.
 
 ### Ingestion (`packages/server/src/cron/ingest-wastewater.ts`)
 
 - Fetches CSV, parses semicolon-delimited rows with German decimal handling
 - Groups by date + pathogen, averages Messwert across plants
 - Computes trend by comparing latest vs previous week (rising >1.5x, falling <0.67x, stable otherwise; "new" if previous=0, "gone" if current=0)
+- DB table: `wastewater_snapshots` (JSONB snapshot, one row per city)
 - Cache key: `berlin:wastewater:summary` (7-day TTL)
-- Cron schedule: `0 6 * * *` (daily at 6 AM), `runOnStart: true`
+- Cron schedule: `0 6 * * *` (daily at 6 AM), conditional `runOnStart` based on DB freshness
 
 ### Route (`packages/server/src/routes/wastewater.ts`)
 
 - `GET /:city/wastewater` — returns `WastewaterSummary | null`
-- Cache-only, no DB fallback
+- Cache-first, DB fallback, then null
 - `Cache-Control: 43200` (12 hours)
 
 ### Frontend

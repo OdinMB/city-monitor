@@ -33,6 +33,7 @@ export function createTransitRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbAlerts = await loadTransitAlerts(db, city.id);
         if (dbAlerts) {
+          cache.set(`${city.id}:transit:alerts`, dbAlerts, 1200);
           res.json(dbAlerts);
           return;
         }

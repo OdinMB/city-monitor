@@ -36,6 +36,7 @@ export function createEventsRouter(cache: Cache, db: Db | null = null) {
       try {
         const dbEvents = await loadEvents(db, city.id);
         if (dbEvents) {
+          cache.set(`${city.id}:events:upcoming`, dbEvents, 21600);
           res.json(filterFuture(dbEvents));
           return;
         }

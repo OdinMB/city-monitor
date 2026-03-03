@@ -10,10 +10,11 @@
 2. Create in-memory cache (always)
 3. Create DB connection if `DATABASE_URL` set (returns `null` otherwise)
 4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`
-5. Create ingestion functions (feed, weather, transit, events, safety, summarize, nina, air-quality, pharmacies, traffic, construction, water-levels, political, appointments) — each receives cache and optionally db
-6. Create scheduler with 15 cron jobs (all `runOnStart: true` except data-retention). Startup runs execute **in parallel**, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`)
-7. Mount routers under `/api` with per-route Cache-Control headers
-8. Return `{ app, cache, db, scheduler }`
+5. Run freshness check (`findStaleJobs`) — queries `fetched_at` from each domain's table. Domains with data newer than their cron interval are considered fresh; stale or missing domains are flagged for startup ingestion
+6. Create ingestion functions — each receives cache and optionally db
+7. Create scheduler with cron jobs. Only stale domains get `runOnStart: true`; fresh domains skip startup API calls. Without a DB, all domains are marked stale (preserves cache-only behavior). Startup runs execute **in parallel**, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`)
+8. Mount routers under `/api` with per-route Cache-Control headers
+9. Return `{ app, cache, db, scheduler }`
 
 Entry point (`index.ts`) calls `createApp()` and listens on `PORT` (default 3001).
 
@@ -34,8 +35,14 @@ Applied via middleware per route tier:
 | `/api/:city/traffic` | 120s (2 min) | Traffic updates every 5 min |
 | `/api/:city/construction` | 900s (15 min) | Construction updates every 30 min |
 | `/api/:city/water-levels` | 300s (5 min) | Water levels update every 15 min |
+| `/api/:city/aeds` | 43200s (12h) | AEDs update daily |
+| `/api/:city/social-atlas` | 43200s (12h) | Social atlas updates weekly |
+| `/api/:city/budget` | 3600s (1h) | Budget updates daily |
 | `/api/:city/appointments` | 3600s (1h) | Appointments update every 6h |
-| `/api/:city/political/:level` | 86400s (24h) | Political data updates weekly |
+| `/api/:city/bathing` | 43200s (12h) | Bathing quality updates daily |
+| `/api/:city/wastewater` | 43200s (12h) | Wastewater updates daily |
+| `/api/:city/labor-market` | 3600s (1h) | Labor market updates daily |
+| `/api/:city/political/:level` | 3600s (1h) | Political data updates weekly |
 
 ## Scheduler (`packages/server/src/lib/scheduler.ts`)
 
@@ -55,13 +62,19 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-air-quality` | `*/30 * * * *` | WAQI stations + Sensor.Community (PM→EAQI) grid |
 | `ingest-pharmacies` | `0 */6 * * *` | aponet.de emergency pharmacies |
 | `ingest-traffic` | `*/5 * * * *` | TomTom traffic incidents |
-| `ingest-construction` | `*/30 * * * *` | VIZ Berlin construction/roadworks (cache-only) |
+| `ingest-construction` | `*/30 * * * *` | VIZ Berlin construction/roadworks |
 | `ingest-water-levels` | `*/15 * * * *` | PEGELONLINE river gauge stations |
 | `ingest-appointments` | `0 */6 * * *` | Firecrawl-scraped Bürgeramt appointment availability |
+| `ingest-aeds` | `0 0 * * *` | OpenStreetMap AED locations (daily) |
+| `ingest-social-atlas` | `0 5 * * 0` | MSS WFS social atlas GeoJSON (weekly) |
+| `ingest-budget` | `0 6 * * *` | Berlin Haushalt budget data (daily) |
+| `ingest-bathing` | `0 6 * * *` | LAGeSo bathing water quality (daily) |
+| `ingest-wastewater` | `0 6 * * *` | LAGeSo wastewater viral loads (daily, Berlin-only) |
+| `ingest-labor-market` | `0 7 * * *` | BA unemployment statistics (daily, Berlin-only) |
 | `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly) |
 | `data-retention` | `0 3 * * *` | Prune old data (nightly) |
 
-All ingestion jobs have `runOnStart: true` except data-retention (3am only). `summarize-news` has `dependsOn: ['ingest-feeds']`.
+Ingestion jobs use conditional `runOnStart` based on DB freshness checks — only stale/missing domains trigger startup API calls. `data-retention` never runs on start. `summarize-news` has `dependsOn: ['ingest-feeds']`.
 
 ### API
 
