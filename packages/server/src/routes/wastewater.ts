@@ -23,7 +23,7 @@ export function createWastewaterRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.get<WastewaterSummary>(`${city.id}:wastewater:summary`);
+    const cached = cache.getWithMeta<WastewaterSummary>(`${city.id}:wastewater:summary`);
     if (cached) {
       res.json(cached);
       return;
@@ -34,7 +34,7 @@ export function createWastewaterRouter(cache: Cache, db: Db | null = null) {
         const stored = await loadWastewater(db, city.id);
         if (stored) {
           cache.set(`${city.id}:wastewater:summary`, stored, 604800);
-          res.json(stored);
+          res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createWastewaterRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json(null);
+    res.json({ data: null, fetchedAt: null });
   });
 
   return router;

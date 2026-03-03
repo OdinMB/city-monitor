@@ -23,7 +23,7 @@ export function createTrafficRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.get<TrafficIncident[]>(`${city.id}:traffic:incidents`);
+    const cached = cache.getWithMeta<TrafficIncident[]>(`${city.id}:traffic:incidents`);
     if (cached) {
       res.json(cached);
       return;
@@ -34,7 +34,7 @@ export function createTrafficRouter(cache: Cache, db: Db | null = null) {
         const stored = await loadTrafficIncidents(db, city.id);
         if (stored) {
           cache.set(`${city.id}:traffic:incidents`, stored, 300);
-          res.json(stored);
+          res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createTrafficRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json([]);
+    res.json({ data: [], fetchedAt: null });
   });
 
   return router;

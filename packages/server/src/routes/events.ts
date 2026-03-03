@@ -26,9 +26,9 @@ export function createEventsRouter(cache: Cache, db: Db | null = null) {
     const nowIso = new Date().toISOString();
     const filterFuture = (items: CityEvent[]) => items.filter((e) => e.date >= nowIso);
 
-    const events = cache.get<CityEvent[]>(`${city.id}:events:upcoming`);
-    if (events) {
-      res.json(filterFuture(events));
+    const cached = cache.getWithMeta<CityEvent[]>(`${city.id}:events:upcoming`);
+    if (cached) {
+      res.json({ data: filterFuture(cached.data), fetchedAt: cached.fetchedAt });
       return;
     }
 
@@ -37,7 +37,7 @@ export function createEventsRouter(cache: Cache, db: Db | null = null) {
         const dbEvents = await loadEvents(db, city.id);
         if (dbEvents) {
           cache.set(`${city.id}:events:upcoming`, dbEvents, 21600);
-          res.json(filterFuture(dbEvents));
+          res.json({ data: filterFuture(dbEvents), fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -45,7 +45,7 @@ export function createEventsRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json([]);
+    res.json({ data: [], fetchedAt: null });
   });
 
   return router;

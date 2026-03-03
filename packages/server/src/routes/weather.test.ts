@@ -35,7 +35,8 @@ describe('Weather API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/weather`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toEqual({ current: null, hourly: [], daily: [], alerts: [] });
+    expect(body.data).toEqual({ current: null, hourly: [], daily: [], alerts: [] });
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/weather returns cached weather data', async () => {
@@ -50,9 +51,10 @@ describe('Weather API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/weather`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.current.temp).toBe(12);
-    expect(body.hourly).toHaveLength(1);
-    expect(body.daily).toHaveLength(1);
+    expect(body.data.current.temp).toBe(12);
+    expect(body.data.hourly).toHaveLength(1);
+    expect(body.data.daily).toHaveLength(1);
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/weather returns 404', async () => {

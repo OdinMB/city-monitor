@@ -10,6 +10,8 @@ vi.mock('drizzle-orm', () => ({
   lt: vi.fn((col, val) => ({ op: 'lt', col, val })),
   and: vi.fn((...args: unknown[]) => ({ op: 'and', args })),
   eq: vi.fn((col, val) => ({ op: 'eq', col, val })),
+  notInArray: vi.fn((col, subquery) => ({ op: 'notInArray', col, subquery })),
+  sql: vi.fn(),
 }));
 
 import { createDataRetention } from './data-retention.js';
@@ -18,8 +20,10 @@ import type { Db } from '../db/index.js';
 function createMockDb() {
   const where = vi.fn().mockResolvedValue([]);
   const deleteFn = vi.fn().mockReturnValue({ where });
+  const from = vi.fn().mockReturnValue([]);
+  const select = vi.fn().mockReturnValue({ from });
   return {
-    db: { delete: deleteFn } as unknown as Db,
+    db: { delete: deleteFn, select } as unknown as Db,
     deleteFn,
     where,
   };
@@ -38,8 +42,8 @@ describe('data-retention', () => {
     await handler();
 
     // 20 delete calls (one per table)
-    expect(mock.deleteFn).toHaveBeenCalledTimes(20);
-    expect(mock.where).toHaveBeenCalledTimes(20);
+    expect(mock.deleteFn).toHaveBeenCalledTimes(21);
+    expect(mock.where).toHaveBeenCalledTimes(21);
   });
 
   it('runs without errors when DB is empty', async () => {
@@ -54,10 +58,12 @@ describe('data-retention', () => {
       .mockRejectedValueOnce(new Error('DB error')) // second table fails
       .mockResolvedValue([]);       // rest OK
     const deleteFn = vi.fn().mockReturnValue({ where });
-    const db = { delete: deleteFn } as unknown as Db;
+    const from = vi.fn().mockReturnValue([]);
+    const select = vi.fn().mockReturnValue({ from });
+    const db = { delete: deleteFn, select } as unknown as Db;
 
     const handler = createDataRetention(db);
     await expect(handler()).resolves.not.toThrow();
-    expect(deleteFn).toHaveBeenCalledTimes(20);
+    expect(deleteFn).toHaveBeenCalledTimes(21);
   });
 });

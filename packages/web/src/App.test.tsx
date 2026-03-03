@@ -63,7 +63,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /toggle theme/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /switch to (dark|light) mode/i })).toBeDefined();
     });
   });
 

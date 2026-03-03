@@ -35,20 +35,22 @@ describe('Events API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/events`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toEqual([]);
+    expect(body.data).toEqual([]);
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/events returns cached events', async () => {
     const mockEvents: CityEvent[] = [
-      { id: '1', title: 'Test Event', venue: 'Philharmonie', date: '2026-03-03T19:00:00Z', category: 'music', url: 'https://example.com', source: 'kulturdaten' },
+      { id: '1', title: 'Test Event', venue: 'Philharmonie', date: '2099-12-31T19:00:00Z', category: 'music', url: 'https://example.com', source: 'kulturdaten' },
     ];
     appContext.cache.set('berlin:events:upcoming', mockEvents, 60);
 
     const res = await fetch(`${baseUrl}/api/berlin/events`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toHaveLength(1);
-    expect(body[0].venue).toBe('Philharmonie');
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].venue).toBe('Philharmonie');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/events returns 404', async () => {

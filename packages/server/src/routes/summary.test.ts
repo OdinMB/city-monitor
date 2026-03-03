@@ -35,7 +35,8 @@ describe('Summary API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/news/summary`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.briefing).toBeNull();
+    expect(body.data.briefing).toBeNull();
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/news/summary returns cached summary', async () => {
@@ -50,7 +51,8 @@ describe('Summary API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/news/summary`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.briefing).toBe('Berlin saw major transit disruptions today.');
+    expect(body.data.briefing).toBe('Berlin saw major transit disruptions today.');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/news/summary returns 404', async () => {

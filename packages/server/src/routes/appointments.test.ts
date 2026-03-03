@@ -33,10 +33,11 @@ describe('Appointments API', () => {
 
   it('GET /api/berlin/appointments returns empty default when no data', async () => {
     const res = await fetch(`${baseUrl}/api/berlin/appointments`);
-    const body = await res.json() as BuergeramtData;
+    const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.services).toEqual([]);
-    expect(body.bookingUrl).toContain('service.berlin.de');
+    expect(body.data.services).toEqual([]);
+    expect(body.data.bookingUrl).toContain('service.berlin.de');
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/appointments returns cached data', async () => {
@@ -56,12 +57,13 @@ describe('Appointments API', () => {
     appContext.cache.set('berlin:appointments', mockData, 60);
 
     const res = await fetch(`${baseUrl}/api/berlin/appointments`);
-    const body = await res.json() as BuergeramtData;
+    const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.services).toHaveLength(1);
-    expect(body.services[0].name).toBe('Anmeldung');
-    expect(body.services[0].status).toBe('available');
-    expect(body.fetchedAt).toBe('2026-03-03T10:00:00Z');
+    expect(body.data.services).toHaveLength(1);
+    expect(body.data.services[0].name).toBe('Anmeldung');
+    expect(body.data.services[0].status).toBe('available');
+    expect(body.data.fetchedAt).toBe('2026-03-03T10:00:00Z');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/appointments returns 404', async () => {

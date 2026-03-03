@@ -34,7 +34,8 @@ describe('Political API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/political/bundestag`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toEqual([]);
+    expect(body.data).toEqual([]);
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/political/state returns cached data', async () => {
@@ -53,8 +54,9 @@ describe('Political API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/political/state`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toHaveLength(1);
-    expect(body[0].representatives[0].party).toBe('SPD');
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].representatives[0].party).toBe('SPD');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/berlin/political/invalid returns 400', async () => {

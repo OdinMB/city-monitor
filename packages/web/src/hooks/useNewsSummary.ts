@@ -4,17 +4,12 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../lib/api.js';
+import { api, type NewsSummaryData, type ApiResponse } from '../lib/api.js';
 
-export interface NewsSummaryData {
-  briefing: string | null;
-  generatedAt: string | null;
-  headlineCount: number;
-  cached: boolean;
-}
+export type { NewsSummaryData };
 
 export function useNewsSummary(cityId: string) {
-  return useQuery<NewsSummaryData>({
+  const query = useQuery<ApiResponse<NewsSummaryData>>({
     queryKey: ['news', 'summary', cityId],
     queryFn: () => api.getNewsSummary(cityId),
     refetchInterval: 15 * 60 * 1000,
@@ -23,4 +18,5 @@ export function useNewsSummary(cityId: string) {
     gcTime: 60 * 60 * 1000,
     retry: 1,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

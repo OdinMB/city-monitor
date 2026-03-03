@@ -35,7 +35,8 @@ describe('Budget API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/budget`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toBeNull();
+    expect(body.data).toBeNull();
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/budget returns cached data', async () => {
@@ -56,9 +57,10 @@ describe('Budget API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/budget`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.year).toBe('2026');
-    expect(body.areas).toHaveLength(1);
-    expect(body.areas[0].areaName).toBe('Berlin (Total)');
+    expect(body.data.year).toBe('2026');
+    expect(body.data.areas).toHaveLength(1);
+    expect(body.data.areas[0].areaName).toBe('Berlin (Total)');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/budget returns 404', async () => {

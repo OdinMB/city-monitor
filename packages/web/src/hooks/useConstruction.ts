@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type ConstructionSite } from '../lib/api.js';
+import { api, type ConstructionSite, type ApiResponse } from '../lib/api.js';
 
 export function useConstruction(cityId: string) {
-  return useQuery<ConstructionSite[]>({
+  const query = useQuery<ApiResponse<ConstructionSite[]>>({
     queryKey: ['construction', cityId],
     queryFn: () => api.getConstruction(cityId),
     refetchInterval: 15 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useConstruction(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

@@ -23,19 +23,19 @@ export function createAirQualityRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    let data = cache.get<AirQuality>(`${city.id}:air-quality`);
+    let cached = cache.getWithMeta<AirQuality>(`${city.id}:air-quality`);
 
     // Cache miss — fetch immediately instead of waiting for the next cron cycle
-    if (!data) {
+    if (!cached) {
       try {
         await ingestCityAirQuality(city, cache);
-        data = cache.get<AirQuality>(`${city.id}:air-quality`);
+        cached = cache.getWithMeta<AirQuality>(`${city.id}:air-quality`);
       } catch {
         // Fall through — return null
       }
     }
 
-    res.json(data ?? null);
+    res.json(cached ?? { data: null, fetchedAt: null });
   });
 
   router.get('/:city/air-quality/grid', async (req, res) => {
@@ -45,15 +45,15 @@ export function createAirQualityRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    let data = cache.get<AirQualityGridPoint[]>(`${city.id}:air-quality:grid`);
+    let cached = cache.getWithMeta<AirQualityGridPoint[]>(`${city.id}:air-quality:grid`);
 
     // Cache miss — try DB before live fetch (cache → DB → API)
-    if (!data && db) {
+    if (!cached && db) {
       try {
         const rows = await loadAirQualityGrid(db, city.id);
         if (rows) {
           cache.set(`${city.id}:air-quality:grid`, rows, 1800);
-          data = rows;
+          cached = cache.getWithMeta<AirQualityGridPoint[]>(`${city.id}:air-quality:grid`);
         }
       } catch {
         // Fall through to live fetch
@@ -61,16 +61,16 @@ export function createAirQualityRouter(cache: Cache, db: Db | null = null) {
     }
 
     // Still no data — fetch from WAQI + Sensor.Community
-    if (!data) {
+    if (!cached) {
       try {
         await ingestCityAirQualityGrid(city, cache, db);
-        data = cache.get<AirQualityGridPoint[]>(`${city.id}:air-quality:grid`);
+        cached = cache.getWithMeta<AirQualityGridPoint[]>(`${city.id}:air-quality:grid`);
       } catch {
         // Fall through — return empty
       }
     }
 
-    res.json(data ?? []);
+    res.json(cached ?? { data: [], fetchedAt: null });
   });
 
   return router;

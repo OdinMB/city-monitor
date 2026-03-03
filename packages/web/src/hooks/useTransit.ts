@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type TransitAlert } from '../lib/api.js';
+import { api, type TransitAlert, type ApiResponse } from '../lib/api.js';
 
 export function useTransit(cityId: string) {
-  return useQuery<TransitAlert[]>({
+  const query = useQuery<ApiResponse<TransitAlert[]>>({
     queryKey: ['transit', cityId],
     queryFn: () => api.getTransit(cityId),
     refetchInterval: 5 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useTransit(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

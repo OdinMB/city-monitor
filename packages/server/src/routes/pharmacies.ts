@@ -23,7 +23,7 @@ export function createPharmaciesRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.get<EmergencyPharmacy[]>(`${city.id}:pharmacies:emergency`);
+    const cached = cache.getWithMeta<EmergencyPharmacy[]>(`${city.id}:pharmacies:emergency`);
     if (cached) {
       res.json(cached);
       return;
@@ -34,7 +34,7 @@ export function createPharmaciesRouter(cache: Cache, db: Db | null = null) {
         const stored = await loadPharmacies(db, city.id);
         if (stored) {
           cache.set(`${city.id}:pharmacies:emergency`, stored, 21600);
-          res.json(stored);
+          res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createPharmaciesRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json([]);
+    res.json({ data: [], fetchedAt: null });
   });
 
   return router;

@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type WaterLevelData } from '../lib/api.js';
+import { api, type WaterLevelData, type ApiResponse } from '../lib/api.js';
 
 export function useWaterLevels(cityId: string) {
-  return useQuery<WaterLevelData>({
+  const query = useQuery<ApiResponse<WaterLevelData>>({
     queryKey: ['water-levels', cityId],
     queryFn: () => api.getWaterLevels(cityId),
     refetchInterval: 15 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useWaterLevels(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

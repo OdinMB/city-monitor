@@ -34,8 +34,9 @@ describe('News API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/news/digest`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.items).toEqual([]);
-    expect(body.categories).toEqual({});
+    expect(body.data.items).toEqual([]);
+    expect(body.data.categories).toEqual({});
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/news/digest returns cached digest', async () => {
@@ -48,8 +49,9 @@ describe('News API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/news/digest`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.items).toHaveLength(1);
-    expect(body.items[0].title).toBe('Test');
+    expect(body.data.items).toHaveLength(1);
+    expect(body.data.items[0].title).toBe('Test');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/news/digest returns 404', async () => {
@@ -81,7 +83,8 @@ describe('News API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/bootstrap`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.airQuality).toEqual(mockAq);
+    expect(body.airQuality.data).toEqual(mockAq);
+    expect(typeof body.airQuality.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/bootstrap returns 404', async () => {

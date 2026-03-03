@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type SafetyReport } from '../lib/api.js';
+import { api, type SafetyReport, type ApiResponse } from '../lib/api.js';
 
 export function useSafety(cityId: string) {
-  return useQuery<SafetyReport[]>({
+  const query = useQuery<ApiResponse<SafetyReport[]>>({
     queryKey: ['safety', cityId],
     queryFn: () => api.getSafety(cityId),
     refetchInterval: 10 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useSafety(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

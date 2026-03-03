@@ -19,6 +19,32 @@ i18n.use(initReactI18next).init({
 window.URL.createObjectURL = window.URL.createObjectURL || (() => '');
 window.URL.revokeObjectURL = window.URL.revokeObjectURL || (() => {});
 
+// Mock canvas 2D context for map icon generation (jsdom doesn't support canvas)
+const mockCtx = {
+  beginPath: vi.fn(),
+  roundRect: vi.fn(),
+  fill: vi.fn(),
+  stroke: vi.fn(),
+  save: vi.fn(),
+  restore: vi.fn(),
+  translate: vi.fn(),
+  scale: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  arc: vi.fn(),
+  arcTo: vi.fn(),
+  bezierCurveTo: vi.fn(),
+  quadraticCurveTo: vi.fn(),
+  closePath: vi.fn(),
+  getImageData: vi.fn().mockReturnValue({ data: new Uint8ClampedArray(4), width: 1, height: 1 }),
+  fillStyle: '',
+  strokeStyle: '',
+  lineWidth: 1,
+  lineCap: 'butt',
+  lineJoin: 'miter',
+};
+HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(mockCtx) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+
 // Mock maplibre-gl globally — WebGL is not available in jsdom
 vi.mock('maplibre-gl', () => {
   const MockMap = vi.fn().mockImplementation(() => ({
@@ -43,6 +69,10 @@ vi.mock('maplibre-gl', () => {
     setFeatureState: vi.fn(),
     getCanvas: vi.fn().mockReturnValue({ style: {} }),
     isStyleLoaded: vi.fn().mockReturnValue(true),
+    hasImage: vi.fn().mockReturnValue(false),
+    addImage: vi.fn(),
+    removeImage: vi.fn(),
+    loadImage: vi.fn().mockResolvedValue({ data: new Uint8Array(4), width: 1, height: 1 }),
   }));
   const MockPopup = vi.fn().mockImplementation(() => ({
     setLngLat: vi.fn().mockReturnThis(),

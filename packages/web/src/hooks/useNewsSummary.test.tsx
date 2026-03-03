@@ -32,7 +32,7 @@ describe('useNewsSummary', () => {
 
   it('fetches news summary for a city', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify(mockSummary), { status: 200 }),
+      new Response(JSON.stringify({ data: mockSummary, fetchedAt: '2026-03-02T10:00:00Z' }), { status: 200 }),
     );
 
     const { result } = renderHook(() => useNewsSummary('berlin'), {

@@ -34,7 +34,8 @@ describe('Pharmacies API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/pharmacies`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toEqual([]);
+    expect(body.data).toEqual([]);
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/pharmacies returns cached data', async () => {
@@ -55,8 +56,9 @@ describe('Pharmacies API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/pharmacies`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toHaveLength(1);
-    expect(body[0].name).toBe('Stern-Apotheke');
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].name).toBe('Stern-Apotheke');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/pharmacies returns 404', async () => {

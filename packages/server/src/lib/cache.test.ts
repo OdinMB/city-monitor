@@ -85,4 +85,41 @@ describe('Cache', () => {
     const result = cache.getBatch(['a', 'b', 'missing']);
     expect(result).toEqual({ a: 1, b: 2 });
   });
+
+  it('getWithMeta returns data with fetchedAt timestamp', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-03T12:00:00Z'));
+    cache.set('key', { value: 42 }, 60);
+    const result = cache.getWithMeta<{ value: number }>('key');
+    expect(result).toEqual({
+      data: { value: 42 },
+      fetchedAt: '2026-03-03T12:00:00.000Z',
+    });
+    vi.useRealTimers();
+  });
+
+  it('getWithMeta returns null for missing key', () => {
+    expect(cache.getWithMeta('missing')).toBeNull();
+  });
+
+  it('getWithMeta returns null for expired key', () => {
+    vi.useFakeTimers();
+    cache.set('key', 'data', 1);
+    vi.advanceTimersByTime(2000);
+    expect(cache.getWithMeta('key')).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('getBatchWithMeta returns wrapped entries', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-03T12:00:00Z'));
+    cache.set('a', 1, 60);
+    cache.set('b', 2, 60);
+    const result = cache.getBatchWithMeta(['a', 'b', 'missing']);
+    expect(result).toEqual({
+      a: { data: 1, fetchedAt: '2026-03-03T12:00:00.000Z' },
+      b: { data: 2, fetchedAt: '2026-03-03T12:00:00.000Z' },
+    });
+    vi.useRealTimers();
+  });
 });

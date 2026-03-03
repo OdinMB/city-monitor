@@ -35,7 +35,8 @@ describe('Wastewater API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/wastewater`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toBeNull();
+    expect(body.data).toBeNull();
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/wastewater returns cached summary', async () => {
@@ -51,11 +52,12 @@ describe('Wastewater API', () => {
     appContext.cache.set('berlin:wastewater:summary', mockSummary, 60);
 
     const res = await fetch(`${baseUrl}/api/berlin/wastewater`);
-    const body = await res.json() as WastewaterSummary;
+    const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.sampleDate).toBe('2025-12-14');
-    expect(body.pathogens).toHaveLength(3);
-    expect(body.plantCount).toBe(3);
+    expect(body.data.sampleDate).toBe('2025-12-14');
+    expect(body.data.pathogens).toHaveLength(3);
+    expect(body.data.plantCount).toBe(3);
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/wastewater returns 404', async () => {

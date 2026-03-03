@@ -23,7 +23,7 @@ export function createAedsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.get<AedLocation[]>(`${city.id}:aed:locations`);
+    const cached = cache.getWithMeta<AedLocation[]>(`${city.id}:aed:locations`);
     if (cached) {
       res.json(cached);
       return;
@@ -34,7 +34,7 @@ export function createAedsRouter(cache: Cache, db: Db | null = null) {
         const stored = await loadAeds(db, city.id);
         if (stored) {
           cache.set(`${city.id}:aed:locations`, stored, 86400);
-          res.json(stored);
+          res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createAedsRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json([]);
+    res.json({ data: [], fetchedAt: null });
   });
 
   return router;

@@ -25,13 +25,13 @@ export function createNinaRouter(cache: Cache, db: Db | null = null) {
 
     // Non-German cities don't have NINA warnings
     if (city.country !== 'DE') {
-      res.json([]);
+      res.json({ data: [], fetchedAt: null });
       return;
     }
 
-    const warnings = cache.get<NinaWarning[]>(`${city.id}:nina:warnings`);
-    if (warnings) {
-      res.json(warnings);
+    const cached = cache.getWithMeta<NinaWarning[]>(`${city.id}:nina:warnings`);
+    if (cached) {
+      res.json(cached);
       return;
     }
 
@@ -40,7 +40,7 @@ export function createNinaRouter(cache: Cache, db: Db | null = null) {
         const dbWarnings = await loadNinaWarnings(db, city.id);
         if (dbWarnings) {
           cache.set(`${city.id}:nina:warnings`, dbWarnings, 600);
-          res.json(dbWarnings);
+          res.json({ data: dbWarnings, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -48,7 +48,7 @@ export function createNinaRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json([]);
+    res.json({ data: [], fetchedAt: null });
   });
 
   return router;

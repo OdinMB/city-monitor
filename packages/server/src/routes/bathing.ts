@@ -23,7 +23,7 @@ export function createBathingRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.get<BathingSpot[]>(`${city.id}:bathing:spots`);
+    const cached = cache.getWithMeta<BathingSpot[]>(`${city.id}:bathing:spots`);
     if (cached) {
       res.json(cached);
       return;
@@ -34,7 +34,7 @@ export function createBathingRouter(cache: Cache, db: Db | null = null) {
         const stored = await loadBathingSpots(db, city.id);
         if (stored) {
           cache.set(`${city.id}:bathing:spots`, stored, 86400);
-          res.json(stored);
+          res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createBathingRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json([]);
+    res.json({ data: [], fetchedAt: null });
   });
 
   return router;

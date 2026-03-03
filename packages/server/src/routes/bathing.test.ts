@@ -34,7 +34,8 @@ describe('Bathing Water API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/bathing`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toEqual([]);
+    expect(body.data).toEqual([]);
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/bathing returns cached data', async () => {
@@ -62,10 +63,11 @@ describe('Bathing Water API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/bathing`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toHaveLength(1);
-    expect(body[0].id).toBe('bath-B350');
-    expect(body[0].name).toBe('Strandbad Wannsee');
-    expect(body[0].quality).toBe('good');
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].id).toBe('bath-B350');
+    expect(body.data[0].name).toBe('Strandbad Wannsee');
+    expect(body.data[0].quality).toBe('good');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/bathing returns 404', async () => {

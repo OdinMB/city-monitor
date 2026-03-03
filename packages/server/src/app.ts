@@ -169,6 +169,14 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     ? { getJobs: () => [], stop: () => {} }
     : createScheduler(jobs);
 
+  // Cache-Control per route tier (max-age < cron interval)
+  const cacheFor = (seconds: number): express.RequestHandler =>
+    (_req, res, next) => { res.set('Cache-Control', `public, max-age=${seconds}`); next(); };
+
+  // Non-city routes (mounted before validateCity so /api/health, /api/weather-tiles aren't rejected)
+  app.use('/api', createHealthRouter(cache, scheduler));
+  app.use('/api', cacheFor(600), createWeatherTilesRouter());
+
   // Validate :city param on all /:city/* routes
   app.use('/api/:city', validateCity);
 
@@ -176,11 +184,6 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const bootstrapLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
   app.use('/api/:city/bootstrap', bootstrapLimit);
 
-  // Cache-Control per route tier (max-age < cron interval)
-  const cacheFor = (seconds: number): express.RequestHandler =>
-    (_req, res, next) => { res.set('Cache-Control', `public, max-age=${seconds}`); next(); };
-
-  app.use('/api', createHealthRouter(cache, scheduler));
   app.use('/api', cacheFor(300), createNewsRouter(cache, db));
   app.use('/api', cacheFor(300), createWeatherRouter(cache, db));
   app.use('/api', cacheFor(120), createTransitRouter(cache, db));
@@ -200,7 +203,6 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
-  app.use('/api', cacheFor(600), createWeatherTilesRouter());
 
   return { app, cache, db, scheduler };
 }

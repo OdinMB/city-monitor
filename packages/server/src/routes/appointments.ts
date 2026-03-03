@@ -29,7 +29,7 @@ export function createAppointmentsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.get<BuergeramtData>(`${city.id}:appointments`);
+    const cached = cache.getWithMeta<BuergeramtData>(`${city.id}:appointments`);
     if (cached) {
       res.json(cached);
       return;
@@ -40,7 +40,7 @@ export function createAppointmentsRouter(cache: Cache, db: Db | null = null) {
         const stored = await loadAppointments(db, city.id);
         if (stored) {
           cache.set(`${city.id}:appointments`, stored, 21600);
-          res.json(stored);
+          res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -48,7 +48,7 @@ export function createAppointmentsRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json(EMPTY_DEFAULT);
+    res.json({ data: EMPTY_DEFAULT, fetchedAt: null });
   });
 
   return router;

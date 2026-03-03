@@ -23,9 +23,9 @@ export function createTransitRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const alerts = cache.get<TransitAlert[]>(`${city.id}:transit:alerts`);
-    if (alerts) {
-      res.json(alerts);
+    const cached = cache.getWithMeta<TransitAlert[]>(`${city.id}:transit:alerts`);
+    if (cached) {
+      res.json(cached);
       return;
     }
 
@@ -34,7 +34,7 @@ export function createTransitRouter(cache: Cache, db: Db | null = null) {
         const dbAlerts = await loadTransitAlerts(db, city.id);
         if (dbAlerts) {
           cache.set(`${city.id}:transit:alerts`, dbAlerts, 1200);
-          res.json(dbAlerts);
+          res.json({ data: dbAlerts, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createTransitRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json([]);
+    res.json({ data: [], fetchedAt: null });
   });
 
   return router;

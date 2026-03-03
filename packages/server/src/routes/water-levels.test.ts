@@ -35,7 +35,8 @@ describe('Water Levels API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/water-levels`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toEqual({ stations: [], fetchedAt: null });
+    expect(body.data).toEqual({ stations: [], fetchedAt: null });
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/water-levels returns cached data', async () => {
@@ -59,10 +60,11 @@ describe('Water Levels API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/water-levels`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.stations).toHaveLength(1);
-    expect(body.stations[0].name).toBe('Mühlendamm');
-    expect(body.stations[0].currentLevel).toBe(278);
-    expect(body.fetchedAt).toBe('2026-03-03T00:30:00Z');
+    expect(body.data.stations).toHaveLength(1);
+    expect(body.data.stations[0].name).toBe('Mühlendamm');
+    expect(body.data.stations[0].currentLevel).toBe(278);
+    expect(body.data.fetchedAt).toBe('2026-03-03T00:30:00Z');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/water-levels returns 404', async () => {

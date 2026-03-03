@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type BuergeramtData } from '../lib/api.js';
+import { api, type BuergeramtData, type ApiResponse } from '../lib/api.js';
 
 export function useAppointments(cityId: string) {
-  return useQuery<BuergeramtData>({
+  const query = useQuery<ApiResponse<BuergeramtData>>({
     queryKey: ['appointments', cityId],
     queryFn: () => api.getAppointments(cityId),
     refetchInterval: 30 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useAppointments(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

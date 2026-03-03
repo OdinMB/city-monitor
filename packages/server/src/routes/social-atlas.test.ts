@@ -34,7 +34,8 @@ describe('Social Atlas API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/social-atlas`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toBeNull();
+    expect(body.data).toBeNull();
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/social-atlas returns cached GeoJSON', async () => {
@@ -53,9 +54,10 @@ describe('Social Atlas API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/social-atlas`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.type).toBe('FeatureCollection');
-    expect(body.features).toHaveLength(1);
-    expect(body.features[0].properties.plrId).toBe('01010101');
+    expect(body.data.type).toBe('FeatureCollection');
+    expect(body.data.features).toHaveLength(1);
+    expect(body.data.features[0].properties.plrId).toBe('01010101');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/social-atlas returns 404', async () => {

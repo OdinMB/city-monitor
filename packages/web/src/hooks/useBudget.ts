@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type BudgetSummary } from '../lib/api.js';
+import { api, type BudgetSummary, type ApiResponse } from '../lib/api.js';
 
 export function useBudget(cityId: string) {
-  return useQuery<BudgetSummary | null>({
+  const query = useQuery<ApiResponse<BudgetSummary | null>>({
     queryKey: ['budget', cityId],
     queryFn: () => api.getBudget(cityId),
     refetchInterval: 60 * 60 * 1000, // 1 hour — data changes very rarely
@@ -17,4 +17,5 @@ export function useBudget(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

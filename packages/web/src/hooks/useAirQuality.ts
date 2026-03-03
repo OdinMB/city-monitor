@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type AirQuality } from '../lib/api.js';
+import { api, type AirQuality, type ApiResponse } from '../lib/api.js';
 
 export function useAirQuality(cityId: string) {
-  return useQuery<AirQuality | null>({
+  const query = useQuery<ApiResponse<AirQuality | null>>({
     queryKey: ['air-quality', cityId],
     queryFn: () => api.getAirQuality(cityId),
     refetchInterval: 30 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useAirQuality(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type NewsDigest } from '../lib/api.js';
+import { api, type NewsDigest, type ApiResponse } from '../lib/api.js';
 
 export function useNewsDigest(cityId: string) {
-  return useQuery<NewsDigest>({
+  const query = useQuery<ApiResponse<NewsDigest>>({
     queryKey: ['news', 'digest', cityId],
     queryFn: () => api.getNewsDigest(cityId),
     refetchInterval: 5 * 60 * 1000,
@@ -18,4 +18,5 @@ export function useNewsDigest(cityId: string) {
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5 * 60 * 1000),
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

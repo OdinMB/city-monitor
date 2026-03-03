@@ -23,9 +23,9 @@ export function createSafetyRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const reports = cache.get<SafetyReport[]>(`${city.id}:safety:recent`);
-    if (reports) {
-      res.json(reports);
+    const cached = cache.getWithMeta<SafetyReport[]>(`${city.id}:safety:recent`);
+    if (cached) {
+      res.json(cached);
       return;
     }
 
@@ -34,7 +34,7 @@ export function createSafetyRouter(cache: Cache, db: Db | null = null) {
         const dbReports = await loadSafetyReports(db, city.id);
         if (dbReports) {
           cache.set(`${city.id}:safety:recent`, dbReports, 900);
-          res.json(dbReports);
+          res.json({ data: dbReports, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createSafetyRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json([]);
+    res.json({ data: [], fetchedAt: null });
   });
 
   return router;

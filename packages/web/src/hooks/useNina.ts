@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type NinaWarning } from '../lib/api.js';
+import { api, type NinaWarning, type ApiResponse } from '../lib/api.js';
 
 export function useNina(cityId: string) {
-  return useQuery<NinaWarning[]>({
+  const query = useQuery<ApiResponse<NinaWarning[]>>({
     queryKey: ['nina', cityId],
     queryFn: () => api.getNina(cityId),
     refetchInterval: 5 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useNina(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

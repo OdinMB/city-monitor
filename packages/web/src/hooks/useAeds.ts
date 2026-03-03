@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type AedLocation } from '../lib/api.js';
+import { api, type AedLocation, type ApiResponse } from '../lib/api.js';
 
 export function useAeds(cityId: string) {
-  return useQuery<AedLocation[]>({
+  const query = useQuery<ApiResponse<AedLocation[]>>({
     queryKey: ['aeds', cityId],
     queryFn: () => api.getAeds(cityId),
     refetchInterval: 24 * 60 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useAeds(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

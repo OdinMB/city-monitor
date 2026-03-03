@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type LaborMarketSummary } from '../lib/api.js';
+import { api, type LaborMarketSummary, type ApiResponse } from '../lib/api.js';
 
 export function useLaborMarket(cityId: string, enabled = true) {
-  return useQuery<LaborMarketSummary | null>({
+  const query = useQuery<ApiResponse<LaborMarketSummary | null>>({
     queryKey: ['labor-market', cityId],
     queryFn: () => api.getLaborMarket(cityId),
     enabled,
@@ -18,4 +18,5 @@ export function useLaborMarket(cityId: string, enabled = true) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

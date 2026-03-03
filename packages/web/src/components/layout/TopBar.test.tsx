@@ -34,10 +34,10 @@ function createWrapper(options?: { weather?: WeatherData; airQuality?: typeof mo
   });
 
   if (options?.weather) {
-    queryClient.setQueryData(['weather', 'berlin'], options.weather);
+    queryClient.setQueryData(['weather', 'berlin'], { data: options.weather, fetchedAt: new Date().toISOString() });
   }
   if (options?.airQuality) {
-    queryClient.setQueryData(['air-quality', 'berlin'], options.airQuality);
+    queryClient.setQueryData(['air-quality', 'berlin'], { data: options.airQuality, fetchedAt: new Date().toISOString() });
   }
 
   return ({ children }: { children: ReactNode }) => (

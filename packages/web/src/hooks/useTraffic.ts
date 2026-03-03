@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type TrafficIncident } from '../lib/api.js';
+import { api, type TrafficIncident, type ApiResponse } from '../lib/api.js';
 
 export function useTrafficIncidents(cityId: string) {
-  return useQuery<TrafficIncident[]>({
+  const query = useQuery<ApiResponse<TrafficIncident[]>>({
     queryKey: ['traffic', cityId],
     queryFn: () => api.getTraffic(cityId),
     refetchInterval: 5 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useTrafficIncidents(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

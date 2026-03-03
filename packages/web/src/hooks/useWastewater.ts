@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type WastewaterSummary } from '../lib/api.js';
+import { api, type WastewaterSummary, type ApiResponse } from '../lib/api.js';
 
 export function useWastewater(cityId: string, enabled = true) {
-  return useQuery<WastewaterSummary | null>({
+  const query = useQuery<ApiResponse<WastewaterSummary | null>>({
     queryKey: ['wastewater', cityId],
     queryFn: () => api.getWastewater(cityId),
     enabled,
@@ -18,4 +18,5 @@ export function useWastewater(cityId: string, enabled = true) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

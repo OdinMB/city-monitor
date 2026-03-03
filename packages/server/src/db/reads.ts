@@ -29,6 +29,12 @@ import {
   laborMarketSnapshots,
 } from './schema.js';
 import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary } from '@city-monitor/shared';
+import {
+  WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
+  PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
+  BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
+  TrafficIncidentSchema, ConstructionSiteSchema,
+} from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
@@ -37,6 +43,20 @@ import type { SafetyReport } from '../cron/ingest-safety.js';
 import type { NewsSummary } from '../cron/summarize.js';
 import type { AirQualityGridPoint } from '@city-monitor/shared';
 import type { PersistedNewsItem } from './writes.js';
+import { createLogger } from '../lib/logger.js';
+import { z } from 'zod';
+
+const log = createLogger('reads');
+
+/** Validate JSONB data with a Zod schema. Returns null on failure. */
+function validateJsonb<T>(schema: z.ZodType<T>, data: unknown, label: string): T | null {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    log.warn(`${label}: JSONB validation failed — ${result.error.issues[0]?.message}`);
+    return null;
+  }
+  return result.data;
+}
 
 export async function loadWeather(db: Db, cityId: string): Promise<WeatherData | null> {
   const rows = await db
@@ -49,12 +69,16 @@ export async function loadWeather(db: Db, cityId: string): Promise<WeatherData |
   if (rows.length === 0) return null;
 
   const row = rows[0];
-  return {
+  // Guard against stale data: weather cron runs every 30min, discard if older than 2h
+  if (row.fetchedAt && Date.now() - row.fetchedAt.getTime() > 2 * 60 * 60 * 1000) return null;
+
+  const assembled = {
     current: row.current,
     hourly: row.hourly,
     daily: row.daily,
-    alerts: (row.alerts as WeatherData['alerts']) ?? [],
-  } as WeatherData;
+    alerts: (row.alerts ?? []),
+  };
+  return validateJsonb(WeatherDataSchema, assembled, 'weather');
 }
 
 export async function loadTransitAlerts(db: Db, cityId: string): Promise<TransitAlert[] | null> {
@@ -98,6 +122,10 @@ export async function loadEvents(db: Db, cityId: string): Promise<CityEvent[] | 
     .orderBy(events.date);
 
   if (rows.length === 0) return null;
+
+  // Guard against stale data: events cron runs every 6h, discard if older than 12h
+  const newest = rows.reduce((max, r) => r.fetchedAt > max ? r.fetchedAt : max, rows[0]!.fetchedAt);
+  if (Date.now() - newest.getTime() > 12 * 60 * 60 * 1000) return null;
 
   return rows.map((row) => ({
     id: row.hash,
@@ -240,7 +268,7 @@ export async function loadPoliticalDistricts(
     .limit(1);
 
   if (rows.length === 0) return null;
-  return rows[0].districts as PoliticalDistrict[];
+  return validateJsonb(z.array(PoliticalDistrictSchema), rows[0].districts, 'political');
 }
 
 export async function loadPoliticalFetchedAt(
@@ -333,10 +361,11 @@ export async function loadWaterLevels(db: Db, cityId: string): Promise<WaterLeve
   if (rows.length === 0) return null;
 
   const row = rows[0];
-  return {
-    stations: row.stations as WaterLevelData['stations'],
+  const assembled = {
+    stations: row.stations,
     fetchedAt: row.fetchedAt.toISOString(),
   };
+  return validateJsonb(WaterLevelDataSchema, assembled, 'water-levels');
 }
 
 export async function loadAppointments(db: Db, cityId: string): Promise<BuergeramtData | null> {
@@ -350,11 +379,12 @@ export async function loadAppointments(db: Db, cityId: string): Promise<Buergera
   if (rows.length === 0) return null;
 
   const row = rows[0];
-  return {
-    services: row.services as BuergeramtData['services'],
+  const assembled = {
+    services: row.services,
     bookingUrl: row.bookingUrl,
     fetchedAt: row.fetchedAt.toISOString(),
   };
+  return validateJsonb(BuergeramtDataSchema, assembled, 'appointments');
 }
 
 export async function loadBudget(db: Db, cityId: string): Promise<BudgetSummary | null> {
@@ -366,7 +396,7 @@ export async function loadBudget(db: Db, cityId: string): Promise<BudgetSummary 
     .limit(1);
 
   if (rows.length === 0) return null;
-  return rows[0].data as BudgetSummary;
+  return validateJsonb(BudgetSummarySchema, rows[0].data, 'budget');
 }
 
 export async function loadConstructionSites(db: Db, cityId: string): Promise<ConstructionSite[] | null> {
@@ -378,7 +408,7 @@ export async function loadConstructionSites(db: Db, cityId: string): Promise<Con
     .limit(1);
 
   if (rows.length === 0) return null;
-  return rows[0].sites as ConstructionSite[];
+  return validateJsonb(z.array(ConstructionSiteSchema), rows[0].sites, 'construction');
 }
 
 export async function loadTrafficIncidents(db: Db, cityId: string): Promise<TrafficIncident[] | null> {
@@ -390,7 +420,7 @@ export async function loadTrafficIncidents(db: Db, cityId: string): Promise<Traf
     .limit(1);
 
   if (rows.length === 0) return null;
-  return rows[0].incidents as TrafficIncident[];
+  return validateJsonb(z.array(TrafficIncidentSchema), rows[0].incidents, 'traffic');
 }
 
 export async function loadPharmacies(db: Db, cityId: string): Promise<EmergencyPharmacy[] | null> {
@@ -402,7 +432,7 @@ export async function loadPharmacies(db: Db, cityId: string): Promise<EmergencyP
     .limit(1);
 
   if (rows.length === 0) return null;
-  return rows[0].pharmacies as EmergencyPharmacy[];
+  return validateJsonb(z.array(EmergencyPharmacySchema), rows[0].pharmacies, 'pharmacies');
 }
 
 export async function loadAeds(db: Db, cityId: string): Promise<AedLocation[] | null> {
@@ -414,7 +444,7 @@ export async function loadAeds(db: Db, cityId: string): Promise<AedLocation[] | 
     .limit(1);
 
   if (rows.length === 0) return null;
-  return rows[0].locations as AedLocation[];
+  return validateJsonb(z.array(AedLocationSchema), rows[0].locations, 'aeds');
 }
 
 export async function loadSocialAtlas(db: Db, cityId: string): Promise<unknown | null> {
@@ -438,7 +468,7 @@ export async function loadWastewater(db: Db, cityId: string): Promise<Wastewater
     .limit(1);
 
   if (rows.length === 0) return null;
-  return rows[0].data as WastewaterSummary;
+  return validateJsonb(WastewaterSummarySchema, rows[0].data, 'wastewater');
 }
 
 export async function loadBathingSpots(db: Db, cityId: string): Promise<BathingSpot[] | null> {
@@ -450,7 +480,7 @@ export async function loadBathingSpots(db: Db, cityId: string): Promise<BathingS
     .limit(1);
 
   if (rows.length === 0) return null;
-  return rows[0].spots as BathingSpot[];
+  return validateJsonb(z.array(BathingSpotSchema), rows[0].spots, 'bathing');
 }
 
 export async function loadLaborMarket(db: Db, cityId: string): Promise<LaborMarketSummary | null> {
@@ -462,7 +492,7 @@ export async function loadLaborMarket(db: Db, cityId: string): Promise<LaborMark
     .limit(1);
 
   if (rows.length === 0) return null;
-  return rows[0].data as LaborMarketSummary;
+  return validateJsonb(LaborMarketSummarySchema, rows[0].data, 'labor-market');
 }
 
 export type { GeocodeResult };

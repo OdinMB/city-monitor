@@ -47,7 +47,8 @@ describe('Air Quality API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/air-quality`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toBeNull();
+    expect(body.data).toBeNull();
+    expect(body.fetchedAt).toBeNull();
 
     vi.restoreAllMocks();
   });
@@ -72,8 +73,9 @@ describe('Air Quality API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/air-quality`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.current.europeanAqi).toBe(35);
-    expect(body.hourly).toHaveLength(2);
+    expect(body.data.current.europeanAqi).toBe(35);
+    expect(body.data.hourly).toHaveLength(2);
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/air-quality returns 404', async () => {

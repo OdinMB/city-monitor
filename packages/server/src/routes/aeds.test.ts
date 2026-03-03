@@ -34,7 +34,8 @@ describe('AEDs API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/aeds`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toEqual([]);
+    expect(body.data).toEqual([]);
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/aeds returns cached data', async () => {
@@ -55,9 +56,10 @@ describe('AEDs API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/aeds`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toHaveLength(1);
-    expect(body[0].id).toBe('aed-11111111');
-    expect(body[0].indoor).toBe(true);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].id).toBe('aed-11111111');
+    expect(body.data[0].indoor).toBe(true);
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/aeds returns 404', async () => {

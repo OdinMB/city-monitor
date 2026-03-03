@@ -52,14 +52,14 @@ describe('DB reads', () => {
 
   it('loadWeather returns WeatherData from row', async () => {
     const db = createMockDb([{
-      current: { temp: 10 },
-      hourly: [{ time: 'now' }],
-      daily: [{ date: 'today' }],
+      current: { temp: 10, feelsLike: 8, humidity: 65, precipitation: 0, weatherCode: 3, windSpeed: 12, windDirection: 270 },
+      hourly: [{ time: '2026-03-03T12:00', temp: 10, precipProb: 20, weatherCode: 3 }],
+      daily: [{ date: '2026-03-03', high: 12, low: 5, weatherCode: 3, precip: 0.5, sunrise: '06:30', sunset: '18:00' }],
       alerts: [],
     }]);
     const result = await loadWeather(db, 'berlin');
     expect(result).not.toBeNull();
-    expect(result!.current).toEqual({ temp: 10 });
+    expect(result!.current.temp).toBe(10);
   });
 
   it('loadTransitAlerts returns null when no rows', async () => {
@@ -86,7 +86,7 @@ describe('DB reads', () => {
 
   it('loadEvents maps rows to CityEvent[]', async () => {
     const db = createMockDb([
-      { hash: 'h1', title: 'Concert', venue: 'Hall', date: new Date('2026-03-03'), endDate: null, category: 'music', url: 'https://x.com', description: null, free: true, source: 'ticketmaster', price: '29–89 EUR' },
+      { hash: 'h1', title: 'Concert', venue: 'Hall', date: new Date('2026-03-03'), endDate: null, category: 'music', url: 'https://x.com', description: null, free: true, source: 'ticketmaster', price: '29–89 EUR', fetchedAt: new Date() },
     ]);
     const result = await loadEvents(db, 'berlin');
     expect(result).toHaveLength(1);

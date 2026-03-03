@@ -25,8 +25,8 @@ export function createPoliticalRouter(cache: Cache) {
       return;
     }
 
-    const data = cache.get<PoliticalDistrict[]>(`${city.id}:political:${level}`);
-    res.json(data ?? []);
+    const cached = cache.getWithMeta<PoliticalDistrict[]>(`${city.id}:political:${level}`);
+    res.json(cached ?? { data: [], fetchedAt: null });
   });
 
   return router;

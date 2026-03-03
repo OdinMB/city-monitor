@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api } from '../lib/api.js';
+import { api, type ApiResponse } from '../lib/api.js';
 
 export function useSocialAtlas(cityId: string, enabled: boolean) {
-  return useQuery<GeoJSON.FeatureCollection | null>({
+  const query = useQuery<ApiResponse<GeoJSON.FeatureCollection | null>>({
     queryKey: ['social-atlas', cityId],
     queryFn: () => api.getSocialAtlas(cityId),
     enabled,
@@ -18,4 +18,5 @@ export function useSocialAtlas(cityId: string, enabled: boolean) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }

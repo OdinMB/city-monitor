@@ -23,7 +23,7 @@ export function createConstructionRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.get<ConstructionSite[]>(`${city.id}:construction:sites`);
+    const cached = cache.getWithMeta<ConstructionSite[]>(`${city.id}:construction:sites`);
     if (cached) {
       res.json(cached);
       return;
@@ -34,7 +34,7 @@ export function createConstructionRouter(cache: Cache, db: Db | null = null) {
         const stored = await loadConstructionSites(db, city.id);
         if (stored) {
           cache.set(`${city.id}:construction:sites`, stored, 1800);
-          res.json(stored);
+          res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createConstructionRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json([]);
+    res.json({ data: [], fetchedAt: null });
   });
 
   return router;

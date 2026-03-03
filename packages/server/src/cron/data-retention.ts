@@ -7,7 +7,7 @@
  * accumulates and this cron is the sole cleanup mechanism.
  */
 
-import { lt } from 'drizzle-orm';
+import { lt, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '../db/index.js';
 import {
   weatherSnapshots,
@@ -82,6 +82,11 @@ export function createDataRetention(db: Db) {
 
       // AI summaries (30 days)
       { name: 'summaries', fn: () => db.delete(aiSummaries).where(lt(aiSummaries.generatedAt, new Date(now - RETENTION.summaries))) },
+
+      // Orphaned summaries: delete summaries whose headlineHash no longer exists in newsItems
+      { name: 'orphan_summaries', fn: () => db.delete(aiSummaries).where(
+        notInArray(aiSummaries.headlineHash, db.select({ hash: newsItems.hash }).from(newsItems))
+      ) },
     ];
 
     for (const task of tasks) {

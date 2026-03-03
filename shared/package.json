@@ -4,5 +4,8 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "main": "./types.ts",
-  "types": "./types.ts"
+  "types": "./types.ts",
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
 }

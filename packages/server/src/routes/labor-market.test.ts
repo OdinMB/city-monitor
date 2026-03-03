@@ -35,7 +35,8 @@ describe('Labor Market API', () => {
     const res = await fetch(`${baseUrl}/api/berlin/labor-market`);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body).toBeNull();
+    expect(body.data).toBeNull();
+    expect(body.fetchedAt).toBeNull();
   });
 
   it('GET /api/berlin/labor-market returns cached summary', async () => {
@@ -57,11 +58,12 @@ describe('Labor Market API', () => {
     appContext.cache.set('berlin:labor-market', mockSummary, 60);
 
     const res = await fetch(`${baseUrl}/api/berlin/labor-market`);
-    const body = await res.json() as LaborMarketSummary;
+    const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.unemploymentRate).toBe(10.6);
-    expect(body.totalUnemployed).toBe(226880);
-    expect(body.reportMonth).toBe('2026-02');
+    expect(body.data.unemploymentRate).toBe(10.6);
+    expect(body.data.totalUnemployed).toBe(226880);
+    expect(body.data.reportMonth).toBe('2026-02');
+    expect(typeof body.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/labor-market returns 404', async () => {

@@ -6,6 +6,7 @@
 interface Entry {
   value: unknown;
   expiry: number;
+  updatedAt: number;
 }
 
 /**
@@ -30,7 +31,7 @@ export function createCache() {
   }
 
   function set(key: string, value: unknown, ttlSeconds: number): void {
-    entries.set(key, { value, expiry: Date.now() + ttlSeconds * 1000 });
+    entries.set(key, { value, expiry: Date.now() + ttlSeconds * 1000, updatedAt: Date.now() });
   }
 
   function del(key: string): void {
@@ -67,11 +68,29 @@ export function createCache() {
     return task;
   }
 
+  function getWithMeta<T>(key: string): { data: T; fetchedAt: string } | null {
+    const e = entries.get(key);
+    if (!isValid(e)) {
+      if (e) entries.delete(key);
+      return null;
+    }
+    return { data: e.value as T, fetchedAt: new Date(e.updatedAt).toISOString() };
+  }
+
   function getBatch(keys: string[]): Record<string, unknown> {
     const out: Record<string, unknown> = {};
     for (const k of keys) {
       const v = get(k);
       if (v !== null) out[k] = v;
+    }
+    return out;
+  }
+
+  function getBatchWithMeta(keys: string[]): Record<string, { data: unknown; fetchedAt: string }> {
+    const out: Record<string, { data: unknown; fetchedAt: string }> = {};
+    for (const k of keys) {
+      const m = getWithMeta(k);
+      if (m !== null) out[k] = m;
     }
     return out;
   }
@@ -85,7 +104,7 @@ export function createCache() {
     pending.clear();
   }
 
-  return { get, set, delete: del, fetch, getBatch, size, clear };
+  return { get, set, delete: del, fetch, getWithMeta, getBatch, getBatchWithMeta, size, clear };
 }
 
 export type Cache = ReturnType<typeof createCache>;

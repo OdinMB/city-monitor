@@ -38,5 +38,8 @@ export function useBootstrap(cityId: string) {
     if (data.wastewater) queryClient.setQueryData(['wastewater', cityId], data.wastewater);
   }, [query.data, cityId, queryClient]);
 
+  // Note: bootstrap fields are already in { data, fetchedAt } format matching
+  // individual hook query shapes, so setQueryData works without wrapping.
+
   return query;
 }

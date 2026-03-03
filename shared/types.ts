@@ -3,6 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+/** Standard API response wrapper with freshness metadata */
+export interface ApiResponse<T> {
+  data: T;
+  fetchedAt: string | null;
+}
+
 export interface CityConfig {
   id: string;
   name: string;

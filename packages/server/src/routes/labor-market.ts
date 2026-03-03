@@ -23,7 +23,7 @@ export function createLaborMarketRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const cached = cache.get<LaborMarketSummary>(`${city.id}:labor-market`);
+    const cached = cache.getWithMeta<LaborMarketSummary>(`${city.id}:labor-market`);
     if (cached) {
       res.json(cached);
       return;
@@ -34,7 +34,7 @@ export function createLaborMarketRouter(cache: Cache, db: Db | null = null) {
         const stored = await loadLaborMarket(db, city.id);
         if (stored) {
           cache.set(`${city.id}:labor-market`, stored, 86400);
-          res.json(stored);
+          res.json({ data: stored, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createLaborMarketRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json(null);
+    res.json({ data: null, fetchedAt: null });
   });
 
   return router;

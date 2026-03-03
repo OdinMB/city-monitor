@@ -13,25 +13,25 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export type { WeatherData } from '@city-monitor/shared';
-import type { WeatherData } from '@city-monitor/shared';
+export type { WeatherData, ApiResponse } from '@city-monitor/shared';
+import type { WeatherData, ApiResponse } from '@city-monitor/shared';
 
 export interface BootstrapData {
-  news: unknown | null;
-  weather: WeatherData | null;
-  transit: unknown | null;
-  events: unknown | null;
-  safety: unknown | null;
-  nina: unknown | null;
-  airQuality: AirQuality | null;
-  pharmacies: unknown | null;
-  traffic: unknown | null;
-  construction: unknown | null;
-  waterLevels: WaterLevelData | null;
-  budget: BudgetSummary | null;
-  appointments: BuergeramtData | null;
-  laborMarket: LaborMarketSummary | null;
-  wastewater: WastewaterSummary | null;
+  news: ApiResponse<NewsDigest> | null;
+  weather: ApiResponse<WeatherData> | null;
+  transit: ApiResponse<TransitAlert[]> | null;
+  events: ApiResponse<CityEvent[]> | null;
+  safety: ApiResponse<SafetyReport[]> | null;
+  nina: ApiResponse<NinaWarning[]> | null;
+  airQuality: ApiResponse<AirQuality | null> | null;
+  pharmacies: ApiResponse<EmergencyPharmacy[]> | null;
+  traffic: ApiResponse<TrafficIncident[]> | null;
+  construction: ApiResponse<ConstructionSite[]> | null;
+  waterLevels: ApiResponse<WaterLevelData> | null;
+  budget: ApiResponse<BudgetSummary | null> | null;
+  appointments: ApiResponse<BuergeramtData> | null;
+  laborMarket: ApiResponse<LaborMarketSummary | null> | null;
+  wastewater: ApiResponse<WastewaterSummary | null> | null;
 }
 
 export interface NewsDigest {
@@ -168,27 +168,29 @@ export interface EmergencyPharmacy {
 export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, LaborMarketSummary, WastewaterSummary, WastewaterPathogen } from '@city-monitor/shared';
 import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, LaborMarketSummary, WastewaterSummary } from '@city-monitor/shared';
 
+export type NewsSummaryData = { briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean };
+
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
-  getNewsDigest: (city: string) => fetchJson<NewsDigest>(`${BASE}/${city}/news/digest`),
-  getNewsSummary: (city: string) => fetchJson<{ briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean }>(`${BASE}/${city}/news/summary`),
-  getWeather: (city: string) => fetchJson<WeatherData>(`${BASE}/${city}/weather`),
-  getTransit: (city: string) => fetchJson<TransitAlert[]>(`${BASE}/${city}/transit`),
-  getEvents: (city: string) => fetchJson<CityEvent[]>(`${BASE}/${city}/events`),
-  getSafety: (city: string) => fetchJson<SafetyReport[]>(`${BASE}/${city}/safety`),
-  getNina: (city: string) => fetchJson<NinaWarning[]>(`${BASE}/${city}/nina`),
-  getAirQuality: (city: string) => fetchJson<AirQuality | null>(`${BASE}/${city}/air-quality`),
-  getAirQualityGrid: (city: string) => fetchJson<AirQualityGridPoint[]>(`${BASE}/${city}/air-quality/grid`),
-  getPharmacies: (city: string) => fetchJson<EmergencyPharmacy[]>(`${BASE}/${city}/pharmacies`),
-  getTraffic: (city: string) => fetchJson<TrafficIncident[]>(`${BASE}/${city}/traffic`),
-  getConstruction: (city: string) => fetchJson<ConstructionSite[]>(`${BASE}/${city}/construction`),
-  getAeds: (city: string) => fetchJson<AedLocation[]>(`${BASE}/${city}/aeds`),
-  getBathing: (city: string) => fetchJson<BathingSpot[]>(`${BASE}/${city}/bathing`),
-  getWaterLevels: (city: string) => fetchJson<WaterLevelData>(`${BASE}/${city}/water-levels`),
-  getPolitical: (city: string, level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke') => fetchJson<PoliticalDistrict[]>(`${BASE}/${city}/political/${level}`),
-  getBudget: (city: string) => fetchJson<BudgetSummary | null>(`${BASE}/${city}/budget`),
-  getAppointments: (city: string) => fetchJson<BuergeramtData>(`${BASE}/${city}/appointments`),
-  getSocialAtlas: (city: string) => fetchJson<GeoJSON.FeatureCollection | null>(`${BASE}/${city}/social-atlas`),
-  getLaborMarket: (city: string) => fetchJson<LaborMarketSummary | null>(`${BASE}/${city}/labor-market`),
-  getWastewater: (city: string) => fetchJson<WastewaterSummary | null>(`${BASE}/${city}/wastewater`),
+  getNewsDigest: (city: string) => fetchJson<ApiResponse<NewsDigest>>(`${BASE}/${city}/news/digest`),
+  getNewsSummary: (city: string) => fetchJson<ApiResponse<NewsSummaryData>>(`${BASE}/${city}/news/summary`),
+  getWeather: (city: string) => fetchJson<ApiResponse<WeatherData>>(`${BASE}/${city}/weather`),
+  getTransit: (city: string) => fetchJson<ApiResponse<TransitAlert[]>>(`${BASE}/${city}/transit`),
+  getEvents: (city: string) => fetchJson<ApiResponse<CityEvent[]>>(`${BASE}/${city}/events`),
+  getSafety: (city: string) => fetchJson<ApiResponse<SafetyReport[]>>(`${BASE}/${city}/safety`),
+  getNina: (city: string) => fetchJson<ApiResponse<NinaWarning[]>>(`${BASE}/${city}/nina`),
+  getAirQuality: (city: string) => fetchJson<ApiResponse<AirQuality | null>>(`${BASE}/${city}/air-quality`),
+  getAirQualityGrid: (city: string) => fetchJson<ApiResponse<AirQualityGridPoint[]>>(`${BASE}/${city}/air-quality/grid`),
+  getPharmacies: (city: string) => fetchJson<ApiResponse<EmergencyPharmacy[]>>(`${BASE}/${city}/pharmacies`),
+  getTraffic: (city: string) => fetchJson<ApiResponse<TrafficIncident[]>>(`${BASE}/${city}/traffic`),
+  getConstruction: (city: string) => fetchJson<ApiResponse<ConstructionSite[]>>(`${BASE}/${city}/construction`),
+  getAeds: (city: string) => fetchJson<ApiResponse<AedLocation[]>>(`${BASE}/${city}/aeds`),
+  getBathing: (city: string) => fetchJson<ApiResponse<BathingSpot[]>>(`${BASE}/${city}/bathing`),
+  getWaterLevels: (city: string) => fetchJson<ApiResponse<WaterLevelData>>(`${BASE}/${city}/water-levels`),
+  getPolitical: (city: string, level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke') => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${BASE}/${city}/political/${level}`),
+  getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${BASE}/${city}/budget`),
+  getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${BASE}/${city}/appointments`),
+  getSocialAtlas: (city: string) => fetchJson<ApiResponse<GeoJSON.FeatureCollection | null>>(`${BASE}/${city}/social-atlas`),
+  getLaborMarket: (city: string) => fetchJson<ApiResponse<LaborMarketSummary | null>>(`${BASE}/${city}/labor-market`),
+  getWastewater: (city: string) => fetchJson<ApiResponse<WastewaterSummary | null>>(`${BASE}/${city}/wastewater`),
 };

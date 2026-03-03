@@ -23,9 +23,9 @@ export function createWeatherRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const data = cache.get<WeatherData>(`${city.id}:weather`);
-    if (data) {
-      res.json(data);
+    const cached = cache.getWithMeta<WeatherData>(`${city.id}:weather`);
+    if (cached) {
+      res.json(cached);
       return;
     }
 
@@ -34,7 +34,7 @@ export function createWeatherRouter(cache: Cache, db: Db | null = null) {
         const dbData = await loadWeather(db, city.id);
         if (dbData) {
           cache.set(`${city.id}:weather`, dbData, 1800);
-          res.json(dbData);
+          res.json({ data: dbData, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createWeatherRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json({ current: null, hourly: [], daily: [], alerts: [] });
+    res.json({ data: { current: null, hourly: [], daily: [], alerts: [] }, fetchedAt: null });
   });
 
   return router;

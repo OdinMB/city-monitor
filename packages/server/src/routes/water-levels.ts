@@ -23,9 +23,9 @@ export function createWaterLevelsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const data = cache.get<WaterLevelData>(`${city.id}:water-levels`);
-    if (data) {
-      res.json(data);
+    const cached = cache.getWithMeta<WaterLevelData>(`${city.id}:water-levels`);
+    if (cached) {
+      res.json(cached);
       return;
     }
 
@@ -34,7 +34,7 @@ export function createWaterLevelsRouter(cache: Cache, db: Db | null = null) {
         const dbData = await loadWaterLevels(db, city.id);
         if (dbData) {
           cache.set(`${city.id}:water-levels`, dbData, 900);
-          res.json(dbData);
+          res.json({ data: dbData, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -42,7 +42,7 @@ export function createWaterLevelsRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json({ stations: [], fetchedAt: null });
+    res.json({ data: { stations: [], fetchedAt: null }, fetchedAt: null });
   });
 
   return router;

@@ -24,9 +24,9 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const digest = cache.get<NewsDigest>(`${city.id}:news:digest`);
-    if (digest) {
-      res.json(digest);
+    const cached = cache.getWithMeta<NewsDigest>(`${city.id}:news:digest`);
+    if (cached) {
+      res.json(cached);
       return;
     }
 
@@ -48,7 +48,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
           for (const [cat, catItems] of Object.entries(categories)) {
             cache.set(`${city.id}:news:${cat}`, catItems, 900);
           }
-          res.json(rebuilt);
+          res.json({ data: rebuilt, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -56,7 +56,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json({ items: [], categories: {}, updatedAt: null });
+    res.json({ data: { items: [], categories: {}, updatedAt: null }, fetchedAt: null });
   });
 
   router.get('/:city/news/summary', async (req, res) => {
@@ -66,9 +66,9 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const summary = cache.get<NewsSummary>(`${city.id}:news:summary`);
-    if (summary) {
-      res.json(summary);
+    const cachedSummary = cache.getWithMeta<NewsSummary>(`${city.id}:news:summary`);
+    if (cachedSummary) {
+      res.json(cachedSummary);
       return;
     }
 
@@ -77,7 +77,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
         const dbSummary = await loadSummary(db, city.id);
         if (dbSummary) {
           cache.set(`${city.id}:news:summary`, dbSummary, 86400);
-          res.json(dbSummary);
+          res.json({ data: dbSummary, fetchedAt: new Date().toISOString() });
           return;
         }
       } catch (err) {
@@ -85,7 +85,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       }
     }
 
-    res.json({ briefing: null, generatedAt: null, headlineCount: 0, cached: false });
+    res.json({ data: { briefing: null, generatedAt: null, headlineCount: 0, cached: false }, fetchedAt: null });
   });
 
   router.get('/:city/bootstrap', (req, res) => {
@@ -95,7 +95,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
-    const data = cache.getBatch([
+    const data = cache.getBatchWithMeta([
       `${city.id}:news:digest`,
       `${city.id}:weather`,
       `${city.id}:transit:alerts`,

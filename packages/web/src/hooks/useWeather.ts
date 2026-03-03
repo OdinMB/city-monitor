@@ -4,10 +4,10 @@
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type WeatherData } from '../lib/api.js';
+import { api, type WeatherData, type ApiResponse } from '../lib/api.js';
 
 export function useWeather(cityId: string) {
-  return useQuery<WeatherData>({
+  const query = useQuery<ApiResponse<WeatherData>>({
     queryKey: ['weather', cityId],
     queryFn: () => api.getWeather(cityId),
     refetchInterval: 15 * 60 * 1000,
@@ -17,4 +17,5 @@ export function useWeather(cityId: string) {
     retry: 2,
     placeholderData: keepPreviousData,
   });
+  return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
 }
