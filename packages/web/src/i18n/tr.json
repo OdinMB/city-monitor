@@ -7,7 +7,9 @@
     "language": "Dil",
     "theme": {
       "light": "Açık",
-      "dark": "Koyu"
+      "dark": "Koyu",
+      "switchDark": "Koyu moda geç",
+      "switchLight": "Açık moda geç"
     }
   },
   "panel": {
@@ -19,7 +21,8 @@
       "generatedAgo": "{{time}} önce oluşturuldu",
       "headlines_count": "{{count}} başlık",
       "all": "Tümü",
-      "retry": "Tekrar dene"
+      "retry": "Tekrar dene",
+      "locationPin": "Konum bilgisi var"
     },
     "weather": {
       "title": "Hava Durumu",

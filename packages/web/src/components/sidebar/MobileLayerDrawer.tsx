@@ -102,7 +102,7 @@ export function MobileLayerDrawer() {
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle layers panel"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400">
             <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />
             <path d="m22 12.65-8.58 3.91a2 2 0 0 1-1.66 0L3.18 12.9" />
             <path d="m22 17.65-8.58 3.91a2 2 0 0 1-1.66 0L3.18 17.9" />

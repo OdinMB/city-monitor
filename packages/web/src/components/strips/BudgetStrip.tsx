@@ -100,7 +100,7 @@ function PieChart({
       <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 text-center mb-1">
         {label}
       </div>
-      <svg viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
+      <svg role="img" aria-label={`${label}: ${formatAmount(total)}`} viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
         {slices.length === 1 ? (
           /* Single-slice case: full circle (SVG arc can't draw 360°) */
           <>

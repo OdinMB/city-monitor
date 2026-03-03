@@ -7,7 +7,9 @@
     "language": "اللغة",
     "theme": {
       "light": "فاتح",
-      "dark": "داكن"
+      "dark": "داكن",
+      "switchDark": "التبديل إلى الوضع الداكن",
+      "switchLight": "التبديل إلى الوضع الفاتح"
     }
   },
   "panel": {
@@ -19,7 +21,8 @@
       "generatedAgo": "تم الإنشاء {{time}}",
       "headlines_count": "{{count}} عناوين",
       "all": "الكل",
-      "retry": "إعادة المحاولة"
+      "retry": "إعادة المحاولة",
+      "locationPin": "يحتوي على موقع"
     },
     "weather": {
       "title": "الطقس",

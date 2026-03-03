@@ -49,7 +49,7 @@ function formatWeekLabel(date: Date): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-function Sparkline({ data, color, sampleDate }: { data: number[]; color: string; sampleDate: string }) {
+function Sparkline({ data, color, sampleDate, label }: { data: number[]; color: string; sampleDate: string; label: string }) {
   if (data.length < 2) return null;
 
   const max = Math.max(...data);
@@ -64,7 +64,7 @@ function Sparkline({ data, color, sampleDate }: { data: number[]; color: string;
 
   return (
     <div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="block w-full h-7" preserveAspectRatio="none">
+      <svg role="img" aria-label={label} viewBox={`0 0 ${w} ${h}`} className="block w-full h-7" preserveAspectRatio="none">
         {max === 0 ? (
           <line x1={0} y1={h - 1} x2={w} y2={h - 1} stroke={color} strokeWidth={1.5} strokeOpacity={0.4} />
         ) : (
@@ -145,7 +145,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
               )}
             </div>
           </div>
-          <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={data.sampleDate} />
+          <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={data.sampleDate} label={`${pathogenLabel(p.name, t)} trend`} />
         </div>
       ))}
       <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center">

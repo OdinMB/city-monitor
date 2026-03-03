@@ -7,7 +7,9 @@
     "language": "Sprache",
     "theme": {
       "light": "Hell",
-      "dark": "Dunkel"
+      "dark": "Dunkel",
+      "switchDark": "Dunkelmodus aktivieren",
+      "switchLight": "Hellmodus aktivieren"
     }
   },
   "panel": {
@@ -19,7 +21,8 @@
       "generatedAgo": "Erstellt {{time}}",
       "headlines_count": "{{count}} Schlagzeilen",
       "all": "Alle",
-      "retry": "Erneut versuchen"
+      "retry": "Erneut versuchen",
+      "locationPin": "Hat Ortsangabe"
     },
     "weather": {
       "title": "Wetter",

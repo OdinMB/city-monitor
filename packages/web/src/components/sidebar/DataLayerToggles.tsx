@@ -71,7 +71,7 @@ function LayerBadge({ icon, color, active, small }: { icon: IconNode; color: str
         className="inline-flex items-center justify-center rounded transition-all"
         style={{ width: size, height: size, backgroundColor: active ? color : INACTIVE_COLOR }}
       >
-        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           {icon.map(([tag, attrs], i) => createElement(tag, { key: i, ...attrs }))}
         </svg>
       </span>

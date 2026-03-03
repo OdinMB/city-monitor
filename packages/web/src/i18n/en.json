@@ -7,7 +7,9 @@
     "language": "Language",
     "theme": {
       "light": "Light",
-      "dark": "Dark"
+      "dark": "Dark",
+      "switchDark": "Switch to dark mode",
+      "switchLight": "Switch to light mode"
     }
   },
   "panel": {
@@ -19,7 +21,8 @@
       "generatedAgo": "Generated {{time}}",
       "headlines_count": "{{count}} headlines",
       "all": "All",
-      "retry": "Retry"
+      "retry": "Retry",
+      "locationPin": "Has location"
     },
     "weather": {
       "title": "Weather",

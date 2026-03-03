@@ -135,16 +135,11 @@ function CompactNewsItem({ item }: { item: NewsItem }) {
           <img src={faviconUrl} alt="" width={14} height={14} className="inline-block" loading="lazy" />
         )}
         <span>{item.sourceName}</span>
-        {item.tier === 1 && (
-          <span className="px-1 py-0.5 rounded text-[10px] font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-            T1
-          </span>
-        )}
         <span className={`px-1.5 py-0.5 rounded text-[10px] ${colorClass}`}>
           {t(`category.${item.category}`, item.category)}
         </span>
         {item.location && (
-          <span className="text-blue-500 dark:text-blue-400">{'📍'}</span>
+          <span className="text-blue-500 dark:text-blue-400" role="img" aria-label={t('panel.news.locationPin')}>📍</span>
         )}
         <span className="ml-auto">{formatRelativeTime(item.publishedAt)}</span>
       </div>
