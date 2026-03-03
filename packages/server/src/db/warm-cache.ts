@@ -38,31 +38,31 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
   const tasks = [
     (async () => {
       const weather = await loadWeather(db, cityId);
-      if (weather) cache.set(`${cityId}:weather`, weather, 1800);
+      if (weather) cache.set(`${cityId}:weather`, weather, 2160);      // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} weather failed`, err)),
 
     (async () => {
       const alerts = await loadTransitAlerts(db, cityId);
-      if (alerts) cache.set(`${cityId}:transit:alerts`, alerts, 1200);
+      if (alerts) cache.set(`${cityId}:transit:alerts`, alerts, 1080);  // 15min cron + 20%
     })().catch((err) => log.error(`${cityId} transit failed`, err)),
 
     (async () => {
       const items = await loadEvents(db, cityId);
-      if (items) cache.set(`${cityId}:events:upcoming`, items, 21600);
+      if (items) cache.set(`${cityId}:events:upcoming`, items, 25920);  // 6h cron + 20%
     })().catch((err) => log.error(`${cityId} events failed`, err)),
 
     (async () => {
       const reports = await loadSafetyReports(db, cityId);
-      if (reports) cache.set(`${cityId}:safety:recent`, reports, 900);
+      if (reports) cache.set(`${cityId}:safety:recent`, reports, 720);  // 10min cron + 20%
     })().catch((err) => log.error(`${cityId} safety failed`, err)),
 
     (async () => {
       const items = await loadNewsItems(db, cityId);
       if (items && items.length > 0) {
         const digest = buildDigestFromItems(items);
-        cache.set(`${cityId}:news:digest`, digest, 900);
+        cache.set(`${cityId}:news:digest`, digest, 720);               // 10min cron + 20%
         for (const [cat, catItems] of Object.entries(digest.categories)) {
-          cache.set(`${cityId}:news:${cat}`, catItems, 900);
+          cache.set(`${cityId}:news:${cat}`, catItems, 720);
         }
       }
     })().catch((err) => log.error(`${cityId} news failed`, err)),
@@ -74,22 +74,22 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
 
     (async () => {
       const warnings = await loadNinaWarnings(db, cityId);
-      if (warnings) cache.set(`${cityId}:nina:warnings`, warnings, 600);
+      if (warnings) cache.set(`${cityId}:nina:warnings`, warnings, 360);  // 5min cron + 20%
     })().catch((err) => log.error(`${cityId} nina failed`, err)),
 
     (async () => {
       const grid = await loadAirQualityGrid(db, cityId);
-      if (grid) cache.set(`${cityId}:air-quality:grid`, grid, 1800);
+      if (grid) cache.set(`${cityId}:air-quality:grid`, grid, 2160);   // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} aq grid failed`, err)),
 
     (async () => {
       const waterLevels = await loadWaterLevels(db, cityId);
-      if (waterLevels) cache.set(`${cityId}:water-levels`, waterLevels, 900);
+      if (waterLevels) cache.set(`${cityId}:water-levels`, waterLevels, 1080);  // 15min cron + 20%
     })().catch((err) => log.error(`${cityId} water levels failed`, err)),
 
     (async () => {
       const appointments = await loadAppointments(db, cityId);
-      if (appointments) cache.set(`${cityId}:appointments`, appointments, 21600);
+      if (appointments) cache.set(`${cityId}:appointments`, appointments, 25920);  // 6h cron + 20%
     })().catch((err) => log.error(`${cityId} appointments failed`, err)),
 
     ...(['bezirke', 'bundestag', 'state', 'state-bezirke'] as const).map((level) =>
@@ -106,17 +106,17 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
 
     (async () => {
       const sites = await loadConstructionSites(db, cityId);
-      if (sites) cache.set(`${cityId}:construction:sites`, sites, 1800);
+      if (sites) cache.set(`${cityId}:construction:sites`, sites, 2160);   // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} construction failed`, err)),
 
     (async () => {
       const incidents = await loadTrafficIncidents(db, cityId);
-      if (incidents) cache.set(`${cityId}:traffic:incidents`, incidents, 300);
+      if (incidents) cache.set(`${cityId}:traffic:incidents`, incidents, 360);  // 5min cron + 20%
     })().catch((err) => log.error(`${cityId} traffic failed`, err)),
 
     (async () => {
       const pharmacies = await loadPharmacies(db, cityId);
-      if (pharmacies) cache.set(`${cityId}:pharmacies:emergency`, pharmacies, 21600);
+      if (pharmacies) cache.set(`${cityId}:pharmacies:emergency`, pharmacies, 25920);  // 6h cron + 20%
     })().catch((err) => log.error(`${cityId} pharmacies failed`, err)),
 
     (async () => {

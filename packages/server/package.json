@@ -18,6 +18,7 @@
   "dependencies": {
     "@city-monitor/shared": "*",
     "@langchain/openai": "^1.2.11",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "drizzle-orm": "^0.39",
     "express": "^5",
@@ -29,6 +30,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^5",
     "@types/node-cron": "^3.0.11",

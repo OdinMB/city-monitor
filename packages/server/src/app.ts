@@ -5,6 +5,7 @@
 
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createCache } from './lib/cache.js';
@@ -58,6 +59,7 @@ import { validateCity } from './lib/validate-city.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
   const app = express();
+  app.use(compression());
   app.use(helmet());
 
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://citymonitor.app')

@@ -126,6 +126,7 @@ export const newsItems = pgTable('news_items', {
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [
   index('news_city_idx').on(table.cityId),
+  index('news_city_published_idx').on(table.cityId, table.publishedAt),
   uniqueIndex('news_city_hash_idx').on(table.cityId, table.hash),
 ]);
 

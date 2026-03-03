@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { eq, and, desc, max } from 'drizzle-orm';
+import { eq, and, or, isNull, desc, max } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
   weatherSnapshots,
@@ -140,9 +140,12 @@ export async function loadNewsItems(db: Db, cityId: string): Promise<PersistedNe
   const rows = await db
     .select()
     .from(newsItems)
-    .where(eq(newsItems.cityId, cityId))
+    .where(and(
+      eq(newsItems.cityId, cityId),
+      or(isNull(newsItems.relevantToCity), eq(newsItems.relevantToCity, true)),
+    ))
     .orderBy(desc(newsItems.publishedAt))
-    .limit(500);
+    .limit(200);
 
   if (rows.length === 0) return null;
 
