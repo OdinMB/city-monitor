@@ -8,18 +8,22 @@
  * Modifications:
  * - City-scoped instead of global variant-based
  * - Uses fast-xml-parser instead of regex parsing
- * - Writes to in-memory cache (Postgres persistence added later)
+ * - Persists items to Postgres with LLM assessments
+ * - Only filters genuinely new items through LLM on each run
  * - Simplified concurrency model (batch of 10 vs 20)
  */
 
 import type { CityConfig, FeedConfig } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
-import { parseFeed, type FeedItem } from '../lib/rss-parser.js';
+import type { Db } from '../db/index.js';
+import { saveNewsItems, type PersistedNewsItem } from '../db/writes.js';
+import { loadNewsItems } from '../db/reads.js';
+import { parseFeed } from '../lib/rss-parser.js';
 import { classifyHeadline } from '../lib/classifier.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
-import { filterAndGeolocateNews, type FilteredItem } from '../lib/openai.js';
+import { filterAndGeolocateNews } from '../lib/openai.js';
 
 const log = createLogger('ingest-feeds');
 
@@ -47,12 +51,12 @@ export interface NewsDigest {
   updatedAt: string;
 }
 
-export function createFeedIngestion(cache: Cache) {
+export function createFeedIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestFeeds(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       try {
-        await ingestCityFeeds(city, cache);
+        await ingestCityFeeds(city, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -60,7 +64,7 @@ export function createFeedIngestion(cache: Cache) {
   };
 }
 
-async function ingestCityFeeds(city: CityConfig, cache: Cache): Promise<void> {
+async function ingestCityFeeds(city: CityConfig, cache: Cache, db: Db | null): Promise<void> {
   const deadline = Date.now() + OVERALL_DEADLINE_MS;
   const allItems: NewsItem[] = [];
 
@@ -94,8 +98,61 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache): Promise<void> {
     return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
   });
 
-  // LLM-based relevance filtering + geolocation
-  const filtered = await applyLlmFilter(city, deduped);
+  // Load existing assessments from DB to avoid re-filtering known items
+  const existingAssessments = new Map<string, { relevant: boolean; confidence: number; location?: NewsItem['location'] }>();
+  if (db) {
+    try {
+      const existing = await loadNewsItems(db, city.id);
+      if (existing) {
+        for (const item of existing) {
+          if (item.assessment?.relevant != null) {
+            existingAssessments.set(item.id, {
+              relevant: item.assessment.relevant,
+              confidence: item.assessment.confidence ?? 0,
+              location: item.location,
+            });
+          }
+        }
+      }
+    } catch {
+      // DB read failed — filter everything fresh
+    }
+  }
+
+  // Partition into known (have DB assessment) and new (need LLM filter)
+  const knownItems: PersistedNewsItem[] = [];
+  const newItems: NewsItem[] = [];
+
+  for (const item of deduped) {
+    const stored = existingAssessments.get(item.id);
+    if (stored) {
+      knownItems.push({
+        ...item,
+        location: stored.location ?? item.location,
+        assessment: { relevant: stored.relevant, confidence: stored.confidence },
+      });
+    } else {
+      newItems.push(item);
+    }
+  }
+
+  // LLM-based relevance filtering + geolocation (only for new items)
+  const assessedNewItems = await applyLlmFilter(city, newItems);
+
+  // Merge all items and apply drop logic
+  const allAssessed: PersistedNewsItem[] = [
+    ...knownItems,
+    ...assessedNewItems,
+  ];
+
+  // Re-sort after merge
+  allAssessed.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+  });
+
+  // Apply relevance drop logic to all items
+  const filtered = applyDropLogic(allAssessed);
 
   // Build digest
   const categories: Record<string, NewsItem[]> = {};
@@ -118,10 +175,36 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache): Promise<void> {
     cache.set(`${city.id}:news:${cat}`, items, 900);
   }
 
-  log.info(`${city.id}: ${filtered.length} articles (${deduped.length - filtered.length} filtered) from ${city.feeds.length} feeds`);
+  // Persist all items (including assessments) to DB
+  if (db) {
+    try {
+      await saveNewsItems(db, city.id, allAssessed);
+    } catch (err) {
+      log.error(`${city.id} DB write failed`, err);
+    }
+  }
+
+  const skippedCount = knownItems.length;
+  const newCount = newItems.length;
+  log.info(`${city.id}: ${filtered.length} articles (${skippedCount} from DB, ${newCount} new, ${allAssessed.length - filtered.length} filtered) from ${city.feeds.length} feeds`);
 }
 
-async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<NewsItem[]> {
+/**
+ * Filters out items the LLM assessed as irrelevant.
+ * Shared by ingest-feeds, warm-cache, and the news digest route.
+ */
+export function applyDropLogic(items: PersistedNewsItem[]): NewsItem[] {
+  return items.filter((item) => {
+    const a = item.assessment;
+    if (!a) return true;
+    if (a.relevant === false) return false;
+    return true;
+  });
+}
+
+async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<PersistedNewsItem[]> {
+  if (items.length === 0) return [];
+
   try {
     const result = await filterAndGeolocateNews(
       city.id,
@@ -133,45 +216,36 @@ async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<News
       })),
     );
 
-    if (!result) return items; // Fallback: return all items when OpenAI is unavailable
+    if (!result) {
+      // Fallback: return all items without assessment when OpenAI is unavailable
+      return items.map((item) => ({ ...item }));
+    }
 
-    const filtered: NewsItem[] = [];
+    const assessed: PersistedNewsItem[] = [];
     for (let i = 0; i < items.length; i++) {
       const verdict = result.find((r) => r.index === i);
-      if (!verdict) {
-        // No verdict — keep the item
-        filtered.push(items[i]);
-        continue;
-      }
+      const item: PersistedNewsItem = { ...items[i] };
 
-      // Drop items where LLM is confident they're irrelevant
-      // But keep tier-1 items if confidence is below 0.7 (benefit of the doubt)
-      if (!verdict.relevant && verdict.confidence >= 0.7 && items[i].tier > 1) {
-        continue;
-      }
-      if (!verdict.relevant && verdict.confidence >= 0.9) {
-        continue; // Drop even tier-1 if confidence is very high
-      }
+      if (verdict) {
+        item.assessment = { relevant: verdict.relevant, confidence: verdict.confidence };
 
-      // Attach location if provided
-      if (verdict.lat != null && verdict.lon != null) {
-        items[i] = {
-          ...items[i],
-          location: {
+        // Attach location if provided
+        if (verdict.lat != null && verdict.lon != null) {
+          item.location = {
             lat: verdict.lat,
             lon: verdict.lon,
             label: verdict.locationLabel,
-          },
-        };
+          };
+        }
       }
 
-      filtered.push(items[i]);
+      assessed.push(item);
     }
 
-    return filtered;
+    return assessed;
   } catch (err) {
-    log.error(`${city.id} LLM filter failed, using unfiltered items`, err);
-    return items;
+    log.error(`${city.id} LLM filter failed, returning items without assessment`, err);
+    return items.map((item) => ({ ...item }));
   }
 }
 
@@ -213,7 +287,7 @@ async function fetchAndParseFeed(
     });
 
     return items;
-  } catch (err) {
+  } catch (_err) {
     log.warn(`failed to fetch ${feed.name}`);
     return null;
   }

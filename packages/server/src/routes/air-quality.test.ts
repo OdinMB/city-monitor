@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import type { Server } from 'node:http';
 import { createApp } from '../app.js';
 
@@ -25,16 +25,31 @@ describe('Air Quality API', () => {
   });
 
   afterAll(async () => {
+    vi.restoreAllMocks();
     await new Promise<void>((resolve) => {
       server.close(() => resolve());
     });
   });
 
-  it('GET /api/berlin/air-quality returns null when no data', async () => {
+  it('GET /api/berlin/air-quality returns null when cache is empty and upstream fails', async () => {
+    appContext.cache.delete('berlin:air-quality');
+    // The route has a cache-miss fallback that fetches from Open-Meteo.
+    // Mock fetch so the fallback fails, causing the route to return null.
+    const originalFetch = globalThis.fetch;
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      // Let requests to our own test server through
+      if (url.startsWith(baseUrl)) return originalFetch(input, init);
+      // Block external API calls
+      return Promise.resolve(new Response('', { status: 500 }));
+    });
+
     const res = await fetch(`${baseUrl}/api/berlin/air-quality`);
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body).toBeNull();
+
+    vi.restoreAllMocks();
   });
 
   it('GET /api/berlin/air-quality returns cached data', async () => {

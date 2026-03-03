@@ -19,8 +19,9 @@ export function createPoliticalRouter(cache: Cache) {
     }
 
     const level = req.params.level;
-    if (level !== 'bundestag' && level !== 'state') {
-      res.status(400).json({ error: 'Invalid level. Use "bundestag" or "state".' });
+    const VALID_LEVELS = ['bundestag', 'state', 'bezirke', 'state-bezirke'];
+    if (!VALID_LEVELS.includes(level)) {
+      res.status(400).json({ error: `Invalid level. Use one of: ${VALID_LEVELS.join(', ')}` });
       return;
     }
 

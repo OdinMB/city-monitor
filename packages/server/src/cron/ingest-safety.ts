@@ -6,6 +6,7 @@
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveSafetyReports } from '../db/writes.js';
+import { loadSafetyReports } from '../db/reads.js';
 import { parseFeed } from '../lib/rss-parser.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
@@ -68,25 +69,45 @@ async function ingestCitySafety(cityId: string, cityName: string, feedUrl: strin
     district: extractDistrict(item.title),
   }));
 
-  // LLM geolocation for police reports
-  try {
-    const geoResults = await geolocateReports(
-      cityId,
-      cityName,
-      reports.map((r) => ({ title: r.title, description: r.description })),
-    );
-    if (geoResults) {
-      for (const geo of geoResults) {
-        if (geo.lat != null && geo.lon != null && reports[geo.index]) {
-          reports[geo.index] = {
-            ...reports[geo.index],
-            location: { lat: geo.lat, lon: geo.lon, label: geo.locationLabel },
-          };
+  // Carry over coordinates from DB for already-geocoded items
+  const existingCoords = new Map<string, SafetyReport['location']>();
+  if (db) {
+    try {
+      const existing = await loadSafetyReports(db, cityId);
+      if (existing) {
+        for (const r of existing) {
+          if (r.location) existingCoords.set(r.id, r.location);
         }
       }
+    } catch {
+      // DB read failed — geocode everything fresh
     }
-  } catch (err) {
-    log.warn(`${cityId} geolocation failed, continuing without`);
+  }
+
+  for (const report of reports) {
+    const stored = existingCoords.get(report.id);
+    if (stored) report.location = stored;
+  }
+
+  // LLM geolocation only for items without coordinates
+  const needsGeo = reports.filter((r) => !r.location);
+  if (needsGeo.length > 0) {
+    try {
+      const geoResults = await geolocateReports(
+        cityId,
+        cityName,
+        needsGeo.map((r) => ({ title: r.title, description: r.description })),
+      );
+      if (geoResults) {
+        for (const geo of geoResults) {
+          if (geo.lat != null && geo.lon != null && needsGeo[geo.index]) {
+            needsGeo[geo.index].location = { lat: geo.lat, lon: geo.lon, label: geo.locationLabel };
+          }
+        }
+      }
+    } catch (_err) {
+      log.warn(`${cityId} geolocation failed, continuing without`);
+    }
   }
 
   // Sort by most recent first

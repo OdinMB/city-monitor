@@ -6,10 +6,10 @@
 import { Router } from 'express';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
-import { loadSummary } from '../db/reads.js';
+import { loadSummary, loadNewsItems } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
-import type { NewsDigest } from '../cron/ingest-feeds.js';
+import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import type { NewsSummary } from '../cron/summarize.js';
 
 const log = createLogger('route:news');
@@ -17,7 +17,7 @@ const log = createLogger('route:news');
 export function createNewsRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
 
-  router.get('/:city/news/digest', (req, res) => {
+  router.get('/:city/news/digest', async (req, res) => {
     const city = getCityConfig(req.params.city);
     if (!city) {
       res.status(404).json({ error: 'City not found' });
@@ -25,12 +25,33 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
     }
 
     const digest = cache.get<NewsDigest>(`${city.id}:news:digest`);
-    if (!digest) {
-      res.json({ items: [], categories: {}, updatedAt: null });
+    if (digest) {
+      res.json(digest);
       return;
     }
 
-    res.json(digest);
+    // DB fallback when cache is cold
+    if (db) {
+      try {
+        const items = await loadNewsItems(db, city.id);
+        if (items && items.length > 0) {
+          const filtered = applyDropLogic(items);
+
+          const categories: Record<string, NewsItem[]> = {};
+          for (const item of filtered) {
+            if (!categories[item.category]) categories[item.category] = [];
+            categories[item.category]!.push(item);
+          }
+
+          res.json({ items: filtered, categories, updatedAt: new Date().toISOString() });
+          return;
+        }
+      } catch (err) {
+        log.error(`${city.id} DB read failed`, err);
+      }
+    }
+
+    res.json({ items: [], categories: {}, updatedAt: null });
   });
 
   router.get('/:city/news/summary', async (req, res) => {
