@@ -1,15 +1,6 @@
 /**
- * Keyword-based news headline classifier for city categories.
- *
- * Adapted from World Monitor (AGPL-3.0)
- * Original: server/worldmonitor/news/v1/_classifier.ts
- * Copyright (C) 2024-2026 Elie Habib
- *
- * Modifications:
- * - Replaced global threat categories with city-level categories
- * - German keywords for Berlin-specific classification
- * - Simplified from 5 threat levels to 2 confidence tiers (high/medium)
- * - Kept word-boundary matching for short ambiguous terms
+ * Copyright (C) 2026 Odin Mühlenbein
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
 export type CityCategory =
@@ -27,82 +18,108 @@ export interface ClassificationResult {
   confidence: number;
 }
 
-interface KeywordTier {
-  high: string[];
-  medium: string[];
+interface Rule {
+  pattern: RegExp;
+  category: CityCategory;
+  confidence: number;
 }
 
-const BERLIN_KEYWORDS: Record<CityCategory, KeywordTier> = {
-  transit: {
-    high: ['Sperrung', 'Störung', 'Ausfall', 'BVG', 'S-Bahn', 'U-Bahn', 'Verspätung', 'gesperrt'],
-    medium: ['Baustelle', 'Umleitung', 'Tram', 'Ringbahn'],
-  },
-  crime: {
-    high: ['Mord', 'Überfall', 'Festnahme', 'Messerangriff', 'Schießerei'],
-    medium: ['Diebstahl', 'Einbruch', 'Polizei', 'Razzia', 'Verdächtig'],
-  },
-  politics: {
-    high: ['Senat', 'Abgeordnetenhaus', 'Bezirksbürgermeister'],
-    medium: ['Wahl', 'Koalition', 'Protest', 'Demo', 'Bezirk', 'Bürgermeister'],
-  },
-  culture: {
-    high: ['Berlinale', 'Museumsinsel', 'Philharmonie'],
-    medium: ['Ausstellung', 'Konzert', 'Festival', 'Theater', 'Galerie', 'Kino'],
-  },
-  weather: {
-    high: ['Unwetter', 'Hitzewelle', 'Sturm', 'Hochwasser'],
-    medium: ['Regen', 'Schnee', 'Gewitter', 'Temperatur'],
-  },
-  economy: {
-    high: ['Insolvenz', 'Startup', 'Ansiedlung'],
-    medium: ['Arbeitsmarkt', 'Miete', 'Immobilien', 'Wirtschaft'],
-  },
-  sports: {
-    high: ['Hertha', 'Union Berlin', 'Alba Berlin', 'Eisbären'],
-    medium: ['Bundesliga', 'Olympiastadion', 'Marathon'],
-  },
-  local: { high: [], medium: [] },
-};
+/**
+ * Flat rule list ordered by priority (first match wins).
+ * High-confidence rules come first, then medium-confidence.
+ * Short/ambiguous terms use word-boundary anchors (\b).
+ */
+const RULES: Rule[] = [
+  // -- High confidence (0.85) --
+  // Transit
+  { pattern: /Sperrung/i, category: 'transit', confidence: 0.85 },
+  { pattern: /Störung/i, category: 'transit', confidence: 0.85 },
+  { pattern: /Ausfall/i, category: 'transit', confidence: 0.85 },
+  { pattern: /\bBVG\b/i, category: 'transit', confidence: 0.85 },
+  { pattern: /S-Bahn/i, category: 'transit', confidence: 0.85 },
+  { pattern: /U-Bahn/i, category: 'transit', confidence: 0.85 },
+  { pattern: /Verspätung/i, category: 'transit', confidence: 0.85 },
+  { pattern: /gesperrt/i, category: 'transit', confidence: 0.85 },
+  // Crime
+  { pattern: /\bMord\b/i, category: 'crime', confidence: 0.85 },
+  { pattern: /Überfall/i, category: 'crime', confidence: 0.85 },
+  { pattern: /Festnahme/i, category: 'crime', confidence: 0.85 },
+  { pattern: /Messerangriff/i, category: 'crime', confidence: 0.85 },
+  { pattern: /Schießerei/i, category: 'crime', confidence: 0.85 },
+  // Politics
+  { pattern: /Senat/i, category: 'politics', confidence: 0.85 },
+  { pattern: /Abgeordnetenhaus/i, category: 'politics', confidence: 0.85 },
+  { pattern: /Bezirksbürgermeister/i, category: 'politics', confidence: 0.85 },
+  // Culture
+  { pattern: /Berlinale/i, category: 'culture', confidence: 0.85 },
+  { pattern: /Museumsinsel/i, category: 'culture', confidence: 0.85 },
+  { pattern: /Philharmonie/i, category: 'culture', confidence: 0.85 },
+  // Weather
+  { pattern: /Unwetter/i, category: 'weather', confidence: 0.85 },
+  { pattern: /Hitzewelle/i, category: 'weather', confidence: 0.85 },
+  { pattern: /Sturm/i, category: 'weather', confidence: 0.85 },
+  { pattern: /Hochwasser/i, category: 'weather', confidence: 0.85 },
+  // Economy
+  { pattern: /Insolvenz/i, category: 'economy', confidence: 0.85 },
+  { pattern: /Startup/i, category: 'economy', confidence: 0.85 },
+  { pattern: /Ansiedlung/i, category: 'economy', confidence: 0.85 },
+  // Sports
+  { pattern: /Hertha/i, category: 'sports', confidence: 0.85 },
+  { pattern: /Union Berlin/i, category: 'sports', confidence: 0.85 },
+  { pattern: /Alba Berlin/i, category: 'sports', confidence: 0.85 },
+  { pattern: /Eisbären/i, category: 'sports', confidence: 0.85 },
 
-const SHORT_KEYWORDS = new Set(['BVG', 'Demo', 'Mord', 'Wahl', 'Kino', 'Tram']);
+  // -- Medium confidence (0.6) --
+  // Transit
+  { pattern: /Baustelle/i, category: 'transit', confidence: 0.6 },
+  { pattern: /Umleitung/i, category: 'transit', confidence: 0.6 },
+  { pattern: /\bTram\b/i, category: 'transit', confidence: 0.6 },
+  { pattern: /Ringbahn/i, category: 'transit', confidence: 0.6 },
+  // Crime
+  { pattern: /Diebstahl/i, category: 'crime', confidence: 0.6 },
+  { pattern: /Einbruch/i, category: 'crime', confidence: 0.6 },
+  { pattern: /Polizei/i, category: 'crime', confidence: 0.6 },
+  { pattern: /Razzia/i, category: 'crime', confidence: 0.6 },
+  { pattern: /Verdächtig/i, category: 'crime', confidence: 0.6 },
+  // Politics
+  { pattern: /\bWahl\b/i, category: 'politics', confidence: 0.6 },
+  { pattern: /Koalition/i, category: 'politics', confidence: 0.6 },
+  { pattern: /Protest/i, category: 'politics', confidence: 0.6 },
+  { pattern: /\bDemo\b/i, category: 'politics', confidence: 0.6 },
+  { pattern: /Bezirk/i, category: 'politics', confidence: 0.6 },
+  { pattern: /Bürgermeister/i, category: 'politics', confidence: 0.6 },
+  // Culture
+  { pattern: /Ausstellung/i, category: 'culture', confidence: 0.6 },
+  { pattern: /Konzert/i, category: 'culture', confidence: 0.6 },
+  { pattern: /Festival/i, category: 'culture', confidence: 0.6 },
+  { pattern: /Theater/i, category: 'culture', confidence: 0.6 },
+  { pattern: /Galerie/i, category: 'culture', confidence: 0.6 },
+  { pattern: /\bKino\b/i, category: 'culture', confidence: 0.6 },
+  // Weather
+  { pattern: /Regen/i, category: 'weather', confidence: 0.6 },
+  { pattern: /Schnee/i, category: 'weather', confidence: 0.6 },
+  { pattern: /Gewitter/i, category: 'weather', confidence: 0.6 },
+  { pattern: /Temperatur/i, category: 'weather', confidence: 0.6 },
+  // Economy
+  { pattern: /Arbeitsmarkt/i, category: 'economy', confidence: 0.6 },
+  { pattern: /Miete/i, category: 'economy', confidence: 0.6 },
+  { pattern: /Immobilien/i, category: 'economy', confidence: 0.6 },
+  { pattern: /Wirtschaft/i, category: 'economy', confidence: 0.6 },
+  // Sports
+  { pattern: /Bundesliga/i, category: 'sports', confidence: 0.6 },
+  { pattern: /Olympiastadion/i, category: 'sports', confidence: 0.6 },
+  { pattern: /Marathon/i, category: 'sports', confidence: 0.6 },
+];
 
-const keywordRegexCache = new Map<string, RegExp>();
-
-function getKeywordRegex(kw: string): RegExp {
-  let re = keywordRegexCache.get(kw);
-  if (!re) {
-    const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    re = SHORT_KEYWORDS.has(kw)
-      ? new RegExp(`\\b${escaped}\\b`, 'i')
-      : new RegExp(escaped, 'i');
-    keywordRegexCache.set(kw, re);
-  }
-  return re;
-}
-
+/** Classify a news headline into a city category. First matching rule wins. */
 export function classifyHeadline(
   title: string,
   _cityId: string,
 ): ClassificationResult {
-  const keywords = BERLIN_KEYWORDS; // TODO: per-city keyword maps when multi-city
-
-  // Check high-confidence keywords first
-  for (const [category, tier] of Object.entries(keywords) as [CityCategory, KeywordTier][]) {
-    for (const kw of tier.high) {
-      if (getKeywordRegex(kw).test(title)) {
-        return { category, confidence: 0.85 };
-      }
+  for (const rule of RULES) {
+    if (rule.pattern.test(title)) {
+      return { category: rule.category, confidence: rule.confidence };
     }
   }
-
-  // Then medium-confidence
-  for (const [category, tier] of Object.entries(keywords) as [CityCategory, KeywordTier][]) {
-    for (const kw of tier.medium) {
-      if (getKeywordRegex(kw).test(title)) {
-        return { category, confidence: 0.6 };
-      }
-    }
-  }
-
   return { category: 'local', confidence: 0.3 };
 }
