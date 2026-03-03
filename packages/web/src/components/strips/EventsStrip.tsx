@@ -221,8 +221,8 @@ export function EventsStrip() {
         <p className="text-sm text-gray-400 py-1 text-center">{t('panel.events.empty')}</p>
       ) : (
         <div className="space-y-1.5">
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} lang={i18n.language} t={t} />
+          {events.map((event, i) => (
+            <EventCard key={`${event.id}-${i}`} event={event} lang={i18n.language} t={t} />
           ))}
         </div>
       )}

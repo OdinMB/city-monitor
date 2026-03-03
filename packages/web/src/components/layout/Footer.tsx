@@ -26,6 +26,14 @@ export function Footer() {
       >
         {t('footer.basedOn')}
       </a>
+      <a
+        href="https://openweathermap.org/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:underline"
+      >
+        {t('footer.weatherTiles')}
+      </a>
       <span>{t('footer.license')}</span>
     </footer>
   );
