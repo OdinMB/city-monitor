@@ -57,7 +57,7 @@ export function NinaBanner() {
   if (active.length === 0) return null;
 
   return (
-    <div className="space-y-2 mb-4">
+    <div className="space-y-2 mb-4" aria-live="polite">
       {active.map((warning) => (
         <NinaWarningCard key={warning.id} warning={warning} onDismiss={dismiss} />
       ))}

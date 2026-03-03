@@ -5,7 +5,7 @@
 
 export function Skeleton({ lines = 3 }: { lines?: number }) {
   return (
-    <div data-testid="skeleton" className="space-y-3 animate-pulse">
+    <div data-testid="skeleton" className="space-y-3 animate-pulse" aria-hidden="true">
       {Array.from({ length: lines }, (_, i) => (
         <div
           key={i}
