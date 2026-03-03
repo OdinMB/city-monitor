@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTransit } from '../../hooks/useTransit.js';
@@ -27,7 +28,7 @@ function getSeverityDot(severity: TransitAlert['severity']): string {
   return 'bg-gray-400';
 }
 
-function AlertRow({ alert }: { alert: TransitAlert }) {
+const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
   return (
     <div className="flex items-start gap-2 py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
       <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${getSeverityDot(alert.severity)}`} />
@@ -43,7 +44,7 @@ function AlertRow({ alert }: { alert: TransitAlert }) {
       </p>
     </div>
   );
-}
+});
 
 export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();

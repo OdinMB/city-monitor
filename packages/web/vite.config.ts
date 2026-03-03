@@ -59,6 +59,15 @@ export default defineConfig({
   ],
   build: {
     target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'maplibre': ['maplibre-gl'],
+          'react-vendor': ['react', 'react-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+        },
+      },
+    },
   },
   optimizeDeps: {
     esbuildOptions: {

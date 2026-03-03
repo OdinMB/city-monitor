@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBathing } from '../../hooks/useBathing.js';
@@ -17,7 +18,7 @@ const QUALITY_COLORS: Record<string, string> = {
 
 const SLOTS = 7;
 
-function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: string) => string }) {
+const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: string) => string }) {
   const color = QUALITY_COLORS[spot.quality] ?? QUALITY_COLORS.good;
 
   return (
@@ -52,7 +53,7 @@ function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: string) => string }) {
       </div>
     </div>
   );
-}
+});
 
 export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   const { id: cityId } = useCityConfig();
@@ -67,23 +68,26 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
     return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.bathing.empty')}</p>;
   }
 
-  // Separate by quality
-  const flagged = data.filter((s) => s.quality === 'warning' || s.quality === 'poor');
-  const good = data
-    .filter((s) => s.quality === 'good')
-    .sort((a, b) => (b.waterTemp ?? -Infinity) - (a.waterTemp ?? -Infinity));
+  const { goodDisplay, warnDisplay, goodCount, warnCount, poorCount } = useMemo(() => {
+    // Separate by quality
+    const flagged = data.filter((s) => s.quality === 'warning' || s.quality === 'poor');
+    const good = data
+      .filter((s) => s.quality === 'good')
+      .sort((a, b) => (b.waterTemp ?? -Infinity) - (a.waterTemp ?? -Infinity));
 
-  // Fill slots: warnings first, then good to fill remaining
-  const goodSlots = Math.max(0, SLOTS - flagged.length);
-  const selected = [...flagged, ...good.slice(0, goodSlots)];
+    // Fill slots: warnings first, then good to fill remaining
+    const goodSlots = Math.max(0, SLOTS - flagged.length);
+    const selected = [...flagged, ...good.slice(0, goodSlots)];
 
-  // Display order: good first, then warnings
-  const goodDisplay = selected.filter((s) => s.quality === 'good');
-  const warnDisplay = selected.filter((s) => s.quality !== 'good');
-
-  const goodCount = data.filter((s) => s.quality === 'good').length;
-  const warnCount = data.filter((s) => s.quality === 'warning').length;
-  const poorCount = data.filter((s) => s.quality === 'poor').length;
+    return {
+      // Display order: good first, then warnings
+      goodDisplay: selected.filter((s) => s.quality === 'good'),
+      warnDisplay: selected.filter((s) => s.quality !== 'good'),
+      goodCount: data.filter((s) => s.quality === 'good').length,
+      warnCount: data.filter((s) => s.quality === 'warning').length,
+      poorCount: data.filter((s) => s.quality === 'poor').length,
+    };
+  }, [data]);
 
   return (
     <div className="space-y-3">

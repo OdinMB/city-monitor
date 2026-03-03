@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
@@ -65,7 +66,7 @@ interface PollutantCardProps {
   color: string;
 }
 
-function PollutantCard({ label, value, max, color }: PollutantCardProps) {
+const PollutantCard = memo(function PollutantCard({ label, value, max, color }: PollutantCardProps) {
   const pct = Math.min((value / max) * 100, 100);
   return (
     <div className="min-w-0">
@@ -84,11 +85,11 @@ function PollutantCard({ label, value, max, color }: PollutantCardProps) {
       </div>
     </div>
   );
-}
+});
 
 /* ── Station row ──────────────────────────────────────────── */
 
-function StationEntry({ name, aqi }: { name: string; aqi: number }) {
+const StationEntry = memo(function StationEntry({ name, aqi }: { name: string; aqi: number }) {
   const level = getAqiLevel(aqi);
   return (
     <div className="flex items-center gap-1.5 min-w-0">
@@ -99,7 +100,7 @@ function StationEntry({ name, aqi }: { name: string; aqi: number }) {
       </span>
     </div>
   );
-}
+});
 
 /* ── Main component ───────────────────────────────────────── */
 
@@ -119,10 +120,13 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
   const aqiValue = Math.round(data.current.europeanAqi);
 
   // Filter to WAQI stations (have aqicn.org URL), sort by name for stable order, take 8
-  const stations = (gridData ?? [])
-    .filter((s) => s.url?.includes('aqicn.org'))
-    .sort((a, b) => a.station.localeCompare(b.station))
-    .slice(0, 8);
+  const stations = useMemo(
+    () => (gridData ?? [])
+      .filter((s) => s.url?.includes('aqicn.org'))
+      .sort((a, b) => a.station.localeCompare(b.station))
+      .slice(0, 8),
+    [gridData],
+  );
 
   return (
     <>

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWastewater } from '../../hooks/useWastewater.js';
@@ -49,7 +50,7 @@ function formatWeekLabel(date: Date): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-function Sparkline({ data, color, sampleDate, label }: { data: number[]; color: string; sampleDate: string; label: string }) {
+const Sparkline = memo(function Sparkline({ data, color, sampleDate, label }: { data: number[]; color: string; sampleDate: string; label: string }) {
   if (data.length < 2) return null;
 
   const max = Math.max(...data);
@@ -80,7 +81,7 @@ function Sparkline({ data, color, sampleDate, label }: { data: number[]; color: 
       </div>
     </div>
   );
-}
+});
 
 export function WastewaterStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();

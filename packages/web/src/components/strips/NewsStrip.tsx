@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
@@ -49,24 +49,37 @@ export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand:
 
   const items = data?.items ?? [];
 
-  const visibleItems = items.filter((item) => !HIDDEN_CATEGORIES.has(item.category));
+  const visibleItems = useMemo(
+    () => items.filter((item) => !HIDDEN_CATEGORIES.has(item.category)),
+    [items],
+  );
 
   const hasActiveCategory = activeCategory === 'all' || visibleItems.some((item) => item.category === activeCategory);
   const resolvedCategory = hasActiveCategory ? activeCategory : 'all';
-  const filteredItems = resolvedCategory === 'all'
-    ? visibleItems.slice(0, MAX_ITEMS)
-    : visibleItems.filter((item) => item.category === resolvedCategory).slice(0, MAX_ITEMS);
 
-  const availableCategories = ALL_CATEGORIES.filter(
-    (cat) => cat === 'all' || items.some((item) => item.category === cat && !HIDDEN_CATEGORIES.has(cat)),
+  const filteredItems = useMemo(
+    () => resolvedCategory === 'all'
+      ? visibleItems.slice(0, MAX_ITEMS)
+      : visibleItems.filter((item) => item.category === resolvedCategory).slice(0, MAX_ITEMS),
+    [visibleItems, resolvedCategory],
   );
 
-  const categoryCounts: Record<string, number> = {};
-  for (const item of items) {
-    if (!HIDDEN_CATEGORIES.has(item.category)) {
-      categoryCounts[item.category] = (categoryCounts[item.category] ?? 0) + 1;
+  const availableCategories = useMemo(
+    () => ALL_CATEGORIES.filter(
+      (cat) => cat === 'all' || items.some((item) => item.category === cat && !HIDDEN_CATEGORIES.has(cat)),
+    ),
+    [items],
+  );
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of items) {
+      if (!HIDDEN_CATEGORIES.has(item.category)) {
+        counts[item.category] = (counts[item.category] ?? 0) + 1;
+      }
     }
-  }
+    return counts;
+  }, [items]);
 
   const activeIndex = (availableCategories as readonly string[]).indexOf(resolvedCategory);
   const selectByIndex = useCallback((i: number) => setActiveCategory(availableCategories[i] as string), [availableCategories]);
@@ -129,7 +142,7 @@ export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand:
   );
 }
 
-function CompactNewsItem({ item }: { item: NewsItem }) {
+const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem }) {
   const { t } = useTranslation();
   const colorClass = CATEGORY_COLORS[item.category] ?? CATEGORY_COLORS.local;
   const domain = FAVICON_DOMAINS[item.sourceName];
@@ -160,4 +173,4 @@ function CompactNewsItem({ item }: { item: NewsItem }) {
       </div>
     </li>
   );
-}
+});

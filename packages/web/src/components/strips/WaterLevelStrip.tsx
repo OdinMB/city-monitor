@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
@@ -21,7 +22,7 @@ function getCharValue(station: WaterLevelStation, shortname: string): number | u
   return station.characteristicValues?.find((c) => c.shortname === shortname)?.value;
 }
 
-function StationRow({ station, t }: { station: WaterLevelStation; t: (k: string) => string }) {
+const StationRow = memo(function StationRow({ station, t }: { station: WaterLevelStation; t: (k: string) => string }) {
   const color = STATE_COLORS[station.state] ?? STATE_COLORS.unknown;
   const stateKey = station.state === 'very_high' ? 'veryHigh' : (station.state ?? 'unknown');
 
@@ -56,7 +57,7 @@ function StationRow({ station, t }: { station: WaterLevelStation; t: (k: string)
       </div>
     </div>
   );
-}
+});
 
 export function WaterLevelStrip() {
   const { id: cityId } = useCityConfig();

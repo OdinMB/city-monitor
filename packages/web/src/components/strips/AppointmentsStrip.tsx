@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAppointments } from '../../hooks/useAppointments.js';
@@ -23,7 +24,7 @@ function daysUntil(isoDate: string): number {
   return Math.max(0, Math.round((target.getTime() - now.getTime()) / 86_400_000));
 }
 
-function ServiceRow({ service, t }: { service: BuergeramtService; t: (k: string, opts?: Record<string, unknown>) => string }) {
+const ServiceRow = memo(function ServiceRow({ service, t }: { service: BuergeramtService; t: (k: string, opts?: Record<string, unknown>) => string }) {
   const color = STATUS_COLORS[service.status];
   const statusKey = service.status;
   const days = service.earliestDate ? daysUntil(service.earliestDate) : null;
@@ -53,7 +54,7 @@ function ServiceRow({ service, t }: { service: BuergeramtService; t: (k: string,
       </span>
     </div>
   );
-}
+});
 
 const STATUS_PRIORITY: Record<string, number> = { none: 0, scarce: 1, unknown: 2, available: 3 };
 const COLLAPSED_SERVICES = 5;

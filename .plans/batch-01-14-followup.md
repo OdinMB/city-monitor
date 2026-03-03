@@ -16,3 +16,4 @@ _(Files that should be removed after user confirmation)_
 
 - **Plan 03 (Security):** Skipped Zod schemas for external API response validation (Open-Meteo, WAQI, VBB, VIZ, PEGELONLINE). This is a defensive hardening measure that touches all 15+ cron files. Consider doing this as a separate follow-up task.
 - **Plan 04 (Backend Performance):** Skipped batch geocoding optimization. Requires adding `p-limit` dependency and reworking geocode call sites in news and safety ingestion. Consider as a separate follow-up task.
+- **Plan 05 (Frontend Performance):** Skipped CityMap split into sub-components (MapContainer, useMapLayers, useMapPopups, useMapStyle). This is a large refactor that improves maintainability but not runtime performance. Consider as a separate task. Also skipped bundle visualizer dev dependency.
