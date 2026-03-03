@@ -20,6 +20,7 @@ import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
 import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
 import { BudgetStrip } from '../strips/BudgetStrip.js';
+import { SocialAtlasStrip } from '../strips/SocialAtlasStrip.js';
 import { Skeleton } from './Skeleton.js';
 
 const CityMap = lazy(() =>
@@ -74,11 +75,32 @@ export function CommandLayout() {
           <Tile title={t('panel.appointments.title')} span={1}>
             <AppointmentsStrip />
           </Tile>
+          <Tile title={t('panel.socialAtlas.title')} span={1}>
+            <SocialAtlasStrip />
+          </Tile>
           <Tile title={t('panel.budget.title')} span={2}>
             <BudgetStrip />
           </Tile>
           <Tile title={t('sidebar.layers.political')} span={2} expandable>
             {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+          <Tile title={t('support.title')} span={1}>
+            <div className="flex flex-col items-center text-center py-2">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="text-pink-500 dark:text-pink-400 mb-3" aria-hidden="true">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+              <p className="text-base font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
+                {t('support.message')}
+              </p>
+              <a
+                href="https://ko-fi.com/OdinMB"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-full bg-pink-50 dark:bg-pink-950/40 px-4 py-2 text-sm font-semibold text-pink-600 dark:text-pink-400 transition-colors hover:bg-pink-100 dark:hover:bg-pink-950/60"
+              >
+                {t('support.cta')}
+              </a>
+            </div>
           </Tile>
         </DashboardGrid>
       </div>
