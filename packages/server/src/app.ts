@@ -56,6 +56,7 @@ import { validateCity } from './lib/validate-city.js';
 
 export async function createApp(options?: { skipScheduler?: boolean }) {
   const app = express();
+  app.set('trust proxy', 1); // Render reverse proxy
   app.use(compression());
   app.use(helmet());
 

@@ -234,8 +234,10 @@ export async function saveNewsItems(db: Db, cityId: string, items: PersistedNews
 
 export async function saveEvents(db: Db, cityId: string, _source: string, items: CityEvent[]): Promise<void> {
   if (items.length === 0) return;
+  // Deduplicate by event id to avoid ON CONFLICT hitting the same row twice
+  const unique = [...new Map(items.map((e) => [e.id, e])).values()];
   await db.insert(events).values(
-    items.map((e) => ({
+    unique.map((e) => ({
       cityId,
       title: e.title,
       venue: e.venue ?? null,
