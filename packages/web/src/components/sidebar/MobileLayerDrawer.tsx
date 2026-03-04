@@ -60,7 +60,7 @@ export function MobileLayerDrawer() {
   }, [open, close]);
 
   return (
-    <div className="absolute inset-y-0 left-0 z-40 lg:hidden pointer-events-none">
+    <div className="absolute inset-0 z-40 lg:hidden pointer-events-none">
       {/* Backdrop */}
       {progress > 0 && (
         <div
