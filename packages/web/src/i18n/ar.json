@@ -156,6 +156,17 @@
       "densityLabel": "الكثافة",
       "german": "الجنسية الألمانية"
     },
+    "feuerwehr": {
+      "title": "الإطفاء",
+      "missions": "المهام",
+      "emsResponseTime": "الإسعاف",
+      "fireResponseTime": "الإطفاء",
+      "ems": "إسعاف",
+      "fire": "حريق",
+      "technicalRescue": "إنقاذ تقني",
+      "partial": "جزئي",
+      "empty": "لا تتوفر بيانات"
+    },
     "laborMarket": {
       "title": "البطالة",
       "unemployment": "معدل البطالة",
@@ -196,6 +207,29 @@
       "vsNormal": "مقابل {{diff}} طبيعي",
       "empty": "لا توجد بيانات مناسيب"
     },
+    "crisis": {
+      "title": "خدمات الأزمات",
+      "tab": {
+        "citywide": "على مستوى المدينة",
+        "local": "محلي"
+      },
+      "hours24_7": "24/7",
+      "hoursDaily": "يومياً 16–0",
+      "hoursMoSa": "إثنين–سبت 14–20",
+      "showMore": "{{count}} أخرى",
+      "localNote": "Berliner Krisendienst — 9 مكاتب إقليمية للدعم النفسي الفوري في الأزمات. يومياً 16–0 · غرف الطوارئ النفسية خارج هذه الأوقات.",
+      "service": {
+        "telefonSeelsorge": "خط الأزمات",
+        "krisendienst": "خدمة أزمات برلين",
+        "bigHotline": "خط العنف الأسري",
+        "kindernotdienst": "خدمة طوارئ الأطفال",
+        "jugendnotdienst": "خدمة طوارئ الشباب",
+        "kinderJugendtelefon": "خط مساعدة الأطفال/الشباب",
+        "drogennotdienst": "خدمة طوارئ المخدرات",
+        "maneo": "مكافحة العنف (مجتمع الميم)",
+        "schwulenberatung": "استشارات مجتمع الميم"
+      }
+    },
     "bathing": {
       "title": "مياه السباحة",
       "empty": "لا توجد بيانات سباحة",
@@ -229,6 +263,9 @@
     "community": "مجتمع",
     "other": "أخرى",
     "museum": "متحف"
+  },
+  "stale": {
+    "updated": "تم التحديث {{time}}"
   },
   "time": {
     "justNow": "الآن",

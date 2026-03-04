@@ -156,6 +156,17 @@
       "densityLabel": "Density",
       "german": "German nationality"
     },
+    "feuerwehr": {
+      "title": "Fire Department",
+      "missions": "Missions",
+      "emsResponseTime": "EMS Response",
+      "fireResponseTime": "Fire Response",
+      "ems": "EMS",
+      "fire": "Fire",
+      "technicalRescue": "Tech. Rescue",
+      "partial": "partial",
+      "empty": "No data available"
+    },
     "laborMarket": {
       "title": "Unemployment",
       "unemployment": "Unemployment",
@@ -196,6 +207,29 @@
         "high": "High"
       }
     },
+    "crisis": {
+      "title": "Crisis Services",
+      "tab": {
+        "citywide": "City-wide",
+        "local": "Local"
+      },
+      "hours24_7": "24/7",
+      "hoursDaily": "daily 4pm–12am",
+      "hoursMoSa": "Mon–Sat 2–8pm",
+      "showMore": "{{count}} more",
+      "localNote": "Berliner Krisendienst — 9 regional offices for immediate psychiatric crisis support. Daily 4pm–12am · Psychiatric emergency rooms outside these hours.",
+      "service": {
+        "telefonSeelsorge": "Crisis Helpline",
+        "krisendienst": "Berlin Crisis Service",
+        "bigHotline": "Domestic Violence Hotline",
+        "kindernotdienst": "Child Emergency Service",
+        "jugendnotdienst": "Youth Emergency Service",
+        "kinderJugendtelefon": "Children/Youth Helpline",
+        "drogennotdienst": "Drug Emergency Service",
+        "maneo": "Anti-Violence (LGBTQ+)",
+        "schwulenberatung": "LGBTQ+ Counseling"
+      }
+    },
     "bathing": {
       "title": "Bathing Water",
       "empty": "No bathing data",
@@ -229,6 +263,9 @@
     "community": "Community",
     "other": "Other",
     "museum": "Museum"
+  },
+  "stale": {
+    "updated": "Updated {{time}}"
   },
   "time": {
     "justNow": "just now",

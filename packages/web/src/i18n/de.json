@@ -156,6 +156,17 @@
       "densityLabel": "Dichte",
       "german": "Deutsche Staatsangehörigkeit"
     },
+    "feuerwehr": {
+      "title": "Feuerwehr",
+      "missions": "Einsätze",
+      "emsResponseTime": "Rettungsdienst",
+      "fireResponseTime": "Brandbekämpfung",
+      "ems": "Rettungsdienst",
+      "fire": "Brand",
+      "technicalRescue": "Techn. Hilfe",
+      "partial": "laufend",
+      "empty": "Keine Daten verfügbar"
+    },
     "laborMarket": {
       "title": "Arbeitslosigkeit",
       "unemployment": "Arbeitslosenquote",
@@ -196,6 +207,29 @@
       "vsNormal": "gg. {{diff}} normal",
       "empty": "Keine Pegeldaten"
     },
+    "crisis": {
+      "title": "Krisendienste",
+      "tab": {
+        "citywide": "Stadtweit",
+        "local": "Lokal"
+      },
+      "hours24_7": "24/7",
+      "hoursDaily": "tägl. 16–0 Uhr",
+      "hoursMoSa": "Mo–Sa 14–20",
+      "showMore": "{{count}} weitere",
+      "localNote": "Berliner Krisendienst — 9 regionale Anlaufstellen für psychiatrische Soforthilfe. Täglich 16–0 Uhr · Psychiatrische Notaufnahmen außerhalb der Zeiten.",
+      "service": {
+        "telefonSeelsorge": "TelefonSeelsorge",
+        "krisendienst": "Berliner Krisendienst",
+        "bigHotline": "BIG Hotline (häusl. Gewalt)",
+        "kindernotdienst": "Kindernotdienst",
+        "jugendnotdienst": "Jugendnotdienst",
+        "kinderJugendtelefon": "Kinder-/Jugendtelefon",
+        "drogennotdienst": "Drogennotdienst",
+        "maneo": "Maneo (Anti-Gewalt)",
+        "schwulenberatung": "Schwulenberatung"
+      }
+    },
     "bathing": {
       "title": "Badegewässer",
       "empty": "Keine Badedaten",
@@ -229,6 +263,9 @@
     "community": "Gemeinschaft",
     "other": "Sonstiges",
     "museum": "Museum"
+  },
+  "stale": {
+    "updated": "Aktualisiert {{time}}"
   },
   "time": {
     "justNow": "gerade eben",

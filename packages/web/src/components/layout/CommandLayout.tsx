@@ -18,6 +18,8 @@ import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
 import { BudgetStrip } from '../strips/BudgetStrip.js';
 import { LaborMarketStrip } from '../strips/LaborMarketStrip.js';
 import { WastewaterStrip } from '../strips/WastewaterStrip.js';
+import { CrisisStrip } from '../strips/CrisisStrip.js';
+import { FeuerwehrStrip } from '../strips/FeuerwehrStrip.js';
 import { PopulationStrip } from '../strips/PopulationStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -97,6 +99,11 @@ export function CommandLayout() {
             </Tile>
           )}
           {cityId === 'berlin' && (
+            <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded) => <FeuerwehrStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {cityId === 'berlin' && (
             <Tile title={t('panel.laborMarket.title')} span={1} expandable defaultExpanded={isDesktop}>
               {() => <LaborMarketStrip />}
             </Tile>
@@ -110,6 +117,11 @@ export function CommandLayout() {
             {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
           <BathingTile isDesktop={isDesktop} />
+          {cityId === 'berlin' && (
+            <Tile title={t('panel.crisis.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded, setExpanded) => <CrisisStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+            </Tile>
+          )}
 
           <Tile title={t('panel.budget.title')} span={2}>
             <BudgetStrip />

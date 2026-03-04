@@ -156,6 +156,17 @@
       "densityLabel": "Yoğunluk",
       "german": "Alman vatandaşlığı"
     },
+    "feuerwehr": {
+      "title": "İtfaiye",
+      "missions": "Görevler",
+      "emsResponseTime": "Acil Müdahale",
+      "fireResponseTime": "Yangın Müdahale",
+      "ems": "Acil",
+      "fire": "Yangın",
+      "technicalRescue": "Teknik Kurtarma",
+      "partial": "kısmi",
+      "empty": "Veri mevcut değil"
+    },
     "laborMarket": {
       "title": "İşsizlik",
       "unemployment": "İşsizlik oranı",
@@ -196,6 +207,29 @@
       "vsNormal": "normal: {{diff}}",
       "empty": "Seviye verisi yok"
     },
+    "crisis": {
+      "title": "Kriz Hizmetleri",
+      "tab": {
+        "citywide": "Şehir Geneli",
+        "local": "Yerel"
+      },
+      "hours24_7": "7/24",
+      "hoursDaily": "günlük 16–0",
+      "hoursMoSa": "Pzt–Cmt 14–20",
+      "showMore": "{{count}} daha",
+      "localNote": "Berliner Krisendienst — acil psikiyatrik destek için 9 bölgesel ofis. Günlük 16–0 · Bu saatler dışında psikiyatri acil servisleri.",
+      "service": {
+        "telefonSeelsorge": "Kriz Hattı",
+        "krisendienst": "Berlin Kriz Servisi",
+        "bigHotline": "Aile İçi Şiddet Hattı",
+        "kindernotdienst": "Çocuk Acil Hizmeti",
+        "jugendnotdienst": "Gençlik Acil Hizmeti",
+        "kinderJugendtelefon": "Çocuk/Gençlik Hattı",
+        "drogennotdienst": "Uyuşturucu Acil Hizmeti",
+        "maneo": "Şiddete Karşı (LGBTİ+)",
+        "schwulenberatung": "LGBTİ+ Danışmanlık"
+      }
+    },
     "bathing": {
       "title": "Yüzme Suyu",
       "empty": "Yüzme verisi yok",
@@ -229,6 +263,9 @@
     "community": "Topluluk",
     "other": "Diğer",
     "museum": "Müze"
+  },
+  "stale": {
+    "updated": "Güncellendi {{time}}"
   },
   "time": {
     "justNow": "az önce",
