@@ -85,6 +85,11 @@ export interface CityDataSources {
     provider: 'mss-wfs';
     wfsUrl: string;
   };
+  pollen?: {
+    provider: 'dwd';
+    regionId: number;
+    partregionId: number;
+  };
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -97,6 +102,8 @@ export interface CurrentWeather {
   weatherCode: number;
   windSpeed: number;
   windDirection: number;
+  uvIndex?: number;
+  uvIndexClearSky?: number;
 }
 
 export interface HourlyForecast {
@@ -104,6 +111,7 @@ export interface HourlyForecast {
   temp: number;
   precipProb: number;
   weatherCode: number;
+  uvIndex?: number;
 }
 
 export interface DailyForecast {
@@ -114,6 +122,8 @@ export interface DailyForecast {
   precip: number;
   sunrise: string;
   sunset: string;
+  uvIndexMax?: number;
+  uvIndexClearSkyMax?: number;
 }
 
 export interface WeatherAlert {
@@ -123,11 +133,18 @@ export interface WeatherAlert {
   validUntil: string;
 }
 
+export interface DwdUvForecast {
+  today: number;
+  tomorrow: number;
+  dayAfter: number;
+}
+
 export interface WeatherData {
   current: CurrentWeather;
   hourly: HourlyForecast[];
   daily: DailyForecast[];
   alerts: WeatherAlert[];
+  dwdUv?: DwdUvForecast;
 }
 
 // Political data
@@ -392,4 +409,21 @@ export interface PopulationSummary {
   changeAbsolute: number;   // vs previous snapshot (0 if first)
   changePct: number;
   snapshotDate: string;     // "2025-12-31"
+}
+
+// Pollen forecast (DWD Pollenflug-Gefahrenindex)
+export type PollenIntensity = '0' | '0-1' | '1' | '1-2' | '2' | '2-3' | '3' | '-1';
+
+export type PollenType = 'Hasel' | 'Erle' | 'Esche' | 'Birke' | 'Graeser' | 'Roggen' | 'Beifuss' | 'Ambrosia';
+
+export interface PollenTypeForecast {
+  today: PollenIntensity;
+  tomorrow: PollenIntensity;
+  dayAfterTomorrow: PollenIntensity;
+}
+
+export interface PollenForecast {
+  region: string;
+  updatedAt: string;
+  pollen: Record<PollenType, PollenTypeForecast>;
 }

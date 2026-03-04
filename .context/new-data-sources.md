@@ -73,8 +73,6 @@ Sources with **hardcoded URLs or version-pinned data** that need periodic manual
 - ~~Parking availability~~ — researched 2026-03-04, no real-time data for Berlin (no Parkleitsystem); static WFS data exists but low value for real-time dashboard
 - Noise complaints / noise map (Berlin has a strategic noise map WMS)
 - Energy generation (solar/wind dashboards from Bundesnetzagentur SMARD API)
-- Pollen forecast (DWD offers pollen index data)
-- UV Index (already in Open-Meteo, just not displayed)
 - Public WiFi hotspots (Berlin has a static dataset)
 - EV charging stations (Bundesnetzagentur has a register)
 - School closures / Kita strikes (no good API, would need scraping)

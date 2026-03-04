@@ -37,6 +37,9 @@ export const CK = {
   // Emergency Services
   feuerwehr: (cityId: string) => `${cityId}:feuerwehr`,
 
+  // Health
+  pollen: (cityId: string) => `${cityId}:pollen`,
+
   // Economics
   laborMarket: (cityId: string) => `${cityId}:labor-market`,
   budget: (cityId: string) => `${cityId}:budget`,
@@ -70,5 +73,6 @@ export const CK = {
     CK.laborMarket(cityId),
     CK.wastewaterSummary(cityId),
     CK.populationSummary(cityId),
+    CK.pollen(cityId),
   ],
 } as const;

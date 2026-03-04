@@ -34,6 +34,7 @@ export function useBootstrap(cityId: string) {
     if (data.wastewater) queryClient.setQueryData(['wastewater', cityId], data.wastewater);
     if (data.populationSummary) queryClient.setQueryData(['population-summary', cityId], data.populationSummary);
     if (data.feuerwehr) queryClient.setQueryData(['feuerwehr', cityId], data.feuerwehr);
+    if (data.pollen) queryClient.setQueryData(['pollen', cityId], data.pollen);
   }, [query.data, cityId, queryClient]);
 
   // Note: bootstrap fields are already in { data, fetchedAt } format matching

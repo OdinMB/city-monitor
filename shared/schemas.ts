@@ -280,6 +280,28 @@ export const FeuerwehrSummarySchema = z.object({
 
 // --- Population Demographics ---
 
+// --- Pollen Forecast ---
+
+const PollenIntensitySchema = z.enum(['0', '0-1', '1', '1-2', '2', '2-3', '3', '-1']);
+
+const PollenTypeForecastSchema = z.object({
+  today: PollenIntensitySchema,
+  tomorrow: PollenIntensitySchema,
+  dayAfterTomorrow: PollenIntensitySchema,
+});
+
+const POLLEN_TYPES = ['Hasel', 'Erle', 'Esche', 'Birke', 'Graeser', 'Roggen', 'Beifuss', 'Ambrosia'] as const;
+
+export const PollenForecastSchema = z.object({
+  region: z.string(),
+  updatedAt: z.string(),
+  pollen: z.object(
+    Object.fromEntries(POLLEN_TYPES.map((t) => [t, PollenTypeForecastSchema])) as Record<typeof POLLEN_TYPES[number], typeof PollenTypeForecastSchema>,
+  ),
+});
+
+// --- Population Demographics ---
+
 export const PopulationSummarySchema = z.object({
   total: z.number(),
   density: z.number().default(0),

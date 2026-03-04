@@ -35,7 +35,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'DWD (Deutscher Wetterdienst)',
         url: 'https://www.dwd.de/',
-        description: 'Official German severe weather warnings.',
+        description: 'Official German severe weather warnings and pollen forecast (Pollenflug-Gefahrenindex).',
       },
       {
         name: 'WAQI (World Air Quality Index)',

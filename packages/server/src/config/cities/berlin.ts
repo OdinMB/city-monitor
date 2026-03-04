@@ -96,6 +96,11 @@ export const berlin: CityConfig = {
       provider: 'mss-wfs',
       wfsUrl: 'https://gdi.berlin.de/services/wfs/mss_2023',
     },
+    pollen: {
+      provider: 'dwd',
+      regionId: 50,         // Brandenburg und Berlin
+      partregionId: -1,     // no sub-regions
+    },
     appointments: {
       provider: 'service-berlin',
       services: [

@@ -30,6 +30,7 @@ export interface BootstrapData {
   wastewater: ApiResponse<WastewaterSummary | null> | null;
   populationSummary: ApiResponse<PopulationSummary | null> | null;
   feuerwehr: ApiResponse<FeuerwehrSummary | null> | null;
+  pollen: ApiResponse<PollenForecast | null> | null;
 }
 
 export interface NewsDigest {
@@ -163,8 +164,8 @@ export interface EmergencyPharmacy {
   distance?: number;
 }
 
-export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, LaborMarketSummary, WastewaterSummary, WastewaterPathogen, PopulationFeatureProps, PopulationSummary, FeuerwehrSummary, FeuerwehrMonthData } from '@city-monitor/shared';
-import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, LaborMarketSummary, WastewaterSummary, PopulationSummary, FeuerwehrSummary } from '@city-monitor/shared';
+export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, LaborMarketSummary, WastewaterSummary, WastewaterPathogen, PopulationFeatureProps, PopulationSummary, FeuerwehrSummary, FeuerwehrMonthData, PollenForecast, PollenType, PollenIntensity, PollenTypeForecast } from '@city-monitor/shared';
+import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, LaborMarketSummary, WastewaterSummary, PopulationSummary, FeuerwehrSummary, PollenForecast } from '@city-monitor/shared';
 
 export type NewsSummaryData = { briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean };
 
@@ -194,6 +195,7 @@ export const api = {
   getPopulation: (city: string) => fetchJson<ApiResponse<GeoJSON.FeatureCollection | null>>(`${BASE}/${city}/population`),
   getPopulationSummary: (city: string) => fetchJson<ApiResponse<PopulationSummary | null>>(`${BASE}/${city}/population/summary`),
   getFeuerwehr: (city: string) => fetchJson<ApiResponse<FeuerwehrSummary | null>>(`${BASE}/${city}/feuerwehr`),
+  getPollen: (city: string) => fetchJson<ApiResponse<PollenForecast | null>>(`${BASE}/${city}/pollen`),
   // History endpoints — lazy-loaded for expanded tile views
   getWeatherHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/weather/history?range=${range}`),
   getAqiHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/air-quality/history?range=${range}`),

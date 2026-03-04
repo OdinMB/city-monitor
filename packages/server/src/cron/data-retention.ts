@@ -28,6 +28,7 @@ import {
   bathingSnapshots,
   laborMarketSnapshots,
   feuerwehrSnapshots,
+  pollenSnapshots,
 } from '../db/schema.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -81,6 +82,7 @@ export function createDataRetention(db: Db) {
       { name: 'wastewater', fn: () => db.delete(wastewaterSnapshots).where(lt(wastewaterSnapshots.fetchedAt, new Date(now - RETENTION.moderate))) },
 
       { name: 'feuerwehr', fn: () => db.delete(feuerwehrSnapshots).where(lt(feuerwehrSnapshots.fetchedAt, new Date(now - RETENTION.infrequent))) },
+      { name: 'pollen', fn: () => db.delete(pollenSnapshots).where(lt(pollenSnapshots.fetchedAt, new Date(now - RETENTION.moderate))) },
 
       // Infrequent data (30 days)
       { name: 'budget', fn: () => db.delete(budgetSnapshots).where(lt(budgetSnapshots.fetchedAt, new Date(now - RETENTION.infrequent))) },

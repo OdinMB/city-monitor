@@ -297,6 +297,16 @@ export const feuerwehrSnapshots = pgTable('feuerwehr_snapshots', {
   index('feuerwehr_city_idx').on(table.cityId),
 ]);
 
+// Pollen forecast snapshots (DWD)
+export const pollenSnapshots = pgTable('pollen_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  data: jsonb('data').notNull(), // PollenForecast
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('pollen_city_idx').on(table.cityId),
+]);
+
 // Milestone 07 — AI Summaries
 export const aiSummaries = pgTable('ai_summaries', {
   id: serial('id').primaryKey(),

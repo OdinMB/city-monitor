@@ -21,6 +21,7 @@ import { LaborMarketStrip } from '../strips/LaborMarketStrip.js';
 import { WastewaterStrip } from '../strips/WastewaterStrip.js';
 import { CrisisStrip } from '../strips/CrisisStrip.js';
 import { FeuerwehrStrip } from '../strips/FeuerwehrStrip.js';
+import { PollenStrip } from '../strips/PollenStrip.js';
 import { PopulationStrip } from '../strips/PopulationStrip.js';
 import { Skeleton } from './Skeleton.js';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -87,6 +88,9 @@ export function CommandLayout() {
           </Tile>
           <Tile title={t('panel.airQuality.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <AirQualityStrip expanded={expanded} />}
+          </Tile>
+          <Tile title={t('panel.pollen.title')} span={1} expandable defaultExpanded={isDesktop}>
+            {(expanded) => <PollenStrip expanded={expanded} />}
           </Tile>
           <Tile title={t('panel.news.title')} span={2} expandable defaultExpanded={false}>
             {(expanded, setExpanded) => <NewsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}

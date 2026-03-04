@@ -30,6 +30,11 @@ export const hamburg: CityConfig = {
     // HVV transport.rest API is deprecated and offline (March 2026) — no free alternative
     police: { provider: 'rss', url: 'https://www.presseportal.de/rss/dienststelle_6013.rss2' },
     nina: { ars: '020000000000' },
+    pollen: {
+      provider: 'dwd',
+      regionId: 10,         // Schleswig-Holstein und Hamburg
+      partregionId: 12,     // Geest, Schleswig-Holstein und Hamburg
+    },
     waterLevels: {
       provider: 'pegelonline',
       stations: [
