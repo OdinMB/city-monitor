@@ -287,6 +287,7 @@
     "councilMeetings": {
       "title": "اجتماعات المجلس",
       "empty": "لا توجد اجتماعات قادمة",
+      "filterLabel": "تصفية حسب الهيئة",
       "bvv": "مجلس المنطقة",
       "parliament": "برلمان الولاية",
       "agendaItems": "{{count}} بنود جدول الأعمال",

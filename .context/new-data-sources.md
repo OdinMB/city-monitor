@@ -75,26 +75,6 @@ Sources with **hardcoded URLs or version-pinned data** that need periodic manual
 - Public WiFi hotspots (Berlin has a static dataset)
 - EV charging stations (Bundesnetzagentur has a register)
 - School closures / Kita strikes (no good API, would need scraping)
-- City council meeting agendas (some cities use Allris with semi-structured data)
-
----
-
-## Berliner Feuerwehr — FEASIBLE (Daily Stats)
-
-- **Source:** GitHub Open Data — `https://github.com/Berliner-Feuerwehr/BF-Open-Data`
-- **License:** CC-BY-4.0
-- **Format:** CSV files updated daily
-
-### Datasets
-- **Per-mission:** `mission_data_set_open_data_YYYY.csv` — date, type, dispatch code, severity, district, response time, units
-- **Daily aggregates:** `BFw_mission_data_daily.csv` — total calls by category, response time stats
-
-### Limitations
-- **District-level location only** — no street addresses or coordinates
-- Daily update cadence (0-24h stale)
-- CSV grows throughout the year (13+ MB)
-
-**Best for:** KPI tiles (daily call count, avg response time, type breakdown). Not suitable for map pins.
 
 ---
 

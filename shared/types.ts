@@ -96,6 +96,13 @@ export interface CityDataSources {
     lon: number;
     radius: number; // km
   };
+  councilMeetings?: {
+    bvv: Array<{ district: string; baseUrl: string }>;
+    parliament?: {
+      committeeUrl: string;
+      plenaryUrl: string;
+    };
+  };
 }
 
 // Weather data types (shared between server ingestion and web UI)
@@ -443,3 +450,6 @@ export interface PollenForecast {
   updatedAt: string;
   pollen: Record<PollenType, PollenTypeForecast>;
 }
+
+// Council meetings (BVV OParl + PARDOK)
+export type { CouncilMeeting } from './schemas.js';

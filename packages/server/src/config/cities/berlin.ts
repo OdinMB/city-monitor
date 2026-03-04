@@ -122,5 +122,24 @@ export const berlin: CityConfig = {
         { id: '121721', name: 'Bewohnerparkausweis' },
       ],
     },
+    councilMeetings: {
+      bvv: [
+        { district: 'Mitte', baseUrl: 'https://www.sitzungsdienst-mitte.de/oi/oparl/1.0' },
+        { district: 'Pankow', baseUrl: 'https://www.sitzungsdienst-pankow.de/oi/oparl/1.0' },
+        { district: 'Charlottenburg-Wilmersdorf', baseUrl: 'https://www.sitzungsdienst-charlottenburg-wilmersdorf.de/oi/oparl/1.0' },
+        { district: 'Friedrichshain-Kreuzberg', baseUrl: 'https://www.sitzungsdienst-friedrichshain-kreuzberg.de/oi/oparl/1.0' },
+        { district: 'Neukölln', baseUrl: 'https://www.sitzungsdienst-neukoelln.de/oi/oparl/1.0' },
+        { district: 'Steglitz-Zehlendorf', baseUrl: 'https://www.sitzungsdienst-steglitz-zehlendorf.de/oi/oparl/1.0' },
+        { district: 'Treptow-Köpenick', baseUrl: 'https://www.sitzungsdienst-treptow-koepenick.de/oi/oparl/1.0' },
+        { district: 'Marzahn-Hellersdorf', baseUrl: 'https://www.sitzungsdienst-marzahn-hellersdorf.de/oi/oparl/1.0' },
+        { district: 'Lichtenberg', baseUrl: 'https://www.sitzungsdienst-lichtenberg.de/oi/oparl/1.0' },
+        { district: 'Reinickendorf', baseUrl: 'https://www.sitzungsdienst-reinickendorf.de/oi/oparl/1.0' },
+        { district: 'Tempelhof-Schöneberg', baseUrl: 'https://www.sitzungsdienst-tempelhof-schoeneberg.de/oi/oparl/1.0' },
+      ],
+      parliament: {
+        committeeUrl: 'https://www.parlament-berlin.de/app_com.xml',
+        plenaryUrl: 'https://www.parlament-berlin.de/app_plen.xml',
+      },
+    },
   },
 };

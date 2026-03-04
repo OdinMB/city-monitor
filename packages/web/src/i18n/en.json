@@ -287,6 +287,7 @@
     "councilMeetings": {
       "title": "Council Meetings",
       "empty": "No upcoming meetings",
+      "filterLabel": "Filter by body",
       "bvv": "District Assembly",
       "parliament": "State Parliament",
       "agendaItems": "{{count}} agenda items",

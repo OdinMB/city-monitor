@@ -325,3 +325,25 @@ export const PopulationSummarySchema = z.object({
   changePct: z.number(),
   snapshotDate: z.string(),
 });
+
+// --- Council Meetings ---
+
+export const CouncilAgendaItemSchema = z.object({
+  number: z.string(),
+  name: z.string(),
+  public: z.boolean(),
+});
+
+export const CouncilMeetingSchema = z.object({
+  id: z.string(),
+  source: z.enum(['bvv', 'parliament']),
+  district: z.string().optional(),
+  committee: z.string(),
+  start: z.string(),
+  end: z.string().optional(),
+  location: z.string().optional(),
+  agendaItems: z.array(CouncilAgendaItemSchema).optional(),
+  webUrl: z.string().optional(),
+});
+
+export type CouncilMeeting = z.infer<typeof CouncilMeetingSchema>;

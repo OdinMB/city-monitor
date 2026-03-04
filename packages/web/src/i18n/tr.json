@@ -287,6 +287,7 @@
     "councilMeetings": {
       "title": "Meclis Toplantıları",
       "empty": "Yaklaşan toplantı yok",
+      "filterLabel": "Organa göre filtrele",
       "bvv": "İlçe Meclisi",
       "parliament": "Eyalet Parlamentosu",
       "agendaItems": "{{count}} gündem maddesi",

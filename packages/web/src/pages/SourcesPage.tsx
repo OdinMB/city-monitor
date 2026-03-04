@@ -167,6 +167,13 @@ const BERLIN_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Council Meetings',
+    sources: [
+      { name: 'ALLRIS OParl (BVV)', url: 'https://oparl.org/', description: 'District assembly meetings from 11 Berlin Bezirke via OParl 1.0 JSON API.' },
+      { name: 'PARDOK (Abgeordnetenhaus)', url: 'https://www.parlament-berlin.de/', description: 'Berlin state parliament committee and plenary schedules via XML feeds.' },
+    ],
+  },
+  {
     category: 'Maps',
     sources: [
       { name: 'Sensor.Community', url: 'https://sensor.community/', description: 'Citizen-run air quality sensors — PM2.5 and PM10 readings.' },

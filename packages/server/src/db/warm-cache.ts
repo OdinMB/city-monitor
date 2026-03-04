@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { createLogger } from '../lib/logger.js';
@@ -166,6 +166,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
         const r = await loadNoiseSensors(db, 'berlin');
         if (r) cache.set(CK.noiseSensors('berlin'), r.data, 1200, r.fetchedAt);
       })().catch((err) => log.error('noise-sensors failed', err)),
+
+      (async () => {
+        const r = await loadCouncilMeetings(db, 'berlin');
+        if (r) cache.set(CK.councilMeetings('berlin'), r.data, 25920, r.fetchedAt);
+      })().catch((err) => log.error('council-meetings failed', err)),
     ] : []),
   ];
 

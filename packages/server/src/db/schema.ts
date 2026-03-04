@@ -317,6 +317,15 @@ export const noiseSensorSnapshots = pgTable('noise_sensor_snapshots', {
   index('noise_sensor_city_idx').on(table.cityId),
 ]);
 
+export const councilMeetingSnapshots = pgTable('council_meeting_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  meetings: jsonb('meetings').notNull(), // CouncilMeeting[]
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('council_meeting_city_idx').on(table.cityId),
+]);
+
 // Milestone 07 — AI Summaries
 export const aiSummaries = pgTable('ai_summaries', {
   id: serial('id').primaryKey(),

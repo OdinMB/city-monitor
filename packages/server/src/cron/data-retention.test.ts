@@ -37,8 +37,8 @@ describe('data-retention', () => {
     await handler();
 
     // one delete call per table
-    expect(mock.deleteFn).toHaveBeenCalledTimes(24);
-    expect(mock.where).toHaveBeenCalledTimes(24);
+    expect(mock.deleteFn).toHaveBeenCalledTimes(25);
+    expect(mock.where).toHaveBeenCalledTimes(25);
   });
 
   it('runs without errors when DB is empty', async () => {
@@ -59,6 +59,6 @@ describe('data-retention', () => {
 
     const handler = createDataRetention(db);
     await expect(handler()).resolves.not.toThrow();
-    expect(deleteFn).toHaveBeenCalledTimes(24);
+    expect(deleteFn).toHaveBeenCalledTimes(25);
   });
 });

@@ -32,6 +32,7 @@ export interface BootstrapData {
   feuerwehr: ApiResponse<FeuerwehrSummary | null> | null;
   pollen: ApiResponse<PollenForecast | null> | null;
   noiseSensors: ApiResponse<NoiseSensor[] | null> | null;
+  councilMeetings: ApiResponse<CouncilMeeting[] | null> | null;
 }
 
 export interface NewsDigest {
@@ -165,8 +166,8 @@ export interface EmergencyPharmacy {
   distance?: number;
 }
 
-export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, LaborMarketSummary, WastewaterSummary, WastewaterPathogen, PopulationFeatureProps, PopulationSummary, FeuerwehrSummary, FeuerwehrMonthData, PollenForecast, PollenType, PollenIntensity, PollenTypeForecast, NoiseSensor } from '@city-monitor/shared';
-import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, LaborMarketSummary, WastewaterSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor } from '@city-monitor/shared';
+export type { AirQualityGridPoint, ConstructionSite, WaterLevelData, WaterLevelStation, AedLocation, BathingSpot, BudgetSummary, BudgetAreaSummary, BudgetCategoryAmount, BuergeramtData, BuergeramtService, SocialAtlasFeatureProps, LaborMarketSummary, WastewaterSummary, WastewaterPathogen, PopulationFeatureProps, PopulationSummary, FeuerwehrSummary, FeuerwehrMonthData, PollenForecast, PollenType, PollenIntensity, PollenTypeForecast, NoiseSensor, CouncilMeeting } from '@city-monitor/shared';
+import type { AirQualityGridPoint, ConstructionSite, WaterLevelData, AedLocation, BathingSpot, BudgetSummary, BuergeramtData, LaborMarketSummary, WastewaterSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting } from '@city-monitor/shared';
 
 export type NewsSummaryData = { briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean };
 
@@ -198,6 +199,7 @@ export const api = {
   getFeuerwehr: (city: string) => fetchJson<ApiResponse<FeuerwehrSummary | null>>(`${BASE}/${city}/feuerwehr`),
   getPollen: (city: string) => fetchJson<ApiResponse<PollenForecast | null>>(`${BASE}/${city}/pollen`),
   getNoiseSensors: (city: string) => fetchJson<ApiResponse<NoiseSensor[] | null>>(`${BASE}/${city}/noise-sensors`),
+  getCouncilMeetings: (city: string) => fetchJson<ApiResponse<CouncilMeeting[] | null>>(`${BASE}/${city}/council-meetings`),
   // History endpoints — lazy-loaded for expanded tile views
   getWeatherHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/weather/history?range=${range}`),
   getAqiHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/air-quality/history?range=${range}`),

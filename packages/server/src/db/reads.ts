@@ -26,14 +26,15 @@ import {
   feuerwehrSnapshots,
   pollenSnapshots,
   noiseSensorSnapshots,
+  councilMeetingSnapshots,
 } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, HistoryPoint } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
-  FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema,
+  FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -638,6 +639,20 @@ export async function loadNoiseSensors(db: Db, cityId: string): Promise<DbResult
   // Discard data older than 2h (cron runs every 10min)
   if (rows[0].fetchedAt && Date.now() - rows[0].fetchedAt.getTime() > 2 * 60 * 60 * 1000) return null;
   const data = validateJsonb(z.array(NoiseSensorSchema), rows[0].data, 'noise-sensors');
+  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
+}
+
+export async function loadCouncilMeetings(db: Db, cityId: string): Promise<DbResult<CouncilMeeting[]>> {
+  const rows = await db
+    .select()
+    .from(councilMeetingSnapshots)
+    .where(eq(councilMeetingSnapshots.cityId, cityId))
+    .orderBy(desc(councilMeetingSnapshots.fetchedAt))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  if (rows[0].fetchedAt && Date.now() - rows[0].fetchedAt.getTime() > 48 * 60 * 60 * 1000) return null;
+  const data = validateJsonb(z.array(CouncilMeetingSchema), rows[0].meetings, 'council-meetings');
   return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
 }
 

@@ -43,6 +43,9 @@ export const CK = {
   // Noise
   noiseSensors: (cityId: string) => `${cityId}:noise-sensors`,
 
+  // Council Meetings
+  councilMeetings: (cityId: string) => `${cityId}:council-meetings`,
+
   // Economics
   laborMarket: (cityId: string) => `${cityId}:labor-market`,
   budget: (cityId: string) => `${cityId}:budget`,
@@ -78,5 +81,6 @@ export const CK = {
     CK.populationSummary(cityId),
     CK.pollen(cityId),
     CK.noiseSensors(cityId),
+    CK.councilMeetings(cityId),
   ],
 } as const;
