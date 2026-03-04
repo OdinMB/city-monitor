@@ -163,7 +163,7 @@ export async function geocode(
         geocodeCache.set(cacheKey, result);
         return result;
       }
-    } catch (_err) {
+    } catch {
       log.warn(`DB lookup failed for "${cacheKey}"`);
     }
   }
@@ -204,7 +204,7 @@ export async function geocode(
     }
 
     return result;
-  } catch (_err) {
+  } catch {
     log.warn(`geocode failed for "${query}"`);
     // Don't cache — transient errors should be retried on next call
     return null;

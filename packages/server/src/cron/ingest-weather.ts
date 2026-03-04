@@ -78,7 +78,7 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
     try {
       const alerts = await fetchDwdAlerts(city);
       data.alerts = alerts;
-    } catch (_err) {
+    } catch {
       log.warn(`${city.id}: DWD alerts failed`);
     }
   }
@@ -98,7 +98,7 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
   // Fetch air quality alongside weather
   try {
     await ingestCityAirQuality(city, cache);
-  } catch (_err) {
+  } catch {
     log.warn(`${city.id}: air quality failed`);
   }
 }

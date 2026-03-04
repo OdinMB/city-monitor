@@ -101,7 +101,7 @@ async function ingestCitySafety(cityId: string, cityName: string, feedUrl: strin
           }
         }
       }
-    } catch (_err) {
+    } catch {
       log.warn(`${cityId} geolocation failed, continuing without`);
     }
   }

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/OdinMB/city-monitor/main/packages/web/public/og-default.png" alt="City Monitor — Real-time city dashboard" width="600" />
+  <img src="packages/web/public/og-default.png" alt="City Monitor — Real-time city dashboard" width="600" />
 </p>
 
 <h1 align="center">City Monitor</h1>

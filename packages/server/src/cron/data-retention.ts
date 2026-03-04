@@ -4,7 +4,7 @@
  * accumulates and this cron is the sole cleanup mechanism.
  */
 
-import { lt, notInArray, sql } from 'drizzle-orm';
+import { lt, notInArray } from 'drizzle-orm';
 import type { Db } from '../db/index.js';
 import {
   weatherSnapshots,

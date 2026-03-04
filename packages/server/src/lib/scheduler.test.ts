@@ -104,7 +104,7 @@ describe('Scheduler', () => {
     await new Promise((r) => setTimeout(r, 200));
 
     // Weather should start in parallel with feeds (both have no unmet deps)
-    const feedsStart = callOrder.indexOf('feeds-start');
+    const _feedsStart = callOrder.indexOf('feeds-start');
     const feedsEnd = callOrder.indexOf('feeds-end');
     const weatherStart = callOrder.indexOf('weather-start');
     const summarizeStart = callOrder.indexOf('summarize-start');

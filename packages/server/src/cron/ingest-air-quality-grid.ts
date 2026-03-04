@@ -222,15 +222,13 @@ export async function ingestCityAirQualityGrid(city: CityConfig, cache: Cache, d
   }
 
   // Prune entries older than 2h
-  for (const name of Object.keys(scCache)) {
-    if (now - scCache[name].fetchedAt > SC_MAX_STALE_MS) {
-      delete scCache[name];
-    }
-  }
+  const prunedCache = Object.fromEntries(
+    Object.entries(scCache).filter(([, e]) => now - e.fetchedAt <= SC_MAX_STALE_MS),
+  );
 
-  cache.set(scCacheKey, scCache, 7200);
+  cache.set(scCacheKey, prunedCache, 7200);
 
-  const scPoints = Object.values(scCache).map((e) => e.point);
+  const scPoints = Object.values(prunedCache).map((e) => e.point);
   const grid = [...waqiPoints, ...scPoints];
 
   if (grid.length === 0) {

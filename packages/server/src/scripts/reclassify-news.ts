@@ -39,7 +39,7 @@ const result = await db.execute(sql`
   WHERE published_at > ${cutoff}
 `);
 
-console.log(`Done — ${(result as any).count ?? 'unknown number of'} rows updated.`);
+console.log(`Done — ${(result as unknown as Record<string, unknown>).count ?? 'unknown number of'} rows updated.`);
 console.log('The next news cron cycle will reclassify these items.');
 
 await client.end();

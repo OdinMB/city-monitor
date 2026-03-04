@@ -129,7 +129,7 @@ async function ingestCityTransit(
           alertMap.set(dedupeKey, alert);
         }
       }
-    } catch (_err) {
+    } catch {
       log.warn(`station ${station.id} failed`);
     }
   }

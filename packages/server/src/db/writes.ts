@@ -5,7 +5,7 @@
  * Hash-keyed tables (news, events, safety) use UPSERT to avoid duplicates.
  */
 
-import { eq, and, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
   weatherSnapshots,

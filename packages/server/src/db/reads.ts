@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, max, gte, sql, avg } from 'drizzle-orm';
+import { eq, and, desc, asc, max, gte, avg } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
   weatherSnapshots,

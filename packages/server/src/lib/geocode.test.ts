@@ -14,8 +14,9 @@ vi.mock('../db/writes.js', () => ({
 import { geocode, clearGeocodeCache, initGeocodeDb } from './geocode.js';
 import { loadGeocodeLookup } from '../db/reads.js';
 import { saveGeocodeLookup } from '../db/writes.js';
+import type { Db } from '../db/index.js';
 
-const mockDb = {} as any;
+const mockDb = {} as Db;
 
 const NOMINATIM_RESPONSE = [
   { lat: '52.5219184', lon: '13.4132147', display_name: 'Alexanderplatz, Mitte, Berlin' },
