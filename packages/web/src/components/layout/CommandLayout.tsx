@@ -36,14 +36,14 @@ export function CommandLayout() {
   const isDesktop = typeof window !== 'undefined'
     && window.matchMedia('(min-width: 640px)').matches;
 
-  // Once NINA data loads, switch default layer: warnings if alerts exist, news otherwise
+  // Once NINA data loads, switch default layer: warnings if alerts exist, traffic otherwise
   const { data: ninaWarnings } = useNina(cityId);
   const setActiveLayers = useCommandCenter((s) => s.setActiveLayers);
   const layerInitRef = useRef(false);
   useEffect(() => {
     if (layerInitRef.current || ninaWarnings === undefined) return;
     layerInitRef.current = true;
-    const layer: DataLayer = ninaWarnings.length > 0 ? 'warnings' : 'news';
+    const layer: DataLayer = ninaWarnings.length > 0 ? 'warnings' : 'traffic';
     setActiveLayers(new Set<DataLayer>([layer]));
   }, [ninaWarnings, setActiveLayers]);
 
