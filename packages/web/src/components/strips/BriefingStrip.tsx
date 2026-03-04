@@ -19,8 +19,8 @@ function BriefingContent({ text }: { text: string }) {
 
 export function BriefingStrip() {
   const { id: cityId } = useCityConfig();
-  const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: summaryRefetch } = useNewsSummary(cityId);
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: summaryRefetch } = useNewsSummary(cityId, i18n.language);
 
   if (summaryError) return <StripErrorFallback domain="Briefing" onRetry={summaryRefetch} />;
 

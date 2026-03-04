@@ -1,13 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme.js';
-
-const LANGUAGES = [
-  { code: 'de', label: 'DE' },
-  { code: 'en', label: 'EN' },
-  { code: 'tr', label: 'TR' },
-  { code: 'ar', label: 'AR' },
-] as const;
+import { useCityConfig } from '../../hooks/useCityConfig.js';
 
 /**
  * Language switcher + theme toggle for the header.
@@ -16,6 +10,11 @@ const LANGUAGES = [
 export function HeaderControls() {
   const { theme, toggle } = useTheme();
   const { t, i18n } = useTranslation();
+  const cityConfig = useCityConfig();
+  const languages = useMemo(
+    () => cityConfig.languages.map((code) => ({ code, label: code.toUpperCase() })),
+    [cityConfig.languages],
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -61,7 +60,7 @@ export function HeaderControls() {
   const themeIcon = theme === 'light' ? moonIcon : sunIcon;
 
   const languageButtons = (className: string, onSelect?: () => void) =>
-    LANGUAGES.map((lang) => (
+    languages.map((lang) => (
       <button
         key={lang.code}
         onClick={() => {

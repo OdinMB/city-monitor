@@ -85,7 +85,7 @@ describe('DB writes', () => {
   it('saveSummary inserts a new summary row', async () => {
     const summary = { briefing: 'Test briefing', headlineCount: 5, headlineHash: 'abc123' };
 
-    await saveSummary(db, 'berlin', summary, 'gpt-4.1-mini', { input: 100, output: 50 });
+    await saveSummary(db, 'berlin', 'de', summary, 'gpt-4.1-mini', { input: 100, output: 50 });
     expect(insert).toHaveBeenCalledOnce();
     expect(values).toHaveBeenCalledOnce();
   });

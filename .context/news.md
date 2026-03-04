@@ -41,18 +41,18 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 
 ### Data Flow
 
-1. **Summarization** (`packages/server/src/cron/summarize.ts`) — Runs every 15 minutes (at :05, :20, :35, :50). Skipped if `OPENAI_API_KEY` not set. Takes up to 25 most recent items with importance > 0.5 from cached news digest. Passes titles + descriptions for richer context. Hashes the top 5 headlines to detect changes — skips API call if headlines unchanged since last summary. Writes to cache key `{cityId}:news:summary` (TTL 86400s / 24h) and persists to Postgres with token counts.
+1. **Summarization** (`packages/server/src/cron/summarize.ts`) — Runs every 15 minutes (at :05, :20, :35, :50). Skipped if `OPENAI_API_KEY` not set. Takes up to 25 most recent items with importance > 0.5 from cached news digest. Passes titles + descriptions for richer context. Hashes the top 5 headlines to detect changes — skips API call if headlines unchanged since last summary. **Generates briefings in all languages configured for the city** (e.g. de/en/tr/ar for Berlin) in a single LLM call via structured output. Writes to cache key `{cityId}:news:summary` (TTL 86400s / 24h) and persists one row per language to Postgres with token counts.
 
-2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/summary` returns cached summary, falls back to Postgres, then empty structure.
+2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/summary?lang=<code>` returns the briefing for the requested language, falling back to the city's primary language. The `lang` param is validated against `city.languages`.
 
-3. **Frontend** — Uses `useNewsSummary()` hook (refetch 15 min). Displays briefing text with generation timestamp.
+3. **Frontend** — Uses `useNewsSummary(cityId, i18n.language)` hook (refetch 15 min). Passes the user's selected language to the API. When the user switches language, React Query fetches the briefing in the new language.
 
 ### LLM Integration (`packages/server/src/lib/openai.ts`)
 
 - **Client:** LangChain `ChatOpenAI` with Zod-validated structured output (`.withStructuredOutput(zodSchema, { includeRaw: true })`)
 - **Model:** `gpt-5-mini` for summarization (configurable via `OPENAI_MODEL`), `gpt-5-nano` for filtering/geolocation (configurable via `OPENAI_FILTER_MODEL`)
-- **Structured output schemas:** `BriefingSchema` (briefing text), `FilterResultSchema` (index, relevant_to_city, category, importance, locationLabel), `GeoResultSchema` (index, locationLabel)
-- **System prompt:** Local news editor for [city], 6-8 bullet points (~120 words), focus on daily-life impact, write in [language]
+- **Structured output schemas:** `BriefingSchema` (dynamic — one key per configured language, e.g. `{ briefings: { de: string, en: string, tr: string, ar: string } }`), `FilterResultSchema` (index, relevant_to_city, category, importance, locationLabel), `GeoResultSchema` (index, locationLabel)
+- **System prompt:** Local news editor for [city], two short paragraphs (~120 words per language), focus on daily-life impact, write in all configured languages in one response
 - **Location extraction:** Filter prompt pushes LLM for district/neighborhood-level specificity (not bare city names). Includes examples mapping organizations to known addresses (e.g. "Senat" -> "Rotes Rathaus, Mitte"). Post-processing discards labels that are just the bare city name or "city, country" format before geocoding.
 - **Usage tracking:** In-memory per-city totals (input/output tokens, call count). Exposed via `getUsageStats()` on the health endpoint.
 - **Cost estimate:** gpt-5-mini at $1.00/1M input, $4.00/1M output
@@ -88,7 +88,7 @@ interface NewsDigest {
 }
 
 interface NewsSummary {
-  briefing: string;
+  briefings: Record<string, string>;  // keyed by language code (de, en, tr, ar)
   generatedAt: string;
   headlineCount: number;
   cached: boolean;
@@ -98,7 +98,7 @@ interface NewsSummary {
 ## DB Schema
 
 - `newsItems` table — cityId, hash (dedup key via unique index `news_city_hash_idx`), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevantToCity (bool), importance (real, 0–1), lat, lon, locationLabel, fetchedAt. UPSERT on (cityId, hash). 7-day retention. Reads limited to 500 rows.
-- `aiSummaries` table — cityId, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. INSERT-only. 30-day retention.
+- `aiSummaries` table — cityId, lang, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. One row per language per generation batch (rows share the same generatedAt). INSERT-only. 30-day retention.
 
 ## Drop Logic
 

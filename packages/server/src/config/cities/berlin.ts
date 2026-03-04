@@ -7,7 +7,7 @@ export const berlin: CityConfig = {
   coordinates: { lat: 52.52, lon: 13.405 },
   boundingBox: { north: 52.68, south: 52.34, east: 13.76, west: 13.09 },
   timezone: 'Europe/Berlin',
-  languages: ['de', 'en'],
+  languages: ['de', 'en', 'tr', 'ar'],
   map: {
     center: [13.405, 52.52],
     zoom: 11,

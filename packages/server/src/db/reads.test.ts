@@ -112,13 +112,13 @@ describe('DB reads', () => {
     expect(result).toBeNull();
   });
 
-  it('loadSummary maps row to NewsSummary', async () => {
+  it('loadSummary maps rows to multi-lang NewsSummary', async () => {
     const db = createMockDb([
-      { summary: 'Briefing text', generatedAt: new Date('2026-03-02'), headlineHash: 'abc' },
+      { lang: 'de', summary: 'Deutsche Zusammenfassung', generatedAt: new Date('2026-03-02'), headlineHash: 'abc' },
     ]);
     const result = await loadSummary(db, 'berlin');
     expect(result).not.toBeNull();
-    expect(result!.briefing).toBe('Briefing text');
+    expect(result!.briefings['de']).toBe('Deutsche Zusammenfassung');
     expect(result!.cached).toBe(true);
     expect(result!.headlineHash).toBe('abc');
   });

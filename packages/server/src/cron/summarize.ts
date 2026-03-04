@@ -15,7 +15,7 @@ import type { NewsDigest } from './ingest-feeds.js';
 const log = createLogger('summarize');
 
 export interface NewsSummary {
-  briefing: string;
+  briefings: Record<string, string>;
   generatedAt: string;
   headlineCount: number;
   cached: boolean;
@@ -34,7 +34,7 @@ export function createSummarization(cache: Cache, db: Db | null = null) {
     const cities = getActiveCities();
     for (const city of cities) {
       try {
-        await summarizeCityNews(city.id, city.name, city.languages[0] ?? 'en', cache, db);
+        await summarizeCityNews(city.id, city.name, city.languages, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -45,7 +45,7 @@ export function createSummarization(cache: Cache, db: Db | null = null) {
 async function summarizeCityNews(
   cityId: string,
   cityName: string,
-  lang: string,
+  langs: string[],
   cache: Cache,
   db: Db | null,
 ): Promise<void> {
@@ -71,12 +71,13 @@ async function summarizeCityNews(
   const existing = cache.get<NewsSummary & { headlineHash: string }>(CK.newsSummary(cityId));
   if (existing && existing.headlineHash === headlineHash) return;
 
+  const effectiveLangs = langs.length > 0 ? langs : ['en'];
   const items = topItems.map((item) => ({ title: item.title, description: item.description }));
-  const result = await summarizeHeadlines(cityName, items, lang);
+  const result = await summarizeHeadlines(cityName, items, effectiveLangs);
   if (!result) return;
 
   const summary: NewsSummary & { headlineHash: string } = {
-    briefing: result.summary,
+    briefings: result.briefings,
     generatedAt: new Date().toISOString(),
     headlineCount: items.length,
     cached: result.cached,
@@ -88,11 +89,14 @@ async function summarizeCityNews(
   if (db) {
     try {
       const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
-      await saveSummary(db, cityId, summary, model, { input: result.inputTokens, output: result.outputTokens });
+      const generatedAt = new Date();
+      for (const [lang, text] of Object.entries(result.briefings)) {
+        await saveSummary(db, cityId, lang, { briefing: text, headlineCount: items.length, headlineHash }, model, { input: result.inputTokens, output: result.outputTokens }, generatedAt);
+      }
     } catch (err) {
       log.error(`${cityId} DB write failed`, err);
     }
   }
 
-  log.info(`${cityId}: summary generated (${items.length} headlines)`);
+  log.info(`${cityId}: summary generated (${items.length} headlines, ${effectiveLangs.length} langs)`);
 }

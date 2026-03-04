@@ -15,6 +15,13 @@
       "when": 1772575049205,
       "tag": "0001_brown_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772635949533,
+      "tag": "0002_dizzy_jazinda",
+      "breakpoints": true
     }
   ]
 }

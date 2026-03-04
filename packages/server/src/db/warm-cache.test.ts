@@ -9,7 +9,7 @@ vi.mock('./reads.js', () => ({
   loadEvents: vi.fn().mockResolvedValue([{ id: '1', title: 'Event', date: '2026-03-03', category: 'other', url: '' }]),
   loadSafetyReports: vi.fn().mockResolvedValue([{ id: '1', title: 'Report', description: '', publishedAt: '', url: '' }]),
   loadNewsItems: vi.fn().mockResolvedValue([{ id: 'n1', title: 'News', url: 'https://x.com', publishedAt: '2026-03-02', sourceName: 'Test', sourceUrl: 'https://x.com', category: 'politics', tier: 1, lang: 'de' }]),
-  loadSummary: vi.fn().mockResolvedValue({ briefing: 'Test', generatedAt: '2026-03-02', headlineCount: 5, cached: true, headlineHash: 'abc' }),
+  loadSummary: vi.fn().mockResolvedValue({ briefings: { de: 'Test' }, generatedAt: '2026-03-02', headlineCount: 5, cached: true, headlineHash: 'abc' }),
   loadNinaWarnings: vi.fn().mockResolvedValue([]),
   loadAirQualityGrid: vi.fn().mockResolvedValue([{ lat: 52.52, lon: 13.41, europeanAqi: 42, station: 'Mitte' }]),
   loadAllGeocodeLookups: vi.fn().mockResolvedValue([]),

@@ -62,26 +62,46 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
+    const requestedLang = typeof req.query.lang === 'string' ? req.query.lang : null;
+    const lang = (requestedLang && city.languages.includes(requestedLang))
+      ? requestedLang
+      : city.languages[0] ?? 'de';
+
+    let summary: NewsSummary | null = null;
+    let fetchedAt: string | null = null;
+
     const cachedSummary = cache.getWithMeta<NewsSummary>(CK.newsSummary(city.id));
     if (cachedSummary) {
-      res.json(cachedSummary);
-      return;
-    }
-
-    if (db) {
+      summary = cachedSummary.data;
+      fetchedAt = cachedSummary.fetchedAt;
+    } else if (db) {
       try {
         const dbSummary = await loadSummary(db, city.id);
         if (dbSummary) {
           cache.set(CK.newsSummary(city.id), dbSummary, 86400);
-          res.json({ data: dbSummary, fetchedAt: new Date().toISOString() });
-          return;
+          summary = dbSummary;
+          fetchedAt = new Date().toISOString();
         }
       } catch (err) {
         log.error(`${city.id} DB read failed`, err);
       }
     }
 
-    res.json({ data: { briefing: null, generatedAt: null, headlineCount: 0, cached: false }, fetchedAt: null });
+    if (!summary) {
+      res.json({ data: { briefing: null, generatedAt: null, headlineCount: 0, cached: false }, fetchedAt: null });
+      return;
+    }
+
+    const briefing = summary.briefings[lang] ?? summary.briefings[city.languages[0] ?? 'de'] ?? null;
+    res.json({
+      data: {
+        briefing,
+        generatedAt: summary.generatedAt,
+        headlineCount: summary.headlineCount,
+        cached: summary.cached,
+      },
+      fetchedAt,
+    });
   });
 
   router.get('/:city/bootstrap', (req, res) => {

@@ -13,7 +13,7 @@ describe('openai', () => {
 
   it('summarizeHeadlines returns null when not configured', async () => {
     vi.stubEnv('OPENAI_API_KEY', '');
-    const result = await summarizeHeadlines('Berlin', [{ title: 'Headline 1' }, { title: 'Headline 2' }], 'de');
+    const result = await summarizeHeadlines('Berlin', [{ title: 'Headline 1' }, { title: 'Headline 2' }], ['de']);
     expect(result).toBeNull();
   });
 

@@ -67,7 +67,7 @@ Each panel has a dedicated hook that polls its endpoint independently after boot
 | `useBootstrap` | `['bootstrap', cityId]` | — | 60s |
 | `useWeather` | `['weather', cityId]` | 15 min | 5 min |
 | `useNewsDigest` | `['news', 'digest', cityId]` | 5 min | 2 min |
-| `useNewsSummary` | `['news', 'summary', cityId]` | 15 min | 2 min |
+| `useNewsSummary` | `['news', 'summary', cityId, lang]` | 15 min | 5 min |
 | `useTransit` | `['transit', cityId]` | 5 min | 2 min |
 | `useEvents` | `['events', cityId]` | 60 min | 2 min |
 | `useSafety` | `['safety', cityId]` | 10 min | 2 min |
@@ -108,7 +108,7 @@ Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `Safety
 - **Tile** — Card wrapper with `title`, `span` (1 | 2 | 'full'), optional `expandable` (chevron toggle in header, render-function children receiving `expanded` boolean), optional `height` ('auto' | 'sm' | 'md' | 'lg'). Rounded border, shadow, `@container` body for container queries. Maps span to `col-span-*` classes.
 - **TopBar** — City name (link back to `/`), current weather + AQI popovers, `HeaderControls` (language switcher + theme toggle).
 - **PageShell** — Simplified layout for static pages (imprint, privacy, etc.). "City Monitor" logo link, `HeaderControls`, centered prose container, Footer. No city context dependency.
-- **HeaderControls** — Shared language switcher (DE/EN/TR/AR) + theme toggle. Desktop: inline buttons. Mobile: hamburger menu dropdown. Used by both TopBar and PageShell.
+- **HeaderControls** — Shared language switcher + theme toggle. Language buttons are built dynamically from `useCityConfig().languages` (per-city: Berlin shows DE/EN/TR/AR, Hamburg shows DE/EN). Desktop: inline buttons. Mobile: hamburger menu dropdown. Used by both TopBar and PageShell.
 - **Footer** — AGPL source code link, World Monitor attribution, Ko-fi support link, internal legal links (Legal Notice, Privacy, No Tracking).
 
 Tile assignments: Briefing (1), Weather (1, expandable), Air Quality (1, expandable), News (2), Transit (1, expandable, collapsed by default — 4 rows collapsed, 8 expanded), Water Levels (1, expandable), Labor Market (1, expandable, Berlin-only), Appointments (1), Events (2, last). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.

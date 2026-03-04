@@ -179,17 +179,21 @@ export async function saveAirQualityGrid(db: Db, cityId: string, points: AirQual
 export async function saveSummary(
   db: Db,
   cityId: string,
+  lang: string,
   summary: { briefing: string; headlineCount: number; headlineHash: string },
   model: string,
   tokens: { input: number; output: number },
+  generatedAt?: Date,
 ): Promise<void> {
   await db.insert(aiSummaries).values({
     cityId,
+    lang,
     headlineHash: summary.headlineHash,
     summary: summary.briefing,
     model,
     inputTokens: tokens.input,
     outputTokens: tokens.output,
+    ...(generatedAt ? { generatedAt } : {}),
   });
 }
 

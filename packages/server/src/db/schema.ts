@@ -291,6 +291,7 @@ export const populationSnapshots = pgTable('population_snapshots', {
 export const aiSummaries = pgTable('ai_summaries', {
   id: serial('id').primaryKey(),
   cityId: text('city_id').notNull(),
+  lang: text('lang').notNull().default('de'),
   headlineHash: text('headline_hash').notNull(),
   summary: text('summary').notNull(),
   model: text('model').notNull(),

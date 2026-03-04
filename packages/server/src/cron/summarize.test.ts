@@ -33,4 +33,30 @@ describe('summarize', () => {
     const summary = cache.get<NewsSummary>('berlin:news:summary');
     expect(summary).toBeNull();
   });
+
+  it('stores briefings as a Record<string, string> keyed by language', async () => {
+    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    const cache = createCache();
+
+    // Seed cache with a pre-built summary to verify the shape
+    const mockSummary: NewsSummary = {
+      briefings: {
+        de: 'Deutsche Zusammenfassung',
+        en: 'English summary',
+      },
+      generatedAt: new Date().toISOString(),
+      headlineCount: 5,
+      cached: true,
+    };
+    cache.set('berlin:news:summary', mockSummary, 60);
+
+    const result = cache.get<NewsSummary>('berlin:news:summary');
+    expect(result).not.toBeNull();
+    expect(result!.briefings).toEqual({
+      de: 'Deutsche Zusammenfassung',
+      en: 'English summary',
+    });
+    expect(result!.briefings['de']).toBe('Deutsche Zusammenfassung');
+    expect(result!.briefings['en']).toBe('English summary');
+  });
 });

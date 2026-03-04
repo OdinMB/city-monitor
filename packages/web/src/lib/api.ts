@@ -170,7 +170,7 @@ export type NewsSummaryData = { briefing: string | null; generatedAt: string | n
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${BASE}/${city}/bootstrap`),
   getNewsDigest: (city: string) => fetchJson<ApiResponse<NewsDigest>>(`${BASE}/${city}/news/digest`),
-  getNewsSummary: (city: string) => fetchJson<ApiResponse<NewsSummaryData>>(`${BASE}/${city}/news/summary`),
+  getNewsSummary: (city: string, lang?: string) => fetchJson<ApiResponse<NewsSummaryData>>(`${BASE}/${city}/news/summary${lang ? `?lang=${lang}` : ''}`),
   getWeather: (city: string) => fetchJson<ApiResponse<WeatherData>>(`${BASE}/${city}/weather`),
   getTransit: (city: string) => fetchJson<ApiResponse<TransitAlert[]>>(`${BASE}/${city}/transit`),
   getEvents: (city: string) => fetchJson<ApiResponse<CityEvent[]>>(`${BASE}/${city}/events`),

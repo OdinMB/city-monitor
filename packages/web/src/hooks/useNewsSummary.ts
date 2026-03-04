@@ -3,10 +3,10 @@ import { api, type NewsSummaryData, type ApiResponse } from '../lib/api.js';
 
 export type { NewsSummaryData };
 
-export function useNewsSummary(cityId: string) {
+export function useNewsSummary(cityId: string, lang?: string) {
   const query = useQuery<ApiResponse<NewsSummaryData>>({
-    queryKey: ['news', 'summary', cityId],
-    queryFn: () => api.getNewsSummary(cityId),
+    queryKey: ['news', 'summary', cityId, lang],
+    queryFn: () => api.getNewsSummary(cityId, lang),
     refetchInterval: 15 * 60 * 1000,
     refetchIntervalInBackground: false,
     staleTime: 5 * 60 * 1000,

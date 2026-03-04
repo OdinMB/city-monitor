@@ -45,22 +45,36 @@ function getModel(modelName: string): ChatOpenAI {
 // Briefing summarization
 // ---------------------------------------------------------------------------
 
-const BriefingSchema = z.object({
-  briefing: z.string().describe('The editorial briefing text (two paragraphs)'),
-});
+const LANGUAGE_NAMES: Record<string, string> = {
+  de: 'German',
+  en: 'English',
+  tr: 'Turkish',
+  ar: 'Arabic',
+};
 
 export async function summarizeHeadlines(
   cityName: string,
   items: Array<{ title: string; description?: string }>,
-  lang: string,
-): Promise<{ summary: string; cached: boolean; inputTokens: number; outputTokens: number } | null> {
-  if (!isConfigured()) return null;
+  langs: string[],
+): Promise<{ briefings: Record<string, string>; cached: boolean; inputTokens: number; outputTokens: number } | null> {
+  if (!isConfigured() || langs.length === 0) return null;
 
-  const language = lang === 'de' ? 'German' : 'English';
   const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
 
+  const langDescriptions = langs
+    .map((l) => `"${l}": ${LANGUAGE_NAMES[l] ?? l}`)
+    .join(', ');
+
+  const briefingShape = z.object(
+    Object.fromEntries(langs.map((l) => [
+      l,
+      z.string().describe(`The editorial briefing in ${LANGUAGE_NAMES[l] ?? l}`),
+    ])) as Record<string, z.ZodString>,
+  );
+  const BriefingSchema = z.object({ briefings: briefingShape });
+
   try {
-    log.info(`summarizing ${items.length} headlines for ${cityName}…`);
+    log.info(`summarizing ${items.length} headlines for ${cityName} in [${langs.join(', ')}]…`);
     const start = performance.now();
 
     const structured = getModel(model).withStructuredOutput(BriefingSchema, { includeRaw: true });
@@ -70,7 +84,7 @@ export async function summarizeHeadlines(
       .join('\n');
 
     const result = await structured.invoke([
-      new SystemMessage(`You are a local news editor writing a brief daily digest for ${cityName}. Write exactly two short paragraphs in an editorial voice that weave together the most important local developments from the stories below. Don't just list headlines — synthesize, contextualize, and highlight what matters most for daily life in ${cityName} (transit, safety, local politics, weather). Aim for ~120 words total. Write in ${language}. If nothing is locally relevant, respond with a single dash: -`),
+      new SystemMessage(`You are a local news editor writing a brief daily digest for ${cityName}. Write exactly two short paragraphs in an editorial voice that weave together the most important local developments from the stories below. Don't just list headlines — synthesize, contextualize, and highlight what matters most for daily life in ${cityName} (transit, safety, local politics, weather). Aim for ~120 words per language. Write the briefing in each of these languages: ${langDescriptions}. Return an object with keys: ${langs.join(', ')}. If nothing is locally relevant, use a single dash (-) for that language.`),
       new HumanMessage(itemList),
     ]);
 
@@ -83,7 +97,7 @@ export async function summarizeHeadlines(
     trackUsage(cityName.toLowerCase(), inTok, outTok);
 
     return {
-      summary: result.parsed.briefing,
+      briefings: result.parsed.briefings,
       cached: false,
       inputTokens: inTok,
       outputTokens: outTok,

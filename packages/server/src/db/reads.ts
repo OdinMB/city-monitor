@@ -44,6 +44,9 @@ import { z } from 'zod';
 
 const log = createLogger('reads');
 
+/** Wrapper returned by every route-facing read function. */
+export type DbResult<T> = { data: T; fetchedAt: Date } | null;
+
 /** Validate JSONB data with a Zod schema. Returns null on failure. */
 function validateJsonb<T>(schema: z.ZodType<T>, data: unknown, label: string): T | null {
   const result = schema.safeParse(data);
@@ -54,7 +57,7 @@ function validateJsonb<T>(schema: z.ZodType<T>, data: unknown, label: string): T
   return result.data;
 }
 
-export async function loadWeather(db: Db, cityId: string): Promise<WeatherData | null> {
+export async function loadWeather(db: Db, cityId: string): Promise<DbResult<WeatherData>> {
   const rows = await db
     .select()
     .from(weatherSnapshots)
@@ -65,8 +68,8 @@ export async function loadWeather(db: Db, cityId: string): Promise<WeatherData |
   if (rows.length === 0) return null;
 
   const row = rows[0];
-  // Guard against stale data: weather cron runs every 30min, discard if older than 2h
-  if (row.fetchedAt && Date.now() - row.fetchedAt.getTime() > 2 * 60 * 60 * 1000) return null;
+  // Safety net: discard data older than 6h (weather cron runs every 30min)
+  if (row.fetchedAt && Date.now() - row.fetchedAt.getTime() > 6 * 60 * 60 * 1000) return null;
 
   const assembled = {
     current: row.current,
@@ -74,10 +77,11 @@ export async function loadWeather(db: Db, cityId: string): Promise<WeatherData |
     daily: row.daily,
     alerts: (row.alerts ?? []),
   };
-  return validateJsonb(WeatherDataSchema, assembled, 'weather');
+  const data = validateJsonb(WeatherDataSchema, assembled, 'weather');
+  return data ? { data, fetchedAt: row.fetchedAt } : null;
 }
 
-export async function loadTransitAlerts(db: Db, cityId: string): Promise<TransitAlert[] | null> {
+export async function loadTransitAlerts(db: Db, cityId: string): Promise<DbResult<TransitAlert[]>> {
   // Get only the latest batch (rows sharing the MAX fetched_at)
   const latest = await db
     .select({ val: max(transitDisruptions.fetchedAt) })
@@ -86,8 +90,8 @@ export async function loadTransitAlerts(db: Db, cityId: string): Promise<Transit
   const latestTs = latest[0]?.val;
   if (!latestTs) return null;
 
-  // Guard against stale data: if the latest batch is too old, treat as empty
-  if (Date.now() - latestTs.getTime() > 30 * 60 * 1000) return null;
+  // Safety net: discard data older than 3h (transit cron runs every 15min)
+  if (Date.now() - latestTs.getTime() > 3 * 60 * 60 * 1000) return null;
 
   const rows = await db
     .select()
@@ -96,21 +100,24 @@ export async function loadTransitAlerts(db: Db, cityId: string): Promise<Transit
 
   if (rows.length === 0) return null;
 
-  return rows.map((row) => ({
-    id: row.externalId ?? String(row.id),
-    line: row.line,
-    lines: row.line.split(', '),
-    type: row.type as TransitAlert['type'],
-    severity: row.severity as TransitAlert['severity'],
-    message: row.message,
-    detail: row.detail ?? row.message,
-    station: row.station ?? '',
-    location: row.lat != null && row.lon != null ? { lat: row.lat, lon: row.lon } : null,
-    affectedStops: (row.affectedStops as string[]) ?? [],
-  }));
+  return {
+    data: rows.map((row) => ({
+      id: row.externalId ?? String(row.id),
+      line: row.line,
+      lines: row.line.split(', '),
+      type: row.type as TransitAlert['type'],
+      severity: row.severity as TransitAlert['severity'],
+      message: row.message,
+      detail: row.detail ?? row.message,
+      station: row.station ?? '',
+      location: row.lat != null && row.lon != null ? { lat: row.lat, lon: row.lon } : null,
+      affectedStops: (row.affectedStops as string[]) ?? [],
+    })),
+    fetchedAt: latestTs,
+  };
 }
 
-export async function loadEvents(db: Db, cityId: string): Promise<CityEvent[] | null> {
+export async function loadEvents(db: Db, cityId: string): Promise<DbResult<CityEvent[]>> {
   const rows = await db
     .select()
     .from(events)
@@ -119,26 +126,29 @@ export async function loadEvents(db: Db, cityId: string): Promise<CityEvent[] | 
 
   if (rows.length === 0) return null;
 
-  // Guard against stale data: events cron runs every 6h, discard if older than 12h
   const newest = rows.reduce((max, r) => r.fetchedAt > max ? r.fetchedAt : max, rows[0]!.fetchedAt);
-  if (Date.now() - newest.getTime() > 12 * 60 * 60 * 1000) return null;
+  // Safety net: discard data older than 48h (events cron runs every 6h)
+  if (Date.now() - newest.getTime() > 48 * 60 * 60 * 1000) return null;
 
-  return rows.map((row) => ({
-    id: row.hash,
-    title: row.title,
-    venue: row.venue ?? undefined,
-    date: row.date.toISOString(),
-    endDate: row.endDate?.toISOString(),
-    category: (row.category as CityEvent['category']) ?? 'other',
-    url: row.url ?? '',
-    description: row.description ?? undefined,
-    free: row.free ?? undefined,
-    source: (row.source as CityEvent['source']) ?? 'kulturdaten',
-    price: row.price ?? undefined,
-  }));
+  return {
+    data: rows.map((row) => ({
+      id: row.hash,
+      title: row.title,
+      venue: row.venue ?? undefined,
+      date: row.date.toISOString(),
+      endDate: row.endDate?.toISOString(),
+      category: (row.category as CityEvent['category']) ?? 'other',
+      url: row.url ?? '',
+      description: row.description ?? undefined,
+      free: row.free ?? undefined,
+      source: (row.source as CityEvent['source']) ?? 'kulturdaten',
+      price: row.price ?? undefined,
+    })),
+    fetchedAt: newest,
+  };
 }
 
-export async function loadSafetyReports(db: Db, cityId: string): Promise<SafetyReport[] | null> {
+export async function loadSafetyReports(db: Db, cityId: string): Promise<DbResult<SafetyReport[]>> {
   const rows = await db
     .select()
     .from(safetyReports)
@@ -147,20 +157,24 @@ export async function loadSafetyReports(db: Db, cityId: string): Promise<SafetyR
 
   if (rows.length === 0) return null;
 
-  return rows.map((row) => ({
-    id: row.hash,
-    title: row.title,
-    description: row.description ?? '',
-    publishedAt: row.publishedAt?.toISOString() ?? '',
-    url: row.url ?? '',
-    district: row.district ?? undefined,
-    location: row.lat != null && row.lon != null
-      ? { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined }
-      : undefined,
-  }));
+  const newest = rows.reduce((max, r) => r.fetchedAt > max ? r.fetchedAt : max, rows[0]!.fetchedAt);
+  return {
+    data: rows.map((row) => ({
+      id: row.hash,
+      title: row.title,
+      description: row.description ?? '',
+      publishedAt: row.publishedAt?.toISOString() ?? '',
+      url: row.url ?? '',
+      district: row.district ?? undefined,
+      location: row.lat != null && row.lon != null
+        ? { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined }
+        : undefined,
+    })),
+    fetchedAt: newest,
+  };
 }
 
-export async function loadNewsItems(db: Db, cityId: string): Promise<PersistedNewsItem[] | null> {
+export async function loadNewsItems(db: Db, cityId: string): Promise<DbResult<PersistedNewsItem[]>> {
   const rows = await db
     .select()
     .from(newsItems)
@@ -173,24 +187,28 @@ export async function loadNewsItems(db: Db, cityId: string): Promise<PersistedNe
 
   if (rows.length === 0) return null;
 
-  return rows.map((row) => ({
-    id: row.hash,
-    title: row.title,
-    url: row.url,
-    publishedAt: row.publishedAt?.toISOString() ?? '',
-    sourceName: row.sourceName,
-    sourceUrl: row.sourceUrl,
-    description: row.description ?? undefined,
-    category: row.category,
-    tier: row.tier,
-    lang: row.lang,
-    location: row.lat != null && row.lon != null
-      ? { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined }
-      : undefined,
-    assessment: row.relevantToCity != null
-      ? { relevant_to_city: row.relevantToCity, importance: row.importance ?? undefined, category: row.category }
-      : undefined,
-  }));
+  const newest = rows.reduce((max, r) => r.fetchedAt > max ? r.fetchedAt : max, rows[0]!.fetchedAt);
+  return {
+    data: rows.map((row) => ({
+      id: row.hash,
+      title: row.title,
+      url: row.url,
+      publishedAt: row.publishedAt?.toISOString() ?? '',
+      sourceName: row.sourceName,
+      sourceUrl: row.sourceUrl,
+      description: row.description ?? undefined,
+      category: row.category,
+      tier: row.tier,
+      lang: row.lang,
+      location: row.lat != null && row.lon != null
+        ? { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined }
+        : undefined,
+      assessment: row.relevantToCity != null
+        ? { relevant_to_city: row.relevantToCity, importance: row.importance ?? undefined, category: row.category }
+        : undefined,
+    })),
+    fetchedAt: newest,
+  };
 }
 
 /**
@@ -227,23 +245,35 @@ export async function loadAllNewsAssessments(db: Db, cityId: string): Promise<Pe
   }));
 }
 
-export async function loadSummary(db: Db, cityId: string): Promise<(NewsSummary & { headlineHash: string }) | null> {
+export async function loadSummary(db: Db, cityId: string): Promise<DbResult<NewsSummary & { headlineHash: string }>> {
+  // Load most recent rows — enough to cover all language variants from the latest batch
   const rows = await db
     .select()
     .from(aiSummaries)
     .where(eq(aiSummaries.cityId, cityId))
     .orderBy(desc(aiSummaries.generatedAt))
-    .limit(1);
+    .limit(10);
 
   if (rows.length === 0) return null;
 
-  const row = rows[0];
+  // Group by the most recent generation timestamp
+  const latestTs = rows[0].generatedAt.getTime();
+  const latestRows = rows.filter((r) => r.generatedAt.getTime() === latestTs);
+
+  const briefings: Record<string, string> = {};
+  for (const row of latestRows) {
+    briefings[row.lang] = row.summary;
+  }
+
   return {
-    briefing: row.summary,
-    generatedAt: row.generatedAt.toISOString(),
-    headlineCount: 0, // Not stored in DB; informational only
-    cached: true,
-    headlineHash: row.headlineHash,
+    data: {
+      briefings,
+      generatedAt: rows[0].generatedAt.toISOString(),
+      headlineCount: 0,
+      cached: true,
+      headlineHash: rows[0].headlineHash,
+    },
+    fetchedAt: rows[0].generatedAt,
   };
 }
 

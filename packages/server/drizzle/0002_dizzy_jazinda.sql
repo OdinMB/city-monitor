@@ -1,0 +1,1 @@
+ALTER TABLE "ai_summaries" ADD COLUMN "lang" text DEFAULT 'de' NOT NULL;
