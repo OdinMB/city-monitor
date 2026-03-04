@@ -86,6 +86,34 @@ select:focus-visible,
   outline-offset: 2px;
 }
 
+/* Custom thin scrollbar for tile content areas */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 3px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.6);
+}
+.dark .scrollbar-thin {
+  scrollbar-color: rgba(107, 114, 128, 0.4) transparent;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.4);
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.6);
+}
+
 /* Hide map zoom controls on mobile — finger gestures handle zoom */
 @media (max-width: 1023px) {
   .maplibregl-ctrl-top-right .maplibregl-ctrl-group {
