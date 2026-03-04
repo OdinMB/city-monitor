@@ -92,7 +92,7 @@ async function ingestCityConstruction(cityId: string, url: string, cache: Cache,
       direction: props.direction ?? undefined,
       validFrom: props.validity?.from ?? undefined,
       validUntil: props.validity?.to ?? undefined,
-      isFuture: props.is_future,
+      isFuture: props.is_future ?? false,
       geometry: feature.geometry as ConstructionSite['geometry'],
     });
   }

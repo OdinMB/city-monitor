@@ -136,7 +136,7 @@ export const ConstructionSiteSchema = z.object({
   direction: z.string().optional(),
   validFrom: z.string().optional(),
   validUntil: z.string().optional(),
-  isFuture: z.boolean(),
+  isFuture: z.boolean().default(false),
   geometry: z.object({
     type: z.string(),
     coordinates: z.any(),
