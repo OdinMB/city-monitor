@@ -14,10 +14,6 @@ const STATE_COLORS: Record<string, string> = {
   unknown: '#9ca3af',
 };
 
-function getCharValue(station: WaterLevelStation, shortname: string): number | undefined {
-  return station.characteristicValues?.find((c) => c.shortname === shortname)?.value;
-}
-
 const StationRow = memo(function StationRow({ station, t }: { station: WaterLevelStation; t: (k: string) => string }) {
   const color = STATE_COLORS[station.state] ?? STATE_COLORS.unknown;
   const stateKey = station.state === 'very_high' ? 'veryHigh' : (station.state ?? 'unknown');

@@ -22,16 +22,24 @@ const CATEGORY_COLORS: Record<string, string> = {
   sports: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
 };
 
-const FAVICON_DOMAINS: Record<string, string> = {
-  rbb24: 'www.rbb24.de',
-  Tagesspiegel: 'www.tagesspiegel.de',
-  'Berliner Morgenpost': 'www.morgenpost.de',
-  'BZ Berlin': 'www.bz-berlin.de',
-  'Berlin.de News': 'www.berlin.de',
-  'Berliner Zeitung': 'www.berliner-zeitung.de',
-  'taz Berlin': 'taz.de',
-  'RBB Polizei': 'www.berlin.de',
-  Exberliner: 'www.exberliner.com',
+/** Maps source name → local favicon filename (without extension) */
+const FAVICON_SLUGS: Record<string, string> = {
+  // Berlin
+  rbb24: 'rbb24',
+  Tagesspiegel: 'tagesspiegel',
+  'Berliner Morgenpost': 'berliner-morgenpost',
+  'BZ Berlin': 'bz-berlin',
+  'Berlin.de News': 'berlin-de-news',
+  'Berliner Zeitung': 'berliner-zeitung',
+  'taz Berlin': 'taz-berlin',
+  'RBB Polizei': 'berlin-de-news',
+  Exberliner: 'exberliner',
+  'Gründerszene Berlin': 'gruenderszene',
+  // Hamburg
+  'NDR Hamburg': 'ndr-hamburg',
+  'Hamburger Abendblatt': 'hamburger-abendblatt',
+  MOPO: 'mopo',
+  'hamburg.de News': 'hamburg-de-news',
 };
 
 const MAX_ITEMS = 10;
@@ -129,7 +137,7 @@ export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand:
         {remaining > 0 && (
           <button
             onClick={onExpand}
-            className="w-full pt-2 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+            className="w-full pt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
           >
             {t('panel.news.showMore', { count: remaining })}
           </button>
@@ -142,8 +150,8 @@ export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand:
 const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem }) {
   const { t } = useTranslation();
   const colorClass = CATEGORY_COLORS[item.category] ?? CATEGORY_COLORS.local;
-  const domain = FAVICON_DOMAINS[item.sourceName];
-  const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=16` : null;
+  const slug = FAVICON_SLUGS[item.sourceName];
+  const faviconUrl = slug ? `/favicons/${slug}.png` : null;
 
   return (
     <li className="py-2 first:pt-0 last:pb-0">
@@ -161,7 +169,7 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
           {t(`category.${item.category}`, item.category)}
         </span>
         {item.importance != null && item.importance > 0 && (
-          <span className="text-[10px] text-gray-400 dark:text-gray-500">{Math.round(item.importance * 100)}%</span>
+          <span className="text-[10px] text-gray-500 dark:text-gray-400">{Math.round(item.importance * 100)}%</span>
         )}
         {item.location && (
           <span className="text-blue-500 dark:text-blue-400" role="img" aria-label={t('panel.news.locationPin')}>📍</span>

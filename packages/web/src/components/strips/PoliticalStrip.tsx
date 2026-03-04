@@ -123,14 +123,16 @@ function SeatChart({ districts, seatsLabel }: { districts: PoliticalDistrict[]; 
   const cx = 100, cy = 98;
   const outerR = 88, innerR = 54;
 
-  let angle = Math.PI;
-  const arcs = parties.map(([party, count], i) => {
-    const sweep = (count / total) * Math.PI;
-    const start = angle - (i === 0 ? 0 : GAP_RAD / 2);
-    const end = angle - sweep + (i === parties.length - 1 ? 0 : GAP_RAD / 2);
-    angle -= sweep;
-    return { d: arcPath(cx, cy, outerR, innerR, start, end), color: getPartyColor(party), party, count };
-  });
+  const arcs = parties.reduce<{ angle: number; items: { d: string; color: string; party: string; count: number }[] }>(
+    (acc, [party, count], i) => {
+      const sweep = (count / total) * Math.PI;
+      const start = acc.angle - (i === 0 ? 0 : GAP_RAD / 2);
+      const end = acc.angle - sweep + (i === parties.length - 1 ? 0 : GAP_RAD / 2);
+      acc.items.push({ d: arcPath(cx, cy, outerR, innerR, start, end), color: getPartyColor(party), party, count });
+      return { angle: acc.angle - sweep, items: acc.items };
+    },
+    { angle: Math.PI, items: [] },
+  ).items;
 
   return (
     <div>

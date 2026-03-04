@@ -17,9 +17,15 @@
 [data-city='berlin'] {
   --accent: #e2001a;
 }
+.dark[data-city='berlin'] {
+  --accent: #ff4d5e;
+}
 
 [data-city='hamburg'] {
   --accent: #004b93;
+}
+.dark[data-city='hamburg'] {
+  --accent: #5b9bd5;
 }
 
 /* MapLibre popup */

@@ -15,7 +15,16 @@
 Feeds are defined in city config files (e.g. `packages/server/src/config/cities/berlin.ts`). Each feed has:
 - `name`, `url`, `tier` (1=primary, 2=secondary, 3=tertiary), `type` ('rss'|'atom'), `lang`, optional `category` override
 
-Berlin has 10 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, BZ Berlin, Berlin.de News, Berliner Zeitung, taz Berlin, RBB Polizei (category=crime), Grunderzene, Exberliner.
+Berlin has 10 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, BZ Berlin, Berlin.de News, Berliner Zeitung, taz Berlin, RBB Polizei (category=crime), Gründerszene, Exberliner.
+
+### Favicons
+
+News source favicons are self-hosted in `packages/web/public/favicons/`. When adding a new feed source:
+
+1. Add the source name → slug mapping to `FAVICON_SLUGS` in `packages/web/src/components/strips/NewsStrip.tsx`
+2. Add the slug → domain mapping to `FAVICON_SOURCES` in `packages/web/scripts/fetch-favicons.ts`
+3. Run `npx tsx packages/web/scripts/fetch-favicons.ts` to download the favicon
+4. Commit the new `.png` file from `packages/web/public/favicons/`
 
 ### Ingestion Constraints
 

@@ -28,22 +28,26 @@ Follow every step when adding a new data source. Skip items marked with a surfac
 17. **Dashboard tile** (tile) — create strip component in `packages/web/src/components/strips/<Name>Strip.tsx`, mount in `packages/web/src/components/layout/CommandLayout.tsx`
 18. **i18n** — add translation keys in all 4 locale files (`en.json`, `de.json`, `tr.json`, `ar.json`)
 
+### Favicons (if adding news feeds)
+
+19. **Favicon slugs** — add source name → slug mapping to `FAVICON_SLUGS` in `packages/web/src/components/strips/NewsStrip.tsx` and slug → domain mapping to `FAVICON_SOURCES` in `packages/web/scripts/fetch-favicons.ts`. Run `npx tsx packages/web/scripts/fetch-favicons.ts` and commit the new PNGs from `packages/web/public/favicons/`.
+
 ### Documentation & Attribution
 
-19. **Sources page** — add entry to `SHARED_SOURCES`, `BERLIN_SOURCES`, or `HAMBURG_SOURCES` in `packages/web/src/pages/SourcesPage.tsx`
-20. **Context file** — create `.context/<name>.md` documenting the data source, ingestion pipeline, cache keys, endpoint shapes
-21. **CLAUDE.md** — add a one-line reference to the new context file in the "Context Files" section
-22. **Data freshness note** — if the source uses a hardcoded URL that changes periodically (XLSX files, biennial WFS layer names, budget CSVs), add an entry to the Data Freshness Inventory below with the check schedule
+20. **Sources page** — add entry to `SHARED_SOURCES`, `BERLIN_SOURCES`, or `HAMBURG_SOURCES` in `packages/web/src/pages/SourcesPage.tsx`
+21. **Context file** — create `.context/<name>.md` documenting the data source, ingestion pipeline, cache keys, endpoint shapes
+22. **CLAUDE.md** — add a one-line reference to the new context file in the "Context Files" section
+23. **Data freshness note** — if the source uses a hardcoded URL that changes periodically (XLSX files, biennial WFS layer names, budget CSVs), add an entry to the Data Freshness Inventory below with the check schedule
 
 ### Testing
 
-23. **Unit tests** — test CSV/XLSX/JSON parsing logic with mock data, test summary aggregation, test edge cases (empty data, malformed rows)
-24. **Integration test** — test REST endpoint with mock cache/DB
+24. **Unit tests** — test CSV/XLSX/JSON parsing logic with mock data, test summary aggregation, test edge cases (empty data, malformed rows)
+25. **Integration test** — test REST endpoint with mock cache/DB
 
 ### DB Migration (production)
 
-25. **Generate migration** — `npm run db:generate` from `packages/server`
-26. **Apply migration** — `npm run db:migrate` (or `db:push` in dev)
+26. **Generate migration** — `npm run db:generate` from `packages/server`
+27. **Apply migration** — `npm run db:migrate` (or `db:push` in dev)
 
 ---
 

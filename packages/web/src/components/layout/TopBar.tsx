@@ -29,7 +29,7 @@ export function TopBar() {
       {/* Centered city name — desktop only */}
       <span
         className="hidden md:block absolute left-1/2 -translate-x-1/2 text-lg font-bold pointer-events-none"
-        style={{ color: city.theme.accent }}
+        style={{ color: 'var(--accent)' }}
       >
         {city.name.toUpperCase()}
       </span>
@@ -37,7 +37,7 @@ export function TopBar() {
       <div className="flex items-center gap-2 min-w-0">
         <span
           className="md:hidden text-lg font-bold mr-1 shrink-0"
-          style={{ color: city.theme.accent }}
+          style={{ color: 'var(--accent)' }}
         >
           {city.name.toUpperCase()}
         </span>

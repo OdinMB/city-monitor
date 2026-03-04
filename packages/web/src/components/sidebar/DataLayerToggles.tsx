@@ -88,7 +88,7 @@ function SubLayerItem({ icon, color, active, label, onClick }: { icon: IconNode;
       style={active ? { backgroundColor: `${color}12` } : undefined}
     >
       <LayerBadge icon={icon} color={color} active={active} small />
-      <span className={`text-[13px] ${active ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}`}>
+      <span className={`text-[13px] ${active ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'}`}>
         {label}
       </span>
     </button>
@@ -123,7 +123,7 @@ export function DataLayerToggles() {
         <button
           onClick={toggleSingleView}
           aria-pressed={singleView}
-          className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
+          className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
         >
           <span className={singleView ? 'text-gray-700 dark:text-gray-200 font-medium' : ''}>
             {t('sidebar.viewMode.single')}

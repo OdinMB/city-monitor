@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useEvents } from '../../hooks/useEvents.js';
@@ -177,15 +177,15 @@ export function EventsStrip({ expanded, onExpand }: { expanded: boolean; onExpan
   // Source tab keyboard navigation
   const sourceKeys = activeSourceFilters.map((sf) => sf.key);
   const sourceActiveIdx = sourceKeys.indexOf(resolvedSource);
-  const selectSourceByIdx = useCallback((i: number) => {
+  const selectSourceByIdx = (i: number) => {
     setSourceFilter(sourceKeys[i] as SourceFilter);
     setCategoryFilter('all');
-  }, [sourceKeys]);
+  };
   const { setTabRef: setSrcRef, onKeyDown: onSrcKeyDown } = useTabKeys(sourceKeys.length, sourceActiveIdx, selectSourceByIdx);
 
   // Category tab keyboard navigation
   const catActiveIdx = (availableCategories as readonly string[]).indexOf(resolvedCategory);
-  const selectCatByIdx = useCallback((i: number) => setCategoryFilter(availableCategories[i] as string), [availableCategories]);
+  const selectCatByIdx = (i: number) => setCategoryFilter(availableCategories[i] as string);
   const { setTabRef: setCatRef, onKeyDown: onCatKeyDown } = useTabKeys(availableCategories.length, catActiveIdx, selectCatByIdx);
 
   return (

@@ -37,7 +37,7 @@ export function Popover({
   hover = false,
   className = '',
 }: PopoverProps) {
-  const { refs, floatingStyles, context } = useFloating({
+  const { refs: { setReference, setFloating }, floatingStyles, context } = useFloating({
     open,
     onOpenChange,
     placement,
@@ -45,19 +45,22 @@ export function Popover({
     whileElementsMounted: autoUpdate,
   });
 
-  const interactions = [
-    useDismiss(context),
-    ...(hover ? [useHover(context, { move: true, delay: { open: 150, close: 150 } })] : [useClick(context)]),
-  ];
-  const { getReferenceProps, getFloatingProps } = useInteractions(interactions);
+  const hoverInteraction = useHover(context, { enabled: hover, move: true, delay: { open: 150, close: 150 } });
+  const clickInteraction = useClick(context, { enabled: !hover });
+  const dismissInteraction = useDismiss(context);
+  const { getReferenceProps, getFloatingProps } = useInteractions([
+    hoverInteraction,
+    clickInteraction,
+    dismissInteraction,
+  ]);
 
   return (
     <>
-      {renderTrigger(refs.setReference, getReferenceProps())}
+      {renderTrigger(setReference, getReferenceProps())}
       {open && (
         <FloatingPortal>
           <div
-            ref={refs.setFloating}
+            ref={setFloating}
             style={floatingStyles}
             {...getFloatingProps()}
             className={`z-50 ${className}`}
