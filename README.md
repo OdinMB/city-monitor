@@ -1,14 +1,12 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/OdinMB/city-monitor/main/packages/web/public/og-default.png" alt="City Monitor — Real-time city dashboard" width="600" />
-  <br>
-  <img src="https://raw.githubusercontent.com/OdinMB/city-monitor/main/packages/web/public/og-berlin.png" alt="City Monitor Berlin" width="600" />
-</p>
-
 <h1 align="center">City Monitor</h1>
 
 <p align="center">
   Real-time city dashboard, currently covering Berlin.<br>
   Inspired by <a href="https://worldmonitor.io">World Monitor</a>.
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/OdinMB/city-monitor/main/packages/web/public/screenshot.png" alt="City Monitor Berlin dashboard" width="800" />
 </p>
 
 <p align="center">
