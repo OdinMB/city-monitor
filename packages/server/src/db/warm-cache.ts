@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { createLogger } from '../lib/logger.js';
@@ -33,124 +33,129 @@ export async function warmCache(db: Db, cache: Cache): Promise<void> {
 async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
   const tasks = [
     (async () => {
-      const weather = await loadWeather(db, cityId);
-      if (weather) cache.set(CK.weather(cityId), weather, 2160);      // 30min cron + 20%
+      const r = await loadWeather(db, cityId);
+      if (r) cache.set(CK.weather(cityId), r.data, 2160, r.fetchedAt);      // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} weather failed`, err)),
 
     (async () => {
-      const alerts = await loadTransitAlerts(db, cityId);
-      if (alerts) cache.set(CK.transitAlerts(cityId), alerts, 1080);  // 15min cron + 20%
+      const r = await loadTransitAlerts(db, cityId);
+      if (r) cache.set(CK.transitAlerts(cityId), r.data, 1080, r.fetchedAt);  // 15min cron + 20%
     })().catch((err) => log.error(`${cityId} transit failed`, err)),
 
     (async () => {
-      const items = await loadEvents(db, cityId);
-      if (items) cache.set(CK.eventsUpcoming(cityId), items, 25920);  // 6h cron + 20%
+      const r = await loadEvents(db, cityId);
+      if (r) cache.set(CK.eventsUpcoming(cityId), r.data, 25920, r.fetchedAt);  // 6h cron + 20%
     })().catch((err) => log.error(`${cityId} events failed`, err)),
 
     (async () => {
-      const reports = await loadSafetyReports(db, cityId);
-      if (reports) cache.set(CK.safetyRecent(cityId), reports, 720);  // 10min cron + 20%
+      const r = await loadSafetyReports(db, cityId);
+      if (r) cache.set(CK.safetyRecent(cityId), r.data, 720, r.fetchedAt);  // 10min cron + 20%
     })().catch((err) => log.error(`${cityId} safety failed`, err)),
 
     (async () => {
-      const items = await loadNewsItems(db, cityId);
-      if (items && items.length > 0) {
-        const digest = buildDigestFromItems(items);
-        cache.set(CK.newsDigest(cityId), digest, 720);               // 10min cron + 20%
+      const r = await loadNewsItems(db, cityId);
+      if (r && r.data.length > 0) {
+        const digest = buildDigestFromItems(r.data);
+        cache.set(CK.newsDigest(cityId), digest, 720, r.fetchedAt);               // 10min cron + 20%
         for (const [cat, catItems] of Object.entries(digest.categories)) {
-          cache.set(CK.newsCategory(cityId, cat), catItems, 720);
+          cache.set(CK.newsCategory(cityId, cat), catItems, 720, r.fetchedAt);
         }
       }
     })().catch((err) => log.error(`${cityId} news failed`, err)),
 
     (async () => {
-      const summary = await loadSummary(db, cityId);
-      if (summary) cache.set(CK.newsSummary(cityId), summary, 86400);
+      const r = await loadSummary(db, cityId);
+      if (r) cache.set(CK.newsSummary(cityId), r.data, 86400, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} summary failed`, err)),
 
     (async () => {
-      const warnings = await loadNinaWarnings(db, cityId);
-      if (warnings) cache.set(CK.ninaWarnings(cityId), warnings, 360);  // 5min cron + 20%
+      const r = await loadNinaWarnings(db, cityId);
+      if (r) cache.set(CK.ninaWarnings(cityId), r.data, 360, r.fetchedAt);  // 5min cron + 20%
     })().catch((err) => log.error(`${cityId} nina failed`, err)),
 
     (async () => {
-      const grid = await loadAirQualityGrid(db, cityId);
-      if (grid) cache.set(CK.airQualityGrid(cityId), grid, 2160);   // 30min cron + 20%
+      const r = await loadAirQualityGrid(db, cityId);
+      if (r) cache.set(CK.airQualityGrid(cityId), r.data, 2160, r.fetchedAt);   // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} aq grid failed`, err)),
 
     (async () => {
-      const waterLevels = await loadWaterLevels(db, cityId);
-      if (waterLevels) cache.set(CK.waterLevels(cityId), waterLevels, 1080);  // 15min cron + 20%
+      const r = await loadWaterLevels(db, cityId);
+      if (r) cache.set(CK.waterLevels(cityId), r.data, 1080, r.fetchedAt);  // 15min cron + 20%
     })().catch((err) => log.error(`${cityId} water levels failed`, err)),
 
     (async () => {
-      const appointments = await loadAppointments(db, cityId);
-      if (appointments) cache.set(CK.appointments(cityId), appointments, 25920);  // 6h cron + 20%
+      const r = await loadAppointments(db, cityId);
+      if (r) cache.set(CK.appointments(cityId), r.data, 25920, r.fetchedAt);  // 6h cron + 20%
     })().catch((err) => log.error(`${cityId} appointments failed`, err)),
 
     ...(['bezirke', 'bundestag', 'state', 'state-bezirke'] as const).map((level) =>
       (async () => {
-        const districts = await loadPoliticalDistricts(db, cityId, level);
-        if (districts) cache.set(CK.political(cityId, level), districts, 604800);
+        const r = await loadPoliticalDistricts(db, cityId, level);
+        if (r) cache.set(CK.political(cityId, level), r.data, 604800, r.fetchedAt);
       })().catch((err) => log.error(`${cityId} political:${level} failed`, err)),
     ),
 
     (async () => {
-      const budget = await loadBudget(db, cityId);
-      if (budget) cache.set(CK.budget(cityId), budget, 86400);
+      const r = await loadBudget(db, cityId);
+      if (r) cache.set(CK.budget(cityId), r.data, 86400, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} budget failed`, err)),
 
     (async () => {
-      const sites = await loadConstructionSites(db, cityId);
-      if (sites) cache.set(CK.constructionSites(cityId), sites, 2160);   // 30min cron + 20%
+      const r = await loadConstructionSites(db, cityId);
+      if (r) cache.set(CK.constructionSites(cityId), r.data, 2160, r.fetchedAt);   // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} construction failed`, err)),
 
     (async () => {
-      const incidents = await loadTrafficIncidents(db, cityId);
-      if (incidents) cache.set(CK.trafficIncidents(cityId), incidents, 360);  // 5min cron + 20%
+      const r = await loadTrafficIncidents(db, cityId);
+      if (r) cache.set(CK.trafficIncidents(cityId), r.data, 360, r.fetchedAt);  // 5min cron + 20%
     })().catch((err) => log.error(`${cityId} traffic failed`, err)),
 
     (async () => {
-      const pharmacies = await loadPharmacies(db, cityId);
-      if (pharmacies) cache.set(CK.pharmacies(cityId), pharmacies, 25920);  // 6h cron + 20%
+      const r = await loadPharmacies(db, cityId);
+      if (r) cache.set(CK.pharmacies(cityId), r.data, 25920, r.fetchedAt);  // 6h cron + 20%
     })().catch((err) => log.error(`${cityId} pharmacies failed`, err)),
 
     (async () => {
-      const aeds = await loadAeds(db, cityId);
-      if (aeds) cache.set(CK.aedLocations(cityId), aeds, 86400);
+      const r = await loadAeds(db, cityId);
+      if (r) cache.set(CK.aedLocations(cityId), r.data, 86400, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} aeds failed`, err)),
 
     (async () => {
-      const geojson = await loadSocialAtlas(db, cityId);
-      if (geojson) cache.set(CK.socialAtlasGeojson(cityId), geojson, 604800);
+      const r = await loadSocialAtlas(db, cityId);
+      if (r) cache.set(CK.socialAtlasGeojson(cityId), r.data, 604800, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} social-atlas failed`, err)),
 
     // Wastewater, bathing, and labor market are Berlin-only data sources
     ...(cityId === 'berlin' ? [
       (async () => {
-        const wastewater = await loadWastewater(db, 'berlin');
-        if (wastewater) cache.set(CK.wastewaterSummary('berlin'), wastewater, 604800);
+        const r = await loadWastewater(db, 'berlin');
+        if (r) cache.set(CK.wastewaterSummary('berlin'), r.data, 604800, r.fetchedAt);
       })().catch((err) => log.error('wastewater failed', err)),
 
       (async () => {
-        const spots = await loadBathingSpots(db, 'berlin');
-        if (spots) cache.set(CK.bathingSpots('berlin'), spots, 86400);
+        const r = await loadBathingSpots(db, 'berlin');
+        if (r) cache.set(CK.bathingSpots('berlin'), r.data, 86400, r.fetchedAt);
       })().catch((err) => log.error('bathing failed', err)),
 
       (async () => {
-        const laborMarket = await loadLaborMarket(db, 'berlin');
-        if (laborMarket) cache.set(CK.laborMarket('berlin'), laborMarket, 86400);
+        const r = await loadLaborMarket(db, 'berlin');
+        if (r) cache.set(CK.laborMarket('berlin'), r.data, 86400, r.fetchedAt);
       })().catch((err) => log.error('labor-market failed', err)),
 
       (async () => {
-        const geojson = await loadPopulationGeojson(db, 'berlin');
-        if (geojson) cache.set(CK.populationGeojson('berlin'), geojson, 2592000);
+        const r = await loadPopulationGeojson(db, 'berlin');
+        if (r) cache.set(CK.populationGeojson('berlin'), r.data, 2592000, r.fetchedAt);
       })().catch((err) => log.error('population geojson failed', err)),
 
       (async () => {
-        const summary = await loadPopulationSummary(db, 'berlin');
-        if (summary) cache.set(CK.populationSummary('berlin'), summary, 2592000);
+        const r = await loadPopulationSummary(db, 'berlin');
+        if (r) cache.set(CK.populationSummary('berlin'), r.data, 2592000, r.fetchedAt);
       })().catch((err) => log.error('population summary failed', err)),
+
+      (async () => {
+        const r = await loadFeuerwehr(db, 'berlin');
+        if (r) cache.set(CK.feuerwehr('berlin'), r.data, 86400, r.fetchedAt);
+      })().catch((err) => log.error('feuerwehr failed', err)),
     ] : []),
   ];
 

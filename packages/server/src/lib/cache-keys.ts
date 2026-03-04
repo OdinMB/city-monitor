@@ -34,6 +34,9 @@ export const CK = {
   // Political
   political: (cityId: string, level: string) => `${cityId}:political:${level}`,
 
+  // Emergency Services
+  feuerwehr: (cityId: string) => `${cityId}:feuerwehr`,
+
   // Economics
   laborMarket: (cityId: string) => `${cityId}:labor-market`,
   budget: (cityId: string) => `${cityId}:budget`,
@@ -63,6 +66,7 @@ export const CK = {
     CK.waterLevels(cityId),
     CK.budget(cityId),
     CK.appointments(cityId),
+    CK.feuerwehr(cityId),
     CK.laborMarket(cityId),
     CK.wastewaterSummary(cityId),
     CK.populationSummary(cityId),

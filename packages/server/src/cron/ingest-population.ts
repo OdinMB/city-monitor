@@ -270,10 +270,10 @@ export function createPopulationIngestion(cache: Cache, db: Db | null = null) {
       let changePct = 0;
       if (db) {
         try {
-          const prev = await loadPopulationSummary(db, 'berlin');
-          if (prev && prev.total > 0) {
-            changeAbsolute = totalPop - prev.total;
-            changePct = (changeAbsolute / prev.total) * 100;
+          const prevResult = await loadPopulationSummary(db, 'berlin');
+          if (prevResult && prevResult.data.total > 0) {
+            changeAbsolute = totalPop - prevResult.data.total;
+            changePct = (changeAbsolute / prevResult.data.total) * 100;
           }
         } catch {
           // Ignore — first run or DB unavailable

@@ -28,10 +28,10 @@ export function createWaterLevelsRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const dbData = await loadWaterLevels(db, city.id);
-        if (dbData) {
-          cache.set(CK.waterLevels(city.id), dbData, 900);
-          res.json({ data: dbData, fetchedAt: new Date().toISOString() });
+        const result = await loadWaterLevels(db, city.id);
+        if (result) {
+          cache.set(CK.waterLevels(city.id), result.data, 900, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

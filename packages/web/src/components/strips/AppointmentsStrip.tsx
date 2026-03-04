@@ -2,8 +2,10 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAppointments } from '../../hooks/useAppointments.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 import type { BuergeramtService } from '../../lib/api.js';
 
 const STATUS_COLORS: Record<BuergeramtService['status'], string> = {
@@ -56,10 +58,13 @@ const STATUS_PRIORITY: Record<string, number> = { none: 0, scarce: 1, unknown: 2
 const COLLAPSED_SERVICES = 5;
 const EXPANDED_SERVICES = 10;
 
+const FRESH_MAX_AGE = 8 * 60 * 60 * 1000; // 8h (cron every 6h)
+
 export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useAppointments(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useAppointments(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (isLoading) {
     return <Skeleton lines={4} />;
@@ -144,6 +149,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
           {t('panel.appointments.bookAppointment')} →
         </a>
       </div>
+      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </div>
   );
 }

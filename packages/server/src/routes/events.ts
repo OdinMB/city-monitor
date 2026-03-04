@@ -30,10 +30,10 @@ export function createEventsRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const dbEvents = await loadEvents(db, city.id);
-        if (dbEvents) {
-          cache.set(CK.eventsUpcoming(city.id), dbEvents, 21600);
-          res.json({ data: filterFuture(dbEvents), fetchedAt: new Date().toISOString() });
+        const result = await loadEvents(db, city.id);
+        if (result) {
+          cache.set(CK.eventsUpcoming(city.id), result.data, 21600, result.fetchedAt);
+          res.json({ data: filterFuture(result.data), fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

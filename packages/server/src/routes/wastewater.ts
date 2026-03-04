@@ -27,10 +27,10 @@ export function createWastewaterRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const stored = await loadWastewater(db, city.id);
-        if (stored) {
-          cache.set(CK.wastewaterSummary(city.id), stored, 604800);
-          res.json({ data: stored, fetchedAt: new Date().toISOString() });
+        const result = await loadWastewater(db, city.id);
+        if (result) {
+          cache.set(CK.wastewaterSummary(city.id), result.data, 604800, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

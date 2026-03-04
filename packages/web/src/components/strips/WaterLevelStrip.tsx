@@ -2,8 +2,10 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 import type { WaterLevelStation } from '../../lib/api.js';
 
 const STATE_COLORS: Record<string, string> = {
@@ -51,10 +53,13 @@ const StationRow = memo(function StationRow({ station, t }: { station: WaterLeve
   );
 });
 
+const FRESH_MAX_AGE = 20 * 60 * 1000; // 20 min (cron every 15 min)
+
 export function WaterLevelStrip() {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useWaterLevels(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useWaterLevels(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (isLoading) {
     return <Skeleton lines={3} />;
@@ -70,6 +75,7 @@ export function WaterLevelStrip() {
       {data.stations.map((station) => (
         <StationRow key={station.uuid} station={station} t={t} />
       ))}
+      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </div>
   );
 }

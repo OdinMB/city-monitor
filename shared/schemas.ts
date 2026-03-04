@@ -260,6 +260,24 @@ export const PoliticalDistrictSchema = z.object({
   representatives: z.array(RepresentativeSchema),
 });
 
+// --- Feuerwehr ---
+
+export const FeuerwehrMonthDataSchema = z.object({
+  reportMonth: z.string(),
+  missionCountAll: z.number(),
+  missionCountEms: z.number(),
+  missionCountFire: z.number(),
+  missionCountTechnicalRescue: z.number(),
+  responseTimeEmsCriticalMedian: z.number(),
+  responseTimeFirePumpMedian: z.number(),
+});
+
+export const FeuerwehrSummarySchema = z.object({
+  current: FeuerwehrMonthDataSchema,
+  partial: FeuerwehrMonthDataSchema.nullable(),
+  previous: FeuerwehrMonthDataSchema.nullable(),
+});
+
 // --- Population Demographics ---
 
 export const PopulationSummarySchema = z.object({

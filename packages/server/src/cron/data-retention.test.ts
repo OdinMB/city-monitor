@@ -36,9 +36,9 @@ describe('data-retention', () => {
     const handler = createDataRetention(mock.db);
     await handler();
 
-    // 20 delete calls (one per table)
-    expect(mock.deleteFn).toHaveBeenCalledTimes(21);
-    expect(mock.where).toHaveBeenCalledTimes(21);
+    // one delete call per table
+    expect(mock.deleteFn).toHaveBeenCalledTimes(22);
+    expect(mock.where).toHaveBeenCalledTimes(22);
   });
 
   it('runs without errors when DB is empty', async () => {
@@ -59,6 +59,6 @@ describe('data-retention', () => {
 
     const handler = createDataRetention(db);
     await expect(handler()).resolves.not.toThrow();
-    expect(deleteFn).toHaveBeenCalledTimes(21);
+    expect(deleteFn).toHaveBeenCalledTimes(22);
   });
 });

@@ -353,6 +353,23 @@ export interface WastewaterSummary {
   plantCount: number;
 }
 
+// Feuerwehr (Berlin Fire Department) monthly operations
+export interface FeuerwehrMonthData {
+  reportMonth: string;                      // "2026-02"
+  missionCountAll: number;
+  missionCountEms: number;
+  missionCountFire: number;
+  missionCountTechnicalRescue: number;
+  responseTimeEmsCriticalMedian: number;    // seconds
+  responseTimeFirePumpMedian: number;       // seconds
+}
+
+export interface FeuerwehrSummary {
+  current: FeuerwehrMonthData;              // last complete month
+  partial: FeuerwehrMonthData | null;       // current partial month (may be null early in month)
+  previous: FeuerwehrMonthData | null;      // month before current, for MoM delta
+}
+
 // Population demographics (Amt für Statistik Berlin-Brandenburg, semi-annual)
 export interface PopulationFeatureProps {
   plrId: string;         // 8-digit Planungsraum ID (e.g. "01100101")

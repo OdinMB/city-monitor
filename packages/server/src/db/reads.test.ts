@@ -45,16 +45,18 @@ describe('DB reads', () => {
     expect(result).toBeNull();
   });
 
-  it('loadWeather returns WeatherData from row', async () => {
+  it('loadWeather returns DbResult with WeatherData', async () => {
     const db = createMockDb([{
       current: { temp: 10, feelsLike: 8, humidity: 65, precipitation: 0, weatherCode: 3, windSpeed: 12, windDirection: 270 },
       hourly: [{ time: '2026-03-03T12:00', temp: 10, precipProb: 20, weatherCode: 3 }],
       daily: [{ date: '2026-03-03', high: 12, low: 5, weatherCode: 3, precip: 0.5, sunrise: '06:30', sunset: '18:00' }],
       alerts: [],
+      fetchedAt: new Date(),
     }]);
     const result = await loadWeather(db, 'berlin');
     expect(result).not.toBeNull();
-    expect(result!.current.temp).toBe(10);
+    expect(result!.data.current.temp).toBe(10);
+    expect(result!.fetchedAt).toBeInstanceOf(Date);
   });
 
   it('loadTransitAlerts returns null when no rows', async () => {
@@ -63,14 +65,14 @@ describe('DB reads', () => {
     expect(result).toBeNull();
   });
 
-  it('loadTransitAlerts maps rows to TransitAlert[]', async () => {
+  it('loadTransitAlerts maps rows to DbResult<TransitAlert[]>', async () => {
     const db = createMockDb([
       { id: 1, externalId: 'ext1', line: 'U2', type: 'disruption', severity: 'high', message: 'Test', detail: 'Test detail', station: 'Alexanderplatz', lat: 52.52, lon: 13.41, affectedStops: ['A', 'B'] },
     ]);
     const result = await loadTransitAlerts(db, 'berlin');
-    expect(result).toHaveLength(1);
-    expect(result![0].line).toBe('U2');
-    expect(result![0].id).toBe('ext1');
+    expect(result!.data).toHaveLength(1);
+    expect(result!.data[0].line).toBe('U2');
+    expect(result!.data[0].id).toBe('ext1');
   });
 
   it('loadEvents returns null when no rows', async () => {
@@ -79,16 +81,16 @@ describe('DB reads', () => {
     expect(result).toBeNull();
   });
 
-  it('loadEvents maps rows to CityEvent[]', async () => {
+  it('loadEvents maps rows to DbResult<CityEvent[]>', async () => {
     const db = createMockDb([
       { hash: 'h1', title: 'Concert', venue: 'Hall', date: new Date('2026-03-03'), endDate: null, category: 'music', url: 'https://x.com', description: null, free: true, source: 'ticketmaster', price: '29–89 EUR', fetchedAt: new Date() },
     ]);
     const result = await loadEvents(db, 'berlin');
-    expect(result).toHaveLength(1);
-    expect(result![0].title).toBe('Concert');
-    expect(result![0].id).toBe('h1');
-    expect(result![0].source).toBe('ticketmaster');
-    expect(result![0].price).toBe('29–89 EUR');
+    expect(result!.data).toHaveLength(1);
+    expect(result!.data[0].title).toBe('Concert');
+    expect(result!.data[0].id).toBe('h1');
+    expect(result!.data[0].source).toBe('ticketmaster');
+    expect(result!.data[0].price).toBe('29–89 EUR');
   });
 
   it('loadSafetyReports returns null when no rows', async () => {
@@ -97,13 +99,13 @@ describe('DB reads', () => {
     expect(result).toBeNull();
   });
 
-  it('loadSafetyReports maps rows to SafetyReport[]', async () => {
+  it('loadSafetyReports maps rows to DbResult<SafetyReport[]>', async () => {
     const db = createMockDb([
-      { hash: 'h1', title: 'Report', description: 'Test', publishedAt: new Date('2026-03-01'), url: 'https://x.com', district: 'Mitte' },
+      { hash: 'h1', title: 'Report', description: 'Test', publishedAt: new Date('2026-03-01'), url: 'https://x.com', district: 'Mitte', fetchedAt: new Date() },
     ]);
     const result = await loadSafetyReports(db, 'berlin');
-    expect(result).toHaveLength(1);
-    expect(result![0].district).toBe('Mitte');
+    expect(result!.data).toHaveLength(1);
+    expect(result!.data[0].district).toBe('Mitte');
   });
 
   it('loadSummary returns null when no rows', async () => {
@@ -112,15 +114,15 @@ describe('DB reads', () => {
     expect(result).toBeNull();
   });
 
-  it('loadSummary maps rows to multi-lang NewsSummary', async () => {
+  it('loadSummary maps rows to DbResult with multi-lang NewsSummary', async () => {
     const db = createMockDb([
       { lang: 'de', summary: 'Deutsche Zusammenfassung', generatedAt: new Date('2026-03-02'), headlineHash: 'abc' },
     ]);
     const result = await loadSummary(db, 'berlin');
     expect(result).not.toBeNull();
-    expect(result!.briefings['de']).toBe('Deutsche Zusammenfassung');
-    expect(result!.cached).toBe(true);
-    expect(result!.headlineHash).toBe('abc');
+    expect(result!.data.briefings['de']).toBe('Deutsche Zusammenfassung');
+    expect(result!.data.cached).toBe(true);
+    expect(result!.data.headlineHash).toBe('abc');
   });
 
   it('loadAirQualityGrid returns null when no rows', async () => {
@@ -129,16 +131,16 @@ describe('DB reads', () => {
     expect(result).toBeNull();
   });
 
-  it('loadAirQualityGrid maps rows to AirQualityGridPoint[]', async () => {
+  it('loadAirQualityGrid maps rows to DbResult<AirQualityGridPoint[]>', async () => {
     const db = createMockDb([
       { lat: 52.52, lon: 13.41, europeanAqi: 42, station: 'Berlin Mitte', url: 'https://example.com' },
       { lat: 52.48, lon: 13.35, europeanAqi: 35, station: 'Steglitz', url: null },
     ]);
     const result = await loadAirQualityGrid(db, 'berlin');
-    expect(result).toHaveLength(2);
-    expect(result![0].europeanAqi).toBe(42);
-    expect(result![0].station).toBe('Berlin Mitte');
-    expect(result![0].url).toBe('https://example.com');
-    expect(result![1].url).toBeUndefined();
+    expect(result!.data).toHaveLength(2);
+    expect(result!.data[0].europeanAqi).toBe(42);
+    expect(result!.data[0].station).toBe('Berlin Mitte');
+    expect(result!.data[0].url).toBe('https://example.com');
+    expect(result!.data[1].url).toBeUndefined();
   });
 });

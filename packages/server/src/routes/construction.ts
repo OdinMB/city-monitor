@@ -27,10 +27,10 @@ export function createConstructionRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const stored = await loadConstructionSites(db, city.id);
-        if (stored) {
-          cache.set(CK.constructionSites(city.id), stored, 1800);
-          res.json({ data: stored, fetchedAt: new Date().toISOString() });
+        const result = await loadConstructionSites(db, city.id);
+        if (result) {
+          cache.set(CK.constructionSites(city.id), result.data, 1800, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

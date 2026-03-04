@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWeather } from '../../hooks/useWeather.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 
 function formatDayName(dateStr: string, locale: string): string {
   try {
@@ -54,10 +56,13 @@ function sampleHourly<T extends { time: string }>(hourly: T[], now: string): T[]
 
 const DAILY_COUNT = 7;
 
+const FRESH_MAX_AGE = 45 * 60 * 1000; // 45 min (cron every 30 min)
+
 export function WeatherStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useWeather(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useWeather(cityId);
   const { t, i18n } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain="Weather" onRetry={refetch} />;
@@ -158,6 +163,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
           )}
         </>
       )}
+      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </>
   );
 }

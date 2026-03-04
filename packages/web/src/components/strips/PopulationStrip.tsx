@@ -3,6 +3,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePopulationSummary } from '../../hooks/usePopulationSummary.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 
 function formatChange(n: number): string {
   const sign = n >= 0 ? '+' : '';
@@ -94,9 +95,7 @@ export function PopulationStrip() {
       </div>
 
       {/* Source footnote */}
-      <p className="mt-4 text-[10px] text-gray-400 dark:text-gray-500 text-center">
-        {t('panel.population.source')} · {data.snapshotDate}
-      </p>
+      <TileFooter>{t('panel.population.source')} · {data.snapshotDate}</TileFooter>
     </div>
   );
 }

@@ -26,10 +26,10 @@ export function createSocialAtlasRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const stored = await loadSocialAtlas(db, city.id);
-        if (stored) {
-          cache.set(CK.socialAtlasGeojson(city.id), stored, 604800);
-          res.json({ data: stored, fetchedAt: new Date().toISOString() });
+        const result = await loadSocialAtlas(db, city.id);
+        if (result) {
+          cache.set(CK.socialAtlasGeojson(city.id), result.data, 604800, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

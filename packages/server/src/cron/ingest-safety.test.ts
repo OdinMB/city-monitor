@@ -94,26 +94,29 @@ describe('ingest-safety — DB coordinate reuse', () => {
     const hash2 = hashString('https://www.berlin.de/polizei/polizeimeldungen/2' + 'Verkehrsunfall in Kreuzberg');
 
     // Both items already in DB with coordinates
-    vi.mocked(loadSafetyReports).mockResolvedValue([
-      {
-        id: hash1,
-        title: 'Raub in Mitte – Täter flüchtig',
-        description: 'Am Samstag wurde ein Mann beraubt.',
-        publishedAt: '2026-03-01T10:00:00.000Z',
-        url: 'https://www.berlin.de/polizei/polizeimeldungen/1',
-        district: 'Mitte',
-        location: { lat: 52.52, lon: 13.40, label: 'Mitte' },
-      },
-      {
-        id: hash2,
-        title: 'Verkehrsunfall in Kreuzberg',
-        description: 'Bei einem Unfall wurden zwei Personen verletzt.',
-        publishedAt: '2026-03-01T08:00:00.000Z',
-        url: 'https://www.berlin.de/polizei/polizeimeldungen/2',
-        district: 'Kreuzberg',
-        location: { lat: 52.50, lon: 13.41, label: 'Kreuzberg' },
-      },
-    ]);
+    vi.mocked(loadSafetyReports).mockResolvedValue({
+      data: [
+        {
+          id: hash1,
+          title: 'Raub in Mitte – Täter flüchtig',
+          description: 'Am Samstag wurde ein Mann beraubt.',
+          publishedAt: '2026-03-01T10:00:00.000Z',
+          url: 'https://www.berlin.de/polizei/polizeimeldungen/1',
+          district: 'Mitte',
+          location: { lat: 52.52, lon: 13.40, label: 'Mitte' },
+        },
+        {
+          id: hash2,
+          title: 'Verkehrsunfall in Kreuzberg',
+          description: 'Bei einem Unfall wurden zwei Personen verletzt.',
+          publishedAt: '2026-03-01T08:00:00.000Z',
+          url: 'https://www.berlin.de/polizei/polizeimeldungen/2',
+          district: 'Kreuzberg',
+          location: { lat: 52.50, lon: 13.41, label: 'Kreuzberg' },
+        },
+      ],
+      fetchedAt: new Date(),
+    });
 
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(mockPoliceFeedXml, { status: 200 }),
@@ -141,17 +144,20 @@ describe('ingest-safety — DB coordinate reuse', () => {
     const hash1 = hashString('https://www.berlin.de/polizei/polizeimeldungen/1' + 'Raub in Mitte – Täter flüchtig');
 
     // Only item 1 already in DB with coordinates; item 2 is new
-    vi.mocked(loadSafetyReports).mockResolvedValue([
-      {
-        id: hash1,
-        title: 'Raub in Mitte – Täter flüchtig',
-        description: 'Am Samstag wurde ein Mann beraubt.',
-        publishedAt: '2026-03-01T10:00:00.000Z',
-        url: 'https://www.berlin.de/polizei/polizeimeldungen/1',
-        district: 'Mitte',
-        location: { lat: 52.52, lon: 13.40, label: 'Mitte' },
-      },
-    ]);
+    vi.mocked(loadSafetyReports).mockResolvedValue({
+      data: [
+        {
+          id: hash1,
+          title: 'Raub in Mitte – Täter flüchtig',
+          description: 'Am Samstag wurde ein Mann beraubt.',
+          publishedAt: '2026-03-01T10:00:00.000Z',
+          url: 'https://www.berlin.de/polizei/polizeimeldungen/1',
+          district: 'Mitte',
+          location: { lat: 52.52, lon: 13.40, label: 'Mitte' },
+        },
+      ],
+      fetchedAt: new Date(),
+    });
 
     // geolocateReports returns coords for the one new item (index 0 of the subset passed)
     vi.mocked(geolocateReports).mockResolvedValue([

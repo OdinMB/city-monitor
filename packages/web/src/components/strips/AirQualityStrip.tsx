@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { getAqiLevel } from '../../lib/aqi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 
 /* ── AQI scale segments ───────────────────────────────────── */
 
@@ -100,11 +102,14 @@ const StationEntry = memo(function StationEntry({ name, aqi }: { name: string; a
 
 /* ── Main component ───────────────────────────────────────── */
 
+const FRESH_MAX_AGE = 45 * 60 * 1000; // 45 min (cron every 30 min)
+
 export function AirQualityStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useAirQuality(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useAirQuality(cityId);
   const { data: gridData } = useAirQualityGrid(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   // Filter to WAQI stations (have aqicn.org URL), sort by name for stable order, take 8
   // Must be above early returns to satisfy Rules of Hooks
@@ -170,6 +175,7 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
           )}
         </>
       )}
+      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </>
   );
 }

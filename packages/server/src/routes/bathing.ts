@@ -27,10 +27,10 @@ export function createBathingRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const stored = await loadBathingSpots(db, city.id);
-        if (stored) {
-          cache.set(CK.bathingSpots(city.id), stored, 86400);
-          res.json({ data: stored, fetchedAt: new Date().toISOString() });
+        const result = await loadBathingSpots(db, city.id);
+        if (result) {
+          cache.set(CK.bathingSpots(city.id), result.data, 86400, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

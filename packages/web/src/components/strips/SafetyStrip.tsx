@@ -1,14 +1,19 @@
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useSafety } from '../../hooks/useSafety.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
+
+const FRESH_MAX_AGE = 15 * 60 * 1000; // 15 min (cron every 10 min)
 
 export function SafetyStrip() {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useSafety(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useSafety(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   const reports = data ?? [];
 
@@ -25,6 +30,7 @@ export function SafetyStrip() {
       ) : reports.length === 0 ? (
         <p className="text-sm text-gray-400 py-2 text-center">{t('panel.safety.empty')}</p>
       ) : (
+        <>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {reports.map((report) => (
             <a
@@ -57,6 +63,8 @@ export function SafetyStrip() {
             </a>
           ))}
         </div>
+        {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
+        </>
       )}
     </section>
   );

@@ -33,10 +33,10 @@ export function createAppointmentsRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const stored = await loadAppointments(db, city.id);
-        if (stored) {
-          cache.set(CK.appointments(city.id), stored, 21600);
-          res.json({ data: stored, fetchedAt: new Date().toISOString() });
+        const result = await loadAppointments(db, city.id);
+        if (result) {
+          cache.set(CK.appointments(city.id), result.data, 21600, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

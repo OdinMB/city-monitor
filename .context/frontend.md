@@ -154,6 +154,15 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 - Rent map overlay (Berlin only): raster WMS tile layer from Berlin Open Data (`gdi.berlin.de/services/wms/wohnlagenadr2024`). Shows Wohnlagenkarte residential quality zones (einfach/mittel/gut) that drive Mietspiegel rent ranges. Added/removed via `setRentMapOverlay()` based on `activeLayers.has('rent-map') && city.id === 'berlin'`. No server proxy needed (public WMS, no API key). Sidebar toggle hidden for non-Berlin cities via `cities` filter in `LAYER_META`. License: dl-de-zero-2.0.
 - Vite config requires `target: 'esnext'` (both `build.target` and `optimizeDeps.esbuildOptions.target`) to prevent MapLibre's GeoJSON web worker crash (`__publicField is not defined`)
 
+## Data Freshness
+
+API responses include `fetchedAt` (ISO string) indicating when data was last ingested from external sources. The frontend uses this to show staleness indicators.
+
+- **`useFreshness(fetchedAt, freshMaxAge)`** — hook that returns `{ isStale, agoText }`. Re-evaluates every 60s. `agoText` uses i18n `time.*` keys.
+- **`TileFooter`** — unified footnote component (`text-[10px]`, gray, centered). Used for staleness badges and domain-specific notes (measurement dates, generation times).
+- Each strip has a `FRESH_MAX_AGE` constant (ms) defining when its data is considered stale. When stale, a `TileFooter` with "Updated X ago" (translated) appears at the bottom.
+- Strips with domain-specific footnotes (BriefingStrip, WastewaterStrip, BathingStrip, LaborMarketStrip, PopulationStrip) use `TileFooter` for those notes as well, ensuring consistent styling.
+
 ## Reusable Components
 
 | Component | File | Description |
@@ -164,7 +173,7 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 
 | File | Purpose |
 |---|---|
-| `lib/format-time.ts` | `formatRelativeTime(iso)` — "just now", "5 min ago", "2h ago", "3d ago" |
+| `lib/format-time.ts` | `formatRelativeTime(iso)` — English-only "just now", "5 min ago"; `formatRelativeTimeI18n(iso, t)` — i18n-aware variant using `time.*` keys |
 | `lib/map-icons.ts` | Lucide-to-canvas icon renderer, `registerAllMapIcons()`, color maps, exports `IconNode` type |
 | `lib/weather-codes.ts` | WMO code to emoji + label mapping |
 

@@ -29,6 +29,7 @@ import { createBathingRouter } from './routes/bathing.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
 import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createPopulationRouter } from './routes/population.js';
+import { createFeuerwehrRouter } from './routes/feuerwehr.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -51,6 +52,7 @@ import { createBathingIngestion } from './cron/ingest-bathing.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { createPopulationIngestion } from './cron/ingest-population.js';
+import { createFeuerwehrIngestion } from './cron/ingest-feuerwehr.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
@@ -69,7 +71,10 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   }
   app.use(cors({ origin: allowedOrigins }));
 
-  app.use(rateLimit({ windowMs: 60_000, max: 100, standardHeaders: true, legacyHeaders: false }));
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (!isDev) {
+    app.use(rateLimit({ windowMs: 60_000, max: 100, standardHeaders: true, legacyHeaders: false }));
+  }
   app.use(express.json());
 
   const cache = createCache();
@@ -109,6 +114,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-wastewater',   tableName: 'wastewater_snapshots',    maxAgeSeconds: 86400 },
     { jobName: 'ingest-labor-market', tableName: 'labor_market_snapshots',  maxAgeSeconds: 86400 },
     { jobName: 'ingest-population',   tableName: 'population_snapshots',    maxAgeSeconds: 2592000 },
+    { jobName: 'ingest-feuerwehr',   tableName: 'feuerwehr_snapshots',    maxAgeSeconds: 86400 },
   ];
 
   const stale = db
@@ -136,6 +142,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestWastewater = createWastewaterIngestion(cache, db);
   const ingestLaborMarket = createLaborMarketIngestion(cache, db);
   const ingestPopulation = createPopulationIngestion(cache, db);
+  const ingestFeuerwehr = createFeuerwehrIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -163,6 +170,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
     { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
+    { name: 'ingest-feuerwehr', schedule: '0 8 * * *', handler: ingestFeuerwehr, runOnStart: s('ingest-feuerwehr') },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -181,9 +189,11 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   // Validate :city param on all /:city/* routes
   app.use('/api/:city', validateCity);
 
-  // Stricter rate limit for bootstrap (heavy payload)
-  const bootstrapLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
-  app.use('/api/:city/bootstrap', bootstrapLimit);
+  // Stricter rate limit for bootstrap (heavy payload) — skip in dev
+  if (!isDev) {
+    const bootstrapLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+    app.use('/api/:city/bootstrap', bootstrapLimit);
+  }
 
   app.use('/api', cacheFor(300), createNewsRouter(cache, db));
   app.use('/api', cacheFor(300), createWeatherRouter(cache, db));
@@ -205,6 +215,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
   app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));
+  app.use('/api', cacheFor(43200), createFeuerwehrRouter(cache, db));
 
   return { app, cache, db, scheduler };
 }

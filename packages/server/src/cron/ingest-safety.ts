@@ -69,9 +69,9 @@ async function ingestCitySafety(cityId: string, cityName: string, feedUrl: strin
   const existingCoords = new Map<string, SafetyReport['location']>();
   if (db) {
     try {
-      const existing = await loadSafetyReports(db, cityId);
-      if (existing) {
-        for (const r of existing) {
+      const existingResult = await loadSafetyReports(db, cityId);
+      if (existingResult) {
+        for (const r of existingResult.data) {
           if (r.location) existingCoords.set(r.id, r.location);
         }
       }

@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBudget } from '../../hooks/useBudget.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 import type { BudgetAreaSummary, BudgetCategoryAmount } from '../../lib/api.js';
 
 type Mode = 'city' | 'districts';
@@ -180,10 +182,13 @@ function AreaSelect({
 
 /* ── Main component ──────────────────────────────────────── */
 
+const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
+
 export function BudgetStrip() {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useBudget(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useBudget(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
   const [mode, setMode] = useState<Mode>('city');
 
   // District pickers: only real districts (codes 31-42), not Hauptverwaltung (30)
@@ -249,6 +254,7 @@ export function BudgetStrip() {
         />
         )}
       </div>
+      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </>
   );
 }

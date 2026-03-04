@@ -2,8 +2,10 @@ import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBathing } from '../../hooks/useBathing.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 import type { BathingSpot } from '../../lib/api.js';
 
 const QUALITY_COLORS: Record<string, string> = {
@@ -52,10 +54,13 @@ const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: s
   );
 });
 
+const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
+
 export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useBathing(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useBathing(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   // Must be above early returns to satisfy Rules of Hooks
   const { goodDisplay, warnDisplay, goodCount, warnCount, poorCount, latestMeasuredAt, offSeason } = useMemo(() => {
@@ -133,11 +138,11 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
           </div>
         </div>
       )}
-      {latestMeasuredAt && (
-        <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-2">
-          {t('panel.bathing.measuredAt', { date: new Date(latestMeasuredAt + 'T00:00:00Z').toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
-        </p>
-      )}
+      <TileFooter stale={isStale}>
+        {latestMeasuredAt && t('panel.bathing.measuredAt', { date: new Date(latestMeasuredAt + 'T00:00:00Z').toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
+        {latestMeasuredAt && agoText && ' · '}
+        {agoText && t('stale.updated', { time: agoText })}
+      </TileFooter>
       </div>
     </div>
   );

@@ -27,10 +27,10 @@ export function createTrafficRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const stored = await loadTrafficIncidents(db, city.id);
-        if (stored) {
-          cache.set(CK.trafficIncidents(city.id), stored, 300);
-          res.json({ data: stored, fetchedAt: new Date().toISOString() });
+        const result = await loadTrafficIncidents(db, city.id);
+        if (result) {
+          cache.set(CK.trafficIncidents(city.id), result.data, 300, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

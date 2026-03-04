@@ -25,8 +25,9 @@ export function createCache() {
     return e.value as T;
   }
 
-  function set(key: string, value: unknown, ttlSeconds: number): void {
-    entries.set(key, { value, expiry: Date.now() + ttlSeconds * 1000, updatedAt: Date.now() });
+  function set(key: string, value: unknown, ttlSeconds: number, fetchedAt?: Date): void {
+    const now = Date.now();
+    entries.set(key, { value, expiry: now + ttlSeconds * 1000, updatedAt: fetchedAt?.getTime() ?? now });
   }
 
   function del(key: string): void {

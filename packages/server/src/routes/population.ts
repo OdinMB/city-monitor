@@ -27,10 +27,10 @@ export function createPopulationRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const stored = await loadPopulationGeojson(db, city.id);
-        if (stored) {
-          cache.set(CK.populationGeojson(city.id), stored, 2592000);
-          res.json({ data: stored, fetchedAt: new Date().toISOString() });
+        const result = await loadPopulationGeojson(db, city.id);
+        if (result) {
+          cache.set(CK.populationGeojson(city.id), result.data, 2592000, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {
@@ -56,10 +56,10 @@ export function createPopulationRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const stored = await loadPopulationSummary(db, city.id);
-        if (stored) {
-          cache.set(CK.populationSummary(city.id), stored, 2592000);
-          res.json({ data: stored, fetchedAt: new Date().toISOString() });
+        const result = await loadPopulationSummary(db, city.id);
+        if (result) {
+          cache.set(CK.populationSummary(city.id), result.data, 2592000, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

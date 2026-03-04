@@ -51,9 +51,9 @@ export function createAirQualityRouter(cache: Cache, db: Db | null = null) {
     // Cache miss — try DB before live fetch (cache → DB → API)
     if (!cached && db) {
       try {
-        const rows = await loadAirQualityGrid(db, city.id);
-        if (rows) {
-          cache.set(CK.airQualityGrid(city.id), rows, 1800);
+        const result = await loadAirQualityGrid(db, city.id);
+        if (result) {
+          cache.set(CK.airQualityGrid(city.id), result.data, 1800, result.fetchedAt);
           cached = cache.getWithMeta<AirQualityGridPoint[]>(CK.airQualityGrid(city.id));
         }
       } catch {

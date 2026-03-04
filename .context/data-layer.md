@@ -93,9 +93,9 @@ All tables have `id` (serial PK), `cityId` (text), and `fetchedAt` (timestamp, d
 
 ### Reads (`reads.ts`)
 
-Query functions that return typed objects or `null`. Each loads the most recent data for a city. Snapshot tables use `ORDER BY fetchedAt DESC LIMIT 1`. Multi-row tables (transit, air quality, NINA) use `MAX(fetchedAt)` to find the latest batch, with staleness guards (30–60 min) to avoid serving stale data when the current state is empty.
+All route-facing read functions return `DbResult<T>` (`{ data: T; fetchedAt: Date } | null`). This wrapper ensures routes always have the real `fetchedAt` timestamp from the DB — never `new Date()`. Each function loads the most recent data for a city. Snapshot tables use `ORDER BY fetchedAt DESC LIMIT 1`. Multi-row tables (transit, air quality, NINA) use `MAX(fetchedAt)` to find the latest batch. Safety-net upper bounds (3–48h depending on domain) prevent serving extremely stale data when a cron job has stopped entirely, but generous enough to always surface data while the cron is running.
 - `loadWeather`, `loadTransitAlerts`, `loadEvents`, `loadSafetyReports`, `loadNewsItems`, `loadSummary`, `loadNinaWarnings`, `loadAirQualityGrid`, `loadWaterLevels`, `loadPoliticalDistricts`, `loadAppointments`
-- `loadBudget`, `loadConstructionSites`, `loadTrafficIncidents`, `loadPharmacies`, `loadAeds`, `loadSocialAtlas`, `loadWastewater`, `loadBathingSpots`, `loadLaborMarket`
+- `loadBudget`, `loadConstructionSites`, `loadTrafficIncidents`, `loadPharmacies`, `loadAeds`, `loadSocialAtlas`, `loadWastewater`, `loadBathingSpots`, `loadLaborMarket`, `loadPopulationGeojson`, `loadPopulationSummary`, `loadFeuerwehr`
 - **Historical queries** (used by `/history` endpoints, not cron): `loadWeatherHistory`, `loadAqiHistory`, `loadWaterLevelHistory`, `loadLaborMarketHistory` — each takes `(db, cityId, sinceDays)` and returns `HistoryPoint[]`
 
 ### Writes (`writes.ts`)

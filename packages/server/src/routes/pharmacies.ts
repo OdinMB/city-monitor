@@ -27,10 +27,10 @@ export function createPharmaciesRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const stored = await loadPharmacies(db, city.id);
-        if (stored) {
-          cache.set(CK.pharmacies(city.id), stored, 21600);
-          res.json({ data: stored, fetchedAt: new Date().toISOString() });
+        const result = await loadPharmacies(db, city.id);
+        if (result) {
+          cache.set(CK.pharmacies(city.id), result.data, 21600, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

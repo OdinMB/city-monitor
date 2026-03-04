@@ -2,8 +2,10 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTransit } from '../../hooks/useTransit.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 import type { TransitAlert } from '../../lib/api.js';
 
 const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
@@ -42,10 +44,13 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
   );
 });
 
+const FRESH_MAX_AGE = 20 * 60 * 1000; // 20 min (cron every 15 min)
+
 export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useTransit(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useTransit(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   const alerts = data ?? [];
   const sorted = [...alerts].sort(
@@ -76,6 +81,7 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
           +{hiddenCount} {t('panel.transit.more')}
         </button>
       )}
+      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </div>
   );
 }

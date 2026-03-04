@@ -29,10 +29,10 @@ export function createWeatherRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const dbData = await loadWeather(db, city.id);
-        if (dbData) {
-          cache.set(CK.weather(city.id), dbData, 1800);
-          res.json({ data: dbData, fetchedAt: new Date().toISOString() });
+        const result = await loadWeather(db, city.id);
+        if (result) {
+          cache.set(CK.weather(city.id), result.data, 1800, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

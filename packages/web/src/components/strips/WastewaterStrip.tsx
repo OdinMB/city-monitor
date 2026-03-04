@@ -2,8 +2,10 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWastewater } from '../../hooks/useWastewater.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 import type { WastewaterPathogen } from '../../lib/api.js';
 
 const TREND_ARROWS: Record<WastewaterPathogen['trend'], string> = {
@@ -79,11 +81,14 @@ const Sparkline = memo(function Sparkline({ data, color, sampleDate, label }: { 
   );
 });
 
+const FRESH_MAX_AGE = 8 * 24 * 60 * 60 * 1000; // 8 days (cron weekly)
+
 export function WastewaterStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
   const isBerlin = cityId === 'berlin';
-  const { data, isLoading, isError, refetch } = useWastewater(cityId, isBerlin);
+  const { data, fetchedAt, isLoading, isError, refetch } = useWastewater(cityId, isBerlin);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (!isBerlin) return null;
   if (isLoading) return <Skeleton lines={2} />;
@@ -112,9 +117,10 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-2">
+        <TileFooter stale={isStale}>
           {t('panel.wastewater.sampleDate', { date: new Date(data.sampleDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
-        </p>
+          {agoText && (' · ' + t('stale.updated', { time: agoText }))}
+        </TileFooter>
       </div>
     );
   }
@@ -146,9 +152,10 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
           <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={data.sampleDate} label={`${pathogenLabel(p.name, t)} trend`} />
         </div>
       ))}
-      <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center">
+      <TileFooter stale={isStale}>
         {t('panel.wastewater.sampleDate', { date: new Date(data.sampleDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
-      </p>
+        {agoText && (' · ' + t('stale.updated', { time: agoText }))}
+      </TileFooter>
     </div>
   );
 }

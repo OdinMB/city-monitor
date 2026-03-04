@@ -27,10 +27,10 @@ export function createSafetyRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const dbReports = await loadSafetyReports(db, city.id);
-        if (dbReports) {
-          cache.set(CK.safetyRecent(city.id), dbReports, 900);
-          res.json({ data: dbReports, fetchedAt: new Date().toISOString() });
+        const result = await loadSafetyReports(db, city.id);
+        if (result) {
+          cache.set(CK.safetyRecent(city.id), result.data, 900, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

@@ -33,10 +33,10 @@ export function createNinaRouter(cache: Cache, db: Db | null = null) {
 
     if (db) {
       try {
-        const dbWarnings = await loadNinaWarnings(db, city.id);
-        if (dbWarnings) {
-          cache.set(CK.ninaWarnings(city.id), dbWarnings, 600);
-          res.json({ data: dbWarnings, fetchedAt: new Date().toISOString() });
+        const result = await loadNinaWarnings(db, city.id);
+        if (result) {
+          cache.set(CK.ninaWarnings(city.id), result.data, 600, result.fetchedAt);
+          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

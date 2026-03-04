@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 import type { NewsItem } from '../../lib/api.js';
 
 const ALL_CATEGORIES = ['all', 'politics', 'economy', 'culture', 'local', 'transit', 'crime', 'sports'] as const;
@@ -45,10 +47,13 @@ const FAVICON_SLUGS: Record<string, string> = {
 const MAX_ITEMS = 10;
 const COLLAPSED_ITEMS = 5;
 
+const FRESH_MAX_AGE = 15 * 60 * 1000; // 15 min (cron every 10 min)
+
 export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand: () => void }) {
   const { id: cityId } = useCityConfig();
-  const { data, isLoading, isError, refetch } = useNewsDigest(cityId);
+  const { data, fetchedAt, isLoading, isError, refetch } = useNewsDigest(cityId);
   const { t } = useTranslation();
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
@@ -143,6 +148,7 @@ export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand:
           </button>
         )}
       </div>
+      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </>
   );
 }

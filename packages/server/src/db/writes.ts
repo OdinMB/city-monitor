@@ -30,8 +30,9 @@ import {
   bathingSnapshots,
   laborMarketSnapshots,
   populationSnapshots,
+  feuerwehrSnapshots,
 } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
@@ -115,6 +116,10 @@ export async function saveLaborMarket(db: Db, cityId: string, data: LaborMarketS
 
 export async function savePopulation(db: Db, cityId: string, geojson: unknown, summary: PopulationSummary): Promise<void> {
   await db.insert(populationSnapshots).values({ cityId, geojson, summary });
+}
+
+export async function saveFeuerwehr(db: Db, cityId: string, data: FeuerwehrSummary): Promise<void> {
+  await db.insert(feuerwehrSnapshots).values({ cityId, data });
 }
 
 // ---------------------------------------------------------------------------

@@ -29,9 +29,9 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
     // DB fallback when cache is cold
     if (db) {
       try {
-        const items = await loadNewsItems(db, city.id);
-        if (items && items.length > 0) {
-          const filtered = applyDropLogic(items);
+        const result = await loadNewsItems(db, city.id);
+        if (result && result.data.length > 0) {
+          const filtered = applyDropLogic(result.data);
 
           const categories: Record<string, NewsItem[]> = {};
           for (const item of filtered) {
@@ -39,12 +39,12 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
             categories[item.category]!.push(item);
           }
 
-          const rebuilt: NewsDigest = { items: filtered, categories, updatedAt: new Date().toISOString() };
-          cache.set(CK.newsDigest(city.id), rebuilt, 900);
+          const rebuilt: NewsDigest = { items: filtered, categories, updatedAt: result.fetchedAt.toISOString() };
+          cache.set(CK.newsDigest(city.id), rebuilt, 900, result.fetchedAt);
           for (const [cat, catItems] of Object.entries(categories)) {
-            cache.set(CK.newsCategory(city.id, cat), catItems, 900);
+            cache.set(CK.newsCategory(city.id, cat), catItems, 900, result.fetchedAt);
           }
-          res.json({ data: rebuilt, fetchedAt: new Date().toISOString() });
+          res.json({ data: rebuilt, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {
@@ -76,11 +76,11 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       fetchedAt = cachedSummary.fetchedAt;
     } else if (db) {
       try {
-        const dbSummary = await loadSummary(db, city.id);
-        if (dbSummary) {
-          cache.set(CK.newsSummary(city.id), dbSummary, 86400);
-          summary = dbSummary;
-          fetchedAt = new Date().toISOString();
+        const result = await loadSummary(db, city.id);
+        if (result) {
+          cache.set(CK.newsSummary(city.id), result.data, 86400, result.fetchedAt);
+          summary = result.data;
+          fetchedAt = result.fetchedAt.toISOString();
         }
       } catch (err) {
         log.error(`${city.id} DB read failed`, err);
@@ -131,6 +131,7 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
       laborMarket: data[CK.laborMarket(city.id)] ?? null,
       wastewater: data[CK.wastewaterSummary(city.id)] ?? null,
       populationSummary: data[CK.populationSummary(city.id)] ?? null,
+      feuerwehr: data[CK.feuerwehr(city.id)] ?? null,
     });
   });
 

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { getPartyColor } from '../../lib/party-colors.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 import type { PoliticalDistrict, Representative } from '../../lib/api.js';
 
 type View = 'state' | 'bezirke' | 'bundestag';
@@ -169,12 +171,15 @@ function SeatChart({ districts, seatsLabel }: { districts: PoliticalDistrict[]; 
 
 const PREVIEW_COUNT = 5;
 
+const FRESH_MAX_AGE = 8 * 24 * 60 * 60 * 1000; // 8 days (cron weekly)
+
 export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onExpand?: () => void }) {
   const [view, setView] = useState<View>('state');
   const { id: cityId } = useCityConfig();
   const { t } = useTranslation();
 
-  const { data, isLoading, isError, refetch } = usePolitical(cityId, VIEW_LEVELS[view]);
+  const { data, fetchedAt, isLoading, isError, refetch } = usePolitical(cityId, VIEW_LEVELS[view]);
+  const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain="Political" onRetry={refetch} />;
@@ -229,6 +234,7 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
           <RepList districts={data} limit={expanded ? undefined : PREVIEW_COUNT} onExpand={onExpand} />
         </>
       )}
+      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </div>
   );
 }

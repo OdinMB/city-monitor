@@ -287,6 +287,16 @@ export const populationSnapshots = pgTable('population_snapshots', {
   index('population_city_idx').on(table.cityId),
 ]);
 
+// Feuerwehr (fire department) monthly operations snapshots
+export const feuerwehrSnapshots = pgTable('feuerwehr_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  data: jsonb('data').notNull(), // FeuerwehrSummary
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('feuerwehr_city_idx').on(table.cityId),
+]);
+
 // Milestone 07 — AI Summaries
 export const aiSummaries = pgTable('ai_summaries', {
   id: serial('id').primaryKey(),

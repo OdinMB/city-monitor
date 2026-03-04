@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useLaborMarket } from '../../hooks/useLaborMarket.js';
+import { useFreshness } from '../../hooks/useFreshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
+import { TileFooter } from '../layout/TileFooter.js';
 
 function formatYoy(percent: number): { text: string; color: string } {
   const sign = percent > 0 ? '+' : '';
@@ -89,9 +91,7 @@ export function LaborMarketStrip() {
         </div>
       </div>
 
-      <div className="text-center text-xs text-gray-400 dark:text-gray-500">
-        {data.reportMonth}
-      </div>
+      <TileFooter>{data.reportMonth}</TileFooter>
     </div>
   );
 }
