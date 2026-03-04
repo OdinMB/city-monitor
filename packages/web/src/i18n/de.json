@@ -202,6 +202,8 @@
       "best": "Beste Badestellen",
       "warnings": "Warnungen",
       "offSeason": "Außerhalb der Saison",
+      "measuredAt": "Gemessen: {{date}}",
+      "nextSeason": "Neue Messwerte sind ab Mitte Mai verfügbar.",
       "quality": {
         "good": "Gut",
         "warning": "Warnung",

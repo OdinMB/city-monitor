@@ -171,12 +171,14 @@ export function updateBathingMarkers(map: maplibregl.Map, spots: BathingSpot[], 
     const detailLink = detailUrl.startsWith('https://')
       ? `<a href="${esc(detailUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">Details (LAGeSo) ↗</a>`
       : '';
+    const measuredDate = props.measuredAt && props.measuredAt !== 'null'
+      ? `<div style="font-size:11px;opacity:0.5;margin-bottom:4px">Measured: ${esc(String(props.measuredAt))}</div>` : '';
     const html = `<div style="font-size:13px;max-width:300px">
-      <div style="font-weight:600;margin-bottom:4px">${esc(String(props.name))}${seasonBadge}</div>
+      <div style="font-weight:600;margin-bottom:2px">${esc(String(props.name))}${seasonBadge}</div>
+      ${measuredDate}
       <div style="font-size:12px;opacity:0.7">${esc(String(props.waterBody))} · ${esc(String(props.district))}</div>
       <div style="font-size:12px;margin-top:4px">Quality: <strong style="color:${qColor}">${qLabel}</strong>${props.classification && props.classification !== 'null' ? ` <span style="font-size:11px;opacity:0.6">(EU: ${esc(String(props.classification))})</span>` : ''}</div>
       ${tempLine}${visLine}${algaeLine}${advisoryLine}
-      <div style="font-size:11px;opacity:0.5;margin-top:4px">Measured: ${esc(String(props.measuredAt))}</div>
       ${detailLink}
     </div>`;
     return { html, lngLat: coords };

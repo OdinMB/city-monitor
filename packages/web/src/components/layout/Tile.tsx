@@ -5,6 +5,7 @@ type TileHeight = 'auto' | 'sm' | 'md' | 'lg';
 
 interface TileProps {
   title: string;
+  titleBadge?: ReactNode;
   span?: TileSpan;
   height?: TileHeight;
   expandable?: boolean;
@@ -26,7 +27,7 @@ const SPAN_CLASSES: Record<TileSpan, string> = {
   full: 'col-span-full',
 };
 
-export function Tile({ title, span = 1, height = 'auto', expandable, defaultExpanded, children, className }: TileProps) {
+export function Tile({ title, titleBadge, span = 1, height = 'auto', expandable, defaultExpanded, children, className }: TileProps) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
 
   return (
@@ -41,8 +42,8 @@ export function Tile({ title, span = 1, height = 'auto', expandable, defaultExpa
           aria-expanded={expanded}
           aria-label={`${title} — ${expanded ? 'collapse' : 'expand'}`}
         >
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {title}
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            {title}{titleBadge}
           </h2>
           <svg
             width={20}
@@ -61,8 +62,8 @@ export function Tile({ title, span = 1, height = 'auto', expandable, defaultExpa
         </button>
       ) : (
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {title}
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            {title}{titleBadge}
           </h2>
         </div>
       )}

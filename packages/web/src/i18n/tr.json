@@ -202,6 +202,8 @@
       "best": "En iyi noktalar",
       "warnings": "Uyarılar",
       "offSeason": "Sezon dışı",
+      "measuredAt": "Ölçüm: {{date}}",
+      "nextSeason": "Yeni ölçümler Mayıs ortasından itibaren mevcut olacak.",
       "quality": {
         "good": "İyi",
         "warning": "Uyarı",

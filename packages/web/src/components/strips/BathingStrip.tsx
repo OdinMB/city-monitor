@@ -14,6 +14,12 @@ const QUALITY_COLORS: Record<string, string> = {
 
 const SLOTS = 7;
 
+/** Returns true when any loaded bathing spot has inSeason === false. */
+export function useBathingOffSeason(cityId: string): boolean {
+  const { data } = useBathing(cityId);
+  return data != null && data.length > 0 && !data[0].inSeason;
+}
+
 const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: string) => string }) {
   const color = QUALITY_COLORS[spot.quality] ?? QUALITY_COLORS.good;
 
@@ -28,11 +34,6 @@ const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: s
           <span className="text-sm text-gray-900 dark:text-gray-100 truncate">
             {spot.name}
           </span>
-          {!spot.inSeason && (
-            <span className="shrink-0 px-1 py-0.5 rounded text-[9px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-              {t('panel.bathing.offSeason')}
-            </span>
-          )}
         </div>
         <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
           {spot.waterBody}
@@ -57,8 +58,8 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   const { t } = useTranslation();
 
   // Must be above early returns to satisfy Rules of Hooks
-  const { goodDisplay, warnDisplay, goodCount, warnCount, poorCount } = useMemo(() => {
-    if (!data || data.length === 0) return { goodDisplay: [], warnDisplay: [], goodCount: 0, warnCount: 0, poorCount: 0 };
+  const { goodDisplay, warnDisplay, goodCount, warnCount, poorCount, latestMeasuredAt, offSeason } = useMemo(() => {
+    if (!data || data.length === 0) return { goodDisplay: [], warnDisplay: [], goodCount: 0, warnCount: 0, poorCount: 0, latestMeasuredAt: null as string | null, offSeason: false };
     // Separate by quality
     const flagged = data.filter((s) => s.quality === 'warning' || s.quality === 'poor');
     const good = data
@@ -69,6 +70,10 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
     const goodSlots = Math.max(0, SLOTS - flagged.length);
     const selected = [...flagged, ...good.slice(0, goodSlots)];
 
+    // Find most recent measurement date across all spots
+    const latestDate = data.reduce<string | null>((max, s) =>
+      s.measuredAt && (!max || s.measuredAt > max) ? s.measuredAt : max, null);
+
     return {
       // Display order: good first, then warnings
       goodDisplay: selected.filter((s) => s.quality === 'good'),
@@ -76,6 +81,8 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
       goodCount: data.filter((s) => s.quality === 'good').length,
       warnCount: data.filter((s) => s.quality === 'warning').length,
       poorCount: data.filter((s) => s.quality === 'poor').length,
+      latestMeasuredAt: latestDate,
+      offSeason: !data[0].inSeason,
     };
   }, [data]);
 
@@ -90,6 +97,12 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
 
   return (
     <div className="space-y-3">
+      {offSeason && (
+        <p className="text-xs text-gray-600 dark:text-gray-300 text-center">
+          {t('panel.bathing.nextSeason')}
+        </p>
+      )}
+      <div className={offSeason ? 'opacity-40 grayscale space-y-3' : 'space-y-3'}>
       {/* Summary */}
       <div className="flex justify-center gap-3 text-xs font-medium">
         <span style={{ color: QUALITY_COLORS.good }}>{goodCount} {t('panel.bathing.quality.good')}</span>
@@ -120,6 +133,12 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
           </div>
         </div>
       )}
+      {latestMeasuredAt && (
+        <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-2">
+          {t('panel.bathing.measuredAt', { date: new Date(latestMeasuredAt + 'T00:00:00Z').toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
+        </p>
+      )}
+      </div>
     </div>
   );
 }

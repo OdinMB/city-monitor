@@ -13,7 +13,7 @@ import { AirQualityStrip } from '../strips/AirQualityStrip.js';
 import { WeatherStrip } from '../strips/WeatherStrip.js';
 import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
-import { BathingStrip } from '../strips/BathingStrip.js';
+import { BathingStrip, useBathingOffSeason } from '../strips/BathingStrip.js';
 import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
 import { BudgetStrip } from '../strips/BudgetStrip.js';
 import { LaborMarketStrip } from '../strips/LaborMarketStrip.js';
@@ -29,6 +29,22 @@ import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.j
 const CityMap = lazy(() =>
   import('../map/CityMap.js').then((m) => ({ default: m.CityMap })),
 );
+
+function BathingTile({ isDesktop }: { isDesktop: boolean }) {
+  const { t } = useTranslation();
+  const { id: cityId } = useCityConfig();
+  const offSeason = useBathingOffSeason(cityId);
+  const badge = offSeason ? (
+    <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+      {t('panel.bathing.offSeason')}
+    </span>
+  ) : undefined;
+  return (
+    <Tile title={t('panel.bathing.title')} titleBadge={badge} span={1} expandable defaultExpanded={isDesktop}>
+      {(expanded) => <BathingStrip expanded={expanded} />}
+    </Tile>
+  );
+}
 
 export function CommandLayout() {
   const { t } = useTranslation();
@@ -101,9 +117,8 @@ export function CommandLayout() {
           <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
           </Tile>
-          <Tile title={t('panel.bathing.title')} span={1} expandable defaultExpanded={isDesktop}>
-            {(expanded) => <BathingStrip expanded={expanded} />}
-          </Tile>
+          <BathingTile isDesktop={isDesktop} />
+
           <Tile title={t('panel.budget.title')} span={2}>
             <BudgetStrip />
           </Tile>

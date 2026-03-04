@@ -202,6 +202,8 @@
       "best": "Best spots",
       "warnings": "Warnings",
       "offSeason": "Off-season",
+      "measuredAt": "Measured: {{date}}",
+      "nextSeason": "New measurements will be available from mid-May.",
       "quality": {
         "good": "Good",
         "warning": "Warning",
