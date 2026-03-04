@@ -342,7 +342,8 @@
     "cost": "Cost",
     "ads": "Ads",
     "tracking": "Tracking",
-    "cta": "to keep it that way"
+    "cta": "to keep it that way",
+    "footer": "Always a good idea"
   },
   "footer": {
     "sourceCode": "Source Code",
