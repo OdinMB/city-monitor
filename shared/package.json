@@ -3,9 +3,26 @@
   "version": "0.0.1",
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "main": "./types.ts",
+  "main": "./dist/types.js",
   "types": "./types.ts",
+  "exports": {
+    ".": {
+      "types": "./types.ts",
+      "default": "./dist/types.js"
+    },
+    "./schemas.js": {
+      "types": "./schemas.ts",
+      "default": "./dist/schemas.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "typescript": "^5"
   }
 }

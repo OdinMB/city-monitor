@@ -12,7 +12,7 @@ services:
     runtime: node
     plan: starter
     region: frankfurt
-    buildCommand: npm ci && npm run build --workspace=packages/server
+    buildCommand: npm ci && npm run build --workspace=shared && npm run build --workspace=packages/server
     startCommand: npm run db:migrate --workspace=packages/server && node packages/server/dist/index.js
     healthCheckPath: /api/health
     autoDeploy: true
