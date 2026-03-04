@@ -29,6 +29,13 @@
       "when": 1772645757849,
       "tag": "0003_perfect_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772648505260,
+      "tag": "0004_giant_bloodaxe",
+      "breakpoints": true
     }
   ]
 }

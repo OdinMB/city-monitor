@@ -43,7 +43,7 @@ function BathingTile({ isDesktop }: { isDesktop: boolean }) {
     </span>
   ) : undefined;
   return (
-    <Tile title={t('panel.bathing.title')} titleBadge={badge} span={1} expandable defaultExpanded={isDesktop}>
+    <Tile title={t('panel.bathing.title')} titleBadge={badge} span={1} expandable defaultExpanded={offSeason ? false : isDesktop}>
       {(expanded) => <BathingStrip expanded={expanded} />}
     </Tile>
   );
@@ -83,6 +83,9 @@ export function CommandLayout() {
           <Tile title={t('panel.news.briefing')} span={2}>
             <BriefingStrip />
           </Tile>
+          <Tile title={t('panel.news.title')} span={2} expandable defaultExpanded={false}>
+            {(expanded, setExpanded) => <NewsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
           <Tile title={t('panel.weather.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <WeatherStrip expanded={expanded} />}
           </Tile>
@@ -92,22 +95,23 @@ export function CommandLayout() {
           <Tile title={t('panel.pollen.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <PollenStrip expanded={expanded} />}
           </Tile>
-          <Tile title={t('panel.news.title')} span={2} expandable defaultExpanded={false}>
-            {(expanded, setExpanded) => <NewsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-          </Tile>
-          <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={isDesktop}>
-            {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-          </Tile>
           {cityId === 'berlin' && (
             <Tile title={t('panel.wastewater.title')} span={1} expandable defaultExpanded={isDesktop}>
               {(expanded) => <WastewaterStrip expanded={expanded} />}
             </Tile>
           )}
+          <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={isDesktop}>
+            {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+          <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
+            {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
           {cityId === 'berlin' && (
             <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded={isDesktop}>
               {(expanded) => <FeuerwehrStrip expanded={expanded} />}
             </Tile>
           )}
+          <BathingTile isDesktop={isDesktop} />
           {cityId === 'berlin' && (
             <Tile title={t('panel.laborMarket.title')} span={1} expandable defaultExpanded={isDesktop}>
               {() => <LaborMarketStrip />}
@@ -118,10 +122,6 @@ export function CommandLayout() {
               <PopulationStrip />
             </Tile>
           )}
-          <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
-            {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-          </Tile>
-          <BathingTile isDesktop={isDesktop} />
           {cityId === 'berlin' && (
             <Tile title={t('panel.crisis.title')} span={1} expandable defaultExpanded={isDesktop}>
               {(expanded, setExpanded) => <CrisisStrip expanded={expanded} onExpand={() => setExpanded(true)} />}

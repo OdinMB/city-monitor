@@ -117,39 +117,41 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
   const hiddenCount = sorted.length - visible.length;
 
   return (
-    <div className="space-y-2.5">
-      {/* Summary */}
-      <p className={`text-sm text-center font-medium ${summaryColor}`}>
-        {t(`panel.appointments.summary.${summaryKey}`)}
-      </p>
+    <>
+      <div className="space-y-2.5 flex-1">
+        {/* Summary */}
+        <p className={`text-sm text-center font-medium ${summaryColor}`}>
+          {t(`panel.appointments.summary.${summaryKey}`)}
+        </p>
 
-      {/* Service rows */}
-      {visible.map((service) => (
-        <ServiceRow key={service.serviceId} service={service} t={t} />
-      ))}
+        {/* Service rows */}
+        {visible.map((service) => (
+          <ServiceRow key={service.serviceId} service={service} t={t} />
+        ))}
 
-      {hiddenCount > 0 && (
-        <button
-          type="button"
-          onClick={onExpand}
-          className="w-full text-xs text-gray-400 dark:text-gray-500 text-center pt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
-        >
-          +{hiddenCount} {t('panel.transit.more')}
-        </button>
-      )}
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={onExpand}
+            className="w-full text-xs text-gray-400 dark:text-gray-500 text-center pt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+          >
+            +{hiddenCount} {t('panel.transit.more')}
+          </button>
+        )}
 
-      {/* Booking link */}
-      <div className="pt-1 text-center">
-        <a
-          href={data.bookingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-blue-500 hover:underline"
-        >
-          {t('panel.appointments.bookAppointment')} →
-        </a>
+        {/* Booking link */}
+        <div className="pt-1 text-center">
+          <a
+            href={data.bookingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-500 hover:underline"
+          >
+            {t('panel.appointments.bookAppointment')} →
+          </a>
+        </div>
       </div>
       {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
-    </div>
+    </>
   );
 }

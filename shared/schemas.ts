@@ -280,6 +280,17 @@ export const FeuerwehrSummarySchema = z.object({
 
 // --- Population Demographics ---
 
+// --- Noise Sensors ---
+
+export const NoiseSensorSchema = z.object({
+  id: z.number(),
+  lat: z.number(),
+  lon: z.number(),
+  laeq: z.number(),
+  laMin: z.number(),
+  laMax: z.number(),
+});
+
 // --- Pollen Forecast ---
 
 const PollenIntensitySchema = z.enum(['0', '0-1', '1', '1-2', '2', '2-3', '3', '-1']);

@@ -3,8 +3,9 @@
  */
 
 import maplibregl from 'maplibre-gl';
+import { Wind } from 'lucide';
 import type { AirQualityGridPoint } from '../../../lib/api.js';
-import { AQI_LEVEL_COLORS } from '../../../lib/map-icons.js';
+import { createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { getAqiLevel } from '../../../lib/aqi.js';
 import { registerPopupHandlers, type PopupContentFn } from '../popups.js';
 
@@ -20,7 +21,7 @@ function aqGridToGeoJSON(points: AirQualityGridPoint[]): GeoJSON.FeatureCollecti
         station: p.station,
         color: level.color,
         level: level.label,
-        label: String(p.europeanAqi),
+        iconId: `aq-badge-${p.europeanAqi}-${level.label}`,
         url: p.url ?? '',
       },
     });
@@ -38,42 +39,29 @@ export function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoi
 
   if (geojson.features.length === 0) return;
 
-  map.addSource('aq-grid', { type: 'geojson', data: geojson });
-
-  const iconMatch: unknown[] = ['match', ['get', 'level']];
-  for (const level of Object.keys(AQI_LEVEL_COLORS)) {
-    iconMatch.push(level, `aq-icon-${level}`);
+  // Register a badge image for each unique AQI value + level
+  const stroke = isDark ? '#1f2937' : '#ffffff';
+  const registered = new Set<string>();
+  for (const p of points) {
+    const level = getAqiLevel(p.europeanAqi);
+    const id = `aq-badge-${p.europeanAqi}-${level.label}`;
+    if (registered.has(id)) continue;
+    registered.add(id);
+    if (map.hasImage(id)) map.removeImage(id);
+    map.addImage(id, createBadgeIcon(Wind as IconNode, level.color, stroke, `${p.europeanAqi} AQI`));
   }
-  iconMatch.push('aq-icon-good'); // fallback
+
+  map.addSource('aq-grid', { type: 'geojson', data: geojson });
 
   map.addLayer({
     id: 'aq-marker-icon',
     type: 'symbol',
     source: 'aq-grid',
     layout: {
-      'icon-image': iconMatch as maplibregl.ExpressionSpecification,
-      'icon-size': 0.85,
+      'icon-image': ['get', 'iconId'] as unknown as maplibregl.ExpressionSpecification,
+      'icon-size': 1,
       'icon-allow-overlap': true,
       'icon-anchor': 'center',
-    },
-  });
-
-  map.addLayer({
-    id: 'aq-marker-label',
-    type: 'symbol',
-    source: 'aq-grid',
-    layout: {
-      'text-field': ['get', 'label'],
-      'text-size': 9,
-      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-      'text-offset': [0, 2.8],
-      'text-anchor': 'top',
-      'text-allow-overlap': true,
-    },
-    paint: {
-      'text-color': isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)',
-      'text-halo-color': isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
-      'text-halo-width': 1,
     },
   });
 
@@ -91,6 +79,5 @@ export function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoi
     </div>`;
     return { html, lngLat: coords };
   };
-  registerPopupHandlers(map, 'aq-marker-icon', getAqContent, { offset: 12, maxWidth: '260px' });
-  registerPopupHandlers(map, 'aq-marker-label', getAqContent, { offset: 12, maxWidth: '260px' });
+  registerPopupHandlers(map, 'aq-marker-icon', getAqContent, { offset: 16, maxWidth: '260px' });
 }

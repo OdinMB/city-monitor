@@ -32,8 +32,9 @@ import {
   populationSnapshots,
   feuerwehrSnapshots,
   pollenSnapshots,
+  noiseSensorSnapshots,
 } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { TransitAlert } from '../cron/ingest-transit.js';
@@ -125,6 +126,10 @@ export async function saveFeuerwehr(db: Db, cityId: string, data: FeuerwehrSumma
 
 export async function savePollen(db: Db, cityId: string, data: PollenForecast): Promise<void> {
   await db.insert(pollenSnapshots).values({ cityId, data });
+}
+
+export async function saveNoiseSensors(db: Db, cityId: string, data: NoiseSensor[]): Promise<void> {
+  await db.insert(noiseSensorSnapshots).values({ cityId, data });
 }
 
 // ---------------------------------------------------------------------------

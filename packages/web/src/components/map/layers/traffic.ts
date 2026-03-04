@@ -33,7 +33,7 @@ function trafficToGeoJSON(incidents: TrafficIncident[]): GeoJSON.FeatureCollecti
 
 /** Move transit marker layers above traffic/construction so they're not hidden. */
 export function raiseTransitLayers(map: maplibregl.Map) {
-  for (const id of ['transit-marker-icon', 'transit-marker-label']) {
+  for (const id of ['transit-marker-icon']) {
     if (map.getLayer(id)) map.moveLayer(id);
   }
 }

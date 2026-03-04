@@ -101,6 +101,12 @@ export const berlin: CityConfig = {
       regionId: 50,         // Brandenburg und Berlin
       partregionId: -1,     // no sub-regions
     },
+    noiseSensors: {
+      provider: 'sensor-community',
+      lat: 52.52,
+      lon: 13.405,
+      radius: 15,
+    },
     appointments: {
       provider: 'service-berlin',
       services: [

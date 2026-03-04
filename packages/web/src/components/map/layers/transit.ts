@@ -3,8 +3,9 @@
  */
 
 import maplibregl from 'maplibre-gl';
+import { TrainFront } from 'lucide';
 import type { TransitAlert } from '../../../lib/api.js';
-import { SEVERITY_COLORS } from '../../../lib/map-icons.js';
+import { SEVERITY_COLORS, createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { registerPopupHandlers, type PopupContentFn } from '../popups.js';
 
 interface StationGroup {
@@ -54,6 +55,7 @@ function alertsToGeoJSON(alerts: TransitAlert[]): GeoJSON.FeatureCollection {
         label: group.alerts.length > 1
           ? `${group.alerts.length}`
           : group.alerts[0].line,
+        iconId: `transit-badge-${encodeURIComponent(group.alerts.length > 1 ? String(group.alerts.length) : group.alerts[0].line)}-${group.highestSeverity}`,
         alertsJson: JSON.stringify(group.alerts.map((a) => ({
           line: a.line,
           type: a.type,
@@ -106,6 +108,19 @@ export function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[]
 
   if (geojson.features.length === 0) return;
 
+  // Register a badge image for each unique label+severity combo
+  const stroke = isDark ? '#1f2937' : '#ffffff';
+  const registered = new Set<string>();
+  for (const f of geojson.features) {
+    const p = f.properties!;
+    const id = p.iconId as string;
+    if (registered.has(id)) continue;
+    registered.add(id);
+    if (map.hasImage(id)) map.removeImage(id);
+    const color = SEVERITY_COLORS[p.severity as string] ?? SEVERITY_COLORS.low;
+    map.addImage(id, createBadgeIcon(TrainFront as IconNode, color, stroke, p.label as string));
+  }
+
   map.addSource('transit-markers', {
     type: 'geojson',
     data: geojson,
@@ -116,39 +131,10 @@ export function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[]
     type: 'symbol',
     source: 'transit-markers',
     layout: {
-      'icon-image': [
-        'match', ['get', 'severity'],
-        'high', 'transit-icon-high',
-        'medium', 'transit-icon-medium',
-        'transit-icon-low',
-      ],
-      'icon-size': [
-        'case',
-        ['==', ['get', 'severity'], 'high'], 1.15,
-        ['==', ['get', 'severity'], 'medium'], 1.0,
-        0.85,
-      ],
+      'icon-image': ['get', 'iconId'] as unknown as maplibregl.ExpressionSpecification,
+      'icon-size': 1,
       'icon-allow-overlap': true,
       'icon-anchor': 'center',
-    },
-  });
-
-  map.addLayer({
-    id: 'transit-marker-label',
-    type: 'symbol',
-    source: 'transit-markers',
-    layout: {
-      'text-field': ['get', 'label'],
-      'text-size': 9,
-      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-      'text-offset': [0, 2.8],
-      'text-anchor': 'top',
-      'text-allow-overlap': true,
-    },
-    paint: {
-      'text-color': isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)',
-      'text-halo-color': isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
-      'text-halo-width': 1,
     },
   });
 
@@ -161,6 +147,5 @@ export function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[]
     if (!html) return null;
     return { html, lngLat: coords };
   };
-  registerPopupHandlers(map, 'transit-marker-icon', getTransitContent, { offset: 12 });
-  registerPopupHandlers(map, 'transit-marker-label', getTransitContent, { offset: 12 });
+  registerPopupHandlers(map, 'transit-marker-icon', getTransitContent, { offset: 16 });
 }

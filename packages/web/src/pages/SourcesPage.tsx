@@ -170,12 +170,20 @@ const BERLIN_SOURCES: SourceGroup[] = [
     category: 'Maps',
     sources: [
       { name: 'Sensor.Community', url: 'https://sensor.community/', description: 'Citizen-run air quality sensors — PM2.5 and PM10 readings.' },
+      { name: 'Sensor.Community DNMS', url: 'https://sensor.community/en/sensors/dnms/', description: 'Citizen-run noise sensors — LAeq, LAmin, LAmax readings (Berlin only).' },
       { name: 'Berlin Open Data (Rent Map)', url: 'https://daten.berlin.de/', description: 'Residential rent zone map (Wohnlagenkarte 2024) as WMS overlay.' },
+      { name: 'Berlin Noise Map (SenMVKU)', url: 'https://gdi.berlin.de/services/wms/ua_stratlaerm_2022', description: 'EU strategic noise map 2022 — total, road, rail, and air noise as WMS overlay.' },
     ],
   },
 ];
 
 const HAMBURG_SOURCES: SourceGroup[] = [
+  {
+    category: 'Maps',
+    sources: [
+      { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay.' },
+    ],
+  },
   {
     category: 'News',
     sources: [

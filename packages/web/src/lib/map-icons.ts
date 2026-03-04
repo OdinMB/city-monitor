@@ -3,7 +3,7 @@
  * Draws crisp SVG-based icons onto ImageData via Path2D (synchronous).
  */
 
-import { TrainFront, Newspaper, ShieldAlert, Pill, HeartPulse, Wind, Construction, Droplets, Waves, Landmark, Building2, Building, MapPin, Palette, Trophy, TrendingUp, Siren } from 'lucide';
+import { TrainFront, Newspaper, ShieldAlert, Pill, HeartPulse, Construction, Waves, Landmark, Building2, Building, MapPin, Palette, Trophy, TrendingUp, Siren } from 'lucide';
 import type maplibregl from 'maplibre-gl';
 
 export type IconNode = [tag: string, attrs: Record<string, string | number>][];
@@ -63,6 +63,13 @@ export const BATHING_QUALITY_COLORS: Record<string, string> = {
   good: '#22c55e',
   warning: '#f59e0b',
   poor: '#ef4444',
+};
+
+export const NOISE_LEVEL_COLORS: Record<string, string> = {
+  quiet: '#22c55e',
+  moderate: '#eab308',
+  loud: '#f97316',
+  veryLoud: '#ef4444',
 };
 
 export const POLITICAL_ICONS: Record<string, IconNode> = {
@@ -177,16 +184,72 @@ export function createMapIcon(
   return ctx.getImageData(0, 0, size, size);
 }
 
+/**
+ * Draw a wide pill badge: Lucide icon on the left + text label on the right.
+ * Each unique (value, color) combination gets its own image.
+ */
+export function createBadgeIcon(
+  iconNode: IconNode,
+  bgColor: string,
+  strokeColor: string,
+  text: string,
+): ImageData {
+  const h = 32;
+  const iconArea = 28;
+  const textPad = 6;
+
+  // Measure text width
+  const measure = document.createElement('canvas').getContext('2d')!;
+  measure.font = 'bold 13px sans-serif';
+  const textW = Math.ceil(measure.measureText(text).width);
+
+  const w = iconArea + textPad + textW + 8; // 8 = right padding
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+
+  // Pill background
+  const pad = 1;
+  const r = 8;
+  ctx.beginPath();
+  ctx.roundRect(pad, pad, w - 2 * pad, h - 2 * pad, r);
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Lucide icon on the left (24×24 viewbox scaled to fit iconArea)
+  const iconSize = iconArea * 0.6;
+  const scale = iconSize / 24;
+  const iconOffsetX = (iconArea - iconSize) / 2;
+  const iconOffsetY = (h - iconSize) / 2;
+
+  ctx.save();
+  ctx.translate(iconOffsetX, iconOffsetY);
+  ctx.scale(scale, scale);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const [tag, attrs] of iconNode) {
+    drawSVGElement(ctx, tag, attrs);
+  }
+  ctx.restore();
+
+  // Text on the right
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, iconArea + textPad - 2, h / 2 + 1);
+
+  return ctx.getImageData(0, 0, w, h);
+}
+
 /** Register all Lucide-based map icons for every data layer */
 export function registerAllMapIcons(map: maplibregl.Map, isDark: boolean) {
   const stroke = isDark ? '#1f2937' : '#ffffff';
-
-  // Transit: TrainFront × 3 severity colors
-  for (const [severity, color] of Object.entries(SEVERITY_COLORS)) {
-    const id = `transit-icon-${severity}`;
-    if (map.hasImage(id)) map.removeImage(id);
-    map.addImage(id, createMapIcon(TrainFront as IconNode, color, stroke));
-  }
 
   // News: distinct icon per category × category colors
   for (const [category, color] of Object.entries(NEWS_CATEGORY_COLORS)) {
@@ -218,26 +281,13 @@ export function registerAllMapIcons(map: maplibregl.Map, isDark: boolean) {
     map.addImage(id, createMapIcon(Construction as IconNode, color, stroke));
   }
 
-  // Air quality: Wind × 6 AQI level colors
-  for (const [level, color] of Object.entries(AQI_LEVEL_COLORS)) {
-    const id = `aq-icon-${level}`;
-    if (map.hasImage(id)) map.removeImage(id);
-    map.addImage(id, createMapIcon(Wind as IconNode, color, stroke));
-  }
-
-  // Water levels: Droplets × 5 state colors
-  for (const [state, color] of Object.entries(WATER_STATE_COLORS)) {
-    const id = `wl-icon-${state}`;
-    if (map.hasImage(id)) map.removeImage(id);
-    map.addImage(id, createMapIcon(Droplets as IconNode, color, stroke));
-  }
-
   // Bathing water: Waves × 3 quality colors
   for (const [quality, color] of Object.entries(BATHING_QUALITY_COLORS)) {
     const id = `bathing-icon-${quality}`;
     if (map.hasImage(id)) map.removeImage(id);
     map.addImage(id, createMapIcon(Waves as IconNode, color, stroke));
   }
+
 }
 
 /**

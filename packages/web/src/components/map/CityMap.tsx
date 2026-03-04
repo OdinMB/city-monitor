@@ -25,11 +25,12 @@ import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useBathing } from '../../hooks/useBathing.js';
 import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { usePopulation } from '../../hooks/usePopulation.js';
+import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
-import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setRentMapOverlay } from './base.js';
+import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
 import { addDistrictLayer, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
 import { filterNewsForMap, updateNewsMarkers, updateSafetyMarkers } from './layers/news-safety.js';
@@ -40,6 +41,7 @@ import { updateTrafficLayers, updateConstructionLayers } from './layers/traffic.
 import { updateAqGridLayer } from './layers/air-quality.js';
 import { updateWaterLevelMarkers, updateBathingMarkers } from './layers/water.js';
 import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/choropleth.js';
+import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 
 export function CityMap() {
   const city = useCityConfig();
@@ -55,6 +57,7 @@ export function CityMap() {
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
   const { data: constructionSites } = useConstruction(city.id);
   const { data: aqGrid } = useAirQualityGrid(city.id);
+  const { data: noiseSensorData } = useNoiseSensors(city.id);
   const { data: waterLevelData } = useWaterLevels(city.id);
   const { data: bathingData } = useBathing(city.id);
   const politicalLayer = useCommandCenter((s) => s.politicalLayer);
@@ -67,6 +70,10 @@ export function CityMap() {
   const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
   const roadsActive = trafficActive || constructionActive;
   const weatherActive = activeLayers.has('weather');
+  const noiseLayerSel = useCommandCenter((s) => s.noiseLayer);
+  const noiseActive = activeLayers.has('noise');
+  // Hamburg has no 'total' layer — fall back to 'road'
+  const effectiveNoiseLayer = (noiseLayerSel === 'total' && city.id !== 'berlin') ? 'road' : noiseLayerSel;
   const socialLayer = useCommandCenter((s) => s.socialLayer);
   const socialActive = activeLayers.has('social') && city.id === 'berlin';
   const rentMapActive = socialActive && socialLayer === 'rent';
@@ -131,6 +138,10 @@ export function CityMap() {
     [constructionActive, constructionSites],
   );
   const aqGridItems = activeLayers.has('air-quality') ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
+  const noiseSensorItems = useMemo(
+    () => noiseActive ? (noiseSensorData?.data ?? []) : [],
+    [noiseActive, noiseSensorData?.data],
+  );
   const waterLevelItems = (waterActive && waterSubLayers.has('levels')) ? (waterLevelData?.stations ?? EMPTY_WL) : EMPTY_WL;
   const bathingItems = useMemo(
     () => (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [],
@@ -166,6 +177,8 @@ export function CityMap() {
   constructionItemsRef.current = constructionItems;
   const aqGridItemsRef = useRef(aqGridItems);
   aqGridItemsRef.current = aqGridItems;
+  const noiseSensorItemsRef = useRef(noiseSensorItems);
+  noiseSensorItemsRef.current = noiseSensorItems;
   const waterLevelItemsRef = useRef(waterLevelItems);
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
@@ -182,6 +195,10 @@ export function CityMap() {
   roadsActiveRef.current = roadsActive;
   const weatherActiveRef = useRef(weatherActive);
   weatherActiveRef.current = weatherActive;
+  const noiseActiveRef = useRef(noiseActive);
+  noiseActiveRef.current = noiseActive;
+  const effectiveNoiseLayerRef = useRef(effectiveNoiseLayer);
+  effectiveNoiseLayerRef.current = effectiveNoiseLayer;
   const rentMapActiveRef = useRef(rentMapActive);
   rentMapActiveRef.current = rentMapActive;
   const waterActiveRef = useRef(waterActive);
@@ -230,11 +247,13 @@ export function CityMap() {
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
       updateAedMarkers(map, aedItemsRef.current, isDarkRef.current);
       updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
+      updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
       updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
       setWeatherOverlay(map, weatherActiveRef.current);
+      setNoiseOverlay(map, noiseActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
 
       // Collapse the attribution control (MapLibre opens it by default)
@@ -315,11 +334,13 @@ export function CityMap() {
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
       updateAedMarkers(map, aedItemsRef.current, isDark);
       updateAqGridLayer(map, aqGridItemsRef.current, isDark);
+      updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
+      setNoiseOverlay(map, noiseActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
     });
   }, [isDark, city.id]);
@@ -349,6 +370,19 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [rentMapActive]);
+
+  // Show/hide noise WMS overlay when layer or sub-layer changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setNoiseOverlay(map, noiseActive, city.id, effectiveNoiseLayer);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [noiseActive, effectiveNoiseLayer, city.id]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -462,6 +496,16 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
 
   }, [aqGridItems]);
+
+  // Update noise sensor markers (Berlin only — backend returns empty for cities without config)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateNoiseSensorMarkers(map, noiseSensorItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [noiseSensorItems]);
 
   // Update water level markers
   useEffect(() => {

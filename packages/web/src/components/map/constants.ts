@@ -65,6 +65,39 @@ export const RENT_MAP_WMS_URL =
   '&layers=wohnlagenadr2024&styles=&format=image/png&transparent=true' +
   '&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}';
 
+export const NOISE_SOURCE = 'noise-wms';
+export const NOISE_LAYER = 'noise-wms-layer';
+
+const NOISE_WMS_LAYERS: Record<string, Record<string, string>> = {
+  berlin: {
+    total: 'bf_gesamtlaerm_den2022',
+    road: 'bb_strasse_gesamt_den2022',
+    rail: 'bc_tram_ubahn_den2022',
+    air: 'bd_flug_gesamt_den2022',
+  },
+  hamburg: {
+    road: 'strasse_tag',
+    rail: 'schiene_tag',
+    air: 'flug_tag',
+  },
+};
+
+const NOISE_WMS_BASE: Record<string, string> = {
+  berlin: 'https://gdi.berlin.de/services/wms/ua_stratlaerm_2022',
+  hamburg: 'https://geodienste.hamburg.de/wms_strategische_laermkarten',
+};
+
+export function getNoiseWmsUrl(cityId: string, noiseLayer: string): string | null {
+  const base = NOISE_WMS_BASE[cityId];
+  const layers = NOISE_WMS_LAYERS[cityId];
+  if (!base || !layers) return null;
+  const layer = layers[noiseLayer];
+  if (!layer) return null;
+  return `${base}?service=WMS&version=1.1.1&request=GetMap` +
+    `&layers=${layer}&styles=&format=image/png&transparent=true` +
+    `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}`;
+}
+
 export const POLITICAL_MARKER_LAYER = 'political-marker-icon';
 export const POLITICAL_MARKER_SOURCE = 'political-markers';
 

@@ -307,6 +307,16 @@ export const pollenSnapshots = pgTable('pollen_snapshots', {
   index('pollen_city_idx').on(table.cityId),
 ]);
 
+// Noise sensor snapshots (Sensor.Community DNMS)
+export const noiseSensorSnapshots = pgTable('noise_sensor_snapshots', {
+  id: serial('id').primaryKey(),
+  cityId: text('city_id').notNull(),
+  data: jsonb('data').notNull(), // NoiseSensor[]
+  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+}, (table) => [
+  index('noise_sensor_city_idx').on(table.cityId),
+]);
+
 // Milestone 07 — AI Summaries
 export const aiSummaries = pgTable('ai_summaries', {
   id: serial('id').primaryKey(),

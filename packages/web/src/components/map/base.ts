@@ -13,6 +13,9 @@ import {
   RENT_MAP_SOURCE,
   RENT_MAP_LAYER,
   RENT_MAP_WMS_URL,
+  NOISE_SOURCE,
+  NOISE_LAYER,
+  getNoiseWmsUrl,
 } from './constants.js';
 
 /** Strip city prefix and constituency suffixes so API names match Bezirke GeoJSON.
@@ -49,6 +52,7 @@ export function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('bathing-') &&
       !layer.id.startsWith('weather-') &&
       !layer.id.startsWith('rent-map-') &&
+      !layer.id.startsWith('noise-') &&
       !layer.id.startsWith('social-atlas-') &&
       !layer.id.startsWith('population-')
     ) {
@@ -112,6 +116,31 @@ export function setWeatherOverlay(map: maplibregl.Map, visible: boolean) {
   } else {
     if (map.getLayer(WEATHER_LAYER)) map.removeLayer(WEATHER_LAYER);
     if (map.getSource(WEATHER_SOURCE)) map.removeSource(WEATHER_SOURCE);
+  }
+}
+
+export function setNoiseOverlay(map: maplibregl.Map, visible: boolean, cityId: string, noiseLayer: string) {
+  // Always remove old source/layer first so the WMS layer name can change
+  if (map.getLayer(NOISE_LAYER)) map.removeLayer(NOISE_LAYER);
+  if (map.getSource(NOISE_SOURCE)) map.removeSource(NOISE_SOURCE);
+
+  if (visible) {
+    const url = getNoiseWmsUrl(cityId, noiseLayer);
+    if (!url) return;
+    map.addSource(NOISE_SOURCE, {
+      type: 'raster',
+      tiles: [url],
+      tileSize: 256,
+      attribution: '&copy; <a href="https://daten.berlin.de" target="_blank">Open Data</a>',
+    });
+    map.addLayer({
+      id: NOISE_LAYER,
+      type: 'raster',
+      source: NOISE_SOURCE,
+      paint: {
+        'raster-opacity': 0.7,
+      },
+    });
   }
 }
 

@@ -101,49 +101,51 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   }
 
   return (
-    <div className="space-y-3">
-      {offSeason && (
-        <p className="text-xs text-gray-600 dark:text-gray-300 text-center">
-          {t('panel.bathing.nextSeason')}
-        </p>
-      )}
-      <div className={offSeason ? 'opacity-40 grayscale space-y-3' : 'space-y-3'}>
-      {/* Summary */}
-      <div className="flex justify-center gap-3 text-xs font-medium">
-        <span style={{ color: QUALITY_COLORS.good }}>{goodCount} {t('panel.bathing.quality.good')}</span>
-        {warnCount > 0 && <span style={{ color: QUALITY_COLORS.warning }}>{warnCount} {t('panel.bathing.quality.warning')}</span>}
-        {poorCount > 0 && <span style={{ color: QUALITY_COLORS.poor }}>{poorCount} {t('panel.bathing.quality.poor')}</span>}
+    <>
+      <div className="space-y-3 flex-1">
+        {offSeason && (
+          <p className="text-xs text-gray-600 dark:text-gray-300 text-center">
+            {t('panel.bathing.nextSeason')}
+          </p>
+        )}
+        <div className={offSeason ? 'opacity-40 grayscale space-y-3' : 'space-y-3'}>
+          {/* Summary */}
+          <div className="flex justify-center gap-3 text-xs font-medium">
+            <span style={{ color: QUALITY_COLORS.good }}>{goodCount} {t('panel.bathing.quality.good')}</span>
+            {warnCount > 0 && <span style={{ color: QUALITY_COLORS.warning }}>{warnCount} {t('panel.bathing.quality.warning')}</span>}
+            {poorCount > 0 && <span style={{ color: QUALITY_COLORS.poor }}>{poorCount} {t('panel.bathing.quality.poor')}</span>}
+          </div>
+
+          {/* Warnings */}
+          {warnDisplay.length > 0 && (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">
+                {t('panel.bathing.warnings')}
+              </div>
+              <div className="space-y-2">
+                {warnDisplay.map((spot) => <SpotRow key={spot.id} spot={spot} t={t} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Good spots — only when expanded */}
+          {expanded && goodDisplay.length > 0 && (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">
+                {t('panel.bathing.best')}
+              </div>
+              <div className="space-y-2">
+                {goodDisplay.map((spot) => <SpotRow key={spot.id} spot={spot} t={t} />)}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Warnings */}
-      {warnDisplay.length > 0 && (
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">
-            {t('panel.bathing.warnings')}
-          </div>
-          <div className="space-y-2">
-            {warnDisplay.map((spot) => <SpotRow key={spot.id} spot={spot} t={t} />)}
-          </div>
-        </div>
-      )}
-
-      {/* Good spots — only when expanded */}
-      {expanded && goodDisplay.length > 0 && (
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">
-            {t('panel.bathing.best')}
-          </div>
-          <div className="space-y-2">
-            {goodDisplay.map((spot) => <SpotRow key={spot.id} spot={spot} t={t} />)}
-          </div>
-        </div>
-      )}
       <TileFooter stale={isStale}>
         {latestMeasuredAt && t('panel.bathing.measuredAt', { date: new Date(latestMeasuredAt + 'T00:00:00Z').toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
         {latestMeasuredAt && agoText && ' · '}
         {agoText && t('stale.updated', { time: agoText })}
       </TileFooter>
-      </div>
-    </div>
+    </>
   );
 }

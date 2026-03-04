@@ -29,6 +29,7 @@ import {
   laborMarketSnapshots,
   feuerwehrSnapshots,
   pollenSnapshots,
+  noiseSensorSnapshots,
 } from '../db/schema.js';
 import { createLogger } from '../lib/logger.js';
 
@@ -83,6 +84,7 @@ export function createDataRetention(db: Db) {
 
       { name: 'feuerwehr', fn: () => db.delete(feuerwehrSnapshots).where(lt(feuerwehrSnapshots.fetchedAt, new Date(now - RETENTION.infrequent))) },
       { name: 'pollen', fn: () => db.delete(pollenSnapshots).where(lt(pollenSnapshots.fetchedAt, new Date(now - RETENTION.moderate))) },
+      { name: 'noise_sensors', fn: () => db.delete(noiseSensorSnapshots).where(lt(noiseSensorSnapshots.fetchedAt, new Date(now - RETENTION.moderate))) },
 
       // Infrequent data (30 days)
       { name: 'budget', fn: () => db.delete(budgetSnapshots).where(lt(budgetSnapshots.fetchedAt, new Date(now - RETENTION.infrequent))) },

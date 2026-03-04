@@ -31,6 +31,7 @@ import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createPopulationRouter } from './routes/population.js';
 import { createFeuerwehrRouter } from './routes/feuerwehr.js';
 import { createPollenRouter } from './routes/pollen.js';
+import { createNoiseSensorsRouter } from './routes/noise-sensors.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -55,6 +56,7 @@ import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { createPopulationIngestion } from './cron/ingest-population.js';
 import { createFeuerwehrIngestion } from './cron/ingest-feuerwehr.js';
 import { createPollenIngestion } from './cron/ingest-pollen.js';
+import { createNoiseSensorIngestion } from './cron/ingest-noise-sensors.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
@@ -118,6 +120,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-population',   tableName: 'population_snapshots',    maxAgeSeconds: 2592000 },
     { jobName: 'ingest-feuerwehr',   tableName: 'feuerwehr_snapshots',    maxAgeSeconds: 86400 },
     { jobName: 'ingest-pollen',     tableName: 'pollen_snapshots',       maxAgeSeconds: 86400 },
+    { jobName: 'ingest-noise-sensors', tableName: 'noise_sensor_snapshots', maxAgeSeconds: 1800 },
   ];
 
   const stale = db
@@ -147,6 +150,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   const ingestPopulation = createPopulationIngestion(cache, db);
   const ingestFeuerwehr = createFeuerwehrIngestion(cache, db);
   const ingestPollen = createPollenIngestion(cache, db);
+  const ingestNoiseSensors = createNoiseSensorIngestion(cache, db);
 
   const retainData = db ? createDataRetention(db) : async () => {};
 
@@ -176,6 +180,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
     { name: 'ingest-feuerwehr', schedule: '0 8 * * *', handler: ingestFeuerwehr, runOnStart: s('ingest-feuerwehr') },
     { name: 'ingest-pollen', schedule: '0 */6 * * *', handler: ingestPollen, runOnStart: s('ingest-pollen') },
+    { name: 'ingest-noise-sensors', schedule: '*/10 * * * *', handler: ingestNoiseSensors, runOnStart: s('ingest-noise-sensors') },
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
@@ -222,6 +227,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));
   app.use('/api', cacheFor(43200), createFeuerwehrRouter(cache, db));
   app.use('/api', cacheFor(43200), createPollenRouter(cache, db));
+  app.use('/api', cacheFor(300), createNoiseSensorsRouter(cache, db));
 
   return { app, cache, db, scheduler };
 }

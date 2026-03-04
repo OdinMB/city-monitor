@@ -3,9 +3,10 @@
  */
 
 import maplibregl from 'maplibre-gl';
+import { Landmark } from 'lucide';
 import type { PoliticalDistrict } from '../../../lib/api.js';
 import { getPartyColor, getMajorityParty } from '../../../lib/party-colors.js';
-import { registerPoliticalIcons } from '../../../lib/map-icons.js';
+import { registerPoliticalIcons, createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
 import { normalizePoliticalName } from '../base.js';
 
@@ -212,17 +213,26 @@ export function updatePoliticalMarkers(
   if (!districts.length || !geojsonFeatures.length) return;
 
   const colorMap = new Map<string, string>();
+  const mayorMap = new Map<string, string>();
   const uniqueColors = new Set<string>();
   for (const d of districts) {
     const party = getMajorityParty(d.representatives);
     const color = party ? getPartyColor(party) : '#808080';
-    colorMap.set(normalizePoliticalName(d.name), color);
+    const norm = normalizePoliticalName(d.name);
+    colorMap.set(norm, color);
     uniqueColors.add(color);
+    if (d.representatives.length > 0) {
+      mayorMap.set(norm, d.representatives[0].name);
+    }
   }
 
   uniqueColors.add('#808080');
-  registerPoliticalIcons(map, subLayer, [...uniqueColors], isDark);
+  const useBadges = subLayer === 'bezirke';
+  if (!useBadges) {
+    registerPoliticalIcons(map, subLayer, [...uniqueColors], isDark);
+  }
 
+  const stroke = isDark ? '#1f2937' : '#ffffff';
   const points: GeoJSON.Feature[] = [];
 
   for (const f of geojsonFeatures) {
@@ -245,7 +255,17 @@ export function updatePoliticalMarkers(
     }
 
     const color = colorMap.get(normalizePoliticalName(name)) ?? '#808080';
-    const iconId = `political-icon-${color.replace('#', '')}`;
+    let iconId: string;
+
+    if (useBadges) {
+      const mayor = mayorMap.get(normalizePoliticalName(name)) ?? name;
+      iconId = `pol-badge-${encodeURIComponent(mayor)}-${color.replace('#', '')}`;
+      if (!map.hasImage(iconId)) {
+        map.addImage(iconId, createBadgeIcon(Landmark as IconNode, color, stroke, mayor));
+      }
+    } else {
+      iconId = `political-icon-${color.replace('#', '')}`;
+    }
 
     points.push({
       type: 'Feature',
@@ -267,7 +287,7 @@ export function updatePoliticalMarkers(
     source: POLITICAL_MARKER_SOURCE,
     layout: {
       'icon-image': ['get', 'iconId'],
-      'icon-size': 0.85,
+      'icon-size': useBadges ? 1 : 0.85,
       'icon-allow-overlap': true,
       'icon-anchor': 'center',
     },

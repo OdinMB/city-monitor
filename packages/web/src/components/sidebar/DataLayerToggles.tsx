@@ -1,7 +1,7 @@
 import { createElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart } from 'lucide';
-import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane } from 'lucide';
+import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import type { IconNode } from '../../lib/map-icons.js';
 
@@ -11,6 +11,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: st
   { layer: 'traffic', icon: Car as IconNode, color: '#8b5cf6' },
   { layer: 'weather', icon: CloudRain as IconNode, color: '#0ea5e9' },
   { layer: 'air-quality', icon: Wind as IconNode, color: '#50C878' },
+  { layer: 'noise', icon: Volume2 as IconNode, color: '#f97316' },
   { layer: 'water', icon: Droplets as IconNode, color: '#3b82f6' },
   { layer: 'emergencies', icon: HeartPulse as IconNode, color: '#ef4444' },
   { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6', cities: ['berlin'] },
@@ -28,6 +29,13 @@ const NEWS_SUB_META: { key: NewsSubLayer; icon: IconNode; color: string }[] = [
 const EMERGENCY_SUB_META: { key: EmergencySubLayer; icon: IconNode; color: string }[] = [
   { key: 'pharmacies', icon: Pill as IconNode, color: '#22c55e' },
   { key: 'aeds', icon: HeartPulse as IconNode, color: '#ef4444' },
+];
+
+const NOISE_SUB_META: { key: NoiseLayer; icon: IconNode; color: string; cities?: string[] }[] = [
+  { key: 'total', icon: Volume2 as IconNode, color: '#f97316', cities: ['berlin'] },
+  { key: 'road', icon: Car as IconNode, color: '#f97316' },
+  { key: 'rail', icon: TrainTrack as IconNode, color: '#f97316' },
+  { key: 'air', icon: Plane as IconNode, color: '#f97316' },
 ];
 
 const WATER_SUB_META: { key: WaterSubLayer; icon: IconNode; color: string }[] = [
@@ -112,6 +120,8 @@ export function DataLayerToggles() {
   const toggleWaterSubLayer = useCommandCenter((s) => s.toggleWaterSubLayer);
   const trafficSubLayers = useCommandCenter((s) => s.trafficSubLayers);
   const toggleTrafficSubLayer = useCommandCenter((s) => s.toggleTrafficSubLayer);
+  const noiseLayer = useCommandCenter((s) => s.noiseLayer);
+  const setNoiseLayer = useCommandCenter((s) => s.setNoiseLayer);
   const socialLayer = useCommandCenter((s) => s.socialLayer);
   const setSocialLayer = useCommandCenter((s) => s.setSocialLayer);
   const populationLayer = useCommandCenter((s) => s.populationLayer);
@@ -181,6 +191,21 @@ export function DataLayerToggles() {
                 active={waterSubLayers.has(key)}
                 label={t(`sidebar.water.${key}`)}
                 onClick={() => toggleWaterSubLayer(key)}
+              />
+            ));
+          } else if (layer === 'noise' && active) {
+            // Hamburg has no 'total' sub-layer — fall back to 'road' for active state highlight
+            const effectiveNoise = (noiseLayer === 'total' && city.id !== 'berlin') ? 'road' : noiseLayer;
+            subItems = NOISE_SUB_META
+              .filter(({ cities: c }) => !c || c.includes(city.id))
+              .map(({ key, icon: subIcon, color: subColor }) => (
+              <SubLayerItem
+                key={key}
+                icon={subIcon}
+                color={subColor}
+                active={effectiveNoise === key}
+                label={t(`sidebar.noise.${key}`)}
+                onClick={() => setNoiseLayer(key)}
               />
             ));
           } else if (layer === 'social' && active) {

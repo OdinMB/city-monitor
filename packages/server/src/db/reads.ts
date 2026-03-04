@@ -635,6 +635,8 @@ export async function loadNoiseSensors(db: Db, cityId: string): Promise<DbResult
     .limit(1);
 
   if (rows.length === 0) return null;
+  // Discard data older than 2h (cron runs every 10min)
+  if (rows[0].fetchedAt && Date.now() - rows[0].fetchedAt.getTime() > 2 * 60 * 60 * 1000) return null;
   const data = validateJsonb(z.array(NoiseSensorSchema), rows[0].data, 'noise-sensors');
   return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
 }

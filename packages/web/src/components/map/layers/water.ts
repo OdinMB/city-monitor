@@ -3,8 +3,9 @@
  */
 
 import maplibregl from 'maplibre-gl';
+import { Droplets } from 'lucide';
 import type { WaterLevelStation, BathingSpot } from '../../../lib/api.js';
-import { WATER_STATE_COLORS, BATHING_QUALITY_COLORS } from '../../../lib/map-icons.js';
+import { WATER_STATE_COLORS, BATHING_QUALITY_COLORS, createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { registerPopupHandlers } from '../popups.js';
 
 function waterLevelsToGeoJSON(stations: WaterLevelStation[]): GeoJSON.FeatureCollection {
@@ -22,6 +23,7 @@ function waterLevelsToGeoJSON(stations: WaterLevelStation[]): GeoJSON.FeatureCol
           currentLevel: s.currentLevel,
           state: s.state,
           tidal: s.tidal,
+          iconId: `wl-badge-${s.currentLevel}-${s.state}`,
         },
       })),
   };
@@ -37,42 +39,29 @@ export function updateWaterLevelMarkers(map: maplibregl.Map, stations: WaterLeve
 
   if (geojson.features.length === 0) return;
 
-  map.addSource('wl-markers', { type: 'geojson', data: geojson });
-
-  const iconMatch: unknown[] = ['match', ['get', 'state']];
-  for (const state of Object.keys(WATER_STATE_COLORS)) {
-    iconMatch.push(state, `wl-icon-${state}`);
+  // Register a badge image for each unique level+state combo
+  const stroke = isDark ? '#1f2937' : '#ffffff';
+  const registered = new Set<string>();
+  for (const s of stations.filter((s) => s.lat && s.lon)) {
+    const id = `wl-badge-${s.currentLevel}-${s.state}`;
+    if (registered.has(id)) continue;
+    registered.add(id);
+    if (map.hasImage(id)) map.removeImage(id);
+    const color = WATER_STATE_COLORS[s.state] ?? WATER_STATE_COLORS.unknown;
+    map.addImage(id, createBadgeIcon(Droplets as IconNode, color, stroke, `${s.currentLevel} cm`));
   }
-  iconMatch.push('wl-icon-unknown'); // fallback
+
+  map.addSource('wl-markers', { type: 'geojson', data: geojson });
 
   map.addLayer({
     id: 'wl-marker-icon',
     type: 'symbol',
     source: 'wl-markers',
     layout: {
-      'icon-image': iconMatch as maplibregl.ExpressionSpecification,
-      'icon-size': 0.95,
+      'icon-image': ['get', 'iconId'] as unknown as maplibregl.ExpressionSpecification,
+      'icon-size': 1,
       'icon-allow-overlap': true,
       'icon-anchor': 'center',
-    },
-  });
-
-  map.addLayer({
-    id: 'wl-marker-label',
-    type: 'symbol',
-    source: 'wl-markers',
-    layout: {
-      'text-field': ['concat', ['to-string', ['get', 'currentLevel']], ' cm'],
-      'text-size': 10,
-      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-      'text-offset': [0, 2.5],
-      'text-anchor': 'top',
-      'text-allow-overlap': true,
-    },
-    paint: {
-      'text-color': isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)',
-      'text-halo-color': isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
-      'text-halo-width': 1,
     },
   });
 
