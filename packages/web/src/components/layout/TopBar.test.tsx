@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { CityProvider } from '../../hooks/useCityConfig.js';
+import { CityProvider } from '../../hooks/CityProvider.js';
 import { TopBar } from './TopBar.js';
 import type { WeatherData } from '@city-monitor/shared';
 

@@ -51,7 +51,7 @@ export function NewsStrip({ expanded, onExpand }: { expanded: boolean; onExpand:
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  const items = data?.items ?? [];
+  const items = useMemo(() => data?.items ?? [], [data?.items]);
 
   const visibleItems = useMemo(
     () => items.filter((item) => !HIDDEN_CATEGORIES.has(item.category)),

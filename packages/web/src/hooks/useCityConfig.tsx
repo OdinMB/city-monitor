@@ -1,20 +1,6 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { useContext } from 'react';
 import type { CityConfig } from '@city-monitor/shared';
-import { getCityConfig, getDefaultCityId } from '../config/index.js';
-
-const CityContext = createContext<CityConfig | null>(null);
-
-export function CityProvider({ cityId, children }: { cityId?: string; children: ReactNode }) {
-  const config = getCityConfig(cityId || getDefaultCityId());
-  if (!config) {
-    return <div>Unknown city: {cityId}</div>;
-  }
-  return (
-    <CityContext.Provider value={config}>
-      {children}
-    </CityContext.Provider>
-  );
-}
+import { CityContext } from './CityContext.js';
 
 export function useCityConfig(): CityConfig {
   const config = useContext(CityContext);

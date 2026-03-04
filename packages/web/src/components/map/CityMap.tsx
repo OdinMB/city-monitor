@@ -5,7 +5,7 @@
  * Does NOT port worldmonitor's DeckGLMap component.
  */
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -94,21 +94,48 @@ export function CityMap() {
   const isDark = theme === 'dark';
   const mapConfig = city.map;
 
-  const transitItems = (activeLayers.has('traffic') && trafficSubLayers.has('public-transport')) ? (transitAlerts ?? []) : [];
+  const transitItems = useMemo(
+    () => (activeLayers.has('traffic') && trafficSubLayers.has('public-transport')) ? (transitAlerts ?? []) : [],
+    [activeLayers, trafficSubLayers, transitAlerts],
+  );
   const newsActive = activeLayers.has('news');
-  const newsItems = (newsActive && newsSubLayers.has('news'))
-    ? filterNewsForMap(newsDigest?.items ?? [], city.coordinates, city.boundingBox)
-    : [];
-  const safetyItems = (newsActive && newsSubLayers.has('police')) ? (safetyReports ?? []) : [];
-  const warningItems = activeLayers.has('warnings') ? (ninaWarnings ?? []) : [];
+  const newsItems = useMemo(
+    () => (newsActive && newsSubLayers.has('news'))
+      ? filterNewsForMap(newsDigest?.items ?? [], city.coordinates, city.boundingBox)
+      : [],
+    [newsActive, newsSubLayers, newsDigest?.items, city.coordinates, city.boundingBox],
+  );
+  const safetyItems = useMemo(
+    () => (newsActive && newsSubLayers.has('police')) ? (safetyReports ?? []) : [],
+    [newsActive, newsSubLayers, safetyReports],
+  );
+  const warningItems = useMemo(
+    () => activeLayers.has('warnings') ? (ninaWarnings ?? []) : [],
+    [activeLayers, ninaWarnings],
+  );
   const emergencyActive = activeLayers.has('emergencies');
-  const pharmacyItems = (emergencyActive && emergencySubLayers.has('pharmacies')) ? (pharmacyList ?? []) : [];
-  const aedItems = (emergencyActive && emergencySubLayers.has('aeds')) ? (aedList ?? []) : [];
-  const trafficItems = trafficActive ? (trafficIncidents ?? []) : [];
-  const constructionItems = constructionActive ? (constructionSites ?? []) : [];
+  const pharmacyItems = useMemo(
+    () => (emergencyActive && emergencySubLayers.has('pharmacies')) ? (pharmacyList ?? []) : [],
+    [emergencyActive, emergencySubLayers, pharmacyList],
+  );
+  const aedItems = useMemo(
+    () => (emergencyActive && emergencySubLayers.has('aeds')) ? (aedList ?? []) : [],
+    [emergencyActive, emergencySubLayers, aedList],
+  );
+  const trafficItems = useMemo(
+    () => trafficActive ? (trafficIncidents ?? []) : [],
+    [trafficActive, trafficIncidents],
+  );
+  const constructionItems = useMemo(
+    () => constructionActive ? (constructionSites ?? []) : [],
+    [constructionActive, constructionSites],
+  );
   const aqGridItems = activeLayers.has('air-quality') ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
   const waterLevelItems = (waterActive && waterSubLayers.has('levels')) ? (waterLevelData?.stations ?? EMPTY_WL) : EMPTY_WL;
-  const bathingItems = (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [];
+  const bathingItems = useMemo(
+    () => (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [],
+    [waterActive, waterSubLayers, bathingData],
+  );
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
 
@@ -331,7 +358,6 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transitItems]);
 
   // Update news markers when data or layer toggle changes
@@ -342,7 +368,6 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newsItems]);
 
   // Update safety markers when data or layer toggle changes
@@ -353,7 +378,6 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safetyItems]);
 
   // Update NINA warning polygons
@@ -364,7 +388,6 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warningItems]);
 
   // Update emergency markers (pharmacies + AEDs) — combined into a single effect
@@ -390,7 +413,6 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trafficItems]);
 
   // Update construction layers
@@ -401,7 +423,6 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [constructionItems]);
 
   // Show/hide major road layers when traffic or construction data layer is toggled
@@ -439,7 +460,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [aqGridItems]);
 
   // Update water level markers
@@ -450,7 +471,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [waterLevelItems]);
 
   // Update bathing water markers
@@ -461,7 +482,6 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bathingItems]);
 
   // Update social atlas choropleth (lazy — geojson only available when layer is toggled on)
@@ -472,7 +492,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [socialAtlasGeoJson, socialAtlasMetric]);
 
   // Update population choropleth (lazy — geojson only available when a pop-* sub-layer is active)
@@ -483,7 +503,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [populationGeoJson, populationMetric]);
 
   // Political layer: swap GeoJSON source + apply/reset styling
@@ -597,7 +617,6 @@ export function CityMap() {
     })();
 
     return () => { controller.abort(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [politicalActive, politicalLayer]);
 
   // Effect 2: apply party colors + markers when political data arrives/changes
@@ -670,7 +689,6 @@ export function CityMap() {
       map.off('mouseleave', POLITICAL_MARKER_LAYER, onLeave);
       map.off('click', POLITICAL_MARKER_LAYER, onClick);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
