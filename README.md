@@ -10,6 +10,11 @@
 </p>
 
 <p align="center">
+  <img src="https://raw.githubusercontent.com/OdinMB/city-monitor/main/packages/web/public/screenshot_traffic.png" alt="City Monitor Berlin traffic map" width="395" />
+  <img src="https://raw.githubusercontent.com/OdinMB/city-monitor/main/packages/web/public/screenshot_water.png" alt="City Monitor Berlin water map" width="395" />
+</p>
+
+<p align="center">
   <a href="https://citymonitor.app"><img src="https://img.shields.io/badge/live-citymonitor.app-blue" alt="Website" /></a>
   <a href="https://github.com/OdinMB/city-monitor/actions/workflows/ci.yml"><img src="https://github.com/OdinMB/city-monitor/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green" alt="License" /></a>
