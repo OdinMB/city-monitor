@@ -36,6 +36,13 @@
       "when": 1772648505260,
       "tag": "0004_giant_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772751824578,
+      "tag": "0005_unified_snapshots",
+      "breakpoints": true
     }
   ]
 }

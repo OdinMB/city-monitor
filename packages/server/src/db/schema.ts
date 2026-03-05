@@ -5,40 +5,35 @@
 
 import { pgTable, serial, text, timestamp, jsonb, integer, boolean, real, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
-// Milestone 06 — Weather
-export const weatherSnapshots = pgTable('weather_snapshots', {
+// ---------------------------------------------------------------------------
+// Unified snapshots table — replaces 21 individual snapshot/batch tables
+// Type values identify the concrete data source (not the category).
+// ---------------------------------------------------------------------------
+
+export const SNAPSHOT_TYPES = [
+  'open-meteo', 'pegelonline', 'service-berlin', 'berlin-haushalt',
+  'viz-roadworks', 'tomtom-traffic', 'aponet', 'osm-aeds',
+  'mss-social-atlas', 'lageso-wastewater', 'lageso-bathing',
+  'ba-labor-market', 'afstat-population', 'bf-feuerwehr',
+  'dwd-pollen', 'sc-dnms', 'oparl-meetings',
+  'vbb-disruptions', 'aqi-grid', 'bbk-nina',
+  'abgwatch-bezirke', 'abgwatch-bundestag', 'abgwatch-state', 'abgwatch-state-bezirke',
+] as const;
+export type SnapshotType = typeof SNAPSHOT_TYPES[number];
+
+export const snapshots = pgTable('snapshots', {
   id: serial('id').primaryKey(),
   cityId: text('city_id').notNull(),
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-  current: jsonb('current').notNull(),
-  hourly: jsonb('hourly').notNull(),
-  daily: jsonb('daily').notNull(),
-  alerts: jsonb('alerts'),
+  type: text('type').notNull(),
+  data: jsonb('data').notNull(),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
-  index('weather_city_idx').on(table.cityId),
+  index('snapshots_city_type_fetched_idx').on(table.cityId, table.type, table.fetchedAt),
 ]);
 
-// Milestone 09 — Transit
-export const transitDisruptions = pgTable('transit_disruptions', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  externalId: text('external_id'),
-  line: text('line').notNull(),
-  type: text('type').notNull(),
-  severity: text('severity').notNull(),
-  message: text('message').notNull(),
-  detail: text('detail'),
-  station: text('station'),
-  lat: real('lat'),
-  lon: real('lon'),
-  affectedStops: jsonb('affected_stops'),
-  validFrom: timestamp('valid_from'),
-  validUntil: timestamp('valid_until'),
-  resolved: boolean('resolved').default(false),
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('transit_city_idx').on(table.cityId),
-]);
+// ---------------------------------------------------------------------------
+// Hash-keyed accumulation tables (kept as-is)
+// ---------------------------------------------------------------------------
 
 // Milestone 10 — Events
 export const events = pgTable('events', {
@@ -81,26 +76,6 @@ export const safetyReports = pgTable('safety_reports', {
   uniqueIndex('safety_city_hash_idx').on(table.cityId, table.hash),
 ]);
 
-// NINA civil protection warnings
-export const ninaWarnings = pgTable('nina_warnings', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  warningId: text('warning_id').notNull(),
-  version: integer('version').notNull(),
-  source: text('source').notNull(),
-  severity: text('severity').notNull(),
-  headline: text('headline').notNull(),
-  description: text('description'),
-  instruction: text('instruction'),
-  startDate: timestamp('start_date').notNull(),
-  expiresAt: timestamp('expires_at'),
-  area: jsonb('area'),
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('nina_city_idx').on(table.cityId, table.startDate),
-  uniqueIndex('nina_city_warning_version_idx').on(table.cityId, table.warningId, table.version),
-]);
-
 // News items with LLM assessments
 export const newsItems = pgTable('news_items', {
   id: serial('id').primaryKey(),
@@ -138,192 +113,6 @@ export const geocodeLookups = pgTable('geocode_lookups', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
   uniqueIndex('geocode_query_idx').on(table.query),
-]);
-
-// Air quality grid (WAQI + Open-Meteo supplement stations)
-export const airQualityGrid = pgTable('air_quality_grid', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  lat: real('lat').notNull(),
-  lon: real('lon').notNull(),
-  europeanAqi: integer('european_aqi').notNull(),
-  station: text('station').notNull(),
-  url: text('url'),
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('aq_grid_city_idx').on(table.cityId),
-]);
-
-// Political districts (Bezirke, Bundestag, state parliament)
-export const politicalDistricts = pgTable('political_districts', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  level: text('level').notNull(), // 'bezirke' | 'bundestag' | 'state' | 'state-bezirke'
-  districts: jsonb('districts').notNull(), // PoliticalDistrict[]
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  uniqueIndex('political_city_level_idx').on(table.cityId, table.level),
-]);
-
-// Water level snapshots (PEGELONLINE)
-export const waterLevelSnapshots = pgTable('water_level_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  stations: jsonb('stations').notNull(), // WaterLevelStation[]
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('water_level_city_idx').on(table.cityId),
-]);
-
-// Citizen services appointment snapshots
-export const appointmentSnapshots = pgTable('appointment_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  services: jsonb('services').notNull(), // BuergeramtService[]
-  bookingUrl: text('booking_url').notNull(),
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('appointment_city_idx').on(table.cityId),
-]);
-
-// Budget snapshots
-export const budgetSnapshots = pgTable('budget_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  data: jsonb('data').notNull(), // BudgetSummary
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('budget_city_idx').on(table.cityId),
-]);
-
-// Construction site snapshots
-export const constructionSnapshots = pgTable('construction_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  sites: jsonb('sites').notNull(), // ConstructionSite[]
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('construction_city_idx').on(table.cityId),
-]);
-
-// Traffic incident snapshots
-export const trafficSnapshots = pgTable('traffic_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  incidents: jsonb('incidents').notNull(), // TrafficIncident[]
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('traffic_city_idx').on(table.cityId),
-]);
-
-// Emergency pharmacy snapshots
-export const pharmacySnapshots = pgTable('pharmacy_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  pharmacies: jsonb('pharmacies').notNull(), // EmergencyPharmacy[]
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('pharmacy_city_idx').on(table.cityId),
-]);
-
-// AED location snapshots
-export const aedSnapshots = pgTable('aed_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  locations: jsonb('locations').notNull(), // AedLocation[]
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('aed_city_idx').on(table.cityId),
-]);
-
-// Social atlas GeoJSON snapshots
-export const socialAtlasSnapshots = pgTable('social_atlas_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  geojson: jsonb('geojson').notNull(), // GeoJSON FeatureCollection
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('social_atlas_city_idx').on(table.cityId),
-]);
-
-// Wastewater monitoring snapshots
-export const wastewaterSnapshots = pgTable('wastewater_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  data: jsonb('data').notNull(), // WastewaterSummary
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('wastewater_city_idx').on(table.cityId),
-]);
-
-// Bathing water quality snapshots
-export const bathingSnapshots = pgTable('bathing_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  spots: jsonb('spots').notNull(), // BathingSpot[]
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('bathing_city_idx').on(table.cityId),
-]);
-
-// Labor market snapshots
-export const laborMarketSnapshots = pgTable('labor_market_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  data: jsonb('data').notNull(), // LaborMarketSummary
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('labor_market_city_idx').on(table.cityId),
-]);
-
-// Population demographics snapshots
-export const populationSnapshots = pgTable('population_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  geojson: jsonb('geojson').notNull(), // GeoJSON FeatureCollection
-  summary: jsonb('summary').notNull(), // PopulationSummary
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('population_city_idx').on(table.cityId),
-]);
-
-// Feuerwehr (fire department) monthly operations snapshots
-export const feuerwehrSnapshots = pgTable('feuerwehr_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  data: jsonb('data').notNull(), // FeuerwehrSummary
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('feuerwehr_city_idx').on(table.cityId),
-]);
-
-// Pollen forecast snapshots (DWD)
-export const pollenSnapshots = pgTable('pollen_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  data: jsonb('data').notNull(), // PollenForecast
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('pollen_city_idx').on(table.cityId),
-]);
-
-// Noise sensor snapshots (Sensor.Community DNMS)
-export const noiseSensorSnapshots = pgTable('noise_sensor_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  data: jsonb('data').notNull(), // NoiseSensor[]
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('noise_sensor_city_idx').on(table.cityId),
-]);
-
-export const councilMeetingSnapshots = pgTable('council_meeting_snapshots', {
-  id: serial('id').primaryKey(),
-  cityId: text('city_id').notNull(),
-  meetings: jsonb('meetings').notNull(), // CouncilMeeting[]
-  fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
-}, (table) => [
-  index('council_meeting_city_idx').on(table.cityId),
 ]);
 
 // Milestone 07 — AI Summaries

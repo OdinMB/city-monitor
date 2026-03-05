@@ -18,6 +18,8 @@ export const CurrentWeatherSchema = z.object({
   weatherCode: z.number(),
   windSpeed: z.number(),
   windDirection: z.number(),
+  uvIndex: z.number().optional(),
+  uvIndexClearSky: z.number().optional(),
 });
 
 export const HourlyForecastSchema = z.object({
@@ -25,6 +27,7 @@ export const HourlyForecastSchema = z.object({
   temp: z.number(),
   precipProb: z.number(),
   weatherCode: z.number(),
+  uvIndex: z.number().optional(),
 });
 
 export const DailyForecastSchema = z.object({
@@ -35,6 +38,8 @@ export const DailyForecastSchema = z.object({
   precip: z.number(),
   sunrise: z.string(),
   sunset: z.string(),
+  uvIndexMax: z.number().optional(),
+  uvIndexClearSkyMax: z.number().optional(),
 });
 
 export const WeatherAlertSchema = z.object({
@@ -216,6 +221,7 @@ export const WastewaterPathogenSchema = z.object({
   trend: z.enum(['rising', 'falling', 'stable', 'new', 'gone']),
   level: z.enum(['none', 'low', 'moderate', 'high']),
   history: z.array(z.number()),
+  sampleDate: z.string().optional(),
 });
 
 export const WastewaterSummarySchema = z.object({
@@ -347,3 +353,35 @@ export const CouncilMeetingSchema = z.object({
 });
 
 export type CouncilMeeting = z.infer<typeof CouncilMeetingSchema>;
+
+// --- Transit Alerts ---
+
+export const TransitAlertSchema = z.object({
+  id: z.string(),
+  line: z.string(),
+  lines: z.array(z.string()),
+  type: z.enum(['delay', 'disruption', 'cancellation', 'planned-work']),
+  severity: z.enum(['low', 'medium', 'high']),
+  message: z.string(),
+  detail: z.string(),
+  station: z.string(),
+  location: z.object({ lat: z.number(), lon: z.number() }).nullable(),
+  affectedStops: z.array(z.string()),
+});
+
+// --- NINA Warnings ---
+
+export const NinaWarningSchema = z.object({
+  id: z.string(),
+  version: z.number(),
+  startDate: z.string(),
+  expiresAt: z.string().optional(),
+  severity: z.enum(['minor', 'moderate', 'severe', 'extreme']),
+  urgency: z.string().optional(),
+  type: z.string(),
+  source: z.enum(['mowas', 'biwapp', 'katwarn', 'dwd', 'lhp', 'police']),
+  headline: z.string(),
+  description: z.string().optional(),
+  instruction: z.string().optional(),
+  area: z.object({ type: z.string(), geometry: z.unknown(), properties: z.unknown().optional() }).optional(),
+});

@@ -1,40 +1,22 @@
-import { eq, and, desc, asc, max, gte, avg } from 'drizzle-orm';
+import { eq, and, desc, asc, gte } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
-  weatherSnapshots,
-  transitDisruptions,
+  snapshots,
   events,
   safetyReports,
   newsItems,
   aiSummaries,
-  ninaWarnings,
   geocodeLookups,
-  airQualityGrid,
-  politicalDistricts,
-  waterLevelSnapshots,
-  appointmentSnapshots,
-  budgetSnapshots,
-  constructionSnapshots,
-  trafficSnapshots,
-  pharmacySnapshots,
-  aedSnapshots,
-  socialAtlasSnapshots,
-  wastewaterSnapshots,
-  bathingSnapshots,
-  laborMarketSnapshots,
-  populationSnapshots,
-  feuerwehrSnapshots,
-  pollenSnapshots,
-  noiseSensorSnapshots,
-  councilMeetingSnapshots,
 } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint } from '@city-monitor/shared';
+import type { SnapshotType } from './schema.js';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
+  TransitAlertSchema, NinaWarningSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -42,7 +24,6 @@ import type { TransitAlert } from '../cron/ingest-transit.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
 import type { NewsSummary } from '../cron/summarize.js';
-import type { AirQualityGridPoint } from '@city-monitor/shared';
 import type { PersistedNewsItem } from './writes.js';
 import { createLogger } from '../lib/logger.js';
 import { z } from 'zod';
@@ -62,62 +43,201 @@ function validateJsonb<T>(schema: z.ZodType<T>, data: unknown, label: string): T
   return result.data;
 }
 
-export async function loadWeather(db: Db, cityId: string): Promise<DbResult<WeatherData>> {
+// ---------------------------------------------------------------------------
+// Generic snapshot helpers (internal)
+// ---------------------------------------------------------------------------
+
+interface SnapshotOpts<T> {
+  schema?: z.ZodType<T>;
+  maxAgeMs?: number;
+}
+
+async function loadSnapshot<T>(
+  db: Db,
+  cityId: string,
+  type: SnapshotType,
+  opts?: SnapshotOpts<T>,
+): Promise<DbResult<T>> {
   const rows = await db
     .select()
-    .from(weatherSnapshots)
-    .where(eq(weatherSnapshots.cityId, cityId))
-    .orderBy(desc(weatherSnapshots.fetchedAt))
+    .from(snapshots)
+    .where(and(eq(snapshots.cityId, cityId), eq(snapshots.type, type)))
+    .orderBy(desc(snapshots.fetchedAt))
     .limit(1);
 
   if (rows.length === 0) return null;
 
   const row = rows[0];
-  // Safety net: discard data older than 6h (weather cron runs every 30min)
-  if (row.fetchedAt && Date.now() - row.fetchedAt.getTime() > 6 * 60 * 60 * 1000) return null;
 
-  const assembled = {
-    current: row.current,
-    hourly: row.hourly,
-    daily: row.daily,
-    alerts: (row.alerts ?? []),
-  };
-  const data = validateJsonb(WeatherDataSchema, assembled, 'weather');
-  return data ? { data, fetchedAt: row.fetchedAt } : null;
+  if (opts?.maxAgeMs && Date.now() - row.fetchedAt.getTime() > opts.maxAgeMs) return null;
+
+  if (opts?.schema) {
+    const data = validateJsonb(opts.schema, row.data, type);
+    return data ? { data, fetchedAt: row.fetchedAt } : null;
+  }
+
+  return { data: row.data as T, fetchedAt: row.fetchedAt };
+}
+
+async function loadSnapshotHistory(
+  db: Db,
+  cityId: string,
+  type: SnapshotType,
+  sinceDays: number,
+): Promise<Array<{ data: unknown; fetchedAt: Date }>> {
+  const since = new Date(Date.now() - sinceDays * 86_400_000);
+  return db
+    .select({ data: snapshots.data, fetchedAt: snapshots.fetchedAt })
+    .from(snapshots)
+    .where(and(
+      eq(snapshots.cityId, cityId),
+      eq(snapshots.type, type),
+      gte(snapshots.fetchedAt, since),
+    ))
+    .orderBy(asc(snapshots.fetchedAt));
+}
+
+// ---------------------------------------------------------------------------
+// Named read wrappers — signatures unchanged for callers
+// ---------------------------------------------------------------------------
+
+export async function loadWeather(db: Db, cityId: string): Promise<DbResult<WeatherData>> {
+  return loadSnapshot(db, cityId, 'open-meteo', { schema: WeatherDataSchema });
 }
 
 export async function loadTransitAlerts(db: Db, cityId: string): Promise<DbResult<TransitAlert[]>> {
-  // Get only the latest batch (rows sharing the MAX fetched_at)
-  const latest = await db
-    .select({ val: max(transitDisruptions.fetchedAt) })
-    .from(transitDisruptions)
-    .where(eq(transitDisruptions.cityId, cityId));
-  const latestTs = latest[0]?.val;
-  if (!latestTs) return null;
+  return loadSnapshot(db, cityId, 'vbb-disruptions', { schema: z.array(TransitAlertSchema) });
+}
 
+export async function loadWaterLevels(db: Db, cityId: string): Promise<DbResult<WaterLevelData>> {
+  const result = await loadSnapshot<{ stations: unknown }>(db, cityId, 'pegelonline');
+  if (!result) return null;
+  const assembled = { stations: result.data.stations, fetchedAt: result.fetchedAt.toISOString() };
+  const data = validateJsonb(WaterLevelDataSchema, assembled, 'pegelonline');
+  return data ? { data, fetchedAt: result.fetchedAt } : null;
+}
+
+export async function loadAppointments(db: Db, cityId: string): Promise<DbResult<BuergeramtData>> {
+  const result = await loadSnapshot<{ services: unknown; bookingUrl: string }>(db, cityId, 'service-berlin');
+  if (!result) return null;
+  const assembled = {
+    services: result.data.services,
+    bookingUrl: result.data.bookingUrl,
+    fetchedAt: result.fetchedAt.toISOString(),
+  };
+  const data = validateJsonb(BuergeramtDataSchema, assembled, 'service-berlin');
+  return data ? { data, fetchedAt: result.fetchedAt } : null;
+}
+
+export async function loadBudget(db: Db, cityId: string): Promise<DbResult<BudgetSummary>> {
+  return loadSnapshot(db, cityId, 'berlin-haushalt', { schema: BudgetSummarySchema });
+}
+
+export async function loadConstructionSites(db: Db, cityId: string): Promise<DbResult<ConstructionSite[]>> {
+  return loadSnapshot(db, cityId, 'viz-roadworks', { schema: z.array(ConstructionSiteSchema) });
+}
+
+export async function loadTrafficIncidents(db: Db, cityId: string): Promise<DbResult<TrafficIncident[]>> {
+  return loadSnapshot(db, cityId, 'tomtom-traffic', { schema: z.array(TrafficIncidentSchema) });
+}
+
+export async function loadPharmacies(db: Db, cityId: string): Promise<DbResult<EmergencyPharmacy[]>> {
+  return loadSnapshot(db, cityId, 'aponet', { schema: z.array(EmergencyPharmacySchema) });
+}
+
+export async function loadAeds(db: Db, cityId: string): Promise<DbResult<AedLocation[]>> {
+  return loadSnapshot(db, cityId, 'osm-aeds', { schema: z.array(AedLocationSchema) });
+}
+
+export async function loadSocialAtlas(db: Db, cityId: string): Promise<DbResult<unknown>> {
+  return loadSnapshot(db, cityId, 'mss-social-atlas');
+}
+
+export async function loadWastewater(db: Db, cityId: string): Promise<DbResult<WastewaterSummary>> {
+  return loadSnapshot(db, cityId, 'lageso-wastewater', { schema: WastewaterSummarySchema });
+}
+
+export async function loadBathingSpots(db: Db, cityId: string): Promise<DbResult<BathingSpot[]>> {
+  return loadSnapshot(db, cityId, 'lageso-bathing', { schema: z.array(BathingSpotSchema) });
+}
+
+export async function loadLaborMarket(db: Db, cityId: string): Promise<DbResult<LaborMarketSummary>> {
+  return loadSnapshot(db, cityId, 'ba-labor-market', { schema: LaborMarketSummarySchema });
+}
+
+export async function loadPopulationGeojson(db: Db, cityId: string): Promise<DbResult<unknown>> {
+  const result = await loadSnapshot<{ geojson: unknown }>(db, cityId, 'afstat-population');
+  if (!result) return null;
+  return { data: result.data.geojson, fetchedAt: result.fetchedAt };
+}
+
+export async function loadPopulationSummary(db: Db, cityId: string): Promise<DbResult<PopulationSummary>> {
+  const result = await loadSnapshot<{ summary: unknown }>(db, cityId, 'afstat-population');
+  if (!result) return null;
+  const data = validateJsonb(PopulationSummarySchema, result.data.summary, 'afstat-population');
+  return data ? { data, fetchedAt: result.fetchedAt } : null;
+}
+
+export async function loadFeuerwehr(db: Db, cityId: string): Promise<DbResult<FeuerwehrSummary>> {
+  return loadSnapshot(db, cityId, 'bf-feuerwehr', { schema: FeuerwehrSummarySchema });
+}
+
+export async function loadPollen(db: Db, cityId: string): Promise<DbResult<PollenForecast>> {
+  return loadSnapshot(db, cityId, 'dwd-pollen', { schema: PollenForecastSchema, maxAgeMs: 48 * 3600_000 });
+}
+
+export async function loadNoiseSensors(db: Db, cityId: string): Promise<DbResult<NoiseSensor[]>> {
+  return loadSnapshot(db, cityId, 'sc-dnms', { schema: z.array(NoiseSensorSchema), maxAgeMs: 2 * 3600_000 });
+}
+
+export async function loadCouncilMeetings(db: Db, cityId: string): Promise<DbResult<CouncilMeeting[]>> {
+  return loadSnapshot(db, cityId, 'oparl-meetings', { schema: z.array(CouncilMeetingSchema), maxAgeMs: 48 * 3600_000 });
+}
+
+export async function loadNinaWarnings(db: Db, cityId: string): Promise<DbResult<NinaWarning[]>> {
+  return loadSnapshot(db, cityId, 'bbk-nina', { schema: z.array(NinaWarningSchema), maxAgeMs: 3 * 3600_000 });
+}
+
+export async function loadAirQualityGrid(db: Db, cityId: string): Promise<DbResult<AirQualityGridPoint[]>> {
+  return loadSnapshot(db, cityId, 'aqi-grid', { schema: z.array(z.object({
+    lat: z.number(),
+    lon: z.number(),
+    europeanAqi: z.number(),
+    station: z.string(),
+    url: z.string().optional(),
+  })), maxAgeMs: 6 * 3600_000 });
+}
+
+export async function loadPoliticalDistricts(
+  db: Db,
+  cityId: string,
+  level: string,
+): Promise<DbResult<PoliticalDistrict[]>> {
+  return loadSnapshot(db, cityId, `abgwatch-${level}` as SnapshotType, { schema: z.array(PoliticalDistrictSchema) });
+}
+
+export async function loadPoliticalFetchedAt(
+  db: Db,
+  cityId: string,
+  level: string,
+): Promise<Date | null> {
   const rows = await db
-    .select()
-    .from(transitDisruptions)
-    .where(and(eq(transitDisruptions.cityId, cityId), eq(transitDisruptions.fetchedAt, latestTs)));
+    .select({ fetchedAt: snapshots.fetchedAt })
+    .from(snapshots)
+    .where(and(
+      eq(snapshots.cityId, cityId),
+      eq(snapshots.type, `abgwatch-${level}`),
+    ))
+    .orderBy(desc(snapshots.fetchedAt))
+    .limit(1);
 
   if (rows.length === 0) return null;
-
-  return {
-    data: rows.map((row) => ({
-      id: row.externalId ?? String(row.id),
-      line: row.line,
-      lines: row.line.split(', '),
-      type: row.type as TransitAlert['type'],
-      severity: row.severity as TransitAlert['severity'],
-      message: row.message,
-      detail: row.detail ?? row.message,
-      station: row.station ?? '',
-      location: row.lat != null && row.lon != null ? { lat: row.lat, lon: row.lon } : null,
-      affectedStops: (row.affectedStops as string[]) ?? [],
-    })),
-    fetchedAt: latestTs,
-  };
+  return rows[0].fetchedAt;
 }
+
+// ---------------------------------------------------------------------------
+// Non-snapshot tables (unchanged)
+// ---------------------------------------------------------------------------
 
 export async function loadEvents(db: Db, cityId: string): Promise<DbResult<CityEvent[]>> {
   const rows = await db
@@ -279,112 +399,9 @@ export async function loadSummary(db: Db, cityId: string): Promise<DbResult<News
   };
 }
 
-export async function loadNinaWarnings(db: Db, cityId: string): Promise<DbResult<NinaWarning[]>> {
-  // Get only the latest batch (rows sharing the MAX fetched_at)
-  const latest = await db
-    .select({ val: max(ninaWarnings.fetchedAt) })
-    .from(ninaWarnings)
-    .where(eq(ninaWarnings.cityId, cityId));
-  const latestTs = latest[0]?.val;
-  if (!latestTs) return null;
-
-  // Safety net: discard data older than 3h (NINA cron runs every 5min)
-  if (Date.now() - latestTs.getTime() > 3 * 60 * 60 * 1000) return null;
-
-  const rows = await db
-    .select()
-    .from(ninaWarnings)
-    .where(and(eq(ninaWarnings.cityId, cityId), eq(ninaWarnings.fetchedAt, latestTs)))
-    .orderBy(desc(ninaWarnings.startDate));
-
-  if (rows.length === 0) return null;
-
-  return {
-    data: rows.map((row) => ({
-      id: row.warningId,
-      version: row.version,
-      startDate: row.startDate.toISOString(),
-      expiresAt: row.expiresAt?.toISOString(),
-      severity: row.severity as NinaWarning['severity'],
-      urgency: undefined,
-      type: 'unknown',
-      source: row.source as NinaWarning['source'],
-      headline: row.headline,
-      description: row.description ?? undefined,
-      instruction: row.instruction ?? undefined,
-      area: (row.area as NinaWarning['area']) ?? undefined,
-    })),
-    fetchedAt: latestTs,
-  };
-}
-
-export async function loadPoliticalDistricts(
-  db: Db,
-  cityId: string,
-  level: string,
-): Promise<DbResult<PoliticalDistrict[]>> {
-  const rows = await db
-    .select()
-    .from(politicalDistricts)
-    .where(and(
-      eq(politicalDistricts.cityId, cityId),
-      eq(politicalDistricts.level, level),
-    ))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(z.array(PoliticalDistrictSchema), rows[0].districts, 'political');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadPoliticalFetchedAt(
-  db: Db,
-  cityId: string,
-  level: string,
-): Promise<Date | null> {
-  const rows = await db
-    .select({ fetchedAt: politicalDistricts.fetchedAt })
-    .from(politicalDistricts)
-    .where(and(
-      eq(politicalDistricts.cityId, cityId),
-      eq(politicalDistricts.level, level),
-    ))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  return rows[0].fetchedAt;
-}
-
-export async function loadAirQualityGrid(db: Db, cityId: string): Promise<DbResult<AirQualityGridPoint[]>> {
-  // Get only the latest batch (rows sharing the MAX fetched_at)
-  const latest = await db
-    .select({ val: max(airQualityGrid.fetchedAt) })
-    .from(airQualityGrid)
-    .where(eq(airQualityGrid.cityId, cityId));
-  const latestTs = latest[0]?.val;
-  if (!latestTs) return null;
-
-  // Safety net: discard data older than 6h (AQ cron runs every 30min)
-  if (Date.now() - latestTs.getTime() > 6 * 60 * 60 * 1000) return null;
-
-  const rows = await db
-    .select()
-    .from(airQualityGrid)
-    .where(and(eq(airQualityGrid.cityId, cityId), eq(airQualityGrid.fetchedAt, latestTs)));
-
-  if (rows.length === 0) return null;
-
-  return {
-    data: rows.map((row) => ({
-      lat: row.lat,
-      lon: row.lon,
-      europeanAqi: row.europeanAqi,
-      station: row.station,
-      url: row.url ?? undefined,
-    })),
-    fetchedAt: latestTs,
-  };
-}
+// ---------------------------------------------------------------------------
+// Geocode lookups (unchanged)
+// ---------------------------------------------------------------------------
 
 export interface GeocodeLookupRow extends GeocodeResult {
   provider: string;
@@ -419,243 +436,6 @@ export async function loadAllGeocodeLookups(db: Db): Promise<(GeocodeLookupRow &
   }));
 }
 
-export async function loadWaterLevels(db: Db, cityId: string): Promise<DbResult<WaterLevelData>> {
-  const rows = await db
-    .select()
-    .from(waterLevelSnapshots)
-    .where(eq(waterLevelSnapshots.cityId, cityId))
-    .orderBy(desc(waterLevelSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-
-  const row = rows[0];
-  const assembled = {
-    stations: row.stations,
-    fetchedAt: row.fetchedAt.toISOString(),
-  };
-  const data = validateJsonb(WaterLevelDataSchema, assembled, 'water-levels');
-  return data ? { data, fetchedAt: row.fetchedAt } : null;
-}
-
-export async function loadAppointments(db: Db, cityId: string): Promise<DbResult<BuergeramtData>> {
-  const rows = await db
-    .select()
-    .from(appointmentSnapshots)
-    .where(eq(appointmentSnapshots.cityId, cityId))
-    .orderBy(desc(appointmentSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-
-  const row = rows[0];
-  const assembled = {
-    services: row.services,
-    bookingUrl: row.bookingUrl,
-    fetchedAt: row.fetchedAt.toISOString(),
-  };
-  const data = validateJsonb(BuergeramtDataSchema, assembled, 'appointments');
-  return data ? { data, fetchedAt: row.fetchedAt } : null;
-}
-
-export async function loadBudget(db: Db, cityId: string): Promise<DbResult<BudgetSummary>> {
-  const rows = await db
-    .select()
-    .from(budgetSnapshots)
-    .where(eq(budgetSnapshots.cityId, cityId))
-    .orderBy(desc(budgetSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(BudgetSummarySchema, rows[0].data, 'budget');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadConstructionSites(db: Db, cityId: string): Promise<DbResult<ConstructionSite[]>> {
-  const rows = await db
-    .select()
-    .from(constructionSnapshots)
-    .where(eq(constructionSnapshots.cityId, cityId))
-    .orderBy(desc(constructionSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(z.array(ConstructionSiteSchema), rows[0].sites, 'construction');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadTrafficIncidents(db: Db, cityId: string): Promise<DbResult<TrafficIncident[]>> {
-  const rows = await db
-    .select()
-    .from(trafficSnapshots)
-    .where(eq(trafficSnapshots.cityId, cityId))
-    .orderBy(desc(trafficSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(z.array(TrafficIncidentSchema), rows[0].incidents, 'traffic');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadPharmacies(db: Db, cityId: string): Promise<DbResult<EmergencyPharmacy[]>> {
-  const rows = await db
-    .select()
-    .from(pharmacySnapshots)
-    .where(eq(pharmacySnapshots.cityId, cityId))
-    .orderBy(desc(pharmacySnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(z.array(EmergencyPharmacySchema), rows[0].pharmacies, 'pharmacies');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadAeds(db: Db, cityId: string): Promise<DbResult<AedLocation[]>> {
-  const rows = await db
-    .select()
-    .from(aedSnapshots)
-    .where(eq(aedSnapshots.cityId, cityId))
-    .orderBy(desc(aedSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(z.array(AedLocationSchema), rows[0].locations, 'aeds');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadSocialAtlas(db: Db, cityId: string): Promise<DbResult<unknown>> {
-  const rows = await db
-    .select()
-    .from(socialAtlasSnapshots)
-    .where(eq(socialAtlasSnapshots.cityId, cityId))
-    .orderBy(desc(socialAtlasSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  return { data: rows[0].geojson, fetchedAt: rows[0].fetchedAt };
-}
-
-export async function loadWastewater(db: Db, cityId: string): Promise<DbResult<WastewaterSummary>> {
-  const rows = await db
-    .select()
-    .from(wastewaterSnapshots)
-    .where(eq(wastewaterSnapshots.cityId, cityId))
-    .orderBy(desc(wastewaterSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(WastewaterSummarySchema, rows[0].data, 'wastewater');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadBathingSpots(db: Db, cityId: string): Promise<DbResult<BathingSpot[]>> {
-  const rows = await db
-    .select()
-    .from(bathingSnapshots)
-    .where(eq(bathingSnapshots.cityId, cityId))
-    .orderBy(desc(bathingSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(z.array(BathingSpotSchema), rows[0].spots, 'bathing');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadLaborMarket(db: Db, cityId: string): Promise<DbResult<LaborMarketSummary>> {
-  const rows = await db
-    .select()
-    .from(laborMarketSnapshots)
-    .where(eq(laborMarketSnapshots.cityId, cityId))
-    .orderBy(desc(laborMarketSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(LaborMarketSummarySchema, rows[0].data, 'labor-market');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadPopulationGeojson(db: Db, cityId: string): Promise<DbResult<unknown>> {
-  const rows = await db
-    .select()
-    .from(populationSnapshots)
-    .where(eq(populationSnapshots.cityId, cityId))
-    .orderBy(desc(populationSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  return { data: rows[0].geojson, fetchedAt: rows[0].fetchedAt };
-}
-
-export async function loadPopulationSummary(db: Db, cityId: string): Promise<DbResult<PopulationSummary>> {
-  const rows = await db
-    .select()
-    .from(populationSnapshots)
-    .where(eq(populationSnapshots.cityId, cityId))
-    .orderBy(desc(populationSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(PopulationSummarySchema, rows[0].summary, 'population');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadFeuerwehr(db: Db, cityId: string): Promise<DbResult<FeuerwehrSummary>> {
-  const rows = await db
-    .select()
-    .from(feuerwehrSnapshots)
-    .where(eq(feuerwehrSnapshots.cityId, cityId))
-    .orderBy(desc(feuerwehrSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  const data = validateJsonb(FeuerwehrSummarySchema, rows[0].data, 'feuerwehr');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadPollen(db: Db, cityId: string): Promise<DbResult<PollenForecast>> {
-  const rows = await db
-    .select()
-    .from(pollenSnapshots)
-    .where(eq(pollenSnapshots.cityId, cityId))
-    .orderBy(desc(pollenSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  // Safety net: discard data older than 48h (pollen cron runs every 6h, DWD updates daily)
-  if (rows[0].fetchedAt && Date.now() - rows[0].fetchedAt.getTime() > 48 * 60 * 60 * 1000) return null;
-  const data = validateJsonb(PollenForecastSchema, rows[0].data, 'pollen');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadNoiseSensors(db: Db, cityId: string): Promise<DbResult<NoiseSensor[]>> {
-  const rows = await db
-    .select()
-    .from(noiseSensorSnapshots)
-    .where(eq(noiseSensorSnapshots.cityId, cityId))
-    .orderBy(desc(noiseSensorSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  // Discard data older than 2h (cron runs every 10min)
-  if (rows[0].fetchedAt && Date.now() - rows[0].fetchedAt.getTime() > 2 * 60 * 60 * 1000) return null;
-  const data = validateJsonb(z.array(NoiseSensorSchema), rows[0].data, 'noise-sensors');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
-export async function loadCouncilMeetings(db: Db, cityId: string): Promise<DbResult<CouncilMeeting[]>> {
-  const rows = await db
-    .select()
-    .from(councilMeetingSnapshots)
-    .where(eq(councilMeetingSnapshots.cityId, cityId))
-    .orderBy(desc(councilMeetingSnapshots.fetchedAt))
-    .limit(1);
-
-  if (rows.length === 0) return null;
-  if (rows[0].fetchedAt && Date.now() - rows[0].fetchedAt.getTime() > 48 * 60 * 60 * 1000) return null;
-  const data = validateJsonb(z.array(CouncilMeetingSchema), rows[0].meetings, 'council-meetings');
-  return data ? { data, fetchedAt: rows[0].fetchedAt } : null;
-}
-
 /* ── Historical time-series queries ─────────────────────────────── */
 
 /**
@@ -667,47 +447,35 @@ export async function loadWeatherHistory(
   cityId: string,
   sinceDays: number,
 ): Promise<HistoryPoint[]> {
-  const since = new Date(Date.now() - sinceDays * 86_400_000);
-  const rows = await db
-    .select({ fetchedAt: weatherSnapshots.fetchedAt, current: weatherSnapshots.current })
-    .from(weatherSnapshots)
-    .where(and(eq(weatherSnapshots.cityId, cityId), gte(weatherSnapshots.fetchedAt, since)))
-    .orderBy(asc(weatherSnapshots.fetchedAt));
+  const rows = await loadSnapshotHistory(db, cityId, 'open-meteo', sinceDays);
 
   return rows
     .map((r) => {
-      const cur = r.current as { temp?: number } | null;
-      if (!cur || typeof cur.temp !== 'number') return null;
-      return { timestamp: r.fetchedAt.toISOString(), value: cur.temp };
+      const d = r.data as { current?: { temp?: number } } | null;
+      const temp = d?.current?.temp;
+      if (typeof temp !== 'number') return null;
+      return { timestamp: r.fetchedAt.toISOString(), value: temp };
     })
     .filter((p): p is HistoryPoint => p !== null);
 }
 
 /**
- * Load AQI history by averaging europeanAqi across grid stations per fetch batch.
- * Returns one point per batch (each cron run = ~30min resolution).
+ * Load AQI history by averaging europeanAqi across grid stations per snapshot.
+ * Returns one point per snapshot (each cron run = ~30min resolution).
  */
 export async function loadAqiHistory(
   db: Db,
   cityId: string,
   sinceDays: number,
 ): Promise<HistoryPoint[]> {
-  const since = new Date(Date.now() - sinceDays * 86_400_000);
-  const rows = await db
-    .select({
-      fetchedAt: airQualityGrid.fetchedAt,
-      avgAqi: avg(airQualityGrid.europeanAqi),
-    })
-    .from(airQualityGrid)
-    .where(and(eq(airQualityGrid.cityId, cityId), gte(airQualityGrid.fetchedAt, since)))
-    .groupBy(airQualityGrid.fetchedAt)
-    .orderBy(asc(airQualityGrid.fetchedAt));
+  const rows = await loadSnapshotHistory(db, cityId, 'aqi-grid', sinceDays);
 
   return rows
     .map((r) => {
-      const val = r.avgAqi != null ? Number(r.avgAqi) : NaN;
-      if (Number.isNaN(val)) return null;
-      return { timestamp: r.fetchedAt.toISOString(), value: Math.round(val) };
+      const points = r.data as AirQualityGridPoint[] | null;
+      if (!Array.isArray(points) || points.length === 0) return null;
+      const avg = points.reduce((sum, p) => sum + p.europeanAqi, 0) / points.length;
+      return { timestamp: r.fetchedAt.toISOString(), value: Math.round(avg) };
     })
     .filter((p): p is HistoryPoint => p !== null);
 }
@@ -721,16 +489,12 @@ export async function loadWaterLevelHistory(
   cityId: string,
   sinceDays: number,
 ): Promise<HistoryPoint[]> {
-  const since = new Date(Date.now() - sinceDays * 86_400_000);
-  const rows = await db
-    .select({ fetchedAt: waterLevelSnapshots.fetchedAt, stations: waterLevelSnapshots.stations })
-    .from(waterLevelSnapshots)
-    .where(and(eq(waterLevelSnapshots.cityId, cityId), gte(waterLevelSnapshots.fetchedAt, since)))
-    .orderBy(asc(waterLevelSnapshots.fetchedAt));
+  const rows = await loadSnapshotHistory(db, cityId, 'pegelonline', sinceDays);
 
   return rows
     .map((r) => {
-      const stations = r.stations as Array<{ currentLevel?: number }> | null;
+      const d = r.data as { stations?: Array<{ currentLevel?: number }> } | null;
+      const stations = d?.stations;
       if (!Array.isArray(stations) || stations.length === 0) return null;
       const levels = stations.map((s) => s.currentLevel).filter((l): l is number => typeof l === 'number');
       if (levels.length === 0) return null;
@@ -749,12 +513,7 @@ export async function loadLaborMarketHistory(
   cityId: string,
   sinceDays: number,
 ): Promise<HistoryPoint[]> {
-  const since = new Date(Date.now() - sinceDays * 86_400_000);
-  const rows = await db
-    .select({ fetchedAt: laborMarketSnapshots.fetchedAt, data: laborMarketSnapshots.data })
-    .from(laborMarketSnapshots)
-    .where(and(eq(laborMarketSnapshots.cityId, cityId), gte(laborMarketSnapshots.fetchedAt, since)))
-    .orderBy(asc(laborMarketSnapshots.fetchedAt));
+  const rows = await loadSnapshotHistory(db, cityId, 'ba-labor-market', sinceDays);
 
   // Deduplicate by reportMonth — keep latest snapshot per month
   const byMonth = new Map<string, HistoryPoint>();

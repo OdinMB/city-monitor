@@ -1,40 +1,21 @@
 /**
  * DB write functions.
  * All writes INSERT new rows (no delete) to preserve historical data.
- * A daily cleanup cron removes rows older than 7 days.
+ * A daily cleanup cron removes rows older than the retention period.
  * Hash-keyed tables (news, events, safety) use UPSERT to avoid duplicates.
  */
 
 import { sql } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
-  weatherSnapshots,
-  transitDisruptions,
+  snapshots,
   events,
   safetyReports,
   newsItems,
   aiSummaries,
-  ninaWarnings,
   geocodeLookups,
-  airQualityGrid,
-  politicalDistricts,
-  waterLevelSnapshots,
-  appointmentSnapshots,
-  budgetSnapshots,
-  constructionSnapshots,
-  trafficSnapshots,
-  pharmacySnapshots,
-  aedSnapshots,
-  socialAtlasSnapshots,
-  wastewaterSnapshots,
-  bathingSnapshots,
-  laborMarketSnapshots,
-  populationSnapshots,
-  feuerwehrSnapshots,
-  pollenSnapshots,
-  noiseSensorSnapshots,
-  councilMeetingSnapshots,
 } from './schema.js';
+import type { SnapshotType } from './schema.js';
 import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -53,12 +34,19 @@ export interface NewsItemAssessment {
 export type PersistedNewsItem = NewsItem & { assessment?: NewsItemAssessment };
 
 // ---------------------------------------------------------------------------
+// Generic snapshot helper
+// ---------------------------------------------------------------------------
+
+async function saveSnapshot(db: Db, cityId: string, type: SnapshotType, data: unknown): Promise<void> {
+  await db.insert(snapshots).values({ cityId, type, data });
+}
+
+// ---------------------------------------------------------------------------
 // Snapshot tables — INSERT only, no delete
 // ---------------------------------------------------------------------------
 
 export async function saveWeather(db: Db, cityId: string, data: WeatherData): Promise<void> {
-  await db.insert(weatherSnapshots).values({
-    cityId,
+  await saveSnapshot(db, cityId, 'open-meteo', {
     current: data.current,
     hourly: data.hourly,
     daily: data.daily,
@@ -67,134 +55,100 @@ export async function saveWeather(db: Db, cityId: string, data: WeatherData): Pr
 }
 
 export async function saveWaterLevels(db: Db, cityId: string, data: WaterLevelData): Promise<void> {
-  await db.insert(waterLevelSnapshots).values({
-    cityId,
-    stations: data.stations,
-  });
+  await saveSnapshot(db, cityId, 'pegelonline', { stations: data.stations });
 }
 
 export async function saveAppointments(db: Db, cityId: string, data: BuergeramtData): Promise<void> {
-  await db.insert(appointmentSnapshots).values({
-    cityId,
-    services: data.services,
-    bookingUrl: data.bookingUrl,
-  });
+  await saveSnapshot(db, cityId, 'service-berlin', { services: data.services, bookingUrl: data.bookingUrl });
 }
 
 export async function saveBudget(db: Db, cityId: string, data: BudgetSummary): Promise<void> {
-  await db.insert(budgetSnapshots).values({ cityId, data });
+  await saveSnapshot(db, cityId, 'berlin-haushalt', data);
 }
 
 export async function saveConstructionSites(db: Db, cityId: string, sites: ConstructionSite[]): Promise<void> {
-  await db.insert(constructionSnapshots).values({ cityId, sites });
+  await saveSnapshot(db, cityId, 'viz-roadworks', sites);
 }
 
 export async function saveTrafficIncidents(db: Db, cityId: string, incidents: TrafficIncident[]): Promise<void> {
-  await db.insert(trafficSnapshots).values({ cityId, incidents });
+  await saveSnapshot(db, cityId, 'tomtom-traffic', incidents);
 }
 
 export async function savePharmacies(db: Db, cityId: string, pharmacies: EmergencyPharmacy[]): Promise<void> {
-  await db.insert(pharmacySnapshots).values({ cityId, pharmacies });
+  await saveSnapshot(db, cityId, 'aponet', pharmacies);
 }
 
 export async function saveAeds(db: Db, cityId: string, locations: AedLocation[]): Promise<void> {
-  await db.insert(aedSnapshots).values({ cityId, locations });
+  await saveSnapshot(db, cityId, 'osm-aeds', locations);
 }
 
 export async function saveSocialAtlas(db: Db, cityId: string, geojson: unknown): Promise<void> {
-  await db.insert(socialAtlasSnapshots).values({ cityId, geojson });
+  await saveSnapshot(db, cityId, 'mss-social-atlas', geojson);
 }
 
 export async function saveWastewater(db: Db, cityId: string, data: WastewaterSummary): Promise<void> {
-  await db.insert(wastewaterSnapshots).values({ cityId, data });
+  await saveSnapshot(db, cityId, 'lageso-wastewater', data);
 }
 
 export async function saveBathingSpots(db: Db, cityId: string, spots: BathingSpot[]): Promise<void> {
-  await db.insert(bathingSnapshots).values({ cityId, spots });
+  await saveSnapshot(db, cityId, 'lageso-bathing', spots);
 }
 
 export async function saveLaborMarket(db: Db, cityId: string, data: LaborMarketSummary): Promise<void> {
-  await db.insert(laborMarketSnapshots).values({ cityId, data });
+  await saveSnapshot(db, cityId, 'ba-labor-market', data);
 }
 
 export async function savePopulation(db: Db, cityId: string, geojson: unknown, summary: PopulationSummary): Promise<void> {
-  await db.insert(populationSnapshots).values({ cityId, geojson, summary });
+  await saveSnapshot(db, cityId, 'afstat-population', { geojson, summary });
 }
 
 export async function saveFeuerwehr(db: Db, cityId: string, data: FeuerwehrSummary): Promise<void> {
-  await db.insert(feuerwehrSnapshots).values({ cityId, data });
+  await saveSnapshot(db, cityId, 'bf-feuerwehr', data);
 }
 
 export async function savePollen(db: Db, cityId: string, data: PollenForecast): Promise<void> {
-  await db.insert(pollenSnapshots).values({ cityId, data });
+  await saveSnapshot(db, cityId, 'dwd-pollen', data);
 }
 
 export async function saveNoiseSensors(db: Db, cityId: string, data: NoiseSensor[]): Promise<void> {
-  await db.insert(noiseSensorSnapshots).values({ cityId, data });
+  await saveSnapshot(db, cityId, 'sc-dnms', data);
 }
 
 export async function saveCouncilMeetings(db: Db, cityId: string, meetings: CouncilMeeting[]): Promise<void> {
-  await db.insert(councilMeetingSnapshots).values({ cityId, meetings });
+  await saveSnapshot(db, cityId, 'oparl-meetings', meetings);
 }
 
 // ---------------------------------------------------------------------------
-// Multi-row current-state tables — INSERT only, read latest batch
+// Multi-row/UPSERT tables → now stored as JSONB snapshot arrays
 // ---------------------------------------------------------------------------
 
 export async function saveTransitAlerts(db: Db, cityId: string, alerts: TransitAlert[]): Promise<void> {
   if (alerts.length === 0) return;
-  await db.insert(transitDisruptions).values(
-    alerts.map((a) => ({
-      cityId,
-      externalId: a.id,
-      line: a.line,
-      type: a.type,
-      severity: a.severity,
-      message: a.message,
-      detail: a.detail,
-      station: a.station,
-      lat: a.location?.lat ?? null,
-      lon: a.location?.lon ?? null,
-      affectedStops: a.affectedStops,
-    })),
-  );
+  await saveSnapshot(db, cityId, 'vbb-disruptions', alerts);
 }
 
 export async function saveNinaWarnings(db: Db, cityId: string, warnings: NinaWarning[]): Promise<void> {
   if (warnings.length === 0) return;
-  await db.insert(ninaWarnings).values(
-    warnings.map((w) => ({
-      cityId,
-      warningId: w.id,
-      version: w.version,
-      source: w.source,
-      severity: w.severity,
-      headline: w.headline,
-      description: w.description ?? null,
-      instruction: w.instruction ?? null,
-      startDate: new Date(w.startDate),
-      expiresAt: w.expiresAt ? new Date(w.expiresAt) : null,
-      area: w.area ?? null,
-    })),
-  ).onConflictDoUpdate({
-    target: [ninaWarnings.cityId, ninaWarnings.warningId, ninaWarnings.version],
-    set: { fetchedAt: sql`now()` },
-  });
+  await saveSnapshot(db, cityId, 'bbk-nina', warnings);
 }
 
 export async function saveAirQualityGrid(db: Db, cityId: string, points: AirQualityGridPoint[]): Promise<void> {
   if (points.length === 0) return;
-  await db.insert(airQualityGrid).values(
-    points.map((p) => ({
-      cityId,
-      lat: p.lat,
-      lon: p.lon,
-      europeanAqi: p.europeanAqi,
-      station: p.station,
-      url: p.url ?? null,
-    })),
-  );
+  await saveSnapshot(db, cityId, 'aqi-grid', points);
 }
+
+export async function savePoliticalDistricts(
+  db: Db,
+  cityId: string,
+  level: string,
+  districts: PoliticalDistrict[],
+): Promise<void> {
+  await saveSnapshot(db, cityId, `abgwatch-${level}` as SnapshotType, districts);
+}
+
+// ---------------------------------------------------------------------------
+// AI Summaries (kept as-is)
+// ---------------------------------------------------------------------------
 
 export async function saveSummary(
   db: Db,
@@ -316,23 +270,8 @@ export async function saveSafetyReports(db: Db, cityId: string, reports: SafetyR
 }
 
 // ---------------------------------------------------------------------------
-// Already-upsert tables — no change needed
+// Geocode lookups (kept as-is)
 // ---------------------------------------------------------------------------
-
-export async function savePoliticalDistricts(
-  db: Db,
-  cityId: string,
-  level: string,
-  districts: PoliticalDistrict[],
-): Promise<void> {
-  await db
-    .insert(politicalDistricts)
-    .values({ cityId, level, districts })
-    .onConflictDoUpdate({
-      target: [politicalDistricts.cityId, politicalDistricts.level],
-      set: { districts, fetchedAt: new Date() },
-    });
-}
 
 export async function saveGeocodeLookup(
   db: Db,
