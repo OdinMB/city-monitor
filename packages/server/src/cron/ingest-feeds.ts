@@ -71,7 +71,8 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache, db: Db | null): P
   );
 
   // 3. Load prior assessments from DB so we don't re-filter known items
-  const prior = await loadPriorAssessments(db, city.id);
+  const hashes = collected.map((item) => item.id);
+  const prior = await loadPriorAssessments(db, city.id, hashes);
 
   // 4. Partition into already-assessed vs new
   const known: PersistedNewsItem[] = [];
@@ -220,12 +221,13 @@ interface PriorAssessment {
 async function loadPriorAssessments(
   db: Db | null,
   cityId: string,
+  hashes: string[],
 ): Promise<Map<string, PriorAssessment>> {
   const map = new Map<string, PriorAssessment>();
-  if (!db) return map;
+  if (!db || hashes.length === 0) return map;
 
   try {
-    const rows = await loadAllNewsAssessments(db, cityId);
+    const rows = await loadAllNewsAssessments(db, cityId, hashes);
     if (rows) {
       for (const row of rows) {
         // Only reuse assessments that have the new importance field;

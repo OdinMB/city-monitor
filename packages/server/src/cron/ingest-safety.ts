@@ -1,7 +1,7 @@
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveSafetyReports } from '../db/writes.js';
-import { loadSafetyReports } from '../db/reads.js';
+import { loadSafetyCoords } from '../db/reads.js';
 import { parseFeed } from '../lib/rss-parser.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
@@ -66,15 +66,11 @@ async function ingestCitySafety(cityId: string, cityName: string, feedUrl: strin
   }));
 
   // Carry over coordinates from DB for already-geocoded items
-  const existingCoords = new Map<string, SafetyReport['location']>();
+  const hashes = reports.map((r) => r.id);
+  let existingCoords = new Map<string, SafetyReport['location']>();
   if (db) {
     try {
-      const existingResult = await loadSafetyReports(db, cityId);
-      if (existingResult) {
-        for (const r of existingResult.data) {
-          if (r.location) existingCoords.set(r.id, r.location);
-        }
-      }
+      existingCoords = await loadSafetyCoords(db, cityId, hashes);
     } catch {
       // DB read failed — geocode everything fresh
     }

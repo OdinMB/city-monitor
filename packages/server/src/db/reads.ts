@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, gte } from 'drizzle-orm';
+import { eq, and, desc, asc, gte, inArray } from 'drizzle-orm';
 import type { Db } from './index.js';
 import {
   snapshots,
@@ -270,6 +270,36 @@ export async function loadEvents(db: Db, cityId: string): Promise<DbResult<CityE
   };
 }
 
+/**
+ * Load coordinates for specific safety report hashes (cron dedup).
+ * Returns a Map of hash → location for reports that have coordinates.
+ */
+export async function loadSafetyCoords(
+  db: Db,
+  cityId: string,
+  hashes: string[],
+): Promise<Map<string, { lat: number; lon: number; label?: string }>> {
+  const map = new Map<string, { lat: number; lon: number; label?: string }>();
+  if (hashes.length === 0) return map;
+
+  const rows = await db
+    .select({
+      hash: safetyReports.hash,
+      lat: safetyReports.lat,
+      lon: safetyReports.lon,
+      locationLabel: safetyReports.locationLabel,
+    })
+    .from(safetyReports)
+    .where(and(eq(safetyReports.cityId, cityId), inArray(safetyReports.hash, hashes)));
+
+  for (const row of rows) {
+    if (row.lat != null && row.lon != null) {
+      map.set(row.hash, { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined });
+    }
+  }
+  return map;
+}
+
 export async function loadSafetyReports(db: Db, cityId: string): Promise<DbResult<SafetyReport[]>> {
   const rows = await db
     .select()
@@ -334,16 +364,20 @@ export async function loadNewsItems(db: Db, cityId: string): Promise<DbResult<Pe
 }
 
 /**
- * Load ALL assessed news items (including rejected ones) for the cron prior-assessment map.
+ * Load assessed news items by hash for the cron prior-assessment map.
+ * Only fetches the specific items we need (by hash), so no items are missed.
  * Unlike loadNewsItems, this does NOT filter out relevant_to_city = false.
  */
-export async function loadAllNewsAssessments(db: Db, cityId: string): Promise<PersistedNewsItem[] | null> {
+export async function loadAllNewsAssessments(db: Db, cityId: string, hashes?: string[]): Promise<PersistedNewsItem[] | null> {
+  const conditions = [eq(newsItems.cityId, cityId)];
+  if (hashes && hashes.length > 0) {
+    conditions.push(inArray(newsItems.hash, hashes));
+  }
+
   const rows = await db
     .select()
     .from(newsItems)
-    .where(eq(newsItems.cityId, cityId))
-    .orderBy(desc(newsItems.publishedAt))
-    .limit(400);
+    .where(and(...conditions));
 
   if (rows.length === 0) return null;
 

@@ -165,7 +165,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
 
   const jobs: ScheduledJob[] = [
     { name: 'ingest-feeds', schedule: '*/10 * * * *', handler: ingestFeeds, runOnStart: s('ingest-feeds') },
-    { name: 'summarize-news', schedule: '5,20,35,50 * * * *', handler: summarizeNews, runOnStart: s('summarize-news'), dependsOn: ['ingest-feeds'] },
+    { name: 'summarize-news', schedule: '5 */6 * * *', handler: summarizeNews, runOnStart: s('summarize-news'), dependsOn: ['ingest-feeds'] },
     { name: 'ingest-weather', schedule: '*/30 * * * *', handler: ingestWeather, runOnStart: s('ingest-weather') },
     { name: 'ingest-transit', schedule: '*/15 * * * *', handler: ingestTransit, runOnStart: s('ingest-transit') },
     { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: s('ingest-events') },

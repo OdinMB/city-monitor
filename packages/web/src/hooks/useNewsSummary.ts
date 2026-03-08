@@ -7,10 +7,10 @@ export function useNewsSummary(cityId: string, lang?: string) {
   const query = useQuery<ApiResponse<NewsSummaryData>>({
     queryKey: ['news', 'summary', cityId, lang],
     queryFn: () => api.getNewsSummary(cityId, lang),
-    refetchInterval: 15 * 60 * 1000,
+    refetchInterval: 60 * 60 * 1000,
     refetchIntervalInBackground: false,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 6 * 60 * 60 * 1000,
     retry: 1,
   });
   return { ...query, data: query.data?.data, fetchedAt: query.data?.fetchedAt ?? null };
