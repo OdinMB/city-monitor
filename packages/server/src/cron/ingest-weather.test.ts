@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createWeatherIngestion, type WeatherData } from './ingest-weather.js';
+import { saveWeather } from '../db/writes.js';
+
+vi.mock('../db/writes.js', () => ({
+  saveWeather: vi.fn(),
+}));
 
 const mockOpenMeteoResponse = {
   current: {
@@ -37,6 +42,7 @@ const mockOpenMeteoResponse = {
 describe('ingest-weather', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.mocked(saveWeather).mockResolvedValue(undefined);
   });
 
   it('fetches weather from Open-Meteo and writes to cache', async () => {
@@ -111,5 +117,69 @@ describe('ingest-weather', () => {
 
     const data = cache.get<WeatherData>('berlin:weather');
     expect(data).toBeNull();
+  });
+
+  it('updates cache when DB write succeeds', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(mockOpenMeteoResponse), { status: 200 }),
+    );
+
+    const cache = createCache();
+    const db = {} as Parameters<typeof createWeatherIngestion>[1];
+    const ingest = createWeatherIngestion(cache, db);
+    await ingest();
+
+    expect(vi.mocked(saveWeather)).toHaveBeenCalled();
+    const data = cache.get<WeatherData>('berlin:weather');
+    expect(data).toBeTruthy();
+    expect(data!.current.temp).toBe(12.5);
+  });
+
+  it('keeps previous cached weather when DB write fails', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(mockOpenMeteoResponse), { status: 200 }),
+    );
+    vi.mocked(saveWeather).mockRejectedValue(new Error('DB unavailable'));
+
+    const cache = createCache();
+    const previousWeather: WeatherData = {
+      current: {
+        temp: 99,
+        feelsLike: 100,
+        humidity: 10,
+        precipitation: 0,
+        weatherCode: 0,
+        windSpeed: 0,
+        windDirection: 0,
+        uvIndex: 0,
+        uvIndexClearSky: 0,
+      },
+      hourly: [],
+      daily: [],
+      alerts: [],
+    };
+    cache.set('berlin:weather', previousWeather, 1800);
+
+    const db = {} as Parameters<typeof createWeatherIngestion>[1];
+    const ingest = createWeatherIngestion(cache, db);
+    await ingest();
+
+    const data = cache.get<WeatherData>('berlin:weather');
+    expect(data).toEqual(previousWeather);
+  });
+
+  it('still updates cache in cache-only mode', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(mockOpenMeteoResponse), { status: 200 }),
+    );
+
+    const cache = createCache();
+    const ingest = createWeatherIngestion(cache, null);
+    await ingest();
+
+    expect(vi.mocked(saveWeather)).not.toHaveBeenCalled();
+    const data = cache.get<WeatherData>('berlin:weather');
+    expect(data).toBeTruthy();
+    expect(data!.current.temp).toBe(12.5);
   });
 });

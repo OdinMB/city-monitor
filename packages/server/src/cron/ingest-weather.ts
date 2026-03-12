@@ -94,17 +94,22 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
     }
   }
 
-  cache.set(CK.weather(city.id), data, 1800);
-
+  let canCacheWeather = db === null;
   if (db) {
     try {
       await saveWeather(db, city.id, data);
+      canCacheWeather = true;
     } catch (err) {
       log.error(`${city.id} DB write failed`, err);
     }
   }
 
-  log.info(`${city.id}: weather updated`);
+  if (canCacheWeather) {
+    cache.set(CK.weather(city.id), data, 1800);
+    log.info(`${city.id}: weather updated`);
+  } else {
+    log.warn(`${city.id}: weather not cached because DB write failed`);
+  }
 
   // Fetch air quality alongside weather
   try {
