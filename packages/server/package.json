@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs generate",
-    "db:migrate": "node ../../node_modules/drizzle-kit/bin.cjs migrate",
+    "db:migrate": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs migrate",
     "db:push": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs push",
     "db:studio": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs studio"
   },
