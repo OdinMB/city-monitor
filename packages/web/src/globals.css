@@ -281,3 +281,11 @@ select:focus-visible,
   }
 }
 
+/* Lift attribution above the skyline separator (which overlaps via -mt-16) */
+.maplibregl-ctrl-bottom-right {
+  bottom: 4.5rem;
+}
+.maplibregl-ctrl-bottom-left {
+  bottom: 4.5rem;
+}
+
