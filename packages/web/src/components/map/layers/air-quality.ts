@@ -5,7 +5,7 @@
 import maplibregl from 'maplibre-gl';
 import { Wind } from 'lucide';
 import type { AirQualityGridPoint } from '../../../lib/api.js';
-import { createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
+import { createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { getAqiLevel } from '../../../lib/aqi.js';
 import { registerPopupHandlers, type PopupContentFn } from '../popups.js';
 
@@ -48,7 +48,7 @@ export function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoi
     if (registered.has(id)) continue;
     registered.add(id);
     if (map.hasImage(id)) map.removeImage(id);
-    map.addImage(id, createBadgeIcon(Wind as IconNode, level.color, stroke, `${p.europeanAqi} AQI`));
+    map.addImage(id, createVerticalBadgeIcon(Wind as IconNode, level.color, stroke, `${p.europeanAqi} AQI`));
   }
 
   map.addSource('aq-grid', { type: 'geojson', data: geojson });

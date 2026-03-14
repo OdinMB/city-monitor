@@ -6,7 +6,7 @@ import maplibregl from 'maplibre-gl';
 import { Landmark } from 'lucide';
 import type { PoliticalDistrict } from '../../../lib/api.js';
 import { getPartyColor, getMajorityParty } from '../../../lib/party-colors.js';
-import { registerPoliticalIcons, createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
+import { registerPoliticalIcons, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
 import { normalizePoliticalName } from '../base.js';
 
@@ -261,7 +261,7 @@ export function updatePoliticalMarkers(
       const mayor = mayorMap.get(normalizePoliticalName(name)) ?? name;
       iconId = `pol-badge-${encodeURIComponent(mayor)}-${color.replace('#', '')}`;
       if (!map.hasImage(iconId)) {
-        map.addImage(iconId, createBadgeIcon(Landmark as IconNode, color, stroke, mayor));
+        map.addImage(iconId, createVerticalBadgeIcon(Landmark as IconNode, color, stroke, mayor));
       }
     } else {
       iconId = `political-icon-${color.replace('#', '')}`;

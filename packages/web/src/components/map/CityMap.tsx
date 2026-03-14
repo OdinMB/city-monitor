@@ -43,6 +43,62 @@ import { updateWaterLevelMarkers, updateBathingMarkers } from './layers/water.js
 import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/choropleth.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 
+/** Symbol layer IDs that should animate in after fly-in */
+const MARKER_LAYERS = [
+  'transit-marker-icon',
+  'news-marker-icon',
+  'safety-marker-icon',
+  'wl-marker-icon',
+  'bathing-marker-icon',
+  'aq-marker-icon',
+  'noise-sensor-icon',
+  'pharmacy-marker-icon',
+  'aed-marker-icon',
+  'construction-points',
+  'political-markers',
+];
+
+/** Animate marker layers from invisible to fully visible with stagger */
+function animateMarkerEntrance(map: maplibregl.Map) {
+  const duration = 500; // ms
+  const stagger = 100; // ms between layer groups
+
+  for (let i = 0; i < MARKER_LAYERS.length; i++) {
+    const layerId = MARKER_LAYERS[i];
+    if (!map.getLayer(layerId)) continue;
+
+    // Set initial opacity to 0
+    try {
+      map.setPaintProperty(layerId, 'icon-opacity', 0);
+    } catch {
+      continue; // layer type might not support icon-opacity
+    }
+
+    // Animate opacity from 0 → 1
+    const delay = i * stagger;
+    const startTime = performance.now() + delay;
+
+    const animate = () => {
+      if (!map.getLayer(layerId)) return;
+      const elapsed = performance.now() - startTime;
+      if (elapsed < 0) {
+        requestAnimationFrame(animate);
+        return;
+      }
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out quad
+      const eased = 1 - (1 - progress) * (1 - progress);
+      try {
+        map.setPaintProperty(layerId, 'icon-opacity', eased);
+      } catch {
+        return;
+      }
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }
+}
+
 export function CityMap() {
   const city = useCityConfig();
   const { theme } = useTheme();
@@ -212,20 +268,26 @@ export function CityMap() {
   const politicalLayerRef = useRef(politicalLayer);
   politicalLayerRef.current = politicalLayer;
 
+  // Fly-in animation: start zoomed out, fly to city bounds
+  const FLY_IN_ZOOM = 7;
+  const FLY_IN_DURATION = 1500;
+  const mapReadyRef = useRef(false);
+
   // Create map once
   useEffect(() => {
     if (!containerRef.current) return;
 
     const bounds = mapConfig.bounds as maplibregl.LngLatBoundsLike;
+    const cityCenter: [number, number] = [city.coordinates.lon, city.coordinates.lat];
 
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: isDarkRef.current ? DARK_STYLE : LIGHT_STYLE,
-      bounds,
-      fitBoundsOptions: { padding: 20 },
+      center: cityCenter,
+      zoom: FLY_IN_ZOOM,
       minZoom: mapConfig.minZoom ?? 9,
       maxZoom: mapConfig.maxZoom ?? 16,
-      maxBounds: bounds,
+      maxBounds: undefined, // allow fly-in from outside bounds
       attributionControl: false,
     });
 
@@ -242,23 +304,43 @@ export function CityMap() {
       registerAllMapIcons(map, isDarkRef.current);
       addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
       setupDistrictHover(map);
-      updateTrafficLayers(map, trafficItemsRef.current, isDarkRef.current);
-      updateConstructionLayers(map, constructionItemsRef.current, isDarkRef.current);
-      updateTransitMarkers(map, transitItemsRef.current ?? [], isDarkRef.current);
-      updateNewsMarkers(map, newsItemsRef.current, isDarkRef.current, cityCoordRef.current, catLabelRef.current);
-      updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
-      updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
-      updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
-      updateAedMarkers(map, aedItemsRef.current, isDarkRef.current);
-      updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
-      updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
-      updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
-      updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
-      updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current);
-      updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
-      setWeatherOverlay(map, weatherActiveRef.current);
-      setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
-      setRentMapOverlay(map, rentMapActiveRef.current);
+
+      // Fly in to city bounds
+      map.fitBounds(bounds, {
+        padding: 20,
+        duration: FLY_IN_DURATION,
+        essential: true,
+        easing: (t: number) => 1 - (1 - t) * (1 - t), // ease-out quad
+      });
+
+      // After fly-in completes, render data layers with staggered animation
+      map.once('moveend', () => {
+        // Lock bounds after fly-in
+        map.setMaxBounds(bounds);
+        mapReadyRef.current = true;
+
+        // Render all data layers
+        updateTrafficLayers(map, trafficItemsRef.current, isDarkRef.current);
+        updateConstructionLayers(map, constructionItemsRef.current, isDarkRef.current);
+        updateTransitMarkers(map, transitItemsRef.current ?? [], isDarkRef.current);
+        updateNewsMarkers(map, newsItemsRef.current, isDarkRef.current, cityCoordRef.current, catLabelRef.current);
+        updateSafetyMarkers(map, safetyItemsRef.current, isDarkRef.current);
+        updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
+        updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
+        updateAedMarkers(map, aedItemsRef.current, isDarkRef.current);
+        updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
+        updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
+        updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
+        updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
+        updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current);
+        updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
+        setWeatherOverlay(map, weatherActiveRef.current);
+        setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
+        setRentMapOverlay(map, rentMapActiveRef.current);
+
+        // Animate marker layers: fade in opacity over 500ms
+        animateMarkerEntrance(map);
+      });
 
       // Collapse the attribution control (MapLibre opens it by default)
       containerRef.current
@@ -271,6 +353,7 @@ export function CityMap() {
     return () => {
       map.remove();
       mapRef.current = null;
+      mapReadyRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -79,6 +79,8 @@ export const POLITICAL_ICONS: Record<string, IconNode> = {
 };
 
 const ICON_SIZE = 36;
+const VERTICAL_BADGE_MAX_TEXT_WIDTH = 100;
+const VERTICAL_BADGE_MAX_LINES = 3;
 
 /** Render a single SVG element onto a canvas context */
 function drawSVGElement(
@@ -243,6 +245,130 @@ export function createBadgeIcon(
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, iconArea + textPad - 2, h / 2 + 1);
+
+  return ctx.getImageData(0, 0, w, h);
+}
+
+/**
+ * Word-wrap text into lines that fit within maxWidth pixels.
+ * Pure function once given a measuring context.
+ */
+export function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number,
+): string[] {
+  const words = text.split(/\s+/);
+  if (words.length === 0) return [text];
+
+  const lines: string[] = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const candidate = currentLine + ' ' + words[i];
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      currentLine = candidate;
+    } else {
+      lines.push(currentLine);
+      currentLine = words[i];
+      if (lines.length >= maxLines - 1) {
+        // Last allowed line — append remaining words and truncate
+        const remaining = [currentLine, ...words.slice(i + 1)].join(' ');
+        if (ctx.measureText(remaining).width > maxWidth) {
+          // Truncate with ellipsis
+          let truncated = remaining;
+          while (ctx.measureText(truncated + '…').width > maxWidth && truncated.length > 1) {
+            truncated = truncated.slice(0, -1);
+          }
+          lines.push(truncated + '…');
+        } else {
+          lines.push(remaining);
+        }
+        return lines;
+      }
+    }
+  }
+  lines.push(currentLine);
+  return lines;
+}
+
+/**
+ * Draw a vertical badge: Lucide icon on top + text label below (with word-wrap).
+ * The icon portion is anchored at the geolocation; text extends below.
+ */
+export function createVerticalBadgeIcon(
+  iconNode: IconNode,
+  bgColor: string,
+  strokeColor: string,
+  text: string,
+  maxTextWidth = VERTICAL_BADGE_MAX_TEXT_WIDTH,
+): ImageData {
+  const iconSize = 32;
+  const iconPad = 3;
+  const textFontSize = 11;
+  const lineHeight = 14;
+  const textPadY = 4;
+  const textPadX = 4;
+
+  // Measure text + wrap
+  const measure = document.createElement('canvas').getContext('2d')!;
+  measure.font = `bold ${textFontSize}px sans-serif`;
+  const lines = wrapText(measure, text, maxTextWidth, VERTICAL_BADGE_MAX_LINES);
+  const lineWidths = lines.map((l) => Math.ceil(measure.measureText(l).width));
+  const maxLineW = Math.max(...lineWidths, 0);
+
+  const textBlockW = maxLineW + textPadX * 2;
+  const textBlockH = lines.length * lineHeight + textPadY;
+
+  const w = Math.max(iconSize + iconPad * 2, textBlockW);
+  const h = iconSize + iconPad * 2 + textBlockH;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+
+  // --- Icon background (rounded square, centered horizontally) ---
+  const iconBgSize = iconSize + iconPad * 2;
+  const iconX = (w - iconBgSize) / 2;
+  const r = 6;
+  ctx.beginPath();
+  ctx.roundRect(iconX, 0, iconBgSize, iconBgSize, r);
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // --- Lucide icon (centered in icon background) ---
+  const lucideSize = iconSize * 0.55;
+  const scale = lucideSize / 24;
+  const lucideOffsetX = iconX + (iconBgSize - lucideSize) / 2;
+  const lucideOffsetY = (iconBgSize - lucideSize) / 2;
+
+  ctx.save();
+  ctx.translate(lucideOffsetX, lucideOffsetY);
+  ctx.scale(scale, scale);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const [tag, attrs] of iconNode) {
+    drawSVGElement(ctx, tag, attrs);
+  }
+  ctx.restore();
+
+  // --- Text lines below icon ---
+  ctx.font = `bold ${textFontSize}px sans-serif`;
+  ctx.fillStyle = bgColor;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'center';
+
+  const textStartY = iconBgSize + 2;
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], w / 2, textStartY + i * lineHeight);
+  }
 
   return ctx.getImageData(0, 0, w, h);
 }

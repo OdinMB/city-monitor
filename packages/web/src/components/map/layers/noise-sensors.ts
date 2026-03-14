@@ -5,7 +5,7 @@
 import maplibregl from 'maplibre-gl';
 import { Volume2 } from 'lucide';
 import type { NoiseSensor } from '../../../lib/api.js';
-import { NOISE_LEVEL_COLORS, createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
+import { NOISE_LEVEL_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { registerPopupHandlers, type PopupContentFn } from '../popups.js';
 
 function getNoiseLevel(laeq: number): { key: string; label: string; color: string } {
@@ -63,7 +63,7 @@ export function updateNoiseSensorMarkers(map: maplibregl.Map, sensors: NoiseSens
     if (registered.has(id)) continue;
     registered.add(id);
     if (map.hasImage(id)) map.removeImage(id);
-    map.addImage(id, createBadgeIcon(Volume2 as IconNode, level.color, stroke, `${rounded} dB`));
+    map.addImage(id, createVerticalBadgeIcon(Volume2 as IconNode, level.color, stroke, `${rounded} dB`));
   }
 
   map.addSource('noise-sensors', { type: 'geojson', data: geojson });

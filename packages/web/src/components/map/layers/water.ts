@@ -5,7 +5,7 @@
 import maplibregl from 'maplibre-gl';
 import { Droplets } from 'lucide';
 import type { WaterLevelStation, BathingSpot } from '../../../lib/api.js';
-import { WATER_STATE_COLORS, BATHING_QUALITY_COLORS, createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
+import { WATER_STATE_COLORS, BATHING_QUALITY_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { registerPopupHandlers } from '../popups.js';
 
 function waterLevelsToGeoJSON(stations: WaterLevelStation[]): GeoJSON.FeatureCollection {
@@ -48,7 +48,7 @@ export function updateWaterLevelMarkers(map: maplibregl.Map, stations: WaterLeve
     registered.add(id);
     if (map.hasImage(id)) map.removeImage(id);
     const color = WATER_STATE_COLORS[s.state] ?? WATER_STATE_COLORS.unknown;
-    map.addImage(id, createBadgeIcon(Droplets as IconNode, color, stroke, `${s.currentLevel} cm`));
+    map.addImage(id, createVerticalBadgeIcon(Droplets as IconNode, color, stroke, `${s.currentLevel} cm`));
   }
 
   map.addSource('wl-markers', { type: 'geojson', data: geojson });

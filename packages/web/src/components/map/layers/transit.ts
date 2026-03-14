@@ -5,7 +5,7 @@
 import maplibregl from 'maplibre-gl';
 import { TrainFront } from 'lucide';
 import type { TransitAlert } from '../../../lib/api.js';
-import { SEVERITY_COLORS, createBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
+import { SEVERITY_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { registerPopupHandlers, type PopupContentFn } from '../popups.js';
 
 interface StationGroup {
@@ -118,7 +118,7 @@ export function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[]
     registered.add(id);
     if (map.hasImage(id)) map.removeImage(id);
     const color = SEVERITY_COLORS[p.severity as string] ?? SEVERITY_COLORS.low;
-    map.addImage(id, createBadgeIcon(TrainFront as IconNode, color, stroke, p.label as string));
+    map.addImage(id, createVerticalBadgeIcon(TrainFront as IconNode, color, stroke, p.label as string));
   }
 
   map.addSource('transit-markers', {
