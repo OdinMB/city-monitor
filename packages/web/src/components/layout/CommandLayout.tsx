@@ -103,8 +103,37 @@ export function CommandLayout() {
           <Tile title={t('panel.airQuality.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded) => <AirQualityStrip expanded={expanded} />}
           </Tile>
-          <Tile title={t('panel.transit.title')} span={2} expandable defaultExpanded={isDesktop}>
+          <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={isDesktop}>
             {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          </Tile>
+          <Tile title={t('support.title')} span={1}>
+            <>
+              <div className="flex flex-col items-center justify-center gap-6 h-full pb-4">
+                <div className="grid grid-cols-3 gap-4 text-center w-full">
+                  {(['cost', 'ads', 'tracking'] as const).map((key) => (
+                    <div key={key}>
+                      <div className="text-4xl font-extrabold tabular-nums text-green-600 dark:text-green-400">0</div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">{t(`support.${key}`)}</div>
+                    </div>
+                  ))}
+                </div>
+                <a
+                  href="https://ko-fi.com/OdinMB"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  <span className="inline-flex items-center gap-2 text-xl font-bold text-gray-700 dark:text-gray-200">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="text-red-400" aria-hidden="true">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                    </svg>
+                    {t('support.title')}
+                  </span>
+                  <span className="text-lg text-gray-400 dark:text-gray-500 mt-0.5">{t('support.cta')}</span>
+                </a>
+              </div>
+              <TileFooter>{t('support.footer')}</TileFooter>
+            </>
           </Tile>
 
           {/* Row 3: Environment */}
@@ -145,36 +174,6 @@ export function CommandLayout() {
               <PopulationStrip />
             </Tile>
           )}
-          <Tile title={t('support.title')} span={1}>
-            <>
-              <div className="flex flex-col items-center justify-center gap-6 h-full pb-4">
-                <div className="grid grid-cols-3 gap-4 text-center w-full">
-                  {(['cost', 'ads', 'tracking'] as const).map((key) => (
-                    <div key={key}>
-                      <div className="text-4xl font-extrabold tabular-nums text-green-600 dark:text-green-400">0</div>
-                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">{t(`support.${key}`)}</div>
-                    </div>
-                  ))}
-                </div>
-                <a
-                  href="https://ko-fi.com/OdinMB"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center hover:text-gray-900 dark:hover:text-white transition-colors"
-                >
-                  <span className="inline-flex items-center gap-2 text-xl font-bold text-gray-700 dark:text-gray-200">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="text-red-400" aria-hidden="true">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                    </svg>
-                    {t('support.title')}
-                  </span>
-                  <span className="text-lg text-gray-400 dark:text-gray-500 mt-0.5">{t('support.cta')}</span>
-                </a>
-              </div>
-              <TileFooter>{t('support.footer')}</TileFooter>
-            </>
-          </Tile>
-
           {/* Row 6: Governance */}
           <Tile title={t('panel.budget.title')} span={2}>
             <BudgetStrip />

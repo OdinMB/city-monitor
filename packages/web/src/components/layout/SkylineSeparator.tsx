@@ -11,10 +11,12 @@ interface SkylineSeparatorProps {
 export function SkylineSeparator({ cityId }: SkylineSeparatorProps) {
   return (
     <div className="relative w-full overflow-hidden -mt-16 pointer-events-none" aria-hidden="true">
+      {/* Gradient backdrop so the silhouette contrasts against the map above */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent dark:from-black/60" />
       <svg
         viewBox="0 0 1200 120"
         preserveAspectRatio="xMidYMax slice"
-        className="w-full h-16 sm:h-20 lg:h-24"
+        className="relative w-full h-16 sm:h-20 lg:h-24"
       >
         {cityId === 'berlin' ? <BerlinSkyline /> : <GenericSkyline />}
       </svg>

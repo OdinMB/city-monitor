@@ -10,7 +10,7 @@ export const berlin: CityConfig = {
   languages: ['de', 'en', 'tr', 'ar'],
   map: {
     center: [13.405, 52.52],
-    zoom: 11,
+    zoom: 12,
     minZoom: 9,
     maxZoom: 17,
     bounds: [
