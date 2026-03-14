@@ -419,6 +419,7 @@
     "toggleDark": "Dark Mode umschalten",
     "toggleLayer": "Datenebene 1–9 umschalten",
     "clearLayers": "Alle Ebenen deaktivieren",
-    "close": "Schließen"
+    "close": "Schließen",
+    "toastHint": "Tastenkürzel"
   }
 }

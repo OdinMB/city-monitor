@@ -5,7 +5,7 @@ export function AppErrorFallback({ error }: { error: unknown; resetErrorBoundary
   const { t } = useTranslation();
   const message = error instanceof Error ? error.message : String(error);
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--surface-0)] text-gray-900 dark:text-gray-100 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-surface-0 text-gray-900 dark:text-gray-100 p-8">
       <div className="max-w-md text-center space-y-4">
         <h1 className="text-2xl font-bold">{t('error.title')}</h1>
         <button

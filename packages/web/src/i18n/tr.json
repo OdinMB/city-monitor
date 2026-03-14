@@ -419,6 +419,7 @@
     "toggleDark": "Karanlık modu değiştir",
     "toggleLayer": "Veri katmanı 1–9 değiştir",
     "clearLayers": "Tüm katmanları temizle",
-    "close": "Kapat"
+    "close": "Kapat",
+    "toastHint": "Klavye kısayolları"
   }
 }

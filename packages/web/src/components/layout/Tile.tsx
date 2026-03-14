@@ -77,13 +77,13 @@ export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto'
   return (
     <div
       ref={ref}
-      className={`col-span-1 ${SPAN_CLASSES[span]} ${ROW_SPAN_CLASSES[rowSpan]} flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface-1)] card-glow overflow-hidden tile-reveal ${revealed ? 'tile-revealed' : ''} hover:scale-[1.01] hover:shadow-md transition-[transform,box-shadow] duration-200 ease-out ${className ?? ''}`}
+      className={`col-span-1 ${SPAN_CLASSES[span]} ${ROW_SPAN_CLASSES[rowSpan]} flex flex-col rounded-lg border border-border bg-surface-1 card-glow overflow-hidden tile-reveal ${revealed ? 'tile-revealed' : ''} hover:scale-[1.01] hover:shadow-md transition-[transform,box-shadow] duration-200 ease-out ${className ?? ''}`}
       style={{ '--reveal-delay': `${delay}ms` } as React.CSSProperties}
     >
       {expandable ? (
         <button
           type="button"
-          className="w-full px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between cursor-pointer select-none appearance-none bg-transparent text-left"
+          className="w-full px-4 py-3 border-b border-border-subtle flex items-center justify-between cursor-pointer select-none appearance-none bg-transparent text-left"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-label={`${title} — ${expanded ? 'collapse' : 'expand'}`}
@@ -107,7 +107,7 @@ export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto'
           </svg>
         </button>
       ) : (
-        <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             {title}{titleBadge}
           </h2>

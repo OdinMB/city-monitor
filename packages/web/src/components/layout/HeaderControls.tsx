@@ -110,7 +110,7 @@ export function HeaderControls() {
           </svg>
         </button>
         {menuOpen && (
-          <div role="menu" className="absolute right-0 top-full mt-1 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
+          <div role="menu" className="absolute right-0 top-full mt-1 bg-surface-1 border border-border rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
             <div className="flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden mb-2">
               {languageButtons('flex-1 px-2 py-1.5 text-xs', () => setMenuOpen(false))}
             </div>

@@ -419,6 +419,7 @@
     "toggleDark": "Toggle dark mode",
     "toggleLayer": "Toggle data layer 1–9",
     "clearLayers": "Clear all layers",
-    "close": "Close"
+    "close": "Close",
+    "toastHint": "Keyboard shortcuts"
   }
 }

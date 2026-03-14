@@ -4,6 +4,7 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js';
 import { TopBar } from './TopBar.js';
 import { NewsMarquee } from './NewsMarquee.js';
 import { KeyboardHints } from './KeyboardHints.js';
+import { ShortcutToast } from './ShortcutToast.js';
 import { Footer } from './Footer.js';
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -21,7 +22,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--surface-0)] text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen flex flex-col bg-surface-0 text-gray-900 dark:text-gray-100">
       <div
         className={`fixed top-0 left-0 right-0 z-50 transition-transform motion-reduce:transition-none duration-300 ease-out ${topBarVisible ? 'translate-y-0' : '-translate-y-full'}`}
       >
@@ -34,6 +35,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </main>
       <Footer />
       <KeyboardHints open={hintsOpen} onClose={closeHints} />
+      <ShortcutToast />
     </div>
   );
 }

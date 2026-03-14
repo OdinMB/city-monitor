@@ -3,6 +3,15 @@
 /* Use .dark class on <html> instead of prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Register surface colors as Tailwind theme tokens → bg-surface-0, border-border, etc. */
+@theme {
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+}
+
 :root {
   --accent: #3b82f6;
   --accent-rgb: 59, 130, 246;
@@ -250,6 +259,15 @@ select:focus-visible,
   .marquee-track {
     animation: none;
   }
+}
+
+/* Toast fade-in */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 300ms ease-out;
 }
 
 /* Hide map zoom controls on mobile — finger gestures handle zoom */
