@@ -1,12 +1,15 @@
 import { type ReactNode, useState, useEffect } from 'react';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js';
 import { TopBar } from './TopBar.js';
 import { NewsMarquee } from './NewsMarquee.js';
+import { KeyboardHints } from './KeyboardHints.js';
 import { Footer } from './Footer.js';
 
 export function Shell({ children }: { children: ReactNode }) {
   const city = useCityConfig();
   const [topBarVisible, setTopBarVisible] = useState(false);
+  const { hintsOpen, closeHints } = useKeyboardShortcuts();
 
   // Show TopBar after user scrolls past the hero map (100vh)
   useEffect(() => {
@@ -30,6 +33,7 @@ export function Shell({ children }: { children: ReactNode }) {
         {children}
       </main>
       <Footer />
+      <KeyboardHints open={hintsOpen} onClose={closeHints} />
     </div>
   );
 }

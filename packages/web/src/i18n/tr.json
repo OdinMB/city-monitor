@@ -412,5 +412,13 @@
     "privacy": "Gizlilik",
     "noTracking": "Takip Yok",
     "sources": "Veri Kaynakları"
+  },
+  "shortcuts": {
+    "title": "Klavye Kısayolları",
+    "toggleHints": "Kısayolları göster / gizle",
+    "toggleDark": "Karanlık modu değiştir",
+    "toggleLayer": "Veri katmanı 1–9 değiştir",
+    "clearLayers": "Tüm katmanları temizle",
+    "close": "Kapat"
   }
 }

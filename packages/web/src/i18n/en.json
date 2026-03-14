@@ -412,5 +412,13 @@
     "privacy": "Privacy",
     "noTracking": "No Tracking",
     "sources": "Data Sources"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "toggleHints": "Show / hide shortcuts",
+    "toggleDark": "Toggle dark mode",
+    "toggleLayer": "Toggle data layer 1–9",
+    "clearLayers": "Clear all layers",
+    "close": "Close"
   }
 }

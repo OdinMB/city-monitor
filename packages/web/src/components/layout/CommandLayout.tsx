@@ -1,4 +1,5 @@
 import { lazy, Suspense, useRef } from 'react';
+import { useScrollParallax } from '../../hooks/useScrollParallax.js';
 import { useTranslation } from 'react-i18next';
 import { Sidebar } from '../sidebar/Sidebar.js';
 import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
@@ -64,13 +65,15 @@ export function CommandLayout() {
   useNina(cityId);
 
   const dashboardRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  useScrollParallax(mapRef, 0.3);
 
   return (
     <>
       {/* Upper zone: full-bleed hero map (100vh) */}
-      <div className="relative flex h-screen">
+      <div className="relative flex h-screen overflow-hidden">
         <Sidebar />
-        <div className="flex-1 min-w-0 relative">
+        <div ref={mapRef} className="flex-1 min-w-0 relative">
           <ErrorBoundary FallbackComponent={MapErrorFallback}>
             <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
               <CityMap />
