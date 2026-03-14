@@ -55,6 +55,25 @@
   --border-subtle: #1a2030;  /* cool-tinted subtle border */
 }
 
+/* Skeleton shimmer — gradient sweep left-to-right */
+:root {
+  --shimmer-base: #e5e7eb;
+  --shimmer-highlight: #f3f4f6;
+}
+.dark {
+  --shimmer-base: #374151;
+  --shimmer-highlight: #4b5563;
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--shimmer-base) 25%, var(--shimmer-highlight) 50%, var(--shimmer-base) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
 /* Subtle accent glow at top of page in dark mode */
 .dark body {
   background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(var(--accent-rgb), 0.04), var(--surface-0));
@@ -176,6 +195,10 @@ select:focus-visible,
   }
   .animate-scroll-dot {
     animation: none;
+  }
+  .skeleton-shimmer {
+    animation: none;
+    background: var(--shimmer-base);
   }
 }
 
