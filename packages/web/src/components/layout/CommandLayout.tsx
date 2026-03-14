@@ -85,7 +85,7 @@ export function CommandLayout() {
       <SkylineSeparator cityId={cityId} />
 
       {/* Lower zone: dashboard tiles */}
-      <div ref={dashboardRef} className="bg-gray-50 dark:bg-gray-950">
+      <div ref={dashboardRef} className="bg-[var(--surface-0)]">
         <div className="px-4 pt-4">
           <NinaBanner />
         </div>

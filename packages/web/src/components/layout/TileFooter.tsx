@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 export function TileFooter({ children, stale }: { children: ReactNode; stale?: boolean }) {
   return (
     <div className="mt-auto pt-2 -mx-4 -mb-4">
-      <div className={`px-4 py-1 border-t border-gray-100 dark:border-gray-800 flex items-center justify-center text-[11px] ${stale ? 'text-amber-500 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>
+      <div className={`px-4 py-1 border-t border-[var(--border-subtle)] flex items-center justify-center text-[11px] ${stale ? 'text-amber-500 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>
         {children}
       </div>
     </div>

@@ -85,7 +85,7 @@ export function MobileLayerDrawer() {
         <div
           role="dialog"
           aria-label="Data layers"
-          className="h-full shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 p-3 overflow-y-auto space-y-4"
+          className="h-full shrink-0 bg-[var(--surface-1)] border-r border-[var(--border)] p-3 overflow-y-auto space-y-4"
           style={{ width: PANEL_W }}
         >
           <DataLayerToggles />
@@ -93,7 +93,7 @@ export function MobileLayerDrawer() {
 
         {/* Tab handle */}
         <button
-          className="self-center shrink-0 flex items-center justify-center w-6 h-14 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border border-l-0 border-gray-200 dark:border-gray-700 rounded-r-lg shadow-md cursor-pointer"
+          className="self-center shrink-0 flex items-center justify-center w-6 h-14 bg-[var(--surface-1)]/90 backdrop-blur-sm border border-l-0 border-[var(--border)] rounded-r-lg shadow-md cursor-pointer"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle layers panel"
         >

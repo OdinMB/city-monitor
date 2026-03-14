@@ -8,8 +8,8 @@ export function PageShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <header className="flex items-center justify-between px-4 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-[var(--surface-0)] text-gray-900 dark:text-gray-100">
+      <header className="flex items-center justify-between px-4 py-1.5 border-b border-[var(--border)] bg-[var(--surface-1)]">
         <Link
           to="/"
           className="text-lg font-bold hover:opacity-80 transition-opacity"

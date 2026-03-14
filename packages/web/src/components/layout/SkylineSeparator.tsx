@@ -25,7 +25,7 @@ export function SkylineSeparator({ cityId }: SkylineSeparatorProps) {
 /** Berlin skyline: TV Tower, Brandenburg Gate, Cathedral, buildings */
 function BerlinSkyline() {
   return (
-    <g className="fill-gray-50 dark:fill-gray-950">
+    <g style={{ fill: 'var(--surface-0)' }}>
       {/* Base ground */}
       <rect x="0" y="100" width="1200" height="20" />
 
@@ -91,7 +91,7 @@ function BerlinSkyline() {
 /** Generic city skyline for cities without a custom design */
 function GenericSkyline() {
   return (
-    <g className="fill-gray-50 dark:fill-gray-950">
+    <g style={{ fill: 'var(--surface-0)' }}>
       <rect x="0" y="100" width="1200" height="20" />
       <rect x="50" y="70" width="40" height="50" />
       <rect x="100" y="55" width="50" height="65" />

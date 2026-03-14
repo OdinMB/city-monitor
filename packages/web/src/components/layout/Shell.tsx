@@ -17,7 +17,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen flex flex-col bg-[var(--surface-0)] text-gray-900 dark:text-gray-100">
       <div
         className={`fixed top-0 left-0 right-0 z-50 transition-transform motion-reduce:transition-none duration-300 ease-out ${topBarVisible ? 'translate-y-0' : '-translate-y-full'}`}
       >

@@ -25,7 +25,7 @@ export function TopBar() {
     : null;
 
   return (
-    <header className="relative flex items-center justify-between px-4 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <header className="relative flex items-center justify-between px-4 py-1.5 border-b border-[var(--border)] bg-[var(--surface-1)]">
       {/* Centered city name — desktop only */}
       <span
         className="hidden md:block absolute left-1/2 -translate-x-1/2 text-lg font-bold pointer-events-none"
@@ -56,7 +56,7 @@ export function TopBar() {
                 {weatherInfo.icon} {Math.round(current.temp)}°
               </button>
             )}
-            className="max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"
+            className="max-h-[80vh] overflow-y-auto bg-[var(--surface-1)] border border-[var(--border)] rounded-lg shadow-lg"
           >
             <WeatherPopover />
           </Popover>
@@ -82,7 +82,7 @@ export function TopBar() {
                 </span>
               </button>
             )}
-            className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"
+            className="bg-[var(--surface-1)] border border-[var(--border)] rounded-lg shadow-lg"
           >
             <AqiTooltip />
           </Popover>
