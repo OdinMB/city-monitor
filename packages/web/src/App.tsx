@@ -35,6 +35,7 @@ function Dashboard() {
   useEffect(() => {
     document.documentElement.setAttribute('data-city', city.id);
     document.title = `City Monitor — ${city.name}`;
+    return () => document.documentElement.removeAttribute('data-city');
   }, [city.id, city.name]);
 
   return (

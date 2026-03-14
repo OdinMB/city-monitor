@@ -83,10 +83,8 @@
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* Subtle accent glow at top of page in dark mode */
-.dark body {
-  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(var(--accent-rgb), 0.04), var(--surface-0));
-}
+/* Subtle accent glow at top of page in dark mode — applied to the app shell div, not body,
+   because Shell's min-h-screen div paints over body's background. */
 
 /* Card inner glow — glass edge effect for dark mode */
 .card-glow {
