@@ -114,6 +114,27 @@ select:focus-visible,
   background: rgba(107, 114, 128, 0.6);
 }
 
+/* Tile reveal animation — staggered slide-up + fade */
+.tile-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 600ms ease-out, transform 600ms ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.tile-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .tile-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* Hide map zoom controls on mobile — finger gestures handle zoom */
 @media (max-width: 1023px) {
   .maplibregl-ctrl-top-right .maplibregl-ctrl-group {

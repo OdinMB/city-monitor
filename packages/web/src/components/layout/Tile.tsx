@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useState, useRef, useEffect } from 'react';
 
 type TileSpan = 1 | 2 | 'full';
 type TileHeight = 'auto' | 'sm' | 'md' | 'lg';
@@ -12,6 +12,8 @@ interface TileProps {
   defaultExpanded?: boolean;
   children: ReactNode | ((expanded: boolean, setExpanded: (v: boolean) => void) => ReactNode);
   className?: string;
+  /** Stagger index for reveal animation (set by DashboardGrid) */
+  revealIndex?: number;
 }
 
 const HEIGHT_CLASSES: Record<TileHeight, string> = {
@@ -27,12 +29,49 @@ const SPAN_CLASSES: Record<TileSpan, string> = {
   full: 'col-span-full',
 };
 
-export function Tile({ title, titleBadge, span = 1, height = 'auto', expandable, defaultExpanded, children, className }: TileProps) {
+export function Tile({ title, titleBadge, span = 1, height = 'auto', expandable, defaultExpanded, children, className, revealIndex = 0 }: TileProps) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [revealed, setRevealed] = useState(false);
+
+  // Reveal on scroll via IntersectionObserver
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // Guard: IntersectionObserver not available (SSR / jsdom)
+    if (typeof IntersectionObserver === 'undefined') {
+      setRevealed(true);
+      return;
+    }
+
+    // Check prefers-reduced-motion
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      setRevealed(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setRevealed(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const delay = Math.min(revealIndex * 80, 800);
 
   return (
     <div
-      className={`col-span-1 ${SPAN_CLASSES[span]} flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden ${className ?? ''}`}
+      ref={ref}
+      className={`col-span-1 ${SPAN_CLASSES[span]} flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden tile-reveal ${revealed ? 'tile-revealed' : ''} hover:scale-[1.01] hover:shadow-md transition-[transform,box-shadow] duration-200 ease-out ${className ?? ''}`}
+      style={{ '--reveal-delay': `${delay}ms` } as React.CSSProperties}
     >
       {expandable ? (
         <button
