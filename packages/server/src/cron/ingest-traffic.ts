@@ -120,13 +120,13 @@ async function ingestCityTraffic(city: CityConfig, cache: Cache, db: Db | null):
       severity: toSeverity(props.magnitudeOfDelay),
       description: desc,
       road: props.roadNumbers?.join(', '),
-      from: props.from,
-      to: props.to,
-      delay: props.delay,
-      length: props.length,
+      from: props.from ?? undefined,
+      to: props.to ?? undefined,
+      delay: props.delay ?? undefined,
+      length: props.length ?? undefined,
       geometry: { type: 'LineString', coordinates: coords },
-      startTime: props.startTime,
-      endTime: props.endTime,
+      startTime: props.startTime ?? undefined,
+      endTime: props.endTime ?? undefined,
     };
   });
 

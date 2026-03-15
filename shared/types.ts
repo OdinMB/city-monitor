@@ -183,14 +183,14 @@ export interface TrafficIncident {
   type: 'jam' | 'closure' | 'construction' | 'accident' | 'other';
   severity: 'low' | 'moderate' | 'major' | 'critical';
   description: string;
-  road?: string;
-  from?: string;
-  to?: string;
-  delay?: number;
-  length?: number;
+  road?: string | null;
+  from?: string | null;
+  to?: string | null;
+  delay?: number | null;
+  length?: number | null;
   geometry: { type: string; coordinates: number[][] };
-  startTime?: string;
-  endTime?: string;
+  startTime?: string | null;
+  endTime?: string | null;
 }
 
 // Emergency pharmacies

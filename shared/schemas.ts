@@ -135,9 +135,9 @@ export const BudgetSummarySchema = z.object({
 export const ConstructionSiteSchema = z.object({
   id: z.string(),
   subtype: z.enum(['construction', 'closure', 'disruption']),
-  street: z.string(),
+  street: z.string().default(''),
   section: z.string().optional(),
-  description: z.string(),
+  description: z.string().default(''),
   direction: z.string().optional(),
   validFrom: z.string().optional(),
   validUntil: z.string().optional(),
@@ -155,14 +155,14 @@ export const TrafficIncidentSchema = z.object({
   type: z.enum(['jam', 'closure', 'construction', 'accident', 'other']),
   severity: z.enum(['low', 'moderate', 'major', 'critical']),
   description: z.string(),
-  road: z.string().optional(),
-  from: z.string().optional(),
-  to: z.string().optional(),
-  delay: z.number().optional(),
-  length: z.number().optional(),
+  road: z.string().nullable().optional(),
+  from: z.string().nullable().optional(),
+  to: z.string().nullable().optional(),
+  delay: z.number().nullable().optional(),
+  length: z.number().nullable().optional(),
   geometry: z.object({ type: z.string(), coordinates: z.any() }),
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
+  startTime: z.string().nullable().optional(),
+  endTime: z.string().nullable().optional(),
 });
 
 // --- Emergency Pharmacies ---
