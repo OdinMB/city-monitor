@@ -29,5 +29,6 @@ npm-debug.log*
 # AI dev artifacts
 .claude/settings.local.json
 .playwright-mcp/
+.tmp/
 nul
 NUL
