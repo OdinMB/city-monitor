@@ -230,6 +230,9 @@ select:focus-visible,
   .animate-scroll-dot {
     animation: none;
   }
+  .animate-drawer-breathe {
+    animation: none;
+  }
   .skeleton-shimmer {
     animation: none;
     background: var(--shimmer-base);
@@ -244,6 +247,16 @@ select:focus-visible,
 }
 .animate-scroll-dot {
   animation: scroll-dot 1.5s ease-in-out infinite;
+}
+
+/* Mobile layer drawer icon breathe — stops after first click */
+@keyframes drawer-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+.animate-drawer-breathe {
+  animation: drawer-breathe 2s ease-in-out infinite;
+  transform-origin: left center;
 }
 
 /* News marquee — continuous horizontal scroll */
@@ -272,6 +285,13 @@ select:focus-visible,
 }
 .animate-fade-in {
   animation: fade-in 300ms ease-out;
+}
+
+/* Offset top-right map controls below the fixed news marquee (h-9 = 2.25rem + gap).
+   !important needed to override maplibre-gl.css which sets top:0 at equal specificity
+   but loads later (imported inside CityMap.tsx). */
+.maplibregl-ctrl-top-right {
+  top: 3rem !important;
 }
 
 /* Hide map zoom controls on mobile — finger gestures handle zoom */

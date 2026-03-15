@@ -35,16 +35,25 @@ export function SkylineSeparator({ cityId }: SkylineSeparatorProps) {
 
   return (
     <div
-      className="relative w-full overflow-hidden -mt-16 pointer-events-none z-0"
+      className="relative w-full overflow-hidden pointer-events-none"
       aria-hidden="true"
       style={{ opacity }}
     >
       {/* Gradient backdrop so the silhouette contrasts against the map above */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent dark:from-white/15 dark:to-transparent" />
+      {/* Mobile: slice preserves aspect ratio, crops from top */}
       <svg
         viewBox="0 0 1200 120"
         preserveAspectRatio="xMidYMax slice"
-        className="relative w-full h-16 sm:h-20 lg:h-24"
+        className="relative w-full h-16 sm:hidden"
+      >
+        {cityId === 'berlin' ? <BerlinSkyline /> : <GenericSkyline />}
+      </svg>
+      {/* Desktop: stretch to fill — shorter without cropping buildings */}
+      <svg
+        viewBox="0 30 1200 90"
+        preserveAspectRatio="none"
+        className="relative w-full hidden sm:block sm:h-10 lg:h-12"
       >
         {cityId === 'berlin' ? <BerlinSkyline /> : <GenericSkyline />}
       </svg>
@@ -57,7 +66,7 @@ function BerlinSkyline() {
   return (
     <g style={{ fill: 'var(--surface-0)' }}>
       {/* Base ground */}
-      <rect x="0" y="100" width="1200" height="20" />
+      <rect x="0" y="110" width="1200" height="10" />
 
       {/* Buildings left cluster */}
       <rect x="0" y="70" width="40" height="50" />
@@ -67,7 +76,7 @@ function BerlinSkyline() {
       <rect x="170" y="72" width="28" height="48" />
 
       {/* TV Tower (Fernsehturm) — iconic needle */}
-      <rect x="258" y="8" width="4" height="92" />
+      <rect x="258" y="8" width="4" height="112" />
       <ellipse cx="260" cy="55" rx="14" ry="10" />
       <ellipse cx="260" cy="52" rx="10" ry="7" />
 
@@ -76,15 +85,17 @@ function BerlinSkyline() {
       <rect x="345" y="58" width="50" height="62" />
       <rect x="400" y="72" width="35" height="48" />
 
-      {/* Brandenburg Gate */}
-      <rect x="480" y="55" width="60" height="65" />
-      {/* Gate pillars */}
-      <rect x="484" y="60" width="5" height="40" />
-      <rect x="496" y="60" width="5" height="40" />
-      <rect x="508" y="60" width="5" height="40" />
-      <rect x="520" y="60" width="5" height="40" />
-      <rect x="532" y="60" width="5" height="40" />
-      {/* Gate top pediment */}
+      {/* Brandenburg Gate — pillars with gaps, entablature on top */}
+      {/* 6 pillars */}
+      <rect x="482" y="58" width="5" height="62" />
+      <rect x="493" y="58" width="5" height="62" />
+      <rect x="504" y="58" width="5" height="62" />
+      <rect x="515" y="58" width="5" height="62" />
+      <rect x="526" y="58" width="5" height="62" />
+      <rect x="537" y="58" width="5" height="62" />
+      {/* Entablature (horizontal beam connecting pillars) */}
+      <rect x="480" y="55" width="64" height="5" />
+      {/* Pediment (triangular top) */}
       <polygon points="478,55 542,55 530,45 490,45" />
       {/* Quadriga on top */}
       <rect x="502" y="38" width="16" height="7" />
@@ -122,7 +133,7 @@ function BerlinSkyline() {
 function GenericSkyline() {
   return (
     <g style={{ fill: 'var(--surface-0)' }}>
-      <rect x="0" y="100" width="1200" height="20" />
+      <rect x="0" y="110" width="1200" height="10" />
       <rect x="50" y="70" width="40" height="50" />
       <rect x="100" y="55" width="50" height="65" />
       <rect x="160" y="65" width="35" height="55" />

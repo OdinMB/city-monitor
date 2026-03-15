@@ -32,7 +32,7 @@ import { registerAllMapIcons } from '../../lib/map-icons.js';
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
 import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
-import { addDistrictLayer, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
+import { addDistrictLayer, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
 import { filterNewsForMap, updateNewsMarkers, updateSafetyMarkers } from './layers/news-safety.js';
 import { updateTransitMarkers } from './layers/transit.js';
 import { updateWarningPolygons } from './layers/warnings.js';
@@ -326,6 +326,9 @@ export function CityMap() {
         setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
         setRentMapOverlay(map, rentMapActiveRef.current);
 
+        // Ensure district labels render below all marker icons
+        ensureDistrictLabelsBelow(map);
+
         // Animate marker layers: fade in opacity over 500ms
         animateMarkerEntrance(map);
 
@@ -392,6 +395,7 @@ export function CityMap() {
                 layout: { 'text-field': ['get', resolved.nameField], 'text-size': 14, 'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'], 'text-anchor': 'center', 'text-allow-overlap': false },
                 paint: { 'text-color': isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)', 'text-halo-color': isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)', 'text-halo-width': 1.5 },
               });
+              ensureDistrictLabelsBelow(map);
               activeNameFieldRef.current = resolved.nameField;
               const freshData = politicalDataRef.current;
               if (freshData) applyPoliticalStyling(map, freshData, isDark, resolved.nameField);
@@ -421,6 +425,7 @@ export function CityMap() {
       setWeatherOverlay(map, weatherActiveRef.current);
       setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current);
+      ensureDistrictLabelsBelow(map);
     });
   }, [isDark, city.id]);
 
@@ -462,6 +467,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [noiseWmsActive, effectiveNoiseLayer, city.id]);
+
+  // Keep district labels below marker layers whenever marker data changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReadyRef.current) return;
+    const apply = () => ensureDistrictLabelsBelow(map);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, waterLevelItems, bathingItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -723,6 +738,7 @@ export function CityMap() {
             'text-halo-width': 1.5,
           },
         });
+        ensureDistrictLabelsBelow(map);
 
         // Store GeoJSON features for marker creation
         politicalGeoFeaturesRef.current = geojson.features;

@@ -9,6 +9,9 @@ const MID = (CLOSED_X + OPEN_X) / 2;
 /** Mobile-only slide-from-left drawer for data layer controls. */
 export function MobileLayerDrawer() {
   const [open, setOpen] = useState(false);
+  const [hasBeenOpened, setHasBeenOpened] = useState(() => {
+    try { return localStorage.getItem('cm-drawer-seen') === '1'; } catch { return false; }
+  });
   const [dragX, setDragX] = useState<number | null>(null);
   const touchRef = useRef({ startX: 0, startY: 0, baseX: CLOSED_X, locked: '' as '' | 'x' | 'y' });
 
@@ -85,7 +88,7 @@ export function MobileLayerDrawer() {
         <div
           role="dialog"
           aria-label="Data layers"
-          className="h-full shrink-0 bg-surface-1 border-r border-border p-3 overflow-y-auto space-y-4"
+          className="h-full shrink-0 bg-surface-1 border-r border-border p-3 pt-12 overflow-y-auto space-y-4"
           style={{ width: PANEL_W }}
         >
           <DataLayerToggles />
@@ -93,8 +96,14 @@ export function MobileLayerDrawer() {
 
         {/* Tab handle */}
         <button
-          className="self-center shrink-0 flex items-center justify-center w-9 h-20 bg-surface-1/90 backdrop-blur-sm border border-l-0 border-border rounded-r-xl shadow-lg cursor-pointer"
-          onClick={() => setOpen((v) => !v)}
+          className={`self-center shrink-0 flex items-center justify-center w-9 h-20 bg-surface-1/90 backdrop-blur-sm border border-l-0 border-border rounded-r-xl shadow-lg cursor-pointer ${!hasBeenOpened ? 'animate-drawer-breathe' : ''}`}
+          onClick={() => {
+            setOpen((v) => !v);
+            if (!hasBeenOpened) {
+              setHasBeenOpened(true);
+              try { localStorage.setItem('cm-drawer-seen', '1'); } catch { /* noop */ }
+            }
+          }}
           aria-label="Toggle layers panel"
         >
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-300">

@@ -28,7 +28,7 @@ export function NewsMarquee() {
 
   return (
     <div
-      className="overflow-hidden bg-surface-1 border-b border-border text-sm text-gray-700 dark:text-gray-300 h-8 flex items-center marquee-container"
+      className="overflow-hidden bg-surface-1 border-b border-border text-base text-gray-700 dark:text-gray-300 h-9 flex items-center marquee-container"
       role="marquee"
       aria-live="off"
     >

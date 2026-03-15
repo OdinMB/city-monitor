@@ -10,6 +10,26 @@ import { registerPoliticalIcons, createVerticalBadgeIcon, type IconNode } from '
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
 import { normalizePoliticalName } from '../base.js';
 
+/** Marker symbol layer IDs — district labels must render below all of these */
+const MARKER_LAYER_IDS = [
+  'transit-marker-icon', 'news-marker-icon', 'safety-marker-icon',
+  'wl-marker-icon', 'bathing-marker-icon', 'aq-marker-icon',
+  'noise-sensor-icon', 'pharmacy-marker-icon', 'aed-marker-icon',
+  'construction-points', 'political-markers',
+  'traffic-incidents-circle', 'traffic-incidents-label',
+];
+
+/** Move district-label below the first existing marker layer so labels render behind markers. */
+export function ensureDistrictLabelsBelow(map: maplibregl.Map) {
+  if (!map.getLayer('district-label')) return;
+  for (const id of MARKER_LAYER_IDS) {
+    if (map.getLayer(id)) {
+      map.moveLayer('district-label', id);
+      return;
+    }
+  }
+}
+
 export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDark: boolean) {
   const config = DISTRICT_URLS[cityId];
   if (!config) return;
@@ -59,6 +79,12 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
     },
   });
 
+  // Find the first existing marker layer so we insert district-label below it
+  let beforeId: string | undefined;
+  for (const id of MARKER_LAYER_IDS) {
+    if (map.getLayer(id)) { beforeId = id; break; }
+  }
+
   map.addLayer({
     id: 'district-label',
     type: 'symbol',
@@ -75,7 +101,7 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
       'text-halo-color': isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)',
       'text-halo-width': 1.5,
     },
-  });
+  }, beforeId);
 }
 
 export function applyPoliticalStyling(

@@ -317,7 +317,7 @@ export function createVerticalBadgeIcon(
   const lineWidths = lines.map((l) => Math.ceil(measure.measureText(l).width));
   const maxLineW = Math.max(...lineWidths, 0);
 
-  const textBlockW = maxLineW + textPadX * 2;
+  const textBlockW = Math.max(maxLineW + textPadX * 2, iconSize + iconPad * 2);
   const textBlockH = lines.length * lineHeight + textPadY * 2;
   const iconBgSize = iconSize + iconPad * 2;
 
@@ -331,32 +331,49 @@ export function createVerticalBadgeIcon(
 
   const r = 6;
 
-  // --- Single connected background (rounded all corners) ---
-  // Draw as one shape so there's no gap between icon and text
-  const bgW = Math.max(iconBgSize, textBlockW);
-  const bgX = (w - bgW) / 2;
+  // --- Icon portion: fixed-width, centered horizontally ---
+  const iconBoxX = (w - iconBgSize) / 2;
   ctx.beginPath();
-  ctx.roundRect(bgX, 0, bgW, h, r);
+  ctx.roundRect(iconBoxX, 0, iconBgSize, iconBgSize, [r, r, 0, 0]);
   ctx.fillStyle = bgColor;
   ctx.fill();
   ctx.strokeStyle = strokeColor;
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // --- Divider line between icon and text areas ---
-  const textY = iconBgSize;
+  // --- Text portion: at least as wide as icon, centered horizontally ---
+  const textBoxX = (w - textBlockW) / 2;
   ctx.beginPath();
-  ctx.moveTo(bgX + 4, textY);
-  ctx.lineTo(bgX + bgW - 4, textY);
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-  ctx.lineWidth = 1;
+  ctx.roundRect(textBoxX, iconBgSize, textBlockW, textBlockH, [0, 0, r, r]);
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 
+  // --- Fill the seam between icon and text boxes ---
+  const seamX = Math.min(iconBoxX, textBoxX);
+  const seamW = Math.max(iconBgSize, textBlockW);
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(seamX + 1, iconBgSize - 1, seamW - 2, 3);
+
+  // --- Divider line between icon and text areas ---
+  const textY = iconBgSize;
+  const dividerLeft = Math.max(iconBoxX, textBoxX) + 4;
+  const dividerRight = Math.min(iconBoxX + iconBgSize, textBoxX + textBlockW) - 4;
+  if (dividerRight > dividerLeft) {
+    ctx.beginPath();
+    ctx.moveTo(dividerLeft, textY);
+    ctx.lineTo(dividerRight, textY);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
   // --- Lucide icon (centered in icon background) ---
-  const iconX = (w - iconBgSize) / 2;
   const lucideSize = iconSize * 0.55;
   const scale = lucideSize / 24;
-  const lucideOffsetX = iconX + (iconBgSize - lucideSize) / 2;
+  const lucideOffsetX = iconBoxX + (iconBgSize - lucideSize) / 2;
   const lucideOffsetY = (iconBgSize - lucideSize) / 2;
 
   ctx.save();

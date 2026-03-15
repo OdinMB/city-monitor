@@ -81,12 +81,11 @@ export function CommandLayout() {
           </ErrorBoundary>
           <MobileLayerDrawer />
         </div>
-      </div>
-
-      {/* Scroll indicator + skyline separator between map and dashboard */}
-      <div className="relative">
-        <ScrollIndicator targetRef={dashboardRef} />
-        <SkylineSeparator cityId={cityId} />
+        {/* Skyline + scroll indicator overlaid at bottom of hero */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+          <ScrollIndicator targetRef={dashboardRef} />
+          <SkylineSeparator cityId={cityId} />
+        </div>
       </div>
 
       {/* Lower zone: dashboard tiles */}
