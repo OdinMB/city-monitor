@@ -72,6 +72,7 @@ npm run dev            # Start both web and server via Turborepo
 npm run build          # Production build
 npm run typecheck      # Type-check all packages
 npm run lint           # Lint all packages
+npm test               # Run all Vitest suites (web + server)
 
 # Database (run from packages/server)
 npm run db:generate    # Generate migrations from schema changes
@@ -79,6 +80,8 @@ npm run db:migrate     # Apply migrations
 npm run db:push        # Push schema directly (dev only)
 npm run db:studio      # Open Drizzle Studio (DB browser)
 ```
+
+**Before every commit, run `npm run typecheck`, `npm run lint`, AND `npm test`.** All three must pass. Do not commit on red — CI on `main` is not a gating check, so a red push lingers until someone notices. If a test fails for a reason unrelated to your change, fix it or revert; do not push past it.
 
 ## Testing
 

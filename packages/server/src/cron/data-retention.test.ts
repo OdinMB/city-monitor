@@ -19,7 +19,8 @@ const NON_SNAPSHOT_TASKS = 5; // news, events, safety, summaries, orphan_summari
 const TOTAL_TIME_TASKS = TOTAL_SNAPSHOT_TYPES + NON_SNAPSHOT_TASKS;
 
 function createMockDb() {
-  const where = vi.fn().mockResolvedValue([]);
+  const returning = vi.fn().mockResolvedValue([]);
+  const where = vi.fn().mockReturnValue({ returning });
   const deleteFn = vi.fn().mockReturnValue({ where });
   // Sub-select chain: db.select().from().where() used inside notExists
   const subWhere = vi.fn().mockReturnValue({ __subquery: true });
@@ -31,6 +32,7 @@ function createMockDb() {
     db: { delete: deleteFn, select, execute } as unknown as Db,
     deleteFn,
     where,
+    returning,
     execute,
   };
 }
@@ -116,10 +118,11 @@ describe('data-retention', () => {
   });
 
   it('continues cleanup even if one table fails', async () => {
-    const where = vi.fn()
+    const returning = vi.fn()
       .mockResolvedValueOnce([])    // first table OK
       .mockRejectedValueOnce(new Error('DB error')) // second table fails
       .mockResolvedValue([]);       // rest OK
+    const where = vi.fn().mockReturnValue({ returning });
     const deleteFn = vi.fn().mockReturnValue({ where });
     const subWhere = vi.fn().mockReturnValue({ __subquery: true });
     const from = vi.fn().mockReturnValue({ where: subWhere });
@@ -133,7 +136,8 @@ describe('data-retention', () => {
   });
 
   it('continues row-count pruning even if one fails', async () => {
-    const where = vi.fn().mockResolvedValue([]);
+    const returning = vi.fn().mockResolvedValue([]);
+    const where = vi.fn().mockReturnValue({ returning });
     const deleteFn = vi.fn().mockReturnValue({ where });
     const subWhere = vi.fn().mockReturnValue({ __subquery: true });
     const from = vi.fn().mockReturnValue({ where: subWhere });
