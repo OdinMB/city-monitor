@@ -40,7 +40,7 @@ const CityMap = lazy(() =>
   import('../map/CityMap.js').then((m) => ({ default: m.CityMap })),
 );
 
-function BathingTile({ isDesktop }: { isDesktop: boolean }) {
+function BathingTile() {
   const { t } = useTranslation();
   const { id: cityId } = useCityConfig();
   const offSeason = useBathingOffSeason(cityId);
@@ -50,7 +50,7 @@ function BathingTile({ isDesktop }: { isDesktop: boolean }) {
     </span>
   ) : undefined;
   return (
-    <Tile title={t('panel.bathing.title')} titleBadge={badge} span={1} expandable defaultExpanded={offSeason ? false : isDesktop}>
+    <Tile title={t('panel.bathing.title')} titleBadge={badge} span={1} expandable>
       {(expanded) => <BathingStrip expanded={expanded} />}
     </Tile>
   );
@@ -142,20 +142,20 @@ export function CommandLayout() {
           </Tile>
 
           {/* Row 3: Environment */}
-          <Tile title={t('panel.pollen.title')} span={1} expandable defaultExpanded={isDesktop}>
+          <Tile title={t('panel.pollen.title')} span={1} expandable>
             {(expanded) => <PollenStrip expanded={expanded} />}
           </Tile>
           {cityId === 'berlin' && (
-            <Tile title={t('panel.wastewater.title')} span={1} expandable defaultExpanded={isDesktop}>
+            <Tile title={t('panel.wastewater.title')} span={1} expandable>
               {(expanded) => <WastewaterStrip expanded={expanded} />}
             </Tile>
           )}
           {cityId === 'berlin' && (
-            <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded={isDesktop}>
+            <Tile title={t('panel.feuerwehr.title')} span={1} expandable>
               {(expanded) => <FeuerwehrStrip expanded={expanded} />}
             </Tile>
           )}
-          <BathingTile isDesktop={isDesktop} />
+          <BathingTile />
 
           {/* Row 4: Information */}
           <Tile title={t('panel.news.title')} span={2} className="hidden sm:block">
