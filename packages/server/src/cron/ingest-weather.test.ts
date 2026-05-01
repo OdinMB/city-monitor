@@ -1,38 +1,57 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { CityConfig } from '@city-monitor/shared';
 import { createCache } from '../lib/cache.js';
 import { createWeatherIngestion, type WeatherData } from './ingest-weather.js';
+import * as configModule from '../config/index.js';
 
-const mockOpenMeteoResponse = {
-  current: {
-    temperature_2m: 12.5,
-    relative_humidity_2m: 65,
-    apparent_temperature: 10.2,
-    precipitation: 0,
-    weather_code: 3,
-    wind_speed_10m: 15.3,
-    wind_direction_10m: 240,
-    uv_index: 3.2,
-    uv_index_clear_sky: 5.1,
+const mockCurrentResponse = {
+  weather: {
+    timestamp: '2026-05-01T12:00:00+00:00',
+    temperature: 18.5,
+    relative_humidity: 55,
+    wind_speed_10: 12.3,
+    wind_direction_10: 240,
+    precipitation_60: 0.2,
+    icon: 'partly-cloudy-day',
+    condition: 'dry',
   },
-  hourly: {
-    time: ['2026-03-02T00:00', '2026-03-02T01:00', '2026-03-02T02:00'],
-    temperature_2m: [10, 9.5, 9],
-    precipitation_probability: [20, 30, 10],
-    weather_code: [3, 3, 2],
-    uv_index: [0, 0.5, 1.2],
-  },
-  daily: {
-    time: ['2026-03-02', '2026-03-03'],
-    weather_code: [3, 61],
-    temperature_2m_max: [15, 12],
-    temperature_2m_min: [5, 4],
-    precipitation_sum: [0, 5.2],
-    sunrise: ['2026-03-02T06:30', '2026-03-03T06:28'],
-    sunset: ['2026-03-02T18:15', '2026-03-03T18:17'],
-    uv_index_max: [4.5, 2.1],
-    uv_index_clear_sky_max: [6.0, 3.5],
-  },
+  sources: [],
 };
+
+const mockForecastResponse = {
+  weather: Array.from({ length: 168 }, (_, i) => ({
+    timestamp: new Date(Date.UTC(2026, 4, 1, i)).toISOString(),
+    temperature: 15 + (i % 12),
+    precipitation: 0,
+    precipitation_probability: i < 3 ? null : 20,
+    icon: 'clear-day',
+  })),
+};
+
+function brightSkyMock(input: RequestInfo | URL): Response {
+  const url = typeof input === 'string' ? input : input.toString();
+  if (url.includes('/current_weather')) {
+    return new Response(JSON.stringify(mockCurrentResponse), { status: 200 });
+  }
+  if (url.includes('/weather?')) {
+    return new Response(JSON.stringify(mockForecastResponse), { status: 200 });
+  }
+  // DWD alerts (JSONP wrapper) and DWD UV — return harmless empty payloads.
+  if (url.includes('warnings.json')) {
+    return new Response('warnWetter.loadWarnings({});', { status: 200 });
+  }
+  if (url.includes('uvi.json')) {
+    return new Response(JSON.stringify({ content: [] }), { status: 200 });
+  }
+  // Open-Meteo air-quality
+  if (url.includes('air-quality-api.open-meteo.com')) {
+    return new Response(JSON.stringify({
+      current: { european_aqi: 40, pm10: 10, pm2_5: 5, nitrogen_dioxide: 8, ozone: 50 },
+      hourly: { time: ['2026-05-01T00:00'], european_aqi: [40], pm2_5: [5], pm10: [10] },
+    }), { status: 200 });
+  }
+  throw new Error(`unexpected URL: ${url}`);
+}
 
 describe('ingest-weather', () => {
   beforeEach(() => {
@@ -40,10 +59,8 @@ describe('ingest-weather', () => {
     vi.unstubAllEnvs();
   });
 
-  it('fetches weather from Open-Meteo and writes to cache', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(mockOpenMeteoResponse), { status: 200 }),
-    );
+  it('fetches BrightSky and writes WeatherData to cache', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => brightSkyMock(input));
 
     const cache = createCache();
     const ingest = createWeatherIngestion(cache);
@@ -51,65 +68,28 @@ describe('ingest-weather', () => {
 
     const data = cache.get<WeatherData>('berlin:weather');
     expect(data).toBeTruthy();
-    expect(data!.current.temp).toBe(12.5);
-    expect(data!.current.humidity).toBe(65);
-    expect(data!.current.weatherCode).toBe(3);
-    expect(data!.hourly).toHaveLength(3);
-    expect(data!.daily).toHaveLength(2);
+    expect(data!.current.temp).toBe(18.5);
+    expect(data!.current.humidity).toBe(55);
+    expect(typeof data!.current.weatherCode).toBe('number');
+    expect(typeof data!.current.feelsLike).toBe('number');
+    expect(data!.hourly.length).toBe(168);
+    expect(data!.daily.length).toBeGreaterThanOrEqual(7);
+    // First three hourlies have null precipitation_probability — must be coerced to 0.
+    expect(data!.hourly[0]!.precipProb).toBe(0);
   });
 
-  it('transforms Open-Meteo response into clean API shape', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(mockOpenMeteoResponse), { status: 200 }),
-    );
+  it('throws when BrightSky returns a non-OK response', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('api.brightsky.dev')) {
+        return new Response('upstream gone', { status: 503 });
+      }
+      return brightSkyMock(input);
+    });
 
     const cache = createCache();
     const ingest = createWeatherIngestion(cache);
-    await ingest();
-
-    const data = cache.get<WeatherData>('berlin:weather')!;
-    expect(data.current).toEqual({
-      temp: 12.5,
-      feelsLike: 10.2,
-      humidity: 65,
-      precipitation: 0,
-      weatherCode: 3,
-      windSpeed: 15.3,
-      windDirection: 240,
-      uvIndex: 3.2,
-      uvIndexClearSky: 5.1,
-    });
-
-    expect(data.hourly[0]).toEqual({
-      time: '2026-03-02T00:00',
-      temp: 10,
-      precipProb: 20,
-      weatherCode: 3,
-      uvIndex: 0,
-    });
-
-    expect(data.daily[0]).toEqual({
-      date: '2026-03-02',
-      high: 15,
-      low: 5,
-      weatherCode: 3,
-      precip: 0,
-      sunrise: '2026-03-02T06:30',
-      sunset: '2026-03-02T18:15',
-      uvIndexMax: 4.5,
-      uvIndexClearSkyMax: 6.0,
-    });
-  });
-
-  it('throws when Open-Meteo returns a non-OK response', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('bad request', { status: 400 }),
-    );
-
-    const cache = createCache();
-    const ingest = createWeatherIngestion(cache);
-
-    await expect(ingest()).rejects.toThrow(/400/);
+    await expect(ingest()).rejects.toThrow(/503/);
     expect(cache.get<WeatherData>('berlin:weather')).toBeNull();
   });
 
@@ -121,23 +101,51 @@ describe('ingest-weather', () => {
     it('throws when any city fails, but successful cities still write to cache', async () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.toString();
-        // Berlin (52.52) fails on the Open-Meteo forecast call;
-        // Hamburg (53.55) succeeds.
-        if (url.includes('api.open-meteo.com/v1/forecast') && url.includes('latitude=52.52')) {
-          return new Response('upstream error', { status: 502 });
+        // Berlin (lat=52.52) BrightSky calls fail; Hamburg (lat=53.5511) succeeds.
+        if (url.includes('api.brightsky.dev') && url.includes('lat=52.52')) {
+          return new Response('upstream gone', { status: 502 });
         }
-        return new Response(JSON.stringify(mockOpenMeteoResponse), { status: 200 });
+        return brightSkyMock(input);
       });
 
       const cache = createCache();
       const ingest = createWeatherIngestion(cache);
-
       await expect(ingest()).rejects.toThrow();
 
-      // Hamburg should have completed despite Berlin failing
       expect(cache.get<WeatherData>('hamburg:weather')).toBeTruthy();
-      // Berlin should not have written
       expect(cache.get<WeatherData>('berlin:weather')).toBeNull();
+    });
+  });
+
+  describe('skip-on-unsupported-provider', () => {
+    it('logs a warning and continues when a city has no adapter for its provider', async () => {
+      const fakeNonDe: CityConfig = {
+        id: 'london',
+        name: 'London',
+        country: 'GB',
+        coordinates: { lat: 51.5, lon: -0.12 },
+        boundingBox: { north: 51.7, south: 51.3, east: 0.3, west: -0.5 },
+        timezone: 'Europe/London',
+        languages: ['en'],
+        map: { center: [-0.12, 51.5], zoom: 11, minZoom: 9, maxZoom: 17, bounds: [[-0.5, 51.3], [0.3, 51.7]] },
+        theme: { accent: '#cf142b' },
+        feeds: [],
+        dataSources: { weather: { provider: 'open-meteo', lat: 51.5, lon: -0.12 } },
+      };
+
+      const berlinReal = configModule.getCityConfig('berlin');
+      vi.spyOn(configModule, 'getActiveCities').mockReturnValue([berlinReal!, fakeNonDe]);
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => brightSkyMock(input));
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const cache = createCache();
+      const ingest = createWeatherIngestion(cache);
+      await expect(ingest()).resolves.not.toThrow();
+
+      expect(cache.get<WeatherData>('berlin:weather')).toBeTruthy();
+      expect(cache.get<WeatherData>('london:weather')).toBeNull();
+      const matchingWarns = warnSpy.mock.calls.filter(([msg]) => typeof msg === 'string' && /london.*provider 'open-meteo'/.test(msg));
+      expect(matchingWarns).toHaveLength(1);
     });
   });
 });

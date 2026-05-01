@@ -26,7 +26,7 @@ export const hamburg: CityConfig = {
     { name: 'hamburg.de News', url: 'https://www.hamburg.de/rss/aktuelles/', tier: 1, type: 'gov', lang: 'de' },
   ],
   dataSources: {
-    weather: { provider: 'open-meteo', lat: 53.5511, lon: 9.9937 },
+    weather: { provider: 'brightsky', lat: 53.5511, lon: 9.9937 },
     // HVV transport.rest API is deprecated and offline (March 2026) — no free alternative
     police: {
       provider: 'rss',

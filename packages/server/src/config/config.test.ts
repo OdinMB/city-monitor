@@ -32,7 +32,7 @@ describe('City config', () => {
 
   it('Berlin config has weather data source', () => {
     const config = getCityConfig('berlin');
-    expect(config!.dataSources.weather.provider).toBe('open-meteo');
+    expect(config!.dataSources.weather.provider).toBe('brightsky');
   });
 
   it('getCityConfig returns undefined for inactive city', () => {
@@ -54,7 +54,7 @@ describe('City config', () => {
     vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
     const config = getCityConfig('hamburg');
     expect(config!.feeds.length).toBeGreaterThan(0);
-    expect(config!.dataSources.weather.provider).toBe('open-meteo');
+    expect(config!.dataSources.weather.provider).toBe('brightsky');
     // Hamburg transit not supported — HVV transport.rest API is offline
     expect(config!.dataSources.transit).toBeUndefined();
   });

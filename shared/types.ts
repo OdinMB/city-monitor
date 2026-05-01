@@ -57,7 +57,7 @@ export interface EventSourceConfig {
 }
 
 export interface CityDataSources {
-  weather: { provider: 'open-meteo'; lat: number; lon: number };
+  weather: { provider: 'open-meteo' | 'brightsky'; lat: number; lon: number };
   airQuality?: {
     sensorCommunityStations?: Array<{ sensorId: number; name: string; fallbackIds?: number[] }>;
   };

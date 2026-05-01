@@ -31,7 +31,7 @@ export const berlin: CityConfig = {
     { name: 'Exberliner', url: 'https://www.exberliner.com/feed/', tier: 3, type: 'other', lang: 'en' },
   ],
   dataSources: {
-    weather: { provider: 'open-meteo', lat: 52.52, lon: 13.405 },
+    weather: { provider: 'brightsky', lat: 52.52, lon: 13.405 },
     transit: {
       provider: 'hafas',
       operatorId: 'VBB',

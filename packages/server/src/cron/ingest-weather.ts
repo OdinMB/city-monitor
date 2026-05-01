@@ -1,10 +1,11 @@
-import type { CityConfig, WeatherData, CurrentWeather, HourlyForecast, DailyForecast, WeatherAlert, DwdUvForecast, AirQuality } from '@city-monitor/shared';
+import type { CityConfig, WeatherData, WeatherAlert, DwdUvForecast, AirQuality } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveWeather } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { fetchBrightSkyForecast } from '../lib/brightsky.js';
 
 const log = createLogger('ingest-weather');
 
@@ -12,43 +13,16 @@ export type { WeatherData, AirQuality };
 
 const WEATHER_TIMEOUT_MS = 15_000;
 
-interface OpenMeteoResponse {
-  current: {
-    temperature_2m: number;
-    relative_humidity_2m: number;
-    apparent_temperature: number;
-    precipitation: number;
-    weather_code: number;
-    wind_speed_10m: number;
-    wind_direction_10m: number;
-    uv_index: number;
-    uv_index_clear_sky: number;
-  };
-  hourly: {
-    time: string[];
-    temperature_2m: number[];
-    precipitation_probability: number[];
-    weather_code: number[];
-    uv_index: number[];
-  };
-  daily: {
-    time: string[];
-    weather_code: number[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    precipitation_sum: number[];
-    sunrise: string[];
-    sunset: string[];
-    uv_index_max: number[];
-    uv_index_clear_sky_max: number[];
-  };
-}
-
 export function createWeatherIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestWeather(): Promise<void> {
     const cities = getActiveCities();
     const failures: string[] = [];
     for (const city of cities) {
+      const provider = city.dataSources.weather.provider;
+      if (provider !== 'brightsky') {
+        log.warn(`${city.id}: no weather adapter for provider '${provider}' — see .context/weather.md to add one`);
+        continue;
+      }
       try {
         await ingestCityWeather(city, cache, db);
       } catch (err) {
@@ -63,30 +37,10 @@ export function createWeatherIngestion(cache: Cache, db: Db | null = null) {
 }
 
 async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null): Promise<void> {
-  const { lat, lon } = city.dataSources.weather;
+  const data = await fetchBrightSkyForecast(city);
 
-  const url = `https://api.open-meteo.com/v1/forecast`
-    + `?latitude=${lat}&longitude=${lon}`
-    + `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index,uv_index_clear_sky`
-    + `&hourly=temperature_2m,precipitation_probability,weather_code,uv_index`
-    + `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset,uv_index_max,uv_index_clear_sky_max`
-    + `&timezone=${encodeURIComponent(city.timezone)}`
-    + `&forecast_days=7`;
-
-  const response = await log.fetch(url, {
-    signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
-    headers: { 'User-Agent': 'CityMonitor/1.0' },
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`Open-Meteo forecast ${response.status} for ${city.id}: ${body.slice(0, 200)}`);
-  }
-
-  const raw: OpenMeteoResponse = await response.json();
-  const data = transformWeatherData(raw);
-
-  // Fetch DWD alerts and UV for German cities
+  // DWD alerts and UV — German cities only. BrightSky doesn't expose UV;
+  // alerts could move to BrightSky's /alerts endpoint as a follow-up.
   if (city.country === 'DE') {
     try {
       const alerts = await fetchDwdAlerts(city);
@@ -106,6 +60,8 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
 
   if (db) {
     try {
+      // Snapshot type 'open-meteo' is a historical opaque key — see plan
+      // 2026-05-01_brightsky-migration.md. Renaming is out of scope.
       await saveWeather(db, city.id, data);
     } catch (err) {
       log.error(`${city.id} DB write failed`, err);
@@ -179,42 +135,6 @@ export async function ingestCityAirQuality(city: CityConfig, cache: Cache): Prom
 
   cache.set(CK.airQuality(city.id), airQuality, 3600);
   log.info(`${city.id}: air quality updated (AQI: ${airQuality.current.europeanAqi})`);
-}
-
-function transformWeatherData(raw: OpenMeteoResponse): WeatherData {
-  const current: CurrentWeather = {
-    temp: raw.current.temperature_2m,
-    feelsLike: raw.current.apparent_temperature,
-    humidity: raw.current.relative_humidity_2m,
-    precipitation: raw.current.precipitation,
-    weatherCode: raw.current.weather_code,
-    windSpeed: raw.current.wind_speed_10m,
-    windDirection: raw.current.wind_direction_10m,
-    uvIndex: raw.current.uv_index,
-    uvIndexClearSky: raw.current.uv_index_clear_sky,
-  };
-
-  const hourly: HourlyForecast[] = raw.hourly.time.map((time, i) => ({
-    time,
-    temp: raw.hourly.temperature_2m[i],
-    precipProb: raw.hourly.precipitation_probability[i],
-    weatherCode: raw.hourly.weather_code[i],
-    uvIndex: raw.hourly.uv_index[i],
-  }));
-
-  const daily: DailyForecast[] = raw.daily.time.map((date, i) => ({
-    date,
-    high: raw.daily.temperature_2m_max[i],
-    low: raw.daily.temperature_2m_min[i],
-    weatherCode: raw.daily.weather_code[i],
-    precip: raw.daily.precipitation_sum[i],
-    sunrise: raw.daily.sunrise[i],
-    sunset: raw.daily.sunset[i],
-    uvIndexMax: raw.daily.uv_index_max[i],
-    uvIndexClearSkyMax: raw.daily.uv_index_clear_sky_max[i],
-  }));
-
-  return { current, hourly, daily, alerts: [] };
 }
 
 async function fetchDwdAlerts(city: CityConfig): Promise<WeatherAlert[]> {
