@@ -15,7 +15,8 @@
     "db:push": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs push",
     "db:studio": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs studio",
     "db:invalidate": "tsx --env-file-if-exists=.env src/scripts/invalidate-cache.ts",
-    "db:retain": "tsx --env-file-if-exists=.env src/scripts/data-retention.ts"
+    "db:retain": "tsx --env-file-if-exists=.env src/scripts/data-retention.ts",
+    "check:weather": "tsx --env-file-if-exists=.env src/scripts/check-weather-sources.ts"
   },
   "dependencies": {
     "@city-monitor/shared": "*",

@@ -51,6 +51,10 @@ interface WeatherData {
 - `packages/web/src/lib/weather-codes.ts` — Maps WMO weather codes to emoji + label. Handles clear/cloudy (0-3), fog (45-48), drizzle (51-57), rain (61-67), snow (71-77), showers (80-82), snow showers (85-86), thunderstorms (95-99). Fallback: "Unknown".
 - `packages/web/src/lib/uv-levels.ts` — Maps UV index to WHO level (low/moderate/high/veryHigh/extreme) and color. Floors fractional values.
 
+## Diagnostics
+
+When weather appears stale in production, run `npm run check:weather` (from `packages/server/`) to probe all four upstreams (Open-Meteo forecast, Open-Meteo air-quality, DWD warnings, DWD UV) end-to-end. Exits 0 if all return 200 + the expected shape, 1 if any fail. Add `-- --city hamburg` to probe Hamburg coordinates instead of Berlin. The script is not picked up by `vitest` / `turbo run test`.
+
 ## DB Schema
 
 Unified `snapshots` table, type `open-meteo` — `data` JSONB contains `{ current, hourly, daily, alerts }`. No staleness guard on reads — `loadWeather()` always returns the latest row regardless of age. The frontend freshness system (TileFooter, 45-min threshold) handles stale display. Note: `dwdUv` is NOT persisted to DB — it only lives in the in-memory cache and is re-fetched on each cron run.
