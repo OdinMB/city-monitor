@@ -151,7 +151,7 @@ export function CommandLayout() {
             </Tile>
           )}
           {cityId === 'berlin' && (
-            <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded>
+            <Tile title={t('panel.feuerwehr.title')} span={1} expandable defaultExpanded={isDesktop}>
               {(expanded) => <FeuerwehrStrip expanded={expanded} />}
             </Tile>
           )}
