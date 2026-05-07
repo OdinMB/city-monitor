@@ -26,7 +26,7 @@
     "drizzle-orm": "^0.45.2",
     "exceljs": "^4.4.0",
     "express": "^5",
-    "express-rate-limit": "^8.2.1",
+    "express-rate-limit": "^8.5.1",
     "fast-xml-parser": "^5.4.1",
     "helmet": "^8.1.0",
     "node-cron": "^3.0.3",
