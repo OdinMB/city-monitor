@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+# This repo is public and CI runs on fork pull requests, so these jobs execute
+# code the PR author wrote (its test files, and install scripts from its own
+# lockfile). That is contained rather than prevented: a read-only token, no
+# secrets referenced here, and no deployment artifact — Render builds separately
+# from main. Switching to pull_request_target, or adding secrets to this
+# workflow, is a security change and needs review.
+permissions:
+  contents: read
+
 jobs:
   typecheck:
     runs-on: ubuntu-latest

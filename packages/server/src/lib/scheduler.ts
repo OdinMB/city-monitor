@@ -1,4 +1,4 @@
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 import { createLogger } from './logger.js';
 
 const log = createLogger('scheduler');
@@ -23,7 +23,7 @@ export interface JobInfo {
 
 export function createScheduler(jobs: ScheduledJob[]) {
   const jobInfos: JobInfo[] = [];
-  const tasks: cron.ScheduledTask[] = [];
+  const tasks: ScheduledTask[] = [];
 
   for (const job of jobs) {
     const info: JobInfo = {
