@@ -187,18 +187,28 @@ describe('ingest-bathing', () => {
     );
   });
 
-  it('sets inSeason based on current date', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(buildCsv(GOOD_ROW), { status: 200 }),
-    );
+  // Season runs 15 May – 15 Sep, so the clock is pinned rather than left to
+  // whenever the suite happens to run.
+  it.each([
+    ['2026-07-01T12:00:00Z', true],
+    ['2026-03-01T12:00:00Z', false],
+  ])('sets inSeason from the current date (%s → %s)', async (now, expected) => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(now));
+    try {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(buildCsv(GOOD_ROW), { status: 200 }),
+      );
 
-    const cache = createCache();
-    const ingest = createBathingIngestion(cache);
-    await ingest();
+      const cache = createCache();
+      const ingest = createBathingIngestion(cache);
+      await ingest();
 
-    const spot = cache.get<BathingSpot[]>('berlin:bathing:spots')![0];
-    // Test runs outside bathing season (March), so inSeason should be false
-    expect(spot.inSeason).toBe(false);
+      const spot = cache.get<BathingSpot[]>('berlin:bathing:spots')![0];
+      expect(spot.inSeason).toBe(expected);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('skips rows with missing coordinates', async () => {
