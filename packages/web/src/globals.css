@@ -227,7 +227,7 @@ select:focus-visible,
     transform: none;
     transition: none;
   }
-  .animate-scroll-dot {
+  .animate-scroll-bounce {
     animation: none;
   }
   .animate-drawer-breathe {
@@ -239,14 +239,14 @@ select:focus-visible,
   }
 }
 
-/* Scroll indicator — animated dot inside mouse icon */
-@keyframes scroll-dot {
-  0% { transform: translateY(0); opacity: 1; }
-  50% { transform: translateY(10px); opacity: 0.3; }
-  100% { transform: translateY(0); opacity: 1; }
+/* Scroll indicator — the whole chip bounces. No opacity fade: the chip is what
+   makes the white chevron readable over a pale basemap, so it must stay solid. */
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
 }
-.animate-scroll-dot {
-  animation: scroll-dot 1.5s ease-in-out infinite;
+.animate-scroll-bounce {
+  animation: scroll-bounce 1.5s ease-in-out infinite;
 }
 
 /* Mobile layer drawer icon breathe — stops after first click */
@@ -305,5 +305,33 @@ select:focus-visible,
 .maplibregl-ctrl-bottom-right,
 .maplibregl-ctrl-bottom-left {
   bottom: 5rem;
+}
+
+/* Hero height — one *visible* screen tall.
+
+   Not `h-screen`/100vh: the spec defines unprefixed viewport units against the
+   LARGE viewport, i.e. the height with dynamically-retracting browser chrome
+   assumed retracted. On iPhone that makes a 100vh box 50-160 CSS px taller than
+   what Safari actually paints at page load, so anything anchored to its bottom
+   edge (scroll indicator, skyline) lands under Safari's own bottom bar — not
+   painted, and not tappable, because the bar takes the touch. 100svh is the
+   SMALL viewport: chrome assumed expanded, i.e. the region the browser
+   guarantees to show. No pixel constant, no device measurement.
+
+   svh, not dvh: dvh re-sizes as the chrome collapses, and on iOS only after the
+   scroll ends (WebKit 266835). The dashboard's document offset IS this hero's
+   height, so a dvh hero would move the target out from under the smooth
+   scrollIntoView the indicator triggers.
+
+   The @supports wrapper is a real fallback and must stay in this shape: a plain
+   `height: 100vh; height: 100svh;` pair is stripped back to the svh line alone
+   by Tailwind's Lightning CSS pass (hardcoded Safari 16.4 target), which would
+   leave pre-Safari-15.4 browsers at height:auto — a ~300px stub, the map's
+   min-height, instead of a full-screen hero. */
+@utility h-hero {
+  height: 100vh;
+  @supports (height: 100svh) {
+    height: 100svh;
+  }
 }
 

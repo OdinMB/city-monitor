@@ -71,8 +71,8 @@ export function CommandLayout() {
 
   return (
     <>
-      {/* Upper zone: full-bleed hero map (100vh) */}
-      <div className="relative flex h-screen overflow-hidden">
+      {/* Upper zone: hero map — one *visible* screen tall, not 100vh (see @utility h-hero) */}
+      <div className="relative flex h-hero overflow-hidden">
         <Sidebar />
         <div ref={mapRef} className="flex-1 min-w-0 relative">
           <ErrorBoundary FallbackComponent={MapErrorFallback}>
