@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useCityConfig } from '../hooks/useCityConfig.js';
 import { PageShell } from '../components/layout/PageShell.js';
+import { safeUrl } from '../lib/safe-url.js';
 
 interface Source {
   name: string;
@@ -295,7 +296,7 @@ export function SourcesPage() {
                   className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm"
                 >
                   <a
-                    href={source.url}
+                    href={safeUrl(source.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"

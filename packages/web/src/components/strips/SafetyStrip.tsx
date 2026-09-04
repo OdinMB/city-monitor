@@ -3,6 +3,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useSafety } from '../../hooks/useSafety.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
+import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -31,7 +32,7 @@ export function SafetyStrip() {
           {reports.map((report) => (
             <a
               key={report.id}
-              href={report.url}
+              href={safeUrl(report.url)}
               target="_blank"
               rel="noopener noreferrer"
               className="block p-2.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"

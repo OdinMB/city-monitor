@@ -5,6 +5,7 @@ import { usePolitical } from '../../hooks/usePolitical.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { getPartyColor } from '../../lib/party-colors.js';
+import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -62,7 +63,7 @@ function RepRow({ rep }: { rep: Representative & { district: string } }) {
       <span className="text-gray-400 dark:text-gray-500 hidden @xs:inline ml-auto truncate">{rep.district}</span>
       {rep.profileUrl && (
         <a
-          href={rep.profileUrl}
+          href={safeUrl(rep.profileUrl)}
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-500 hover:text-blue-400 ml-auto shrink-0 @xs:ml-1"

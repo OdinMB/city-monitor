@@ -4,6 +4,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useEvents } from '../../hooks/useEvents.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -92,7 +93,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
           {event.price && <div>{event.price}</div>}
           {event.url && (
             <a
-              href={event.url}
+              href={safeUrl(event.url)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block text-blue-600 dark:text-blue-400 hover:underline"

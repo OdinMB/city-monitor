@@ -38,6 +38,18 @@ GitHub Actions workflow in `.github/workflows/ci.yml`. Runs on push/PR to `main`
 3. `npm run lint`
 4. `npm test`
 
+The workflow declares `permissions: contents: read`. This repo is public and CI runs on fork pull requests, so these jobs already execute PR-authored code (its test files, and install scripts from its own lockfile). That is contained, not prevented — read-only token, no secrets referenced, no deployment artifact (Render builds separately from `main`). Switching to `pull_request_target` or adding secrets here is a security change.
+
+## Dependency Advisories
+
+`npm audit` sits at **4 moderate, deliberately**. They are one dead chain: two deprecated `@esbuild-kit` packages, `drizzle-kit`, and an old esbuild beneath them. drizzle-kit's current release still declares it, only an unreleased 1.0 preview drops it, and that tool runs `db:migrate` on every deploy. `esbuild-kit` appears in drizzle-kit's `package.json` only — no source file loads it. Revisit when drizzle-kit 1.0 ships stable.
+
+**Never run `npm audit fix --force` here.** It "fixes" those rows by downgrading drizzle-kit several major versions and exceljs by about five years, to patch code that never executes.
+
+The root `package.json` carries `"overrides": { "uuid": "^11.1.1" }` because `node-cron` pinned `uuid` to exactly `8.3.2` and `exceljs` trails it, so no range bump reaches the patched version. 11.1.1 is the highest 11.x and the advisory's fix floor; 14.x drops the CommonJS entry point exceljs needs. Note that adding an override alone does not re-resolve an existing lockfile entry — `npm update uuid` is what actually moves it.
+
+Link targets from ingested feeds pass through `safeUrl()` (`packages/web/src/lib/safe-url.ts`) before reaching an `href`, because the deployed CSP allows inline script and would not block a `javascript:` URL. Apply it to any new feed-supplied link.
+
 ## Environment Variables
 
 | Variable | Service | Required | Source |

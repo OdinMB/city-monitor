@@ -1,5 +1,6 @@
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
+import { safeUrl } from '../../lib/safe-url.js';
 
 /**
  * Scrolling news ticker showing latest headlines in a continuous loop.
@@ -16,7 +17,7 @@ export function NewsMarquee() {
   const headlines = items.map((item) => (
     <a
       key={item.id}
-      href={item.url}
+      href={safeUrl(item.url)}
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1.5 whitespace-nowrap hover:text-[var(--accent)] transition-colors"

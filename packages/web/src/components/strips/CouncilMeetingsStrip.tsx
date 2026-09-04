@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useCouncilMeetings } from '../../hooks/useCouncilMeetings.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -80,7 +81,7 @@ function MeetingRow({ meeting, t, locale }: { meeting: CouncilMeeting; t: (key: 
         </div>
         {meeting.webUrl && (
           <a
-            href={meeting.webUrl}
+            href={safeUrl(meeting.webUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-1"

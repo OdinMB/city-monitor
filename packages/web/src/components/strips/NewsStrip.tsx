@@ -5,6 +5,7 @@ import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
+import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -148,7 +149,7 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
 
   return (
     <li className="py-2 first:pt-0 last:pb-0">
-      <a href={item.url} target="_blank" rel="noopener noreferrer" className="block group">
+      <a href={safeUrl(item.url)} target="_blank" rel="noopener noreferrer" className="block group">
         <span className="text-sm text-gray-900 dark:text-gray-100 group-hover:text-[var(--accent)] transition-colors line-clamp-2 sm:line-clamp-1">
           {item.title}
         </span>

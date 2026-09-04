@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAppointments } from '../../hooks/useAppointments.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -142,7 +143,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
         {/* Booking link */}
         <div className="pt-1 text-center">
           <a
-            href={data.bookingUrl}
+            href={safeUrl(data.bookingUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-blue-500 hover:underline"
