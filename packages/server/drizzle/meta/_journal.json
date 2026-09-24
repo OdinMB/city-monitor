@@ -43,6 +43,13 @@
       "when": 1772751824578,
       "tag": "0005_unified_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790213816790,
+      "tag": "0006_safety_geo_attempted",
+      "breakpoints": true
     }
   ]
 }

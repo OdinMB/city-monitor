@@ -69,7 +69,7 @@ Historical data accumulates and is cleaned by the data-retention cron.
 |---|---|---|
 | `snapshots` | cityId, type, data (JSONB), fetchedAt (timestamptz) | `snapshots_city_type_fetched_idx(cityId, type, fetchedAt)` |
 | `events` | cityId, title, venue, date, category, url, free, hash | `events_city_date_idx(cityId, date)` |
-| `safetyReports` | cityId, title, description, publishedAt, url, district, hash | `safety_city_published_idx(cityId, publishedAt)` |
+| `safetyReports` | cityId, title, description, publishedAt, url, district, lat/lon, locationLabel, geoAttempted, hash | `safety_city_published_idx(cityId, publishedAt)`, unique `safety_city_hash_idx(cityId, hash)` |
 | `newsItems` | cityId, hash, title, url, publishedAt, category, tier, relevantToCity, importance, lat/lon | `news_city_idx(cityId)`, unique `news_city_hash_idx(cityId, hash)` |
 | `geocodeLookups` | query, lat, lon, displayName, provider | `geocode_query_idx(query)` (unique) |
 | `aiSummaries` | cityId, headlineHash, summary, model, inputTokens, outputTokens | `summaries_city_generated_idx(cityId, generatedAt)` |

@@ -2,7 +2,7 @@ import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import type { SafetyReport } from '@city-monitor/shared';
 import { saveSafetyReports } from '../db/writes.js';
-import { loadSafetyCoords } from '../db/reads.js';
+import { loadSafetyGeoState, type SafetyGeoState } from '../db/reads.js';
 import { parseFeed } from '../lib/rss-parser.js';
 import { hashString } from '../lib/hash.js';
 import { getActiveCities } from '../config/index.js';
@@ -53,42 +53,22 @@ async function ingestCitySafety(cityId: string, cityName: string, policeConfig: 
     district: extractDistrict(item.title, policeConfig.districts),
   }));
 
-  // Carry over coordinates from DB for already-geocoded items
-  const hashes = reports.map((r) => r.id);
-  let existingCoords = new Map<string, SafetyReport['location']>();
+  // Carry over coordinates and the attempted marker from DB
+  let stored: SafetyGeoState = { coords: new Map(), attempted: new Set() };
   if (db) {
     try {
-      existingCoords = await loadSafetyCoords(db, cityId, hashes);
+      stored = await loadSafetyGeoState(db, cityId, reports.map((r) => r.id));
     } catch {
       // DB read failed — geocode everything fresh
     }
   }
 
   for (const report of reports) {
-    const stored = existingCoords.get(report.id);
-    if (stored) report.location = stored;
+    const location = stored.coords.get(report.id);
+    if (location) report.location = location;
   }
 
-  // LLM geolocation only for items without coordinates
-  const needsGeo = reports.filter((r) => !r.location);
-  if (needsGeo.length > 0) {
-    try {
-      const geoResults = await geolocateReports(
-        cityId,
-        cityName,
-        needsGeo.map((r) => ({ title: r.title, description: r.description })),
-      );
-      if (geoResults) {
-        for (const geo of geoResults) {
-          if (geo.lat != null && geo.lon != null && needsGeo[geo.index]) {
-            needsGeo[geo.index].location = { lat: geo.lat, lon: geo.lon, label: geo.locationLabel };
-          }
-        }
-      }
-    } catch {
-      log.warn(`${cityId} geolocation failed, continuing without`);
-    }
-  }
+  const geoAttempted = await geolocateNewReports(cityId, cityName, reports, stored.attempted);
 
   // Sort by most recent first
   reports.sort((a, b) =>
@@ -99,13 +79,52 @@ async function ingestCitySafety(cityId: string, cityName: string, policeConfig: 
 
   if (db) {
     try {
-      await saveSafetyReports(db, cityId, reports);
+      await saveSafetyReports(db, cityId, reports, geoAttempted);
     } catch (err) {
       log.error(`${cityId} DB write failed`, err);
     }
   }
 
   log.info(`${cityId}: ${reports.length} reports`);
+}
+
+/**
+ * Ask the LLM for locations of reports that have no coordinates and were never
+ * attempted, and set `location` on the ones it places. Returns the updated
+ * attempted set: after a successful call, every report sent that still has no
+ * coordinates is final (no label, left out, or the label did not geocode).
+ * A failed or rejected call marks nothing, so those reports are retried.
+ */
+async function geolocateNewReports(
+  cityId: string,
+  cityName: string,
+  reports: SafetyReport[],
+  previouslyAttempted: ReadonlySet<string>,
+): Promise<Set<string>> {
+  const attempted = new Set(previouslyAttempted);
+  const needsGeo = reports.filter((r) => !r.location && !attempted.has(r.id));
+  if (needsGeo.length === 0) return attempted;
+
+  try {
+    const geoResults = await geolocateReports(
+      cityId,
+      cityName,
+      needsGeo.map((r) => ({ title: r.title, description: r.description })),
+    );
+    if (!geoResults) return attempted;
+
+    for (const geo of geoResults) {
+      if (geo.lat != null && geo.lon != null && needsGeo[geo.index]) {
+        needsGeo[geo.index].location = { lat: geo.lat, lon: geo.lon, label: geo.locationLabel };
+      }
+    }
+    for (const report of needsGeo) {
+      if (!report.location) attempted.add(report.id);
+    }
+  } catch {
+    log.warn(`${cityId} geolocation failed, continuing without`);
+  }
+  return attempted;
 }
 
 function extractDistrict(title: string, districts?: string[]): string | undefined {

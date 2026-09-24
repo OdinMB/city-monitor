@@ -270,17 +270,23 @@ export async function loadEvents(db: Db, cityId: string): Promise<DbResult<CityE
   };
 }
 
+export interface SafetyGeoState {
+  /** Reports that already have coordinates. */
+  coords: Map<string, { lat: number; lon: number; label?: string }>;
+  /** Reports a successful LLM pass left without coordinates — not to be re-sent. */
+  attempted: Set<string>;
+}
+
 /**
- * Load coordinates for specific safety report hashes (cron dedup).
- * Returns a Map of hash → location for reports that have coordinates.
+ * Load the stored location state for specific safety report hashes (cron dedup).
  */
-export async function loadSafetyCoords(
+export async function loadSafetyGeoState(
   db: Db,
   cityId: string,
   hashes: string[],
-): Promise<Map<string, { lat: number; lon: number; label?: string }>> {
-  const map = new Map<string, { lat: number; lon: number; label?: string }>();
-  if (hashes.length === 0) return map;
+): Promise<SafetyGeoState> {
+  const state: SafetyGeoState = { coords: new Map(), attempted: new Set() };
+  if (hashes.length === 0) return state;
 
   const rows = await db
     .select({
@@ -288,16 +294,19 @@ export async function loadSafetyCoords(
       lat: safetyReports.lat,
       lon: safetyReports.lon,
       locationLabel: safetyReports.locationLabel,
+      geoAttempted: safetyReports.geoAttempted,
     })
     .from(safetyReports)
     .where(and(eq(safetyReports.cityId, cityId), inArray(safetyReports.hash, hashes)));
 
   for (const row of rows) {
     if (row.lat != null && row.lon != null) {
-      map.set(row.hash, { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined });
+      state.coords.set(row.hash, { lat: row.lat, lon: row.lon, label: row.locationLabel ?? undefined });
+    } else if (row.geoAttempted) {
+      state.attempted.add(row.hash);
     }
   }
-  return map;
+  return state;
 }
 
 export async function loadSafetyReports(db: Db, cityId: string): Promise<DbResult<SafetyReport[]>> {

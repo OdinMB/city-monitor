@@ -27,6 +27,10 @@ interface SafetyReport {
 
 Currently hardcoded to Berlin districts (Mitte, Kreuzberg, etc.). Hamburg uses presseportal.de RSS (no district extraction yet).
 
+### Location Extraction
+
+Map pins come from two steps: `geolocateReports()` (`lib/openai.ts`, model `OPENAI_GEO_MODEL`, falling back to `OPENAI_FILTER_MODEL`) asks the LLM for a location label per report, then `geocode()` turns the label into coordinates. Coordinates carry over by hash via `loadSafetyGeoState()`, so a placed report is never re-sent. `safety_reports.geo_attempted` stops the other re-send: once a *successful* LLM pass leaves a report without coordinates (no label, left out, or label did not geocode), it is marked and skipped on every later run. A failed call, or a response rejected by `checkBatchIndices`, marks nothing, so those reports are retried. The marker lives only in the DB row — it is not part of `SafetyReport` and never reaches the cache or API. Cache-only mode (no `DATABASE_URL`) still re-sends every unplaced report each run.
+
 ### Data Sources
 
 - **Berlin:** `https://www.berlin.de/polizei/polizeimeldungen/index.php/rss`
@@ -73,4 +77,4 @@ German keywords in event title determine category: Konzert/Musik -> music, Ausst
 ## DB Schema
 
 - `events` table — cityId, title, venue, date, category, url, free, hash. Indexed by `events_city_date_idx(cityId, date)`. Persisted via `saveEvents()` on every ingestion run.
-- `safetyReports` table — cityId, title, description, publishedAt, url, district, hash. Indexed by `safety_city_published_idx(cityId, publishedAt)`. Persisted via `saveSafetyReports()`. Data retention: reports older than 7 days are pruned nightly.
+- `safetyReports` table — cityId, title, description, publishedAt, url, district, lat, lon, locationLabel, geoAttempted, hash. Indexed by `safety_city_published_idx(cityId, publishedAt)`, unique on (cityId, hash). Persisted via `saveSafetyReports(db, cityId, reports, geoAttempted)` (UPSERT). Data retention: rows not refreshed (`fetchedAt`) for 3 days are pruned nightly.

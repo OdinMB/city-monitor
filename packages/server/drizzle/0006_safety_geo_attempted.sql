@@ -1,0 +1,1 @@
+ALTER TABLE "safety_reports" ADD COLUMN "geo_attempted" boolean DEFAULT false NOT NULL;

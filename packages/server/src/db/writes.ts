@@ -241,7 +241,17 @@ export async function saveEvents(db: Db, cityId: string, _source: string, items:
   });
 }
 
-export async function saveSafetyReports(db: Db, cityId: string, reports: SafetyReport[]): Promise<void> {
+/**
+ * @param geoAttempted hashes whose LLM location pass is done without a result.
+ *   The marker is persisted here only — it stays out of `SafetyReport`, so it
+ *   never reaches the cache or the API.
+ */
+export async function saveSafetyReports(
+  db: Db,
+  cityId: string,
+  reports: SafetyReport[],
+  geoAttempted: ReadonlySet<string> = new Set(),
+): Promise<void> {
   if (reports.length === 0) return;
   await db.insert(safetyReports).values(
     reports.map((r) => ({
@@ -254,6 +264,7 @@ export async function saveSafetyReports(db: Db, cityId: string, reports: SafetyR
       lat: r.location?.lat ?? null,
       lon: r.location?.lon ?? null,
       locationLabel: r.location?.label ?? null,
+      geoAttempted: geoAttempted.has(r.id),
       hash: r.id,
     })),
   ).onConflictDoUpdate({
@@ -264,6 +275,7 @@ export async function saveSafetyReports(db: Db, cityId: string, reports: SafetyR
       lat: sql`excluded.lat`,
       lon: sql`excluded.lon`,
       locationLabel: sql`excluded.location_label`,
+      geoAttempted: sql`excluded.geo_attempted`,
       fetchedAt: sql`now()`,
     },
   });

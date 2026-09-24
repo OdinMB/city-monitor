@@ -80,6 +80,21 @@ describe('DB writes', () => {
     await saveSafetyReports(db, 'berlin', reports as unknown as SafetyReport[]);
     expect(insert).toHaveBeenCalledOnce();
     expect(onConflictDoUpdate).toHaveBeenCalledOnce();
+    expect(values.mock.calls[0]![0]).toEqual([expect.objectContaining({ hash: '1', geoAttempted: false })]);
+  });
+
+  it('saveSafetyReports marks only the reports in the attempted set', async () => {
+    const reports = [
+      { id: 'tried', title: 'A', description: '', publishedAt: '2026-03-01T00:00:00Z', url: 'https://example.com/a' },
+      { id: 'placed', title: 'B', description: '', publishedAt: '2026-03-01T00:00:00Z', url: 'https://example.com/b', location: { lat: 52.5, lon: 13.4 } },
+    ] as SafetyReport[];
+
+    await saveSafetyReports(db, 'berlin', reports, new Set(['tried']));
+    expect(values.mock.calls[0]![0]).toEqual([
+      expect.objectContaining({ hash: 'tried', geoAttempted: true }),
+      expect.objectContaining({ hash: 'placed', geoAttempted: false }),
+    ]);
+    expect(onConflictDoUpdate.mock.calls[0]![0].set).toHaveProperty('geoAttempted');
   });
 
   it('saveSummary inserts a new summary row', async () => {

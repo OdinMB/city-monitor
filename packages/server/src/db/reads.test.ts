@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadSummary, loadAirQualityGrid, loadPollen, loadNoiseSensors } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadSafetyGeoState, loadSummary, loadAirQualityGrid, loadPollen, loadNoiseSensors } from './reads.js';
 import type { Db } from './index.js';
 
 /**
@@ -141,6 +141,26 @@ describe('DB reads', () => {
     const result = await loadSafetyReports(db, 'berlin');
     expect(result!.data).toHaveLength(1);
     expect(result!.data[0].district).toBe('Mitte');
+  });
+
+  it('loadSafetyGeoState separates placed reports from attempted-without-location ones', async () => {
+    const db = createMockDb([
+      { hash: 'placed', lat: 52.52, lon: 13.40, locationLabel: 'Mitte', geoAttempted: false },
+      { hash: 'attempted', lat: null, lon: null, locationLabel: null, geoAttempted: true },
+      { hash: 'fresh', lat: null, lon: null, locationLabel: null, geoAttempted: false },
+    ]);
+    const state = await loadSafetyGeoState(db, 'berlin', ['placed', 'attempted', 'fresh']);
+    expect([...state.coords.keys()]).toEqual(['placed']);
+    expect(state.coords.get('placed')).toEqual({ lat: 52.52, lon: 13.40, label: 'Mitte' });
+    expect([...state.attempted]).toEqual(['attempted']);
+  });
+
+  it('loadSafetyGeoState skips the query when there are no hashes', async () => {
+    const db = createMockDb([]);
+    const state = await loadSafetyGeoState(db, 'berlin', []);
+    expect(state.coords.size).toBe(0);
+    expect(state.attempted.size).toBe(0);
+    expect(db.select).not.toHaveBeenCalled();
   });
 
   it('loadSummary returns null when no rows', async () => {

@@ -69,6 +69,8 @@ export const safetyReports = pgTable('safety_reports', {
   lat: real('lat'),
   lon: real('lon'),
   locationLabel: text('location_label'),
+  /** A successful LLM location pass left this report without coordinates — never re-send it. */
+  geoAttempted: boolean('geo_attempted').notNull().default(false),
   hash: text('hash').notNull(),
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [
