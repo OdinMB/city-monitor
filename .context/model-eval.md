@@ -35,12 +35,12 @@ npm run eval:models --workspace=packages/server -- --out ../../DOCS/<date>_<name
 ## What it writes (`<out>/`)
 
 - `results.md` — per-site tables, which rules each candidate passed, the winners, the rated briefing arms, a Turkish/Arabic back-translation table for the operator to fill in, and spend.
-- `rating-sets.json` + `rating-key.json` — blind rating of German and English briefings (≤ 3 items per language; baseline, best Luna, best Sol per item; options shuffled per item id). A leak guard refuses to write if a model name appears anywhere except inside an item whose own headlines contain the same string.
+- `rating-sets.json` + `rating-key.json` — blind rating of German and English briefings (≤ 3 items per language; baseline, best Luna, best Sol per item). Option order is balanced across the file — every ordering used equally often, in a seeded sequence — because a hash per item alone put the same order on 5 of 6 items in a real run. A leak guard refuses to write if a model name appears anywhere except inside an item whose own headlines contain the same string.
 - `data/` — `inputs.json`, `calls.jsonl` (every call record incl. parsed output), `briefings.json`, `tr-ar-review.md`, `spend-log.json` (cumulative across runs).
 
 ## Where the rules live
 
-- `extraction-scoring.ts` — metrics and the automatic decision rules R1–R5 for news and police (first passing candidate in cost order wins).
+- `extraction-scoring.ts` — metrics and the automatic decision rules R1–R5 for news and police (first passing candidate in cost order wins). For police, a report left out of an accepted response is scored as "no location", not as a defect: GPT-6 Luna answers the prompt's "omit the locationLabel field" by leaving the item out, and production marks it attempted exactly like a null. A news item left out stays a defect (production re-sends it). The news table also shows "Briefing-eligible" (relevant and importance > 0.5, the summarize job's cut-off).
 - `briefing-scoring.ts` — hard checks (present, right language, no Markdown, length), soft signals, arm ranking, rating selection.
 - `call-stats.ts` — failure classification (refusal = empty content, truncated = `finish_reason: length`, else unparseable; LangChain 1.2.11 hides the refusal text) and latency/token/cost stats.
 - `inputs.ts` — live sampling and `buildBriefingInputs` (sliding 24h windows, 4h apart, ordered and cut exactly as the summarize job does via `compareDigestOrder`, `applyDropLogic`, `selectBriefingItems`).

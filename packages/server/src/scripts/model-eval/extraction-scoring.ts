@@ -28,6 +28,12 @@ export interface Coverage {
   rejected: number;
   /** Sample items without an accepted verdict, whatever the cause. */
   missing: number;
+  /**
+   * The part of `missing` left out of accepted responses. For police this is
+   * how several models answer "no location" (the prompt says to omit the
+   * field), and production marks such a report attempted exactly like a null.
+   */
+  omitted: number;
   duplicates: number;
   outOfRange: number;
 }
@@ -39,6 +45,7 @@ export function collectVerdicts(
 ): { verdicts: Map<string, ExtractionItem>; coverage: Coverage } {
   const verdicts = new Map<string, ExtractionItem>();
   let rejected = 0;
+  let omitted = 0;
   let duplicates = 0;
   let outOfRange = 0;
 
@@ -54,10 +61,11 @@ export function collectVerdicts(
       continue;
     }
     duplicates += checked.duplicates;
+    omitted += size - checked.items.length;
     for (const item of checked.items) verdicts.set(record.inputIds[item.index]!, item);
   }
 
-  return { verdicts, coverage: { rejected, missing: n - verdicts.size, duplicates, outOfRange } };
+  return { verdicts, coverage: { rejected, missing: n - verdicts.size, omitted, duplicates, outOfRange } };
 }
 
 /** Letters outside the Latin script, control characters, leaked tokens, or > 80 chars. */
@@ -125,6 +133,8 @@ export interface ExtractionMetrics extends CallStats, Coverage {
   labelRate: number;
   geocodedRate: number;
   onMapRate: number;
+  /** News: relevant and importance > 0.5 (the briefing's cut-off), over all sample items. */
+  briefingEligibleRate?: number;
   relevanceAgreement?: number;
   categoryAgreement?: number;
   importanceFlips?: number;
@@ -200,6 +210,9 @@ export function scoreExtraction(
     labelRate: ratio(labels.length, ctx.n),
     geocodedRate: ratio(points.length, ctx.n),
     onMapRate: ratio(points.filter((p) => inBox(p, ctx.bbox)).length, ctx.n),
+    ...(site === 'news'
+      ? { briefingEligibleRate: ratio(items.map(normalizeVerdict).filter((v) => v.relevant_to_city && v.importance > 0.5).length, ctx.n) }
+      : {}),
     ...(baseline ? compareWithBaseline(site, verdicts, baseline, cityLower) : {}),
     costPerMonth: stats.costPerCall * ctx.volume,
   };
@@ -232,15 +245,19 @@ const pct = (v: number | undefined) => (v === undefined ? 'n/a' : `${(v * 100).t
 
 function evaluateCandidate(site: ExtractionSite, b: ExtractionMetrics, c: ExtractionMetrics): CandidateEvaluation {
   const failures = c.refusals + c.truncated + c.parseErrors;
-  const defects = (m: ExtractionMetrics) => m.missing + m.duplicates + m.outOfRange;
+  // A police report left out of an accepted response ends up exactly like a null
+  // label in production (marked attempted, no pin), so it is not a defect there.
+  const lost = (m: ExtractionMetrics) => (site === 'police' ? m.missing - m.omitted : m.missing);
+  const defects = (m: ExtractionMetrics) => lost(m) + m.duplicates + m.outOfRange;
   const defectLimit = Math.max(defects(b), 0.01 * c.n);
   const onMapTolerance = Math.max(0.03, 1 / c.n);
+  const omittedNote = site === 'police' && c.omitted > 0 ? ` (${c.omitted} left out = no location, not counted)` : '';
 
   const rules: RuleResult[] = [
     {
       id: 'R1',
       pass: c.apiErrors === 0 && failures === 0 && c.rejected === 0 && defects(c) <= defectLimit + EPSILON,
-      detail: `${c.apiErrors} API errors, ${failures} refusal/truncated/unparseable, ${c.rejected} rejected responses, ${defects(c)} missing or invalid-index items (limit ${defectLimit.toFixed(1)})`,
+      detail: `${c.apiErrors} API errors, ${failures} refusal/truncated/unparseable, ${c.rejected} rejected responses, ${defects(c)} missing or invalid-index items${omittedNote} (limit ${defectLimit.toFixed(1)})`,
     },
     {
       id: 'R2',

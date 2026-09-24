@@ -70,6 +70,30 @@ export function shuffleForItem<T>(itemId: string, values: readonly T[]): T[] {
   return out;
 }
 
+function permutations(n: number): number[][] {
+  if (n <= 1) return [Array.from({ length: n }, (_, i) => i)];
+  return permutations(n - 1).flatMap((perm) =>
+    Array.from({ length: n }, (_, at) => [...perm.slice(0, at), n - 1, ...perm.slice(at)]));
+}
+
+/**
+ * Option order per item, as indices into that item's arm list. A hash per item
+ * alone can repeat one order on most items of a small file (it did: 5 of 6), so
+ * a rater could learn which slot holds which arm. Instead every ordering is used
+ * equally often across the file, in a sequence shuffled by a seed from all item
+ * ids: deterministic, and each arm lands in each slot about equally often.
+ */
+function balancedOrders(items: ReadonlyArray<{ id: string; size: number }>): number[][] {
+  const seed = items.map((i) => i.id).join('|');
+  const used = new Map<number, number>();
+  return items.map(({ size }) => {
+    const pool = shuffleForItem(`${seed}#${size}`, permutations(size));
+    const k = used.get(size) ?? 0;
+    used.set(size, k + 1);
+    return pool[k % pool.length]!;
+  });
+}
+
 function formatBerlinTime(iso: string): string {
   return new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/Berlin',
@@ -125,16 +149,22 @@ export function buildRatingSets(source: {
   const ratingKey: RatingKey = {};
   const headlinesByItem = new Map<string, string>();
   const langs = [...new Set(source.picks.map((p) => p.lang))];
+  const setIdOf = (lang: string) => `city-monitor-briefing-${lang}`;
+  const itemIdOf = (lang: string, i: number) => `${setIdOf(lang)}-${String(i + 1).padStart(2, '0')}`;
+
+  const planned = langs.flatMap((lang) => source.picks.filter((p) => p.lang === lang)
+    .map((pick, i) => ({ id: itemIdOf(lang, i), size: pick.armIds.length })));
+  const orders = new Map(balancedOrders(planned).map((order, i) => [planned[i]!.id, order]));
 
   const sets = langs.map((lang): RatingSet => {
     const language = LANGUAGE_TITLES[lang] ?? lang;
-    const setId = `city-monitor-briefing-${lang}`;
+    const setId = setIdOf(lang);
     const items = source.picks.filter((p) => p.lang === lang).map((pick, i): RatingItem => {
-      const id = `${setId}-${String(i + 1).padStart(2, '0')}`;
+      const id = itemIdOf(lang, i);
       const { windowEnd, headlineList } = source.context(pick.inputId);
       headlinesByItem.set(id, headlineList);
 
-      const order = shuffleForItem(id, pick.armIds);
+      const order = orders.get(id)!.map((k) => pick.armIds[k]!);
       ratingKey[id] = Object.fromEntries(order.map((armId, j) => [LABELS[j]!, armId]));
       return {
         id,
@@ -202,16 +232,16 @@ function table(header: string[], rows: Array<Array<string | number>>): string {
 function extractionTable(section: ExtractionSection): string {
   const news = section.site === 'news';
   const header = [
-    'Arm', 'Calls', 'API errors', 'Refusals', 'Truncated', 'Unparseable', 'Rejected responses', 'Missing items',
+    'Arm', 'Calls', 'API errors', 'Refusals', 'Truncated', 'Unparseable', 'Rejected responses', 'Missing items', 'of which left out',
     ...(news ? ['Invalid values'] : []), 'Junk labels',
-    ...(news ? ['Relevance agr.', 'Category agr.', 'Importance flips'] : []), 'Same label',
+    ...(news ? ['Relevance agr.', 'Category agr.', 'Importance flips', 'Briefing-eligible'] : []), 'Same label',
     'Label rate', 'Geocoded', 'On map', 'p50 / p95 ms', 'Tokens in / out (reasoning)', '$ / call', '$ / month',
   ];
   const rows = section.metrics.map((m) => [
     m.arm === section.baselineArm ? `${m.arm} (today)` : m.arm,
-    m.calls, m.apiErrors, m.refusals, m.truncated, m.parseErrors, m.rejected, m.missing + m.duplicates,
+    m.calls, m.apiErrors, m.refusals, m.truncated, m.parseErrors, m.rejected, m.missing + m.duplicates, m.omitted,
     ...(news ? [m.invalidValues] : []), m.junkLabels,
-    ...(news ? [pct(m.relevanceAgreement), pct(m.categoryAgreement), pct(m.importanceFlips)] : []), pct(m.sameLabelRate),
+    ...(news ? [pct(m.relevanceAgreement), pct(m.categoryAgreement), pct(m.importanceFlips), pct(m.briefingEligibleRate)] : []), pct(m.sameLabelRate),
     pct(m.labelRate), pct(m.geocodedRate), pct(m.onMapRate),
     `${int(m.p50Ms)} / ${int(m.p95Ms)}`,
     `${int(m.meanInTok)} / ${int(m.meanOutTok)} (${int(m.meanReasoningTok)})`,
@@ -241,7 +271,10 @@ function extractionSection(title: string, section: ExtractionSection | null, not
     `## ${title}`,
     note,
     extractionTable(section),
-    '"Missing items" counts items without an accepted verdict (failed calls, rejected responses, omitted or duplicate indices). Rates are over all sample items.',
+    '"Missing items" counts items without an accepted verdict (failed calls, rejected responses, omitted or duplicate indices); "of which left out" is the part a successful response simply did not return. Rates are over all sample items.',
+    section.site === 'news'
+      ? '"Briefing-eligible" is the share of items marked relevant with importance above 0.5, the cut-off for the daily briefing. "Importance flips" counts items that cross that cut-off relative to the baseline, in either direction.'
+      : 'Several models answer "no location" by leaving the report out rather than returning null — the prompt says to "omit the locationLabel field". Production marks a left-out report attempted exactly like a null one, so R1 does not count left-out police reports as defects.',
     '### Rules per candidate',
     ruleLines(section.evaluations),
     section.fallbackRan ? 'No GPT-6 candidate passed, so the gpt-5.6-luna fallback arms ran with the same rules.' : '',

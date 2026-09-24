@@ -62,7 +62,7 @@ describe('collectVerdicts', () => {
       3,
     );
     expect([...verdicts.keys()]).toEqual(['a', 'c']);
-    expect(coverage).toEqual({ rejected: 0, missing: 1, duplicates: 1, outOfRange: 0 });
+    expect(coverage).toEqual({ rejected: 0, missing: 1, omitted: 1, duplicates: 1, outOfRange: 0 });
   });
 
   it('counts a 1-based batch as rejected and all of its items as missing', () => {
@@ -74,12 +74,13 @@ describe('collectVerdicts', () => {
       4,
     );
     expect([...verdicts.keys()]).toEqual(['a', 'b']);
-    expect(coverage).toEqual({ rejected: 1, missing: 2, duplicates: 0, outOfRange: 1 });
+    expect(coverage).toEqual({ rejected: 1, missing: 2, omitted: 0, duplicates: 0, outOfRange: 1 });
   });
 
-  it('counts the items of failed calls as missing', () => {
+  it('counts the items of failed calls as missing but not as omitted', () => {
     const { coverage } = collectVerdicts([record(['a', 'b'], null)], 2);
     expect(coverage.missing).toBe(2);
+    expect(coverage.omitted).toBe(0);
   });
 });
 
@@ -104,6 +105,9 @@ describe('scoreExtraction', () => {
     expect(candidate.metrics.relevanceAgreement).toBe(0.75);
     expect(candidate.metrics.importanceFlips).toBe(0.5);
     expect(candidate.metrics.categoryAgreement).toBe(1);
+    // Relevant and above the briefing's > 0.5 cut-off, over all sample items.
+    expect(baseline.metrics.briefingEligibleRate).toBe(0.5);
+    expect(candidate.metrics.briefingEligibleRate).toBe(0.5);
   });
 
   it('leaves agreement undefined when there is nothing to compare', () => {
@@ -144,7 +148,7 @@ function metrics(over: Partial<ExtractionMetrics> = {}): ExtractionMetrics {
   return {
     arm: 'arm', site: 'news', n: 1000, calls: 100,
     apiErrors: 0, refusals: 0, truncated: 0, parseErrors: 0,
-    rejected: 0, missing: 0, duplicates: 0, outOfRange: 0,
+    rejected: 0, missing: 0, omitted: 0, duplicates: 0, outOfRange: 0,
     invalidValues: 0, junkLabels: 0, junkExamples: [],
     labelRate: 0.8, geocodedRate: 0.6, onMapRate: 0.5,
     relevanceAgreement: 0.95, categoryAgreement: 0.9, importanceFlips: 0.05, sameLabelRate: 0.7,
@@ -175,6 +179,18 @@ describe('decideExtraction', () => {
     const base = metrics({ arm: 'base', n: 20, onMapRate: 10 / 20 });
     expect(decideExtraction('news', base, [metrics({ arm: 'c', n: 20, onMapRate: 9 / 20 })]).winner).toBe('c');
     expect(decideExtraction('news', base, [metrics({ arm: 'c', n: 20, onMapRate: 8 / 20 })]).winner).toBeNull();
+  });
+
+  it('treats police items left out of an accepted response as "no location", but news omissions as defects', () => {
+    // Production marks an omitted police report attempted exactly like a null label;
+    // an omitted news item stays unassessed and is re-sent next run.
+    // n = 100: the defect limit is one item.
+    const omitting = { n: 100, missing: 6, omitted: 6 };
+    const policeBase = metrics({ arm: 'base', site: 'police', n: 100 });
+    expect(decideExtraction('police', policeBase, [metrics({ arm: 'c', site: 'police', ...omitting })]).winner).toBe('c');
+    expect(decideExtraction('news', metrics({ arm: 'base', n: 100 }), [metrics({ arm: 'c', ...omitting })]).winner).toBeNull();
+    // Items lost for any other reason still count against a police candidate.
+    expect(decideExtraction('police', policeBase, [metrics({ arm: 'c', site: 'police', n: 100, missing: 8, omitted: 6 })]).winner).toBeNull();
   });
 
   it('fails a candidate with a rejected batch or a refusal', () => {

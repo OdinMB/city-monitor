@@ -63,6 +63,19 @@ describe('buildRatingSets', () => {
     expect(new Set(baselineLabels).size).toBeGreaterThan(1);
   });
 
+  it('puts every arm under every label equally often across the file', () => {
+    // 6 items × 3 options: each arm is A, B and C exactly twice. A hash per item
+    // alone gave one real file the same order on 5 of 6 items.
+    for (const arm of ARMS) {
+      const labels = items.map((item) => Object.entries(ratingKey[item.id]!).find(([, a]) => a === arm)![0]).sort();
+      expect(labels).toEqual(['A', 'A', 'B', 'B', 'C', 'C']);
+    }
+  });
+
+  it('gives the same orders when built again from the same picks', () => {
+    expect(build(picksFor(['in1', 'in2', 'in3'])).ratingKey).toEqual(ratingKey);
+  });
+
   it('shows the headlines the writer received as context', () => {
     expect(items[0]!.context_md).toContain('1. Senat beschließt Haushalt');
   });
