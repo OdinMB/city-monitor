@@ -129,13 +129,19 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `DATABASE_URL` | No | — | Postgres connection string. Cache-only mode if not set. |
 | `OPENAI_API_KEY` | No | — | Enables AI summarization. Skipped if not set. |
 | `OPENAI_MODEL` | No | `gpt-5-mini` | OpenAI model for summaries |
-| `OPENAI_FILTER_MODEL` | No | `gpt-5-nano` | Model for news filtering + location extraction |
+| `OPENAI_SUMMARY_EFFORT` | No | _(unset = API default)_ | Reasoning effort for summaries |
+| `OPENAI_FILTER_MODEL` | No | `gpt-5-nano` | Model for news classification + location labels |
+| `OPENAI_FILTER_EFFORT` | No | _(unset = API default)_ | Reasoning effort for news classification |
+| `OPENAI_GEO_MODEL` | No | `OPENAI_FILTER_MODEL` | Model for police-report location extraction |
+| `OPENAI_GEO_EFFORT` | No | _(unset = API default)_ | Reasoning effort for police-report location extraction |
 | `ACTIVE_CITIES` | No | `berlin` | Comma-separated city IDs |
 | `APONET_TOKEN` | No | _(community token)_ | aponet.de API token for emergency pharmacies |
 | `LOCATIONIQ_TOKEN` | No | — | LocationIQ geocoding token. Used as fallback when Nominatim is rate-limited. |
 | `WAQI_API_TOKEN` | No | — | WAQI air quality API token. AQ grid skipped if not set. |
 | `TOMTOM_API_KEY` | No | — | TomTom traffic API key. Traffic skipped if not set. |
 | `FIRECRAWL_API_KEY` | No | — | Firecrawl v2 API key for Bürgeramt appointment scraping. Appointments skipped if not set. |
+
+**Reasoning effort values** depend on the model family. `gpt-5`, `gpt-5-mini`, `gpt-5-nano` (dated or not): `minimal | low | medium | high`. `gpt-5.<n>-*` and `gpt-6-*`: `none | low | medium | high | xhigh | max` (GPT-6 rejects `minimal`). A value outside the model's set is logged and ignored, never sent. Effort reaches the API through `modelKwargs.reasoning_effort` — LangChain's own `reasoning` option is silently dropped for `gpt-6-*` IDs by @langchain/openai 1.2.x. Max tokens, temperature and top_p are never set.
 
 ## Utility Libraries
 
@@ -147,3 +153,5 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `lib/classifier.ts` | German keyword-based headline classification into 8 categories. |
 | `lib/geocode.ts` | Nominatim-first geocoding (1 QPS, free). Falls back to LocationIQ when rate-limited and `LOCATIONIQ_TOKEN` is set. |
 | `lib/parse-history.ts` | Parses `?history=Nd` query params. Used by history endpoints. |
+| `lib/llm-client.ts` | Per-call-site model + reasoning effort (`resolveSiteTarget`), `getModel`, the single structured-output call path `invokeStructured`, and `MODEL_PRICING`. |
+| `lib/llm-prompts.ts` | The three LLM prompts and Zod schemas behind request builders (`buildBriefingRequest`, `buildFilterRequest`, `buildGeoRequest`), shared by production and the model-eval harness. |

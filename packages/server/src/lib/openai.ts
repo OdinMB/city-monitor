@@ -1,12 +1,13 @@
 /**
- * LLM client for news summarization, relevance filtering, and geolocation.
- * Uses LangChain's ChatOpenAI with Zod-validated structured output.
+ * LLM pipelines for news summarization, relevance filtering, and geolocation:
+ * batching, index checks, geocoding of extracted labels, and usage tracking.
+ * Model selection and the call path live in llm-client.ts; prompts and
+ * schemas in llm-prompts.ts.
  */
 
-import { ChatOpenAI } from '@langchain/openai';
-import { AIMessage, SystemMessage, HumanMessage } from '@langchain/core/messages';
-import { z } from 'zod';
 import { createLogger } from './logger.js';
+import { resolveSiteTarget, invokeStructured, describeTarget, estimateCostUsd, type ModelTarget } from './llm-client.js';
+import { buildBriefingRequest, buildFilterRequest, buildGeoRequest, VALID_CATEGORIES, type FilterResult } from './llm-prompts.js';
 
 const log = createLogger('openai');
 
@@ -45,6 +46,35 @@ export function stripBareCityLabel(label: string | null | undefined, cityLower: 
   return label;
 }
 
+export type BatchIndexCheck<T> =
+  | { ok: true; items: T[]; duplicates: number }
+  | { ok: false; reason: string };
+
+/**
+ * Validate the item indices of one model response against a request of `n`
+ * items numbered 0..n-1.
+ *
+ * Any non-integer or out-of-range index rejects the whole response: it is the
+ * signature of a numbering shift (e.g. a model counting from 1), and then every
+ * other verdict in the response belongs to a neighbouring item. Dropping only
+ * the bad index would lose the last item and still mis-assign the rest.
+ * On a duplicate index the first occurrence wins.
+ */
+export function checkBatchIndices<T extends { index: number }>(items: readonly T[], n: number): BatchIndexCheck<T> {
+  const invalid = items.filter((item) => !Number.isInteger(item.index) || item.index < 0 || item.index >= n);
+  if (invalid.length > 0) {
+    return { ok: false, reason: `${invalid.length} of ${items.length} indices outside 0..${n - 1} (first: ${invalid[0]!.index})` };
+  }
+  const seen = new Set<number>();
+  const kept: T[] = [];
+  for (const item of items) {
+    if (seen.has(item.index)) continue;
+    seen.add(item.index);
+    kept.push(item);
+  }
+  return { ok: true, items: kept, duplicates: items.length - kept.length };
+}
+
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
@@ -53,70 +83,38 @@ export function isConfigured(): boolean {
   return !!process.env.OPENAI_API_KEY;
 }
 
-function getModel(modelName: string): ChatOpenAI {
-  return new ChatOpenAI({ model: modelName });
-}
-
 // ---------------------------------------------------------------------------
 // Briefing summarization
 // ---------------------------------------------------------------------------
-
-const LANGUAGE_NAMES: Record<string, string> = {
-  de: 'German',
-  en: 'English',
-  tr: 'Turkish',
-  ar: 'Arabic',
-};
 
 export async function summarizeHeadlines(
   cityName: string,
   items: Array<{ title: string; description?: string }>,
   langs: string[],
-): Promise<{ briefings: Record<string, string>; cached: boolean; inputTokens: number; outputTokens: number } | null> {
+): Promise<{ briefings: Record<string, string>; cached: boolean; inputTokens: number; outputTokens: number; model: string } | null> {
   if (!isConfigured() || langs.length === 0) return null;
 
-  const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
-
-  const langDescriptions = langs
-    .map((l) => `"${l}": ${LANGUAGE_NAMES[l] ?? l}`)
-    .join(', ');
-
-  const briefingShape = z.object(
-    Object.fromEntries(langs.map((l) => [
-      l,
-      z.string().describe(`The editorial briefing in ${LANGUAGE_NAMES[l] ?? l}`),
-    ])) as Record<string, z.ZodString>,
-  );
-  const BriefingSchema = z.object({ briefings: briefingShape });
+  const target = resolveSiteTarget('summary');
 
   try {
-    log.info(`summarizing ${items.length} headlines for ${cityName} in [${langs.join(', ')}]…`);
-    const start = performance.now();
+    log.info(`summarizing ${items.length} headlines for ${cityName} in [${langs.join(', ')}] with ${describeTarget(target)}…`);
 
-    const structured = getModel(model).withStructuredOutput(BriefingSchema, { includeRaw: true });
+    const result = await invokeStructured(target, buildBriefingRequest(cityName, items, langs));
+    log.info(`${cityName}: done in ${result.ms}ms (${result.inTok}in/${result.outTok}out tokens)`);
 
-    const itemList = items
-      .map((item, i) => `${i + 1}. ${item.title}${item.description ? ` — ${item.description.slice(0, 120)}` : ''}`)
-      .join('\n');
+    trackUsage(cityName.toLowerCase(), target.model, result.inTok, result.outTok);
 
-    const result = await structured.invoke([
-      new SystemMessage(`You are a local news editor writing a brief daily digest for ${cityName}. Write exactly two short paragraphs in an editorial voice that weave together the most important local developments from the stories below. Don't just list headlines — synthesize, contextualize, and highlight what matters most for daily life in ${cityName} (transit, safety, local politics, weather). Aim for ~120 words per language. Write the briefing in each of these languages: ${langDescriptions}. Return an object with keys: ${langs.join(', ')}. If nothing is locally relevant, use a single dash (-) for that language.`),
-      new HumanMessage(itemList),
-    ]);
-
-    const ms = Math.round(performance.now() - start);
-    const raw = result.raw as AIMessage;
-    const inTok = raw.usage_metadata?.input_tokens ?? 0;
-    const outTok = raw.usage_metadata?.output_tokens ?? 0;
-    log.info(`${cityName}: done in ${ms}ms (${inTok}in/${outTok}out tokens)`);
-
-    trackUsage(cityName.toLowerCase(), model, inTok, outTok);
+    if (!result.parsed) {
+      log.error(`summarization for ${cityName} returned an unparseable response`);
+      return null;
+    }
 
     return {
       briefings: result.parsed.briefings,
       cached: false,
-      inputTokens: inTok,
-      outputTokens: outTok,
+      inputTokens: result.inTok,
+      outputTokens: result.outTok,
+      model: target.model,
     };
   } catch (err) {
     log.error(`summarization failed for ${cityName}`, err);
@@ -138,67 +136,47 @@ export interface FilteredItem {
   locationLabel?: string;
 }
 
-const FilterResultSchema = z.object({
-  items: z.array(z.object({
-    index: z.number(),
-    relevant_to_city: z.boolean(),
-    category: z.string(),
-    importance: z.number(),
-    locationLabel: z.string().nullable(),
-  })),
-});
-
-const VALID_CATEGORIES = new Set(['local', 'politics', 'transit', 'culture', 'crime', 'weather', 'economy', 'sports']);
-
 /** Items per LLM request — small batches yield more reliable structured output. */
-const LLM_BATCH_SIZE = 10;
+export const LLM_BATCH_SIZE = 10;
 
-function buildFilterPrompt(cityName: string): string {
-  return `You are a local news editor for ${cityName}. For each headline below, determine:
+type FilterVerdict = FilterResult['items'][number];
 
-1. **relevant_to_city** (true/false): Is this specifically about ${cityName} or its immediate region? National/international news = false UNLESS it has a concrete local angle.
-2. **category**: Classify into exactly one of: local, politics, transit, culture, crime, weather, economy, sports. Use "local" as fallback if unclear.
-3. **importance** (0.0–1.0): How significant is this news for the city as a whole? Rate based on how many residents are affected or how much it shapes the city's trajectory — NOT on how dramatic or emotional the headline sounds.
-   - 0.0–0.2: Routine filler — minor openings, generic announcements, press releases with no public impact, individual incidents (a single traffic accident, a single crime, one person injured/killed)
-   - 0.3–0.4: Mildly noteworthy — small infrastructure changes, minor cultural events, routine policy updates, individual crime reports, localized incidents affecting a small area
-   - 0.5–0.6: Significant — major transit disruptions, political decisions with real impact, notable economic developments, new city statistics or reports (unemployment, population, housing)
-   - 0.7–0.8: Very important — major policy changes, large-scale infrastructure projects, events affecting large parts of the city, trends in crime/safety statistics, significant economic shifts
-   - 0.9–1.0: Critical/breaking — city-wide emergencies, disasters, events requiring immediate public attention
-   NOTE: Individual crimes, accidents, or deaths are inherently LOCAL incidents (0.0–0.4) unless they reveal a city-wide pattern or trigger systemic change. Crime statistics, policy responses, or serial patterns rate higher.
-4. **locationLabel** (string, try VERY hard — we need this for map markers): Extract or infer the most specific location in ${cityName} for this news item. Use every possible clue:
-   - **Explicit mentions**: street names, landmarks, neighborhoods, districts, transit stations, buildings, parks, rivers, bridges, squares
-   - **Institutions/orgs**: map them to their physical address (e.g. "Senat" → "Rotes Rathaus, Mitte", "BVG" → "Holzmarktstraße, Mitte", "Charité" → "Charitéplatz, Mitte", "FU Berlin" → "Dahlem", "TU Berlin" → "Charlottenburg", "Olympiastadion" → "Westend", "Philharmonie" → "Tiergarten", "Berlinale" → "Potsdamer Platz", "Zoo" → "Tiergarten", "Tierpark" → "Friedrichsfelde")
-   - **Source feed context**: If the news source typically covers a specific area (e.g. "Berliner Woche Spandau" → Spandau, "Neukölln Blog" → Neukölln), use that district as a fallback
-   - **Topic-based inference**: Transit line disruptions → the affected station/route area; construction → the mentioned street/area; local politics → the district government involved; school/hospital names → their neighborhood
-   - **Last resort**: If the news clearly relates to ${cityName} but you can only narrow it to a Bezirk/borough, return that district name (e.g. "Spandau", "Reinickendorf"). A district-level location is FAR better than nothing.
-   IMPORTANT: Never return just "${cityName}" or the bare city name — always go to at least district/neighborhood level. Only omit locationLabel if the news is truly city-wide with no geographic anchor at all (e.g. "Berlin unemployment rate rises" or "citywide transit strike").`;
+interface BatchOutcome {
+  items: FilterVerdict[];
+  inTok: number;
+  outTok: number;
 }
 
 /**
- * Classify a single batch of items via the LLM.
- * Items use local 0-based indices within the batch; the caller maps them
- * back to global indices.
+ * Classify one batch. The model numbers items 0-based within the batch; a
+ * response that fails the index check yields no items, so the batch is
+ * retried next run like a failed call.
  */
 async function classifyBatch(
-  structured: ReturnType<ChatOpenAI['withStructuredOutput']>,
-  systemPrompt: string,
+  target: ModelTarget,
+  cityName: string,
   batchItems: Array<{ title: string; description?: string; sourceName: string }>,
-): Promise<{ items: z.infer<typeof FilterResultSchema>['items']; inTok: number; outTok: number }> {
-  const itemList = batchItems
-    .map((item, i) => `${i}. [${item.sourceName}] ${item.title}${item.description ? `\n   ${item.description.slice(0, 300)}` : ''}`)
-    .join('\n');
+  startIndex: number,
+): Promise<BatchOutcome> {
+  const result = await invokeStructured(target, buildFilterRequest(cityName, batchItems));
+  const tokens = { inTok: result.inTok, outTok: result.outTok };
 
-  const result = await structured.invoke([
-    new SystemMessage(systemPrompt),
-    new HumanMessage(itemList),
-  ]);
+  if (!result.parsed) {
+    log.error(`${cityName} batch at index ${startIndex}: unparseable response`);
+    return { items: [], ...tokens };
+  }
 
-  const raw = result.raw as AIMessage;
-  return {
-    items: result.parsed.items,
-    inTok: raw.usage_metadata?.input_tokens ?? 0,
-    outTok: raw.usage_metadata?.output_tokens ?? 0,
-  };
+  const checked = checkBatchIndices(result.parsed.items, batchItems.length);
+  if (!checked.ok) {
+    log.error(`${cityName} batch at index ${startIndex} rejected: ${checked.reason}`);
+    return { items: [], ...tokens };
+  }
+  if (checked.duplicates > 0) {
+    log.warn(`${cityName} batch at index ${startIndex}: ignored ${checked.duplicates} duplicate indices`);
+  }
+
+  // Remap local batch indices to global indices
+  return { items: checked.items.map((item) => ({ ...item, index: item.index + startIndex })), ...tokens };
 }
 
 export async function filterAndGeolocateNews(
@@ -208,14 +186,11 @@ export async function filterAndGeolocateNews(
 ): Promise<FilteredItem[] | null> {
   if (!isConfigured() || items.length === 0) return null;
 
-  const filterModel = process.env.OPENAI_FILTER_MODEL || 'gpt-5-nano';
+  const target = resolveSiteTarget('filter');
 
   try {
-    log.info(`filtering ${items.length} items for ${cityName} (batch size ${LLM_BATCH_SIZE})…`);
+    log.info(`filtering ${items.length} items for ${cityName} with ${describeTarget(target)} (batch size ${LLM_BATCH_SIZE})…`);
     const start = performance.now();
-
-    const structured = getModel(filterModel).withStructuredOutput(FilterResultSchema, { includeRaw: true });
-    const systemPrompt = buildFilterPrompt(cityName);
 
     // Split items into batches and run LLM requests in parallel
     const batches: Array<{ startIndex: number; batchItems: typeof items }> = [];
@@ -224,18 +199,12 @@ export async function filterAndGeolocateNews(
     }
 
     const batchResults = await Promise.all(
-      batches.map(async ({ startIndex, batchItems }) => {
+      batches.map(async ({ startIndex, batchItems }): Promise<BatchOutcome> => {
         try {
-          const result = await classifyBatch(structured, systemPrompt, batchItems);
-          // Remap local batch indices to global indices
-          return {
-            items: result.items.map((item) => ({ ...item, index: item.index + startIndex })),
-            inTok: result.inTok,
-            outTok: result.outTok,
-          };
+          return await classifyBatch(target, cityName, batchItems, startIndex);
         } catch (err) {
           log.error(`${cityName} batch at index ${startIndex} failed`, err);
-          return { items: [] as z.infer<typeof FilterResultSchema>['items'], inTok: 0, outTok: 0 };
+          return { items: [], inTok: 0, outTok: 0 };
         }
       }),
     );
@@ -248,7 +217,7 @@ export async function filterAndGeolocateNews(
     const ms = Math.round(performance.now() - start);
     log.info(`${cityName} filter: done in ${ms}ms — ${batches.length} batches (${totalInTok}in/${totalOutTok}out tokens)`);
 
-    trackUsage(cityId, filterModel, totalInTok, totalOutTok);
+    trackUsage(cityId, target.model, totalInTok, totalOutTok);
 
     // Resolve location names to coordinates via Nominatim
     const { geocode } = await import('./geocode.js');
@@ -299,13 +268,11 @@ export interface GeolocatedReport {
   locationLabel?: string;
 }
 
-const GeoResultSchema = z.object({
-  items: z.array(z.object({
-    index: z.number(),
-    locationLabel: z.string().nullable(),
-  })),
-});
-
+/**
+ * Extract a location label per report and geocode it. Returns null when the
+ * call fails or the response fails the index check — callers must then treat
+ * every report as not attempted.
+ */
 export async function geolocateReports(
   cityId: string,
   cityName: string,
@@ -313,38 +280,32 @@ export async function geolocateReports(
 ): Promise<GeolocatedReport[] | null> {
   if (!isConfigured() || reports.length === 0) return null;
 
-  const filterModel = process.env.OPENAI_FILTER_MODEL || 'gpt-5-nano';
+  const target = resolveSiteTarget('geo');
 
   try {
-    log.info(`geolocating ${reports.length} reports for ${cityName}…`);
-    const start = performance.now();
+    log.info(`geolocating ${reports.length} reports for ${cityName} with ${describeTarget(target)}…`);
 
-    const structured = getModel(filterModel).withStructuredOutput(GeoResultSchema, { includeRaw: true });
+    const result = await invokeStructured(target, buildGeoRequest(cityName, reports));
+    log.info(`${cityName} geocode: done in ${result.ms}ms (${result.inTok}in/${result.outTok}out tokens)`);
 
-    const reportList = reports
-      .map((r, i) => `${i}. ${r.title}${r.description ? ` — ${r.description.slice(0, 150)}` : ''}`)
-      .join('\n');
+    trackUsage(cityId, target.model, result.inTok, result.outTok);
 
-    const result = await structured.invoke([
-      new SystemMessage(`You are a location extractor for ${cityName}. For each police report, extract the most specific location name mentioned (street, intersection, landmark, neighborhood). Do NOT generate coordinates — only extract the location text. If no location is identifiable, omit the locationLabel field.`),
-      new HumanMessage(reportList),
-    ]);
+    if (!result.parsed) {
+      log.error(`${cityName} geocode: unparseable response`);
+      return null;
+    }
 
-    const ms = Math.round(performance.now() - start);
-    const raw = result.raw as AIMessage;
-    const inTok = raw.usage_metadata?.input_tokens ?? 0;
-    const outTok = raw.usage_metadata?.output_tokens ?? 0;
-    log.info(`${cityName} geocode: done in ${ms}ms (${inTok}in/${outTok}out tokens)`);
-
-    trackUsage(cityId, filterModel, inTok, outTok);
-
-    const llmItems = result.parsed.items;
+    const checked = checkBatchIndices(result.parsed.items, reports.length);
+    if (!checked.ok) {
+      log.error(`${cityName} geocode response rejected: ${checked.reason}`);
+      return null;
+    }
 
     // Resolve location names to coordinates via Nominatim
     const { geocode } = await import('./geocode.js');
     const cityLower = cityName.toLowerCase();
     const results: GeolocatedReport[] = [];
-    for (const item of llmItems) {
+    for (const item of checked.items) {
       const label = stripBareCityLabel(item.locationLabel, cityLower);
 
       const geoResult: GeolocatedReport = {
@@ -374,18 +335,10 @@ export async function geolocateReports(
 // Usage stats (exposed via /health endpoint)
 // ---------------------------------------------------------------------------
 
-/** Per-model pricing in USD per 1M tokens */
-const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  'gpt-5-mini': { input: 1.00, output: 4.00 },
-  'gpt-5-nano': { input: 0.10, output: 0.40 },
-};
-const DEFAULT_PRICING = { input: 1.00, output: 4.00 };
-
 export function getUsageStats(): Record<string, UsageEntry & { estimatedCostUsd: number }> {
   const result: Record<string, UsageEntry & { estimatedCostUsd: number }> = {};
   for (const [key, entry] of Object.entries(usage)) {
-    const pricing = MODEL_PRICING[entry.model] ?? DEFAULT_PRICING;
-    const cost = (entry.input * pricing.input / 1_000_000) + (entry.output * pricing.output / 1_000_000);
+    const cost = estimateCostUsd(entry.model, entry.input, entry.output);
     result[key] = { ...entry, estimatedCostUsd: Math.round(cost * 10000) / 10000 };
   }
   return result;

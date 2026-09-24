@@ -89,10 +89,9 @@ async function summarizeCityNews(
 
   if (db) {
     try {
-      const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
       const generatedAt = new Date();
       for (const [lang, text] of Object.entries(result.briefings)) {
-        await saveSummary(db, cityId, lang, { briefing: text, headlineCount: items.length, headlineHash }, model, { input: result.inputTokens, output: result.outputTokens }, generatedAt);
+        await saveSummary(db, cityId, lang, { briefing: text, headlineCount: items.length, headlineHash }, result.model, { input: result.inputTokens, output: result.outputTokens }, generatedAt);
       }
     } catch (err) {
       log.error(`${cityId} DB write failed`, err);

@@ -47,15 +47,17 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 
 3. **Frontend** — Uses `useNewsSummary(cityId, i18n.language)` hook (refetch 15 min). Passes the user's selected language to the API. When the user switches language, React Query fetches the briefing in the new language.
 
-### LLM Integration (`packages/server/src/lib/openai.ts`)
+### LLM Integration (`packages/server/src/lib/openai.ts`, `llm-client.ts`, `llm-prompts.ts`)
 
-- **Client:** LangChain `ChatOpenAI` with Zod-validated structured output (`.withStructuredOutput(zodSchema, { includeRaw: true })`)
-- **Model:** `gpt-5-mini` for summarization (configurable via `OPENAI_MODEL`), `gpt-5-nano` for filtering/geolocation (configurable via `OPENAI_FILTER_MODEL`)
+- **Layout:** `openai.ts` holds the three pipelines (batching, index checks, geocoding, usage tracking). `llm-client.ts` decides model + effort per call site and makes the one structured call (`invokeStructured`). `llm-prompts.ts` holds the prompts and schemas behind request builders, so production and the model-eval harness send identical prompts.
+- **Client:** LangChain `ChatOpenAI` with Zod-validated structured output (`.withStructuredOutput(zodSchema, { includeRaw: true })`, default `jsonSchema` method — never `functionCalling`, which GPT-6 only supports at effort `none`)
+- **Model + effort per call site:** summaries `OPENAI_MODEL` (default `gpt-5-mini`) + `OPENAI_SUMMARY_EFFORT`; news classification `OPENAI_FILTER_MODEL` (default `gpt-5-nano`) + `OPENAI_FILTER_EFFORT`; police locations `OPENAI_GEO_MODEL` (falls back to `OPENAI_FILTER_MODEL`) + `OPENAI_GEO_EFFORT`. Unset effort = API default. Valid values per model family: see `server.md` → Environment Variables.
 - **Structured output schemas:** `BriefingSchema` (dynamic — one key per configured language, e.g. `{ briefings: { de: string, en: string, tr: string, ar: string } }`), `FilterResultSchema` (index, relevant_to_city, category, importance, locationLabel), `GeoResultSchema` (index, locationLabel)
+- **Index check:** filter and police responses are numbered 0-based. `checkBatchIndices` rejects a whole response if any index is non-integer or out of range (the signature of a model counting from 1 — every verdict would land on its neighbour). A rejected news batch counts as failed and is retried next run; a rejected police response returns `null`. Duplicate indices: first occurrence wins.
 - **System prompt:** Local news editor for [city], two short paragraphs (~120 words per language), focus on daily-life impact, write in all configured languages in one response
 - **Location extraction:** Filter prompt pushes LLM for district/neighborhood-level specificity (not bare city names). Includes examples mapping organizations to known addresses (e.g. "Senat" -> "Rotes Rathaus, Mitte"). Post-processing discards labels that are just the bare city name or "city, country" format before geocoding.
 - **Usage tracking:** In-memory per-city totals (input/output tokens, call count). Exposed via `getUsageStats()` on the health endpoint.
-- **Cost estimate:** gpt-5-mini at $1.00/1M input, $4.00/1M output
+- **Cost estimate:** per-model prices in `MODEL_PRICING` (`llm-client.ts`); unknown models fall back to $1.00/$4.00 per 1M tokens
 - **Timing:** Logs duration + token counts per call via logger
 
 ## Key Types
