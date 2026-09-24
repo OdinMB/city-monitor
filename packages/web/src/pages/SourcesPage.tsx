@@ -101,7 +101,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'OpenAI',
         url: 'https://openai.com/',
-        description: 'GPT-6 Luna for news headline classification and geolocation; GPT-5 mini for daily briefing summarization.',
+        description: 'GPT-6 Luna for news headline classification, geolocation and the daily briefing.',
       },
     ],
   },

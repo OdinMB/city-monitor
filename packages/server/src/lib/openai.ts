@@ -7,7 +7,7 @@
 
 import { createLogger } from './logger.js';
 import { resolveSiteTarget, invokeStructured, describeTarget, estimateCostUsd, type ModelTarget } from './llm-client.js';
-import { buildBriefingRequest, buildFilterRequest, buildGeoRequest, VALID_CATEGORIES, type FilterResult } from './llm-prompts.js';
+import { buildBriefingRequest, buildFilterRequest, buildGeoRequest, VALID_CATEGORIES, type BriefingMoment, type FilterResult } from './llm-prompts.js';
 
 const log = createLogger('openai');
 
@@ -91,6 +91,7 @@ export async function summarizeHeadlines(
   cityName: string,
   items: Array<{ title: string; description?: string }>,
   langs: string[],
+  moment: BriefingMoment,
 ): Promise<{ briefings: Record<string, string>; cached: boolean; inputTokens: number; outputTokens: number; model: string } | null> {
   if (!isConfigured() || langs.length === 0) return null;
 
@@ -99,7 +100,7 @@ export async function summarizeHeadlines(
   try {
     log.info(`summarizing ${items.length} headlines for ${cityName} in [${langs.join(', ')}] with ${describeTarget(target)}…`);
 
-    const result = await invokeStructured(target, buildBriefingRequest(cityName, items, langs));
+    const result = await invokeStructured(target, buildBriefingRequest(cityName, items, langs, moment));
     log.info(`${cityName}: done in ${result.ms}ms (${result.inTok}in/${result.outTok}out tokens)`);
 
     trackUsage(cityName.toLowerCase(), target.model, result.inTok, result.outTok);

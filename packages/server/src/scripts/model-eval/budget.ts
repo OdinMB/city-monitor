@@ -8,7 +8,7 @@ import path from 'node:path';
 
 export interface SpendEntry {
   startedAt: string;
-  mode: 'full' | 'smoke';
+  mode: 'full' | 'smoke' | 'briefing-check';
   estimateUsd: number;
   actualUsd: number;
   calls: number;

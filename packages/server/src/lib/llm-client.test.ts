@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { resolveSiteTarget, getModel, estimateCostUsd, describeTarget, DEFAULT_PRICING, MODEL_PRICING } from './llm-client.js';
+import { resolveSiteTarget, defaultSiteTarget, getModel, estimateCostUsd, describeTarget, DEFAULT_PRICING, MODEL_PRICING } from './llm-client.js';
 
 const SITE_ENV = [
   'OPENAI_MODEL',
@@ -20,7 +20,7 @@ afterEach(() => {
 
 describe('resolveSiteTarget — models', () => {
   it('uses each site\'s default model and effort when nothing is configured', () => {
-    expect(resolveSiteTarget('summary')).toEqual({ model: 'gpt-5-mini' });
+    expect(resolveSiteTarget('summary')).toEqual({ model: 'gpt-6-luna', effort: 'high' });
     expect(resolveSiteTarget('filter')).toEqual({ model: 'gpt-6-luna', effort: 'medium' });
     expect(resolveSiteTarget('geo')).toEqual({ model: 'gpt-6-luna', effort: 'none' });
   });
@@ -103,9 +103,22 @@ describe('resolveSiteTarget — default effort', () => {
     expect(resolveSiteTarget('geo')).toEqual({ model: 'gpt-5-nano' });
   });
 
-  it('sends no effort for a site without a default', () => {
+});
+
+describe('defaultSiteTarget', () => {
+  it('is what resolveSiteTarget gives with nothing configured, whatever the env says', () => {
+    const sites = ['summary', 'filter', 'geo'] as const;
+    const unconfigured = sites.map((site) => resolveSiteTarget(site));
+
     vi.stubEnv('OPENAI_MODEL', 'gpt-6-sol');
-    expect(resolveSiteTarget('summary')).toEqual({ model: 'gpt-6-sol' });
+    vi.stubEnv('OPENAI_SUMMARY_EFFORT', 'low');
+    vi.stubEnv('OPENAI_FILTER_MODEL', 'gpt-5.6-luna');
+    vi.stubEnv('OPENAI_FILTER_EFFORT', 'low');
+    vi.stubEnv('OPENAI_GEO_MODEL', 'gpt-5-nano');
+    vi.stubEnv('OPENAI_GEO_EFFORT', 'minimal');
+
+    expect(sites.map((site) => resolveSiteTarget(site))).not.toEqual(unconfigured);
+    expect(sites.map((site) => defaultSiteTarget(site))).toEqual(unconfigured);
   });
 });
 

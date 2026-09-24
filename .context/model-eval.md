@@ -10,12 +10,12 @@
 | Police locations | gpt-5-nano@default | gpt-6-luna@none, @low | gpt-5.6-luna@none, @low |
 | Briefing (de/en/tr/ar) | gpt-5-mini@default | gpt-6-luna@medium, @high, gpt-6-sol@low, @medium | — |
 
-Arms live in `arms.ts` (`ARMS`). `@default` = no `reasoning_effort` sent. **Since that run, production defaults to `gpt-6-luna@medium` for news and `gpt-6-luna@none` for police**, but the baseline arms still name gpt-5-nano, and the briefing inputs are built from the news winner's scores, or from the baseline's when there is no winner. Before the next rerun, point the news and police baselines at the current production targets. The gpt-5-nano snapshot shuts down on 2026-12-11. Every request is built by the production builders in `lib/llm-prompts.ts` and sent through `invokeStructured` in `lib/llm-client.ts`, so the eval measures exactly what production would send.
+Arms live in `arms.ts` (`ARMS`). `@default` = no `reasoning_effort` sent. **Since that run, production defaults to `gpt-6-luna@medium` for news, `gpt-6-luna@none` for police and `gpt-6-luna@high` for the briefing**, but the `ARMS` baselines still name gpt-5-nano and gpt-5-mini, and a full run builds the briefing inputs from the news winner's scores, or from the baseline's when there is no winner. Before the next full rerun, point the baselines at the current production targets (`productionArm(site)` gives them). The gpt-5-nano and gpt-5-mini snapshots shut down on 2026-12-11. Every request is built by the production builders in `lib/llm-prompts.ts` and sent through `invokeStructured` in `lib/llm-client.ts`, so the eval measures exactly what production would send.
 
 ## Running it
 
 ```bash
-npm run eval:models --workspace=packages/server -- --out ../../DOCS/<date>_<name> [--dry-run] [--reuse-inputs] [--budget-usd 5] [--smoke]
+npm run eval:models --workspace=packages/server -- --out ../../DOCS/<date>_<name> [--dry-run] [--reuse-inputs] [--budget-usd 5] [--smoke | --briefing-check]
 ```
 
 - `--out` is resolved relative to `packages/server`. Keep it under the gitignored `DOCS/`.
@@ -23,6 +23,8 @@ npm run eval:models --workspace=packages/server -- --out ../../DOCS/<date>_<name
 - `--reuse-inputs`: reuse `<out>/data/inputs.json` so a rerun compares arms on identical inputs.
 - `--budget-usd`: the run refuses to start if cumulative spend (`<out>/data/spend-log.json`) plus the worst-case estimate exceeds it, and re-checks before every arm with actual spend.
 - `--smoke`: 10 news items, 10 police reports, one briefing input, no fallbacks, briefing only baseline + first Luna + first Sol; writes to `<out>/smoke/` but books its spend in the same spend log. About $0.01 actual.
+- `--briefing-check`: a regression check of the briefing after a prompt, model or effort change. It runs production's code-default arms only (`productionArm`, not env): the news arm scores the live sample, and the briefing arm runs on up to 6 inputs built from those scores. No police sample, no comparison, no rating files. Writes to `<out>/briefing-check/`, and books spend in the shared log. About $0.03 actual, about 3 minutes. Check the word-range column against the wanted 140–190. Weekday and transit wording has no automatic check: read the de/en texts in `data/briefings.json` against each input's "time given to the writer".
+- The budget is cumulative over the spend log. To cap one run at $X, pass the log's total plus $X.
 - A full run takes 10–20 minutes, mostly geocoding (Nominatim, 1 req/s) — run it in the background.
 
 ## What it reads, and what it never does
@@ -41,7 +43,7 @@ npm run eval:models --workspace=packages/server -- --out ../../DOCS/<date>_<name
 ## Where the rules live
 
 - `extraction-scoring.ts` — metrics and the automatic decision rules R1–R5 for news and police (first passing candidate in cost order wins). For police, a report left out of an accepted response is scored as "no location", not as a defect: GPT-6 Luna answers the prompt's "omit the locationLabel field" by leaving the item out, and production marks it attempted exactly like a null. A news item left out stays a defect (production re-sends it). The news table also shows "Briefing-eligible" (relevant and inside the summarize job's cut-off), and R5 counts flips across that cut-off. Both call `meetsBriefingCutoff` from `cron/summarize.ts` (importance ≥ 0.5), so they follow production if it changes. Before 2026-09-24 the cut-off was `> 0.5`, so that run's R5 and briefing-eligible figures use `> 0.5`.
-- `briefing-scoring.ts` — hard checks (present, right language, no Markdown, length), soft signals, arm ranking, rating selection.
+- `briefing-scoring.ts` — hard checks (present, right language, no Markdown, length), soft signals, arm ranking, rating selection. Length bounds scale with `WANTED_WORDS.target` (160, the length the owner wants), not with the prompt's number (`BRIEFING_PROMPT_WORDS`, 140), so they judge the output against the goal. "Two paragraphs" means two blocks separated by a blank line, which is how the dashboard splits them; before 2026-09-24 any newline counted. Each briefing prompt gets its input's window end as the current local time. The invented-numbers signal counts digits from that date line as known.
 - `call-stats.ts` — failure classification (refusal = empty content, truncated = `finish_reason: length`, else unparseable; LangChain 1.2.11 hides the refusal text) and latency/token/cost stats.
 - `inputs.ts` — live sampling and `buildBriefingInputs` (sliding 24h windows, 4h apart, ordered and cut exactly as the summarize job does via `compareDigestOrder`, `applyDropLogic`, `selectBriefingItems`).
 - `budget.ts` — spend log and budget guard. `deliverable.ts` — rendering. `run.ts` — CLI orchestration.

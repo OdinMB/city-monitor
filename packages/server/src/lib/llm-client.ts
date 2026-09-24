@@ -48,16 +48,16 @@ interface SiteConfig {
    * resolves to — unless that model does not support it, in which case no
    * effort is sent (the API default).
    */
-  defaultEffort?: ReasoningEffort;
+  defaultEffort: ReasoningEffort;
 }
 
 /**
- * News and police defaults come from the 2026-09-24 model eval (see
- * .context/model-eval.md). The briefing stays on gpt-5-mini until its blind
- * rating is done; that snapshot shuts down on 2026-12-11.
+ * Defaults come from the 2026-09-24 model eval (see .context/model-eval.md):
+ * news and police from its automatic rules, the briefing from the owner's
+ * blind rating (gpt-6-luna@high preferred on every rated item).
  */
 const SITES: Record<LlmSite, SiteConfig> = {
-  summary: { modelEnv: ['OPENAI_MODEL'], effortEnv: 'OPENAI_SUMMARY_EFFORT', defaultModel: 'gpt-5-mini' },
+  summary: { modelEnv: ['OPENAI_MODEL'], effortEnv: 'OPENAI_SUMMARY_EFFORT', defaultModel: 'gpt-6-luna', defaultEffort: 'high' },
   filter: { modelEnv: ['OPENAI_FILTER_MODEL'], effortEnv: 'OPENAI_FILTER_EFFORT', defaultModel: 'gpt-6-luna', defaultEffort: 'medium' },
   geo: { modelEnv: ['OPENAI_GEO_MODEL', 'OPENAI_FILTER_MODEL'], effortEnv: 'OPENAI_GEO_EFFORT', defaultModel: 'gpt-6-luna', defaultEffort: 'none' },
 };
@@ -104,8 +104,11 @@ function parseEffort(raw: string | undefined, model: string, envName: string): R
 
 /** The site's default effort, if the model supports it. */
 function defaultEffortFor(config: SiteConfig, model: string): ReasoningEffort | undefined {
-  const effort = config.defaultEffort;
-  return effort && allowedEfforts(model).includes(effort) ? effort : undefined;
+  return allowedEfforts(model).includes(config.defaultEffort) ? config.defaultEffort : undefined;
+}
+
+function toTarget(model: string, effort: ReasoningEffort | undefined): ModelTarget {
+  return effort ? { model, effort } : { model };
 }
 
 /** Model and effort for a call site. Reads env at call time. */
@@ -113,7 +116,13 @@ export function resolveSiteTarget(site: LlmSite): ModelTarget {
   const config = SITES[site];
   const model = config.modelEnv.map((name) => process.env[name]).find((value) => !!value) || config.defaultModel;
   const effort = parseEffort(process.env[config.effortEnv], model, config.effortEnv) ?? defaultEffortFor(config, model);
-  return effort ? { model, effort } : { model };
+  return toTarget(model, effort);
+}
+
+/** The call site's code default, ignoring env: what production runs when nothing overrides it. */
+export function defaultSiteTarget(site: LlmSite): ModelTarget {
+  const config = SITES[site];
+  return toTarget(config.defaultModel, defaultEffortFor(config, config.defaultModel));
 }
 
 /** `model@effort`, or `model@default` when no effort is sent. */

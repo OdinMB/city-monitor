@@ -61,6 +61,8 @@ Link targets from ingested feeds pass through `safeUrl()` (`packages/web/src/lib
 | `NODE_ENV` | API | Yes | `production` |
 | `PORT` | API | Yes | `3001` |
 
+**LLM model and effort variables** (`OPENAI_MODEL`, `OPENAI_FILTER_MODEL`, `OPENAI_GEO_MODEL` and their `*_EFFORT` vars; see `server.md`) are left unset in production, so the code defaults in `lib/llm-client.ts` apply. A value set in the Render dashboard, on the service or in a linked Environment Group, overrides the default silently and survives every deploy. `render.yaml` cannot show it, so check the dashboard after any model change. Secret files cannot override it: `node packages/server/dist/index.js` loads no env file (only the npm scripts pass `--env-file-if-exists=.env`). `/api/health` → `ai` names the model that actually ran (keys are `model:city`).
+
 ## Domain Setup
 
 1. Add custom domain in Render → Static Site → Settings → Custom Domain

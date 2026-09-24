@@ -10,7 +10,7 @@ Real-time multi-city dashboard (Berlin, Hamburg). Inspired by [World Monitor](ht
 - **Backend:** Node + Express, single process with `node-cron` for scheduled data ingestion
 - **Database:** PostgreSQL (Render) + Drizzle ORM (schema-as-code, no code generation)
 - **Cache:** In-memory Map with TTL — hot read layer in front of Postgres
-- **AI:** OpenAI via LangChain. GPT-6 Luna classifies news and places police reports; gpt-5-mini writes the daily briefing. The model and effort for each call site are set in `lib/llm-client.ts`.
+- **AI:** OpenAI via LangChain. GPT-6 Luna classifies news, places police reports and writes the daily briefing. The model and effort for each call site are set in `lib/llm-client.ts`.
 - **Maps:** MapLibre GL JS with CARTO tiles (free, no API key)
 - **Deployment:** Render.com (1 web service + 1 static site)
 - **Monorepo:** Turborepo

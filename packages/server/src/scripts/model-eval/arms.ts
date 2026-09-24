@@ -5,7 +5,10 @@
  * the cost estimate.
  */
 
-import { invokeStructured, estimateCostUsd, describeTarget, type LlmRequest, type ModelTarget, type ReasoningEffort } from '../../lib/llm-client.js';
+import {
+  invokeStructured, estimateCostUsd, describeTarget, defaultSiteTarget,
+  type LlmRequest, type LlmSite, type ModelTarget, type ReasoningEffort,
+} from '../../lib/llm-client.js';
 import { geocode, clearGeocodeCache } from '../../lib/geocode.js';
 import { createLogger } from '../../lib/logger.js';
 import { classifyFailure } from './call-stats.js';
@@ -64,6 +67,18 @@ export function armsFor(site: SiteId, role: ArmRole): Arm[] {
 
 export function baselineOf(site: SiteId): Arm {
   return armsFor(site, 'baseline')[0]!;
+}
+
+const LLM_SITE: Record<SiteId, LlmSite> = { news: 'filter', police: 'geo', briefing: 'summary' };
+
+/**
+ * What production runs at `site` when no env var overrides it: the code
+ * defaults in llm-client.ts. Unlike the `ARMS` baselines, this follows the
+ * code, so a `--briefing-check` run always tests the current default.
+ */
+export function productionArm(site: SiteId): Arm {
+  const target = defaultSiteTarget(LLM_SITE[site]);
+  return arm(site, 'baseline', target.model, target.effort);
 }
 
 /** Monthly production calls per site, for $/month. */

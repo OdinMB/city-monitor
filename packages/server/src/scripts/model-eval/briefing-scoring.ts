@@ -58,13 +58,27 @@ function hasMarkdown(text: string): boolean {
   return lines.filter((line) => /^\d+[.)]\s/.test(line)).length >= 2;
 }
 
-/** Words per language; ~120 is the prompt's target, tr/ar use fewer, longer words. */
-const LENGTH_BOUNDS: Record<string, { min: number; max: number }> = {
-  de: { min: 72, max: 180 },
-  en: { min: 72, max: 180 },
-  tr: { min: 54, max: 180 },
-  ar: { min: 54, max: 180 },
-};
+export interface WordRange {
+  min: number;
+  max: number;
+}
+
+/**
+ * The briefing length the owner wants, per language. The prompt asks for less
+ * (`BRIEFING_PROMPT_WORDS`) because GPT-6 Luna overshoots what it is asked for.
+ */
+export const WANTED_WORDS = { target: 160, min: 140, max: 190 } as const;
+
+/**
+ * Hard length bounds around the wanted length: 0.6–1.5× for German and
+ * English. Turkish and Arabic use fewer, longer words, so every other
+ * language gets a floor of 0.45×. These catch broken output; the wanted band
+ * itself is judged from the word-range column.
+ */
+export function lengthBounds(lang: string): WordRange {
+  const floor = lang === 'de' || lang === 'en' ? 0.6 : 0.45;
+  return { min: Math.round(WANTED_WORDS.target * floor), max: Math.round(WANTED_WORDS.target * 1.5) };
+}
 
 export interface BriefingCheck {
   present: boolean;
@@ -74,8 +88,9 @@ export interface BriefingCheck {
   /** All four checks above. */
   hardPass: boolean;
   words: number;
+  /** Blocks separated by a blank line — the dashboard (BriefingStrip) splits paragraphs only there. */
   paragraphs: number;
-  /** de/en only: numbers that do not occur in the input headlines. */
+  /** de/en only: numbers that do not occur in the source text. */
   unknownNumbers: string[];
   junk: boolean;
 }
@@ -83,15 +98,16 @@ export interface BriefingCheck {
 export const HARD_CHECKS = ['present', 'rightLanguage', 'noMarkdown', 'lengthOk'] as const;
 export type HardCheck = typeof HARD_CHECKS[number];
 
-export function checkBriefing(lang: string, text: string | undefined, headlines: string): BriefingCheck {
+/** `sourceText`: everything the writer was given that may carry numbers — headlines and the prompt's date line. */
+export function checkBriefing(lang: string, text: string | undefined, sourceText: string): BriefingCheck {
   const body = (text ?? '').trim();
   const present = body !== '' && body !== '-';
   const words = body === '' ? 0 : body.split(/\s+/).length;
-  const bounds = LENGTH_BOUNDS[lang] ?? { min: 54, max: 180 };
+  const bounds = lengthBounds(lang);
 
-  const headlineNumbers = new Set(headlines.match(/\d+/g) ?? []);
+  const sourceNumbers = new Set(sourceText.match(/\d+/g) ?? []);
   const unknownNumbers = lang === 'de' || lang === 'en'
-    ? [...new Set(body.match(/\d+/g) ?? [])].filter((num) => !headlineNumbers.has(num))
+    ? [...new Set(body.match(/\d+/g) ?? [])].filter((num) => !sourceNumbers.has(num))
     : [];
 
   const check = {
@@ -100,7 +116,7 @@ export function checkBriefing(lang: string, text: string | undefined, headlines:
     noMarkdown: !hasMarkdown(body),
     lengthOk: words >= bounds.min && words <= bounds.max,
     words,
-    paragraphs: body.split(/\n+/).filter((p) => p.trim() !== '').length,
+    paragraphs: body.split(/\n\s*\n/).filter((p) => p.trim() !== '').length,
     unknownNumbers,
     junk: hasJunkCharacters(body, true),
   };
@@ -127,6 +143,8 @@ export interface BriefingArmScore extends CallStats {
   allPassShare: number;
   /** Pass rate per language and hard check, over all inputs. */
   passRates: Record<string, Record<HardCheck, number>>;
+  /** Shortest and longest text per language; null when no input produced one. */
+  wordRange: Record<string, WordRange | null>;
   twoParagraphRate: number;
   meanUnknownNumbers: number;
   junkOutputs: number;
@@ -156,6 +174,14 @@ function scoreBriefingArm(
     ])) as Record<HardCheck, number>,
   ]));
 
+  const wordRange = Object.fromEntries(langs.map((lang) => {
+    const counts = inputIds.flatMap((id) => {
+      const check = checksFor(id)?.[lang];
+      return check?.present ? [check.words] : [];
+    });
+    return [lang, counts.length > 0 ? { min: Math.min(...counts), max: Math.max(...counts) } : null];
+  }));
+
   const twoParagraphRate = ratio(allChecks.filter((c) => c?.paragraphs === 2).length, outputs);
   const junkOutputs = allChecks.filter((c) => c?.junk).length;
   const meanUnknownNumbers = mean(deEnChecks.map((c) => c?.unknownNumbers.length ?? 0));
@@ -168,6 +194,7 @@ function scoreBriefingArm(
     ...stats,
     allPassShare: ratio(inputIds.filter((id) => langs.every((lang) => checksFor(id)?.[lang]?.hardPass === true)).length, inputIds.length),
     passRates,
+    wordRange,
     twoParagraphRate,
     meanUnknownNumbers,
     junkOutputs,

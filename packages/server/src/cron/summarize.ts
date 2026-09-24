@@ -2,6 +2,7 @@
  * News summarization cron job.
  */
 
+import type { CityConfig } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveSummary } from '../db/writes.js';
@@ -51,7 +52,7 @@ export function createSummarization(cache: Cache, db: Db | null = null) {
     const cities = getActiveCities();
     for (const city of cities) {
       try {
-        await summarizeCityNews(city.id, city.name, city.languages, cache, db);
+        await summarizeCityNews(city, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -59,13 +60,8 @@ export function createSummarization(cache: Cache, db: Db | null = null) {
   };
 }
 
-async function summarizeCityNews(
-  cityId: string,
-  cityName: string,
-  langs: string[],
-  cache: Cache,
-  db: Db | null,
-): Promise<void> {
+async function summarizeCityNews(city: CityConfig, cache: Cache, db: Db | null): Promise<void> {
+  const { id: cityId, name: cityName, languages: langs } = city;
   const digest = cache.get<NewsDigest>(CK.newsDigest(cityId));
   if (!digest || digest.items.length === 0) return;
 
@@ -86,7 +82,7 @@ async function summarizeCityNews(
 
   const effectiveLangs = langs.length > 0 ? langs : ['en'];
   const items = topItems.map((item) => ({ title: item.title, description: item.description }));
-  const result = await summarizeHeadlines(cityName, items, effectiveLangs);
+  const result = await summarizeHeadlines(cityName, items, effectiveLangs, { now: new Date(), timeZone: city.timezone });
   if (!result) return;
 
   const summary: NewsSummary & { headlineHash: string } = {

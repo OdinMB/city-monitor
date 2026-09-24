@@ -8,10 +8,11 @@ import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { MODEL_PRICING, DEFAULT_PRICING } from '../../lib/llm-client.js';
+import { BRIEFING_PROMPT_WORDS } from '../../lib/llm-prompts.js';
 import { VOLUME, POLICE_CHUNK, type SiteId } from './arms.js';
 import type { EvalInputs, BriefingInput } from './inputs.js';
 import type { ExtractionMetrics, CandidateEvaluation } from './extraction-scoring.js';
-import { HARD_CHECKS, type BriefingArmScore, type RatingPick } from './briefing-scoring.js';
+import { HARD_CHECKS, WANTED_WORDS, lengthBounds, type BriefingArmScore, type RatingPick } from './briefing-scoring.js';
 
 // ---------------------------------------------------------------------------
 // Rating sets
@@ -201,8 +202,11 @@ export interface ExtractionSection {
 }
 
 export interface BriefingSection {
-  inputs: Array<{ id: string; windowEnd: string; items: number }>;
+  /** `promptTime`: the local date and time the prompt gave the writer (the window end). */
+  inputs: Array<{ id: string; windowEnd: string; promptTime: string; items: number }>;
   langs: string[];
+  /** The news arm whose scores selected the briefing inputs. */
+  classifiedBy: string;
   baselineArm: string;
   /** Ranked best first. */
   scores: BriefingArmScore[];
@@ -212,7 +216,7 @@ export interface BriefingSection {
 }
 
 export interface EvalReport {
-  mode: 'full' | 'smoke';
+  mode: 'full' | 'smoke' | 'briefing-check';
   inputs: Pick<EvalInputs, 'fetchedAt' | 'sources'> & { newsCount: number; policeCount: number };
   news: ExtractionSection | null;
   police: ExtractionSection | null;
@@ -283,19 +287,20 @@ function extractionSection(title: string, section: ExtractionSection | null, not
   ].filter(Boolean).join('\n\n');
 }
 
-function briefingSection(briefing: EvalReport['briefing']): string {
-  if (!briefing) return '## Daily briefing\n\nNot run.';
-  if ('skipped' in briefing) return `## Daily briefing\n\n${briefing.skipped}`;
-
+/** Inputs, hard checks and the arm table — shared by the full eval and the briefing check. */
+function briefingScores(briefing: BriefingSection): string {
   const checkCell = (s: BriefingArmScore, lang: string) =>
     HARD_CHECKS.map((c) => (s.passRates[lang]?.[c] ?? 0) * 100).map((v) => v.toFixed(0)).join('/');
+  const wordsCell = (s: BriefingArmScore) =>
+    briefing.langs.map((l) => { const r = s.wordRange[l]; return r ? `${r.min}–${r.max}` : '–'; }).join(' / ');
   const scoreTable = table(
-    ['Rank', 'Arm', 'All 4 languages pass', ...briefing.langs.map((l) => `${l} present/lang/no-md/length %`), 'Two paragraphs', 'Invented numbers / text', 'Junk outputs', 'Failures', 'p50 / p95 ms', 'Tokens in / out (reasoning)', '$ / call', '$ / month'],
+    ['Rank', 'Arm', 'All 4 languages pass', ...briefing.langs.map((l) => `${l} present/lang/no-md/length %`), `Words ${briefing.langs.join('/')} (min–max)`, 'Two paragraphs', 'Invented numbers / text', 'Junk outputs', 'Failures', 'p50 / p95 ms', 'Tokens in / out (reasoning)', '$ / call', '$ / month'],
     briefing.scores.map((s, i) => [
       i + 1,
       s.arm === briefing.baselineArm ? `${s.arm} (today)` : s.arm,
       pct(s.allPassShare),
       ...briefing.langs.map((l) => checkCell(s, l)),
+      wordsCell(s),
       pct(s.twoParagraphRate),
       s.meanUnknownNumbers.toFixed(2),
       s.junkOutputs,
@@ -307,7 +312,29 @@ function briefingSection(briefing: EvalReport['briefing']): string {
     ]),
   );
 
-  const inputs = table(['Input', 'Window end (UTC)', 'Headlines'], briefing.inputs.map((i) => [i.id, i.windowEnd, i.items]));
+  const inputs = table(
+    ['Input', 'Window end (UTC)', 'Time given to the writer (Berlin)', 'Headlines'],
+    briefing.inputs.map((i) => [i.id, i.windowEnd, i.promptTime, i.items]),
+  );
+  const bounds = (lang: string) => { const b = lengthBounds(lang); return `${b.min}–${b.max}`; };
+  const unusable = Object.entries(briefing.unusable)
+    .map(([arm, message]) => `- \`${arm}\` was unusable: its first call failed with \`${message}\`.`)
+    .join('\n');
+
+  return [
+    '## Daily briefing',
+    `Inputs are rebuilt from the live sample: sliding 24-hour windows, classified by \`${briefing.classifiedBy}\`, ordered and cut exactly as the summarize job does. Each prompt gives the writer its window's end as the current local time.`,
+    inputs,
+    `Hard checks per language: present, right language, no Markdown, length (${bounds('de')} words for de/en, ${bounds('tr')} for tr/ar; the wanted length is about ${WANTED_WORDS.target}, ${WANTED_WORDS.min}–${WANTED_WORDS.max}, and the prompt asks for ~${BRIEFING_PROMPT_WORDS} because Luna overshoots). "All 4 languages pass" is the share of inputs where every language passes every hard check. "Two paragraphs" counts texts with exactly two blocks separated by a blank line, which is where the dashboard splits paragraphs. Ranking: all-pass share, then soft signals (two paragraphs, invented numbers, junk), then cost.`,
+    scoreTable,
+    unusable,
+  ].filter(Boolean).join('\n\n');
+}
+
+function briefingSection(briefing: EvalReport['briefing']): string {
+  if (!briefing) return '## Daily briefing\n\nNot run.';
+  if ('skipped' in briefing) return `## Daily briefing\n\n${briefing.skipped}`;
+
   const picks = briefing.picks.length === 0
     ? 'No input had at least two eligible arms in both German and English, so there is nothing to rate.'
     : briefing.picks.map((p) => `- ${p.inputId} (${p.lang}): ${p.armIds.map((a) => `\`${a}\``).join(', ')}`).join('\n');
@@ -316,17 +343,9 @@ function briefingSection(briefing: EvalReport['briefing']): string {
     ['Arm', 'Input', 'Turkish: verdict', 'Turkish: evidence', 'Arabic: verdict', 'Arabic: evidence'],
     reviewedArms.flatMap((arm) => briefing.ratedInputIds.map((input) => [`\`${arm}\``, input, '_to fill_', '', '_to fill_', ''])),
   );
-  const unusable = Object.entries(briefing.unusable)
-    .map(([arm, message]) => `- \`${arm}\` was unusable: its first call failed with \`${message}\`.`)
-    .join('\n');
 
   return [
-    '## Daily briefing',
-    'Inputs are rebuilt from the live sample: sliding 24-hour windows, classified by the chosen news arm, ordered and cut exactly as the summarize job does.',
-    inputs,
-    'Hard checks per language: present, right language, no Markdown, length (72–180 words for de/en, 54–180 for tr/ar). "All 4 languages pass" is the share of inputs where every language passes every hard check. Ranking: that share, then soft signals (two paragraphs, invented numbers, junk), then cost.',
-    scoreTable,
-    unusable,
+    briefingScores(briefing),
     '### Sent to you for rating',
     'Each rated item shows today\'s gpt-5-mini, the best-ranked Luna arm and the best-ranked Sol arm (an arm that fails a hard check on that item is replaced by the next one of the same model, then the next overall). That answers the phase-2 question — Luna, Sol, or neither — which the three top-ranked arms overall might not, if they were three efforts of one model. Option order is shuffled per item; `rating-key.json` maps labels back to arms.',
     picks,
@@ -398,8 +417,27 @@ function methodSection(report: EvalReport): string {
   ].join('\n');
 }
 
-export function renderResults(report: EvalReport): string {
+function spendLine(report: EvalReport): string {
   const s = report.spend;
+  return `This run: estimated ${usd(s.estimateUsd, 2)} (worst case), actual ${usd(s.actualUsd, 4)} over ${s.calls} calls. Cumulative: ${usd(s.priorUsd + s.actualUsd, 4)} of the ${usd(s.capUsd, 2)} cap.`;
+}
+
+/** Briefing check: one production arm, no comparison, no rating. */
+function renderBriefingCheck(report: EvalReport): string {
+  const b = report.briefing;
+  const feeds = report.inputs.sources.feeds.map((f) => `${f.name} ${f.ok ? f.items : 'failed'}`).join(', ');
+  return [
+    '# Briefing check — city-monitor',
+    `Production's default briefing arm, run on briefing inputs rebuilt from the live news sample fetched ${report.inputs.fetchedAt} (${report.inputs.newsCount} items; per feed: ${feeds}). No other arm and no rating: this checks that the briefing still passes its checks with the current prompt and defaults.`,
+    !b ? '## Daily briefing\n\nNot run.' : 'skipped' in b ? `## Daily briefing\n\n${b.skipped}` : briefingScores(b),
+    '## Spend',
+    spendLine(report),
+    '',
+  ].join('\n\n');
+}
+
+export function renderResults(report: EvalReport): string {
+  if (report.mode === 'briefing-check') return renderBriefingCheck(report);
   return [
     `# GPT-6 model eval — city-monitor${report.mode === 'smoke' ? ' (smoke run)' : ''}`,
     '## What was tested and why',
@@ -411,7 +449,7 @@ export function renderResults(report: EvalReport): string {
     briefingSection(report.briefing),
     methodSection(report),
     '## Spend',
-    `This run: estimated ${usd(s.estimateUsd, 2)} (worst case), actual ${usd(s.actualUsd, 4)} over ${s.calls} calls. Cumulative: ${usd(s.priorUsd + s.actualUsd, 4)} of the ${usd(s.capUsd, 2)} cap.`,
+    spendLine(report),
     '',
   ].join('\n\n');
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkBriefing, scoreBriefingArms, selectRatingArms, type BriefingOutcome } from './briefing-scoring.js';
+import { checkBriefing, lengthBounds, scoreBriefingArms, selectRatingArms, type BriefingOutcome } from './briefing-scoring.js';
 
 const TEXT = {
   de: 'Der Senat hat am Montag beschlossen, dass die Mieten in der Stadt nicht weiter steigen sollen. Die Opposition kritisiert den Plan und sagt, er komme zu spät.',
@@ -56,16 +56,14 @@ describe('checkBriefing — markdown', () => {
 describe('checkBriefing — length', () => {
   const words = (n: number) => Array.from({ length: n }, () => 'wort').join(' ');
 
-  it('bounds German and English at 72–180 words', () => {
-    expect(checkBriefing('de', words(71), '').lengthOk).toBe(false);
-    expect(checkBriefing('de', words(72), '').lengthOk).toBe(true);
-    expect(checkBriefing('en', words(180), '').lengthOk).toBe(true);
-    expect(checkBriefing('en', words(181), '').lengthOk).toBe(false);
-  });
-
-  it('bounds Turkish and Arabic at 54–180 words', () => {
-    expect(checkBriefing('tr', words(53), '').lengthOk).toBe(false);
-    expect(checkBriefing('ar', words(54), '').lengthOk).toBe(true);
+  it('passes lengths inside each language\'s bounds, both ends included, and fails outside them', () => {
+    for (const lang of ['de', 'en', 'tr', 'ar']) {
+      const { min, max } = lengthBounds(lang);
+      expect(checkBriefing(lang, words(min - 1), '').lengthOk).toBe(false);
+      expect(checkBriefing(lang, words(min), '').lengthOk).toBe(true);
+      expect(checkBriefing(lang, words(max), '').lengthOk).toBe(true);
+      expect(checkBriefing(lang, words(max + 1), '').lengthOk).toBe(false);
+    }
   });
 });
 
@@ -75,8 +73,10 @@ describe('checkBriefing — soft signals', () => {
     expect(check.unknownNumbers).toEqual(['2026']);
   });
 
-  it('counts paragraphs', () => {
+  it('counts paragraphs the way the dashboard splits them: on blank lines only', () => {
     expect(checkBriefing('de', 'Absatz eins.\n\nAbsatz zwei.', '').paragraphs).toBe(2);
+    expect(checkBriefing('de', 'Absatz eins.\n \nAbsatz zwei.', '').paragraphs).toBe(2);
+    expect(checkBriefing('de', 'Absatz eins.\nAbsatz zwei.', '').paragraphs).toBe(1);
   });
 });
 
@@ -89,8 +89,7 @@ describe('scoreBriefingArms', () => {
     }));
   }
 
-  function outcome(arm: string, inputId: string, pass: boolean, costUsd: number): BriefingOutcome {
-    const texts = pass ? TEXT : { ...TEXT, tr: TEXT.en };
+  function outcomeWith(arm: string, inputId: string, texts: Record<string, string>, costUsd = 0.001): BriefingOutcome {
     return {
       arm,
       inputId,
@@ -101,6 +100,23 @@ describe('scoreBriefingArms', () => {
       checks: checksIgnoringLength(texts),
     };
   }
+
+  function outcome(arm: string, inputId: string, pass: boolean, costUsd: number): BriefingOutcome {
+    return outcomeWith(arm, inputId, pass ? TEXT : { ...TEXT, tr: TEXT.en }, costUsd);
+  }
+
+  it('reports each language\'s shortest and longest briefing, skipping absent ones', () => {
+    const outcomes = [
+      outcomeWith('a', 'in1', TEXT),
+      outcomeWith('a', 'in2', { ...TEXT, de: `${TEXT.de} ${TEXT.de}` }),
+      outcomeWith('a', 'in3', { ...TEXT, en: '-' }),
+    ];
+    const [score] = scoreBriefingArms([{ id: 'a', model: 'm' }], outcomes, ['in1', 'in2', 'in3'], ['de', 'en'], 120);
+    const deWords = checkBriefing('de', TEXT.de, '').words;
+    const enWords = checkBriefing('en', TEXT.en, '').words;
+    expect(score!.wordRange.de).toEqual({ min: deWords, max: 2 * deWords });
+    expect(score!.wordRange.en).toEqual({ min: enWords, max: enWords });
+  });
 
   it('ranks by all-language pass share, then cost', () => {
     const arms = [

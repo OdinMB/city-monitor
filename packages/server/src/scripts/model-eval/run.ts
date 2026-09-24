@@ -1,12 +1,14 @@
 /**
  * Model eval CLI for the GPT-6 migration (see .context/model-eval.md).
  *
- *   npm run eval:models --workspace=packages/server -- --out ../../DOCS/<folder> [--dry-run] [--reuse-inputs] [--budget-usd 5] [--smoke]
+ *   npm run eval:models --workspace=packages/server -- --out ../../DOCS/<folder> [--dry-run] [--reuse-inputs] [--budget-usd 5] [--smoke | --briefing-check]
  *
  * Runs news classification, police locations and the briefing on their arms,
  * decides the two extraction sites automatically, and writes results.md plus
- * blind rating sets for the briefing. Reads live public data; the only DB
- * access is an optional SELECT. Never writes to a database.
+ * blind rating sets for the briefing. `--briefing-check` instead runs only
+ * production's briefing arm, on inputs scored by production's news arm.
+ * Reads live public data; the only DB access is an optional SELECT. Never
+ * writes to a database.
  */
 
 import { appendFileSync } from 'node:fs';
@@ -17,9 +19,12 @@ import { parseArgs } from 'node:util';
 import { berlin } from '../../config/cities/berlin.js';
 import { createLogger } from '../../lib/logger.js';
 import { isConfigured, LLM_BATCH_SIZE, stripBareCityLabel } from '../../lib/openai.js';
-import { buildFilterRequest, buildGeoRequest, buildBriefingRequest, type BriefingResult } from '../../lib/llm-prompts.js';
 import {
-  ARMS, VOLUME, POLICE_CHUNK, armsFor, baselineOf, armKey, estimateRunCost, runArm, geocodeLabels,
+  buildFilterRequest, buildGeoRequest, buildBriefingRequest, formatLocalMoment,
+  type BriefingMoment, type BriefingResult,
+} from '../../lib/llm-prompts.js';
+import {
+  ARMS, VOLUME, POLICE_CHUNK, armsFor, baselineOf, productionArm, armKey, estimateRunCost, runArm, geocodeLabels,
   type Arm, type CallRecord, type EvalRequest, type SiteId,
 } from './arms.js';
 import { collectInputs, buildBriefingInputs, type EvalInputs, type BriefingInput } from './inputs.js';
@@ -34,17 +39,66 @@ import { createBudget, readSpendLog, appendSpendLog, BudgetExceededError, type B
 const log = createLogger('model-eval');
 
 const SERVER_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
-const MAX_BRIEFING_INPUTS = 6;
-const MIN_BRIEFING_INPUTS = 3;
-/** Smoke run: one call per extraction arm, one briefing input, no fallbacks. */
-const SMOKE_LIMITS = { news: LLM_BATCH_SIZE, police: POLICE_CHUNK };
+
+/**
+ * full: every arm, decisions and rating sets. smoke: a cheap end-to-end proof.
+ * briefing-check: production's briefing arm only, as a regression check.
+ */
+type Mode = EvalReport['mode'];
+
+interface ModeSpec {
+  /** Where the run writes, under `--out`. The spend log is always `<out>/data/spend-log.json`. */
+  subdir: string;
+  inputLimits: { news?: number; police?: number };
+  /** Arms this run may call, in run order. */
+  arms: () => Arm[];
+  /** Briefing inputs: at most `max`; with fewer than `min` the briefing site is skipped. */
+  briefingInputs: { max: number; min: number };
+  /** Smoke only: when no 24h window qualifies, brief on the sample's 10 newest items instead. */
+  briefSampleIfNoWindow: boolean;
+}
+
+function smokeArms(): Arm[] {
+  const firstOf = (model: string) => ARMS.briefing.find((a) => a.target.model === model)!;
+  return [
+    ...ARMS.news.filter((a) => a.role !== 'fallback'),
+    ...ARMS.police.filter((a) => a.role !== 'fallback'),
+    baselineOf('briefing'), firstOf('gpt-6-luna'), firstOf('gpt-6-sol'),
+  ];
+}
+
+const MODES: Record<Mode, ModeSpec> = {
+  full: {
+    subdir: '',
+    inputLimits: {},
+    arms: () => [...ARMS.news, ...ARMS.police, ...ARMS.briefing],
+    briefingInputs: { max: 6, min: 3 },
+    briefSampleIfNoWindow: false,
+  },
+  // One call per extraction arm, one briefing input, no fallbacks; briefing baseline + first Luna + first Sol.
+  smoke: {
+    subdir: 'smoke',
+    inputLimits: { news: LLM_BATCH_SIZE, police: POLICE_CHUNK },
+    arms: smokeArms,
+    briefingInputs: { max: 1, min: 1 },
+    briefSampleIfNoWindow: true,
+  },
+  // Production's news arm scores the sample; production's briefing arm writes. No police sample (no archive or DB reads).
+  'briefing-check': {
+    subdir: 'briefing-check',
+    inputLimits: { police: 0 },
+    arms: () => [productionArm('news'), productionArm('briefing')],
+    briefingInputs: { max: 6, min: 1 },
+    briefSampleIfNoWindow: false,
+  },
+};
 
 interface Cli {
   out: string;
   dryRun: boolean;
   reuseInputs: boolean;
   budgetUsd: number;
-  smoke: boolean;
+  mode: Mode;
 }
 
 function parseCli(argv: string[]): Cli {
@@ -56,24 +110,16 @@ function parseCli(argv: string[]): Cli {
       'reuse-inputs': { type: 'boolean', default: false },
       'budget-usd': { type: 'string', default: '5' },
       smoke: { type: 'boolean', default: false },
+      'briefing-check': { type: 'boolean', default: false },
     },
     strict: true,
   });
   const budgetUsd = Number(values['budget-usd']);
   if (!values.out) throw new Error('--out <folder> is required (relative to packages/server)');
   if (!Number.isFinite(budgetUsd) || budgetUsd <= 0) throw new Error('--budget-usd must be a positive number');
-  return { out: values.out, dryRun: values['dry-run'], reuseInputs: values['reuse-inputs'], budgetUsd, smoke: values.smoke };
-}
-
-/** Arms this run may call, in run order. Smoke: no fallbacks, briefing baseline + first Luna + first Sol. */
-function plannedArms(smoke: boolean): Arm[] {
-  if (!smoke) return [...ARMS.news, ...ARMS.police, ...ARMS.briefing];
-  const firstOf = (model: string) => ARMS.briefing.find((a) => a.target.model === model)!;
-  return [
-    ...ARMS.news.filter((a) => a.role !== 'fallback'),
-    ...ARMS.police.filter((a) => a.role !== 'fallback'),
-    baselineOf('briefing'), firstOf('gpt-6-luna'), firstOf('gpt-6-sol'),
-  ];
+  if (values.smoke && values['briefing-check']) throw new Error('--smoke and --briefing-check are separate modes; pick one');
+  const mode: Mode = values.smoke ? 'smoke' : values['briefing-check'] ? 'briefing-check' : 'full';
+  return { out: values.out, dryRun: values['dry-run'], reuseInputs: values['reuse-inputs'], budgetUsd, mode };
 }
 
 interface RunContext {
@@ -181,18 +227,30 @@ async function runExtractionSite(
   };
 }
 
+/** Briefing check: score the news sample with the one planned news arm. No comparison, no geocoding. */
+async function classifyNews(inputs: EvalInputs, ctx: RunContext): Promise<NewsVerdicts> {
+  const newsArm = ctx.planned.find((a) => a.site === 'news')!;
+  const run = (await runArms([newsArm], extractionRequests('news', inputs), ctx)).get(newsArm.id)!;
+  if (run.unusable) throw new Error(`news arm ${newsArm.id} was unusable: ${run.unusable}`);
+  return { armId: newsArm.id, verdicts: collectVerdicts(run.records, inputs.news.length).verdicts };
+}
+
 // ---------------------------------------------------------------------------
 // Briefing
 // ---------------------------------------------------------------------------
 
-function briefingInputsFor(inputs: EvalInputs, newsVerdicts: ReadonlyMap<string, ExtractionItem>, smoke: boolean): BriefingInput[] {
+/** The news verdicts the briefing inputs are built from, and the arm that produced them. */
+interface NewsVerdicts {
+  armId: string;
+  verdicts: ReadonlyMap<string, ExtractionItem>;
+}
+
+function briefingInputsFor(inputs: EvalInputs, newsVerdicts: ReadonlyMap<string, ExtractionItem>, spec: ModeSpec): BriefingInput[] {
   const verdicts = new Map([...newsVerdicts].map(([id, item]) => [id, normalizeVerdict(item)]));
-  const built = buildBriefingInputs(inputs.news, verdicts, new Date(inputs.fetchedAt));
-  if (!smoke) return built.slice(0, MAX_BRIEFING_INPUTS);
+  const built = buildBriefingInputs(inputs.news, verdicts, new Date(inputs.fetchedAt)).slice(0, spec.briefingInputs.max);
   // A 10-item smoke sample rarely fills a window; fall back to the sample itself.
-  return built.length > 0
-    ? built.slice(0, 1)
-    : [{ id: 'in1', windowEnd: inputs.fetchedAt, items: inputs.news.slice(0, 10).map((i) => ({ title: i.title, description: i.description })) }];
+  if (built.length > 0 || !spec.briefSampleIfNoWindow) return built;
+  return [{ id: 'in1', windowEnd: inputs.fetchedAt, items: inputs.news.slice(0, 10).map((i) => ({ title: i.title, description: i.description })) }];
 }
 
 function messageText(content: unknown): string {
@@ -240,18 +298,24 @@ function briefingFiles(args: {
   return files;
 }
 
+/** The prompt's "now" for an input: the end of its window, when the summarize job would have run. */
+function momentOf(input: BriefingInput): BriefingMoment {
+  return { now: new Date(input.windowEnd), timeZone: berlin.timezone };
+}
+
 async function runBriefingSite(
   inputs: EvalInputs,
-  newsVerdicts: ReadonlyMap<string, ExtractionItem>,
+  news: NewsVerdicts,
   ctx: RunContext,
-  smoke: boolean,
+  spec: ModeSpec,
   files: Record<string, string>,
 ): Promise<BriefingSection | { skipped: string }> {
-  const briefingInputs = briefingInputsFor(inputs, newsVerdicts, smoke);
+  const briefingInputs = briefingInputsFor(inputs, news.verdicts, spec);
   const arms = ctx.planned.filter((a) => a.site === 'briefing');
-  if (briefingInputs.length < (smoke ? 1 : MIN_BRIEFING_INPUTS)) {
+  const minInputs = spec.briefingInputs.min;
+  if (briefingInputs.length < minInputs) {
     ctx.budget.skip(arms.map(armKey));
-    const skipped = `Only ${briefingInputs.length} briefing input(s) could be built from the sample (at least ${MIN_BRIEFING_INPUTS} needed), so the briefing arms were not run. The extraction results above stand; rerun later with a fuller news sample.`;
+    const skipped = `Only ${briefingInputs.length} briefing input(s) could be built from the sample (at least ${minInputs} needed), so the briefing arms were not run. Rerun later with a fuller news sample.`;
     log.warn(skipped);
     return { skipped };
   }
@@ -260,9 +324,11 @@ async function runBriefingSite(
   const requests: EvalRequest<BriefingResult>[] = briefingInputs.map((input) => ({
     requestId: `briefing-${input.id}`,
     inputIds: [input.id],
-    request: buildBriefingRequest(berlin.name, input.items, langs),
+    request: buildBriefingRequest(berlin.name, input.items, langs, momentOf(input)),
   }));
   const headlineLists = new Map(requests.map((r) => [r.inputIds[0]!, messageText(r.request.messages[1]?.content)]));
+  // A number the writer took from the prompt's date line is not invented.
+  const sourceTexts = new Map(briefingInputs.map((input) => [input.id, `${headlineLists.get(input.id) ?? ''}\n${formatLocalMoment(momentOf(input))}`]));
 
   const runs = await runArms(arms, requests, ctx);
   const outcomes: BriefingOutcome[] = [...runs.values()].flatMap((run) => run.records).map((record) => {
@@ -273,13 +339,13 @@ async function runBriefingSite(
       inputId,
       record,
       checks: briefings
-        ? Object.fromEntries(langs.map((lang) => [lang, checkBriefing(lang, briefings[lang], headlineLists.get(inputId) ?? '')]))
+        ? Object.fromEntries(langs.map((lang) => [lang, checkBriefing(lang, briefings[lang], sourceTexts.get(inputId) ?? '')]))
         : null,
     };
   });
 
   const inputIds = briefingInputs.map((i) => i.id);
-  const baseline = baselineOf('briefing');
+  const baseline = arms.find((a) => a.role === 'baseline') ?? baselineOf('briefing');
   const scores = scoreBriefingArms(arms.map((a) => ({ id: a.id, model: a.target.model })), outcomes, inputIds, langs, VOLUME.briefing);
   const picks = selectRatingArms({
     inputIds,
@@ -291,8 +357,9 @@ async function runBriefingSite(
   Object.assign(files, briefingFiles({ briefingInputs, arms, outcomes, headlineLists, picks, ratedInputIds }));
 
   return {
-    inputs: briefingInputs.map((i) => ({ id: i.id, windowEnd: i.windowEnd, items: i.items.length })),
+    inputs: briefingInputs.map((i) => ({ id: i.id, windowEnd: i.windowEnd, promptTime: formatLocalMoment(momentOf(i)), items: i.items.length })),
     langs,
+    classifiedBy: news.armId,
     baselineArm: baseline.id,
     scores,
     picks,
@@ -310,15 +377,16 @@ async function loadOrCollectInputs(cli: Cli, dataDir: string): Promise<EvalInput
     log.info('reusing data/inputs.json');
     return JSON.parse(await readFile(path.join(dataDir, 'inputs.json'), 'utf8')) as EvalInputs;
   }
-  const inputs = await collectInputs(cli.smoke ? SMOKE_LIMITS : {});
+  const inputs = await collectInputs(MODES[cli.mode].inputLimits);
   await writeDeliverable(dataDir, { 'inputs.json': JSON.stringify(inputs, null, 2) });
   return inputs;
 }
 
 async function main(): Promise<number> {
   const cli = parseCli(process.argv.slice(2));
+  const spec = MODES[cli.mode];
   const outDir = path.resolve(SERVER_ROOT, cli.out);
-  const runDir = cli.smoke ? path.join(outDir, 'smoke') : outDir;
+  const runDir = path.join(outDir, spec.subdir);
   const dataDir = path.join(runDir, 'data');
   const spendLogPath = path.join(outDir, 'data', 'spend-log.json');
 
@@ -328,11 +396,11 @@ async function main(): Promise<number> {
   }
 
   const inputs = await loadOrCollectInputs(cli, dataDir);
-  const planned = plannedArms(cli.smoke);
+  const planned = spec.arms();
   const callsPerSite: Record<SiteId, number> = {
     news: Math.ceil(inputs.news.length / LLM_BATCH_SIZE),
     police: Math.ceil(inputs.police.length / POLICE_CHUNK),
-    briefing: cli.smoke ? 1 : MAX_BRIEFING_INPUTS,
+    briefing: spec.briefingInputs.max,
   };
   const estimate = estimateRunCost(callsPerSite, planned);
   const priorUsd = (await readSpendLog(spendLogPath)).reduce((sum, e) => sum + e.actualUsd, 0);
@@ -366,7 +434,7 @@ async function main(): Promise<number> {
 
   const files: Record<string, string> = {};
   const report: EvalReport = {
-    mode: cli.smoke ? 'smoke' : 'full',
+    mode: cli.mode,
     inputs: { fetchedAt: inputs.fetchedAt, sources: inputs.sources, newsCount: inputs.news.length, policeCount: inputs.police.length },
     news: null,
     police: null,
@@ -377,10 +445,15 @@ async function main(): Promise<number> {
   const startedAt = new Date().toISOString();
   let exitCode = 0;
   try {
-    const news = await runExtractionSite('news', inputs, ctx);
-    report.news = news.section;
-    report.police = (await runExtractionSite('police', inputs, ctx)).section;
-    report.briefing = await runBriefingSite(inputs, news.winnerVerdicts, ctx, cli.smoke, files);
+    if (cli.mode === 'briefing-check') {
+      report.briefing = await runBriefingSite(inputs, await classifyNews(inputs, ctx), ctx, spec, files);
+    } else {
+      const news = await runExtractionSite('news', inputs, ctx);
+      report.news = news.section;
+      report.police = (await runExtractionSite('police', inputs, ctx)).section;
+      const newsVerdicts = { armId: news.section.winner ?? news.section.baselineArm, verdicts: news.winnerVerdicts };
+      report.briefing = await runBriefingSite(inputs, newsVerdicts, ctx, spec, files);
+    }
   } catch (err) {
     if (!(err instanceof BudgetExceededError)) throw err;
     log.error(`${err.message} — stopping`);

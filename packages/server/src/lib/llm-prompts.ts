@@ -21,10 +21,45 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 export type BriefingResult = { briefings: Record<string, string> };
 
+/**
+ * Words per language the briefing prompt asks for. The owner wants about 160
+ * (140–190), but GPT-6 Luna at effort high writes 15–30% more than it is asked
+ * for, and stating the range in the prompt made it longer still. Measured
+ * 2026-09-24 on live inputs: asking ~160 gave de 171–197 / en 189–210 words,
+ * asking ~140 gave de 150–172 / en 168–194.
+ */
+export const BRIEFING_PROMPT_WORDS = 140;
+
+/** When the briefing is written, and the city's IANA time zone. */
+export interface BriefingMoment {
+  now: Date;
+  timeZone: string;
+}
+
+/**
+ * "Wednesday, 23 September 2026, 14:09" in the given zone. Assembled from
+ * parts so the shape does not depend on the ICU version's en-GB pattern.
+ */
+export function formatLocalMoment({ now, timeZone }: BriefingMoment): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${part('weekday')}, ${part('day')} ${part('month')} ${part('year')}, ${part('hour')}:${part('minute')}`;
+}
+
 export function buildBriefingRequest(
   cityName: string,
   items: Array<{ title: string; description?: string }>,
   langs: string[],
+  moment: BriefingMoment,
 ): LlmRequest<BriefingResult> {
   const langDescriptions = langs
     .map((l) => `"${l}": ${LANGUAGE_NAMES[l] ?? l}`)
@@ -45,7 +80,7 @@ export function buildBriefingRequest(
   return {
     schema: BriefingSchema,
     messages: [
-      new SystemMessage(`You are a local news editor writing a brief daily digest for ${cityName}. Write exactly two short paragraphs in an editorial voice that weave together the most important local developments from the stories below. Don't just list headlines — synthesize, contextualize, and highlight what matters most for daily life in ${cityName} (transit, safety, local politics, weather). Aim for ~120 words per language. Write the briefing in each of these languages: ${langDescriptions}. Return an object with keys: ${langs.join(', ')}. If nothing is locally relevant, use a single dash (-) for that language.`),
+      new SystemMessage(`You are a local news editor writing a brief daily digest for ${cityName}. It is now ${formatLocalMoment(moment)} (local time in ${cityName}). Write exactly two short paragraphs, separated by a blank line, in an editorial voice that weave together the most important local developments from the stories below. Don't just list headlines — synthesize, contextualize, and highlight what matters most for daily life in ${cityName} (transit, safety, local politics, weather). Aim for ~${BRIEFING_PROMPT_WORDS} words per language. Whenever you refer to a day ("today", "tomorrow", "this weekend", "the start of the week"), go by the date and time above — never guess the weekday. The stories span roughly the last day: a transit disruption reported earlier in the day is probably over by now, so mention it in the past tense or leave it out, unless the story says it lasts longer (planned closures and construction work still apply). Write the briefing in each of these languages: ${langDescriptions}. Return an object with keys: ${langs.join(', ')}. If nothing is locally relevant, use a single dash (-) for that language.`),
       new HumanMessage(itemList),
     ],
   };

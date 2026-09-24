@@ -128,8 +128,8 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `PORT` | No | `3001` | Server listen port |
 | `DATABASE_URL` | No | — | Postgres connection string. Cache-only mode if not set. |
 | `OPENAI_API_KEY` | No | — | Enables AI summarization. Skipped if not set. |
-| `OPENAI_MODEL` | No | `gpt-5-mini` | OpenAI model for summaries |
-| `OPENAI_SUMMARY_EFFORT` | No | _(unset = API default)_ | Reasoning effort for summaries |
+| `OPENAI_MODEL` | No | `gpt-6-luna` | OpenAI model for summaries |
+| `OPENAI_SUMMARY_EFFORT` | No | `high` | Reasoning effort for summaries |
 | `OPENAI_FILTER_MODEL` | No | `gpt-6-luna` | Model for news classification + location labels |
 | `OPENAI_FILTER_EFFORT` | No | `medium` | Reasoning effort for news classification |
 | `OPENAI_GEO_MODEL` | No | `OPENAI_FILTER_MODEL`, else `gpt-6-luna` | Model for police-report location extraction |
@@ -141,7 +141,7 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `TOMTOM_API_KEY` | No | — | TomTom traffic API key. Traffic skipped if not set. |
 | `FIRECRAWL_API_KEY` | No | — | Firecrawl v2 API key for Bürgeramt appointment scraping. Appointments skipped if not set. |
 
-**Reasoning effort values** depend on the model family. `gpt-5`, `gpt-5-mini`, `gpt-5-nano` (dated or not): `minimal | low | medium | high`. `gpt-5.<n>-*` and `gpt-6-*`: `none | low | medium | high | xhigh | max` (GPT-6 rejects `minimal`). A value outside the model's set is logged and treated as unset. Unset falls back to the site's default effort (news `medium`, police `none`; summaries have none) when the model supports it; otherwise no effort is sent and the API default applies. So a rollback such as `OPENAI_GEO_MODEL=gpt-5-nano` sends exactly the pre-GPT-6 request. `OPENAI_FILTER_MODEL=gpt-5-nano` rolls back both sites, but news then sends `reasoning_effort: medium` explicitly, because gpt-5-nano supports it; that is the family's API default, so behaviour matches the old request. `OPENAI_FILTER_MODEL=gpt-5.6-luna` alone gives news `gpt-5.6-luna@medium` and police `gpt-5.6-luna@none`. Effort reaches the API through `modelKwargs.reasoning_effort` — LangChain's own `reasoning` option is silently dropped for `gpt-6-*` IDs by @langchain/openai 1.2.x. Max tokens, temperature and top_p are never set.
+**Reasoning effort values** depend on the model family. `gpt-5`, `gpt-5-mini`, `gpt-5-nano` (dated or not): `minimal | low | medium | high`. `gpt-5.<n>-*` and `gpt-6-*`: `none | low | medium | high | xhigh | max` (GPT-6 rejects `minimal`). A value outside the model's set is logged and treated as unset. Unset falls back to the site's default effort (summaries `high`, news `medium`, police `none`) when the model supports it; otherwise no effort is sent and the API default applies. So a rollback such as `OPENAI_GEO_MODEL=gpt-5-nano` sends exactly the pre-GPT-6 request. `OPENAI_FILTER_MODEL=gpt-5-nano` rolls back both sites, but news then sends `reasoning_effort: medium` explicitly, because gpt-5-nano supports it; that is the family's API default, so behaviour matches the old request. A briefing rollback needs both variables: `OPENAI_MODEL=gpt-5-mini` alone sends `gpt-5-mini@high` (gpt-5-mini supports `high`), so add `OPENAI_SUMMARY_EFFORT=medium` to get the old request's effort. `OPENAI_FILTER_MODEL=gpt-5.6-luna` alone gives news `gpt-5.6-luna@medium` and police `gpt-5.6-luna@none`. Effort reaches the API through `modelKwargs.reasoning_effort` — LangChain's own `reasoning` option is silently dropped for `gpt-6-*` IDs by @langchain/openai 1.2.x. Max tokens, temperature and top_p are never set.
 
 ## Utility Libraries
 
@@ -153,5 +153,5 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `lib/classifier.ts` | German keyword-based headline classification into 8 categories. |
 | `lib/geocode.ts` | Nominatim-first geocoding (1 QPS, free). Falls back to LocationIQ when rate-limited and `LOCATIONIQ_TOKEN` is set. |
 | `lib/parse-history.ts` | Parses `?history=Nd` query params. Used by history endpoints. |
-| `lib/llm-client.ts` | Per-call-site model + reasoning effort (`resolveSiteTarget`), `getModel`, the single structured-output call path `invokeStructured`, and `MODEL_PRICING`. |
+| `lib/llm-client.ts` | Per-call-site model + reasoning effort (`resolveSiteTarget`; `defaultSiteTarget` gives the code default without env), `getModel`, the single structured-output call path `invokeStructured`, and `MODEL_PRICING`. |
 | `lib/llm-prompts.ts` | The three LLM prompts and Zod schemas behind request builders (`buildBriefingRequest`, `buildFilterRequest`, `buildGeoRequest`), shared by production and the model-eval harness. |
