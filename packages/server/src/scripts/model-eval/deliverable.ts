@@ -353,7 +353,7 @@ function methodSection(report: EvalReport): string {
     '## Samples and method',
     `- Fetched ${report.inputs.fetchedAt} from the live public sources, read-only.`,
     `- News: ${report.inputs.newsCount} items (newest across all Berlin feeds, in production order). Per feed: ${feeds}.`,
-    `- Police: ${report.inputs.policeCount} reports — ${src.policeFeed} from the live feed, ${src.policeDb} from the database top-up. Top-up: ${src.dbTopUp}.`,
+    `- Police: ${report.inputs.policeCount} reports — ${src.policeFeed} from the live feed, ${src.policeArchive ?? 0} from the berlin.de press-release archive (${src.archive ?? 'not used'}; title plus the release text the feed's description is cut from), ${src.policeDb} from the database top-up. Top-up: ${src.dbTopUp}.`,
     `- News is classified in batches of 10, as in production. Police reports go ${POLICE_CHUNK} per call; production sends every unplaced report of a run in one call, which after the geo_attempted fix is usually a handful, so ${POLICE_CHUNK} per call stands in for a normal run. The one-off backlog call right after deploy is not modelled.`,
     '- Labels are geocoded with the production geocoder (Nominatim, LocationIQ fallback); misses are retried once after clearing its cache so a provider hiccup is not scored against an arm. "On map" means inside Berlin\'s bounding box, which is what the frontend shows.',
     '- Every request is built by the production request builders and sent through the production call path; `@default` means no reasoning_effort is sent, as today.',

@@ -27,7 +27,8 @@ npm run eval:models --workspace=packages/server -- --out ../../DOCS/<date>_<name
 
 ## What it reads, and what it never does
 
-- Reads the live public feeds (Berlin news feeds, police RSS). If the police feed yields fewer than 100 reports and `DATABASE_URL` is set, it tops up with one SELECT of explicit columns from `safety_reports` — never `loadSafetyReports`, which selects every schema column and breaks against an unmigrated DB. A failed top-up logs the error class and driver code only.
+- Reads the live public feeds (Berlin news feeds, police RSS). The police RSS carries only ~10 releases, so the harness fills up to 100 from the berlin.de press-release archive (`/polizei/polizeimeldungen/archiv/<year>/`, 50 per list page): it reads each release page and takes the first `textile` block, the text the RSS description is cut from. One request at a time, 250 ms apart, one retry after 2 s (berlin.de resets about one connection in six).
+- If feed plus archive still yield fewer than 100 reports and `DATABASE_URL` is set, it tops up with one SELECT of explicit columns from `safety_reports` — never `loadSafetyReports`, which selects every schema column and breaks against an unmigrated DB. A failed top-up logs the error class and driver code only.
 - Never writes to a database, never calls a `db/writes` function, never initialises the geocoder's DB cache (`initGeocodeDb`), never changes config or env.
 - `geocode()` caches a provider HTTP error as a permanent miss; the harness clears that cache and retries misses once so a transient 429 is not scored against an arm.
 
@@ -47,6 +48,6 @@ npm run eval:models --workspace=packages/server -- --out ../../DOCS/<date>_<name
 
 ## Known limits
 
-- The berlin.de police RSS feed carries only ~10 releases, so without a reachable DB holding recent `safety_reports` the police decision rests on ~10 reports (R3's tolerance is then one report).
+- The archive parser depends on berlin.de's markup (`cell nowrap date` list rows, `textile` body). If berlin.de changes it, the archive yields nothing, the log says `police archive: 0 releases`, and the police sample falls back to the ~10 feed reports (R3's tolerance is then one report).
 - Police requests go 10 per call; production sends every unplaced report of a run in one call.
 - News $/month is an upper bound: eval batches are full (10 items) while production averages ~2.5 new items per call.

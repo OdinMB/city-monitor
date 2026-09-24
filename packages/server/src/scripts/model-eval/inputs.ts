@@ -1,7 +1,8 @@
 /**
- * Fetch the live evaluation samples (Berlin news feeds, police releases, an
- * optional SELECT-only police top-up from the DB) and build the briefing
- * inputs the summarize job would have seen.
+ * Fetch the live evaluation samples (Berlin news feeds, police releases from
+ * the RSS feed and the berlin.de press-release archive, an optional
+ * SELECT-only police top-up from the DB) and build the briefing inputs the
+ * summarize job would have seen.
  */
 
 import type { NewsItem } from '@city-monitor/shared';
@@ -27,7 +28,9 @@ export interface PoliceSample {
   title: string;
   description: string;
   publishedAt: string;
-  source: 'feed' | 'db';
+  source: 'feed' | 'archive' | 'db';
+  /** Release page; absent for DB rows. */
+  url?: string;
 }
 
 export interface EvalInputs {
@@ -39,6 +42,9 @@ export interface EvalInputs {
   sources: {
     feeds: Array<{ name: string; items: number; ok: boolean }>;
     policeFeed: number;
+    /** Absent in inputs.json files written before the archive pager existed. */
+    policeArchive?: number;
+    archive?: string;
     policeDb: number;
     dbTopUp: string;
   };
@@ -105,7 +111,115 @@ async function collectPoliceFeed(): Promise<PoliceSample[]> {
     description: item.description || '',
     publishedAt: item.publishedAt,
     source: 'feed' as const,
+    url: item.url,
   }));
+}
+
+// The police RSS feed carries only the latest ~10 releases. The berlin.de
+// archive lists every release of the year, 50 per page, newest first; its
+// release pages hold the same text the feed's description is cut from.
+
+const BERLIN_DE = 'https://www.berlin.de';
+const ARCHIVE_MAX_PAGES = 4;
+const ARCHIVE_GAP_MS = 250;
+/** berlin.de resets roughly one connection in six; one slower retry recovers them. */
+const ARCHIVE_RETRY_MS = 2_000;
+const RELEASE_DESCRIPTION_CHARS = 500;
+
+export interface ArchiveEntry {
+  url: string;
+  title: string;
+  publishedAt: string;
+}
+
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  auml: 'ä', ouml: 'ö', uuml: 'ü', Auml: 'Ä', Ouml: 'Ö', Uuml: 'Ü', szlig: 'ß',
+  ndash: '–', mdash: '—', bdquo: '„', ldquo: '“', rdquo: '”', lsquo: '‘', rsquo: '’', hellip: '…',
+};
+
+function decodeEntities(text: string): string {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, ref: string) => {
+    if (ref[0] === '#') {
+      const code = ref[1] === 'x' || ref[1] === 'X' ? parseInt(ref.slice(2), 16) : parseInt(ref.slice(1), 10);
+      return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : match;
+    }
+    return NAMED_ENTITIES[ref] ?? match;
+  });
+}
+
+/** Tags out, entities decoded, whitespace collapsed. */
+function htmlToText(html: string): string {
+  return decodeEntities(html.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+}
+
+/** Wall-clock time in Berlin as ISO with the offset in force then (CET/CEST). */
+function berlinIso(y: number, mo: number, d: number, h: number, mi: number): string {
+  const offset = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Berlin', timeZoneName: 'longOffset' })
+    .formatToParts(new Date(Date.UTC(y, mo - 1, d, h, mi)))
+    .find((part) => part.type === 'timeZoneName')?.value.replace('GMT', '') || 'Z';
+  const pad = (v: number) => String(v).padStart(2, '0');
+  return `${y}-${pad(mo)}-${pad(d)}T${pad(h)}:${pad(mi)}:00${offset}`;
+}
+
+/** Entries of one berlin.de police archive list page. */
+export function parseArchiveList(html: string): ArchiveEntry[] {
+  const entry = /<div class="cell nowrap date">\s*(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})\s*Uhr\s*<\/div>\s*<div class="cell text">\s*<a href="([^"]*pressemitteilung\.\d+\.php)"[^>]*>([\s\S]*?)<\/a>/g;
+  return [...html.matchAll(entry)].map((m) => ({
+    url: m[6]!.startsWith('http') ? m[6]! : BERLIN_DE + m[6]!,
+    title: htmlToText(m[7]!),
+    publishedAt: berlinIso(Number(m[3]), Number(m[2]), Number(m[1]), Number(m[4]), Number(m[5])),
+  }));
+}
+
+/** The release text (first `textile` block) as plain text; '' if the page has none. */
+export function parseReleaseBody(html: string): string {
+  const match = /<div class="textile">([\s\S]*?)<\/div>/.exec(html);
+  return match ? htmlToText(match[1]!) : '';
+}
+
+/**
+ * Up to `need` archive releases not already in the feed, newest first. Pages
+ * and release pages are fetched one at a time with a short gap.
+ */
+async function collectPoliceArchive(need: number, known: ReadonlySet<string>): Promise<{ reports: PoliceSample[]; status: string }> {
+  const year = new Date().getFullYear();
+  const entries: ArchiveEntry[] = [];
+  for (let page = 1; page <= ARCHIVE_MAX_PAGES && entries.length < need; page++) {
+    const html = await fetchText(`${BERLIN_DE}/polizei/polizeimeldungen/archiv/${year}/?page_at_1_0=${page}`);
+    if (html === null) break;
+    const listed = parseArchiveList(html);
+    if (listed.length === 0) break;
+    entries.push(...listed.filter((e) => !known.has(e.url) && !entries.some((x) => x.url === e.url)));
+  }
+
+  const reports: PoliceSample[] = [];
+  let failed = 0;
+  const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  for (const e of entries.slice(0, need)) {
+    await pause(ARCHIVE_GAP_MS);
+    let html = await fetchText(e.url);
+    if (html === null) {
+      await pause(ARCHIVE_RETRY_MS);
+      html = await fetchText(e.url);
+    }
+    const body = html === null ? '' : parseReleaseBody(html);
+    if (!body) {
+      failed++;
+      continue;
+    }
+    reports.push({
+      id: hashString(e.url + e.title),
+      title: e.title,
+      description: body.slice(0, RELEASE_DESCRIPTION_CHARS),
+      publishedAt: e.publishedAt,
+      source: 'archive',
+      url: e.url,
+    });
+  }
+  const status = `${reports.length} releases read from the ${year} archive${failed > 0 ? `, ${failed} pages without text skipped` : ''}`;
+  log.info(`police archive: ${status}`);
+  return { reports, status };
 }
 
 /** Error class plus the driver's code (e.g. ECONNREFUSED, 42P01) — never the message. */
@@ -169,16 +283,25 @@ export async function collectInputs(limits: { news?: number; police?: number } =
 
   const [news, policeFeed] = await Promise.all([collectNews(maxNews), collectPoliceFeed()]);
 
-  let dbReports: PoliceSample[] = [];
-  let dbTopUp = `not needed (${policeFeed.length} reports in the feed)`;
+  let archiveReports: PoliceSample[] = [];
+  let archive = `not needed (${policeFeed.length} reports in the feed)`;
   if (policeFeed.length < maxPolice) {
+    const known = new Set(policeFeed.flatMap((r) => (r.url ? [r.url] : [])));
+    const fromArchive = await collectPoliceArchive(maxPolice - policeFeed.length, known);
+    archiveReports = fromArchive.reports;
+    archive = fromArchive.status;
+  }
+
+  let dbReports: PoliceSample[] = [];
+  let dbTopUp = `not needed (${policeFeed.length + archiveReports.length} reports from the feed and archive)`;
+  if (policeFeed.length + archiveReports.length < maxPolice) {
     const topUp = await topUpPoliceFromDb();
     dbReports = topUp.reports;
     dbTopUp = topUp.status;
   }
 
   const merged = new Map<string, PoliceSample>();
-  for (const report of [...policeFeed, ...dbReports]) if (!merged.has(report.id)) merged.set(report.id, report);
+  for (const report of [...policeFeed, ...archiveReports, ...dbReports]) if (!merged.has(report.id)) merged.set(report.id, report);
   const police = [...merged.values()].sort(byNewest).slice(0, maxPolice);
 
   return {
@@ -188,6 +311,8 @@ export async function collectInputs(limits: { news?: number; police?: number } =
     sources: {
       feeds: news.feeds,
       policeFeed: police.filter((p) => p.source === 'feed').length,
+      policeArchive: police.filter((p) => p.source === 'archive').length,
+      archive,
       policeDb: police.filter((p) => p.source === 'db').length,
       dbTopUp,
     },

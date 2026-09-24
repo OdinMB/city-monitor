@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { NewsItem } from '@city-monitor/shared';
-import { buildBriefingInputs } from './inputs.js';
+import { buildBriefingInputs, parseArchiveList, parseReleaseBody } from './inputs.js';
 import type { NormalizedVerdict } from './extraction-scoring.js';
 
 const NOW = new Date('2026-09-24T12:00:00Z');
@@ -95,5 +95,56 @@ describe('buildBriefingInputs', () => {
       'Headline C', 'Headline B', 'Headline A',
       'Headline G0', 'Headline G1', 'Headline G2', 'Headline G3', 'Headline G4', 'Headline G5',
     ]);
+  });
+});
+
+// Markup as served by berlin.de on 2026-09-24.
+const listItem = (date: string, href: string, title: string) =>
+  `<li><div class="cell nowrap date">${date}</div><div class="cell text"><a href="${href}" >${title}</a><span class="category"><strong>Ereignisort: </strong>Lichtenberg</span></div></li><!-- /Flex Autoteaser_ListItem -->`;
+
+describe('parseArchiveList', () => {
+  it('reads url, title and a Berlin-time timestamp from each entry', () => {
+    const html = `<ul class="list--tablelist">${[
+      listItem('23.09.2026 14:19 Uhr', '/polizei/polizeimeldungen/2026/pressemitteilung.1717600.php', 'Distanzelektroimpulsgerät eingesetzt'),
+      listItem('05.01.2026 09:05 Uhr', '/polizei/polizeimeldungen/2026/pressemitteilung.1600001.php', 'Brand &amp; Festnahme in &quot;Kiez&quot;'),
+    ].join('')}</ul>`;
+
+    expect(parseArchiveList(html)).toEqual([
+      {
+        url: 'https://www.berlin.de/polizei/polizeimeldungen/2026/pressemitteilung.1717600.php',
+        title: 'Distanzelektroimpulsgerät eingesetzt',
+        publishedAt: '2026-09-23T14:19:00+02:00',
+      },
+      {
+        url: 'https://www.berlin.de/polizei/polizeimeldungen/2026/pressemitteilung.1600001.php',
+        title: 'Brand & Festnahme in "Kiez"',
+        publishedAt: '2026-01-05T09:05:00+01:00',
+      },
+    ]);
+  });
+
+  it('returns nothing for a page without entries', () => {
+    expect(parseArchiveList('<html><body><p>Keine Treffer</p></body></html>')).toEqual([]);
+  });
+});
+
+describe('parseReleaseBody', () => {
+  it('returns the first textile block as plain text, the way the RSS description reads', () => {
+    const html = `<h1 class="title">Titel</h1><p class="polizeimeldung">Polizeimeldung vom 16.09.2026</p>
+      <div class="text">
+        <div class="textile">
+          <p>
+            <strong>Nr. 1189</strong><br>
+            Gestern Nachmittag wurden Einsatzkräfte in den Ortsteil Gropiusstadt&nbsp;alarmiert.
+          </p>
+          <p>Zweiter &#8222;Absatz&#8220;.</p>
+        </div>
+        <div class="textile"><p>Kontakt</p></div>
+      </div>`;
+    expect(parseReleaseBody(html)).toBe('Nr. 1189 Gestern Nachmittag wurden Einsatzkräfte in den Ortsteil Gropiusstadt alarmiert. Zweiter „Absatz“.');
+  });
+
+  it('returns an empty string when the page has no textile block', () => {
+    expect(parseReleaseBody('<html><body>Fehler 404</body></html>')).toBe('');
   });
 });
