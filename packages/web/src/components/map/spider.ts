@@ -3,10 +3,13 @@
  * outward with connecting legs. Click elsewhere to collapse.
  */
 
-import maplibregl, { type Listener } from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { SPIDER_BASE_RADIUS, SPIDER_PER_ITEM } from './constants.js';
 
 // --- Types -------------------------------------------------------------------
+
+/** Spider handlers are mouse events on the marker layers (mouseenter/mouseleave/click). */
+type Listener = (e: maplibregl.MapLayerMouseEvent) => void;
 
 export interface SpiderState {
   groups: Map<string, number[]>;       // groupKey → feature indices

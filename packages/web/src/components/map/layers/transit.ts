@@ -2,7 +2,7 @@
  * Transit alert map markers grouped by station.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { TrainFront } from 'lucide';
 import type { TransitAlert } from '../../../lib/api.js';
 import { SEVERITY_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';

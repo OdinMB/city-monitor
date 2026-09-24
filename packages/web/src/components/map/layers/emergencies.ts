@@ -2,7 +2,7 @@
  * Emergency pharmacy and AED defibrillator map markers.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import type { EmergencyPharmacy, AedLocation } from '../../../lib/api.js';
 import { registerPopupHandlers } from '../popups.js';
 

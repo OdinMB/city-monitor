@@ -2,7 +2,7 @@
  * NINA warning polygon layers.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import type { NinaWarning } from '../../../lib/api.js';
 import { NINA_SEVERITY_COLORS } from '../constants.js';
 import { registerPopupHandlers } from '../popups.js';

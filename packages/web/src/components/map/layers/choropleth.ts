@@ -2,7 +2,7 @@
  * Choropleth map layers: Social Atlas and Population demographics.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import type { SocialAtlasFeatureProps, PopulationFeatureProps } from '../../../lib/api.js';
 import { SOCIAL_ATLAS_COLOR_RAMPS, POPULATION_COLOR_RAMPS, type SocialAtlasMetric, type PopulationMetric } from '../constants.js';
 import { showMapPopup, scheduleHoverClose, type MapLayerEvent } from '../popups.js';

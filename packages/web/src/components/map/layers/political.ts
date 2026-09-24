@@ -2,7 +2,7 @@
  * Political district layer: GeoJSON boundaries, party-colored fills, and markers.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { Landmark } from 'lucide';
 import type { PoliticalDistrict } from '../../../lib/api.js';
 import { getPartyColor, getMajorityParty } from '../../../lib/party-colors.js';

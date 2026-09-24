@@ -2,7 +2,7 @@
  * Water level gauge and bathing water quality map markers.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { Droplets } from 'lucide';
 import type { WaterLevelStation, BathingSpot } from '../../../lib/api.js';
 import { WATER_STATE_COLORS, BATHING_QUALITY_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';

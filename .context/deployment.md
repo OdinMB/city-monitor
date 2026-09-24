@@ -27,7 +27,7 @@ Infrastructure defined in `render.yaml` (Blueprint spec).
 - **SPA fallback:** `/* → /index.html` rewrite
 - **API proxy:** `/api/* → https://city-monitor-api.onrender.com/api/*` rewrite
 - **Cache headers:** `/assets/*` immutable (1 year), everything else 5 min
-- **CSP header:** Restrictive Content-Security-Policy on all paths. Allows `'self'` + `'unsafe-inline'` for scripts/styles (needed for theme-detection inline script and Tailwind/MapLibre), CARTO tile domains, WMS overlay domains (gdi.berlin.de, geodienste.hamburg.de), Simple Analytics CDN, GitHub avatars, and `blob:` for MapLibre workers. Blocks frames, objects, and external fonts.
+- **CSP header:** Restrictive Content-Security-Policy on all paths. Allows `'self'` + `'unsafe-inline'` for scripts/styles (needed for theme-detection inline script and Tailwind/MapLibre), CARTO tile domains, WMS overlay domains (gdi.berlin.de, geodienste.hamburg.de), Simple Analytics CDN, GitHub avatars, and `blob:` in `worker-src` (MapLibre v5 built its worker from a blob; v6 loads a same-origin `/assets/maplibre-gl-worker-*.js`, which `'self'` covers). Blocks frames, objects, and external fonts.
 
 ## CI Pipeline
 

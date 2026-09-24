@@ -23,7 +23,7 @@
     "i18next": "^25.8.13",
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide": "^0.576.0",
-    "maplibre-gl": "^5.19.0",
+    "maplibre-gl": "^6.11.2",
     "react": "^19",
     "react-dom": "^19",
     "react-error-boundary": "^6.1.1",

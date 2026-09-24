@@ -2,7 +2,7 @@
  * News and safety map marker layers with spider animation.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import type { NewsItem, SafetyReport } from '../../../lib/api.js';
 import { NEWS_CATEGORY_COLORS } from '../../../lib/map-icons.js';
 import { MAP_NEWS } from '../../../lib/map-settings.js';

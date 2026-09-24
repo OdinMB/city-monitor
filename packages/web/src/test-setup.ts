@@ -74,17 +74,13 @@ vi.mock('maplibre-gl', () => {
     setHTML: vi.fn().mockReturnThis(),
     addTo: vi.fn().mockReturnThis(),
   }));
+  // maplibre-gl v6 is ESM-only with named exports (no default export)
   return {
-    default: {
-      Map: MockMap,
-      NavigationControl: vi.fn(),
-      AttributionControl: vi.fn(),
-      Popup: MockPopup,
-    },
     Map: MockMap,
     NavigationControl: vi.fn(),
     AttributionControl: vi.fn(),
     Popup: MockPopup,
+    setWorkerUrl: vi.fn(),
   };
 });
 

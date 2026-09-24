@@ -4,7 +4,7 @@
  */
 
 import { TrainFront, Newspaper, ShieldAlert, Pill, HeartPulse, Construction, Waves, Landmark, Building2, Building, MapPin, Palette, Trophy, TrendingUp, Siren } from 'lucide';
-import type maplibregl from 'maplibre-gl';
+import type * as maplibregl from 'maplibre-gl';
 
 export type IconNode = [tag: string, attrs: Record<string, string | number>][];
 

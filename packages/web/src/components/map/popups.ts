@@ -2,7 +2,7 @@
  * Shared popup infrastructure for the city map.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 
 // --- Module-level popup state ------------------------------------------------
 

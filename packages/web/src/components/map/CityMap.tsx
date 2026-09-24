@@ -7,8 +7,12 @@
 
 import { useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+// MapLibre v6 ships its worker as a separate ES module. `?worker&url` has Vite
+// bundle it into one self-contained file; plain `?url` would drop the shared
+// chunk it imports and no tiles would load in production builds.
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useTransit } from '../../hooks/useTransit.js';
@@ -42,6 +46,8 @@ import { updateAqGridLayer } from './layers/air-quality.js';
 import { updateWaterLevelMarkers, updateBathingMarkers } from './layers/water.js';
 import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/choropleth.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
+
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
 /** Symbol layer IDs that should animate in after fly-in */
 const MARKER_LAYERS = [

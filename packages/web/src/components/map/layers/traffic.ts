@@ -2,7 +2,7 @@
  * Traffic incident and construction/roadwork map layers.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import type { TrafficIncident, ConstructionSite } from '../../../lib/api.js';
 import { CONSTRUCTION_SUBTYPE_COLORS } from '../../../lib/map-icons.js';
 import { TRAFFIC_SEVERITY_COLORS } from '../constants.js';

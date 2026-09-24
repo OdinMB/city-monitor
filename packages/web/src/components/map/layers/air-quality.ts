@@ -2,7 +2,7 @@
  * Air quality grid map layer.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { Wind } from 'lucide';
 import type { AirQualityGridPoint } from '../../../lib/api.js';
 import { createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';

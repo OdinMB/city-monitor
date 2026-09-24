@@ -2,7 +2,7 @@
  * Noise sensor map markers (Sensor.Community DNMS).
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import { Volume2 } from 'lucide';
 import type { NoiseSensor } from '../../../lib/api.js';
 import { NOISE_LEVEL_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
