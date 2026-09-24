@@ -42,12 +42,10 @@ const FAVICON_SLUGS: Record<string, string> = {
   rbb24: 'rbb24',
   Tagesspiegel: 'tagesspiegel',
   'Berliner Morgenpost': 'berliner-morgenpost',
-  'BZ Berlin': 'bz-berlin',
   'Berlin.de News': 'berlin-de-news',
   'Berliner Zeitung': 'berliner-zeitung',
   'taz Berlin': 'taz-berlin',
   'RBB Polizei': 'berlin-de-news',
-  Exberliner: 'exberliner',
   'Gründerszene Berlin': 'gruenderszene',
   // Hamburg
   'NDR Hamburg': 'ndr-hamburg',

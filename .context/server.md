@@ -116,7 +116,7 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 ## City Configuration (`packages/server/src/config/`)
 
 - `index.ts` — `getActiveCities()` reads `ACTIVE_CITIES` env var (comma-separated IDs, default "berlin"), returns matching `CityConfig[]`. `getCityConfig(id)` for single lookup.
-- `cities/berlin.ts` — Berlin config with 9 RSS feeds, weather (Open-Meteo), transit (VBB), events (kulturdaten.berlin), police (berlin.de Presseportal RSS).
+- `cities/berlin.ts` — Berlin config with 7 RSS feeds, weather (Open-Meteo), transit (VBB), events (kulturdaten.berlin), police (berlin.de Presseportal RSS).
 - `cities/hamburg.ts` — Hamburg config with 4 RSS feeds (NDR, Abendblatt, MOPO, hamburg.de), weather (Open-Meteo), transit (HVV via HAFAS), police (presseportal.de RSS).
 
 Adding a city = adding a config file + registering in `ALL_CITIES` + setting `ACTIVE_CITIES` env var.

@@ -4,7 +4,7 @@
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (9 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, deduplicates by URL+title hash, sorts by tier → importance (desc) → recency. **Before LLM filtering, loads existing assessments from DB** — only genuinely new items (hash not in DB) are sent through the LLM filter. The LLM assigns `category`, `relevant_to_city`, and `importance` (0–1). After filtering, writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s), then persists all items with their assessments to Postgres via UPSERT (dedup on cityId+hash). Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 20 min (TTL 1200s).
+1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (7 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, deduplicates by URL+title hash, sorts by tier → importance (desc) → recency. **Before LLM filtering, loads existing assessments from DB** — only genuinely new items (hash not in DB) are sent through the LLM filter. The LLM assigns `category`, `relevant_to_city`, and `importance` (0–1). After filtering, writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s), then persists all items with their assessments to Postgres via UPSERT (dedup on cityId+hash). Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 20 min (TTL 1200s).
 
 2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/digest` returns cached digest, falls back to Postgres (with `applyDropLogic`), then empty structure.
 
@@ -15,16 +15,16 @@
 Feeds are defined in city config files (e.g. `packages/server/src/config/cities/berlin.ts`). Each feed has:
 - `name`, `url`, `tier` (1=primary, 2=secondary, 3=tertiary), `type` ('rss'|'atom'), `lang`, optional `category` override
 
-Berlin has 9 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, BZ Berlin, Berliner Zeitung, taz Berlin, Polizei Berlin (category=crime), Gründerszene, Exberliner.
+Berlin has 7 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, Berliner Zeitung, taz Berlin, Polizei Berlin (category=crime), Gründerszene.
 
 Feed status (checked 2026-09-24):
 
-- **BZ Berlin: dead on purpose; do not "fix" the URL on your own.** The configured `/feed` returns 404 since BZ changed its CMS. A working feed exists at `https://www.bz-berlin.de/feed/berlin.xml`, but BZ's `robots.txt` links an RSL licence (`/rsl.xml`) that prohibits `ai-input`, and every news item here goes through the LLM classifier. Re-enabling it is the owner's licensing call.
-- **Exberliner: dead.** It rebranded as The Berliner, `exberliner.com` redirects to `the-berliner.com`, and every WordPress feed URL there now 302s to the homepage. The WordPress REST API (`/wp-json/wp/v2/posts`) is public, but using it would need a JSON adapter rather than a feed URL.
+- **BZ Berlin: removed 2026-09-24 for licensing; do not re-add it.** A working feed exists (`/feed/berlin.xml`), but BZ's RSL licence (`/rsl.xml`, linked from `robots.txt`) prohibits `ai-input`, and every news item here goes through the LLM classifier.
+- **Exberliner: removed 2026-09-24.** It rebranded as The Berliner and no longer publishes a feed; every WordPress feed URL 302s to the homepage.
 - taz: `!p<id>` picks the section and the path slug is cosmetic. Berlin is `!p4649`; the old `!p4610` was the Öko section.
 - rbb24 notes in its feed that the content is for non-commercial sites only and must not be archived. `robots.txt` reserves AI training but allows retrieval/grounding with attribution.
 
-Use Node's `fetch` to probe a feed, not curl. BZ's Akamai front end returns 403 to curl even for the homepage, but serves Node's fetch, which is what production uses.
+Use Node's `fetch` to probe a feed, not curl. Some CDN front ends (BZ's Akamai, for one) return 403 to curl even for the homepage, but serve Node's fetch, which is what production uses.
 
 ### Favicons
 
