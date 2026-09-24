@@ -80,13 +80,7 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache, db: Db | null): P
 
   // 6. Merge, re-sort by importance (higher first), filter irrelevant
   const merged: PersistedNewsItem[] = [...known, ...assessed];
-  merged.sort((a, b) => {
-    if (a.tier !== b.tier) return a.tier - b.tier;
-    const aImp = a.assessment?.importance ?? 0;
-    const bImp = b.assessment?.importance ?? 0;
-    if (aImp !== bImp) return bImp - aImp;
-    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
-  });
+  merged.sort(compareDigestOrder);
   const visible = applyDropLogic(merged);
 
   // 7. Build category buckets
@@ -280,8 +274,17 @@ async function applyLlmFilter(city: CityConfig, items: NewsItem[]): Promise<Pers
 }
 
 // ---------------------------------------------------------------------------
-// Shared drop logic (used by warm-cache and news route too)
+// Shared digest ordering and drop logic (used by warm-cache and news route too)
 // ---------------------------------------------------------------------------
+
+/** Digest order: tier first, then importance (highest first), then newest. */
+export function compareDigestOrder(a: PersistedNewsItem, b: PersistedNewsItem): number {
+  if (a.tier !== b.tier) return a.tier - b.tier;
+  const aImp = a.assessment?.importance ?? 0;
+  const bImp = b.assessment?.importance ?? 0;
+  if (aImp !== bImp) return bImp - aImp;
+  return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+}
 
 /**
  * Filters out items the LLM assessed as irrelevant.

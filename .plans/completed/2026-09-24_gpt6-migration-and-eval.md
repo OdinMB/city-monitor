@@ -1,7 +1,7 @@
 # GPT-6 migration, phase 1: model plumbing, police re-send fix, eval harness
 
 - **Date**: 2026-09-24
-- **Status**: draft
+- **Status**: implemented (commits A–C, 2026-09-24); the paid eval run and the owner's rating are still to do
 - **Type**: feature
 - **Complexity**: complex
 

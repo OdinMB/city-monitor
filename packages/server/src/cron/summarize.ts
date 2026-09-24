@@ -25,6 +25,13 @@ const SUMMARY_TTL = 86400; // 24 hours
 const TOP_HEADLINES = 25;
 const HASH_HEADLINE_COUNT = 10;
 
+/** Briefing input: digest items with importance > 0.5, in digest order, up to 25. */
+export function selectBriefingItems<T extends { importance?: number }>(digestItems: readonly T[]): T[] {
+  return digestItems
+    .filter((item) => (item.importance ?? 0) > 0.5)
+    .slice(0, TOP_HEADLINES);
+}
+
 export function createSummarization(cache: Cache, db: Db | null = null) {
   return async function summarizeNews(): Promise<void> {
     if (!isConfigured()) {
@@ -53,11 +60,7 @@ async function summarizeCityNews(
   const digest = cache.get<NewsDigest>(CK.newsDigest(cityId));
   if (!digest || digest.items.length === 0) return;
 
-  // Take most recent stories with importance > 0.5 (up to 25)
-  const topItems = digest.items
-    .filter((item) => (item.importance ?? 0) > 0.5)
-    .slice(0, TOP_HEADLINES);
-
+  const topItems = selectBriefingItems(digest.items);
   if (topItems.length === 0) return;
 
   // Build cache key from sorted top headlines to detect changes

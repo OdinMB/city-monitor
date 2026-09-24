@@ -56,6 +56,7 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/new-data-sources.md`](.context/new-data-sources.md) — **When adding a new data source, follow the checklist in this file.** It covers all 27 integration points (server, frontend, favicons, docs, tests, migration) and includes a data freshness inventory for sources with hardcoded URLs. Also contains research on potential Berlin data sources.
 - [`.context/deploy-on-render.md`](.context/deploy-on-render.md) — Step-by-step Render.com deployment guide: Blueprint (automated) and manual setup for PostgreSQL, API web service, and static frontend. Covers env vars, rewrites, headers, custom domains, multi-city, troubleshooting, and costs.
 - [`.context/testing.md`](.context/testing.md) — Vitest setup for both packages, how to run tests (turbo vs direct), web jsdom environment, co-located test file conventions.
+- [`.context/model-eval.md`](.context/model-eval.md) — Before changing an LLM model, effort or prompt, rerun the model-eval harness (`npm run eval:models`); it is read-only against the DB and budget-capped. Covers the arms, flags, decision rules, output files and known sample limits.
 
 ## Key Conventions
 
