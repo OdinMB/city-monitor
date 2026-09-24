@@ -31,6 +31,21 @@ const ATOM_FEED = `<?xml version="1.0" encoding="UTF-8"?>
 </feed>`;
 
 describe('parseFeed', () => {
+  it('decodes numeric and HTML character references in titles and descriptions', () => {
+    // rbb24 encodes umlauts as numeric references.
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>rbb24</title>
+  <item>
+    <title>VfL Potsdam schl&#228;gt Essen &#x2013; 2. Runde</title>
+    <link>https://example.com/1</link>
+    <description>Stra&#223;e gesperrt&nbsp;&amp; umgeleitet</description>
+  </item>
+</channel></rss>`;
+    const [item] = parseFeed(xml);
+    expect(item!.title).toBe('VfL Potsdam schlägt Essen – 2. Runde');
+    expect(item!.description).toBe('Straße gesperrt & umgeleitet');
+  });
+
   it('parses RSS 2.0 feed', () => {
     const items = parseFeed(RSS_FEED);
     expect(items).toHaveLength(2);

@@ -17,6 +17,15 @@ Feeds are defined in city config files (e.g. `packages/server/src/config/cities/
 
 Berlin has 9 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, BZ Berlin, Berliner Zeitung, taz Berlin, Polizei Berlin (category=crime), Gründerszene, Exberliner.
 
+Feed status (checked 2026-09-24):
+
+- **BZ Berlin: dead on purpose; do not "fix" the URL on your own.** The configured `/feed` returns 404 since BZ changed its CMS. A working feed exists at `https://www.bz-berlin.de/feed/berlin.xml`, but BZ's `robots.txt` links an RSL licence (`/rsl.xml`) that prohibits `ai-input`, and every news item here goes through the LLM classifier. Re-enabling it is the owner's licensing call.
+- **Exberliner: dead.** It rebranded as The Berliner, `exberliner.com` redirects to `the-berliner.com`, and every WordPress feed URL there now 302s to the homepage. The WordPress REST API (`/wp-json/wp/v2/posts`) is public, but using it would need a JSON adapter rather than a feed URL.
+- taz: `!p<id>` picks the section and the path slug is cosmetic. Berlin is `!p4649`; the old `!p4610` was the Öko section.
+- rbb24 notes in its feed that the content is for non-commercial sites only and must not be archived. `robots.txt` reserves AI training but allows retrieval/grounding with attribution.
+
+Use Node's `fetch` to probe a feed, not curl. BZ's Akamai front end returns 403 to curl even for the homepage, but serves Node's fetch, which is what production uses.
+
 ### Favicons
 
 News source favicons are self-hosted in `packages/web/public/favicons/`. When adding a new feed source:
@@ -35,7 +44,7 @@ News source favicons are self-hosted in `packages/web/public/favicons/`. When ad
 
 ### RSS Parser (`packages/server/src/lib/rss-parser.ts`)
 
-Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, url, publishedAt, description, imageUrl.
+Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, url, publishedAt, description, imageUrl. Decodes numeric (`&#228;`) and common HTML (`&nbsp;`) character references (`htmlEntities: true`) — rbb24 encodes umlauts that way. RSS 1.0 (RDF) is not supported.
 ## AI Summarization
 
 ### Data Flow

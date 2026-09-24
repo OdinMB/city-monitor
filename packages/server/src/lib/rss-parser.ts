@@ -16,6 +16,8 @@ const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
   textNodeName: '#text',
+  // Numeric (&#228;) and common HTML (&nbsp;) references — rbb24 encodes umlauts this way.
+  htmlEntities: true,
 });
 
 export function parseFeed(xml: string): FeedItem[] {
