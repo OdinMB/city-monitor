@@ -33,7 +33,7 @@ City Monitor aggregates public data feeds into a single dashboard per city: weat
 | Frontend | React 19, TypeScript, Vite 6, Tailwind v4, Zustand, React Query, MapLibre GL |
 | Backend | Node.js, Express, node-cron, Drizzle ORM |
 | Database | PostgreSQL with in-memory cache |
-| AI | OpenAI GPT-5 for news summarization |
+| AI | OpenAI: GPT-6 Luna for news classification and police-report locations, GPT-5 mini for the daily briefing |
 | Deployment | Render.com |
 
 ## Getting Started

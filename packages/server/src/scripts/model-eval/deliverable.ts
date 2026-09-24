@@ -273,7 +273,7 @@ function extractionSection(title: string, section: ExtractionSection | null, not
     extractionTable(section),
     '"Missing items" counts items without an accepted verdict (failed calls, rejected responses, omitted or duplicate indices); "of which left out" is the part a successful response simply did not return. Rates are over all sample items.',
     section.site === 'news'
-      ? '"Briefing-eligible" is the share of items marked relevant with importance above 0.5, the cut-off for the daily briefing. "Importance flips" counts items that cross that cut-off relative to the baseline, in either direction.'
+      ? '"Briefing-eligible" is the share of items marked relevant with importance 0.5 or above, the cut-off for the daily briefing. "Importance flips" counts items that cross that cut-off relative to the baseline, in either direction.'
       : 'Several models answer "no location" by leaving the report out rather than returning null — the prompt says to "omit the locationLabel field". Production marks a left-out report attempted exactly like a null one, so R1 does not count left-out police reports as defects.',
     '### Rules per candidate',
     ruleLines(section.evaluations),

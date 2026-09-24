@@ -43,12 +43,23 @@ interface SiteConfig {
   modelEnv: readonly string[];
   effortEnv: string;
   defaultModel: string;
+  /**
+   * Sent when the effort env var is unset or invalid, whichever model the site
+   * resolves to — unless that model does not support it, in which case no
+   * effort is sent (the API default).
+   */
+  defaultEffort?: ReasoningEffort;
 }
 
+/**
+ * News and police defaults come from the 2026-09-24 model eval (see
+ * .context/model-eval.md). The briefing stays on gpt-5-mini until its blind
+ * rating is done; that snapshot shuts down on 2026-12-11.
+ */
 const SITES: Record<LlmSite, SiteConfig> = {
   summary: { modelEnv: ['OPENAI_MODEL'], effortEnv: 'OPENAI_SUMMARY_EFFORT', defaultModel: 'gpt-5-mini' },
-  filter: { modelEnv: ['OPENAI_FILTER_MODEL'], effortEnv: 'OPENAI_FILTER_EFFORT', defaultModel: 'gpt-5-nano' },
-  geo: { modelEnv: ['OPENAI_GEO_MODEL', 'OPENAI_FILTER_MODEL'], effortEnv: 'OPENAI_GEO_EFFORT', defaultModel: 'gpt-5-nano' },
+  filter: { modelEnv: ['OPENAI_FILTER_MODEL'], effortEnv: 'OPENAI_FILTER_EFFORT', defaultModel: 'gpt-6-luna', defaultEffort: 'medium' },
+  geo: { modelEnv: ['OPENAI_GEO_MODEL', 'OPENAI_FILTER_MODEL'], effortEnv: 'OPENAI_GEO_EFFORT', defaultModel: 'gpt-6-luna', defaultEffort: 'none' },
 };
 
 const ALL_EFFORTS: readonly ReasoningEffort[] = ['minimal', 'none', 'low', 'medium', 'high', 'xhigh', 'max'];
@@ -74,28 +85,34 @@ function isEffort(value: string): value is ReasoningEffort {
 
 /**
  * Validate an effort value against the model family. Anything the API would
- * reject is logged and dropped, so a misconfigured env var degrades to the API
- * default instead of failing the call site on every run.
+ * reject is logged and treated as unset, so a misconfigured env var degrades
+ * to the site default instead of failing the call site on every run.
  */
 function parseEffort(raw: string | undefined, model: string, envName: string): ReasoningEffort | undefined {
   const value = raw?.trim().toLowerCase();
   if (!value) return undefined;
   if (!isEffort(value)) {
-    log.warn(`${envName} is not a known reasoning effort — using the API default`);
+    log.warn(`${envName} is not a known reasoning effort — ignoring it`);
     return undefined;
   }
   if (!allowedEfforts(model).includes(value)) {
-    log.warn(`${envName}=${value} is not supported by ${model} — using the API default`);
+    log.warn(`${envName}=${value} is not supported by ${model} — ignoring it`);
     return undefined;
   }
   return value;
+}
+
+/** The site's default effort, if the model supports it. */
+function defaultEffortFor(config: SiteConfig, model: string): ReasoningEffort | undefined {
+  const effort = config.defaultEffort;
+  return effort && allowedEfforts(model).includes(effort) ? effort : undefined;
 }
 
 /** Model and effort for a call site. Reads env at call time. */
 export function resolveSiteTarget(site: LlmSite): ModelTarget {
   const config = SITES[site];
   const model = config.modelEnv.map((name) => process.env[name]).find((value) => !!value) || config.defaultModel;
-  const effort = parseEffort(process.env[config.effortEnv], model, config.effortEnv);
+  const effort = parseEffort(process.env[config.effortEnv], model, config.effortEnv) ?? defaultEffortFor(config, model);
   return effort ? { model, effort } : { model };
 }
 

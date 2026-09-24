@@ -19,10 +19,10 @@ afterEach(() => {
 });
 
 describe('resolveSiteTarget — models', () => {
-  it('keeps today\'s models and sends no effort when nothing is configured', () => {
+  it('uses each site\'s default model and effort when nothing is configured', () => {
     expect(resolveSiteTarget('summary')).toEqual({ model: 'gpt-5-mini' });
-    expect(resolveSiteTarget('filter')).toEqual({ model: 'gpt-5-nano' });
-    expect(resolveSiteTarget('geo')).toEqual({ model: 'gpt-5-nano' });
+    expect(resolveSiteTarget('filter')).toEqual({ model: 'gpt-6-luna', effort: 'medium' });
+    expect(resolveSiteTarget('geo')).toEqual({ model: 'gpt-6-luna', effort: 'none' });
   });
 
   it('uses OPENAI_FILTER_MODEL for police extraction when OPENAI_GEO_MODEL is unset', () => {
@@ -45,28 +45,32 @@ describe('resolveSiteTarget — effort validation', () => {
     return resolveSiteTarget('filter').effort;
   }
 
+  /** What the site sends for this model when its effort variable is unset. */
+  function unsetEffortFor(model: string): string | undefined {
+    return effortFor(model, '');
+  }
+
   it('passes a valid effort through', () => {
     expect(effortFor('gpt-6-luna', 'low')).toBe('low');
     expect(effortFor('gpt-5-nano', 'minimal')).toBe('minimal');
   });
 
   it('normalises case and whitespace', () => {
-    expect(effortFor('gpt-6-sol', ' Medium ')).toBe('medium');
+    expect(effortFor('gpt-6-sol', ' High ')).toBe('high');
   });
 
-  it('ignores an empty or unknown effort', () => {
-    expect(effortFor('gpt-6-luna', '')).toBeUndefined();
-    expect(effortFor('gpt-6-luna', 'turbo')).toBeUndefined();
+  it('treats an unknown effort as unset', () => {
+    expect(effortFor('gpt-6-luna', 'turbo')).toBe(unsetEffortFor('gpt-6-luna'));
   });
 
-  it('ignores minimal on GPT-6, which rejects it', () => {
-    expect(effortFor('gpt-6-luna', 'minimal')).toBeUndefined();
+  it('treats minimal on GPT-6, which rejects it, as unset', () => {
+    expect(effortFor('gpt-6-luna', 'minimal')).toBe(unsetEffortFor('gpt-6-luna'));
   });
 
-  it('ignores none and xhigh on the gpt-5 family, which has neither', () => {
-    expect(effortFor('gpt-5-nano', 'none')).toBeUndefined();
-    expect(effortFor('gpt-5-nano', 'xhigh')).toBeUndefined();
-    expect(effortFor('gpt-5-mini-2025-08-07', 'max')).toBeUndefined();
+  it('treats none, xhigh and max on the gpt-5 family, which has none of them, as unset', () => {
+    expect(effortFor('gpt-5-nano', 'none')).toBe(unsetEffortFor('gpt-5-nano'));
+    expect(effortFor('gpt-5-nano', 'xhigh')).toBe(unsetEffortFor('gpt-5-nano'));
+    expect(effortFor('gpt-5-mini-2025-08-07', 'max')).toBe(unsetEffortFor('gpt-5-mini-2025-08-07'));
   });
 
   it('accepts none on GPT-6 and on gpt-5.6-luna', () => {
@@ -77,11 +81,31 @@ describe('resolveSiteTarget — effort validation', () => {
   it('reads each site\'s effort from its own variable', () => {
     vi.stubEnv('OPENAI_MODEL', 'gpt-6-sol');
     vi.stubEnv('OPENAI_SUMMARY_EFFORT', 'high');
-    vi.stubEnv('OPENAI_GEO_MODEL', 'gpt-6-luna');
-    vi.stubEnv('OPENAI_GEO_EFFORT', 'none');
-    expect(resolveSiteTarget('summary')).toEqual({ model: 'gpt-6-sol', effort: 'high' });
-    expect(resolveSiteTarget('geo')).toEqual({ model: 'gpt-6-luna', effort: 'none' });
-    expect(resolveSiteTarget('filter')).toEqual({ model: 'gpt-5-nano' });
+    vi.stubEnv('OPENAI_FILTER_EFFORT', 'low');
+    vi.stubEnv('OPENAI_GEO_EFFORT', 'medium');
+    expect(resolveSiteTarget('summary').effort).toBe('high');
+    expect(resolveSiteTarget('filter').effort).toBe('low');
+    expect(resolveSiteTarget('geo').effort).toBe('medium');
+  });
+});
+
+describe('resolveSiteTarget — default effort', () => {
+  it('keeps each site\'s own default effort when only the model is overridden', () => {
+    // Police follows OPENAI_FILTER_MODEL but not the news site's effort.
+    vi.stubEnv('OPENAI_FILTER_MODEL', 'gpt-5.6-luna');
+    expect(resolveSiteTarget('filter')).toEqual({ model: 'gpt-5.6-luna', effort: 'medium' });
+    expect(resolveSiteTarget('geo')).toEqual({ model: 'gpt-5.6-luna', effort: 'none' });
+  });
+
+  it('sends no effort when the model does not support the site default', () => {
+    // Rolling police back to gpt-5-nano, which has no `none`, restores the pre-GPT-6 request.
+    vi.stubEnv('OPENAI_GEO_MODEL', 'gpt-5-nano');
+    expect(resolveSiteTarget('geo')).toEqual({ model: 'gpt-5-nano' });
+  });
+
+  it('sends no effort for a site without a default', () => {
+    vi.stubEnv('OPENAI_MODEL', 'gpt-6-sol');
+    expect(resolveSiteTarget('summary')).toEqual({ model: 'gpt-6-sol' });
   });
 });
 

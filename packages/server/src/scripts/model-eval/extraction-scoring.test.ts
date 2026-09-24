@@ -105,9 +105,28 @@ describe('scoreExtraction', () => {
     expect(candidate.metrics.relevanceAgreement).toBe(0.75);
     expect(candidate.metrics.importanceFlips).toBe(0.5);
     expect(candidate.metrics.categoryAgreement).toBe(1);
-    // Relevant and above the briefing's > 0.5 cut-off, over all sample items.
+    // Relevant and inside the briefing's cut-off, over all sample items.
     expect(baseline.metrics.briefingEligibleRate).toBe(0.5);
     expect(candidate.metrics.briefingEligibleRate).toBe(0.5);
+  });
+
+  it('uses the briefing\'s cut-off, which includes exactly 0.5', () => {
+    const baseline = scoreExtraction('news', 'base', [record(ids, [
+      newsItem(0, { importance: 0.5 }),
+      newsItem(1, { importance: 0.5 }),
+      newsItem(2, { importance: 0.49 }),
+      newsItem(3, { importance: 0.3 }),
+    ])], ctx);
+    const candidate = scoreExtraction('news', 'cand', [record(ids, [
+      newsItem(0, { importance: 0.8 }),
+      newsItem(1, { importance: 0.49 }),
+      newsItem(2, { importance: 0.4 }),
+      newsItem(3, { importance: 0.3 }),
+    ])], ctx, baseline.verdicts);
+
+    expect(baseline.metrics.briefingEligibleRate).toBe(0.5);
+    // Only item 1 crosses the cut-off; 0.5 → 0.8 stays inside it.
+    expect(candidate.metrics.importanceFlips).toBe(0.25);
   });
 
   it('leaves agreement undefined when there is nothing to compare', () => {

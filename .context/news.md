@@ -36,12 +36,11 @@ News source favicons are self-hosted in `packages/web/public/favicons/`. When ad
 ### RSS Parser (`packages/server/src/lib/rss-parser.ts`)
 
 Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, url, publishedAt, description, imageUrl.
-
 ## AI Summarization
 
 ### Data Flow
 
-1. **Summarization** (`packages/server/src/cron/summarize.ts`) — Runs every 6 hours (at :05 past). Skipped if `OPENAI_API_KEY` not set. Takes up to 25 most recent items with importance > 0.5 from cached news digest. Passes titles + descriptions for richer context. Hashes the top 5 headlines to detect changes — skips API call if headlines unchanged since last summary. **Generates briefings in all languages configured for the city** (e.g. de/en/tr/ar for Berlin) in a single LLM call via structured output. Writes to cache key `{cityId}:news:summary` (TTL 86400s / 24h) and persists one row per language to Postgres with token counts.
+1. **Summarization** (`packages/server/src/cron/summarize.ts`) — Runs every 6 hours (at :05 past). Skipped if `OPENAI_API_KEY` not set. Takes up to 25 items with importance 0.5 or above (`selectBriefingItems` / `meetsBriefingCutoff`) from the cached news digest, in digest order. The cut-off includes 0.5 because the prompt's rubric calls 0.5–0.6 "significant" and GPT-6 Luna scores such stories exactly 0.5 — with `> 0.5` Luna halved the briefing pool. Passes titles + descriptions for richer context. Hashes the top 10 headlines to detect changes — skips API call if headlines unchanged since last summary. **Generates briefings in all languages configured for the city** (e.g. de/en/tr/ar for Berlin) in a single LLM call via structured output. Writes to cache key `{cityId}:news:summary` (TTL 86400s / 24h) and persists one row per language to Postgres with token counts.
 
 2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/summary?lang=<code>` returns the briefing for the requested language, falling back to the city's primary language. The `lang` param is validated against `city.languages`.
 
@@ -51,7 +50,7 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 
 - **Layout:** `openai.ts` holds the three pipelines (batching, index checks, geocoding, usage tracking). `llm-client.ts` decides model + effort per call site and makes the one structured call (`invokeStructured`). `llm-prompts.ts` holds the prompts and schemas behind request builders, so production and the model-eval harness send identical prompts.
 - **Client:** LangChain `ChatOpenAI` with Zod-validated structured output (`.withStructuredOutput(zodSchema, { includeRaw: true })`, default `jsonSchema` method — never `functionCalling`, which GPT-6 only supports at effort `none`)
-- **Model + effort per call site:** summaries `OPENAI_MODEL` (default `gpt-5-mini`) + `OPENAI_SUMMARY_EFFORT`; news classification `OPENAI_FILTER_MODEL` (default `gpt-5-nano`) + `OPENAI_FILTER_EFFORT`; police locations `OPENAI_GEO_MODEL` (falls back to `OPENAI_FILTER_MODEL`) + `OPENAI_GEO_EFFORT`. Unset effort = API default. Valid values per model family: see `server.md` → Environment Variables.
+- **Model + effort per call site:** summaries `OPENAI_MODEL` (default `gpt-5-mini`, no effort sent) + `OPENAI_SUMMARY_EFFORT`; news classification `OPENAI_FILTER_MODEL` (default `gpt-6-luna`) + `OPENAI_FILTER_EFFORT` (default `medium`); police locations `OPENAI_GEO_MODEL` (falls back to `OPENAI_FILTER_MODEL`, then `gpt-6-luna`) + `OPENAI_GEO_EFFORT` (default `none`). News and police defaults come from the 2026-09-24 eval; the briefing model waits for its blind rating. Defaults and valid values per model family: see `server.md` → Environment Variables.
 - **Structured output schemas:** `BriefingSchema` (dynamic — one key per configured language, e.g. `{ briefings: { de: string, en: string, tr: string, ar: string } }`), `FilterResultSchema` (index, relevant_to_city, category, importance, locationLabel), `GeoResultSchema` (index, locationLabel)
 - **Index check:** filter and police responses are numbered 0-based. `checkBatchIndices` rejects a whole response if any index is non-integer or out of range (the signature of a model counting from 1 — every verdict would land on its neighbour). A rejected news batch counts as failed and is retried next run; a rejected police response returns `null`. Duplicate indices: first occurrence wins.
 - **System prompt:** Local news editor for [city], two short paragraphs (~120 words per language), focus on daily-life impact, write in all configured languages in one response
@@ -104,4 +103,4 @@ interface NewsSummary {
 
 ## Drop Logic
 
-`applyDropLogic()` (exported from `ingest-feeds.ts`) filters out items the LLM assessed as irrelevant. Shared by the cron job, warm-cache, and the digest route. Drops all items where `relevant_to_city === false`. Items without assessment default to importance 0.5. Map markers require importance >= 0.5; summarization requires importance >= 0.3.
+`applyDropLogic()` (exported from `ingest-feeds.ts`) filters out items the LLM assessed as irrelevant. Shared by the cron job, warm-cache, and the digest route. Drops all items where `relevant_to_city === false`. Items without assessment default to importance 0.5. Map markers require importance >= 0.5; the briefing requires importance >= 0.5 (see AI Summarization).

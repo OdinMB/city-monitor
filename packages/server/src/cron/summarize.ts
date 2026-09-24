@@ -25,10 +25,19 @@ const SUMMARY_TTL = 86400; // 24 hours
 const TOP_HEADLINES = 25;
 const HASH_HEADLINE_COUNT = 10;
 
-/** Briefing input: digest items with importance > 0.5, in digest order, up to 25. */
+/**
+ * Whether an item's importance puts it in the briefing. The classifier's rubric
+ * calls 0.5–0.6 "significant", and GPT-6 Luna gives such stories exactly 0.5,
+ * so the cut-off includes 0.5. Unscored items stay out.
+ */
+export function meetsBriefingCutoff(importance: number | undefined): boolean {
+  return (importance ?? 0) >= 0.5;
+}
+
+/** Briefing input: digest items that meet the briefing cut-off, in digest order, up to 25. */
 export function selectBriefingItems<T extends { importance?: number }>(digestItems: readonly T[]): T[] {
   return digestItems
-    .filter((item) => (item.importance ?? 0) > 0.5)
+    .filter((item) => meetsBriefingCutoff(item.importance))
     .slice(0, TOP_HEADLINES);
 }
 

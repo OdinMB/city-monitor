@@ -7,6 +7,7 @@
 
 import { checkBatchIndices, stripBareCityLabel } from '../../lib/openai.js';
 import { VALID_CATEGORIES } from '../../lib/llm-prompts.js';
+import { meetsBriefingCutoff } from '../../cron/summarize.js';
 import type { CallRecord } from './arms.js';
 import { callStats, hasJunkCharacters, ratio, type CallStats } from './call-stats.js';
 
@@ -133,7 +134,7 @@ export interface ExtractionMetrics extends CallStats, Coverage {
   labelRate: number;
   geocodedRate: number;
   onMapRate: number;
-  /** News: relevant and importance > 0.5 (the briefing's cut-off), over all sample items. */
+  /** News: relevant and inside the briefing's importance cut-off, over all sample items. */
   briefingEligibleRate?: number;
   relevanceAgreement?: number;
   categoryAgreement?: number;
@@ -173,7 +174,7 @@ function compareWithBaseline(
     sameLabelRate,
     relevanceAgreement: share(normalized.filter(({ c, b }) => c.relevant_to_city === b.relevant_to_city).length, normalized.length),
     categoryAgreement: share(bothRelevant.filter(({ c, b }) => c.category === b.category).length, bothRelevant.length),
-    importanceFlips: share(normalized.filter(({ c, b }) => (c.importance > 0.5) !== (b.importance > 0.5)).length, normalized.length),
+    importanceFlips: share(normalized.filter(({ c, b }) => meetsBriefingCutoff(c.importance) !== meetsBriefingCutoff(b.importance)).length, normalized.length),
   };
 }
 
@@ -211,7 +212,7 @@ export function scoreExtraction(
     geocodedRate: ratio(points.length, ctx.n),
     onMapRate: ratio(points.filter((p) => inBox(p, ctx.bbox)).length, ctx.n),
     ...(site === 'news'
-      ? { briefingEligibleRate: ratio(items.map(normalizeVerdict).filter((v) => v.relevant_to_city && v.importance > 0.5).length, ctx.n) }
+      ? { briefingEligibleRate: ratio(items.map(normalizeVerdict).filter((v) => v.relevant_to_city && meetsBriefingCutoff(v.importance)).length, ctx.n) }
       : {}),
     ...(baseline ? compareWithBaseline(site, verdicts, baseline, cityLower) : {}),
     costPerMonth: stats.costPerCall * ctx.volume,
@@ -282,7 +283,7 @@ function evaluateCandidate(site: ExtractionSite, b: ExtractionMetrics, c: Extrac
       {
         id: 'R5',
         pass: (c.importanceFlips ?? 1) <= 0.1 + EPSILON,
-        detail: `importance flips across 0.5: ${pct(c.importanceFlips)} (max 10%)`,
+        detail: `importance flips across the briefing cut-off: ${pct(c.importanceFlips)} (max 10%)`,
       },
     );
   }

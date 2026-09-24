@@ -130,10 +130,10 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `OPENAI_API_KEY` | No | — | Enables AI summarization. Skipped if not set. |
 | `OPENAI_MODEL` | No | `gpt-5-mini` | OpenAI model for summaries |
 | `OPENAI_SUMMARY_EFFORT` | No | _(unset = API default)_ | Reasoning effort for summaries |
-| `OPENAI_FILTER_MODEL` | No | `gpt-5-nano` | Model for news classification + location labels |
-| `OPENAI_FILTER_EFFORT` | No | _(unset = API default)_ | Reasoning effort for news classification |
-| `OPENAI_GEO_MODEL` | No | `OPENAI_FILTER_MODEL` | Model for police-report location extraction |
-| `OPENAI_GEO_EFFORT` | No | _(unset = API default)_ | Reasoning effort for police-report location extraction |
+| `OPENAI_FILTER_MODEL` | No | `gpt-6-luna` | Model for news classification + location labels |
+| `OPENAI_FILTER_EFFORT` | No | `medium` | Reasoning effort for news classification |
+| `OPENAI_GEO_MODEL` | No | `OPENAI_FILTER_MODEL`, else `gpt-6-luna` | Model for police-report location extraction |
+| `OPENAI_GEO_EFFORT` | No | `none` | Reasoning effort for police-report location extraction |
 | `ACTIVE_CITIES` | No | `berlin` | Comma-separated city IDs |
 | `APONET_TOKEN` | No | _(community token)_ | aponet.de API token for emergency pharmacies |
 | `LOCATIONIQ_TOKEN` | No | — | LocationIQ geocoding token. Used as fallback when Nominatim is rate-limited. |
@@ -141,7 +141,7 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `TOMTOM_API_KEY` | No | — | TomTom traffic API key. Traffic skipped if not set. |
 | `FIRECRAWL_API_KEY` | No | — | Firecrawl v2 API key for Bürgeramt appointment scraping. Appointments skipped if not set. |
 
-**Reasoning effort values** depend on the model family. `gpt-5`, `gpt-5-mini`, `gpt-5-nano` (dated or not): `minimal | low | medium | high`. `gpt-5.<n>-*` and `gpt-6-*`: `none | low | medium | high | xhigh | max` (GPT-6 rejects `minimal`). A value outside the model's set is logged and ignored, never sent. Effort reaches the API through `modelKwargs.reasoning_effort` — LangChain's own `reasoning` option is silently dropped for `gpt-6-*` IDs by @langchain/openai 1.2.x. Max tokens, temperature and top_p are never set.
+**Reasoning effort values** depend on the model family. `gpt-5`, `gpt-5-mini`, `gpt-5-nano` (dated or not): `minimal | low | medium | high`. `gpt-5.<n>-*` and `gpt-6-*`: `none | low | medium | high | xhigh | max` (GPT-6 rejects `minimal`). A value outside the model's set is logged and treated as unset. Unset falls back to the site's default effort (news `medium`, police `none`; summaries have none) when the model supports it; otherwise no effort is sent and the API default applies. So a rollback such as `OPENAI_GEO_MODEL=gpt-5-nano` sends exactly the pre-GPT-6 request, while `OPENAI_FILTER_MODEL=gpt-5.6-luna` alone gives news `gpt-5.6-luna@medium` and police `gpt-5.6-luna@none`. Effort reaches the API through `modelKwargs.reasoning_effort` — LangChain's own `reasoning` option is silently dropped for `gpt-6-*` IDs by @langchain/openai 1.2.x. Max tokens, temperature and top_p are never set.
 
 ## Utility Libraries
 

@@ -4,13 +4,13 @@
 
 ## What it compares
 
-| Site | Baseline (production today) | Candidates, cheapest first | Fallback (only if no candidate passes) |
+| Site | Baseline (production at the 2026-09-24 run) | Candidates, cheapest first | Fallback (only if no candidate passes) |
 |---|---|---|---|
 | News classification | gpt-5-nano@default | gpt-6-luna@low, @medium | gpt-5.6-luna@low, @medium |
 | Police locations | gpt-5-nano@default | gpt-6-luna@none, @low | gpt-5.6-luna@none, @low |
 | Briefing (de/en/tr/ar) | gpt-5-mini@default | gpt-6-luna@medium, @high, gpt-6-sol@low, @medium | — |
 
-Arms live in `arms.ts` (`ARMS`). `@default` = no `reasoning_effort` sent. Every request is built by the production builders in `lib/llm-prompts.ts` and sent through `invokeStructured` in `lib/llm-client.ts`, so the eval measures exactly what production would send.
+Arms live in `arms.ts` (`ARMS`). `@default` = no `reasoning_effort` sent. **Since that run, production defaults to `gpt-6-luna@medium` for news and `gpt-6-luna@none` for police**, but the baseline arms still name gpt-5-nano, and the briefing inputs are built from the news winner's scores, or from the baseline's when there is no winner. Before the next rerun, point the news and police baselines at the current production targets. The gpt-5-nano snapshot shuts down on 2026-12-11. Every request is built by the production builders in `lib/llm-prompts.ts` and sent through `invokeStructured` in `lib/llm-client.ts`, so the eval measures exactly what production would send.
 
 ## Running it
 
@@ -40,7 +40,7 @@ npm run eval:models --workspace=packages/server -- --out ../../DOCS/<date>_<name
 
 ## Where the rules live
 
-- `extraction-scoring.ts` — metrics and the automatic decision rules R1–R5 for news and police (first passing candidate in cost order wins). For police, a report left out of an accepted response is scored as "no location", not as a defect: GPT-6 Luna answers the prompt's "omit the locationLabel field" by leaving the item out, and production marks it attempted exactly like a null. A news item left out stays a defect (production re-sends it). The news table also shows "Briefing-eligible" (relevant and importance > 0.5, the summarize job's cut-off).
+- `extraction-scoring.ts` — metrics and the automatic decision rules R1–R5 for news and police (first passing candidate in cost order wins). For police, a report left out of an accepted response is scored as "no location", not as a defect: GPT-6 Luna answers the prompt's "omit the locationLabel field" by leaving the item out, and production marks it attempted exactly like a null. A news item left out stays a defect (production re-sends it). The news table also shows "Briefing-eligible" (relevant and inside the summarize job's cut-off), and R5 counts flips across that cut-off. Both call `meetsBriefingCutoff` from `cron/summarize.ts` (importance ≥ 0.5), so they follow production if it changes. Before 2026-09-24 the cut-off was `> 0.5`, so that run's R5 and briefing-eligible figures use `> 0.5`.
 - `briefing-scoring.ts` — hard checks (present, right language, no Markdown, length), soft signals, arm ranking, rating selection.
 - `call-stats.ts` — failure classification (refusal = empty content, truncated = `finish_reason: length`, else unparseable; LangChain 1.2.11 hides the refusal text) and latency/token/cost stats.
 - `inputs.ts` — live sampling and `buildBriefingInputs` (sliding 24h windows, 4h apart, ordered and cut exactly as the summarize job does via `compareDigestOrder`, `applyDropLogic`, `selectBriefingItems`).

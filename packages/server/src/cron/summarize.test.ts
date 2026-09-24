@@ -1,6 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
-import { createSummarization, type NewsSummary } from './summarize.js';
+import { createSummarization, selectBriefingItems, type NewsSummary } from './summarize.js';
+
+describe('selectBriefingItems', () => {
+  it('takes items scored 0.5 or higher and drops lower and unscored ones, in digest order', () => {
+    const digest = [
+      { id: 'a', importance: 0.49 },
+      { id: 'b', importance: 0.5 },
+      { id: 'c' },
+      { id: 'd', importance: 0.8 },
+      { id: 'e', importance: 0 },
+    ];
+    expect(selectBriefingItems(digest).map((item) => item.id)).toEqual(['b', 'd']);
+  });
+
+  it('keeps at most the first 25 qualifying items', () => {
+    const digest = Array.from({ length: 30 }, (_, i) => ({ id: `n${i}`, importance: i % 2 === 0 ? 0.5 : 0.2 }));
+    digest.push(...Array.from({ length: 20 }, (_, i) => ({ id: `m${i}`, importance: 0.9 })));
+    const selected = selectBriefingItems(digest);
+    expect(selected).toHaveLength(25);
+    expect(selected[0]!.id).toBe('n0');
+    expect(selected[24]!.id).toBe('m9');
+  });
+});
 
 describe('summarize', () => {
   beforeEach(() => {

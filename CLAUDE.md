@@ -10,7 +10,7 @@ Real-time multi-city dashboard (Berlin, Hamburg). Inspired by [World Monitor](ht
 - **Backend:** Node + Express, single process with `node-cron` for scheduled data ingestion
 - **Database:** PostgreSQL (Render) + Drizzle ORM (schema-as-code, no code generation)
 - **Cache:** In-memory Map with TTL — hot read layer in front of Postgres
-- **AI:** OpenAI GPT-5 for news summarization
+- **AI:** OpenAI via LangChain. GPT-6 Luna classifies news and places police reports; gpt-5-mini writes the daily briefing. The model and effort for each call site are set in `lib/llm-client.ts`.
 - **Maps:** MapLibre GL JS with CARTO tiles (free, no API key)
 - **Deployment:** Render.com (1 web service + 1 static site)
 - **Monorepo:** Turborepo
@@ -38,7 +38,7 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/server.md`](.context/server.md) — App factory, startup sequence, 23 cron jobs, logging system, health & bootstrap endpoints, history endpoints, multi-city config, env vars, utility libraries. Appointments ingestion uses Firecrawl API to scrape service.berlin.de (Varnish WAF blocks plain HTTP).
 - [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (6 tables: unified `snapshots` + 5 specialized), read/write patterns, cache warming, freshness-based startup checks, data retention.
 - [`.context/weather.md`](.context/weather.md) — Open-Meteo forecast ingestion, DWD severe weather alerts for German cities, WMO weather codes.
-- [`.context/news.md`](.context/news.md) — RSS feed ingestion (10 Berlin + 4 Hamburg feeds), headline classifier, AI summarization via OpenAI (gpt-5-mini), cost tracking.
+- [`.context/news.md`](.context/news.md) — RSS feed ingestion (9 Berlin + 4 Hamburg feeds), the LLM classifier, the daily briefing and its importance cut-off, and cost tracking.
 - [`.context/transit.md`](.context/transit.md) — VBB transport.rest integration, line+summary deduplication, German keyword classification of disruption type/severity.
 - [`.context/events-safety.md`](.context/events-safety.md) — kulturdaten.berlin events API, police RSS (Berlin + Hamburg) with district extraction, category classification.
 - [`.context/frontend.md`](.context/frontend.md) — react-router routing (city picker + /:cityId), React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
