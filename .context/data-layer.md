@@ -136,7 +136,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 | Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings | 2 days + 100 row cap |
 | Non-history (infrequent) | berlin-haushalt, osm-aeds, mss-social-atlas, bf-feuerwehr, afstat-population, abgwatch-* | 7 days + 100 row cap |
 | Non-snapshot | news, events, safety | 3 days |
-| Summaries | AI summaries + orphan cleanup | 7 days |
+| Summaries | AI summaries; also any whose city has no news items left | 7 days |
 
 ## Patterns
 

@@ -82,12 +82,15 @@ export async function runDataRetention(db: Db) {
     // AI summaries (7 days)
     { name: 'summaries', fn: () => db.delete(aiSummaries).where(lt(aiSummaries.generatedAt, new Date(now - 7 * DAY_MS))).returning({ id: aiSummaries.id }) },
 
-    // Orphaned summaries: delete summaries whose headlineHash no longer exists in newsItems
+    // Orphaned summaries: a briefing's city has no news items left (e.g. the city
+    // was deactivated). Not keyed on headlineHash: that hashes the briefing's
+    // sorted top-10 titles, while newsItems.hash hashes one item's URL and title,
+    // so the two never match and a hash join would delete every briefing.
     { name: 'orphan_summaries', fn: () => db.delete(aiSummaries).where(
       notExists(
         db.select({ one: sql`1` })
           .from(newsItems)
-          .where(eq(newsItems.hash, aiSummaries.headlineHash))
+          .where(eq(newsItems.cityId, aiSummaries.cityId))
       )
     ).returning({ id: aiSummaries.id }) },
   ];

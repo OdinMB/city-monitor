@@ -112,7 +112,7 @@ interface NewsSummary {
 ## DB Schema
 
 - `newsItems` table — cityId, hash (dedup key via unique index `news_city_hash_idx`), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevantToCity (bool), importance (real, 0–1), lat, lon, locationLabel, fetchedAt. UPSERT on (cityId, hash). 3-day retention (`cron/data-retention.ts`). Reads limited to 500 rows.
-- `aiSummaries` table — cityId, lang, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. One row per language per generation batch (rows share the same generatedAt). INSERT-only. Retention at most 7 days (`cron/data-retention.ts`, which also runs an orphan cleanup against `newsItems`).
+- `aiSummaries` table — cityId, lang, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. One row per language per generation batch (rows share the same generatedAt). INSERT-only. Retention at most 7 days (`cron/data-retention.ts`); the same job also deletes a city's briefings once that city has no `newsItems` rows left. `headlineHash` is only the change detector for the top-10 briefing titles (`cron/summarize.ts`), not a reference to any `newsItems.hash`: never join the two tables on it. Until 2026-09-25 the orphan cleanup did exactly that, and so deleted every stored briefing on each run.
 
 ## Drop Logic
 
