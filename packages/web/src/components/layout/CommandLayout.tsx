@@ -9,6 +9,7 @@ import { NinaBanner } from '../alerts/NinaBanner.js';
 import { DashboardGrid } from './DashboardGrid.js';
 import { Tile } from './Tile.js';
 import { TileFooter } from './TileFooter.js';
+import { AiLabel } from '../AiLabel.js';
 import { BriefingStrip } from '../strips/BriefingStrip.js';
 import { NewsStrip } from '../strips/NewsStrip.js';
 import { EventsStrip } from '../strips/EventsStrip.js';
@@ -96,7 +97,7 @@ export function CommandLayout() {
         </div>
         <DashboardGrid>
           {/* Row 1-2: Hero briefing + Weather + AQI + Transit */}
-          <Tile title={t('panel.news.briefing')} span={2} rowSpan={2}>
+          <Tile title={t('panel.news.briefing')} titleBadge={<AiLabel />} span={2} rowSpan={2}>
             <BriefingStrip />
           </Tile>
           <Tile title={t('panel.news.title')} span={2} className="sm:hidden">

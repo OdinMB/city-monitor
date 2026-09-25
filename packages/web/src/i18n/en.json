@@ -3,6 +3,23 @@
     "title": "City Monitor",
     "noscript": "This site requires JavaScript."
   },
+  "aiLabel": {
+    "badge": "AI",
+    "generated": "AI-generated",
+    "accessibleName": "AI-generated"
+  },
+  "aiNotice": {
+    "briefing": "Written automatically by AI from current local headlines. Not reviewed by an editor; may contain errors.",
+    "newsLegend": "Selected, rated and tagged by AI.",
+    "importanceScore": "Importance score from AI",
+    "locationEstimated": "Location estimated by AI"
+  },
+  "sources": {
+    "aiProcessing": {
+      "title": "AI Processing",
+      "description": "An OpenAI language model selects, rates and tags news headlines, places news and police reports on the map, and writes the daily briefing."
+    }
+  },
   "error": {
     "title": "Something went wrong",
     "reload": "Reload",
@@ -30,7 +47,6 @@
       "headlines_count": "{{count}} headlines",
       "all": "All",
       "retry": "Retry",
-      "locationPin": "Has location",
       "showMore": "{{count}} more"
     },
     "weather": {

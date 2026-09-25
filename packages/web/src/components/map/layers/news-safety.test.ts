@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import i18n from 'i18next';
 import { newsPopupHtml, safetyPopupHtml } from './news-safety';
+import { AI_COPY_LANGS, APPROVED_AI_COPY } from '../../../test-fixtures/approved-ai-copy';
 
 /** Markup a hostile feed item might carry in any text field. */
 const MALICIOUS = '<img src=x onerror="alert(1)"><script>alert(2)</script>';
@@ -10,7 +12,7 @@ function parse(html: string): HTMLElement {
   return el;
 }
 
-/** The popup templates contain only divs, text and one link — anything else was injected. */
+/** The popup templates contain only divs, a bdi, text and one link — anything else was injected. */
 function expectNoInjectedMarkup(el: HTMLElement) {
   expect(el.querySelector('img, script, svg, iframe, object')).toBeNull();
   for (const node of el.querySelectorAll('*')) {
@@ -64,6 +66,44 @@ describe('newsPopupHtml', () => {
 
   it('shows the importance score as a percentage', () => {
     expect(parse(newsPopupHtml(NEWS)).textContent).toContain('87%');
+  });
+});
+
+describe('location note (AI-estimated places)', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  /** The popup line that carries the 📍 place label. */
+  function placeLineOf(el: HTMLElement): HTMLElement | undefined {
+    return [...el.querySelectorAll('div')].find((d) => d.textContent?.startsWith('📍'));
+  }
+
+  const BUILDERS = [
+    ['news', () => newsPopupHtml(NEWS), NEWS.locationLabel],
+    ['police', () => safetyPopupHtml(SAFETY), SAFETY.locationLabel],
+  ] as const;
+
+  describe.each(BUILDERS)('%s popup', (_kind, build, label) => {
+    it.each(AI_COPY_LANGS)('shows the approved note next to the place label (%s)', async (lang) => {
+      await i18n.changeLanguage(lang);
+      const line = placeLineOf(parse(build()));
+      expect(line?.textContent).toBe(`📍 ${label} · ${APPROVED_AI_COPY[lang].locationEstimated}`);
+    });
+  });
+
+  it('shows no note when the popup has no place label', () => {
+    const el = parse(newsPopupHtml({ ...NEWS, locationLabel: '' }));
+    expect(el.textContent).not.toContain(APPROVED_AI_COPY.en.locationEstimated);
+    expect(placeLineOf(el)).toBeUndefined();
+  });
+
+  it('escapes the note like every other popup value', async () => {
+    i18n.addResourceBundle('x-hostile', 'translation', { aiNotice: { locationEstimated: MALICIOUS } }, true, true);
+    await i18n.changeLanguage('x-hostile');
+    const el = parse(safetyPopupHtml(SAFETY));
+    expectNoInjectedMarkup(el);
+    expect(el.textContent).toContain(MALICIOUS);
   });
 });
 

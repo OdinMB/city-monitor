@@ -1,10 +1,15 @@
-// Initialize i18n with English translations for tests
+// Initialize i18n for tests. English is the active language, so assertions
+// match English strings; the other bundles are registered so a test can
+// switch language (e.g. to check the AI labels in all four).
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from './i18n/en.json';
+import de from './i18n/de.json';
+import tr from './i18n/tr.json';
+import ar from './i18n/ar.json';
 
 i18n.use(initReactI18next).init({
-  resources: { en: { translation: en } },
+  resources: { en: { translation: en }, de: { translation: de }, tr: { translation: tr }, ar: { translation: ar } },
   lng: 'en',
   fallbackLng: 'en',
   interpolation: { escapeValue: false },

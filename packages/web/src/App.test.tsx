@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from './App.js';
 
@@ -26,6 +26,18 @@ describe('App', () => {
     });
     expect(screen.getAllByText('News').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Briefing')).toBeDefined();
+  });
+
+  it('labels the Briefing tile as AI-generated next to its heading on first load', async () => {
+    render(
+      <MemoryRouter initialEntries={['/berlin']}>
+        <App />
+      </MemoryRouter>,
+    );
+    const heading = (await screen.findByText('Briefing')).closest('h2')!;
+    const label = within(heading).getByRole('img', { name: 'AI-generated' });
+    expect(within(label).getByText('AI')).toBeTruthy();
+    expect(within(label).getByText('AI-generated')).toBeTruthy();
   });
 
   it('redirects /hamburg to /berlin (Hamburg disabled)', async () => {

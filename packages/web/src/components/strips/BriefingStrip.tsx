@@ -37,6 +37,11 @@ export function BriefingStrip() {
         <Skeleton lines={2} />
       ) : summary?.briefing ? (
         <>
+          {/* Visible AI notice (Art. 50(4) second layer, see .context/ai-transparency.md).
+              It sits outside the data-ai-generated container because it is not model output. */}
+          <p role="note" className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+            {t('aiNotice.briefing')}
+          </p>
           <BriefingContent text={summary.briefing} />
           <TileFooter stale={isStale}>
             {summary.generatedAt && t('panel.news.generatedAgo', { time: formatRelativeTimeI18n(summary.generatedAt, t) })}

@@ -3,6 +3,23 @@
     "title": "City Monitor",
     "noscript": "Bu site JavaScript gerektirir."
   },
+  "aiLabel": {
+    "badge": "AI",
+    "generated": "Yapay zekâ ile oluşturuldu",
+    "accessibleName": "Yapay zekâ ile oluşturuldu"
+  },
+  "aiNotice": {
+    "briefing": "Güncel yerel haber başlıklarından yapay zekâ tarafından otomatik olarak yazıldı. Bir editör tarafından kontrol edilmedi; hatalar içerebilir.",
+    "newsLegend": "Yapay zekâ tarafından seçildi, puanlandı ve etiketlendi.",
+    "importanceScore": "Yapay zekâya göre önem puanı",
+    "locationEstimated": "Konum yapay zekâ tarafından tahmin edildi"
+  },
+  "sources": {
+    "aiProcessing": {
+      "title": "Yapay zekâ ile işleme",
+      "description": "Bir OpenAI dil modeli haber başlıklarını seçer, puanlar ve etiketler; haberleri ve polis bildirimlerini haritada konumlandırır ve günlük özeti yazar."
+    }
+  },
   "error": {
     "title": "Bir şeyler yanlış gitti",
     "reload": "Yeniden yükle",
@@ -30,7 +47,6 @@
       "headlines_count": "{{count}} başlık",
       "all": "Tümü",
       "retry": "Tekrar dene",
-      "locationPin": "Konum bilgisi var",
       "showMore": "{{count}} daha"
     },
     "weather": {

@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useCityConfig } from '../hooks/useCityConfig.js';
 import { PageShell } from '../components/layout/PageShell.js';
 import { safeUrl } from '../lib/safe-url.js';
@@ -95,17 +97,26 @@ const SHARED_SOURCES: SourceGroup[] = [
       },
     ],
   },
-  {
-    category: 'AI Processing',
+];
+
+/**
+ * The AI section, in the UI language unlike the rest of this page (the AI
+ * disclosure must reach readers in their language). It names the vendor but
+ * no model, so it cannot drift from the models configured in the server's
+ * `lib/llm-client.ts`.
+ */
+function aiProcessingGroup(t: TFunction): SourceGroup {
+  return {
+    category: t('sources.aiProcessing.title'),
     sources: [
       {
         name: 'OpenAI',
         url: 'https://openai.com/',
-        description: 'GPT-6 Luna for news headline classification, geolocation and the daily briefing.',
+        description: t('sources.aiProcessing.description'),
       },
     ],
-  },
-];
+  };
+}
 
 const BERLIN_SOURCES: SourceGroup[] = [
   {
@@ -247,8 +258,9 @@ function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] 
 
 export function SourcesPage() {
   const city = useCityConfig();
+  const { t } = useTranslation();
   const citySources = CITY_SOURCES[city.id] ?? [];
-  const groups = mergeGroups(SHARED_SOURCES, citySources);
+  const groups = mergeGroups([...SHARED_SOURCES, aiProcessingGroup(t)], citySources);
 
   const sourceCount = groups.reduce((n, g) => n + g.sources.length, 0);
 

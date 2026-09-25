@@ -123,6 +123,8 @@ export function NewsStrip() {
         ))}
       </div>
 
+      <p role="note" className="mb-2 text-[11px] text-gray-500 dark:text-gray-400">{t('aiNotice.newsLegend')}</p>
+
       <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pr-2">
         {filteredItems.length === 0 ? (
           <p className="text-sm text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
@@ -136,6 +138,30 @@ export function NewsStrip() {
       </div>
       {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </>
+  );
+}
+
+/**
+ * The AI's importance score as "NN%". A meter, so the accessible name can be
+ * exactly the approved "Importance score from AI" while the value stays
+ * announced (a meter's children are presentational, hence aria-valuetext).
+ */
+function ImportanceScore({ percent }: { percent: number }) {
+  const { t } = useTranslation();
+  const label = t('aiNotice.importanceScore');
+  return (
+    <span
+      role="meter"
+      aria-label={label}
+      aria-valuenow={percent}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuetext={`${percent}%`}
+      title={label}
+      className="text-[10px] text-gray-500 dark:text-gray-400"
+    >
+      {percent}%
+    </span>
   );
 }
 
@@ -161,10 +187,17 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
           {t(`category.${item.category}`, item.category)}
         </span>
         {item.importance != null && item.importance > 0 && (
-          <span className="text-[10px] text-gray-500 dark:text-gray-400">{Math.round(item.importance * 100)}%</span>
+          <ImportanceScore percent={Math.round(item.importance * 100)} />
         )}
         {item.location && (
-          <span className="text-blue-500 dark:text-blue-400" role="img" aria-label={t('panel.news.locationPin')}>📍</span>
+          <span
+            className="text-blue-500 dark:text-blue-400"
+            role="img"
+            aria-label={t('aiNotice.locationEstimated')}
+            title={t('aiNotice.locationEstimated')}
+          >
+            📍
+          </span>
         )}
         <span className="ml-auto">{formatRelativeTime(item.publishedAt)}</span>
       </div>

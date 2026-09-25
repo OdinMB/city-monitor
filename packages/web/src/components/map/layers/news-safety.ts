@@ -3,6 +3,7 @@
  */
 
 import * as maplibregl from 'maplibre-gl';
+import i18n from 'i18next';
 import type { NewsItem, SafetyReport } from '../../../lib/api.js';
 import { NEWS_CATEGORY_COLORS } from '../../../lib/map-icons.js';
 import { MAP_NEWS } from '../../../lib/map-settings.js';
@@ -159,9 +160,17 @@ function safetyToGeoJSON(reports: SafetyReport[]): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features };
 }
 
-/** `📍 label` line, or nothing when the item has no place label. */
+/**
+ * `📍 label · Location estimated by AI` line, or nothing when the item has no
+ * place label. The model infers or extracts these places, so the note always
+ * travels with the label (see .context/ai-transparency.md). It is looked up
+ * when the popup opens, so it follows the current UI language; the label sits
+ * in a `<bdi>` so a German street name keeps its direction in an Arabic UI.
+ */
 function placeLine(label: unknown): string {
-  return label ? `<div style="font-size:11px;margin-top:2px">📍 ${escapeHtml(label)}</div>` : '';
+  if (!label) return '';
+  const note = i18n.t('aiNotice.locationEstimated');
+  return `<div style="font-size:11px;margin-top:2px">📍 <bdi>${escapeHtml(label)}</bdi> · ${escapeHtml(note)}</div>`;
 }
 
 /** Outbound link, or nothing when the URL is not an ordinary web address. */

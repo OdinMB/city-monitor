@@ -3,6 +3,23 @@
     "title": "City Monitor",
     "noscript": "Diese Seite benötigt JavaScript."
   },
+  "aiLabel": {
+    "badge": "AI",
+    "generated": "KI-generiert",
+    "accessibleName": "KI-generiert"
+  },
+  "aiNotice": {
+    "briefing": "Automatisch von einer KI aus aktuellen lokalen Schlagzeilen erstellt. Nicht redaktionell geprüft; kann Fehler enthalten.",
+    "newsLegend": "Von einer KI ausgewählt, bewertet und verschlagwortet.",
+    "importanceScore": "Wichtigkeit laut KI",
+    "locationEstimated": "Ort von einer KI geschätzt"
+  },
+  "sources": {
+    "aiProcessing": {
+      "title": "KI-Verarbeitung",
+      "description": "Ein Sprachmodell von OpenAI wählt Schlagzeilen aus, bewertet und verschlagwortet sie, verortet Nachrichten und Polizeimeldungen auf der Karte und schreibt das tägliche Briefing."
+    }
+  },
   "error": {
     "title": "Etwas ist schiefgelaufen",
     "reload": "Neu laden",
@@ -30,7 +47,6 @@
       "headlines_count": "{{count}} Schlagzeilen",
       "all": "Alle",
       "retry": "Erneut versuchen",
-      "locationPin": "Hat Ortsangabe",
       "showMore": "{{count}} weitere"
     },
     "weather": {

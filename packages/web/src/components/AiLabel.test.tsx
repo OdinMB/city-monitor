@@ -1,44 +1,36 @@
-import { describe, it, expect, beforeAll, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, afterEach } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
 import i18n from 'i18next';
 import { AiLabel } from './AiLabel';
-
-// Test-only strings. The real label copy is under owner review and is not in
-// the translation files yet, so these tests check the plumbing, not the words.
-const TEST_COPY = { aiLabel: { badge: 'T-BADGE', generated: 'T-GENERATED', accessibleName: 'T-NAME' } };
-
-beforeAll(() => {
-  i18n.addResourceBundle('en', 'translation', TEST_COPY, true, true);
-  i18n.addResourceBundle('ar', 'translation', TEST_COPY, true, true);
-});
+import { AI_COPY_LANGS, APPROVED_AI_COPY } from '../test-fixtures/approved-ai-copy';
 
 afterEach(async () => {
   await i18n.changeLanguage('en');
 });
 
 describe('AiLabel', () => {
-  it('shows the badge and its second layer as real text, not an image', () => {
-    const { container } = render(<AiLabel />);
-    expect(container.textContent).toContain('T-BADGE');
-    expect(container.textContent).toContain('T-GENERATED');
-    expect(container.querySelector('img, svg')).toBeNull();
-  });
-
-  it('gives screen readers one accessible name for the whole label', () => {
+  it.each(AI_COPY_LANGS)('shows the approved badge and text as real text, with one accessible name (%s)', async (lang) => {
+    const copy = APPROVED_AI_COPY[lang];
+    await i18n.changeLanguage(lang);
     render(<AiLabel />);
-    expect(screen.getByRole('img', { name: 'T-NAME' })).toBeTruthy();
+
+    const label = screen.getByRole('img', { name: copy.generated });
+    expect(within(label).getByText(copy.badge)).toBeTruthy();
+    expect(within(label).getByText(copy.generated)).toBeTruthy();
+    expect(label.querySelector('img, svg')).toBeNull();
+    expect(label.getAttribute('lang')).toBe(lang);
   });
 
-  it('follows the UI language and runs right-to-left in Arabic', async () => {
+  it('runs right-to-left in Arabic and isolates the Latin "AI" badge', async () => {
     await i18n.changeLanguage('ar');
     render(<AiLabel />);
-    const label = screen.getByRole('img', { name: 'T-NAME' });
-    expect(label.getAttribute('lang')).toBe('ar');
+    const label = screen.getByRole('img', { name: APPROVED_AI_COPY.ar.generated });
     expect(label.getAttribute('dir')).toBe('rtl');
+    expect(within(label).getByText('AI').tagName).toBe('BDI');
   });
 
   it('runs left-to-right in a left-to-right language', () => {
     render(<AiLabel />);
-    expect(screen.getByRole('img', { name: 'T-NAME' }).getAttribute('dir')).toBe('ltr');
+    expect(screen.getByRole('img', { name: APPROVED_AI_COPY.en.generated }).getAttribute('dir')).toBe('ltr');
   });
 });

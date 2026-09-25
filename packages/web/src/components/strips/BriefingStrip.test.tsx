@@ -1,19 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import i18n from 'i18next';
 import type { ReactNode } from 'react';
 import { CityProvider } from '../../hooks/CityProvider.js';
 import { BriefingStrip } from './BriefingStrip.js';
+import { AI_COPY_LANGS, APPROVED_AI_COPY } from '../../test-fixtures/approved-ai-copy.js';
 import type { NewsSummaryData, ApiResponse } from '@city-monitor/shared';
 
-function createWrapper(options?: { summary?: ApiResponse<NewsSummaryData> }) {
+function createWrapper(options?: { summary?: ApiResponse<NewsSummaryData>; lang?: string }) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
   if (options?.summary) {
-    queryClient.setQueryData(['news', 'summary', 'berlin', 'en'], options.summary);
+    queryClient.setQueryData(['news', 'summary', 'berlin', options.lang ?? 'en'], options.summary);
   }
 
   return ({ children }: { children: ReactNode }) => (
@@ -70,6 +72,36 @@ describe('BriefingStrip', () => {
 
     render(<BriefingStrip />, { wrapper: createWrapper({ summary }) });
     expect(screen.getByText('Only paragraph.').closest('[data-ai-generated="true"]')).not.toBeNull();
+  });
+
+  describe('AI notice', () => {
+    afterEach(async () => {
+      await i18n.changeLanguage('en');
+    });
+
+    it.each(AI_COPY_LANGS)('opens the briefing with the approved notice, outside the AI text (%s)', async (lang) => {
+      await i18n.changeLanguage(lang);
+      const summary: ApiResponse<NewsSummaryData> = {
+        data: {
+          briefing: 'First paragraph.\n\nSecond paragraph.',
+          generatedAt: '2026-03-17T10:00:00Z',
+          headlineCount: 5,
+          cached: false,
+          aiGenerated: true,
+          generator: 'gpt-6-luna',
+        },
+        fetchedAt: '2026-03-17T10:05:00Z',
+      };
+
+      render(<BriefingStrip />, { wrapper: createWrapper({ summary, lang }) });
+      const notice = screen.getByRole('note');
+      expect(notice.textContent).toBe(APPROVED_AI_COPY[lang].briefingNotice);
+      // First line: it comes before the first paragraph of the briefing.
+      const firstParagraph = screen.getByText('First paragraph.');
+      expect(notice.compareDocumentPosition(firstParagraph) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      // The notice is ours, not model output, so it sits outside the machine-readable AI marker.
+      expect(notice.closest('[data-ai-generated]')).toBeNull();
+    });
   });
 
   it('renders empty message when briefing is null', () => {
