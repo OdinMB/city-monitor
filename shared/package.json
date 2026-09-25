@@ -16,7 +16,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node ../scripts/ensure-dev-deps.mjs && node ../node_modules/typescript/bin/tsc --version && node ../node_modules/typescript/bin/tsc",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

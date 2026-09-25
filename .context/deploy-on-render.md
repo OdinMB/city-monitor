@@ -74,7 +74,7 @@ After the blueprint deploys, skip to [Post-Deploy Verification](#post-deploy-ver
 | **Branch** | `main` |
 | **Root Directory** | *(leave blank)* |
 | **Runtime** | Node |
-| **Build Command** | `npm ci && npm run build --workspace=packages/server` |
+| **Build Command** | `npm ci --include=dev && npm run build --workspace=shared && npm run build --workspace=packages/server` |
 | **Start Command** | `npm run db:migrate --workspace=packages/server && node packages/server/dist/index.js` |
 | **Plan** | Starter ($7/month) |
 
@@ -109,7 +109,7 @@ After the blueprint deploys, skip to [Post-Deploy Verification](#post-deploy-ver
 | **Name** | `city-monitor-web` |
 | **Branch** | `main` |
 | **Root Directory** | *(leave blank)* |
-| **Build Command** | `npm ci && npm run build --workspace=packages/web` |
+| **Build Command** | `npm ci --include=dev && npm run build --workspace=packages/web` |
 | **Publish Directory** | `packages/web/dist` |
 
 4. Add **Redirect/Rewrite Rules** (under the "Redirects/Rewrites" tab):
@@ -182,7 +182,7 @@ To enable Hamburg alongside Berlin:
 | Frontend loads but shows no data | Wait 5–10 min for cron jobs to run. Check `/api/health` to confirm the API is up |
 | API rewrite not working on static site | Verify the `/api/*` rewrite rule is listed **before** the `/*` rule |
 | `OPENAI_API_KEY` errors in logs | Key is optional — remove it or set a valid key. Summaries degrade to headline-only mode without it |
-| Deploy fails at build step | Check that `npm ci` succeeds — Render needs the `package-lock.json` committed |
+| Deploy fails at build step | Check that `npm ci` succeeds — Render needs the `package-lock.json` committed. The build log should show `Version 5.9.3`, the repo's pinned TypeScript; see [deployment.md](deployment.md) for why the builds install devDependencies |
 | Migrations fail on start | Check `DATABASE_URL` points to a running Postgres instance. Verify the database user has schema permissions |
 | Render free tier spins down | Free-tier web services spin down after 15 min of inactivity. Use Starter plan for always-on. Static sites are always available |
 

@@ -12,7 +12,10 @@ services:
     runtime: node
     plan: starter
     region: frankfurt
-    buildCommand: npm ci && npm run build --workspace=shared && npm run build --workspace=packages/server
+    # --include=dev: NODE_ENV=production omits devDependencies, but the build needs
+    # the pinned TypeScript and @types/*, and the start command's db:migrate needs
+    # drizzle-kit. See .context/deployment.md.
+    buildCommand: npm ci --include=dev && npm run build --workspace=shared && npm run build --workspace=packages/server
     startCommand: npm run db:migrate --workspace=packages/server && node packages/server/dist/index.js
     healthCheckPath: /api/health
     autoDeploy: true
@@ -36,7 +39,8 @@ services:
   - type: web
     name: city-monitor-web
     runtime: static
-    buildCommand: npm ci && npm run build --workspace=packages/web
+    # --include=dev: Vite, TypeScript and @types/* are devDependencies. See .context/deployment.md.
+    buildCommand: npm ci --include=dev && npm run build --workspace=packages/web
     staticPublishPath: packages/web/dist
     headers:
       - path: /assets/*

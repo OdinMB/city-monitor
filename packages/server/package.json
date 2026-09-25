@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
-    "build": "tsc",
+    "build": "node ../../scripts/ensure-dev-deps.mjs && node ../../node_modules/typescript/bin/tsc --version && node ../../node_modules/typescript/bin/tsc",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "test": "vitest run",

@@ -22,6 +22,7 @@ packages/
   web/          — React SPA (Vite, port 5173)
   server/       — Express API (port 3001)
 shared/         — Shared TypeScript types
+scripts/        — Build helpers (ensure-dev-deps.mjs, see .context/deployment.md)
 .plans/         — Milestone plans (version-tracked)
 .context/       — Context files for Claude Code
 ```
@@ -43,7 +44,7 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/events-safety.md`](.context/events-safety.md) — kulturdaten.berlin events API, police RSS (Berlin + Hamburg) with district extraction, category classification.
 - [`.context/frontend.md`](.context/frontend.md) — react-router routing (city picker + /:cityId), React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
 - [`.context/i18n.md`](.context/i18n.md) — react-i18next setup, 4 languages (DE/EN/TR/AR), translation key structure, language detection, testing setup.
-- [`.context/deployment.md`](.context/deployment.md) — Render.com blueprint (render.yaml), GitHub Actions CI, environment variables, domain setup, monitoring.
+- [`.context/deployment.md`](.context/deployment.md) — Render.com blueprint (render.yaml), GitHub Actions CI, environment variables, domain setup, monitoring, and why the builds install devDependencies and call the pinned compiler (read before touching build scripts or Render build commands).
 - [`.context/geocoding.md`](.context/geocoding.md) — Nominatim-first geocoding with LocationIQ fallback, rate limiting strategy, API usage, callers.
 - [`.context/water-levels.md`](.context/water-levels.md) — Water parent layer with two sub-layers: PEGELONLINE river gauges (state derivation, gauge bar UI) and LAGeSo bathing water quality (CSV ingestion, quality mapping, seasonal badges). New water features must follow the sub-layer pattern (same as emergencies) and use the shared types.
 - [`.context/social-atlas.md`](.context/social-atlas.md) — MSS 2023 WFS choropleth map layer (biennial, lazy GeoJSON) and BA monthly unemployment dashboard tile. The dashboard tile uses the Bundesagentur fur Arbeit Statistics API (monthly CSV) for current unemployment rates; the map layer uses the separate MSS WFS for per-area social indicators.
