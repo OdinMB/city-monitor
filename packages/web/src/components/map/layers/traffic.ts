@@ -5,6 +5,7 @@
 import * as maplibregl from 'maplibre-gl';
 import type { TrafficIncident, ConstructionSite } from '../../../lib/api.js';
 import { CONSTRUCTION_SUBTYPE_COLORS } from '../../../lib/map-icons.js';
+import { escapeHtml } from '../../../lib/escape-html.js';
 import { TRAFFIC_SEVERITY_COLORS } from '../constants.js';
 import { registerPopupHandlers } from '../popups.js';
 
@@ -79,9 +80,9 @@ export function updateTrafficLayers(map: maplibregl.Map, incidents: TrafficIncid
     const props = e.features[0].properties!;
     const delayMin = props.delay ? Math.round(Number(props.delay) / 60) : 0;
     const html = `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${props.type}${props.road ? ` — ${props.road}` : ''}</div>
-      ${props.description ? `<div style="font-size:12px">${props.description}</div>` : ''}
-      ${props.from && props.to ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${props.from} → ${props.to}</div>` : ''}
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.type)}${props.road ? ` — ${escapeHtml(props.road)}` : ''}</div>
+      ${props.description ? `<div style="font-size:12px">${escapeHtml(props.description)}</div>` : ''}
+      ${props.from && props.to ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${escapeHtml(props.from)} → ${escapeHtml(props.to)}</div>` : ''}
       ${delayMin > 0 ? `<div style="font-size:11px;margin-top:2px">Delay: ~${delayMin} min</div>` : ''}
     </div>`;
     return { html, lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
@@ -93,11 +94,11 @@ export function updateTrafficLayers(map: maplibregl.Map, incidents: TrafficIncid
 function constructionPopupHtml(p: Record<string, unknown>): string {
   const subtypeLabel = String(p.subtype ?? '').replace(/^./, (c: string) => c.toUpperCase());
   return `<div style="font-size:13px;max-width:280px">
-    <div style="font-weight:600;margin-bottom:4px">${subtypeLabel}: ${p.street}</div>
-    ${p.section ? `<div style="font-size:12px;opacity:0.7">${p.section}</div>` : ''}
-    ${p.description ? `<div style="font-size:12px;margin-top:2px">${p.description}</div>` : ''}
-    ${p.validFrom ? `<div style="font-size:11px;opacity:0.6;margin-top:4px">${p.validFrom}${p.validUntil ? ` – ${p.validUntil}` : ''}</div>` : ''}
-    ${p.direction ? `<div style="font-size:11px;opacity:0.6">${p.direction}</div>` : ''}
+    <div style="font-weight:600;margin-bottom:4px">${escapeHtml(subtypeLabel)}: ${escapeHtml(p.street)}</div>
+    ${p.section ? `<div style="font-size:12px;opacity:0.7">${escapeHtml(p.section)}</div>` : ''}
+    ${p.description ? `<div style="font-size:12px;margin-top:2px">${escapeHtml(p.description)}</div>` : ''}
+    ${p.validFrom ? `<div style="font-size:11px;opacity:0.6;margin-top:4px">${escapeHtml(p.validFrom)}${p.validUntil ? ` – ${escapeHtml(p.validUntil)}` : ''}</div>` : ''}
+    ${p.direction ? `<div style="font-size:11px;opacity:0.6">${escapeHtml(p.direction)}</div>` : ''}
   </div>`;
 }
 

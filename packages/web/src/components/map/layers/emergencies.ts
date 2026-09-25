@@ -4,6 +4,7 @@
 
 import * as maplibregl from 'maplibre-gl';
 import type { EmergencyPharmacy, AedLocation } from '../../../lib/api.js';
+import { escapeHtml } from '../../../lib/escape-html.js';
 import { registerPopupHandlers } from '../popups.js';
 
 /** Format "2026-03-03T09:00:00" range into e.g. "Today 09:00 – Tomorrow 09:00" or "3 Mar 09:00 – 4 Mar 09:00" */
@@ -94,10 +95,10 @@ export function updatePharmacyMarkers(map: maplibregl.Map, pharmacies: Emergency
     const dutyLabel = formatPharmacyDuty(props.validFrom, props.validUntil);
     const osmUrl = `https://www.openstreetmap.org/directions?route=;${lat},${lon}`;
     const html = `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${props.name}</div>
-      <div style="font-size:12px">${props.address}</div>
-      ${props.phone ? `<div style="font-size:12px;margin-top:2px">Tel: ${props.phone}</div>` : ''}
-      <div style="font-size:11px;opacity:0.6;margin-top:4px">${dutyLabel}</div>
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.name)}</div>
+      <div style="font-size:12px">${escapeHtml(props.address)}</div>
+      ${props.phone ? `<div style="font-size:12px;margin-top:2px">Tel: ${escapeHtml(props.phone)}</div>` : ''}
+      <div style="font-size:11px;opacity:0.6;margin-top:4px">${escapeHtml(dutyLabel)}</div>
       <a href="${osmUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">Directions ↗</a>
     </div>`;
     return { html, lngLat: coords };
@@ -136,13 +137,13 @@ export function updateAedMarkers(map: maplibregl.Map, aeds: AedLocation[], _isDa
     const indoorBadge = props.indoor === true || props.indoor === 'true'
       ? '<span style="display:inline-block;background:#dbeafe;color:#1e40af;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">Indoor</span>'
       : '<span style="display:inline-block;background:#dcfce7;color:#166534;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">Outdoor</span>';
-    const accessLabel = props.access ? `<div style="font-size:11px;opacity:0.6">Access: ${props.access}</div>` : '';
+    const accessLabel = props.access ? `<div style="font-size:11px;opacity:0.6">Access: ${escapeHtml(props.access)}</div>` : '';
     const osmUrl = `https://www.openstreetmap.org/directions?route=;${lat},${lon}`;
     const html = `<div style="font-size:13px;max-width:280px">
       <div style="font-weight:600;margin-bottom:4px">AED / Defibrillator${indoorBadge}</div>
-      ${props.description ? `<div style="font-size:12px">${props.description}</div>` : ''}
-      ${props.operator ? `<div style="font-size:12px;margin-top:2px">${props.operator}</div>` : ''}
-      ${props.openingHours ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${props.openingHours}</div>` : ''}
+      ${props.description ? `<div style="font-size:12px">${escapeHtml(props.description)}</div>` : ''}
+      ${props.operator ? `<div style="font-size:12px;margin-top:2px">${escapeHtml(props.operator)}</div>` : ''}
+      ${props.openingHours ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${escapeHtml(props.openingHours)}</div>` : ''}
       ${accessLabel}
       <a href="${osmUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">Directions ↗</a>
     </div>`;

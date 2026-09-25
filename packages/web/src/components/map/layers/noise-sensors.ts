@@ -6,6 +6,7 @@ import * as maplibregl from 'maplibre-gl';
 import { Volume2 } from 'lucide';
 import type { NoiseSensor } from '../../../lib/api.js';
 import { NOISE_LEVEL_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
+import { escapeHtml } from '../../../lib/escape-html.js';
 import { registerPopupHandlers, type PopupContentFn } from '../popups.js';
 
 function getNoiseLevel(laeq: number): { key: string; label: string; color: string } {
@@ -86,9 +87,9 @@ export function updateNoiseSensorMarkers(map: maplibregl.Map, sensors: NoiseSens
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
     const level = getNoiseLevel(Number(p.laeq));
     const html = `<div style="font-size:13px;max-width:220px">
-      <div style="font-weight:600;margin-bottom:4px">Noise Sensor #${p.id}</div>
-      <div>L<sub>Aeq</sub>: <strong style="color:${level.color}">${p.laeq} dB</strong> (${level.label})</div>
-      <div style="font-size:11px;color:${isDark ? '#aaa' : '#666'}">Min: ${p.laMin} dB · Max: ${p.laMax} dB</div>
+      <div style="font-weight:600;margin-bottom:4px">Noise Sensor #${escapeHtml(p.id)}</div>
+      <div>L<sub>Aeq</sub>: <strong style="color:${level.color}">${escapeHtml(p.laeq)} dB</strong> (${level.label})</div>
+      <div style="font-size:11px;color:${isDark ? '#aaa' : '#666'}">Min: ${escapeHtml(p.laMin)} dB · Max: ${escapeHtml(p.laMax)} dB</div>
       <div style="font-size:10px;color:${isDark ? '#888' : '#999'};margin-top:4px">Sensor.Community DNMS</div>
     </div>`;
     return { html, lngLat: coords };

@@ -5,6 +5,7 @@
 import * as maplibregl from 'maplibre-gl';
 import type { NinaWarning } from '../../../lib/api.js';
 import { NINA_SEVERITY_COLORS } from '../constants.js';
+import { escapeHtml } from '../../../lib/escape-html.js';
 import { registerPopupHandlers } from '../popups.js';
 
 function warningsToGeoJSON(warnings: NinaWarning[]): GeoJSON.FeatureCollection {
@@ -78,8 +79,8 @@ export function updateWarningPolygons(map: maplibregl.Map, warnings: NinaWarning
     if (!e.features?.length) return null;
     const props = e.features[0].properties!;
     const html = `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${props.headline}</div>
-      <div style="opacity:0.6;font-size:11px">${props.severity}</div>
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.headline)}</div>
+      <div style="opacity:0.6;font-size:11px">${escapeHtml(props.severity)}</div>
     </div>`;
     return { html, lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
   });

@@ -6,6 +6,8 @@ import * as maplibregl from 'maplibre-gl';
 import { Landmark } from 'lucide';
 import type { PoliticalDistrict } from '../../../lib/api.js';
 import { getPartyColor, getMajorityParty } from '../../../lib/party-colors.js';
+import { escapeHtml } from '../../../lib/escape-html.js';
+import { safeUrl } from '../../../lib/safe-url.js';
 import { registerPoliticalIcons, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
 import { normalizePoliticalName } from '../base.js';
@@ -231,21 +233,22 @@ export function buildPoliticalPopupHtml(districtName: string, districts: Politic
     (d) => normalizePoliticalName(d.name) === normalized,
   );
   if (!match || match.representatives.length === 0) {
-    return `<div style="font-size:13px"><strong>${districtName}</strong><br><em>No data available</em></div>`;
+    return `<div style="font-size:13px"><strong>${escapeHtml(districtName)}</strong><br><em>No data available</em></div>`;
   }
 
   const sorted = sortRepsByPartyMajority(match.representatives);
 
   const parts = [`<div style="font-size:13px;max-height:400px;overflow-y:auto">`];
-  parts.push(`<div style="font-weight:600;margin-bottom:6px">${districtName}</div>`);
+  parts.push(`<div style="font-weight:600;margin-bottom:6px">${escapeHtml(districtName)}</div>`);
 
   for (const rep of sorted) {
     const color = getPartyColor(rep.party);
+    const profileUrl = safeUrl(rep.profileUrl);
     parts.push(
       `<div style="border-left:3px solid ${color};padding-left:8px;margin-bottom:6px">` +
-      `<strong>${rep.name}</strong> <span style="opacity:0.6;font-size:11px">${rep.party}</span><br>` +
-      `<span style="font-size:11px;opacity:0.7">${rep.role}${rep.constituency ? ` — ${rep.constituency}` : ''}</span>` +
-      (rep.profileUrl ? `<br><a href="${rep.profileUrl}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Profile →</a>` : '') +
+      `<strong>${escapeHtml(rep.name)}</strong> <span style="opacity:0.6;font-size:11px">${escapeHtml(rep.party)}</span><br>` +
+      `<span style="font-size:11px;opacity:0.7">${escapeHtml(rep.role)}${rep.constituency ? ` — ${escapeHtml(rep.constituency)}` : ''}</span>` +
+      (profileUrl ? `<br><a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Profile →</a>` : '') +
       `</div>`,
     );
   }

@@ -5,6 +5,7 @@
 import * as maplibregl from 'maplibre-gl';
 import type { SocialAtlasFeatureProps, PopulationFeatureProps } from '../../../lib/api.js';
 import { SOCIAL_ATLAS_COLOR_RAMPS, POPULATION_COLOR_RAMPS, type SocialAtlasMetric, type PopulationMetric } from '../constants.js';
+import { escapeHtml } from '../../../lib/escape-html.js';
 import { showMapPopup, scheduleHoverClose, type MapLayerEvent } from '../popups.js';
 
 // --- Social Atlas module-level handler state ---------------------------------
@@ -63,7 +64,7 @@ export function updateSocialAtlasLayer(
 
   function buildSocialAtlasPopup(p: SocialAtlasFeatureProps): string {
     return `<div style="font-size:13px;max-width:300px">
-      <div style="font-weight:600;margin-bottom:6px">${p.plrName}</div>
+      <div style="font-weight:600;margin-bottom:6px">${escapeHtml(p.plrName)}</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="padding:2px 0;opacity:0.7">Unemployment</td><td style="text-align:right;font-weight:500">${p.unemployment?.toFixed(1) ?? '–'}%</td></tr>
         <tr><td style="padding:2px 0;opacity:0.7">Single-parent HH</td><td style="text-align:right;font-weight:500">${p.singleParent?.toFixed(1) ?? '–'}%</td></tr>
@@ -159,7 +160,7 @@ export function updatePopulationLayer(
 
   function buildPopulationPopup(p: PopulationFeatureProps): string {
     return `<div style="font-size:13px;max-width:300px">
-      <div style="font-weight:600;margin-bottom:6px">${p.plrName}</div>
+      <div style="font-weight:600;margin-bottom:6px">${escapeHtml(p.plrName)}</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="padding:2px 0;opacity:0.7">Population</td><td style="text-align:right;font-weight:500">${p.population?.toLocaleString() ?? '–'}</td></tr>
         <tr><td style="padding:2px 0;opacity:0.7">Density</td><td style="text-align:right;font-weight:500">${p.density?.toLocaleString() ?? '–'}/km²</td></tr>

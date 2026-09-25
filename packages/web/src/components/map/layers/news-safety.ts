@@ -6,6 +6,8 @@ import * as maplibregl from 'maplibre-gl';
 import type { NewsItem, SafetyReport } from '../../../lib/api.js';
 import { NEWS_CATEGORY_COLORS } from '../../../lib/map-icons.js';
 import { MAP_NEWS } from '../../../lib/map-settings.js';
+import { escapeHtml } from '../../../lib/escape-html.js';
+import { safeUrl } from '../../../lib/safe-url.js';
 import { showMapPopup, scheduleHoverClose } from '../popups.js';
 import {
   _newsSpider, _newsH, _safetySpider, _safetyH,
@@ -157,6 +159,42 @@ function safetyToGeoJSON(reports: SafetyReport[]): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features };
 }
 
+/** `📍 label` line, or nothing when the item has no place label. */
+function placeLine(label: unknown): string {
+  return label ? `<div style="font-size:11px;margin-top:2px">📍 ${escapeHtml(label)}</div>` : '';
+}
+
+/** Outbound link, or nothing when the URL is not an ordinary web address. */
+function popupLink(url: unknown, text: string): string {
+  const href = safeUrl(typeof url === 'string' ? url : undefined);
+  return href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">${text}</a>` : '';
+}
+
+/**
+ * Popup markup for a news marker, from its feature properties. Title, source
+ * and link come from RSS feeds and the place label from the LLM, so every
+ * value is escaped (see `escapeHtml`).
+ */
+export function newsPopupHtml(props: Record<string, unknown>): string {
+  const imp = Number(props.importance) || 0;
+  return `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.title)}</div>
+      <div style="opacity:0.6;font-size:11px">${escapeHtml(props.sourceName)} · ${escapeHtml(props.categoryLabel)}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
+      ${placeLine(props.locationLabel)}
+      ${popupLink(props.url, 'Read more →')}
+    </div>`;
+}
+
+/** Popup markup for a police-report marker, escaped like `newsPopupHtml`. */
+export function safetyPopupHtml(props: Record<string, unknown>): string {
+  return `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.title)}</div>
+      ${props.district ? `<div style="opacity:0.6;font-size:11px">${escapeHtml(props.district)}</div>` : ''}
+      ${placeLine(props.locationLabel)}
+      ${popupLink(props.url, 'Details →')}
+    </div>`;
+}
+
 export function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDark: boolean, fallback: { lat: number; lon: number }, categoryLabel: (cat: string) => string) {
   const geojson = newsToGeoJSON(items, fallback, categoryLabel);
 
@@ -208,16 +246,8 @@ export function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDar
     map.getCanvas().style.cursor = 'pointer';
     const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon'] });
     if (!f.length) return;
-    const props = f[0].properties!;
     const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-    const imp = Number(props.importance) || 0;
-    const html = `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
-      <div style="opacity:0.6;font-size:11px">${props.sourceName} · ${props.categoryLabel}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
-      ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
-      <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Read more →</a>
-    </div>`;
-    showMapPopup(map, coords, html, { sticky: false });
+    showMapPopup(map, coords, newsPopupHtml(f[0].properties!), { sticky: false });
   });
 
   addSpiderHandler(map, _newsH, 'mouseleave', 'news-marker-icon', () => {
@@ -229,16 +259,8 @@ export function updateNewsMarkers(map: maplibregl.Map, items: NewsItem[], _isDar
   addSpiderHandler(map, _newsH, 'click', 'news-marker-icon', (e: maplibregl.MapMouseEvent) => {
     const f = map.queryRenderedFeatures(e.point, { layers: ['news-marker-icon'] });
     if (!f.length) return;
-    const props = f[0].properties!;
     const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-    const imp = Number(props.importance) || 0;
-    const html = `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
-      <div style="opacity:0.6;font-size:11px">${props.sourceName} · ${props.categoryLabel}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
-      ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
-      <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Read more →</a>
-    </div>`;
-    showMapPopup(map, coords, html, { sticky: true });
+    showMapPopup(map, coords, newsPopupHtml(f[0].properties!), { sticky: true });
   });
 }
 
@@ -287,15 +309,8 @@ export function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[]
     map.getCanvas().style.cursor = 'pointer';
     const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon'] });
     if (!f.length) return;
-    const props = f[0].properties!;
     const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-    const html = `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
-      ${props.district ? `<div style="opacity:0.6;font-size:11px">${props.district}</div>` : ''}
-      ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
-      <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Details →</a>
-    </div>`;
-    showMapPopup(map, coords, html, { sticky: false });
+    showMapPopup(map, coords, safetyPopupHtml(f[0].properties!), { sticky: false });
   });
 
   addSpiderHandler(map, _safetyH, 'mouseleave', 'safety-marker-icon', () => {
@@ -307,14 +322,7 @@ export function updateSafetyMarkers(map: maplibregl.Map, reports: SafetyReport[]
   addSpiderHandler(map, _safetyH, 'click', 'safety-marker-icon', (e: maplibregl.MapMouseEvent) => {
     const f = map.queryRenderedFeatures(e.point, { layers: ['safety-marker-icon'] });
     if (!f.length) return;
-    const props = f[0].properties!;
     const coords = (f[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-    const html = `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${props.title}</div>
-      ${props.district ? `<div style="opacity:0.6;font-size:11px">${props.district}</div>` : ''}
-      ${props.locationLabel ? `<div style="font-size:11px;margin-top:2px">📍 ${props.locationLabel}</div>` : ''}
-      <a href="${props.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Details →</a>
-    </div>`;
-    showMapPopup(map, coords, html, { sticky: true });
+    showMapPopup(map, coords, safetyPopupHtml(f[0].properties!), { sticky: true });
   });
 }
