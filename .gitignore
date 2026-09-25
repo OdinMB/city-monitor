@@ -30,5 +30,6 @@ npm-debug.log*
 .claude/settings.local.json
 .playwright-mcp/
 .tmp/
+DOCS/
 nul
 NUL
