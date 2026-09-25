@@ -58,6 +58,7 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/deploy-on-render.md`](.context/deploy-on-render.md) — Step-by-step Render.com deployment guide: Blueprint (automated) and manual setup for PostgreSQL, API web service, and static frontend. Covers env vars, rewrites, headers, custom domains, multi-city, troubleshooting, and costs.
 - [`.context/testing.md`](.context/testing.md) — Vitest setup for both packages, how to run tests (turbo vs direct), web jsdom environment, co-located test file conventions.
 - [`.context/model-eval.md`](.context/model-eval.md) — Before changing an LLM model, effort or prompt, rerun the model-eval harness (`npm run eval:models`); it is read-only against the DB and budget-capped. Covers the arms, flags, decision rules, output files and known sample limits.
+- [`.context/ai-transparency.md`](.context/ai-transparency.md) — Changing an AI feature, a model, an AI label or where AI text is served? Update this EU AI Act (Art. 50) record in the same change. It holds the AI feature inventory with model ids, each duty's measure and verdict, the text-watermark decision with its 2026-11-15 re-test, and the owner's open decisions.
 
 ## Key Conventions
 
