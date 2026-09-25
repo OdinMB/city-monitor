@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { NewsSummaryData } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { loadSummary, loadNewsItems } from '../db/reads.js';
@@ -88,20 +89,22 @@ export function createNewsRouter(cache: Cache, db: Db | null = null) {
     }
 
     if (!summary) {
-      res.json({ data: { briefing: null, generatedAt: null, headlineCount: 0, cached: false }, fetchedAt: null });
+      const empty: NewsSummaryData = { briefing: null, generatedAt: null, headlineCount: 0, cached: false, aiGenerated: false, generator: null };
+      res.json({ data: empty, fetchedAt: null });
       return;
     }
 
     const briefing = summary.briefings[lang] ?? summary.briefings[city.languages[0] ?? 'de'] ?? null;
-    res.json({
-      data: {
-        briefing,
-        generatedAt: summary.generatedAt,
-        headlineCount: summary.headlineCount,
-        cached: summary.cached,
-      },
-      fetchedAt,
-    });
+    const data: NewsSummaryData = {
+      briefing,
+      generatedAt: summary.generatedAt,
+      headlineCount: summary.headlineCount,
+      cached: summary.cached,
+      // Machine-readable AI marker (Art. 50(2) interim measure, not a watermark).
+      aiGenerated: briefing !== null,
+      generator: briefing !== null ? summary.model : null,
+    };
+    res.json({ data, fetchedAt });
   });
 
   return router;

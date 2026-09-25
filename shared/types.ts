@@ -561,7 +561,20 @@ export interface BootstrapData {
 }
 
 // News AI summary
-export type NewsSummaryData = { briefing: string | null; generatedAt: string | null; headlineCount: number; cached: boolean };
+export type NewsSummaryData = {
+  briefing: string | null;
+  generatedAt: string | null;
+  headlineCount: number;
+  cached: boolean;
+  /**
+   * Machine-readable AI marker for `briefing`: true whenever it holds text.
+   * Metadata only, not a watermark, so it does not travel with copied text
+   * (see .context/ai-transparency.md).
+   */
+  aiGenerated: boolean;
+  /** Id of the model that wrote `briefing`, e.g. "gpt-6-luna"; null when there is none. */
+  generator: string | null;
+};
 
 // Council meetings (BVV OParl + PARDOK)
 export type { CouncilMeeting } from './schemas.js';

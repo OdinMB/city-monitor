@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
+import { summarizeHeadlines } from '../lib/openai.js';
 import { createSummarization, selectBriefingItems, type NewsSummary } from './summarize.js';
+
+vi.mock('../lib/openai.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/openai.js')>()),
+  summarizeHeadlines: vi.fn(),
+}));
 
 describe('selectBriefingItems', () => {
   it('takes items scored 0.5 or higher and drops lower and unscored ones, in digest order', () => {
@@ -69,6 +75,7 @@ describe('summarize', () => {
       generatedAt: new Date().toISOString(),
       headlineCount: 5,
       cached: true,
+      model: 'gpt-6-luna',
     };
     cache.set('berlin:news:summary', mockSummary, 60);
 
@@ -80,5 +87,26 @@ describe('summarize', () => {
     });
     expect(result!.briefings['de']).toBe('Deutsche Zusammenfassung');
     expect(result!.briefings['en']).toBe('English summary');
+  });
+
+  it('records which model wrote the briefing, so the API can mark it', async () => {
+    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    vi.mocked(summarizeHeadlines).mockResolvedValue({
+      briefings: { de: 'Zusammenfassung' },
+      cached: false,
+      inputTokens: 100,
+      outputTokens: 50,
+      model: 'gpt-6-luna',
+    });
+    const cache = createCache();
+    cache.set('berlin:news:digest', {
+      items: [{ id: '1', title: 'Wichtige Meldung', importance: 0.8, tier: 1 }],
+      categories: {},
+      updatedAt: new Date().toISOString(),
+    }, 60);
+
+    await createSummarization(cache)();
+
+    expect(cache.get<NewsSummary>('berlin:news:summary')!.model).toBe('gpt-6-luna');
   });
 });

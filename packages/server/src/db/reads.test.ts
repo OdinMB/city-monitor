@@ -171,13 +171,23 @@ describe('DB reads', () => {
 
   it('loadSummary maps rows to DbResult with multi-lang NewsSummary', async () => {
     const db = createMockDb([
-      { lang: 'de', summary: 'Deutsche Zusammenfassung', generatedAt: new Date('2026-03-02'), headlineHash: 'abc' },
+      { lang: 'de', summary: 'Deutsche Zusammenfassung', generatedAt: new Date('2026-03-02'), headlineHash: 'abc', model: 'gpt-6-luna' },
     ]);
     const result = await loadSummary(db, 'berlin');
     expect(result).not.toBeNull();
     expect(result!.data.briefings['de']).toBe('Deutsche Zusammenfassung');
     expect(result!.data.cached).toBe(true);
     expect(result!.data.headlineHash).toBe('abc');
+  });
+
+  it('loadSummary carries the model that wrote the briefing, for the API marker', async () => {
+    const db = createMockDb([
+      { lang: 'de', summary: 'Neu', generatedAt: new Date('2026-09-25T10:00:00Z'), headlineHash: 'new', model: 'gpt-6-luna' },
+      { lang: 'en', summary: 'New', generatedAt: new Date('2026-09-25T10:00:00Z'), headlineHash: 'new', model: 'gpt-6-luna' },
+      { lang: 'de', summary: 'Alt', generatedAt: new Date('2026-09-24T10:00:00Z'), headlineHash: 'old', model: 'gpt-5-mini' },
+    ]);
+    const result = await loadSummary(db, 'berlin');
+    expect(result!.data.model).toBe('gpt-6-luna');
   });
 
   it('loadAirQualityGrid returns null when no rows', async () => {

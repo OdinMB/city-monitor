@@ -51,9 +51,9 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 
 1. **Summarization** (`packages/server/src/cron/summarize.ts`) — Runs every 6 hours (at :05 past), per active city, passing the city's config so the prompt gets its local time. Skipped if `OPENAI_API_KEY` not set. Takes up to 25 items with importance 0.5 or above (`selectBriefingItems` / `meetsBriefingCutoff`) from the cached news digest, in digest order. The cut-off includes 0.5 because the prompt's rubric calls 0.5–0.6 "significant" and GPT-6 Luna scores such stories exactly 0.5 — with `> 0.5` Luna halved the briefing pool. Passes titles + descriptions for richer context. Hashes the top 10 headlines to detect changes — skips API call if headlines unchanged since last summary. **Generates briefings in all languages configured for the city** (e.g. de/en/tr/ar for Berlin) in a single LLM call via structured output. Writes to cache key `{cityId}:news:summary` (TTL 86400s / 24h) and persists one row per language to Postgres with token counts.
 
-2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/summary?lang=<code>` returns the briefing for the requested language, falling back to the city's primary language. The `lang` param is validated against `city.languages`.
+2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/summary?lang=<code>` returns the briefing for the requested language, falling back to the city's primary language. The `lang` param is validated against `city.languages`. The response carries a machine-readable AI marker: `aiGenerated` (true whenever `briefing` has text) and `generator` (the model id that wrote it, carried in `NewsSummary.model` from generation, or from `ai_summaries.model` on a DB fallback). Keep both on any new path that serves briefing text; they are the interim Art. 50(2) measure in `ai-transparency.md`.
 
-3. **Frontend** — Uses `useNewsSummary(cityId, i18n.language)` hook (refetch 15 min). Passes the user's selected language to the API. When the user switches language, React Query fetches the briefing in the new language.
+3. **Frontend** — Uses `useNewsSummary(cityId, i18n.language)` hook (refetch 60 min). Passes the user's selected language to the API. When the user switches language, React Query fetches the briefing in the new language. `BriefingStrip` puts `data-ai-generated="true"` on the element holding the text (invisible; the visible label is the unmounted `AiLabel`, see `ai-transparency.md`).
 
 ### LLM Integration (`packages/server/src/lib/openai.ts`, `llm-client.ts`, `llm-prompts.ts`)
 
@@ -105,13 +105,14 @@ interface NewsSummary {
   generatedAt: string;
   headlineCount: number;
   cached: boolean;
+  model: string;                      // model that wrote the briefings → API `generator`
 }
 ```
 
 ## DB Schema
 
-- `newsItems` table — cityId, hash (dedup key via unique index `news_city_hash_idx`), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevantToCity (bool), importance (real, 0–1), lat, lon, locationLabel, fetchedAt. UPSERT on (cityId, hash). 7-day retention. Reads limited to 500 rows.
-- `aiSummaries` table — cityId, lang, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. One row per language per generation batch (rows share the same generatedAt). INSERT-only. 30-day retention.
+- `newsItems` table — cityId, hash (dedup key via unique index `news_city_hash_idx`), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevantToCity (bool), importance (real, 0–1), lat, lon, locationLabel, fetchedAt. UPSERT on (cityId, hash). 3-day retention (`cron/data-retention.ts`). Reads limited to 500 rows.
+- `aiSummaries` table — cityId, lang, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. One row per language per generation batch (rows share the same generatedAt). INSERT-only. Retention at most 7 days (`cron/data-retention.ts`, which also runs an orphan cleanup against `newsItems`).
 
 ## Drop Logic
 

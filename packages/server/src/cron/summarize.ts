@@ -20,6 +20,8 @@ export interface NewsSummary {
   generatedAt: string;
   headlineCount: number;
   cached: boolean;
+  /** Model that wrote the briefings; served as the API's `generator` marker. */
+  model: string;
 }
 
 const SUMMARY_TTL = 86400; // 24 hours
@@ -90,6 +92,7 @@ async function summarizeCityNews(city: CityConfig, cache: Cache, db: Db | null):
     generatedAt: new Date().toISOString(),
     headlineCount: items.length,
     cached: result.cached,
+    model: result.model,
     headlineHash,
   };
 

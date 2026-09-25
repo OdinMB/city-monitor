@@ -10,8 +10,10 @@ import { TileFooter } from '../layout/TileFooter.js';
 function BriefingContent({ text }: { text: string }) {
   const paragraphs = text.replace(/\r\n/g, '\n').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
 
+  // data-ai-generated: invisible machine-readable marker (see .context/ai-transparency.md).
+  // It is not the visible label, which Art. 50(4) needs separately.
   return (
-    <div className="text-base lg:text-xl leading-relaxed text-gray-700 dark:text-gray-300 space-y-3">
+    <div data-ai-generated="true" className="text-base lg:text-xl leading-relaxed text-gray-700 dark:text-gray-300 space-y-3">
       {paragraphs.map((p, i) => (
         <p key={i}>{p}</p>
       ))}

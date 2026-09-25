@@ -31,7 +31,26 @@ describe('Summary API', () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.data.briefing).toBeNull();
+    expect(body.data.aiGenerated).toBe(false);
+    expect(body.data.generator).toBeNull();
     expect(body.fetchedAt).toBeNull();
+  });
+
+  it('marks a served briefing as AI-generated and names the model that wrote it', async () => {
+    const mockSummary: NewsSummary & { headlineHash: string } = {
+      briefings: { de: 'Deutsche Zusammenfassung.' },
+      generatedAt: '2026-09-25T10:00:00Z',
+      headlineCount: 8,
+      cached: false,
+      model: 'gpt-6-luna',
+      headlineHash: 'marker1',
+    };
+    appContext.cache.set('berlin:news:summary', mockSummary, 60);
+
+    const res = await fetch(`${baseUrl}/api/berlin/news/summary?lang=de`);
+    const body = await res.json();
+    expect(body.data.aiGenerated).toBe(true);
+    expect(body.data.generator).toBe('gpt-6-luna');
   });
 
   it('GET /api/berlin/news/summary returns default language briefing from cache', async () => {
@@ -43,6 +62,7 @@ describe('Summary API', () => {
       generatedAt: '2026-03-02T10:00:00Z',
       headlineCount: 10,
       cached: true,
+      model: 'gpt-6-luna',
       headlineHash: 'abc123',
     };
     appContext.cache.set('berlin:news:summary', mockSummary, 60);
@@ -65,6 +85,7 @@ describe('Summary API', () => {
       generatedAt: '2026-03-02T10:00:00Z',
       headlineCount: 5,
       cached: true,
+      model: 'gpt-6-luna',
       headlineHash: 'def456',
     };
     appContext.cache.set('berlin:news:summary', mockSummary, 60);
@@ -90,6 +111,7 @@ describe('Summary API', () => {
       generatedAt: '2026-03-02T10:00:00Z',
       headlineCount: 3,
       cached: true,
+      model: 'gpt-6-luna',
       headlineHash: 'ghi789',
     };
     appContext.cache.set('berlin:news:summary', mockSummary, 60);

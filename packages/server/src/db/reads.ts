@@ -437,6 +437,7 @@ export async function loadSummary(db: Db, cityId: string): Promise<DbResult<News
       generatedAt: rows[0].generatedAt.toISOString(),
       headlineCount: 0,
       cached: true,
+      model: rows[0].model,
       headlineHash: rows[0].headlineHash,
     },
     fetchedAt: rows[0].generatedAt,

@@ -44,6 +44,8 @@ describe('BriefingStrip', () => {
         generatedAt: '2026-03-17T10:00:00Z',
         headlineCount: 12,
         cached: false,
+        aiGenerated: true,
+        generator: 'gpt-6-luna',
       },
       fetchedAt: '2026-03-17T10:05:00Z',
     };
@@ -53,6 +55,23 @@ describe('BriefingStrip', () => {
     expect(screen.getByText('Second paragraph about weather.')).toBeTruthy();
   });
 
+  it('marks the element holding the briefing text as AI-generated for machines', () => {
+    const summary: ApiResponse<NewsSummaryData> = {
+      data: {
+        briefing: 'Only paragraph.',
+        generatedAt: '2026-03-17T10:00:00Z',
+        headlineCount: 3,
+        cached: false,
+        aiGenerated: true,
+        generator: 'gpt-6-luna',
+      },
+      fetchedAt: '2026-03-17T10:05:00Z',
+    };
+
+    render(<BriefingStrip />, { wrapper: createWrapper({ summary }) });
+    expect(screen.getByText('Only paragraph.').closest('[data-ai-generated="true"]')).not.toBeNull();
+  });
+
   it('renders empty message when briefing is null', () => {
     const summary: ApiResponse<NewsSummaryData> = {
       data: {
@@ -60,12 +79,15 @@ describe('BriefingStrip', () => {
         generatedAt: null,
         headlineCount: 0,
         cached: false,
+        aiGenerated: false,
+        generator: null,
       },
       fetchedAt: '2026-03-17T10:05:00Z',
     };
 
-    render(<BriefingStrip />, { wrapper: createWrapper({ summary }) });
+    const { container } = render(<BriefingStrip />, { wrapper: createWrapper({ summary }) });
     expect(screen.getByText('No articles available')).toBeTruthy();
+    expect(container.querySelector('[data-ai-generated]')).toBeNull();
   });
 
   it('renders error fallback on fetch error', async () => {
