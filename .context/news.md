@@ -53,7 +53,7 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 
 2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/summary?lang=<code>` returns the briefing for the requested language, falling back to the city's primary language. The `lang` param is validated against `city.languages`. The response carries a machine-readable AI marker: `aiGenerated` (true whenever `briefing` has text) and `generator` (the model id that wrote it, carried in `NewsSummary.model` from generation, or from `ai_summaries.model` on a DB fallback). Keep both on any new path that serves briefing text; they are the interim Art. 50(2) measure in `ai-transparency.md`.
 
-3. **Frontend** — Uses `useNewsSummary(cityId, i18n.language)` hook (refetch 60 min). Passes the user's selected language to the API. When the user switches language, React Query fetches the briefing in the new language. `BriefingStrip` puts `data-ai-generated="true"` on the element holding the text (invisible; the visible label is the unmounted `AiLabel`, see `ai-transparency.md`).
+3. **Frontend** — Uses `useNewsSummary(cityId, i18n.language)` hook (refetch 60 min). Passes the user's selected language to the API. When the user switches language, React Query fetches the briefing in the new language. `BriefingStrip` puts `data-ai-generated="true"` on the element holding the text (invisible; the visible label is the `AiLabel` tag in the tile heading, see `ai-transparency.md`).
 
 ### LLM Integration (`packages/server/src/lib/openai.ts`, `llm-client.ts`, `llm-prompts.ts`)
 

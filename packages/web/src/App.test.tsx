@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from './App.js';
+import { APPROVED_AI_COPY } from './test-fixtures/approved-ai-copy.js';
 
 describe('App', () => {
   it('redirects / to /berlin', async () => {
@@ -35,9 +36,13 @@ describe('App', () => {
       </MemoryRouter>,
     );
     const heading = (await screen.findByText('Briefing')).closest('h2')!;
-    const label = within(heading).getByRole('img', { name: 'AI-generated' });
-    expect(within(label).getByText('AI')).toBeTruthy();
-    expect(within(label).getByText('AI-generated')).toBeTruthy();
+    const tag = within(heading).getByRole('img', {
+      name: APPROVED_AI_COPY.en.generated,
+      description: APPROVED_AI_COPY.en.tooltip,
+    });
+    expect(tag.textContent).toBe(APPROVED_AI_COPY.en.generated);
+    // One tag only: the separate "AI" badge is gone.
+    expect(within(heading).queryByText('AI')).toBeNull();
   });
 
   it('redirects /hamburg to /berlin (Hamburg disabled)', async () => {

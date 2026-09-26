@@ -11,7 +11,8 @@ function BriefingContent({ text }: { text: string }) {
   const paragraphs = text.replace(/\r\n/g, '\n').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
 
   // data-ai-generated: invisible machine-readable marker (see .context/ai-transparency.md).
-  // It is not the visible label, which Art. 50(4) needs separately.
+  // It is not the visible label, which Art. 50(4) needs separately: that is the
+  // AiLabel tag in the tile heading (CommandLayout).
   return (
     <div data-ai-generated="true" className="text-base lg:text-xl leading-relaxed text-gray-700 dark:text-gray-300 space-y-3">
       {paragraphs.map((p, i) => (
@@ -37,11 +38,6 @@ export function BriefingStrip() {
         <Skeleton lines={2} />
       ) : summary?.briefing ? (
         <>
-          {/* Visible AI notice (Art. 50(4) second layer, see .context/ai-transparency.md).
-              It sits outside the data-ai-generated container because it is not model output. */}
-          <p role="note" className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            {t('aiNotice.briefing')}
-          </p>
           <BriefingContent text={summary.briefing} />
           <TileFooter stale={isStale}>
             {summary.generatedAt && t('panel.news.generatedAgo', { time: formatRelativeTimeI18n(summary.generatedAt, t) })}

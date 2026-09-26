@@ -4,12 +4,10 @@
     "noscript": "Bu site JavaScript gerektirir."
   },
   "aiLabel": {
-    "badge": "AI",
     "generated": "Yapay zekâ ile oluşturuldu",
-    "accessibleName": "Yapay zekâ ile oluşturuldu"
+    "tooltip": "Bir editör tarafından kontrol edilmedi, hatalar içerebilir."
   },
   "aiNotice": {
-    "briefing": "Güncel yerel haber başlıklarından yapay zekâ tarafından otomatik olarak yazıldı. Bir editör tarafından kontrol edilmedi; hatalar içerebilir.",
     "newsLegend": "Yapay zekâ tarafından seçildi, puanlandı ve etiketlendi.",
     "importanceScore": "Yapay zekâya göre önem puanı",
     "locationEstimated": "Konum yapay zekâ tarafından tahmin edildi"

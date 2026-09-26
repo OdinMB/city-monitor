@@ -2,32 +2,33 @@ import { useTranslation } from 'react-i18next';
 
 /**
  * Visible label for AI-generated content (EU AI Act Art. 50(4)), sized for a
- * Tile's `titleBadge` slot: an "AI" main element followed by a second layer
- * such as "AI-generated", both as real text. Mounted on the Briefing tile
- * (`CommandLayout`); the copy is the owner-approved wording in the
- * `aiLabel.*` keys (see .context/ai-transparency.md).
+ * Tile's `titleBadge` slot: one tag reading "AI-generated" in the UI language,
+ * as real text, with "Not reviewed by an editor, may contain errors." as its
+ * tooltip. Mounted on the Briefing tile (`CommandLayout`); the copy is the
+ * owner-approved wording in the `aiLabel.*` keys (see
+ * .context/ai-transparency.md).
  *
- * Screen readers get the accessible name as one phrase instead of the two
- * visible fragments. `lang` and `dir` follow the UI language, so the label
- * reads right-to-left in Arabic wherever it is placed; the Latin "AI" badge
- * sits in a `<bdi>` so it keeps its own direction inside Arabic text.
+ * The tooltip is the native `title`, so it shows on mouse hover only, not on
+ * touch or keyboard focus. The image role makes the tag one object for screen
+ * readers: the visible text is its accessible name and the tooltip its
+ * accessible description. `lang` and `dir` follow the UI language, so the tag
+ * reads right-to-left in Arabic wherever it is placed.
  */
 export function AiLabel() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
+  const text = t('aiLabel.generated');
 
   return (
     <span
       role="img"
-      aria-label={t('aiLabel.accessibleName')}
+      aria-label={text}
+      title={t('aiLabel.tooltip')}
       lang={lang}
       dir={i18n.dir(lang)}
-      className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-300"
+      className="shrink-0 cursor-help rounded px-1 py-0.5 text-xs leading-none font-semibold bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
     >
-      <bdi className="rounded px-1 py-0.5 leading-none font-semibold bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
-        {t('aiLabel.badge')}
-      </bdi>
-      <span>{t('aiLabel.generated')}</span>
+      {text}
     </span>
   );
 }

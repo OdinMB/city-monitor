@@ -79,7 +79,9 @@ describe('BriefingStrip', () => {
       await i18n.changeLanguage('en');
     });
 
-    it.each(AI_COPY_LANGS)('opens the briefing with the approved notice, outside the AI text (%s)', async (lang) => {
+    // The caveat moved into the tooltip of the heading's AiLabel tag (2026-09-26),
+    // so the tile opens straight with the marked briefing text.
+    it.each(AI_COPY_LANGS)('has no notice line above the briefing text (%s)', async (lang) => {
       await i18n.changeLanguage(lang);
       const summary: ApiResponse<NewsSummaryData> = {
         data: {
@@ -93,14 +95,11 @@ describe('BriefingStrip', () => {
         fetchedAt: '2026-03-17T10:05:00Z',
       };
 
-      render(<BriefingStrip />, { wrapper: createWrapper({ summary, lang }) });
-      const notice = screen.getByRole('note');
-      expect(notice.textContent).toBe(APPROVED_AI_COPY[lang].briefingNotice);
-      // First line: it comes before the first paragraph of the briefing.
-      const firstParagraph = screen.getByText('First paragraph.');
-      expect(notice.compareDocumentPosition(firstParagraph) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      // The notice is ours, not model output, so it sits outside the machine-readable AI marker.
-      expect(notice.closest('[data-ai-generated]')).toBeNull();
+      const { container } = render(<BriefingStrip />, { wrapper: createWrapper({ summary, lang }) });
+      expect(screen.queryByRole('note')).toBeNull();
+      expect(screen.queryByText(APPROVED_AI_COPY[lang].tooltip)).toBeNull();
+      expect(container.firstElementChild?.getAttribute('data-ai-generated')).toBe('true');
+      expect(screen.getByText('First paragraph.').closest('[data-ai-generated="true"]')).toBe(container.firstElementChild);
     });
   });
 

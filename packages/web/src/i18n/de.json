@@ -4,12 +4,10 @@
     "noscript": "Diese Seite benötigt JavaScript."
   },
   "aiLabel": {
-    "badge": "AI",
     "generated": "KI-generiert",
-    "accessibleName": "KI-generiert"
+    "tooltip": "Nicht redaktionell geprüft, kann Fehler enthalten."
   },
   "aiNotice": {
-    "briefing": "Automatisch von einer KI aus aktuellen lokalen Schlagzeilen erstellt. Nicht redaktionell geprüft; kann Fehler enthalten.",
     "newsLegend": "Von einer KI ausgewählt, bewertet und verschlagwortet.",
     "importanceScore": "Wichtigkeit laut KI",
     "locationEstimated": "Ort von einer KI geschätzt"

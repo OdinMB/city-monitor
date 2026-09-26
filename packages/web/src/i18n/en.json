@@ -4,12 +4,10 @@
     "noscript": "This site requires JavaScript."
   },
   "aiLabel": {
-    "badge": "AI",
     "generated": "AI-generated",
-    "accessibleName": "AI-generated"
+    "tooltip": "Not reviewed by an editor, may contain errors."
   },
   "aiNotice": {
-    "briefing": "Written automatically by AI from current local headlines. Not reviewed by an editor; may contain errors.",
     "newsLegend": "Selected, rated and tagged by AI.",
     "importanceScore": "Importance score from AI",
     "locationEstimated": "Location estimated by AI"
