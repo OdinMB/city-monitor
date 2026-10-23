@@ -59,6 +59,14 @@ The workflow declares `permissions: contents: read`. This repo is public and CI 
 
 The root `package.json` carries `"overrides": { "uuid": "^11.1.1" }` because `node-cron` pinned `uuid` to exactly `8.3.2` and `exceljs` trails it, so no range bump reaches the patched version. 11.1.1 is the highest 11.x and the advisory's fix floor; 14.x drops the CommonJS entry point exceljs needs. Note that adding an override alone does not re-resolve an existing lockfile entry — `npm update uuid` is what actually moves it.
 
+### Node version and the CA trust store
+
+Node trusts only the root list compiled into its binary, so a CA removal reaches the API only through a Node upgrade, never through `npm update`. `.nvmrc` pins an exact version (currently `22.23.4`, the first 22.x without the compromised "emSign ECC Root CA - G3" root, Oct 2026). Render's native runtime and CI (`node-version-file: .nvmrc`) both read it, so one edit moves both. `engines` carries the per-line floors (`^22.23.4 || ^24.22.1 || >=26.12.1`); npm only warns on a mismatch, so `.nvmrc` is what enforces it. The repo has no Python, no Dockerfile, no vendored CA bundle and no custom `ca:` / `NODE_EXTRA_CA_CERTS`. Check a runtime with:
+
+```bash
+node -e "const {X509Certificate}=require('crypto');console.log(require('tls').rootCertificates.filter(p=>new X509Certificate(p).subject.includes('emSign ECC Root CA - G3')).length)"   # must print 0
+```
+
 Link targets from ingested feeds pass through `safeUrl()` (`packages/web/src/lib/safe-url.ts`) before reaching an `href`, because the deployed CSP allows inline script and would not block a `javascript:` URL. Apply it to any new feed-supplied link. Map popups are raw HTML strings, so their text is escaped as well (`frontend.md` → Map).
 
 ## Environment Variables
