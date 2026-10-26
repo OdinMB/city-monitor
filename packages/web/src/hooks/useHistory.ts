@@ -17,17 +17,6 @@ export function useWeatherHistory(cityId: string, enabled: boolean) {
   });
 }
 
-export function useAqiHistory(cityId: string, enabled: boolean) {
-  return useQuery<HistoryPoint[]>({
-    queryKey: ['aqi-history', cityId],
-    queryFn: async () => (await api.getAqiHistory(cityId, '7d')).data,
-    enabled,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
-    placeholderData: keepPreviousData,
-  });
-}
-
 export function useWaterLevelHistory(cityId: string, enabled: boolean) {
   return useQuery<HistoryPoint[]>({
     queryKey: ['water-level-history', cityId],

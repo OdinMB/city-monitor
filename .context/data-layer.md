@@ -34,7 +34,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:news:digest` | 900s (15 min) | ingest-feeds |
 | `{cityId}:news:{category}` | 900s (15 min) | ingest-feeds |
 | `{cityId}:news:summary` | 86400s (24h) | summarize |
-| `{cityId}:air-quality:grid` | 1800s (30 min) | ingest-aq-grid |
+| `{cityId}:air-quality:grid` | 2160s (36 min, cron interval + 20%; `AQ_GRID_TTL_SECONDS`, also used by the route's DB fallback and cache warming) | ingest-aq-grid |
 | `{cityId}:air-quality:sc-cache` | 7200s (2h) | ingest-aq-grid (last reading per Sensor.Community station, pruned after 2h) |
 | `{cityId}:construction:sites` | 1800s (30 min) | ingest-construction |
 | `{cityId}:water-levels` | 900s (15 min) | ingest-water-levels |
@@ -56,7 +56,6 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:noise-sensors` | 1200s (20 min) | ingest-noise-sensors |
 | `{cityId}:council-meetings` | 25920s (7.2h) | ingest-council-meetings |
 | `{cityId}:weather:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
-| `{cityId}:aqi:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
 | `{cityId}:water-levels:history:{N}d` | 900s (15 min) | history endpoint (lazy) |
 | `{cityId}:labor-market:history:{N}d` | 86400s (24h) | history endpoint (lazy) |
 | `feed:{hash of feed URL}` | 1200s (20 min) | ingest-feeds (the feed's parsed `NewsItem[]`, via `cache.fetch`) |
@@ -110,7 +109,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `sc-dnms` | Sensor.Community noise sensors |
 | `oparl-meetings` | OParl/PARDOK council meetings |
 | `vbb-disruptions` | VBB/HAFAS transit disruptions |
-| `aqi-grid` | WAQI + Sensor.Community air quality |
+| `aqi-grid` | Sensor.Community air quality points; the WAQI stations of the same grid are cached, never stored ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
 | `bbk-nina` | BBK NINA civil protection warnings |
 | `abgwatch-*` | Abgeordnetenwatch political districts (4 sub-types) |
 
@@ -122,7 +121,7 @@ All route-facing read functions return `DbResult<T>` (`{ data: T; fetchedAt: Dat
 - `loadWeather`, `loadTransitAlerts`, `loadEvents`, `loadSafetyReports`, `loadNewsItems`, `loadSummary`, `loadNinaWarnings`, `loadAirQualityGrid`, `loadWaterLevels`, `loadPoliticalDistricts`, `loadPoliticalFetchedAt`, `loadAppointments`
 - `loadBudget`, `loadConstructionSites`, `loadTrafficIncidents`, `loadPharmacies`, `loadAeds`, `loadSocialAtlas`, `loadWastewater`, `loadBathingSpots`, `loadLaborMarket`, `loadPopulationGeojson`, `loadPopulationSummary`, `loadFeuerwehr`, `loadPollen`, `loadNoiseSensors`, `loadCouncilMeetings`
 - Cron-side reads (not route-facing, no `DbResult`): `loadSafetyGeoState` (safety cron), `loadAllNewsAssessments` (feed cron), `loadGeocodeLookup` / `loadAllGeocodeLookups` (geocoder and cache warming)
-- **Historical queries** (used by `/history` endpoints, not cron): `loadWeatherHistory`, `loadAqiHistory`, `loadWaterLevelHistory`, `loadLaborMarketHistory` — each takes `(db, cityId, sinceDays)` and returns `HistoryPoint[]`
+- **Historical queries** (used by `/history` endpoints, not cron): `loadWeatherHistory`, `loadWaterLevelHistory`, `loadLaborMarketHistory` — each takes `(db, cityId, sinceDays)` and returns `HistoryPoint[]`. Air quality has none: the stored grid is kept 6 hours and holds no WAQI stations.
 
 ### Writes (`writes.ts`)
 
@@ -135,21 +134,22 @@ The synthetic dev seed (`synthetic/seed.ts`, see [dev-database.md](dev-database.
 
 ### Cache Warming (`warm-cache.ts`)
 
-Runs on server start if DB is connected. First loads every geocode lookup into the geocoder's in-process map, then all data types for all active cities from Postgres into cache. Frequently refreshed domains get their cron interval plus 20% as TTL (weather 4320s, transit and water levels 1080s, news and safety 720s, NINA and traffic 360s, AQ grid and construction 2160s, events, appointments and pharmacies 25920s); the rest get the cron job's own TTL. Berlin-only domains (wastewater, bathing, labor market, population GeoJSON and summary, Feuerwehr, noise sensors, council meetings) are guarded with `cityId === 'berlin'`. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
+Runs on server start if DB is connected. First loads every geocode lookup into the geocoder's in-process map, then all data types for all active cities from Postgres into cache. Frequently refreshed domains get their cron interval plus 20% as TTL (weather 4320s, transit and water levels 1080s, news and safety 720s, NINA and traffic 360s, AQ grid and construction 2160s, events, appointments and pharmacies 25920s); the rest get the cron job's own TTL. Berlin-only domains (wastewater, bathing, labor market, population GeoJSON and summary, Feuerwehr, noise sensors, council meetings) are guarded with `cityId === 'berlin'`. The warmed AQ grid, like the air-quality route's DB fallback, has Sensor.Community points only; the WAQI stations come back with the `ingest-aq-grid` run that every start triggers. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
 
 ### Freshness Checks (`warm-cache.ts`)
 
-`findStaleJobs(db, specs)` determines which cron jobs need a startup run. For each `FreshnessSpec` (job name + table name + max age), it queries the latest `fetched_at` from the corresponding table. If the data is missing or older than `maxAgeSeconds`, the job is marked stale. Max ages are set to roughly the cron interval (e.g. 600s for a `*/10` job, 86400s for a daily job). The stale set is used in `app.ts` to conditionally set `runOnStart` on each job — fresh domains skip startup API calls entirely. Without a DB, all domains are marked stale to preserve cache-only behavior.
+`findStaleJobs(db, specs)` determines which cron jobs need a startup run. For each `FreshnessSpec` (job name + table name + max age), it queries the latest `fetched_at` from the corresponding table. If the data is missing or older than `maxAgeSeconds`, the job is marked stale. Max ages are set to roughly the cron interval (e.g. 600s for a `*/10` job, 86400s for a daily job). The stale set is used in `app.ts` to conditionally set `runOnStart` on each job — fresh domains skip startup API calls entirely. `ingest-aq-grid` has no spec and always runs on start, because its stored grid holds no WAQI stations. Without a DB, all domains are marked stale to preserve cache-only behavior.
 
 ### Data Retention (`cron/data-retention.ts`)
 
-Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion for all snapshot types + non-snapshot tables. Phase 2: row-count cap (100 rows per cityId/type) for non-history snapshot types, using `ROW_NUMBER() OVER (PARTITION BY city_id)` raw SQL. Each cleanup task is independent — one failure doesn't block others. Config is split into `HISTORY_RETENTION` (4 time-only entries) and `CAPPED_RETENTION` (20 entries: time + row cap).
+Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion for all snapshot types + non-snapshot tables. Phase 2: row-count cap (100 rows per cityId/type) for non-history snapshot types, using `ROW_NUMBER() OVER (PARTITION BY city_id)` raw SQL. Each cleanup task is independent — one failure doesn't block others. Config is split into `HISTORY_RETENTION` (3 time-only entries) and `CAPPED_RETENTION` (21 entries: time + row cap).
 
 | Category | Snapshot types / tables | Retention |
 |---|---|---|
 | History | open-meteo | 7 days |
-| History | aqi-grid, pegelonline | 30 days (history endpoints) |
+| History | pegelonline | 30 days (history endpoint) |
 | History | ba-labor-market | 730 days / ~24 months (history endpoints) |
+| Non-history (short-lived) | aqi-grid | 6 hours, the age limit of `loadAirQualityGrid` (`AQ_GRID_MAX_AGE_MS`) + 100 row cap. Kept no longer than a read can use it, so no air-quality archive builds up ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
 | Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings | 2 days + 100 row cap |
 | Non-history (infrequent) | berlin-haushalt, osm-aeds, mss-social-atlas, bf-feuerwehr, afstat-population, abgwatch-* | 7 days + 100 row cap |
 | Non-snapshot | news, events, safety | 3 days |

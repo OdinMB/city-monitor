@@ -6,6 +6,7 @@ import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNews
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
+import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -76,7 +77,7 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
 
     (async () => {
       const r = await loadAirQualityGrid(db, cityId);
-      if (r) cache.set(CK.airQualityGrid(cityId), r.data, 2160, r.fetchedAt);   // 30min cron + 20%
+      if (r) cache.set(CK.airQualityGrid(cityId), r.data, AQ_GRID_TTL_SECONDS, r.fetchedAt);   // 30min cron + 20%
     })().catch((err) => log.error(`${cityId} aq grid failed`, err)),
 
     (async () => {

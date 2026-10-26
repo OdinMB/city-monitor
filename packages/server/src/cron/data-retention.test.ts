@@ -12,6 +12,7 @@ vi.mock('drizzle-orm', () => ({
 }));
 
 import { createDataRetention, HISTORY_RETENTION, CAPPED_RETENTION } from './data-retention.js';
+import { AQ_GRID_MAX_AGE_MS } from '../db/reads.js';
 import type { Db } from '../db/index.js';
 
 const TOTAL_SNAPSHOT_TYPES = HISTORY_RETENTION.length + CAPPED_RETENTION.length;
@@ -85,6 +86,22 @@ describe('data-retention', () => {
     const ltCalls = vi.mocked(lt).mock.calls;
     const ltDates = ltCalls.map(([, val]) => val).filter((v) => v instanceof Date);
     expect(ltDates.some((d) => d.getTime() === twoDaysAgo.getTime())).toBe(true);
+  });
+
+  it('deletes stored air-quality grids older than the grid read serves (6 hours)', async () => {
+    const { and } = await import('drizzle-orm');
+    vi.mocked(and).mockClear();
+    const mock = createMockDb();
+    await createDataRetention(mock.db)();
+
+    const conditions = vi.mocked(and).mock.calls as unknown as Array<Array<{ op: string; val: unknown }>>;
+    const aqGrid = conditions.filter(([typeCond]) => typeCond?.op === 'eq' && typeCond.val === 'aqi-grid');
+    expect(aqGrid).toHaveLength(1);
+    const cutoff = aqGrid[0][1];
+    expect(cutoff.op).toBe('lt');
+    expect((cutoff.val as Date).getTime()).toBe(Date.now() - 6 * 3_600_000);
+    expect((cutoff.val as Date).getTime()).toBe(Date.now() - AQ_GRID_MAX_AGE_MS);
+    expect(HISTORY_RETENTION.map((c) => c.type)).not.toContain('aqi-grid');
   });
 
   it('uses 3-day retention for non-snapshot tables', async () => {

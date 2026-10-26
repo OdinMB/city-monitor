@@ -14,6 +14,14 @@ const AQ_TIMEOUT_MS = 15_000;
 const SC_TIMEOUT_MS = 10_000;
 const SC_MAX_STALE_MS = 2 * 60 * 60 * 1000; // Keep offline SC data for up to 2h
 
+/**
+ * 36 minutes: the 30-minute cron interval + 20%. Must outlast a run that is
+ * slow to finish, or the entry expires first and the route falls back to the
+ * stored grid, which has no WAQI stations. Shared by the route's DB fallback
+ * and cache warming.
+ */
+export const AQ_GRID_TTL_SECONDS = 2160;
+
 interface ScCacheEntry {
   point: AirQualityGridPoint;
   fetchedAt: number;
@@ -236,11 +244,15 @@ export async function ingestCityAirQualityGrid(city: CityConfig, cache: Cache, d
     return;
   }
 
-  cache.set(CK.airQualityGrid(city.id), grid, 1800);
+  cache.set(CK.airQualityGrid(city.id), grid, AQ_GRID_TTL_SECONDS);
 
-  if (db) {
+  // WAQI's terms forbid redistributing its data as cached or archived data, so
+  // its stations stay in the in-memory cache and only the Sensor.Community
+  // points are stored. A DB fallback therefore serves no WAQI stations until
+  // the next run.
+  if (db && scPoints.length > 0) {
     try {
-      await saveAirQualityGrid(db, city.id, grid);
+      await saveAirQualityGrid(db, city.id, scPoints);
     } catch {
       log.warn(`${city.id}: failed to persist AQ grid to DB`);
     }

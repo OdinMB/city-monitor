@@ -96,29 +96,29 @@ describe('aqPopupHtml', () => {
   });
 });
 
+function fakeMap() {
+  return {
+    getLayer: vi.fn(() => undefined),
+    removeLayer: vi.fn(),
+    getSource: vi.fn(() => undefined),
+    removeSource: vi.fn(),
+    hasImage: vi.fn(() => false),
+    removeImage: vi.fn(),
+    addImage: vi.fn(),
+    addSource: vi.fn(),
+    addLayer: vi.fn(),
+    on: vi.fn(),
+  };
+}
+
+const WAQI_POINT: AirQualityGridPoint = { lat: 52.52, lon: 13.4, europeanAqi: 85, station: STATION.station, url: STATION.url };
+const SC_POINT: AirQualityGridPoint = { lat: 52.5, lon: 13.42, europeanAqi: 85, station: SENSOR.station, url: SENSOR.url };
+
 describe('updateAqGridLayer badges', () => {
-  function fakeMap() {
-    return {
-      getLayer: vi.fn(() => undefined),
-      removeLayer: vi.fn(),
-      getSource: vi.fn(() => undefined),
-      removeSource: vi.fn(),
-      hasImage: vi.fn(() => false),
-      removeImage: vi.fn(),
-      addImage: vi.fn(),
-      addSource: vi.fn(),
-      addLayer: vi.fn(),
-      on: vi.fn(),
-    };
-  }
-
-  const WAQI_POINT: AirQualityGridPoint = { lat: 52.52, lon: 13.4, europeanAqi: 85, station: STATION.station, url: STATION.url };
-  const SC_POINT: AirQualityGridPoint = { lat: 52.5, lon: 13.42, europeanAqi: 85, station: SENSOR.station, url: SENSOR.url };
-
   it('labels a WAQI badge US AQI in the US colour and leaves a Sensor.Community badge European', () => {
     const map = fakeMap();
     vi.mocked(createVerticalBadgeIcon).mockClear();
-    updateAqGridLayer(map as unknown as maplibregl.Map, [WAQI_POINT, SC_POINT], false);
+    updateAqGridLayer(map as unknown as maplibregl.Map, [WAQI_POINT, SC_POINT], false, 'berlin');
 
     expect(vi.mocked(createVerticalBadgeIcon).mock.calls.map(([, bg, , text, , fg]) => ({ bg, text, fg }))).toEqual([
       { bg: '#FFFF00', text: '85 US AQI', fg: '#1f2937' },
@@ -130,5 +130,46 @@ describe('updateAqGridLayer badges', () => {
     expect(imageIds).toEqual(['aq-badge-us-85-moderate', 'aq-badge-eu-85-veryPoor']);
     const source = map.addSource.mock.calls[0][1] as { data: GeoJSON.FeatureCollection };
     expect(source.data.features.map((f) => f.properties!.iconId)).toEqual(imageIds);
+  });
+});
+
+describe('updateAqGridLayer attribution', () => {
+  /** The attribution markup the layer's source carries, parsed. */
+  function attribution(map: ReturnType<typeof fakeMap>): HTMLElement | null {
+    const spec = map.addSource.mock.calls[0]?.[1] as { attribution?: string } | undefined;
+    return spec?.attribution ? parse(spec.attribution) : null;
+  }
+
+  it.each([
+    ['berlin', 'Umweltbundesamt, BLUME'],
+    ['hamburg', 'Umweltbundesamt, HaLm'],
+  ])('credits WAQI and the originating agencies while WAQI stations are shown (%s)', (cityId, agencies) => {
+    const map = fakeMap();
+    updateAqGridLayer(map as unknown as maplibregl.Map, [WAQI_POINT, SC_POINT], false, cityId);
+
+    const el = attribution(map)!;
+    const link = el.querySelector('a')!;
+    expect(link.textContent).toBe('World Air Quality Index Project');
+    expect(link.getAttribute('href')).toBe('https://waqi.info/');
+    expect(el.textContent).toBe(`© World Air Quality Index Project, ${agencies}`);
+  });
+
+  it('credits WAQI alone for a city without listed agencies', () => {
+    const map = fakeMap();
+    updateAqGridLayer(map as unknown as maplibregl.Map, [WAQI_POINT], false, 'elsewhere');
+    expect(attribution(map)!.textContent).toBe('© World Air Quality Index Project');
+  });
+
+  it('adds no WAQI credit when the layer holds no WAQI station', () => {
+    const map = fakeMap();
+    updateAqGridLayer(map as unknown as maplibregl.Map, [SC_POINT], false, 'berlin');
+    expect(map.addSource).toHaveBeenCalledOnce();
+    expect(attribution(map)).toBeNull();
+  });
+
+  it('adds no source, and so no credit, when the layer is off', () => {
+    const map = fakeMap();
+    updateAqGridLayer(map as unknown as maplibregl.Map, [], false, 'berlin');
+    expect(map.addSource).not.toHaveBeenCalled();
   });
 });

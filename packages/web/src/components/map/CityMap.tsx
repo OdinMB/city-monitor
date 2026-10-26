@@ -322,7 +322,7 @@ export function CityMap() {
         updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
         updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
         updateAedMarkers(map, aedItemsRef.current, isDarkRef.current);
-        updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current);
+        updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
@@ -406,7 +406,7 @@ export function CityMap() {
       updateWarningPolygons(map, warningItemsRef.current, isDark);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
       updateAedMarkers(map, aedItemsRef.current, isDark);
-      updateAqGridLayer(map, aqGridItemsRef.current, isDark);
+      updateAqGridLayer(map, aqGridItemsRef.current, isDark, cityIdRef.current);
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
@@ -574,7 +574,7 @@ export function CityMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => updateAqGridLayer(map, aqGridItems, isDarkRef.current);
+    const apply = () => updateAqGridLayer(map, aqGridItems, isDarkRef.current, cityIdRef.current);
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };

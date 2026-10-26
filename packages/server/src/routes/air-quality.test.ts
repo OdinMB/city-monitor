@@ -77,4 +77,9 @@ describe('Air Quality API', () => {
     const res = await fetch(`${baseUrl}/api/unknown/air-quality`);
     expect(res.status).toBe(404);
   });
+
+  it('serves no AQI history: the stored grid is not kept as an archive', async () => {
+    const res = await fetch(`${baseUrl}/api/berlin/air-quality/history?range=7d`);
+    expect(res.status).toBe(404);
+  });
 });

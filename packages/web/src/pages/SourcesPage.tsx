@@ -4,6 +4,7 @@ import type { TFunction } from 'i18next';
 import { useCityConfig } from '../hooks/useCityConfig.js';
 import { PageShell } from '../components/layout/PageShell.js';
 import { safeUrl } from '../lib/safe-url.js';
+import { waqiAgencies } from '../lib/aqi.js';
 
 interface Source {
   name: string;
@@ -50,11 +51,6 @@ const SHARED_SOURCES: SourceGroup[] = [
         name: 'DWD (Deutscher Wetterdienst)',
         url: 'https://www.dwd.de/',
         description: 'Weather observations and forecast (via Bright Sky), official severe weather warnings, pollen forecast (Pollenflug-Gefahrenindex), and UV index forecast. Source: Deutscher Wetterdienst. City Monitor derives the daily summaries and feels-like temperature from this data.',
-      },
-      {
-        name: 'WAQI (World Air Quality Index)',
-        url: 'https://waqi.info/',
-        description: 'AQI readings from official monitoring stations.',
       },
     ],
   },
@@ -124,6 +120,24 @@ function aiProcessingGroup(t: TFunction): SourceGroup {
         name: 'OpenAI',
         url: 'https://openai.com/',
         description: t('sources.aiProcessing.description'),
+      },
+    ],
+  };
+}
+
+/**
+ * WAQI, credited with the agencies whose stations it relays for the city, as
+ * its terms require. Sits at the end of the weather group, merged in by category.
+ */
+function waqiGroup(cityId: string): SourceGroup {
+  const agencies = waqiAgencies(cityId);
+  return {
+    category: 'Weather & Environment',
+    sources: [
+      {
+        name: 'WAQI (World Air Quality Index Project)',
+        url: 'https://waqi.info/',
+        description: `Station readings (US AQI) for the map and the air quality tile, shown live and not archived. Data from ${agencies?.full ?? 'the originating monitoring agencies'}, via the World Air Quality Index Project.`,
       },
     ],
   };
@@ -270,7 +284,7 @@ export function SourcesPage() {
   const city = useCityConfig();
   const { t } = useTranslation();
   const citySources = CITY_SOURCES[city.id] ?? [];
-  const groups = mergeGroups([...SHARED_SOURCES, aiProcessingGroup(t)], citySources);
+  const groups = mergeGroups([...SHARED_SOURCES, aiProcessingGroup(t)], [waqiGroup(city.id), ...citySources]);
 
   const sourceCount = groups.reduce((n, g) => n + g.sources.length, 0);
 

@@ -70,7 +70,7 @@ export interface SyntheticData {
   noiseSensors: NoiseSensor[];
   councilMeetings: CouncilMeeting[];
   political: Record<PoliticalLevel, PoliticalDistrict[]>;
-  /** Older snapshots behind the history charts (weather, AQI, water levels, labor market), oldest first. */
+  /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
 
@@ -116,7 +116,6 @@ export function generateSyntheticData(options: { now: Date; seed?: number }): Sy
     const at = new Date(now.getTime() - h * HOUR);
     history.push(
       { type: 'open-meteo', fetchedAt: at, data: { current: currentWeather(rng, weatherModel, at), hourly: [], daily: [], alerts: [] } },
-      { type: 'aqi-grid', fetchedAt: at, data: airQualityGridAt(rng, aqStations, at) },
       { type: 'pegelonline', fetchedAt: at, data: { stations: waterStationsAt(rng, gauges, at) } },
     );
   }

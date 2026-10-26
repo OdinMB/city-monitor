@@ -66,7 +66,6 @@ export const api = {
   getCouncilMeetings: (city: string) => fetchJson<ApiResponse<CouncilMeeting[] | null>>(`${BASE}/${city}/council-meetings`),
   // History endpoints — lazy-loaded for expanded tile views
   getWeatherHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/weather/history?range=${range}`),
-  getAqiHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/air-quality/history?range=${range}`),
   getWaterLevelHistory: (city: string, range = '7d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/water-levels/history?range=${range}`),
   getLaborMarketHistory: (city: string, range = '365d') => fetchJson<{ data: HistoryPoint[] }>(`${BASE}/${city}/labor-market/history?range=${range}`),
 };

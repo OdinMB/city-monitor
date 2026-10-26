@@ -91,12 +91,11 @@ The other domains (NINA, air quality, pharmacies, AEDs, traffic, budget, labor m
 
 #### History Hooks (Lazy-loaded)
 
-`hooks/useHistory.ts` fetches historical time-series from `/api/:city/{domain}/history?range=Nd` endpoints, only while `enabled` is true. No component calls these hooks at the moment (the tile trend charts were removed with `TrendChart`):
+`hooks/useHistory.ts` fetches historical time-series from `/api/:city/{domain}/history?range=Nd` endpoints, only while `enabled` is true. No component calls these hooks at the moment (the tile trend charts were removed with `TrendChart`). Air quality has no history: WAQI's terms forbid archiving its station data (see [weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)).
 
 | Hook | Query Key | Range | Stale Time |
 |---|---|---|---|
 | `useWeatherHistory` | `['weather-history', cityId]` | 7d | 30 min |
-| `useAqiHistory` | `['aqi-history', cityId]` | 7d | 30 min |
 | `useWaterLevelHistory` | `['water-level-history', cityId]` | 7d | 15 min |
 | `useLaborMarketHistory` | `['labor-market-history', cityId]` | 365d | 24h |
 
@@ -109,7 +108,7 @@ The other domains (NINA, air quality, pharmacies, AEDs, traffic, budget, labor m
 
 ## API Client (`packages/web/src/lib/api.ts`)
 
-Thin wrapper: `fetchJson<T>(url)` calls `fetch()` with `cache: 'no-store'`, checks `response.ok`, returns typed JSON. All endpoints under `/api`. The `api` object has one typed method per endpoint (`api.getBootstrap()`, `api.getWeather()`, `api.getNewsSummary(city, lang)`, … `api.getCouncilMeetings()`, plus the four `get*History(city, range)` methods).
+Thin wrapper: `fetchJson<T>(url)` calls `fetch()` with `cache: 'no-store'`, checks `response.ok`, returns typed JSON. All endpoints under `/api`. The `api` object has one typed method per endpoint (`api.getBootstrap()`, `api.getWeather()`, `api.getNewsSummary(city, lang)`, … `api.getCouncilMeetings()`, plus the three `get*History(city, range)` methods).
 
 All data types come from `@city-monitor/shared`; `api.ts` re-exports them so components can import types from `lib/api.js`. Nothing is duplicated in the web package.
 

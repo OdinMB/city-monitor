@@ -137,7 +137,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-pharmacies',   tableName: 'snapshots', maxAgeSeconds: 21600,   filter: { column: 'type', value: 'aponet' } },
     { jobName: 'ingest-traffic',      tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'tomtom-traffic' } },
     { jobName: 'ingest-political',    tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'abgwatch-bundestag' } },
-    { jobName: 'ingest-aq-grid',      tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'aqi-grid' } },
+    // No spec for ingest-aq-grid: it runs on every start (see the job list)
     { jobName: 'ingest-construction', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'viz-roadworks' } },
     { jobName: 'ingest-aeds',         tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'osm-aeds' } },
     { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' } },
@@ -204,7 +204,9 @@ export async function createApp(options?: {
     { name: 'ingest-pharmacies', schedule: '0 */6 * * *', handler: ingestPharmacies, runOnStart: s('ingest-pharmacies') },
     { name: 'ingest-traffic', schedule: '*/5 * * * *', handler: ingestTraffic, runOnStart: s('ingest-traffic') },
     { name: 'ingest-political', schedule: '0 4 * * 1', handler: ingestPolitical, runOnStart: s('ingest-political') },
-    { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid, runOnStart: s('ingest-aq-grid') },
+    // Always on start: the stored grid holds no WAQI stations (WAQI's terms
+    // forbid archiving them), so a fresh row cannot stand in for a run.
+    { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid, runOnStart: true },
     { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction, runOnStart: s('ingest-construction') },
     { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: s('ingest-aeds') },
     { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },

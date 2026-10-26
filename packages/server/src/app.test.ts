@@ -14,6 +14,25 @@ vi.mock('./lib/scheduler.js', () => ({
   },
 }));
 
+// Stand-in for a connected database whose stored data is all fresh; off by default
+const freshDb = vi.hoisted(() => ({ on: false }));
+vi.mock('./db/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./db/index.js')>();
+  return {
+    ...actual,
+    createDb: () => (freshDb.on ? { db: {}, client: {} } : actual.createDb()),
+    testConnection: async (db: Parameters<typeof actual.testConnection>[0]) => (freshDb.on ? undefined : actual.testConnection(db)),
+  };
+});
+vi.mock('./db/warm-cache.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./db/warm-cache.js')>();
+  return {
+    ...actual,
+    warmCache: async (...args: Parameters<typeof actual.warmCache>) => (freshDb.on ? undefined : actual.warmCache(...args)),
+    findStaleJobs: async (...args: Parameters<typeof actual.findStaleJobs>) => (freshDb.on ? new Set<string>() : actual.findStaleJobs(...args)),
+  };
+});
+
 describe('createApp in synthetic mode', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -25,9 +44,12 @@ describe('createApp in synthetic mode', () => {
     vi.stubEnv('ACTIVE_CITIES', 'berlin');
     const fetchSpy = vi.fn(async () => new Response('{}'));
     vi.stubGlobal('fetch', fetchSpy);
+    scheduled.jobs = [];
 
     const { scheduler, cache } = await createApp({ synthetic: true });
 
+    // No scheduler at all, so not even the always-on-start ingest-aq-grid runs
+    expect(scheduled.jobs).toEqual([]);
     expect(scheduler.getJobs()).toEqual([]);
     expect(await scheduler.triggerJob('ingest-feeds')).toBe(false);
     // No RainViewer fetch from the weather tiles router
@@ -90,6 +112,29 @@ describe('createApp startup runs for Berlin-only jobs', () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(cache.size()).toBe(sizeBefore);
+  });
+});
+
+describe('createApp startup runs with fresh stored data', () => {
+  beforeEach(() => {
+    scheduled.jobs = [];
+    freshDb.on = true;
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}')));
+  });
+
+  afterEach(() => {
+    freshDb.on = false;
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('still runs the air-quality grid job on start, since the stored grid has no WAQI stations', async () => {
+    await createApp();
+
+    expect(scheduled.jobs).toHaveLength(26);
+    const startup = scheduled.jobs.filter((j) => j.runOnStart).map((j) => j.name);
+    expect(startup).toEqual(['ingest-aq-grid']);
   });
 });
 

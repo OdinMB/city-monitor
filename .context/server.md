@@ -12,7 +12,7 @@
 4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`
 5. Run freshness check (`findStaleJobs`) — queries `fetched_at` from each domain's table. Domains with data newer than their cron interval are considered fresh; stale or missing domains are flagged for startup ingestion. When Berlin is not active, the Berlin-only jobs (`BERLIN_ONLY_JOBS`, see below) are left out of the check
 6. Create ingestion functions — each receives cache and optionally db
-7. Create scheduler with cron jobs. Only stale domains get `runOnStart: true`; fresh domains skip startup API calls. Without a DB, all domains are marked stale (preserves cache-only behavior). Startup runs execute **in parallel**, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`)
+7. Create scheduler with cron jobs. Only stale domains get `runOnStart: true`; fresh domains skip startup API calls. The exception is `ingest-aq-grid`, which has no freshness spec and always runs on start: its stored grid holds no WAQI stations (see weather.md). Without a DB, all domains are marked stale (preserves cache-only behavior). Startup runs execute **in parallel**, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`)
 8. Mount routers under `/api` with per-route Cache-Control headers
 9. Return `{ app, cache, db, scheduler }`
 
@@ -51,7 +51,6 @@ Applied via middleware per route tier:
 | `/api/:city/council-meetings` | 3600s (1h) | Council meetings update every 6h |
 | `/api/weather-tiles/:z/:x/:y.png` | 300s (5 min) | RainViewer radar tiles (not mounted in synthetic mode) |
 | `/api/:city/weather/history` | 300s (5 min) | Inherits the weather router's value; up to 7d |
-| `/api/:city/air-quality/history` | 600s (10 min) | Inherits the air-quality router's value; up to 30d |
 | `/api/:city/water-levels/history` | 300s (5 min) | Inherits the water-levels router's value; up to 30d |
 | `/api/:city/labor-market/history` | 3600s (1h) | Inherits the labor-market router's value; up to 730d |
 
@@ -72,7 +71,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-events` | `0 */6 * * *` | kulturdaten.berlin, Ticketmaster and gomus events |
 | `ingest-safety` | `*/10 * * * *` | Police RSS |
 | `ingest-nina` | `*/5 * * * *` | NINA civil protection warnings |
-| `ingest-aq-grid` | `*/30 * * * *` | WAQI stations + Sensor.Community (PM→EAQI) grid |
+| `ingest-aq-grid` | `*/30 * * * *` | WAQI stations + Sensor.Community (PM→EAQI) grid; caches both, stores only the Sensor.Community points (WAQI terms, see weather.md) |
 | `ingest-pharmacies` | `0 */6 * * *` | aponet.de emergency pharmacies |
 | `ingest-traffic` | `*/5 * * * *` | TomTom traffic incidents |
 | `ingest-construction` | `*/30 * * * *` | VIZ Berlin construction/roadworks |
@@ -92,7 +91,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-council-meetings` | `0 */6 * * *` | BVV OParl + Abgeordnetenhaus PARDOK meetings |
 | `data-retention` | `0 3 * * *` | Prune old data (nightly) |
 
-Ingestion jobs use conditional `runOnStart` based on DB freshness checks — only stale/missing domains trigger startup API calls. `data-retention` never runs on start. `summarize-news` has `dependsOn: ['ingest-feeds']`, `ingest-population` has `dependsOn: ['ingest-social-atlas']`.
+Ingestion jobs use conditional `runOnStart` based on DB freshness checks — only stale/missing domains trigger startup API calls. `ingest-aq-grid` always runs on start, and `data-retention` never does. `summarize-news` has `dependsOn: ['ingest-feeds']`, `ingest-population` has `dependsOn: ['ingest-social-atlas']`.
 
 **Which cities a job serves.** Most jobs loop over `getActiveCities()` and skip a city without the matching `dataSources` entry (budget, appointments, social atlas, council meetings, noise sensors, roadworks, transit, events…), so they fetch nothing for a city that lacks the source. Five jobs have no config entry because their source covers Berlin only, with a hardcoded URL and rows written under `'berlin'`: `ingest-bathing`, `ingest-wastewater`, `ingest-labor-market`, `ingest-population` and `ingest-feuerwehr`. Each handler returns before any request when `getCityConfig('berlin')` is undefined, and `app.ts` lists them in `BERLIN_ONLY_JOBS` so that, without Berlin, they are left out of the freshness check and get no startup run. They stay scheduled (the health endpoint lists all 26 jobs) and their ticks do nothing. With Berlin active, alone or with other cities, they make the same requests and writes as before. A new Berlin-only source without a config entry follows the same two steps ([new-data-sources.md](new-data-sources.md)).
 

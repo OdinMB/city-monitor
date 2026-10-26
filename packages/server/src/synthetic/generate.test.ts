@@ -110,7 +110,8 @@ describe('generateSyntheticData', () => {
       expect(data.political[level].length, level).toBeGreaterThan(0);
     }
     const types = new Set(data.history.map((h) => h.type));
-    expect(types).toEqual(new Set(['open-meteo', 'aqi-grid', 'pegelonline', 'ba-labor-market']));
+    // No AQI history: only the current grid is stored, like production
+    expect(types).toEqual(new Set(['open-meteo', 'pegelonline', 'ba-labor-market']));
   });
 
   it('passes the Zod schemas the database reads validate with', () => {

@@ -46,6 +46,24 @@ describe('SourcesPage air quality credit', () => {
   });
 });
 
+describe('SourcesPage WAQI credit', () => {
+  it('names the agencies behind the WAQI stations, in the weather group', () => {
+    renderPage();
+
+    const waqi = screen.getByRole('link', { name: 'WAQI (World Air Quality Index Project)' });
+    expect(waqi.getAttribute('href')).toBe('https://waqi.info/');
+    const card = waqi.parentElement!;
+    expect(within(card).getByText(
+      /Data from the Umweltbundesamt \(German Environment Agency\) and the Berlin air quality monitoring network \(BLUME\), via the World Air Quality Index Project\./,
+    )).toBeTruthy();
+    expect(within(card).getByText(/not archived/)).toBeTruthy();
+
+    const section = waqi.closest('section')!;
+    expect(within(section).getByRole('heading', { level: 2 }).textContent).toBe('Weather & Environment');
+    expect(screen.getAllByRole('link', { name: /WAQI/ })).toHaveLength(1);
+  });
+});
+
 describe('SourcesPage AI section', () => {
   afterEach(async () => {
     await i18n.changeLanguage('en');

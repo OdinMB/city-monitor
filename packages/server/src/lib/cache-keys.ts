@@ -55,7 +55,6 @@ export const CK = {
 
   // History
   weatherHistory: (cityId: string, days: number) => `${cityId}:weather:history:${days}d`,
-  aqiHistory: (cityId: string, days: number) => `${cityId}:aqi:history:${days}d`,
   waterLevelHistory: (cityId: string, days: number) => `${cityId}:water-levels:history:${days}d`,
   laborMarketHistory: (cityId: string, days: number) => `${cityId}:labor-market:history:${days}d`,
 

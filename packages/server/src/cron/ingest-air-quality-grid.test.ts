@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createAirQualityGridIngestion, pmToEuropeanAqi } from './ingest-air-quality-grid.js';
+import { AQ_GRID_TTL_SECONDS, createAirQualityGridIngestion, pmToEuropeanAqi } from './ingest-air-quality-grid.js';
 import { createCache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import type { AirQualityGridPoint } from '@city-monitor/shared';
@@ -90,6 +90,18 @@ describe('createAirQualityGridIngestion', () => {
     expect(grid![1].europeanAqi).toBe(35);
   });
 
+  it('caches the grid for the cron interval + 20%, so a slow run does not let it expire', async () => {
+    mockFetchWaqiThenSc();
+
+    const cache = createCache();
+    const setSpy = vi.spyOn(cache, 'set');
+    await createAirQualityGridIngestion(cache)();
+
+    const gridSets = setSpy.mock.calls.filter(([key]) => key === 'berlin:air-quality:grid');
+    expect(gridSets.map((c) => c[2])).toEqual([AQ_GRID_TTL_SECONDS]);
+    expect(AQ_GRID_TTL_SECONDS).toBe(30 * 60 * 1.2);
+  });
+
   it('filters out stations with non-numeric AQI', async () => {
     mockFetchWaqiThenSc();
 
@@ -158,6 +170,37 @@ describe('createAirQualityGridIngestion', () => {
 
     expect(mockSaveAirQualityGrid).toHaveBeenCalledOnce();
     expect(mockSaveAirQualityGrid).toHaveBeenCalledWith(db, 'berlin', expect.any(Array));
+  });
+
+  it('stores only the Sensor.Community points, keeping WAQI stations in the cache alone', async () => {
+    mockFetchWaqiThenSc();
+
+    const cache = createCache();
+    const db = {} as unknown as Db;
+    await createAirQualityGridIngestion(cache, db)();
+
+    const grid = cache.get<AirQualityGridPoint[]>('berlin:air-quality:grid')!;
+    expect(grid.filter((p) => p.url?.includes('aqicn.org'))).toHaveLength(2);
+
+    const stored = mockSaveAirQualityGrid.mock.calls[0][2] as AirQualityGridPoint[];
+    expect(stored).toHaveLength(14);
+    expect(stored.some((p) => p.url?.includes('aqicn.org'))).toBe(false);
+    expect(stored.map((p) => p.station)).not.toContain('Berlin Mitte');
+    expect(stored).toEqual(grid.filter((p) => p.url?.includes('maps.sensor.community')));
+  });
+
+  it('stores nothing when only WAQI stations answered', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify(mockWaqiResponse), { status: 200 }));
+    for (let i = 0; i < 14 * 3; i++) {
+      spy.mockRejectedValueOnce(new Error('Network error'));
+    }
+
+    const cache = createCache();
+    await createAirQualityGridIngestion(cache, {} as unknown as Db)();
+
+    expect(cache.get<AirQualityGridPoint[]>('berlin:air-quality:grid')).toHaveLength(2);
+    expect(mockSaveAirQualityGrid).not.toHaveBeenCalled();
   });
 
   it('does not persist to DB when db is null', async () => {

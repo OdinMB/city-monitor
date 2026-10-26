@@ -7,7 +7,7 @@ import i18n from 'i18next';
 import { Wind } from 'lucide';
 import type { AirQualityGridPoint } from '../../../lib/api.js';
 import { createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
-import { AQI_SCALE_NAME, getAqiLevelOnScale, gridPointScale } from '../../../lib/aqi.js';
+import { AQI_SCALE_NAME, getAqiLevelOnScale, gridPointScale, waqiMapAttribution } from '../../../lib/aqi.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
 import { safeUrl } from '../../../lib/safe-url.js';
 import { registerPopupHandlers, type PopupContentFn } from '../popups.js';
@@ -69,7 +69,12 @@ export function aqPopupHtml(props: Record<string, unknown>): string {
     </div>`;
 }
 
-export function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoint[], isDark: boolean) {
+/**
+ * Draws the grid points, or clears the layer when `points` is empty (layer
+ * off). The source carries the WAQI attribution, so the map's attribution
+ * control lists it exactly while the layer is shown.
+ */
+export function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoint[], isDark: boolean, cityId: string) {
   const geojson = aqGridToGeoJSON(points);
 
   for (const id of ['aq-marker-label', 'aq-marker-icon']) {
@@ -90,7 +95,8 @@ export function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoi
     map.addImage(id, createVerticalBadgeIcon(Wind as IconNode, level.color, stroke, text, undefined, level.textColor));
   }
 
-  map.addSource('aq-grid', { type: 'geojson', data: geojson });
+  const attribution = waqiMapAttribution(points, cityId);
+  map.addSource('aq-grid', { type: 'geojson', data: geojson, ...(attribution && { attribution }) });
 
   map.addLayer({
     id: 'aq-marker-icon',

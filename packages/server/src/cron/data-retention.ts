@@ -15,6 +15,7 @@ import {
   aiSummaries,
 } from '../db/schema.js';
 import type { SnapshotType } from '../db/schema.js';
+import { AQ_GRID_MAX_AGE_MS } from '../db/reads.js';
 import { createLogger } from '../lib/logger.js';
 
 const log = createLogger('data-retention');
@@ -27,13 +28,16 @@ export const ROW_CAP = 100;
 /** History types: time-based only, matching their max query range */
 export const HISTORY_RETENTION: Array<{ type: SnapshotType; retentionMs: number }> = [
   { type: 'open-meteo',      retentionMs: 7 * DAY_MS },
-  { type: 'aqi-grid',        retentionMs: 30 * DAY_MS },
   { type: 'pegelonline',     retentionMs: 30 * DAY_MS },
   { type: 'ba-labor-market', retentionMs: 730 * DAY_MS },
 ];
 
 /** Non-history types: tighter time-based + row-count cap */
 export const CAPPED_RETENTION: Array<{ type: SnapshotType; retentionMs: number }> = [
+  // Kept only as long as the grid read serves a row (6 hours). Rows written
+  // before WAQI stations were left out of the stored grid still hold them.
+  { type: 'aqi-grid',           retentionMs: AQ_GRID_MAX_AGE_MS },
+
   // High/medium frequency (2 days)
   { type: 'vbb-disruptions',    retentionMs: 2 * DAY_MS },
   { type: 'tomtom-traffic',     retentionMs: 2 * DAY_MS },

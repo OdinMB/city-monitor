@@ -197,6 +197,17 @@ export async function loadNinaWarnings(db: Db, cityId: string): Promise<DbResult
   return loadSnapshot(db, cityId, 'bbk-nina', { schema: z.array(NinaWarningSchema), maxAgeMs: 3 * 3600_000 });
 }
 
+/**
+ * Oldest stored air-quality grid that the route fallback and cache warming
+ * serve. The retention job deletes `aqi-grid` rows past this age, since no
+ * reader uses them.
+ */
+export const AQ_GRID_MAX_AGE_MS = 6 * 3600_000;
+
+/**
+ * The last stored grid. It holds the Sensor.Community points only: the
+ * ingestion keeps WAQI stations in the cache and never stores them.
+ */
 export async function loadAirQualityGrid(db: Db, cityId: string): Promise<DbResult<AirQualityGridPoint[]>> {
   return loadSnapshot(db, cityId, 'aqi-grid', { schema: z.array(z.object({
     lat: z.number(),
@@ -204,7 +215,7 @@ export async function loadAirQualityGrid(db: Db, cityId: string): Promise<DbResu
     europeanAqi: z.number(),
     station: z.string(),
     url: z.string().optional(),
-  })), maxAgeMs: 6 * 3600_000 });
+  })), maxAgeMs: AQ_GRID_MAX_AGE_MS });
 }
 
 export async function loadPoliticalDistricts(
@@ -500,27 +511,6 @@ export async function loadWeatherHistory(
       const temp = d?.current?.temp;
       if (typeof temp !== 'number') return null;
       return { timestamp: r.fetchedAt.toISOString(), value: temp };
-    })
-    .filter((p): p is HistoryPoint => p !== null);
-}
-
-/**
- * Load AQI history by averaging europeanAqi across grid stations per snapshot.
- * Returns one point per snapshot (each cron run = ~30min resolution).
- */
-export async function loadAqiHistory(
-  db: Db,
-  cityId: string,
-  sinceDays: number,
-): Promise<HistoryPoint[]> {
-  const rows = await loadSnapshotHistory(db, cityId, 'aqi-grid', sinceDays);
-
-  return rows
-    .map((r) => {
-      const points = r.data as AirQualityGridPoint[] | null;
-      if (!Array.isArray(points) || points.length === 0) return null;
-      const avg = points.reduce((sum, p) => sum + p.europeanAqi, 0) / points.length;
-      return { timestamp: r.fetchedAt.toISOString(), value: Math.round(avg) };
     })
     .filter((p): p is HistoryPoint => p !== null);
 }

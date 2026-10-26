@@ -82,3 +82,44 @@ export function isWaqiStation(point: { url?: string }): boolean {
 export function gridPointScale(point: { url?: string }): AqiScale {
   return isWaqiStation(point) ? 'us' : 'eu';
 }
+
+/** Agencies that run the official stations WAQI relays for a city. */
+export interface WaqiAgencies {
+  /** Proper names only, for the map attribution. */
+  short: string;
+  /** English wording for the Sources page. */
+  full: string;
+}
+
+/**
+ * Originating agencies of the WAQI stations in each city's bounding box. WAQI's
+ * terms make credit to the World Air Quality Index Project and to the
+ * originating agencies mandatory wherever its data is shown.
+ */
+const WAQI_AGENCIES: Record<string, WaqiAgencies> = {
+  berlin: {
+    short: 'Umweltbundesamt, BLUME',
+    full: 'the Umweltbundesamt (German Environment Agency) and the Berlin air quality monitoring network (BLUME)',
+  },
+  hamburg: {
+    short: 'Umweltbundesamt, HaLm',
+    full: 'the Umweltbundesamt (German Environment Agency) and the Hamburg air quality monitoring network (HaLm)',
+  },
+};
+
+/** The city's WAQI originating agencies, or undefined for a city without an entry. */
+export function waqiAgencies(cityId: string): WaqiAgencies | undefined {
+  return WAQI_AGENCIES[cityId];
+}
+
+/**
+ * Map attribution for the air-quality layer: WAQI and the city's originating
+ * agencies, or nothing when no WAQI station is on the layer. Fixed markup with
+ * no feed data in it.
+ */
+export function waqiMapAttribution(points: ReadonlyArray<{ url?: string }>, cityId: string): string | undefined {
+  if (!points.some(isWaqiStation)) return undefined;
+  const agencies = waqiAgencies(cityId);
+  const link = '<a href="https://waqi.info/" target="_blank" rel="noopener">World Air Quality Index Project</a>';
+  return agencies ? `&copy; ${link}, ${agencies.short}` : `&copy; ${link}`;
+}

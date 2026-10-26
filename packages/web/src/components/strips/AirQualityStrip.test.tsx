@@ -75,11 +75,11 @@ describe('AirQualityStrip station list', () => {
   });
 
   it.each([
-    ['en', 'Stations: World Air Quality Index Project'],
-    ['de', 'Messstationen: World Air Quality Index Project'],
-    ['tr', 'İstasyonlar: World Air Quality Index Project'],
-    ['ar', 'المحطات: World Air Quality Index Project'],
-  ])('credits the station data under the list (%s)', async (lang, credit) => {
+    ['en', 'Stations: World Air Quality Index Project and originating agencies'],
+    ['de', 'Messstationen: World Air Quality Index Project und die Messnetzbetreiber'],
+    ['tr', 'İstasyonlar: World Air Quality Index Project ve kaynak kurumlar'],
+    ['ar', 'المحطات: World Air Quality Index Project والجهات المصدرة للبيانات'],
+  ])('credits WAQI and the originating agencies under the list (%s)', async (lang, credit) => {
     await i18n.changeLanguage(lang);
     render(<AirQualityStrip expanded />);
     expect(screen.getByText(credit)).toBeTruthy();
