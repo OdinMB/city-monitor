@@ -18,3 +18,15 @@ export function useMediaQuery(query: string): boolean {
 export function useIsDesktop(): boolean {
   return useMediaQuery('(min-width: 640px)');
 }
+
+/**
+ * True when no input on the device can hover: phones, and tablets with no
+ * mouse or trackpad attached. Uses `any-hover` rather than the primary
+ * `hover`/`pointer` features because an iPad keeps reporting its touchscreen
+ * as the primary input even with a trackpad keyboard attached, while the
+ * `any-` features follow the attached pointer. A keyboard on its own is not
+ * visible to any media query.
+ */
+export function useIsTouchOnly(): boolean {
+  return useMediaQuery('(any-hover: none)');
+}
