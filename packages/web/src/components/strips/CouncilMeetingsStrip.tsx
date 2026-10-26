@@ -66,7 +66,7 @@ function MeetingRow({ meeting, t, locale }: { meeting: CouncilMeeting; t: (key: 
             <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${badgeColor}`}>
               {sourceBadge}
             </span>
-            <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+            <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
               {formatTime(meeting.start, locale)}
             </span>
           </div>
@@ -74,18 +74,20 @@ function MeetingRow({ meeting, t, locale }: { meeting: CouncilMeeting; t: (key: 
             {meeting.committee}
           </p>
           {meeting.district && (
-            <p className="text-xs text-gray-400 dark:text-gray-500">{meeting.district}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{meeting.district}</p>
           )}
           {meeting.location && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{meeting.location}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{meeting.location}</p>
           )}
         </div>
         {meeting.webUrl && (
+          // A 24px target around the 16px icon (WCAG 2.5.8); -mx-1 keeps the
+          // icon where it was and the row's text column at its old width.
           <a
             href={safeUrl(meeting.webUrl)}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-1"
+            className="shrink-0 inline-flex items-center justify-center min-w-6 min-h-6 -mx-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             aria-label={t('panel.councilMeetings.openDetails')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -95,7 +97,7 @@ function MeetingRow({ meeting, t, locale }: { meeting: CouncilMeeting; t: (key: 
         )}
       </div>
       {meeting.agendaItems && meeting.agendaItems.length > 0 && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {t('panel.councilMeetings.agendaItems', { count: meeting.agendaItems.length })}
         </p>
       )}
@@ -129,7 +131,7 @@ export function CouncilMeetingsStrip() {
 
   if (isLoading) return <Skeleton lines={3} />;
   if (isError) return <StripErrorFallback domain={t('panel.councilMeetings.title')} onRetry={refetch} />;
-  if (!allMeetings.length) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.councilMeetings.empty')}</p>;
+  if (!allMeetings.length) return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.councilMeetings.empty')}</p>;
 
   const dayGroups = groupByDay(filtered);
 
@@ -149,9 +151,9 @@ export function CouncilMeetingsStrip() {
         ))}
       </select>
 
-      <div className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pr-2">
+      <div className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pe-2">
         {filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 py-4 text-center">{t('panel.councilMeetings.empty')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">{t('panel.councilMeetings.empty')}</p>
         ) : (
           dayGroups.map((group) => (
             <div key={group.day}>
@@ -159,7 +161,7 @@ export function CouncilMeetingsStrip() {
                 <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
                   {formatDayHeader(group.meetings[0].start, t, i18n.language)}
                 </span>
-                <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-2">{group.meetings.length}</span>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 ml-2">{group.meetings.length}</span>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {group.meetings.map((meeting) => (

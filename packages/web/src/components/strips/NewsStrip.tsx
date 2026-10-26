@@ -99,7 +99,7 @@ export function NewsStrip() {
             className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
               resolvedCategory === cat
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {CATEGORY_ICONS[cat] ?? '📰'}
@@ -111,7 +111,7 @@ export function NewsStrip() {
 
       <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pr-2">
         {filteredItems.length === 0 ? (
-          <p className="text-sm text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
         ) : (
           <ul className="divide-y divide-gray-100 dark:divide-gray-800">
             {filteredItems.map((item) => (

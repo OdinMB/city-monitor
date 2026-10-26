@@ -76,8 +76,8 @@ const Sparkline = memo(function Sparkline({ data, color, sampleDate, label }: { 
         )}
       </svg>
       <div className="flex justify-between mt-0.5">
-        <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatWeekLabel(startDate)}</span>
-        <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatWeekLabel(endDate)}</span>
+        <span className="text-[10px] text-gray-500 dark:text-gray-400">{formatWeekLabel(startDate)}</span>
+        <span className="text-[10px] text-gray-500 dark:text-gray-400">{formatWeekLabel(endDate)}</span>
       </div>
     </div>
   );
@@ -93,7 +93,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.wastewater.title')} onRetry={refetch} />;
-  if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.wastewater.empty')}</p>;
+  if (!data) return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.wastewater.empty')}</p>;
 
   if (!expanded) {
     return (
@@ -137,11 +137,11 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
                 <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {pathogenLabel(p.name, t)}
                 </span>
-                <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
+                <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
                   {formatValue(p.value)} gc/L
                 </span>
                 {p.sampleDate && (
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
                     ({new Date(p.sampleDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })})
                   </span>
                 )}

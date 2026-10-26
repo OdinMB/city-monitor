@@ -26,7 +26,7 @@ function StatRow({
       <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">{label}</span>
       <div className="flex items-baseline gap-3">
         {partial && (
-          <span className="text-lg tabular-nums text-gray-400 dark:text-gray-500">{partial}</span>
+          <span className="text-lg tabular-nums text-gray-500 dark:text-gray-400">{partial}</span>
         )}
         <span className={`text-3xl font-extrabold tabular-nums leading-none ${accent}`}>
           {current}
@@ -52,7 +52,7 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.feuerwehr.title')} onRetry={refetch} />;
-  if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.feuerwehr.empty')}</p>;
+  if (!data) return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.feuerwehr.empty')}</p>;
 
   const { current, partial, previous } = data;
 
@@ -82,7 +82,7 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
             accent="text-orange-600 dark:text-orange-400"
             delta={formatDelta(current.responseTimeFirePumpMedian, previous?.responseTimeFirePumpMedian)}
           />
-          <div className="text-center text-xs text-gray-400 dark:text-gray-500">
+          <div className="text-center text-xs text-gray-500 dark:text-gray-400">
             {current.reportMonth}
           </div>
         </div>

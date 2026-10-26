@@ -100,7 +100,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
             className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
               tab === m.key
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {m.label}
@@ -120,7 +120,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
                   </div>
                 </div>
                 {s.hoursKey && (
-                  <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                  <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                     {t(`panel.crisis.${s.hoursKey}`)}
                   </span>
                 )}
@@ -149,7 +149,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
             </p>
             {KRISENDIENST_REGIONS.map((r) => (
               <div key={r.region} className="flex items-start gap-2 py-1">
-                <span className="shrink-0 text-[11px] font-bold text-gray-400 dark:text-gray-500 w-4 text-right tabular-nums">
+                <span className="shrink-0 text-[11px] font-bold text-gray-500 dark:text-gray-400 w-4 text-right tabular-nums">
                   {r.region}
                 </span>
                 <div className="flex-1 min-w-0">

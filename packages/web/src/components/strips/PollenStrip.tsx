@@ -13,8 +13,8 @@ const POLLEN_TYPES: PollenType[] = [
 ];
 
 const INTENSITY_COLORS: Record<PollenIntensity, string> = {
-  '-1': 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500',
-  '0': 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500',
+  '-1': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  '0': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
   '0-1': 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
   '1': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
   '1-2': 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -49,7 +49,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.pollen.title')} onRetry={refetch} />;
-  if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.pollen.empty')}</p>;
+  if (!data) return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.pollen.empty')}</p>;
 
   const offSeason = isOffSeason(data.pollen);
 
@@ -57,7 +57,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
     return (
       <>
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t('panel.pollen.offSeason')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('panel.pollen.offSeason')}</p>
         </div>
         {agoText && (
           <TileFooter stale={isStale}>

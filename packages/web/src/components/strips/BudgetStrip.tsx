@@ -210,7 +210,7 @@ export function BudgetStrip() {
   if (isLoading) return <Skeleton lines={3} />;
   if (isError) return <StripErrorFallback domain={t('panel.budget.title')} onRetry={refetch} />;
   if (!data || data.areas.length === 0) {
-    return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.budget.empty')}</p>;
+    return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.budget.empty')}</p>;
   }
 
   const total = data.areas.find((a) => a.areaCode === -1);
@@ -233,7 +233,7 @@ export function BudgetStrip() {
             className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
               mode === m.key
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {m.label}

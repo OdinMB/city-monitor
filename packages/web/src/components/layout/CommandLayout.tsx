@@ -135,7 +135,7 @@ export function CommandLayout() {
                     </svg>
                     {t('support.title')}
                   </span>
-                  <span className="text-lg text-gray-400 dark:text-gray-500 mt-0.5">{t('support.cta')}</span>
+                  <span className="text-lg text-gray-500 dark:text-gray-400 mt-0.5">{t('support.cta')}</span>
                 </a>
               </div>
               <TileFooter>{t('support.footer')}</TileFooter>

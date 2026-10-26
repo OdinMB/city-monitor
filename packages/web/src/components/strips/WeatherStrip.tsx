@@ -134,7 +134,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
                   const info = getWeatherInfo(h.weatherCode);
                   return (
                     <div key={h.time} className="shrink-0 text-center text-xs">
-                      <div className="text-gray-400">{hour}</div>
+                      <div className="text-gray-500 dark:text-gray-400">{hour}</div>
                       <div className="text-xl my-0.5">{info.icon}</div>
                       <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(h.temp)}°</div>
                       {h.uvIndex != null && h.uvIndex > 0 && (
@@ -160,7 +160,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
                       <div className="text-gray-500 dark:text-gray-400 mb-0.5">{dayName}</div>
                       <div className="text-2xl my-0.5">{info.icon}</div>
                       <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(d.high)}°</div>
-                      <div className="text-gray-400">{Math.round(d.low)}°</div>
+                      <div className="text-gray-500 dark:text-gray-400">{Math.round(d.low)}°</div>
                       {d.precip > 0 && (
                         <div className="text-blue-500 mt-0.5">{d.precip}mm</div>
                       )}

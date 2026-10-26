@@ -111,7 +111,7 @@ export function PopulationStrip() {
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.population.title')} onRetry={refetch} />;
-  if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.population.empty')}</p>;
+  if (!data) return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.population.empty')}</p>;
 
   const changeColor = data.changeAbsolute >= 0
     ? 'text-green-600 dark:text-green-400'

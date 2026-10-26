@@ -92,7 +92,7 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   if (isError) return <StripErrorFallback domain={t('panel.bathing.title')} onRetry={refetch} />;
 
   if (!data || data.length === 0) {
-    return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.bathing.empty')}</p>;
+    return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.bathing.empty')}</p>;
   }
 
   return (
@@ -114,7 +114,7 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
           {/* Warnings */}
           {warnDisplay.length > 0 && (
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                 {t('panel.bathing.warnings')}
               </div>
               <div className="space-y-2">
@@ -126,7 +126,7 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
           {/* Good spots — only when expanded */}
           {expanded && goodDisplay.length > 0 && (
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                 {t('panel.bathing.best')}
               </div>
               <div className="space-y-2">

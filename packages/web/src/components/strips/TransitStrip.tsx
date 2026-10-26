@@ -69,17 +69,19 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
   return (
     <>
       {sorted.length === 0 ? (
-        <p className="text-sm text-gray-400 py-2 text-center flex-1">{t('panel.transit.empty')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center flex-1">{t('panel.transit.empty')}</p>
       ) : (
         <div>
           {visible.map((alert) => (
             <AlertRow key={alert.id} alert={alert} />
           ))}
+          {/* pb-0.5 -mb-0.5: a 24px target (WCAG 2.5.8) without moving the text
+              or the footer; the extra 2px sits below, clear of the rows. */}
           {hiddenCount > 0 && (
             <button
               type="button"
               onClick={onExpand}
-              className="w-full text-xs text-gray-400 dark:text-gray-500 text-center pt-1.5 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="w-full text-xs text-gray-500 dark:text-gray-400 text-center pt-1.5 pb-0.5 -mb-0.5 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               +{hiddenCount} {t('panel.transit.more')}
             </button>

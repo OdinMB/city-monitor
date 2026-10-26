@@ -26,7 +26,7 @@ export function formatDelta(
   const color = isWorse
     ? 'text-red-500 dark:text-red-400'
     : pct === 0
-      ? 'text-gray-400'
+      ? 'text-gray-500 dark:text-gray-400'
       : 'text-green-500 dark:text-green-400';
   return { text: `${sign}${value}%`, color };
 }
@@ -43,6 +43,6 @@ export function formatYoy(percent: number): { text: string; color: string } {
     ? 'text-red-500 dark:text-red-400'
     : percent < 0
       ? 'text-green-500 dark:text-green-400'
-      : 'text-gray-400';
+      : 'text-gray-500 dark:text-gray-400';
   return { text: `${sign}${value}%`, color };
 }

@@ -54,11 +54,12 @@ describe('formatDelta', () => {
     expect(result!.text).toBe('+100%');
   });
 
-  it('shows gray for zero change', () => {
+  it('shows gray for zero change, at AA contrast in both themes', () => {
     const result = formatDelta(100, 100);
     expect(result).not.toBeNull();
     expect(result!.text).toBe('0.0%');
-    expect(result!.color).toBe('text-gray-400');
+    // gray-400 on a white tile is 2.6:1; gray-500 light / gray-400 dark pass 4.5:1.
+    expect(result!.color).toBe('text-gray-500 dark:text-gray-400');
   });
 });
 
@@ -75,10 +76,10 @@ describe('formatYoy', () => {
     expect(result.color).toContain('text-green');
   });
 
-  it('shows zero as gray', () => {
+  it('shows zero as gray, at AA contrast in both themes', () => {
     const result = formatYoy(0);
     expect(result.text).toBe('0%');
-    expect(result.color).toBe('text-gray-400');
+    expect(result.color).toBe('text-gray-500 dark:text-gray-400');
   });
 
   it('formats decimal values', () => {

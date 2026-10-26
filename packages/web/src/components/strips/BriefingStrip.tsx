@@ -47,7 +47,7 @@ export function BriefingStrip() {
           </TileFooter>
         </>
       ) : (
-        <p className="text-sm text-gray-400">{t('panel.news.empty')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('panel.news.empty')}</p>
       )}
     </>
   );

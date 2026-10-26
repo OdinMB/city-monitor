@@ -28,7 +28,7 @@ const StationRow = memo(function StationRow({ station, t }: { station: WaterLeve
         <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
           {station.waterBody}
         </div>
-        <div className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
+        <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
           {station.name}
           {station.tidal && (
             <span className="ml-1.5 px-1 py-0.5 rounded text-[9px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
@@ -68,7 +68,7 @@ export function WaterLevelStrip() {
   if (isError) return <StripErrorFallback domain={t('panel.waterLevels.title')} onRetry={refetch} />;
 
   if (!data || data.stations.length === 0) {
-    return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.waterLevels.empty')}</p>;
+    return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.waterLevels.empty')}</p>;
   }
 
   return (

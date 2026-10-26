@@ -18,7 +18,7 @@ export function LaborMarketStrip() {
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.laborMarket.title')} onRetry={refetch} />;
-  if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.laborMarket.empty')}</p>;
+  if (!data) return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.laborMarket.empty')}</p>;
 
   const totalYoy = formatYoy(data.yoyChangePercent);
   const sgbIIYoy = formatYoy(data.sgbIIYoyPercent);

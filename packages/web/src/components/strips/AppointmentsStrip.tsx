@@ -78,7 +78,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
   if (!data || data.services.length === 0) {
     return (
       <div className="text-center py-2">
-        <p className="text-sm text-gray-400">{t('panel.appointments.empty')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('panel.appointments.empty')}</p>
         <a
           href="https://service.berlin.de/terminvereinbarung/"
           target="_blank"
@@ -105,7 +105,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
         : 'allAvailable';
 
   const summaryColor = allUnknown
-    ? 'text-gray-400'
+    ? 'text-gray-500 dark:text-gray-400'
     : hasNone
       ? 'text-red-500 dark:text-red-400'
       : hasScarce
@@ -133,11 +133,13 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
           <ServiceRow key={service.serviceId} service={service} t={t} />
         ))}
 
+        {/* pt-2 -mt-1: a 24px target (WCAG 2.5.8) with the text and the rows
+            below where they were; the extra 4px sits in the gap above. */}
         {hiddenCount > 0 && (
           <button
             type="button"
             onClick={onExpand}
-            className="w-full text-xs text-gray-400 dark:text-gray-500 text-center pt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+            className="w-full text-xs text-gray-500 dark:text-gray-400 text-center pt-2 -mt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
           >
             +{hiddenCount} {t('panel.appointments.more')}
           </button>

@@ -47,7 +47,7 @@ function AqiScale({ aqi, t }: { aqi: number; t: (k: string) => string }) {
       {/* Labels */}
       <div className="flex">
         {SCALE_SEGMENTS.map((s) => (
-          <span key={s.key} className="flex-1 text-center text-[9px] text-gray-400 dark:text-gray-500">
+          <span key={s.key} className="flex-1 text-center text-[9px] text-gray-500 dark:text-gray-400">
             {t(`panel.airQuality.level.${s.key}`)}
           </span>
         ))}
@@ -73,7 +73,7 @@ const PollutantCard = memo(function PollutantCard({ label, value, max, color }: 
         <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{label}</span>
         <span className="text-[11px] tabular-nums text-gray-700 dark:text-gray-200 font-semibold">
           {value.toFixed(1)}
-          <span className="font-normal text-gray-400 dark:text-gray-500 ml-0.5">&#xb5;g/m&#xb3;</span>
+          <span className="font-normal text-gray-500 dark:text-gray-400 ml-0.5">&#xb5;g/m&#xb3;</span>
         </span>
       </div>
       <div className="h-1 bg-gray-100 dark:bg-gray-700/50 rounded-full overflow-hidden">

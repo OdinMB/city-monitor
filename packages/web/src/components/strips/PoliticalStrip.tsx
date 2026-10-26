@@ -62,14 +62,16 @@ function RepRow({ rep }: { rep: Representative & { district: string } }) {
         style={{ backgroundColor: getPartyColor(rep.party) }}
       />
       <span className="text-gray-800 dark:text-gray-200 font-medium truncate">{rep.name}</span>
-      <span className="text-gray-400 dark:text-gray-500 shrink-0">{rep.party}</span>
-      <span className="text-gray-400 dark:text-gray-500 hidden @xs:inline ml-auto truncate">{rep.district}</span>
+      <span className="text-gray-500 dark:text-gray-400 shrink-0">{rep.party}</span>
+      <span className="text-gray-500 dark:text-gray-400 hidden @xs:inline ml-auto truncate">{rep.district}</span>
+      {/* min-w-6 min-h-6: a 24px target around the arrow (WCAG 2.5.8); -my-1
+          keeps the row height. */}
       {rep.profileUrl && (
         <a
           href={safeUrl(rep.profileUrl)}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-500 hover:text-blue-400 ml-auto shrink-0 @xs:ml-1"
+          className="inline-flex items-center justify-center min-w-6 min-h-6 -my-1 text-blue-500 hover:text-blue-400 ml-auto shrink-0 @xs:ml-1"
         >
           {forwardArrow(i18n.language)}
         </a>
@@ -156,7 +158,7 @@ function SeatChart({ districts }: { districts: PoliticalDistrict[] }) {
           {total}
         </text>
         <text x={cx} y={cy + 6} textAnchor="middle" dominantBaseline="auto"
-          className="fill-gray-400 dark:fill-gray-500" style={{ fontSize: 10 }}>
+          className="fill-gray-500 dark:fill-gray-400" style={{ fontSize: 10 }}>
           {t('panel.political.seats', { count: total })}
         </text>
       </svg>
@@ -220,7 +222,7 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
             className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
               view === v.key
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {v.label}
@@ -230,7 +232,7 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
 
       <div id="political-panel" role="tabpanel" aria-labelledby={`political-tab-${view}`}>
         {!data || data.length === 0 ? (
-          <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-2">
+          <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
             {t('panel.political.empty')}
           </div>
         ) : view === 'state' ? (
