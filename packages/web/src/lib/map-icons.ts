@@ -296,6 +296,7 @@ export function wrapText(
 /**
  * Draw a vertical badge: Lucide icon on top + text label below (with word-wrap).
  * The icon portion is anchored at the geolocation; text extends below.
+ * Glyph and text are drawn in `fgColor` (white unless the background is light).
  */
 export function createVerticalBadgeIcon(
   iconNode: IconNode,
@@ -303,6 +304,7 @@ export function createVerticalBadgeIcon(
   strokeColor: string,
   text: string,
   maxTextWidth = VERTICAL_BADGE_MAX_TEXT_WIDTH,
+  fgColor = '#ffffff',
 ): ImageData {
   const iconSize = 32;
   const iconPad = 3;
@@ -379,7 +381,7 @@ export function createVerticalBadgeIcon(
   ctx.save();
   ctx.translate(lucideOffsetX, lucideOffsetY);
   ctx.scale(scale, scale);
-  ctx.strokeStyle = '#ffffff';
+  ctx.strokeStyle = fgColor;
   ctx.lineWidth = 2;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -388,9 +390,9 @@ export function createVerticalBadgeIcon(
   }
   ctx.restore();
 
-  // --- Text lines (white on colored background) ---
+  // --- Text lines (fgColor on colored background) ---
   ctx.font = `bold ${textFontSize}px sans-serif`;
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = fgColor;
   ctx.textBaseline = 'top';
   ctx.textAlign = 'center';
 

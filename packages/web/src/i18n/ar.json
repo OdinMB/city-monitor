@@ -103,8 +103,17 @@
         "moderate": "متوسط",
         "poor": "سيئ",
         "veryPoor": "سيئ جداً",
-        "extremelyPoor": "خطير"
-      }
+        "extremelyPoor": "سيئ للغاية"
+      },
+      "usLevel": {
+        "good": "جيد",
+        "moderate": "معتدل",
+        "unhealthySensitive": "غير صحي للفئات الحساسة",
+        "unhealthy": "غير صحي",
+        "veryUnhealthy": "غير صحي جداً",
+        "hazardous": "خطير"
+      },
+      "stationCredit": "المحطات: World Air Quality Index Project"
     },
     "map": {
       "title": "الخريطة"

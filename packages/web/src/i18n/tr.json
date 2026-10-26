@@ -103,8 +103,17 @@
         "moderate": "Vasat",
         "poor": "K\u00f6t\u00fc",
         "veryPoor": "\u00c7ok K\u00f6t\u00fc",
-        "extremelyPoor": "Tehlikeli"
-      }
+        "extremelyPoor": "Son Derece K\u00f6t\u00fc"
+      },
+      "usLevel": {
+        "good": "\u0130yi",
+        "moderate": "Orta",
+        "unhealthySensitive": "Hassas Gruplar \u0130\u00e7in Sa\u011fl\u0131ks\u0131z",
+        "unhealthy": "Sa\u011fl\u0131ks\u0131z",
+        "veryUnhealthy": "\u00c7ok Sa\u011fl\u0131ks\u0131z",
+        "hazardous": "Tehlikeli"
+      },
+      "stationCredit": "\u0130stasyonlar: World Air Quality Index Project"
     },
     "map": {
       "title": "Harita"
