@@ -5,6 +5,7 @@ import { getActiveCities } from '../config/index.js';
 import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
+import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -149,12 +150,12 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
 
       (async () => {
         const r = await loadPopulationGeojson(db, cityId);
-        if (r) cache.set(CK.populationGeojson(cityId), r.data, 2592000, r.fetchedAt);
+        if (r) cache.set(CK.populationGeojson(cityId), r.data, POPULATION_TTL_SECONDS, r.fetchedAt);
       })().catch((err) => log.error(`${cityId} population geojson failed`, err)),
 
       (async () => {
         const r = await loadPopulationSummary(db, cityId);
-        if (r) cache.set(CK.populationSummary(cityId), r.data, 2592000, r.fetchedAt);
+        if (r) cache.set(CK.populationSummary(cityId), r.data, POPULATION_TTL_SECONDS, r.fetchedAt);
       })().catch((err) => log.error(`${cityId} population summary failed`, err)),
 
       (async () => {

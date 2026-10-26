@@ -50,6 +50,9 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:water-levels:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
 | `{cityId}:labor-market:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
 | `feed:{hash}` | 1200s (20 min) | ingest-feeds (raw feed XML) |
+| `{cityId}:population:geojson`, `{cityId}:population:summary` | 3214080s (37.2 days) | ingest-population (Berlin-only) |
+
+A TTL must outlast the longest gap between the runs that refresh the key, or the key goes empty before the next run. Population (monthly, so up to 31 days) is cached for that gap × 1.2: its routes cannot cover an expired entry, because retention deletes `afstat-population` rows after 7 days.
 
 ## Database (`packages/server/src/db/`)
 
