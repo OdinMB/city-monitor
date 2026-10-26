@@ -5,13 +5,19 @@ import { safeUrl } from '../../lib/safe-url.js';
 /**
  * Scrolling news ticker showing latest headlines in a continuous loop.
  * Pauses on hover, respects prefers-reduced-motion.
+ * `reserveSpace` keeps an empty bar of the same height in place while the news
+ * is still loading, so the layout below it doesn't jump when the news arrives.
  */
-export function NewsMarquee() {
+export function NewsMarquee({ reserveSpace = false }: { reserveSpace?: boolean }) {
   const { id: cityId } = useCityConfig();
-  const { data } = useNewsDigest(cityId);
+  const { data, isPending } = useNewsDigest(cityId);
 
   const items = data?.items?.slice(0, 10);
-  if (!items?.length) return null;
+  if (!items?.length) {
+    return reserveSpace && isPending ? (
+      <div className="h-9 bg-surface-1 border-b border-border" aria-hidden="true" />
+    ) : null;
+  }
 
   // Duplicate items for seamless loop
   const headlines = items.map((item) => (
