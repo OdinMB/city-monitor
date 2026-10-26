@@ -6,7 +6,7 @@
 
 ### Startup Sequence
 
-1. Create Express app with CORS + JSON middleware
+1. Create Express app with CORS + JSON middleware. No route reads a request body, so the JSON parser runs with `inflate: false` and `limit: '10kb'`: a compressed body gets 415 without being decompressed, an oversized one 413
 2. Create in-memory cache (always)
 3. Create DB connection if `DATABASE_URL` set (returns `null` otherwise)
 4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`
