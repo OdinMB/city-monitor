@@ -137,7 +137,7 @@ The other optional keys (TomTom traffic, WAQI air quality, Ticketmaster events, 
 
 ## Post-Deploy Verification
 
-1. **Health check:** Visit `https://city-monitor-api.onrender.com/api/health` — you should see JSON with `"status": "ok"`, database connection status, and cache stats
+1. **Health check:** Visit `https://city-monitor-api.onrender.com/api/health` — you should see JSON with `"status": "ok"`, the active cities, the cache entry count and the scheduler's jobs (it does not report database status; check the logs for `warm-cache` lines to confirm the DB connection)
 2. **Frontend:** Visit `https://city-monitor-web.onrender.com` — the dashboard should load and show data within a few minutes (cron jobs need time to populate)
 3. **API proxy:** Visit `https://city-monitor-web.onrender.com/api/health` — this should proxy to the API and return the same health JSON
 

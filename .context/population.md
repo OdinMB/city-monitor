@@ -58,13 +58,13 @@ Both follow the 3-tier pattern: cache → DB fallback → null.
 ## Shared Types
 
 - `PopulationFeatureProps` — per-PLR GeoJSON properties: plrId, plrName, population, density, foreignPct, elderlyPct, youthPct
-- `PopulationSummary` — city aggregate: total, foreignTotal/Pct, elderlyPct, youthPct, workingAgePct, changeAbsolute/Pct, snapshotDate
+- `PopulationSummary` — city aggregate: total, density, foreignTotal/Pct, elderlyPct, youthPct, workingAgePct, changeAbsolute/Pct, snapshotDate
 
 ## Frontend
 
 ### Map Layer
 
-3 choropleth sub-layers under the "socioeconomic" parent (radio-button mutual exclusion with social atlas + rent):
+The Berlin-only `population` data layer (its own sidebar toggle, `cities: ['berlin']` in `DataLayerToggles.tsx`) has 3 choropleth sub-layers, one active at a time (`PopulationLayer` in `useCommandCenter.ts`, default `pop-density`). It is independent of the `social` layer; both can be on at once:
 
 | Sub-layer | Property | Color Ramp |
 |-----------|----------|------------|
@@ -76,10 +76,7 @@ Popup shows PLR name + all 5 metrics for any sub-layer.
 
 ### Dashboard Tile
 
-`PopulationStrip` — expandable, Berlin-only, gated in `CommandLayout.tsx`.
-
-- **Collapsed**: total population + semester-over-semester change badge
-- **Expanded**: total + change, stacked age bar (youth/working/elderly), foreign population line, source footnote
+`PopulationStrip` — not expandable, Berlin-only, gated in `CommandLayout.tsx` (services row). Shows total population with the change since the previous snapshot, an age donut (youth/working age/elderly), density, foreign population share, and a footnote with the snapshot date.
 
 ## Key Files
 
@@ -92,10 +89,10 @@ Popup shows PLR name + all 5 metrics for any sub-layer.
 | `packages/web/src/hooks/usePopulation.ts` | Lazy GeoJSON hook (map layer) |
 | `packages/web/src/hooks/usePopulationSummary.ts` | Summary hook (dashboard tile) |
 | `packages/web/src/components/strips/PopulationStrip.tsx` | Dashboard tile |
-| `packages/web/src/components/map/CityMap.tsx` | `updatePopulationLayer` function |
+| `packages/web/src/components/map/layers/choropleth.ts` | `updatePopulationLayer` and `populationPopupHtml` (map layer) |
 
 ## i18n
 
-- Sidebar: `sidebar.socioeconomic.pop-density`, `sidebar.socioeconomic.pop-elderly`, `sidebar.socioeconomic.pop-foreign`
-- Tile: `panel.population.*` (title, total, foreign, elderly, youth, workingAge, change, empty, source, density)
+- Sidebar: `sidebar.layers.population`, sub-layers `sidebar.population.pop-density`, `sidebar.population.pop-elderly`, `sidebar.population.pop-foreign`
+- Tile: `panel.population.*` (title, total, foreign, elderly, youth, workingAge, ageBreakdown, change, empty, source, density, densityLabel, german)
 - All 4 languages: EN, DE, TR, AR

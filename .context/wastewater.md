@@ -46,11 +46,11 @@ Ingestion fetches the Lageso CSV (small, fast) then the AMELAG TSV (large, strea
 
 ### Frontend
 
-- Hook: `useWastewater(cityId, enabled)` — 24h polling, 12h stale
-- Strip: `WastewaterStrip({ expanded })` — Berlin-only gate, expandable tile
+- Hook: `useWastewater(cityId, enabled = true)` — 24h polling, 12h stale
+- Strip: `WastewaterStrip({ expanded })` — expandable tile; the Berlin-only gate is in `CommandLayout.tsx`
   - **Collapsed:** horizontal row showing each pathogen with level badge and trend arrow (e.g. "Flu A High ->")
   - **Expanded:** vertically stacked pathogens with bold name titles, compact measurement values (gc/L with k/M suffixes), level/trend badges, full-width sparkline charts (12-week history), date labels, and per-pathogen sample date when it differs from the main date
-- Tile placed after Air Quality in dashboard grid, `defaultExpanded={isDesktop}`
+- Tile placed in the environment row after Pollen; starts collapsed (no `defaultExpanded`)
 - Bootstrap seeded via `wastewater` field
 
 ## Shared Types
@@ -75,4 +75,4 @@ interface WastewaterSummary {
 
 ## Berlin-Only
 
-Hardcoded to Berlin (Lageso CSV is Berlin-only; AMELAG filtered to `bundesland=BE`). No `CityDataSources` config entry — gated by `cityId === 'berlin'` in the frontend strip and tile; the cron job fetches nothing when Berlin is not active. Hamburg AMELAG data (`bundesland=HH`) could be added later with the same stream parser.
+Hardcoded to Berlin (Lageso CSV is Berlin-only; AMELAG filtered to `bundesland=BE`). No `CityDataSources` config entry — gated by `cityId === 'berlin'` around the tile in `CommandLayout.tsx` and in the warm-cache Berlin-only block; the cron job fetches nothing when Berlin is not active. Hamburg AMELAG data (`bundesland=HH`) could be added later with the same stream parser.

@@ -102,5 +102,5 @@ The full list: every variable the code reads (`process.env` in `packages/server`
 
 ## Monitoring
 
-- **Health endpoint:** `GET /api/health` — uptime, DB status, cache stats, AI cost tracking
+- **Health endpoint:** `GET /api/health` — uptime, active cities, cache entry count, per-job scheduler state (last run, last failure, running) and AI token/cost tracking. It does not report database status (`packages/server/src/routes/health.ts`)
 - **Render Dashboard:** CPU, memory, request count, Postgres metrics

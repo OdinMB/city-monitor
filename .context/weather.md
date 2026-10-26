@@ -57,7 +57,7 @@ Optional fields `current.uvIndex`, `current.uvIndexClearSky`, `hourly[].uvIndex`
 
 ## DB Schema
 
-Snapshot type `'open-meteo'` in `snapshots.type` is a **historical opaque key** retained to avoid a Drizzle migration touching 6 reference sites (`schema.ts` enum + `reads.ts` × 2 + `writes.ts` + `app.ts:110` freshness + `data-retention.ts`). The data inside is now BrightSky-sourced. Renaming is a follow-up.
+Snapshot type `'open-meteo'` in `snapshots.type` is a **historical opaque key** retained to avoid a Drizzle migration touching 6 reference sites (`schema.ts` enum + `reads.ts` × 2 + `writes.ts` + the `FRESHNESS_SPECS` entry in `app.ts` + `data-retention.ts`). The data inside is now BrightSky-sourced. Renaming is a follow-up.
 
 ## Diagnostics
 

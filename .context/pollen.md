@@ -37,16 +37,16 @@ Standard data source pattern:
 - **Route:** `GET /:city/pollen` — 3-tier read (cache → DB → null)
 - **Bootstrap:** Included (small payload)
 - **Warm cache:** Shared section (not Berlin-only)
-- **Retention:** Moderate (7 days)
+- **Retention:** 2 days plus the 100-row cap (`CAPPED_RETENTION` in `cron/data-retention.ts`); DB reads refuse rows older than 48 h
 
 ## Frontend
 
 - **Hook:** `usePollen.ts` — 1h refetch, 30min stale
-- **Component:** `PollenStrip.tsx` — expandable tile after Air Quality
+- **Component:** `PollenStrip.tsx` — expandable tile, first of the environment row (after the Transit and support tiles)
   - **Collapsed:** Active pollen type badges with intensity colors
   - **Expanded:** 8-row × 3-column forecast table (today/tomorrow/dayAfter)
   - **Off-season:** Centered gray message
-- **Freshness:** 26h max age (accounts for daily DWD update + 6h cron buffer)
+- **Freshness:** `staleAfter('pollen')` in `lib/freshness.ts`: 22 h (6 h job + 3 h grace + 1 h refetch + 12 h HTTP max-age)
 
 ## Key Files
 

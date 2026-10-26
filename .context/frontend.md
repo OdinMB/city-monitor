@@ -25,38 +25,50 @@ react-router-dom with `BrowserRouter` in `main.tsx`. Routes defined in `App.tsx`
 ```
 App (HelmetProvider)
   QueryClientProvider
-    Routes
-      / → redirect to the default city (/berlin)
-      /imprint → ImprintPage (PageShell)
-      /privacy → PrivacyPage (PageShell)
-      /no-ads-no-tracking → NoTrackingPage (PageShell)
-      /:cityId/* → CityRoute
-        CityProvider (context: CityConfig from URL param)
-          Dashboard or SourcesPage
-            Shell / PageShell
-              TopBar (city name link, weather, HeaderControls)
-              CommandLayout
-                Sidebar (single/multi view toggle, data layer icon toggles) — hidden < lg
-                CityMap (full viewport height, transit markers)
-                DashboardGrid
-                  Tile(span=1) → BriefingStrip (AI summary, 1-2 sentences)
-                  Tile(span=1, expandable) → WeatherStrip (current + hourly/daily)
-                  Tile(span=1, expandable) → AirQualityStrip (AQI gauge + pollutants)
-                  Tile(span=2) → NewsStrip (category filter + headlines)
-                  Tile(span=1, expandable, collapsed) → TransitStrip (severity rows, 4 collapsed / 8 expanded)
-                  Tile(span=1, expandable) → WaterLevelStrip (gauge bars + trend chart)
-                  Tile(span=1, expandable) → LaborMarketStrip (unemployment + trend chart)
-                  Tile(span=1, expandable) → AppointmentsStrip (Bürgeramt service availability)
-                  ... (budget, support, political tiles)
-                  Tile(span=2) → EventsStrip (day/time-of-day/category filters, 2-col grid, future-only) — last tile
-              Footer (AGPL source link)
+    ErrorBoundary (AppErrorFallback)
+      Routes
+        / → redirect to the default city (/berlin)
+        /imprint → ImprintPage (PageShell)
+        /privacy → PrivacyPage (PageShell)
+        /no-ads-no-tracking → NoTrackingPage (PageShell)
+        /:cityId/* → CityRoute
+          CityProvider (context: CityConfig from URL param)
+            Dashboard or SourcesPage
+              Shell / PageShell
+                TopBar (city name link, weather, HeaderControls)
+                CommandLayout
+                  Sidebar (single/multi view toggle, data layer icon toggles) — hidden < lg
+                  CityMap (hero height, lazy) + MobileLayerDrawer
+                  NinaBanner
+                  DashboardGrid (tiles in CommandLayout.tsx order; † = Berlin only)
+                    Tile(span=2, rowSpan=2) → BriefingStrip (AI briefing, AiLabel in the heading)
+                    Tile(span=2, < sm only) → NewsStrip
+                    Tile(expandable) → WeatherStrip
+                    Tile(expandable) → AirQualityStrip
+                    Tile(expandable) → TransitStrip (6 rows collapsed / 12 expanded)
+                    Tile → support tile (Ko-fi link)
+                    Tile(expandable) → PollenStrip
+                    Tile(expandable) → WastewaterStrip †
+                    Tile(expandable) → FeuerwehrStrip †
+                    Tile(expandable) → BathingStrip (off-season badge in the heading)
+                    Tile(span=2, ≥ sm only) → NewsStrip (category tabs + headlines)
+                    Tile(span=2) → EventsStrip
+                    Tile(expandable) → AppointmentsStrip
+                    Tile(expandable) → LaborMarketStrip †
+                    Tile → PopulationStrip †
+                    Tile(expandable) → CrisisStrip †
+                    Tile(span=2) → BudgetStrip
+                    Tile(span=2) → CouncilMeetingsStrip †
+                    Tile(expandable) → PoliticalStrip
+                    Tile → WaterLevelStrip (gauge bars)
+                Footer (AGPL source link)
 ```
 
 ## Data Fetching
 
 ### Bootstrap Pattern
 
-On mount, `useBootstrap(cityId)` fetches `GET /api/:city/bootstrap` — a single request returning all data types (news, weather, transit, events, safety, warnings, air quality, pharmacies, traffic, construction, water levels, appointments). The response is split and injected into React Query's cache via `queryClient.setQueryData()`, so downstream hooks get instant data without their own initial fetch.
+On mount, `useBootstrap(cityId)` fetches `GET /api/:city/bootstrap` — a single request returning the cached value of every domain in `CK.bootstrapKeys` (news, weather, transit, events, safety, NINA warnings, air quality, pharmacies, AEDs, traffic, construction, water levels, budget, appointments, labor market, wastewater, population summary, Feuerwehr, pollen, noise sensors, council meetings). Large GeoJSON (social atlas, population map) is not included. The response is split and injected into React Query's cache via `queryClient.setQueryData()`, so downstream hooks get instant data without their own initial fetch.
 
 ### Per-Domain Hooks
 
@@ -67,19 +79,19 @@ Each panel has a dedicated hook that polls its endpoint independently after boot
 | `useBootstrap` | `['bootstrap', cityId]` | — | 60s |
 | `useWeather` | `['weather', cityId]` | 15 min | 5 min |
 | `useNewsDigest` | `['news', 'digest', cityId]` | 5 min | 2 min |
-| `useNewsSummary` | `['news', 'summary', cityId, lang]` | 15 min | 5 min |
+| `useNewsSummary` | `['news', 'summary', cityId, lang]` | 60 min | 30 min |
 | `useTransit` | `['transit', cityId]` | 5 min | 2 min |
-| `useEvents` | `['events', cityId]` | 60 min | 2 min |
-| `useSafety` | `['safety', cityId]` | 10 min | 2 min |
+| `useEvents` | `['events', cityId]` | 30 min | 15 min |
+| `useSafety` | `['safety', cityId]` | 10 min | 5 min |
 | `useConstruction` | `['construction', cityId]` | 15 min | 10 min |
 | `useWaterLevels` | `['water-levels', cityId]` | 15 min | 5 min |
 | `useAppointments` | `['appointments', cityId]` | 30 min | 15 min |
 
-All hooks use `keepPreviousData` as placeholder during refetch, `retry: 2`, and `refetchIntervalInBackground: false`.
+The other domains (NINA, air quality, pharmacies, AEDs, traffic, budget, labor market, wastewater, bathing, population, Feuerwehr, pollen, noise sensors, council meetings, political, social atlas) have hooks of the same shape in `packages/web/src/hooks/`. Most use `keepPreviousData` as placeholder during refetch and `retry: 2`, and most polling ones set `refetchIntervalInBackground: false` (`usePolitical` and `useNoiseSensors` leave React Query's default, also false); `useNewsSummary` retries once and keeps no placeholder.
 
 #### History Hooks (Lazy-loaded)
 
-Fetch historical time-series from `/api/:city/{domain}/history` endpoints. Only fire when `enabled` is true (tile expanded):
+`hooks/useHistory.ts` fetches historical time-series from `/api/:city/{domain}/history?range=Nd` endpoints, only while `enabled` is true. No component calls these hooks at the moment (the tile trend charts were removed with `TrendChart`):
 
 | Hook | Query Key | Range | Stale Time |
 |---|---|---|---|
@@ -97,15 +109,15 @@ Fetch historical time-series from `/api/:city/{domain}/history` endpoints. Only 
 
 ## API Client (`packages/web/src/lib/api.ts`)
 
-Thin wrapper: `fetchJson<T>(url)` calls `fetch()`, checks `response.ok`, returns typed JSON. All endpoints under `/api`. Exports typed methods: `api.getBootstrap()`, `api.getWeather()`, `api.getNewsDigest()`, `api.getNewsSummary()`, `api.getTransit()`, `api.getEvents()`, `api.getSafety()`.
+Thin wrapper: `fetchJson<T>(url)` calls `fetch()` with `cache: 'no-store'`, checks `response.ok`, returns typed JSON. All endpoints under `/api`. The `api` object has one typed method per endpoint (`api.getBootstrap()`, `api.getWeather()`, `api.getNewsSummary(city, lang)`, … `api.getCouncilMeetings()`, plus the four `get*History(city, range)` methods).
 
-Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `SafetyReport` are duplicated in `api.ts` (not imported from server — separate package boundary). `WeatherData`, `BuergeramtData`, and `BuergeramtService` are imported from `@city-monitor/shared`.
+All data types come from `@city-monitor/shared`; `api.ts` re-exports them so components can import types from `lib/api.js`. Nothing is duplicated in the web package.
 
 ## Layout
 
 - **Shell** — Full-height flex column: TopBar, main content, Footer. Dark mode via Tailwind `dark:` classes. The TopBar slides in on scroll through an inline transform, but its buttons stay in the Tab order, so `.topbar-slide` in `globals.css` shows it while it holds keyboard focus (`:focus-visible`, not `:focus-within`, so mouse and touch scrolling are unchanged). Keep the class names if you rework the slide; `topbar-focus.test.ts` guards the wiring.
 - **DashboardGrid** — CSS Grid: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 p-4`. No 3-column breakpoint to avoid gaps with span-2 tiles.
-- **Tile** — Card wrapper with `title`, `span` (1 | 2 | 'full'), optional `expandable` (chevron toggle in header, render-function children receiving `expanded` boolean), optional `height` ('auto' | 'sm' | 'md' | 'lg'). Rounded border, shadow, `@container` body for container queries. Maps span to `col-span-*` classes.
+- **Tile** — Card wrapper with `title`, optional `titleBadge` (node next to the heading), `span` (1 | 2 | 'full'), `rowSpan` (1 | 2, `xl:row-span-2`), optional `expandable` + `defaultExpanded` (chevron toggle in header, render-function children receiving `(expanded, setExpanded)`), optional `height` ('auto' | 'sm' | 'md' | 'lg'). Rounded border, shadow, `@container` body for container queries. Maps span to `col-span-*` classes.
 - **Tile content accessibility (WCAG 2.2 AA)** — Muted text is `text-gray-500 dark:text-gray-400` (4.8:1 on white, 6.8:1 on the dark surfaces); `text-gray-400` in light mode is 2.6:1 and `dark:text-gray-500` 3.7:1, so neither is used for text. On a `bg-gray-100` track or badge, muted text is `text-gray-600` (gray-500 there is 4.4:1). Only decorative separators and dimmed off-season or inactive rows stay lighter. Interactive targets are at least 24×24 CSS px (2.5.8): small ones get `min-h-6`/`min-w-6` or extra padding, with a matching negative margin so the layout does not move (`StripErrorFallback`'s Retry, the "+N more" buttons, the council and political row links). A horizontally scrolling container with focusable children needs 4px of padding (and `scroll-px-1`) so the 2px focus outline at 2px offset is not clipped, as on the Events filter chip rows.
 - **TopBar** — City name (link back to `/`), current weather + AQI popovers, `HeaderControls` (language switcher + theme toggle).
 - **PageShell** — Simplified layout for static pages (imprint, privacy, etc.). "City Monitor" logo link, `HeaderControls`, centered prose container, Footer. No city context dependency.
@@ -113,7 +125,7 @@ Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `Safety
 - **Footer** — AGPL source code link, World Monitor attribution, Ko-fi support link, internal legal links (Legal Notice, Privacy, No Tracking).
 - **CommandLayout hero** — Full-bleed map sized with the `h-hero` utility (`globals.css`), **never `h-screen`/`100vh`**. Mobile browsers resolve `vh` against the viewport with their chrome retracted, so a `100vh` hero runs 50–160 CSS px past what iOS Safari paints at page load, and anything anchored to its bottom edge (`ScrollIndicator`, `SkylineSeparator`) lands under the browser's own bottom bar — invisible and untappable. `h-hero` is `100svh` with a `100vh` fallback nested in `@supports`; the nesting is load-bearing (a plain two-declaration fallback is stripped by Tailwind's Lightning CSS pass). Use `h-hero` for any future full-screen section with bottom-anchored controls. Note `Sidebar` scrolls its own content for the same reason — the hero clips overflow.
 
-Tile assignments: Briefing (1), Weather (1, expandable), Air Quality (1, expandable), News (2), Transit (1, expandable, collapsed by default — 4 rows collapsed, 8 expanded), Water Levels (1, expandable), Labor Market (1, expandable, Berlin-only), Appointments (1), Events (2, last). Expandable tiles use render-function children `(expanded: boolean) => ReactNode` to pass expand state. Strips with internal grids (Events) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
+Tile assignments: see the component tree above (`CommandLayout.tsx` is the source). Weather, Air Quality, Transit, Appointments, Labor Market and Crisis start expanded on desktop (`defaultExpanded={isDesktop}`); Pollen, Wastewater, Feuerwehr, Bathing and Political start collapsed. News renders twice, as a mobile-only tile near the top and a `sm`-and-up tile in the information row. Expandable tiles use render-function children `(expanded, setExpanded) => ReactNode` to pass expand state. Strips with internal grids (Events) use Tailwind v4 container query variants (`@xs:`, `@lg:`, `@2xl:`) so internal layouts respond to tile width, not viewport.
 
 ## Internationalization (i18n)
 
@@ -146,12 +158,12 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 - Initialized from city config: `bounds` (auto-fit to show full city), minZoom, maxZoom, maxBounds
 - Controls: NavigationControl (zoom only, no compass), AttributionControl (compact, collapsed on load)
 - Theme-aware: swaps map style on dark/light toggle via `map.setStyle()` with `isFirstRender` ref to prevent race condition on mount
-- District boundaries: GeoJSON overlay with fill, line (dashed), and label layers per city (`DISTRICT_URLS` config). Constituency-level GeoJSON (`CONSTITUENCY_URLS`) used when political layer selects bundestag or landesparlament — source is swapped via fetch + remove/re-add pattern with AbortController for race protection
-- Political layer: data layer toggle (not a separate map mode) with mutually exclusive sub-options (bezirke/bundestag/landesparlament). Party colors from `PARTY_COLORS` map applied via MapLibre `match` expression on `district-fill`. Click popups show representatives from abgeordnetenwatch API. Available GeoJSON: Berlin bezirke + bundestag; Hamburg bezirke only. Berlin AGH and Hamburg bundestag/buergerschaft deferred
+- District boundaries: GeoJSON overlay with fill, line (dashed), and label layers per city (`DISTRICT_URLS` in `map/constants.ts`, bundled files in `src/data/districts/`). There are no constituency GeoJSONs: every political sub-layer draws on the same Bezirke boundaries. Turning the political layer on re-fetches that GeoJSON and swaps the `districts` source (remove/re-add) with an AbortController for race protection
+- Political layer (`map/layers/political.ts`): data layer toggle (not a separate map mode) with mutually exclusive sub-options (bezirke/bundestag/landesparlament; landesparlament shows the `state-bezirke` data). Party colors (`lib/party-colors.ts`) applied via MapLibre `match` expression on `district-fill`, plus party markers (`updatePoliticalMarkers`). Click popups show representatives from abgeordnetenwatch API
 - Hover effect: feature-state-based fill opacity change + cursor pointer on district polygons (`setupDistrictHover()`)
-- Map icons: `lib/map-icons.ts` renders Lucide SVG icons onto canvas via `Path2D` (synchronous, no async image loading). `registerAllMapIcons(map, isDark)` pre-registers icon variants (rounded-square background + white Lucide glyph): 3 transit (TrainFront × severity), 8 news (Newspaper × category), 1 safety (ShieldAlert), 1 pharmacy (Pill), 3 construction (Construction × subtype), 5 water levels (Droplets × state). Called once on `load` and `styledata`, before any marker updates. Exports `SEVERITY_COLORS`, `NEWS_CATEGORY_COLORS`, `CONSTRUCTION_SUBTYPE_COLORS`, and `WATER_STATE_COLORS` used by both map-icons and CityMap.
+- Map icons: `lib/map-icons.ts` renders Lucide SVG icons onto canvas via `Path2D` (synchronous, no async image loading). `registerAllMapIcons(map, isDark)` pre-registers icon variants (rounded-square background + white Lucide glyph): 8 news (one glyph per category from `NEWS_CATEGORY_ICONS`, coloured by category), 1 police report (Siren), 1 pharmacy (Pill), 1 AED (HeartPulse), 3 construction (Construction × subtype), 3 bathing (Waves × quality). Called once on `load` and `styledata`, before any marker updates. Transit (TrainFront) and water-level (Droplets) markers carry their label inside the icon, so their layer modules build them per feature with `createVerticalBadgeIcon`; political icons come from `registerPoliticalIcons`. Exports the colour maps (`SEVERITY_COLORS`, `NEWS_CATEGORY_COLORS`, `CONSTRUCTION_SUBTYPE_COLORS`, `AQI_LEVEL_COLORS`, `WATER_STATE_COLORS`, `BATHING_QUALITY_COLORS`, `NOISE_LEVEL_COLORS`) used by the layer modules.
 - Construction layer: VIZ Berlin roadworks data rendered as dashed amber/red/orange lines (LineString) + point icons (Point) with subtype-based coloring (construction=amber, closure=red, disruption=orange). GeometryCollection geometries are split into separate line/point features. Click popups show street, section, description, validity dates, and direction.
-- Point markers: All 4 point data layers use `symbol` layers with pre-registered icon images. Transit uses severity-based `match` expression; news uses category-based `match`; safety and pharmacy use fixed icon IDs. Click popups and hover cursors on each layer. News and safety markers use interactive spiderfying — markers at identical coordinates are grouped with a "+N" count badge; clicking expands the group outward in an adaptive-radius circle (base 300m + 80m per item) with connecting spider legs; clicking the map background collapses the expansion. Count badges hide when expanded. Expansion state survives data refreshes if the group key persists. State managed via module-level `SpiderState` per marker type with proper handler cleanup on data updates.
+- Point markers: icon markers are `symbol` layers. News uses a category-based `match` expression and bathing a quality-based one; police reports, pharmacies and AEDs use fixed icon IDs; transit, water levels, air-quality stations, noise sensors and political markers read each feature's own badge icon (`iconId`). Click popups and hover cursors on each layer. News and safety markers use interactive spiderfying — markers at identical coordinates are grouped with a "+N" count badge; clicking expands the group outward in an adaptive-radius circle (base 300m + 80m per item) with connecting spider legs; clicking the map background collapses the expansion. Count badges hide when expanded. Expansion state survives data refreshes if the group key persists. State managed via module-level `SpiderState` per marker type with proper handler cleanup on data updates.
 - **Popup markup is an HTML string** that `showMapPopup` (`map/popups.ts`) hands to MapLibre's `setHTML`, and its text comes from feeds, OSM, APIs and the LLM. Pass every data-derived value through `escapeHtml()` (`lib/escape-html.ts`) and every link target through `safeUrl()` and then `escapeHtml()`; omit the link when `safeUrl` returns nothing. Only constant markup and internal lookups (colours) go in unescaped. The deployed CSP allows inline script, so a missed value is script injection. `news-safety.test.ts` shows the malicious-input test pattern
 - **Popup words follow the UI language.** Each layer exports a pure builder (`trafficPopupHtml`, `bathingPopupHtml`, `aedPopupHtml`, …) that looks its words up with `i18n.t` when the popup opens: `mapPopup.*` keys, or the matching tile's own keys (`panel.waterLevels.*`, `panel.bathing.*`, `panel.population.*`, `nina.severity.*`) so popup and tile say the same thing. Enum values from feeds (incident type, transit alert type, OSM `access`) are translated with the raw value as fallback; names and descriptions from feeds stay as sent. Translated text is escaped like data. A number with a unit or a phone number that follows a translated label goes through `ltr()` (`map/popups.ts`, a `<bdi dir="ltr">`), or Arabic's right-to-left layout reorders it ("21°C" as "C°21"); so does the roadworks validity range, feed data in German format with no words. "Read more", "Details" and "Profile" links end in `forwardArrow()` ("←" in Arabic). The traffic delay is a plural string (`mapPopup.delay` with `count`). Pharmacy duty dates use `i18n.language` for month names, on a 24-hour clock. `popup-language.test.ts` renders every builder in DE/TR/AR and fails on leftover English UI words or raw keys; a new popup or popup string goes in all four bundles and in that test
 - Transit markers: GeoJSON point source from `TransitAlert[]` with severity-colored icons (red/amber/gray) + line label below. Click popup shows line, type, station, message. Updated from map `load` handler and `styledata` handler using refs to bridge async map events with React state.
@@ -173,7 +185,11 @@ API responses include `fetchedAt` (ISO string) indicating when data was last ing
 
 | Component | File | Description |
 |---|---|---|
-| `TrendChart` | `components/TrendChart.tsx` | SVG sparkline for historical time-series data. Props: `data` (HistoryPoint[]), `color`, `label`, `unit`, `height`. Polyline with date labels and last value. Memo'd, renders null for < 2 points. |
+| `Tile`, `TileFooter`, `Skeleton` | `components/layout/` | Tile card (see Layout), footnote/staleness line, loading placeholder |
+| `StripErrorFallback`, `MapErrorFallback`, `AppErrorFallback` | `components/ErrorFallback.tsx` | Error states for a strip (with retry), the map and the whole app |
+| `AiLabel` | `components/AiLabel.tsx` | The Briefing tile's AI tag (see `ai-transparency.md`) |
+
+There is no shared chart component: `TrendChart` was removed, and the wastewater tile draws its own sparkline (`Sparkline` in `WastewaterStrip.tsx`).
 
 ## Frontend Utilities
 

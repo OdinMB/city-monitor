@@ -13,10 +13,12 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | Method | Description |
 |---|---|
 | `get<T>(key)` | Synchronous. Returns null if expired or missing. |
-| `set(key, data, ttlSeconds)` | Stores with absolute expiry timestamp. |
+| `set(key, data, ttlSeconds, fetchedAt?)` | Stores with absolute expiry timestamp. `fetchedAt` (default now) is the data's real fetch time, which `getWithMeta` reports; DB fallbacks and cache warming pass the row's `fetchedAt`. |
 | `delete(key)` | Removes entry. |
-| `fetch<T>(key, ttl, fetcher, negTtl?)` | Async lazy-load with in-flight coalescing. Concurrent calls for the same key share a single promise. Failed fetches are negative-cached for `negTtl` seconds (default 120s) to avoid thundering herd. |
-| `getBatch(keys)` | Returns `Record<key, value>` for all non-null entries. Used by bootstrap endpoint. |
+| `fetch<T>(key, ttl, fetcher, negTtl?)` | Async lazy-load with in-flight coalescing. Concurrent calls for the same key share a single promise. A fetcher result of `null` is negative-cached for `negTtl` seconds (default 120s) to avoid thundering herd. |
+| `getWithMeta<T>(key)` | `{ data, fetchedAt }` (ISO string) or null. Used by the route handlers, whose responses carry `fetchedAt`. |
+| `getBatch(keys)` | Returns `Record<key, value>` for all non-null entries. |
+| `getBatchWithMeta(keys)` | `getWithMeta` for several keys. Used by the bootstrap endpoint. |
 | `size()` | Entry count (for health endpoint). |
 | `clear()` | Empties store and in-flight map. Used in tests. |
 
@@ -25,13 +27,15 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | Key pattern | TTL | Writer |
 |---|---|---|
 | `{cityId}:weather` | 3600s (1 hr) | ingest-weather |
-| `{cityId}:transit:alerts` | 300s (5 min) | ingest-transit |
+| `{cityId}:air-quality` | 3600s (1 hr) | ingest-weather (current AQI from Open-Meteo) |
+| `{cityId}:transit:alerts` | 1200s (20 min) | ingest-transit |
 | `{cityId}:events:upcoming` | 21600s (6h) | ingest-events |
 | `{cityId}:safety:recent` | 900s (15 min) | ingest-safety |
 | `{cityId}:news:digest` | 900s (15 min) | ingest-feeds |
 | `{cityId}:news:{category}` | 900s (15 min) | ingest-feeds |
 | `{cityId}:news:summary` | 86400s (24h) | summarize |
 | `{cityId}:air-quality:grid` | 1800s (30 min) | ingest-aq-grid |
+| `{cityId}:air-quality:sc-cache` | 7200s (2h) | ingest-aq-grid (last reading per Sensor.Community station, pruned after 2h) |
 | `{cityId}:construction:sites` | 1800s (30 min) | ingest-construction |
 | `{cityId}:water-levels` | 900s (15 min) | ingest-water-levels |
 | `{cityId}:political:{level}` | 604800s (7 days) | ingest-political |
@@ -45,17 +49,25 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:labor-market` | 86400s (24h) | ingest-labor-market (Berlin-only) |
 | `{cityId}:appointments` | 21600s (6h) | ingest-appointments |
 | `{cityId}:nina:warnings` | 600s (10 min) | ingest-nina |
+| `{cityId}:population:geojson` | 2592000s (30 days) | ingest-population (Berlin-only) |
+| `{cityId}:population:summary` | 2592000s (30 days) | ingest-population (Berlin-only) |
+| `{cityId}:feuerwehr` | 86400s (24h) | ingest-feuerwehr (Berlin-only) |
+| `{cityId}:pollen` | 86400s (24h) | ingest-pollen |
+| `{cityId}:noise-sensors` | 1200s (20 min) | ingest-noise-sensors |
+| `{cityId}:council-meetings` | 25920s (7.2h) | ingest-council-meetings |
 | `{cityId}:weather:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
 | `{cityId}:aqi:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
-| `{cityId}:water-levels:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
-| `{cityId}:labor-market:history:{N}d` | 1800s (30 min) | history endpoint (lazy) |
-| `feed:{hash}` | 1200s (20 min) | ingest-feeds (raw feed XML) |
+| `{cityId}:water-levels:history:{N}d` | 900s (15 min) | history endpoint (lazy) |
+| `{cityId}:labor-market:history:{N}d` | 86400s (24h) | history endpoint (lazy) |
+| `feed:{hash of feed URL}` | 1200s (20 min) | ingest-feeds (the feed's parsed `NewsItem[]`, via `cache.fetch`) |
+
+Keys are built with the `CK.*` helpers in `lib/cache-keys.ts`. Cache warming and DB fallbacks in the routes may set a different TTL than the cron job (see Cache Warming).
 
 ## Database (`packages/server/src/db/`)
 
 ### Setup (`index.ts`)
 
-ORM: Drizzle (schema-as-code, no code generation). Driver: `postgres` (node-postgres). Connection from `DATABASE_URL` env var. Returns `null` if not set — server runs in cache-only mode.
+ORM: Drizzle (schema-as-code, no code generation). Driver: `postgres` (postgres.js, via `drizzle-orm/postgres-js`; pool of 10). Connection from `DATABASE_URL` env var. `createDb()` returns `{ db, client }`, or `null` if it is not set — server runs in cache-only mode.
 
 ### Schema (`schema.ts`)
 
@@ -68,11 +80,11 @@ Historical data accumulates and is cleaned by the data-retention cron.
 | Table | Key Columns | Index |
 |---|---|---|
 | `snapshots` | cityId, type, data (JSONB), fetchedAt (timestamptz) | `snapshots_city_type_fetched_idx(cityId, type, fetchedAt)` |
-| `events` | cityId, title, venue, date, category, url, free, hash | `events_city_date_idx(cityId, date)` |
+| `events` | cityId, title, venue, date, endDate, category, url, description, free, hash, source, price | `events_city_date_idx(cityId, date)`, `events_city_source_idx(cityId, source, date)`, unique `events_city_hash_idx(cityId, hash)` |
 | `safetyReports` | cityId, title, description, publishedAt, url, district, lat/lon, locationLabel, geoAttempted, hash | `safety_city_published_idx(cityId, publishedAt)`, unique `safety_city_hash_idx(cityId, hash)` |
-| `newsItems` | cityId, hash, title, url, publishedAt, category, tier, relevantToCity, importance, lat/lon | `news_city_idx(cityId)`, unique `news_city_hash_idx(cityId, hash)` |
+| `newsItems` | cityId, hash, title, url, publishedAt, category, tier, relevantToCity, importance, lat/lon | `news_city_idx(cityId)`, `news_city_published_idx(cityId, publishedAt)`, unique `news_city_hash_idx(cityId, hash)` |
 | `geocodeLookups` | query, lat, lon, displayName, provider | `geocode_query_idx(query)` (unique) |
-| `aiSummaries` | cityId, headlineHash, summary, model, inputTokens, outputTokens | `summaries_city_generated_idx(cityId, generatedAt)` |
+| `aiSummaries` | cityId, lang, headlineHash, summary, model, inputTokens, outputTokens | `summaries_city_generated_idx(cityId, generatedAt)` |
 
 The `snapshots.type` column uses concrete data source names (not categories), so different cities can have different sources for the same data category:
 
@@ -100,13 +112,14 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `bbk-nina` | BBK NINA civil protection warnings |
 | `abgwatch-*` | Abgeordnetenwatch political districts (4 sub-types) |
 
-All tables have `id` (serial PK) and `cityId` (text). Snapshots have `fetchedAt` (timestamptz, default now).
+All tables have `id` (serial PK), and all but `geocodeLookups` have `cityId` (text). Snapshots have `fetchedAt` (timestamptz, default now).
 
 ### Reads (`reads.ts`)
 
-All route-facing read functions return `DbResult<T>` (`{ data: T; fetchedAt: Date } | null`). This wrapper ensures routes always have the real `fetchedAt` timestamp from the DB — never `new Date()`. Each function loads the most recent data for a city. Internal `loadSnapshot<T>(db, cityId, type, opts?)` queries the unified `snapshots` table filtered by `(cityId, type)` and `ORDER BY fetchedAt DESC LIMIT 1`. Optional `maxAgeMs` enables staleness guards (3–48h depending on domain) to prevent serving extremely stale data when a cron job has stopped entirely. Named wrappers preserve their original signatures — zero caller changes.
-- `loadWeather`, `loadTransitAlerts`, `loadEvents`, `loadSafetyReports`, `loadNewsItems`, `loadSummary`, `loadNinaWarnings`, `loadAirQualityGrid`, `loadWaterLevels`, `loadPoliticalDistricts`, `loadAppointments`
-- `loadBudget`, `loadConstructionSites`, `loadTrafficIncidents`, `loadPharmacies`, `loadAeds`, `loadSocialAtlas`, `loadWastewater`, `loadBathingSpots`, `loadLaborMarket`, `loadPopulationGeojson`, `loadPopulationSummary`, `loadFeuerwehr`
+All route-facing read functions return `DbResult<T>` (`{ data: T; fetchedAt: Date } | null`). This wrapper ensures routes always have the real `fetchedAt` timestamp from the DB — never `new Date()`. Each function loads the most recent data for a city. Internal `loadSnapshot<T>(db, cityId, type, opts?)` queries the unified `snapshots` table filtered by `(cityId, type)` and `ORDER BY fetchedAt DESC LIMIT 1`. Optional `maxAgeMs` enables staleness guards (2–48h depending on domain: noise sensors 2h, NINA 3h, AQ grid 6h, pollen and council meetings 48h; `loadEvents` applies its own 48h guard) to prevent serving extremely stale data when a cron job has stopped entirely. Named wrappers preserve their original signatures — zero caller changes.
+- `loadWeather`, `loadTransitAlerts`, `loadEvents`, `loadSafetyReports`, `loadNewsItems`, `loadSummary`, `loadNinaWarnings`, `loadAirQualityGrid`, `loadWaterLevels`, `loadPoliticalDistricts`, `loadPoliticalFetchedAt`, `loadAppointments`
+- `loadBudget`, `loadConstructionSites`, `loadTrafficIncidents`, `loadPharmacies`, `loadAeds`, `loadSocialAtlas`, `loadWastewater`, `loadBathingSpots`, `loadLaborMarket`, `loadPopulationGeojson`, `loadPopulationSummary`, `loadFeuerwehr`, `loadPollen`, `loadNoiseSensors`, `loadCouncilMeetings`
+- Cron-side reads (not route-facing, no `DbResult`): `loadSafetyGeoState` (safety cron), `loadAllNewsAssessments` (feed cron), `loadGeocodeLookup` / `loadAllGeocodeLookups` (geocoder and cache warming)
 - **Historical queries** (used by `/history` endpoints, not cron): `loadWeatherHistory`, `loadAqiHistory`, `loadWaterLevelHistory`, `loadLaborMarketHistory` — each takes `(db, cityId, sinceDays)` and returns `HistoryPoint[]`
 
 ### Writes (`writes.ts`)
@@ -120,7 +133,7 @@ The synthetic dev seed (`synthetic/seed.ts`, see [dev-database.md](dev-database.
 
 ### Cache Warming (`warm-cache.ts`)
 
-Runs on server start if DB is connected. Loads all data types for all active cities from Postgres into cache with their standard TTLs. Berlin-only domains (wastewater, bathing, labor market) are guarded with `cityId === 'berlin'`. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
+Runs on server start if DB is connected. First loads every geocode lookup into the geocoder's in-process map, then all data types for all active cities from Postgres into cache. Frequently refreshed domains get their cron interval plus 20% as TTL (weather 4320s, transit and water levels 1080s, news and safety 720s, NINA and traffic 360s, AQ grid and construction 2160s, events, appointments and pharmacies 25920s); the rest get the cron job's own TTL. Berlin-only domains (wastewater, bathing, labor market, population GeoJSON and summary, Feuerwehr, noise sensors, council meetings) are guarded with `cityId === 'berlin'`. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
 
 ### Freshness Checks (`warm-cache.ts`)
 
@@ -133,8 +146,8 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 | Category | Snapshot types / tables | Retention |
 |---|---|---|
 | History | open-meteo | 7 days |
-| History | aqi-grid, pegelonline | 30 days (trend charts) |
-| History | ba-labor-market | 730 days / ~24 months (trend charts) |
+| History | aqi-grid, pegelonline | 30 days (history endpoints) |
+| History | ba-labor-market | 730 days / ~24 months (history endpoints) |
 | Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings | 2 days + 100 row cap |
 | Non-history (infrequent) | berlin-haushalt, osm-aeds, mss-social-atlas, bf-feuerwehr, afstat-population, abgwatch-* | 7 days + 100 row cap |
 | Non-snapshot | news, events, safety | 3 days |
@@ -144,7 +157,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 
 - **Cache-first reads:** Route handlers check cache, then DB (with try/catch + logging), then return empty defaults.
 - **Dual writes:** Cron jobs write to cache immediately, then attempt DB write (errors caught, logged, non-fatal).
-- **Append-only writes:** DB writes INSERT new rows without deleting old ones. Historical data is cleaned by the nightly retention cron. Hash-keyed tables (news, events, safety, NINA) use UPSERT to avoid duplicates.
+- **Append-only writes:** DB writes INSERT new rows without deleting old ones. Historical data is cleaned by the nightly retention cron. Hash-keyed tables (news, events, safety) use UPSERT to avoid duplicates; NINA warnings are a JSONB snapshot like the other snapshot types.
 - **Optional DB:** Everything works without `DATABASE_URL` — cache-only mode with no persistence across restarts.
 - **City isolation:** All cache keys and DB queries are prefixed/filtered by `cityId`. No cross-city data leaks.
-- **Berlin-only domains:** Wastewater, bathing, labor market, population and Feuerwehr ingestion hardcode `'berlin'` as cityId. Each job returns before fetching when Berlin is not active, and gets no freshness check or startup run then ([server.md](server.md#jobs-26-defined-in-appts)). Warm-cache guards these with `cityId === 'berlin'`.
+- **Berlin-only domains:** Wastewater, bathing, labor market, population and Feuerwehr ingestion hardcode `'berlin'` as cityId. Each job returns before fetching when Berlin is not active, and gets no freshness check or startup run then ([server.md](server.md#jobs-26-defined-in-appts)). Noise sensors and council meetings are Berlin-only through config (only `berlin.ts` has `dataSources.noiseSensors` / `councilMeetings`). Warm-cache guards all of these with `cityId === 'berlin'`.

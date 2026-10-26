@@ -28,7 +28,7 @@ Both root scripts build `shared` first, because the server imports its compiled 
   - `openLocalDatabase(url)` runs the guard and connects. `wipeDatabase` and `seedDatabase` take only a handle it returned, and throw for anything else. The handle is frozen, so its `db` cannot be swapped for another connection after the guard ran.
   - `wipeDatabase` truncates every table in the Drizzle schema, but not Drizzle's migrations journal.
   - `seedDatabase` writes through the `save*` functions in `db/writes.ts`.
-  - For the history charts it also writes a week of hourly weather, AQI and water-level snapshots and 23 months of labour-market snapshots.
+  - For the history endpoints it also writes a week of hourly weather, AQI and water-level snapshots and 23 months of labour-market snapshots.
 - `scripts/seed-synthetic.ts` — `db:seed`: the guard, then the `drizzle-orm` migrator (the same journal table `drizzle-kit migrate` uses), then wipe and seed.
 - `dev-synthetic.ts` — `dev:synthetic`:
   - runs the guard and sets `DATABASE_URL` and `ACTIVE_CITIES=berlin` in code;

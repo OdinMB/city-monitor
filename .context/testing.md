@@ -18,7 +18,7 @@ npx turbo run test --filter=@city-monitor/web -- --reporter=verbose
 npx turbo run test --filter=@city-monitor/server -- --reporter=verbose
 
 # Specific test file (path relative to package root)
-npx turbo run test --filter=@city-monitor/web -- src/components/TrendChart.test.tsx
+npx turbo run test --filter=@city-monitor/web -- src/components/strips/NewsStrip.test.tsx
 npx turbo run test --filter=@city-monitor/server -- src/lib/parse-history.test.ts
 ```
 
@@ -30,9 +30,9 @@ To run the app with data but without production access, use the synthetic dev da
 
 ## Web Package (`@city-monitor/web`)
 
-- **Environment:** jsdom (simulated DOM via happy-dom/jsdom)
-- **Setup file:** `src/test-setup.ts` — imports `@testing-library/jest-dom` matchers
-- **Libraries:** `@testing-library/react`, `@testing-library/user-event`
+- **Environment:** jsdom
+- **Setup file:** `src/test-setup.ts` — initializes i18n (all four bundles, English active), stubs `URL.createObjectURL`, the canvas 2D context, `ResizeObserver` and `matchMedia`, and mocks `maplibre-gl`. It does not load `@testing-library/jest-dom` (listed in devDependencies but imported nowhere), so use plain `expect` assertions
+- **Libraries:** `@testing-library/react` (no `user-event`; tests use `fireEvent`)
 - **Globals:** `true` — `describe`, `it`, `expect` are available without imports (but explicit imports from `vitest` also work)
 - **Test location:** Co-located with source files (e.g., `src/components/Foo.test.tsx`)
 - **Mocking:** `vi.mock()` for modules; i18n is auto-initialized via setup file

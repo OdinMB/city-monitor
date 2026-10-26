@@ -17,16 +17,16 @@ Follows the standard data source pattern (like labor-market):
 - **Cron:** `ingest-feuerwehr.ts` — daily at 08:00, fetches CSV, parses last 3 months (previous, current complete, current partial). Does nothing when Berlin is not active
 - **Type:** `FeuerwehrSummary` = `{ current, partial, previous }` where each is a `FeuerwehrMonthData`
 - **Cache key:** `CK.feuerwehr(cityId)` — included in bootstrap bundle
-- **DB:** Unified `snapshots` table, type `bf-feuerwehr`, 30-day retention
+- **DB:** Unified `snapshots` table, type `bf-feuerwehr`, 7-day retention plus the 100-row cap (`CAPPED_RETENTION` in `cron/data-retention.ts`)
 - **Route:** `GET /:city/feuerwehr` — cache-first, DB fallback, 12h HTTP cache
 
 ## Frontend
 
-- **Hook:** `useFeuerwehr(cityId, isBerlin)` — 24h refetch, 12h stale
+- **Hook:** `useFeuerwehr(cityId)` — 24h refetch, 12h stale
 - **Component:** `FeuerwehrStrip` — Berlin-only expandable tile
   - **Collapsed:** 3 KPI blocks — total missions, EMS response time (min:sec), fire pump response time (min:sec), each with month-over-month delta
   - **Expanded:** Mission type breakdown bar (EMS/fire/rescue) + current partial month stats
-- **Placement:** After wastewater tile, before labor market tile
+- **Placement:** Environment row of `CommandLayout.tsx`, after the wastewater tile and before the bathing tile
 
 ## Key Fields Used
 

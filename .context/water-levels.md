@@ -28,7 +28,7 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 ## Server Pipeline
 
 1. **Cron** (`*/15 * * * *`): `createWaterLevelIngestion(cache, db)` fetches PEGELONLINE batch API, derives state, writes to cache (key: `{cityId}:water-levels`, TTL: 900s) then DB
-2. **DB**: Unified `snapshots` table, type `pegelonline` (data JSONB contains `{ stations }`). 30-day retention (extended for trend charts)
+2. **DB**: Unified `snapshots` table, type `pegelonline` (data JSONB contains `{ stations }`). 30-day retention (`HISTORY_RETENTION`, kept for the history endpoint)
 3. **Route** (`GET /api/:city/water-levels`): Three-tier read (cache → DB → empty `{ stations: [], fetchedAt: null }`). 300s Cache-Control
 4. **Bootstrap**: Included in `GET /api/:city/bootstrap` response as `waterLevels` field
 
@@ -40,8 +40,8 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 ## Frontend
 
 - **Hook**: `useWaterLevels(cityId)` — 15-min refetch, 5-min stale, bootstrap-seeded
-- **Dashboard tile**: `WaterLevelStrip` — gauge bars showing current level within MNW-MHW range, color-coded by state (blue=low, green=normal, amber=high, red=very_high, gray=unknown), tidal badge. Expandable — shows 7-day avg water level TrendChart when expanded
-- **History endpoint**: `GET /api/:city/water-levels/history?range=Nd` — returns `HistoryPoint[]` (avg level across stations). Max 30d. Lazy-loaded via `useWaterLevelHistory` hook when tile is expanded
+- **Dashboard tile**: `WaterLevelStrip` — gauge bars showing current level within MNW-MHW range, color-coded by state (blue=low, green=normal, amber=high, red=very_high, gray=unknown), tidal badge. Not expandable, no trend chart (last tile of the grid)
+- **History endpoint**: `GET /api/:city/water-levels/history?range=Nd` — returns `HistoryPoint[]` (avg level across stations), cached 900s. Default 7d, max 30d. The `useWaterLevelHistory` hook exists but no component calls it
 - **Map markers**: Droplets icon colored by state, label showing current level in cm, popup with name/waterBody/level/state
 - **Sidebar toggle**: `water` parent layer with sub-layers `levels` and `bathing` (same pattern as emergencies with pharmacies/AEDs)
 - **i18n**: Keys under `panel.waterLevels.*`, `sidebar.layers.water`, and `sidebar.water.*` in all 4 languages
@@ -66,8 +66,8 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 
 ## Server Pipeline
 
-1. **Cron** (`0 6 * * *`, daily at 6 AM): `createBathingIngestion(cache)` fetches CSV, parses to `BathingSpot[]`, writes to cache (key: `{cityId}:bathing:spots`, TTL: 86400s/24h) and saves a `lageso-bathing` snapshot via `saveBathingSpots`. Does nothing when Berlin is not active (the CSV covers Berlin only)
-2. **Route** (`GET /api/:city/bathing`): Cache read, empty array fallback. 12h Cache-Control
+1. **Cron** (`0 6 * * *`, daily at 6 AM): `createBathingIngestion(cache, db)` fetches CSV, parses to `BathingSpot[]`, writes to cache (key: `berlin:bathing:spots`, TTL: 86400s/24h) then DB via `saveBathingSpots` (unified `snapshots` table, type `lageso-bathing`, 2-day retention plus the 100-row cap). Does nothing when Berlin is not active (the CSV covers Berlin only)
+2. **Route** (`GET /api/:city/bathing`): Three-tier read (cache → DB → empty array). 12h Cache-Control
 3. **Season flag**: `inSeason` boolean computed server-side (May 15 – Sep 15). Data available year-round but UI shows off-season badge
 
 ## Shared Types (`shared/types.ts`)

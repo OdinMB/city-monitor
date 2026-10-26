@@ -40,16 +40,16 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (6 tables: unified `snapshots` + 5 specialized), read/write patterns, cache warming, freshness-based startup checks, data retention.
 - [`.context/weather.md`](.context/weather.md) — BrightSky forecast ingestion, DWD severe weather alerts and UV for German cities, Open-Meteo air quality, WMO weather codes.
 - [`.context/news.md`](.context/news.md) — RSS feed ingestion (7 Berlin + 4 Hamburg feeds), the LLM classifier, the daily briefing and its importance cut-off, and cost tracking. Check its feed-status notes before adding or changing a feed: BZ Berlin was removed because its licence forbids AI input.
-- [`.context/transit.md`](.context/transit.md) — VBB transport.rest integration, line+summary deduplication, German keyword classification of disruption type/severity.
+- [`.context/transit.md`](.context/transit.md) — VBB transport.rest integration, summary+station deduplication (one alert lists every affected line), German keyword classification of disruption type/severity.
 - [`.context/events-safety.md`](.context/events-safety.md) — kulturdaten.berlin events API, police RSS (Berlin + Hamburg) with district extraction, category classification.
-- [`.context/frontend.md`](.context/frontend.md) — react-router routing (city picker + /:cityId), React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
+- [`.context/frontend.md`](.context/frontend.md) — react-router routing (`/` redirects to the default city + /:cityId), React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
 - [`.context/i18n.md`](.context/i18n.md) — react-i18next setup, 4 languages (DE/EN/TR/AR), translation key structure, language detection, testing setup.
 - [`.context/deployment.md`](.context/deployment.md) — Render.com blueprint (render.yaml), GitHub Actions CI, the one full list of environment variables and what each gates, domain setup, monitoring, and why the builds install devDependencies and call the pinned compiler (read before touching build scripts or Render build commands).
 - [`.context/geocoding.md`](.context/geocoding.md) — Nominatim-first geocoding with LocationIQ fallback, rate limiting strategy, API usage, callers.
 - [`.context/water-levels.md`](.context/water-levels.md) — Water parent layer with two sub-layers: PEGELONLINE river gauges (state derivation, gauge bar UI) and LAGeSo bathing water quality (CSV ingestion, quality mapping, seasonal badges). New water features must follow the sub-layer pattern (same as emergencies) and use the shared types.
 - [`.context/social-atlas.md`](.context/social-atlas.md) — MSS 2023 WFS choropleth map layer (biennial, lazy GeoJSON) and BA monthly unemployment dashboard tile. The dashboard tile uses the Bundesagentur fur Arbeit Statistics API (monthly CSV) for current unemployment rates; the map layer uses the separate MSS WFS for per-area social indicators.
 - [`.context/wastewater.md`](.context/wastewater.md) — Lageso Berlin wastewater viral load monitoring (Influenza A/B, RSV) from CSV open data. Wastewater data uses weekly CSV ingestion, trend computation (latest vs previous week), and a Berlin-only expandable dashboard tile (collapsed: level badges, expanded: sparkline charts with values).
-- [`.context/population.md`](.context/population.md) — Semi-annual EWR population demographics from Amt für Statistik (XLSX, SheetJS). Population adds 3 choropleth map sub-layers (density, elderly, foreign) under the socioeconomic parent and a Berlin-only expandable dashboard tile with age breakdown.
+- [`.context/population.md`](.context/population.md) — Semi-annual EWR population demographics from Amt für Statistik (XLSX, ExcelJS). Population adds a Berlin-only `population` map layer with 3 choropleth sub-layers (density, elderly, foreign) and a Berlin-only dashboard tile with age breakdown.
 - [`.context/feuerwehr.md`](.context/feuerwehr.md) — Berliner Feuerwehr monthly operations from GitHub Open Data CSV. Berlin-only expandable KPI tile showing mission counts and EMS/fire response times with month-over-month comparison.
 - [`.context/pollen.md`](.context/pollen.md) — DWD Pollenflug-Gefahrenindex 3-day pollen forecast for 8 types (both cities). Pollen uses a string-based intensity scale ('0' to '3' with half-steps, '-1' for off-season) and a seasonal UI that shows off-season messages in winter.
 - [`.context/noise.md`](.context/noise.md) — WMS strategic noise maps (both cities, frontend-only) and Sensor.Community DNMS live noise sensors (Berlin only). Noise has two layers: a WMS raster overlay with 4 sub-layers (total/road/rail/air) and colored circle markers for live dB readings.
@@ -100,7 +100,7 @@ Both packages use **Vitest**. Each has its own `vitest.config.ts` with package-s
 npx turbo run test
 
 # Run a specific test file (use turbo filter + pass file path relative to package root)
-npx turbo run test --filter=@city-monitor/web -- src/components/TrendChart.test.tsx
+npx turbo run test --filter=@city-monitor/web -- src/components/strips/NewsStrip.test.tsx
 npx turbo run test --filter=@city-monitor/server -- src/lib/parse-history.test.ts
 
 # Run tests with verbose output

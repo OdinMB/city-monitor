@@ -21,7 +21,7 @@ Berlin-only feature showing upcoming BVV (district assembly) and Abgeordnetenhau
 
 1. **Cron** (`ingest-council-meetings.ts`): every 6h, fetches OParl + PARDOK, 14-day lookahead
 2. **Cache**: `{cityId}:council-meetings`, TTL 25920s (7.2h)
-3. **DB**: Unified `snapshots` table, type `oparl-meetings`, 7-day retention
+3. **DB**: Unified `snapshots` table, type `oparl-meetings`, 2-day retention plus the 100-row cap (`CAPPED_RETENTION` in `cron/data-retention.ts`); DB reads refuse rows older than 48 h
 4. **Route**: `GET /:city/council-meetings` — 3-tier read (cache → DB → null)
 5. **Bootstrap**: included in `GET /:city/bootstrap` response
 
@@ -44,8 +44,8 @@ interface CouncilMeeting {
 ## Frontend
 
 - Hook: `useCouncilMeetings` (1h refetch, 30min stale)
-- Strip: `CouncilMeetingsStrip` — collapsed shows 3 meetings, expanded shows all
-- Berlin-only tile in `CommandLayout.tsx`, defaultExpanded=false
+- Strip: `CouncilMeetingsStrip` — a select picks Abgeordnetenhaus (default) or one BVV district; that source's meetings are grouped by day in a scrolling list (max 300 px), each with time, committee, district, location, agenda-item count and a link
+- Berlin-only span-2 tile in `CommandLayout.tsx` (governance row, after Budget); not expandable
 - i18n: `panel.councilMeetings.*` keys in all 4 locales
 
 ## Config (berlin.ts)

@@ -6,7 +6,7 @@
 
 ### Startup Sequence
 
-1. Create Express app with CORS + JSON middleware
+1. Create Express app with compression, helmet, CORS (`ALLOWED_ORIGINS`, plus `localhost:5173` outside production), rate limiting in production (100 requests/min per IP; 10/min for bootstrap, and 10/min shared by social-atlas, population, aeds and budget) and JSON middleware
 2. Create in-memory cache (always)
 3. Create DB connection if `DATABASE_URL` set (returns `null` otherwise)
 4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`
@@ -24,12 +24,13 @@ Applied via middleware per route tier:
 
 | Route | max-age | Rationale |
 |---|---|---|
+| `/api/:city/bootstrap` | 60s (1 min) | Aggregates every domain |
 | `/api/:city/news/*` | 300s (5 min) | Feeds update every 10 min |
 | `/api/:city/weather` | 300s (5 min) | Weather updates hourly |
 | `/api/:city/transit` | 120s (2 min) | Transit updates every 15 min |
 | `/api/:city/events` | 1800s (30 min) | Events update every 6h |
 | `/api/:city/safety` | 300s (5 min) | Safety updates every 10 min |
-| `/api/:city/warnings` | 300s (5 min) | NINA alerts update every 10 min |
+| `/api/:city/nina` | 120s (2 min) | NINA alerts update every 5 min |
 | `/api/:city/air-quality` | 600s (10 min) | Air quality updates every 30 min |
 | `/api/:city/pharmacies` | 3600s (1h) | Pharmacies update every 6h |
 | `/api/:city/traffic` | 120s (2 min) | Traffic updates every 5 min |
@@ -43,10 +44,18 @@ Applied via middleware per route tier:
 | `/api/:city/wastewater` | 43200s (12h) | Wastewater updates daily |
 | `/api/:city/labor-market` | 3600s (1h) | Labor market updates daily |
 | `/api/:city/political/:level` | 3600s (1h) | Political data updates weekly |
-| `/api/:city/weather/history` | 1800s (30 min) | Historical temperature (7d) |
-| `/api/:city/air-quality/history` | 1800s (30 min) | Historical AQI (30d) |
-| `/api/:city/water-levels/history` | 1800s (30 min) | Historical water levels (30d) |
-| `/api/:city/labor-market/history` | 1800s (30 min) | Historical unemployment (24mo) |
+| `/api/:city/population`, `/population/summary` | 43200s (12h) | Population updates monthly |
+| `/api/:city/feuerwehr` | 43200s (12h) | Feuerwehr updates daily |
+| `/api/:city/pollen` | 43200s (12h) | Pollen updates every 6h |
+| `/api/:city/noise-sensors` | 300s (5 min) | Noise sensors update every 10 min |
+| `/api/:city/council-meetings` | 3600s (1h) | Council meetings update every 6h |
+| `/api/weather-tiles/:z/:x/:y.png` | 300s (5 min) | RainViewer radar tiles (not mounted in synthetic mode) |
+| `/api/:city/weather/history` | 300s (5 min) | Inherits the weather router's value; up to 7d |
+| `/api/:city/air-quality/history` | 600s (10 min) | Inherits the air-quality router's value; up to 30d |
+| `/api/:city/water-levels/history` | 300s (5 min) | Inherits the water-levels router's value; up to 30d |
+| `/api/:city/labor-market/history` | 3600s (1h) | Inherits the labor-market router's value; up to 730d |
+
+`/api/health` sets no Cache-Control.
 
 ## Scheduler (`packages/server/src/lib/scheduler.ts`)
 
@@ -89,8 +98,9 @@ Ingestion jobs use conditional `runOnStart` based on DB freshness checks — onl
 
 ### API
 
-- `getJobs(): JobInfo[]` — name, schedule, lastRun (for health endpoint)
+- `getJobs(): JobInfo[]` — name, schedule, lastRun, lastFailure, running, nextRun (for health endpoint). A scheduled tick is skipped while the previous run of the same job is still `running`
 - `stop(): void` — stops all cron tasks (for graceful shutdown)
+- `triggerJob(name): Promise<boolean>` — runs one job now; returns `false` for an unknown or already-running job (used by the dev-only trigger endpoint)
 
 ## Logging (`packages/server/src/lib/logger.ts`)
 
@@ -111,20 +121,22 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
   "uptime": 12345.67,
   "activeCities": ["berlin", "hamburg"],
   "cache": { "entries": 42 },
-  "scheduler": { "jobs": [{ "name": "...", "lastRun": "..." }] },
-  "ai": { "berlin": { "input": 5000, "output": 250, "calls": 5, "estimatedCostUsd": 0.0049 } }
+  "scheduler": { "jobs": [{ "name": "...", "lastRun": "...", "lastFailure": null, "running": false }] },
+  "ai": { "gpt-6-luna:berlin": { "model": "gpt-6-luna", "input": 5000, "output": 250, "calls": 5, "estimatedCostUsd": 0.0049 } }
 }
 ```
 
+`ai` comes from `getUsageStats()` in `lib/openai.ts`, keyed `{model}:{city}`. Outside production the router also exposes `POST /api/health/trigger/:jobName`, which calls `scheduler.triggerJob()`.
+
 ## Bootstrap Endpoint
 
-`GET /api/:city/bootstrap` (in `routes/news.ts`) returns all data types in one response for fast initial page load: news digest, weather, transit alerts, events, safety reports, NINA warnings, air quality, pharmacies, traffic, construction, water levels, appointments. Uses `cache.getBatch()`.
+`GET /api/:city/bootstrap` (in `routes/bootstrap.ts`) returns 21 data slots in one response for fast initial page load: news, weather, transit, events, safety, nina, airQuality, pharmacies, aeds, traffic, construction, waterLevels, budget, appointments, laborMarket, wastewater, populationSummary, feuerwehr, pollen, noiseSensors, councilMeetings. It is cache-only (`cache.getBatchWithMeta(CK.bootstrapKeys(cityId))`, no DB fallback), so a cold slot is `null`.
 
 ## City Configuration (`packages/server/src/config/`)
 
 - `index.ts` — `getActiveCities()` reads `ACTIVE_CITIES` env var (comma-separated IDs, default "berlin"), returns matching `CityConfig[]`. `getCityConfig(id)` for single lookup.
-- `cities/berlin.ts` — Berlin config with 7 RSS feeds, weather (BrightSky), transit (VBB), events (kulturdaten.berlin), police (berlin.de Presseportal RSS).
-- `cities/hamburg.ts` — Hamburg config with 4 RSS feeds (NDR, Abendblatt, MOPO, hamburg.de), weather (BrightSky), transit (HVV via HAFAS), police (presseportal.de RSS).
+- `cities/berlin.ts` — Berlin config with 7 RSS feeds, weather (BrightSky), transit (VBB via `v6.vbb.transport.rest`, 12 stations), events (kulturdaten.berlin, Ticketmaster, gomus), police (berlin.de press-release RSS of Polizei Berlin).
+- `cities/hamburg.ts` — Hamburg config with 4 RSS feeds (NDR, Abendblatt, MOPO, hamburg.de), weather (BrightSky), police (presseportal.de RSS). No transit config, so Hamburg has no transit alerts.
 
 Adding a city = adding a config file + registering in `ALL_CITIES` + setting `ACTIVE_CITIES` env var.
 
@@ -138,11 +150,14 @@ The one list, with what each variable gates, is in [`deployment.md`](deployment.
 
 | File | Purpose |
 |---|---|
-| `lib/hash.ts` | FNV-1a 52-bit hash → base-36 string. Used for dedup keys everywhere. |
+| `lib/hash.ts` | `hashString`: SHA-256 truncated to 12 hex characters. Used for dedup and cache keys everywhere. |
+| `lib/cache-keys.ts` | `CK`, the one source of cache key strings, including `CK.bootstrapKeys(cityId)`. |
+| `lib/validate-city.ts` | `validateCity` middleware on `/api/:city`: a malformed id gets 400, an unknown or inactive city 404. |
+| `lib/brightsky.ts` | BrightSky forecast fetch, icon → WMO code mapping, apparent temperature, daily roll-up. |
 | `lib/rate-gate.ts` | Serializes concurrent calls with minimum gap. Factory: `createRateGate(minGapMs)`. |
 | `lib/rss-parser.ts` | RSS 2.0 + Atom parser using `fast-xml-parser`. Returns `FeedItem[]`. |
-| `lib/classifier.ts` | German keyword-based headline classification into 8 categories. |
+| `lib/openai.ts` | The LLM call sites (`summarizeHeadlines`, `filterAndGeolocateNews`, `geolocateReports`) and per-model, per-city token usage (`getUsageStats`). |
 | `lib/geocode.ts` | Nominatim-first geocoding (1 QPS, free). Falls back to LocationIQ when rate-limited and `LOCATIONIQ_TOKEN` is set. |
-| `lib/parse-history.ts` | Parses `?history=Nd` query params. Used by history endpoints. |
+| `lib/parse-history.ts` | `parseHistoryDays(raw, maxDays)` parses the `?range=Nd` query param of the history endpoints; a value above `maxDays` or malformed returns `null`, and the route then uses its default. |
 | `lib/llm-client.ts` | Per-call-site model + reasoning effort (`resolveSiteTarget`; `defaultSiteTarget` gives the code default without env), `getModel`, the single structured-output call path `invokeStructured`, and `MODEL_PRICING`. |
 | `lib/llm-prompts.ts` | The three LLM prompts and Zod schemas behind request builders (`buildBriefingRequest`, `buildFilterRequest`, `buildGeoRequest`), shared by production and the model-eval harness. |

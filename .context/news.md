@@ -39,10 +39,10 @@ News source favicons are self-hosted in `packages/web/public/favicons/`, one `<s
 
 ### Ingestion Constraints
 
-- Per-feed timeout: 8s
-- Overall deadline: 25s (stops fetching more feeds if exceeded)
-- Batch concurrency: 10 feeds at once
-- Raw feed XML cached separately (TTL 1200s) to avoid redundant fetches across cron cycles
+- Per-feed timeout: 10s (`PER_FEED_TIMEOUT`, shortened to whatever is left of the city deadline)
+- Per-city deadline: 30s (`CITY_DEADLINE`; no new feed is started once it has passed)
+- Concurrency: a pool of 8 workers (`CONCURRENCY`)
+- Each feed's parsed items (not the raw XML) are cached under `feed:{hashString(url)}` (TTL 1200s) to avoid redundant fetches across cron cycles; a non-OK HTTP response is negatively cached for 120s; a timeout or network error is not cached, so the next cycle retries
 
 ### RSS Parser (`packages/server/src/lib/rss-parser.ts`)
 
@@ -67,9 +67,9 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 - **System prompt:** Local news editor for [city], two short paragraphs separated by a blank line, focus on daily-life impact, write in all configured languages in one response.
   - **Current time:** the prompt gives the local weekday, date and time (`formatLocalMoment`, the city's `timezone`), and says to treat a transit disruption from earlier in the day as over. Without it, models guessed the weekday ("start of the week" on a Wednesday). The eval passes each input's window end as that time.
   - **Blank line between paragraphs:** the dashboard (`BriefingStrip`) splits paragraphs only on blank lines. Before the prompt asked for one, 70% of eval briefings used a single newline, which renders as one block.
-  - **Length:** the owner wants about 160 words per language (140–190), but the prompt asks for ~140 (`BRIEFING_PROMPT_WORDS`). GPT-6 Luna at high effort writes 15–30% more than it is asked for: on 2026-09-24, asking ~160 gave de 171–197 and en 189–210 words, and stating "140–190" made it longer still (de 194–253). Asking ~140 gave de 150–172, en 168–194, tr 140–157, ar 157–172. If you change the model or effort, re-measure with `npm run eval:models -- --briefing-check` (see `model-eval.md`). English always runs longest.
+  - **Length:** the owner wants about 160 words per language (140–190), but the prompt asks for ~140 (`BRIEFING_PROMPT_WORDS`). GPT-6 Luna at high effort writes 15–30% more than it is asked for: on 2026-09-24, asking ~160 gave de 171–197 and en 189–210 words, and stating "140–190" made it longer still (de 194–253). Asking ~140 gave de 150–172, en 168–194, tr 140–157, ar 157–172. If you change the model or effort, re-measure with `npm run eval:models --workspace=packages/server -- --briefing-check` (see `model-eval.md`). English always runs longest.
 - **Location extraction:** Filter prompt pushes LLM for district/neighborhood-level specificity (not bare city names). Includes examples mapping organizations to known addresses (e.g. "Senat" -> "Rotes Rathaus, Mitte"). Post-processing discards labels that are just the bare city name or "city, country" format before geocoding.
-- **Usage tracking:** In-memory per-city totals (input/output tokens, call count). Exposed via `getUsageStats()` on the health endpoint.
+- **Usage tracking:** In-memory totals per model and city, keyed `{model}:{city}` (input/output tokens, call count). Exposed via `getUsageStats()` on the health endpoint.
 - **Cost estimate:** per-model prices in `MODEL_PRICING` (`llm-client.ts`); unknown models fall back to $1.00/$4.00 per 1M tokens
 - **Timing:** Logs duration + token counts per call via logger
 
@@ -77,7 +77,7 @@ Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, u
 
 ```typescript
 interface NewsItem {
-  id: string;           // FNV-1a hash of URL + title
+  id: string;           // hashString (SHA-256, 12 hex chars) of URL + title
   title: string;
   url: string;
   publishedAt: string;
@@ -113,7 +113,7 @@ interface NewsSummary {
 
 ## DB Schema
 
-- `newsItems` table — cityId, hash (dedup key via unique index `news_city_hash_idx`), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevantToCity (bool), importance (real, 0–1), lat, lon, locationLabel, fetchedAt. UPSERT on (cityId, hash). 3-day retention (`cron/data-retention.ts`). Reads limited to 500 rows.
+- `newsItems` table — cityId, hash (dedup key via unique index `news_city_hash_idx`), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevantToCity (bool), importance (real, 0–1), lat, lon, locationLabel, fetchedAt. UPSERT on (cityId, hash). 3-day retention (`cron/data-retention.ts`). The cache-miss read (`loadNewsItems` in `db/reads.ts`) returns the 200 most recent rows with `relevantToCity = true`.
 - `aiSummaries` table — cityId, lang, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. One row per language per generation batch (rows share the same generatedAt). INSERT-only. Retention at most 7 days (`cron/data-retention.ts`); the same job also deletes a city's briefings once that city has no `newsItems` rows left. `headlineHash` is only the change detector for the top-10 briefing titles (`cron/summarize.ts`), not a reference to any `newsItems.hash`: never join the two tables on it. Until 2026-09-25 the orphan cleanup did exactly that, and so deleted every stored briefing on each run.
 
 ## Drop Logic

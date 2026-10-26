@@ -53,7 +53,7 @@ Three layers prevent redundant geocoding calls:
 
 ### Layer 1: In-process Map (`geocode.ts`)
 
-Module-level `Map<string, GeocodeResult | null>` keyed by lowercase query string. Location names are stable landmarks — cached indefinitely within a process lifetime. Legitimate "not found" results (empty API response) are cached as `null`; transient network errors are **not** cached so they can be retried.
+Module-level `Map<string, GeocodeResult | null>` keyed by lowercase query string. Location names are stable landmarks, so entries have no TTL; the Map is capped at 10,000 entries (`MAX_ENTRIES`) and evicts the oldest insertion first. Every provider answer is cached, including `null`: both an empty result ("not found") and a non-OK HTTP response (e.g. a 429 or 5xx, which the provider functions turn into `null`) stay cached for the life of the process. Only a thrown error (timeout, network failure) is **not** cached, so it can be retried.
 
 ```typescript
 import { clearGeocodeCache } from './geocode.js';

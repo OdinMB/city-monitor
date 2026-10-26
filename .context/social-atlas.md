@@ -48,10 +48,10 @@ Features with `kom !== 'gultig'` (uninhabited areas) are filtered out.
 Berlin-only (hardcoded, like wastewater). The cron job fetches nothing when Berlin is not active.
 
 - **Cron:** `ingest-labor-market` runs daily (7AM), conditional `runOnStart` based on DB freshness
-- **DB:** Unified `snapshots` table, type `ba-labor-market` (JSONB snapshot, one row per city)
+- **DB:** Unified `snapshots` table, type `ba-labor-market` (one JSONB row per run), kept 730 days (`HISTORY_RETENTION` in `cron/data-retention.ts`) for the history endpoint
 - **Cache key:** `berlin:labor-market`
 - **TTL:** 86400 seconds (1 day)
-- **API:** `GET /api/:city/labor-market` - `LaborMarketSummary`
+- **API:** `GET /api/:city/labor-market` - `LaborMarketSummary`; `GET /api/:city/labor-market/history?range=Nd` - `HistoryPoint[]` (default 365d, max 730d, cached 86400s; the web `useLaborMarketHistory` hook exists but no component calls it)
 
 ### Shared Types
 

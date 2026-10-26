@@ -52,16 +52,16 @@ Standard data source pattern:
 - **Cron:** `ingest-noise-sensors.ts` — fetches area API, filters DNMS entries
 - **Parser:** `parseNoiseSensors()` — exported pure function
 - **DB:** Unified `snapshots` table, type `sc-dnms`
-- **Cache:** TTL 1200s (20 min), cache key `noise-sensors:{cityId}`
+- **Cache:** TTL 1200s (20 min), cache key `{cityId}:noise-sensors` (`CK.noiseSensors`)
 - **Route:** `GET /:city/noise-sensors` — 3-tier read (cache → DB → null)
 - **Bootstrap:** Included (small payload)
 - **Warm cache:** Berlin-only block
-- **Retention:** Moderate (7 days)
+- **Retention:** 2 days plus the 100-row cap (`CAPPED_RETENTION` in `cron/data-retention.ts`); DB reads refuse rows older than 2 h
 
 ### Frontend
 
 - **Hook:** `useNoiseSensors.ts` — 5-min stale, 10-min refetch
-- **Map layer:** `layers/noise-sensors.ts` — colored circles with dB labels
+- **Map layer:** `layers/noise-sensors.ts` — badge icons (Volume2 glyph with the dB value) coloured by level
   - Green (<45 dB), Yellow (45–55), Orange (55–65), Red (>65)
   - Popups show LAeq, LAmin, LAmax values
 - **Visibility:** Markers appear when "Noise" layer is on AND "Live Sensors" sub-item is active (`noiseLiveData` in store). Live sensors are independently toggleable from WMS maps. Default: on.
