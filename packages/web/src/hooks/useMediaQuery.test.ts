@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useMediaQuery, useIsDesktop } from './useMediaQuery.js';
+import { useMediaQuery, useIsDesktop, useIsTouchOnly } from './useMediaQuery.js';
 
 describe('useMediaQuery', () => {
   it('returns false by default in jsdom', () => {
@@ -66,5 +66,34 @@ describe('useIsDesktop', () => {
   it('returns false by default in jsdom', () => {
     const { result } = renderHook(() => useIsDesktop());
     expect(result.current).toBe(false);
+  });
+});
+
+describe('useIsTouchOnly', () => {
+  function stubAnyHoverNone(matches: boolean) {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(any-hover: none)' && matches,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  }
+
+  it('is true when no input can hover', () => {
+    stubAnyHoverNone(true);
+    const { result } = renderHook(() => useIsTouchOnly());
+    expect(result.current).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('is false when any input can hover', () => {
+    stubAnyHoverNone(false);
+    const { result } = renderHook(() => useIsTouchOnly());
+    expect(result.current).toBe(false);
+    vi.unstubAllGlobals();
   });
 });

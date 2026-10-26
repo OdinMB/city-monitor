@@ -1,15 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useIsTouchOnly } from '../../hooks/useMediaQuery.js';
 
 const STORAGE_KEY = 'hasSeenKeyboardHints';
 
-/** One-time toast in bottom-right: "Press ? for keyboard shortcuts". */
+/**
+ * One-time toast in bottom-right: "Press ? for keyboard shortcuts".
+ * Not shown on touch-only devices, which have no keyboard to use the
+ * shortcuts with; the shortcuts themselves still work everywhere. The seen
+ * flag is left unset there, so the toast can still appear once if a mouse
+ * or trackpad is attached later.
+ */
 export function ShortcutToast() {
   const { t } = useTranslation();
+  const touchOnly = useIsTouchOnly();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (touchOnly) return;
     if (localStorage.getItem(STORAGE_KEY)) return;
 
     // Show after a brief delay so it doesn't appear during initial load
@@ -25,14 +34,14 @@ export function ShortcutToast() {
       clearTimeout(showTimer);
       clearTimeout(hideTimer);
     };
-  }, []);
+  }, [touchOnly]);
 
   const dismiss = () => {
     setVisible(false);
     localStorage.setItem(STORAGE_KEY, '1');
   };
 
-  if (!visible) return null;
+  if (!visible || touchOnly) return null;
 
   return (
     <button
