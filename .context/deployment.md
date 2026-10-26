@@ -20,6 +20,10 @@ Infrastructure defined in `render.yaml` (Blueprint spec).
 - **Auto-deploy:** On push to `main`
 - Migrations run automatically on each deploy (in start command)
 
+### Client address and `trust proxy`
+
+Requests reach the API through Render's proxies, so the socket address is a proxy's. Express's `trust proxy` is a hop count, `TRUST_PROXY_HOPS` in `packages/server/src/app.ts`: `req.ip`, which the rate limits count by, is the `X-Forwarded-For` entry that many places from the right. It is 1 and not yet measured. Two paths reach the API: the static site's `/api/*` rewrite (on `citymonitor.app` and `city-monitor-web.onrender.com`) and the API's own `city-monitor-api.onrender.com` address. One count is right only if both pass the same number of proxies. The temporary check page at `/api/connection-check/page` measures it on each path ([server.md](server.md#connection-check-temporary)). When the check is removed (server.md, "Removing it"), this note stays, with the measured count and which path it holds for in place of "not yet measured" and the pointer to the check.
+
 ### Static Frontend
 
 - **Build:** `npm ci --include=dev && npm run build --workspace=packages/web`
