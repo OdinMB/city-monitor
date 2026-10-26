@@ -6,6 +6,7 @@ import { SUPPORT_URL } from '../../lib/constants.js';
 import { Sidebar } from '../sidebar/Sidebar.js';
 import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
 import { NinaBanner } from '../alerts/NinaBanner.js';
+import { NewsMarquee } from './NewsMarquee.js';
 import { DashboardGrid } from './DashboardGrid.js';
 import { Tile } from './Tile.js';
 import { TileFooter } from './TileFooter.js';
@@ -61,6 +62,7 @@ export function CommandLayout() {
   const { t } = useTranslation();
   const { id: cityId } = useCityConfig();
   const isDesktop = useIsDesktop();
+  const isPhone = !isDesktop;
 
   // NINA warnings are fetched for the topbar badge; the default active layers
   // (traffic + weather + warnings) are set in useCommandCenter defaults.
@@ -70,31 +72,46 @@ export function CommandLayout() {
   const mapRef = useRef<HTMLDivElement>(null);
   useScrollParallax(mapRef, 0.3);
 
-  return (
-    <>
-      {/* Upper zone: hero map — one *visible* screen tall, not 100vh (see @utility h-hero) */}
-      <div className="relative flex h-hero overflow-hidden">
-        <Sidebar />
-        <div ref={mapRef} className="flex-1 min-w-0 relative">
-          <ErrorBoundary FallbackComponent={MapErrorFallback}>
-            <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
-              <CityMap />
-            </Suspense>
-          </ErrorBoundary>
-          <MobileLayerDrawer />
-        </div>
-        {/* Skyline + scroll indicator overlaid at bottom of hero */}
+  // Hero map — one *visible* screen tall, not 100vh (see @utility h-hero).
+  // Phones show it below the tiles at a fixed 60vh instead; vh is safe there
+  // because nothing is anchored to the bottom of the screen.
+  const hero = (
+    <div key="hero" className="relative flex h-hero max-sm:h-[60vh] overflow-hidden">
+      <Sidebar />
+      <div ref={mapRef} className="flex-1 min-w-0 relative">
+        <ErrorBoundary FallbackComponent={MapErrorFallback}>
+          <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
+            <CityMap />
+          </Suspense>
+        </ErrorBoundary>
+        <MobileLayerDrawer />
+      </div>
+      {/* Skyline + scroll indicator overlaid at bottom of hero. Not on phones:
+          the map is below the tiles there, and the skyline would already have
+          faded out on scroll by the time it is in view. */}
+      {!isPhone && (
         <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
           <ScrollIndicator targetRef={dashboardRef} />
           <SkylineSeparator cityId={cityId} />
         </div>
-      </div>
+      )}
+    </div>
+  );
 
-      {/* Lower zone: dashboard tiles */}
-      <div ref={dashboardRef} className="bg-surface-0">
-        <div className="px-4 pt-4">
+  // Phones: tiles first, map below them. Both blocks are keyed, so when a
+  // rotated phone crosses the breakpoint React moves the map instead of
+  // remounting it.
+  return (
+    <>
+      {!isPhone && hero}
+
+      {/* Lower zone: dashboard tiles. On phones the warnings and the news
+          ticker lead it, directly under the sticky top bar. */}
+      <div key="dashboard" ref={dashboardRef} className="bg-surface-0">
+        <div className="px-4 pt-4 max-sm:empty:hidden">
           <NinaBanner />
         </div>
+        {isPhone && <NewsMarquee reserveSpace />}
         <DashboardGrid>
           {/* Row 1-2: Hero briefing + Weather + AQI + Transit */}
           <Tile title={t('panel.news.briefing')} titleBadge={<AiLabel />} span={2} rowSpan={2}>
@@ -205,6 +222,8 @@ export function CommandLayout() {
           </Tile>
         </DashboardGrid>
       </div>
+
+      {isPhone && hero}
     </>
   );
 }
