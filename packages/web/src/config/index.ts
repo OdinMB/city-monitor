@@ -20,6 +20,9 @@ export function getAllCities(): CityConfig[] {
   return Object.values(ALL_CITIES).filter((c) => ACTIVE_CITY_IDS.has(c.id));
 }
 
-export function getDefaultCityId(): string {
-  return 'berlin';
+/** Berlin while it is active, otherwise the first active city. `/` redirects
+ *  here, so this must never name an inactive city (that redirects back to `/`). */
+export function getDefaultCityId(activeCities: CityConfig[] = getAllCities()): string {
+  if (activeCities.some((c) => c.id === 'berlin')) return 'berlin';
+  return activeCities[0]?.id ?? 'berlin';
 }

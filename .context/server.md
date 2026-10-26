@@ -25,7 +25,7 @@ Applied via middleware per route tier:
 | Route | max-age | Rationale |
 |---|---|---|
 | `/api/:city/news/*` | 300s (5 min) | Feeds update every 10 min |
-| `/api/:city/weather` | 300s (5 min) | Weather updates every 30 min |
+| `/api/:city/weather` | 300s (5 min) | Weather updates hourly |
 | `/api/:city/transit` | 120s (2 min) | Transit updates every 15 min |
 | `/api/:city/events` | 1800s (30 min) | Events update every 6h |
 | `/api/:city/safety` | 300s (5 min) | Safety updates every 10 min |
@@ -52,18 +52,18 @@ Applied via middleware per route tier:
 
 Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: string[]` for startup ordering — jobs with unmet dependencies wait; all others run in parallel.
 
-### Jobs (defined in app.ts)
+### Jobs (26, defined in app.ts)
 
 | Job | Schedule | Description |
 |---|---|---|
 | `ingest-feeds` | `*/10 * * * *` | Fetch RSS feeds, classify, cache digest |
-| `summarize-news` | `5,20,35,50 * * * *` | AI summary of top headlines |
-| `ingest-weather` | `*/30 * * * *` | Open-Meteo + DWD alerts |
+| `summarize-news` | `5 */6 * * *` | AI summary of top headlines |
+| `ingest-weather` | `0 * * * *` | BrightSky forecast + DWD alerts and UV; Open-Meteo air quality |
 | `ingest-transit` | `*/15 * * * *` | VBB departure disruptions |
-| `ingest-events` | `0 */6 * * *` | kulturdaten.berlin events |
+| `ingest-events` | `0 */6 * * *` | kulturdaten.berlin, Ticketmaster and gomus events |
 | `ingest-safety` | `*/10 * * * *` | Police RSS |
 | `ingest-nina` | `*/5 * * * *` | NINA civil protection warnings |
-| `ingest-air-quality` | `*/30 * * * *` | WAQI stations + Sensor.Community (PM→EAQI) grid |
+| `ingest-aq-grid` | `*/30 * * * *` | WAQI stations + Sensor.Community (PM→EAQI) grid |
 | `ingest-pharmacies` | `0 */6 * * *` | aponet.de emergency pharmacies |
 | `ingest-traffic` | `*/5 * * * *` | TomTom traffic incidents |
 | `ingest-construction` | `*/30 * * * *` | VIZ Berlin construction/roadworks |
@@ -72,13 +72,18 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-aeds` | `0 0 * * *` | OpenStreetMap AED locations (daily) |
 | `ingest-social-atlas` | `0 5 * * 0` | MSS WFS social atlas GeoJSON (weekly) |
 | `ingest-budget` | `0 6 * * *` | Berlin Haushalt budget data (daily) |
-| `ingest-bathing` | `0 6 * * *` | LAGeSo bathing water quality (daily) |
+| `ingest-bathing` | `0 6 * * *` | LAGeSo bathing water quality (daily, Berlin-only) |
 | `ingest-wastewater` | `0 6 * * *` | LAGeSo wastewater viral loads (daily, Berlin-only) |
 | `ingest-labor-market` | `0 7 * * *` | BA unemployment statistics (daily, Berlin-only) |
 | `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly) |
+| `ingest-population` | `0 6 1 * *` | Amt für Statistik population demographics (monthly, Berlin-only) |
+| `ingest-feuerwehr` | `0 8 * * *` | Berliner Feuerwehr operations (daily, Berlin-only) |
+| `ingest-pollen` | `0 */6 * * *` | DWD pollen forecast |
+| `ingest-noise-sensors` | `*/10 * * * *` | Sensor.Community DNMS noise sensors |
+| `ingest-council-meetings` | `0 */6 * * *` | BVV OParl + Abgeordnetenhaus PARDOK meetings |
 | `data-retention` | `0 3 * * *` | Prune old data (nightly) |
 
-Ingestion jobs use conditional `runOnStart` based on DB freshness checks — only stale/missing domains trigger startup API calls. `data-retention` never runs on start. `summarize-news` has `dependsOn: ['ingest-feeds']`.
+Ingestion jobs use conditional `runOnStart` based on DB freshness checks — only stale/missing domains trigger startup API calls. `data-retention` never runs on start. `summarize-news` has `dependsOn: ['ingest-feeds']`, `ingest-population` has `dependsOn: ['ingest-social-atlas']`.
 
 ### API
 
@@ -116,30 +121,14 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 ## City Configuration (`packages/server/src/config/`)
 
 - `index.ts` — `getActiveCities()` reads `ACTIVE_CITIES` env var (comma-separated IDs, default "berlin"), returns matching `CityConfig[]`. `getCityConfig(id)` for single lookup.
-- `cities/berlin.ts` — Berlin config with 7 RSS feeds, weather (Open-Meteo), transit (VBB), events (kulturdaten.berlin), police (berlin.de Presseportal RSS).
-- `cities/hamburg.ts` — Hamburg config with 4 RSS feeds (NDR, Abendblatt, MOPO, hamburg.de), weather (Open-Meteo), transit (HVV via HAFAS), police (presseportal.de RSS).
+- `cities/berlin.ts` — Berlin config with 7 RSS feeds, weather (BrightSky), transit (VBB), events (kulturdaten.berlin), police (berlin.de Presseportal RSS).
+- `cities/hamburg.ts` — Hamburg config with 4 RSS feeds (NDR, Abendblatt, MOPO, hamburg.de), weather (BrightSky), transit (HVV via HAFAS), police (presseportal.de RSS).
 
 Adding a city = adding a config file + registering in `ALL_CITIES` + setting `ACTIVE_CITIES` env var.
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `PORT` | No | `3001` | Server listen port |
-| `DATABASE_URL` | No | — | Postgres connection string. Cache-only mode if not set. |
-| `OPENAI_API_KEY` | No | — | Enables AI summarization. Skipped if not set. |
-| `OPENAI_MODEL` | No | `gpt-6-luna` | OpenAI model for summaries |
-| `OPENAI_SUMMARY_EFFORT` | No | `high` | Reasoning effort for summaries |
-| `OPENAI_FILTER_MODEL` | No | `gpt-6-luna` | Model for news classification + location labels |
-| `OPENAI_FILTER_EFFORT` | No | `medium` | Reasoning effort for news classification |
-| `OPENAI_GEO_MODEL` | No | `OPENAI_FILTER_MODEL`, else `gpt-6-luna` | Model for police-report location extraction |
-| `OPENAI_GEO_EFFORT` | No | `none` | Reasoning effort for police-report location extraction |
-| `ACTIVE_CITIES` | No | `berlin` | Comma-separated city IDs |
-| `APONET_TOKEN` | No | _(community token)_ | aponet.de API token for emergency pharmacies |
-| `LOCATIONIQ_TOKEN` | No | — | LocationIQ geocoding token. Used as fallback when Nominatim is rate-limited. |
-| `WAQI_API_TOKEN` | No | — | WAQI air quality API token. AQ grid skipped if not set. |
-| `TOMTOM_API_KEY` | No | — | TomTom traffic API key. Traffic skipped if not set. |
-| `FIRECRAWL_API_KEY` | No | — | Firecrawl v2 API key for Bürgeramt appointment scraping. Appointments skipped if not set. |
+The one list, with what each variable gates, is in [`deployment.md`](deployment.md#environment-variables). Keep it there when adding a `process.env` read.
 
 **Reasoning effort values** depend on the model family. `gpt-5`, `gpt-5-mini`, `gpt-5-nano` (dated or not): `minimal | low | medium | high`. `gpt-5.<n>-*` and `gpt-6-*`: `none | low | medium | high | xhigh | max` (GPT-6 rejects `minimal`). A value outside the model's set is logged and treated as unset. Unset falls back to the site's default effort (summaries `high`, news `medium`, police `none`) when the model supports it; otherwise no effort is sent and the API default applies. So a rollback such as `OPENAI_GEO_MODEL=gpt-5-nano` sends exactly the pre-GPT-6 request. `OPENAI_FILTER_MODEL=gpt-5-nano` rolls back both sites, but news then sends `reasoning_effort: medium` explicitly, because gpt-5-nano supports it; that is the family's API default, so behaviour matches the old request. A briefing rollback needs both variables: `OPENAI_MODEL=gpt-5-mini` alone sends `gpt-5-mini@high` (gpt-5-mini supports `high`), so add `OPENAI_SUMMARY_EFFORT=medium` to get the old request's effort. `OPENAI_FILTER_MODEL=gpt-5.6-luna` alone gives news `gpt-5.6-luna@medium` and police `gpt-5.6-luna@none`. Effort reaches the API through `modelKwargs.reasoning_effort` — LangChain's own `reasoning` option is silently dropped for `gpt-6-*` IDs by @langchain/openai 1.2.x. Max tokens, temperature and top_p are never set.
 

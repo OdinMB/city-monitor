@@ -10,7 +10,7 @@ react-router-dom with `BrowserRouter` in `main.tsx`. Routes defined in `App.tsx`
 
 | Path | Component | Description |
 |---|---|---|
-| `/` | redirect to `/berlin` | Home redirect |
+| `/` | redirect to `/${getDefaultCityId()}` | Home redirect (Berlin while active, else the first active city) |
 | `/imprint` | `ImprintPage` | Legal notice / Impressum |
 | `/privacy` | `PrivacyPage` | Privacy policy |
 | `/no-ads-no-tracking` | `NoTrackingPage` | No ads, no tracking pledge |
@@ -26,7 +26,7 @@ react-router-dom with `BrowserRouter` in `main.tsx`. Routes defined in `App.tsx`
 App (HelmetProvider)
   QueryClientProvider
     Routes
-      / → redirect to /berlin
+      / → redirect to the default city (/berlin)
       /imprint → ImprintPage (PageShell)
       /privacy → PrivacyPage (PageShell)
       /no-ads-no-tracking → NoTrackingPage (PageShell)
@@ -134,7 +134,7 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 
 `CityProvider` wraps each city dashboard, provides `useCityConfig()` hook that returns the active `CityConfig` object. City ID comes from the URL `:cityId` param. Config loaded from `packages/web/src/config/` (mirrors server config structure).
 
-`getAllCities()` returns all registered city configs (used by CityPicker). `getDefaultCityId()` returns `'berlin'`.
+`getAllCities()` returns the active city configs (used by CityPicker). `getDefaultCityId()` returns `'berlin'` while Berlin is active, otherwise the first active city, so the home redirect never targets an inactive city (which would redirect back to `/` in a loop).
 
 ## Map (`packages/web/src/components/map/CityMap.tsx`)
 

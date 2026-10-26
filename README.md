@@ -43,7 +43,7 @@ npm install
 npm run dev          # Starts web (port 5173) + API (port 3001) via Turborepo
 ```
 
-Requires a `.env` file in `packages/server/` with at least `DATABASE_URL` pointing to a PostgreSQL instance. See [`.context/deployment.md`](.context/deployment.md) for the full list of environment variables.
+No variable is required to start. Without `DATABASE_URL` the server runs cache-only: data lives in memory, every job re-fetches on each start, and nothing survives a restart. To persist data, set `DATABASE_URL` to a PostgreSQL connection string in `packages/server/.env` and run `npm run db:migrate` from `packages/server/`. Without `OPENAI_API_KEY` the news tile stays empty. See [`.context/deployment.md`](.context/deployment.md#environment-variables) for the full list of environment variables and what each one gates.
 
 ## Project Structure
 
@@ -86,12 +86,18 @@ There are three ways to use this:
 
 8. **Add to Sources page** — create a sources array for your city in `packages/web/src/pages/SourcesPage.tsx` listing all data sources with attribution links.
 
-9. *(Optional)* **Add a city skyline** — add an SVG skyline function in `packages/web/src/components/layout/SkylineSeparator.tsx` and wire it to your city ID. This renders a silhouette separator between the hero map and the dashboard tiles. If omitted, a generic skyline is used. You can also delete the skyline entirely if you prefer a clean edge.
+9. **Check the code keyed to Berlin** — some features test for the ID `berlin` in code instead of reading the city config. A new city gets none of them until you add its own branch and data, and a fork that drops Berlin loses them. `git grep -nw berlin -- 'packages/*/src/*' 'packages/web/vite*' ':!*.test.*'` lists every place. The ones you will hit:
+   - **Dashboard tiles** — Wastewater Viral Load, Fire Department, Unemployment, Population, Crisis Services and Council Meetings render only for Berlin (`CommandLayout.tsx`). The wastewater, bathing, labor-market, population and Feuerwehr jobs fetch Berlin's data under the fixed ID `berlin` whatever `ACTIVE_CITIES` says, and `db/warm-cache.ts` restores those (plus noise sensors and council meetings) only for Berlin. The bathing tile shows for every city but stays empty outside Berlin.
+   - **Map layers** — the social atlas, rent map and population layers, the total-noise map and the live noise sensors are Berlin-only (`CityMap.tsx`, `DataLayerToggles.tsx`). District outlines for the political layer and the noise WMS layers are keyed by city ID in `components/map/constants.ts`.
+   - **Server lookups** — the pharmacy search postcode (`CITY_PLZ` in `ingest-pharmacies.ts`: no entry, no pharmacies), the parliaments (`PARLIAMENT_CONFIG` in `ingest-political.ts`: no entry, no political data) and the hard-coded district mayors (`BEZIRKSBUERGERMEISTER`, same file). The Bürgeramt scraper and booking link only know service.berlin.de (`ingest-appointments.ts`, `routes/appointments.ts`, `AppointmentsStrip.tsx`).
+   - **Build, links and styling** — per-city page meta and the sitemap list `/berlin` and `/hamburg` under the base URL `https://citymonitor.app` (`vite.config.ts`, `DASHBOARD_ROUTES` in `vite-plugin-seo.ts`, OG images in `public/og-<city>.png`). The privacy page links to `/berlin/sources`. The dashboard accent colour comes from a `[data-city='<city>']` block in `globals.css`.
+
+10. *(Optional)* **Add a city skyline** — add an SVG skyline function in `packages/web/src/components/layout/SkylineSeparator.tsx` and wire it to your city ID. This renders a silhouette separator between the hero map and the dashboard tiles. If omitted, a generic skyline is used. You can also delete the skyline entirely if you prefer a clean edge.
 
 ### How it works under the hood
 
-- **Server:** `getActiveCities()` reads `ACTIVE_CITIES` and returns configs from `ALL_CITIES`. Every cron job iterates over active cities. The `validateCity` middleware rejects requests for unknown or inactive city IDs.
-- **Frontend:** The router matches `/:cityId` and looks it up via `getCityConfig()`. If the city isn't in `ACTIVE_CITY_IDS`, the user is redirected to the home page.
+- **Server:** `getActiveCities()` reads `ACTIVE_CITIES` and returns configs from `ALL_CITIES`. Cron jobs iterate over active cities, except the Berlin-only ones in step 9. The `validateCity` middleware rejects requests for unknown or inactive city IDs.
+- **Frontend:** The router matches `/:cityId` and looks it up via `getCityConfig()`. If the city isn't in `ACTIVE_CITY_IDS`, the user is redirected to the home page, which redirects to Berlin while it is active and otherwise to the first active city (`getDefaultCityId()`).
 - **Database:** All cities share the same `snapshots` table — rows are keyed by `(city_id, type)`. No schema changes needed.
 - **Cache:** Each city gets its own namespaced cache keys (e.g. `berlin:weather`, `munich:weather`). Cache warming runs for all active cities on startup.
 
