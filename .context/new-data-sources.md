@@ -30,7 +30,7 @@ Follow every step when adding a new data source. Skip items marked with a surfac
 
 ### Favicons (if adding news feeds)
 
-19. **Favicon slugs** — add source name → slug mapping to `FAVICON_SLUGS` in `packages/web/src/components/strips/NewsStrip.tsx` and slug → domain mapping to `FAVICON_SOURCES` in `packages/web/scripts/fetch-favicons.ts`. Run `npx tsx packages/web/scripts/fetch-favicons.ts` and commit the new PNGs from `packages/web/public/favicons/`.
+19. **Favicon slugs** — add source name → slug mapping to `FAVICON_SLUGS` in `packages/web/src/lib/news-favicons.ts` (its test fails until every configured feed has one) and slug → domain mapping to `FAVICON_SOURCES` in `packages/web/scripts/fetch-favicons.ts`. Run `npx tsx packages/web/scripts/fetch-favicons.ts` and commit the new PNGs from `packages/web/public/favicons/`.
 
 ### Documentation & Attribution
 

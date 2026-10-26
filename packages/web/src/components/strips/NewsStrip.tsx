@@ -7,6 +7,7 @@ import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
 import { safeUrl } from '../../lib/safe-url.js';
+import { sourceFaviconUrl } from '../../lib/news-favicons.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -35,24 +36,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   weather: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
   economy: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
   sports: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-};
-
-/** Maps source name → local favicon filename (without extension) */
-const FAVICON_SLUGS: Record<string, string> = {
-  // Berlin
-  rbb24: 'rbb24',
-  Tagesspiegel: 'tagesspiegel',
-  'Berliner Morgenpost': 'berliner-morgenpost',
-  'Berlin.de News': 'berlin-de-news',
-  'Berliner Zeitung': 'berliner-zeitung',
-  'taz Berlin': 'taz-berlin',
-  'RBB Polizei': 'berlin-de-news',
-  'Gründerszene Berlin': 'gruenderszene',
-  // Hamburg
-  'NDR Hamburg': 'ndr-hamburg',
-  'Hamburger Abendblatt': 'hamburger-abendblatt',
-  MOPO: 'mopo',
-  'hamburg.de News': 'hamburg-de-news',
 };
 
 const MAX_ITEMS = 15;
@@ -169,8 +152,7 @@ function ImportanceScore({ percent }: { percent: number }) {
 const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem }) {
   const { t } = useTranslation();
   const colorClass = CATEGORY_COLORS[item.category] ?? CATEGORY_COLORS.local;
-  const slug = FAVICON_SLUGS[item.sourceName];
-  const faviconUrl = slug ? `/favicons/${slug}.png` : null;
+  const faviconUrl = sourceFaviconUrl(item.sourceName);
 
   return (
     <li className="py-2 first:pt-0 last:pb-0">

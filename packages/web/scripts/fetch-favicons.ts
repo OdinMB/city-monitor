@@ -10,9 +10,9 @@ const FAVICON_SOURCES: Record<string, string> = {
   rbb24: 'www.rbb24.de',
   tagesspiegel: 'www.tagesspiegel.de',
   'berliner-morgenpost': 'www.morgenpost.de',
-  'berlin-de-news': 'www.berlin.de',
   'berliner-zeitung': 'www.berliner-zeitung.de',
   'taz-berlin': 'taz.de',
+  'polizei-berlin': 'www.berlin.de',
   gruenderszene: 'www.businessinsider.de',
   // Hamburg
   'ndr-hamburg': 'www.ndr.de',

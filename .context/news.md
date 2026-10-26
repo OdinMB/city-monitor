@@ -28,12 +28,14 @@ Use Node's `fetch` to probe a feed, not curl. Some CDN front ends (BZ's Akamai, 
 
 ### Favicons
 
-News source favicons are self-hosted in `packages/web/public/favicons/`. When adding a new feed source:
+News source favicons are self-hosted in `packages/web/public/favicons/`, one `<slug>.png` per feed, with the slug taken from the feed name. Polizei Berlin's feed is published on berlin.de, so `polizei-berlin.png` is the berlin.de icon. When adding or removing a feed source:
 
-1. Add the source name → slug mapping to `FAVICON_SLUGS` in `packages/web/src/components/strips/NewsStrip.tsx`
+1. Add (or remove) the source name → slug mapping in `FAVICON_SLUGS` in `packages/web/src/lib/news-favicons.ts`
 2. Add the slug → domain mapping to `FAVICON_SOURCES` in `packages/web/scripts/fetch-favicons.ts`
 3. Run `npx tsx packages/web/scripts/fetch-favicons.ts` to download the favicon
 4. Commit the new `.png` file from `packages/web/public/favicons/`
+
+`news-favicons.test.ts` reads every city config in `packages/server/src/config/cities/` and fails when a configured feed has no icon, when the map still lists a feed that is no longer configured, or when a slug has no `.png`.
 
 ### Ingestion Constraints
 
