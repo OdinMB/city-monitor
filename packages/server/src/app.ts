@@ -34,6 +34,7 @@ import { createPollenRouter } from './routes/pollen.js';
 import { createNoiseSensorsRouter } from './routes/noise-sensors.js';
 import { createCouncilMeetingsRouter } from './routes/council-meetings.js';
 import { createBootstrapRouter } from './routes/bootstrap.js';
+import { createConnectionCheckRouter } from './routes/connection-check.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
@@ -77,6 +78,14 @@ const BERLIN_ONLY_JOBS = new Set([
   'ingest-feuerwehr',
 ]);
 
+/**
+ * Express `trust proxy` as a hop count: req.ip, which the rate limits count
+ * by, is the X-Forwarded-For entry this many places from the right (0: the
+ * socket). Check it on each path into the server with
+ * GET /api/connection-check/page.
+ */
+export const TRUST_PROXY_HOPS = 1;
+
 export async function createApp(options?: {
   skipScheduler?: boolean;
   /**
@@ -87,7 +96,7 @@ export async function createApp(options?: {
 }) {
   const synthetic = options?.synthetic ?? false;
   const app = express();
-  app.set('trust proxy', 1); // Render reverse proxy
+  app.set('trust proxy', TRUST_PROXY_HOPS); // Render reverse proxy
   app.use(compression());
   app.use(helmet());
 
@@ -234,6 +243,8 @@ export async function createApp(options?: {
 
   // Non-city routes (mounted before validateCity so /api/health, /api/weather-tiles aren't rejected)
   app.use('/api', createHealthRouter(cache, scheduler));
+  // Temporary: remove once TRUST_PROXY_HOPS is set from its measurement
+  app.use('/api', createConnectionCheckRouter(TRUST_PROXY_HOPS));
   // The tiles router fetches RainViewer as soon as it is created
   if (!synthetic) app.use('/api', cacheFor(300), createWeatherTilesRouter());
 
