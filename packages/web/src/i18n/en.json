@@ -170,14 +170,14 @@
       },
       "service": {
         "120686": "Registration",
-        "121482": "ID Card",
-        "120335": "Passport",
+        "120703": "ID Card",
+        "121151": "Passport",
         "120926": "Police Clearance",
         "120702": "Reg. Certificate",
-        "120697": "Address Change",
+        "120697": "Main Residence Change",
         "121701": "Certification",
-        "121151": "Child Passport",
-        "121627": "Driver's License",
+        "121616": "License Exchange",
+        "121627": "First Driver's License",
         "121721": "Parking Permit"
       },
       "more": "more"

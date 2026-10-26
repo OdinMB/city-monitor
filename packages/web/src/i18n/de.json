@@ -168,14 +168,14 @@
       },
       "service": {
         "120686": "Anmeldung",
-        "121482": "Personalausweis",
-        "120335": "Reisepass",
+        "120703": "Personalausweis",
+        "121151": "Reisepass",
         "120926": "Führungszeugnis",
         "120702": "Meldebescheinigung",
-        "120697": "Ummeldung",
+        "120697": "Hauptwohnung ändern",
         "121701": "Beglaubigung",
-        "121151": "Kinderreisepass",
-        "121627": "Fahrerlaubnis",
+        "121616": "Führerschein umtauschen",
+        "121627": "Führerschein erstmalig",
         "121721": "Bewohnerparkausweis"
       },
       "more": "weitere"

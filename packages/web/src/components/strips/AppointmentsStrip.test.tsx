@@ -49,7 +49,7 @@ describe('AppointmentsStrip in Arabic', () => {
 
   it('counts the days to the next appointment with the Arabic plural forms', async () => {
     await i18n.changeLanguage('ar');
-    const services = [service('120686', 1), service('121482', 2), service('120335', 5), service('120926', 12)];
+    const services = [service('120686', 1), service('120703', 2), service('121151', 5), service('120926', 12)];
     render(<AppointmentsStrip />, { wrapper: createWrapper(services) });
     for (const text of ['خلال يوم', 'خلال يومين', 'خلال 5 أيام', 'خلال 12 يومًا']) {
       expect(screen.getByText(text)).toBeTruthy();

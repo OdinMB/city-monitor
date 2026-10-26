@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseAppointmentDates, deriveStatus } from './ingest-appointments.js';
+import { parseAppointmentDates, parseAvailability, deriveStatus } from './ingest-appointments.js';
 
 const SAMPLE_HTML = `
 <table class="calendar-month-table">
@@ -66,6 +66,33 @@ describe('parseAppointmentDates', () => {
     `;
     const dates = parseAppointmentDates(html);
     expect(dates).toHaveLength(1);
+  });
+
+  it('reads a day starting at Berlin midnight as that Berlin date', () => {
+    // 2025-03-09T23:00:00Z is 00:00 on 10 March in Berlin
+    const html = '<td class="buchbar"><a href="/terminvereinbarung/termin/time/1741561200/">10</a></td>';
+    expect(parseAppointmentDates(html)).toEqual(['2025-03-10']);
+  });
+});
+
+describe('parseAvailability', () => {
+  it('returns the bookable dates of a calendar page', () => {
+    expect(parseAvailability(SAMPLE_HTML)).toHaveLength(3);
+  });
+
+  it('returns no dates for a calendar with every day booked', () => {
+    expect(parseAvailability(EMPTY_HTML)).toEqual([]);
+  });
+
+  it('returns no dates for the notice page shown when nothing is free', () => {
+    const html = '<div class="alert">Leider sind aktuell keine Termine für ihre Auswahl verfügbar.</div>';
+    expect(parseAvailability(html)).toEqual([]);
+  });
+
+  it('returns null for a page that is neither a calendar nor the notice', () => {
+    expect(parseAvailability('<h1>Zu viele Zugriffe</h1><p>Bitte versuchen Sie es später.</p>')).toBeNull();
+    expect(parseAvailability('<html><body>Access denied</body></html>')).toBeNull();
+    expect(parseAvailability('')).toBeNull();
   });
 });
 

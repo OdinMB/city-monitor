@@ -116,16 +116,19 @@ export const berlin: CityConfig = {
     },
     appointments: {
       provider: 'service-berlin',
+      // Ids are service.berlin.de/dienstleistung/{id}/: open that page to check
+      // an id names the service before adding it. A wrong id scrapes another
+      // service's calendar under this label.
       services: [
         { id: '120686', name: 'Anmeldung' },
-        { id: '121482', name: 'Personalausweis' },
-        { id: '120335', name: 'Reisepass' },
+        { id: '120703', name: 'Personalausweis' },
+        { id: '121151', name: 'Reisepass' },
         { id: '120926', name: 'Führungszeugnis' },
         { id: '120702', name: 'Meldebescheinigung' },
-        { id: '120697', name: 'Ummeldung' },
+        { id: '120697', name: 'Hauptwohnung ändern' },
         { id: '121701', name: 'Beglaubigung' },
-        { id: '121151', name: 'Kinderreisepass' },
-        { id: '121627', name: 'Fahrerlaubnis' },
+        { id: '121616', name: 'Führerschein umtauschen' },
+        { id: '121627', name: 'Führerschein erstmalig' },
         { id: '121721', name: 'Bewohnerparkausweis' },
       ],
     },

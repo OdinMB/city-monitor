@@ -32,12 +32,32 @@ export function parseAppointmentDates(html: string): string[] {
     const hrefMatch = hrefRegex.exec(inner);
     if (hrefMatch) {
       const ts = parseInt(hrefMatch[1], 10);
-      const date = new Date(ts * 1000);
-      dateSet.add(date.toISOString().split('T')[0]);
+      // The day's timestamp is Berlin midnight, which falls on the previous day in UTC
+      dateSet.add(BERLIN_DATE.format(new Date(ts * 1000)));
     }
   }
 
   return [...dateSet].sort();
+}
+
+// en-CA formats as YYYY-MM-DD
+const BERLIN_DATE = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' });
+
+// Any calendar day cell, bookable or not ("nichtbuchbar" contains "buchbar")
+const CALENDAR_CELL = /<td[^>]*class="[^"]*buchbar[^"]*"/;
+// The notice page shown instead of a calendar when no slot is free at all,
+// e.g. "Leider sind aktuell keine Termine für ihre Auswahl verfügbar"
+const NO_SLOTS_NOTICE = /kein(e|en)?\b[^<]{0,30}Termin/i;
+
+/**
+ * Bookable dates of a service.berlin.de booking page, [] when the page says
+ * nothing is free, or null when it is neither a calendar nor that notice
+ * (a rate-limit, error or bot-check page), so it is not mistaken for "no slots".
+ */
+export function parseAvailability(html: string): string[] | null {
+  if (CALENDAR_CELL.test(html)) return parseAppointmentDates(html);
+  if (NO_SLOTS_NOTICE.test(html)) return [];
+  return null;
 }
 
 /**
@@ -123,7 +143,11 @@ async function ingestCityAppointments(
     const svc = services[i];
 
     const html = await scrapeService(svc.id, apiKey);
-    if (!html) {
+    const dates = html ? parseAvailability(html) : null;
+    if (html && !dates) {
+      log.warn(`${cityId}: ${svc.name} — page is neither a calendar nor the no-slots notice`);
+    }
+    if (!dates) {
       results.push({
         serviceId: svc.id,
         name: svc.name,
@@ -134,7 +158,6 @@ async function ingestCityAppointments(
       continue;
     }
 
-    const dates = parseAppointmentDates(html);
     results.push({
       serviceId: svc.id,
       name: svc.name,

@@ -167,15 +167,15 @@
       },
       "service": {
         "120686": "İkametgâh Kaydı",
-        "121482": "Kimlik Kartı",
-        "120335": "Pasaport",
+        "120703": "Kimlik Kartı",
+        "121151": "Pasaport",
         "120926": "Sabıka Kaydı",
         "120702": "İkametgâh Belgesi",
-        "120697": "Adres Değişikliği",
+        "120697": "Ana İkamet Değişikliği",
         "121701": "Belge Onayı",
-        "121151": "Çocuk Pasaportu",
-        "121627": "Ehliyet",
-        "121721": "Oturma İzni Parkı"
+        "121616": "Ehliyet Değişimi",
+        "121627": "İlk Ehliyet",
+        "121721": "Sakin Park İzni"
       },
       "more": "daha fazla"
     },
