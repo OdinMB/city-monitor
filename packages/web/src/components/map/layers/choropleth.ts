@@ -3,10 +3,53 @@
  */
 
 import * as maplibregl from 'maplibre-gl';
+import i18n from 'i18next';
 import type { SocialAtlasFeatureProps, PopulationFeatureProps } from '../../../lib/api.js';
 import { SOCIAL_ATLAS_COLOR_RAMPS, POPULATION_COLOR_RAMPS, type SocialAtlasMetric, type PopulationMetric } from '../constants.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
-import { showMapPopup, scheduleHoverClose, type MapLayerEvent } from '../popups.js';
+import { showMapPopup, scheduleHoverClose, ltr, type MapLayerEvent } from '../popups.js';
+
+/**
+ * One label/value row of a choropleth popup; the label is a translation key.
+ * The value is kept left-to-right so "12,000/km²" stays whole in Arabic.
+ */
+function row(labelKey: string, value: string): string {
+  return `<tr><td style="padding:2px 0;opacity:0.7">${escapeHtml(i18n.t(labelKey))}</td><td style="text-align:right;font-weight:500">${ltr(escapeHtml(value))}</td></tr>`;
+}
+
+/**
+ * Popup markup for a social-atlas planning area. The area name comes from the
+ * MSS WFS and the labels from the current UI language; all of it is escaped
+ * (see `escapeHtml`).
+ */
+export function socialAtlasPopupHtml(p: SocialAtlasFeatureProps): string {
+  return `<div style="font-size:13px;max-width:300px">
+      <div style="font-weight:600;margin-bottom:6px">${escapeHtml(p.plrName)}</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        ${row('mapPopup.socialAtlas.unemployment', `${p.unemployment?.toFixed(1) ?? '–'}%`)}
+        ${row('mapPopup.socialAtlas.singleParent', `${p.singleParent?.toFixed(1) ?? '–'}%`)}
+        ${row('mapPopup.socialAtlas.welfare', `${p.welfare?.toFixed(1) ?? '–'}%`)}
+        ${row('mapPopup.socialAtlas.childPoverty', `${p.childPoverty?.toFixed(1) ?? '–'}%`)}
+      </table>
+    </div>`;
+}
+
+/**
+ * Popup markup for a population planning area, escaped like
+ * `socialAtlasPopupHtml`. The labels are the population tile's.
+ */
+export function populationPopupHtml(p: PopulationFeatureProps): string {
+  return `<div style="font-size:13px;max-width:300px">
+      <div style="font-weight:600;margin-bottom:6px">${escapeHtml(p.plrName)}</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        ${row('panel.population.title', p.population?.toLocaleString() ?? '–')}
+        ${row('panel.population.densityLabel', `${p.density?.toLocaleString() ?? '–'}/km²`)}
+        ${row('panel.population.foreign', `${p.foreignPct?.toFixed(1) ?? '–'}%`)}
+        ${row('panel.population.elderly', `${p.elderlyPct?.toFixed(1) ?? '–'}%`)}
+        ${row('panel.population.youth', `${p.youthPct?.toFixed(1) ?? '–'}%`)}
+      </table>
+    </div>`;
+}
 
 // --- Social Atlas module-level handler state ---------------------------------
 
@@ -62,18 +105,6 @@ export function updateSocialAtlasLayer(
     },
   });
 
-  function buildSocialAtlasPopup(p: SocialAtlasFeatureProps): string {
-    return `<div style="font-size:13px;max-width:300px">
-      <div style="font-weight:600;margin-bottom:6px">${escapeHtml(p.plrName)}</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="padding:2px 0;opacity:0.7">Unemployment</td><td style="text-align:right;font-weight:500">${p.unemployment?.toFixed(1) ?? '–'}%</td></tr>
-        <tr><td style="padding:2px 0;opacity:0.7">Single-parent HH</td><td style="text-align:right;font-weight:500">${p.singleParent?.toFixed(1) ?? '–'}%</td></tr>
-        <tr><td style="padding:2px 0;opacity:0.7">Welfare recipients</td><td style="text-align:right;font-weight:500">${p.welfare?.toFixed(1) ?? '–'}%</td></tr>
-        <tr><td style="padding:2px 0;opacity:0.7">Child poverty</td><td style="text-align:right;font-weight:500">${p.childPoverty?.toFixed(1) ?? '–'}%</td></tr>
-      </table>
-    </div>`;
-  }
-
   let hoveredPlrId: string | null = null;
 
   _saMouseMove = (e) => {
@@ -83,7 +114,7 @@ export function updateSocialAtlasLayer(
     if (p.plrId === hoveredPlrId) return;
     hoveredPlrId = p.plrId;
     map.getCanvas().style.cursor = 'pointer';
-    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildSocialAtlasPopup(p), { sticky: false });
+    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], socialAtlasPopupHtml(p), { sticky: false });
   };
 
   _saMouseLeave = () => {
@@ -96,7 +127,7 @@ export function updateSocialAtlasLayer(
     const me = e as MapLayerEvent;
     if (!me.features?.length) return;
     const p = me.features[0].properties as unknown as SocialAtlasFeatureProps;
-    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildSocialAtlasPopup(p), { sticky: true });
+    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], socialAtlasPopupHtml(p), { sticky: true });
   };
 
   map.on('mousemove', 'social-atlas-fill', _saMouseMove);
@@ -158,19 +189,6 @@ export function updatePopulationLayer(
     },
   });
 
-  function buildPopulationPopup(p: PopulationFeatureProps): string {
-    return `<div style="font-size:13px;max-width:300px">
-      <div style="font-weight:600;margin-bottom:6px">${escapeHtml(p.plrName)}</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="padding:2px 0;opacity:0.7">Population</td><td style="text-align:right;font-weight:500">${p.population?.toLocaleString() ?? '–'}</td></tr>
-        <tr><td style="padding:2px 0;opacity:0.7">Density</td><td style="text-align:right;font-weight:500">${p.density?.toLocaleString() ?? '–'}/km²</td></tr>
-        <tr><td style="padding:2px 0;opacity:0.7">Foreign pop.</td><td style="text-align:right;font-weight:500">${p.foreignPct?.toFixed(1) ?? '–'}%</td></tr>
-        <tr><td style="padding:2px 0;opacity:0.7">Aged 65+</td><td style="text-align:right;font-weight:500">${p.elderlyPct?.toFixed(1) ?? '–'}%</td></tr>
-        <tr><td style="padding:2px 0;opacity:0.7">Under 18</td><td style="text-align:right;font-weight:500">${p.youthPct?.toFixed(1) ?? '–'}%</td></tr>
-      </table>
-    </div>`;
-  }
-
   let hoveredPlrId: string | null = null;
 
   _popMouseMove = (e) => {
@@ -180,7 +198,7 @@ export function updatePopulationLayer(
     if (p.plrId === hoveredPlrId) return;
     hoveredPlrId = p.plrId;
     map.getCanvas().style.cursor = 'pointer';
-    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildPopulationPopup(p), { sticky: false });
+    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], populationPopupHtml(p), { sticky: false });
   };
 
   _popMouseLeave = () => {
@@ -193,7 +211,7 @@ export function updatePopulationLayer(
     const me = e as MapLayerEvent;
     if (!me.features?.length) return;
     const p = me.features[0].properties as unknown as PopulationFeatureProps;
-    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], buildPopulationPopup(p), { sticky: true });
+    showMapPopup(map, [me.lngLat.lng, me.lngLat.lat], populationPopupHtml(p), { sticky: true });
   };
 
   map.on('mousemove', 'population-fill', _popMouseMove);

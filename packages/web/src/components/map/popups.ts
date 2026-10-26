@@ -23,6 +23,15 @@ function _closeHoverPopup() {
 export type MapLayerEvent = maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] };
 export type PopupContentFn = (e: MapLayerEvent) => { html: string; lngLat: [number, number] } | null;
 
+/**
+ * Isolate already-escaped markup as left-to-right text. A number with a unit,
+ * or a phone number, that follows a translated label would otherwise have its
+ * parts reordered in an Arabic (right-to-left) popup ("21°C" as "C°21").
+ */
+export function ltr(escapedHtml: string): string {
+  return `<bdi dir="ltr">${escapedHtml}</bdi>`;
+}
+
 /** Schedule hover popup close after a 300 ms delay (cancels any pending timer). */
 export function scheduleHoverClose() {
   _clearHoverTimer();

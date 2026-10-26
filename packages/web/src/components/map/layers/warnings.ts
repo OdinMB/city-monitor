@@ -3,6 +3,7 @@
  */
 
 import * as maplibregl from 'maplibre-gl';
+import i18n from 'i18next';
 import type { NinaWarning } from '../../../lib/api.js';
 import { NINA_SEVERITY_COLORS } from '../constants.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
@@ -77,11 +78,19 @@ export function updateWarningPolygons(map: maplibregl.Map, warnings: NinaWarning
 
   registerPopupHandlers(map, 'warning-fill', (e) => {
     if (!e.features?.length) return null;
-    const props = e.features[0].properties!;
-    const html = `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.headline)}</div>
-      <div style="opacity:0.6;font-size:11px">${escapeHtml(props.severity)}</div>
-    </div>`;
-    return { html, lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
+    return { html: warningPopupHtml(e.features[0].properties!), lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
   });
+}
+
+/**
+ * Popup markup for a NINA warning area. The headline comes from the warning
+ * feed and the severity name from the current UI language (the same words as
+ * the warning banner); both are escaped (see `escapeHtml`).
+ */
+export function warningPopupHtml(props: Record<string, unknown>): string {
+  const severity = String(props.severity ?? '');
+  return `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.headline)}</div>
+      <div style="opacity:0.6;font-size:11px">${escapeHtml(i18n.t(`nina.severity.${severity}`, severity))}</div>
+    </div>`;
 }

@@ -413,6 +413,66 @@
       "landesparlament": "Abgeordnetenhaus"
     }
   },
+  "mapPopup": {
+    "readMore": "Weiterlesen",
+    "details": "Details",
+    "directions": "Route",
+    "profile": "Profil",
+    "phone": "Tel.",
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "delay": "Verzögerung: ~{{minutes}} Min.",
+    "roadEvent": {
+      "jam": "Stau",
+      "closure": "Sperrung",
+      "construction": "Baustelle",
+      "accident": "Unfall",
+      "disruption": "Störung",
+      "other": "Verkehrsmeldung"
+    },
+    "transitType": {
+      "delay": "Verspätung",
+      "disruption": "Störung",
+      "cancellation": "Ausfall",
+      "planned-work": "Bauarbeiten"
+    },
+    "bathing": {
+      "quality": "Qualität",
+      "waterTemp": "Wassertemperatur",
+      "visibility": "Sichttiefe",
+      "euClass": "EU: {{value}}"
+    },
+    "aed": {
+      "title": "AED / Defibrillator",
+      "indoor": "Innen",
+      "outdoor": "Außen",
+      "access": "Zugang",
+      "accessValue": {
+        "public": "öffentlich",
+        "customers": "nur für Kunden",
+        "private": "privat",
+        "permissive": "gestattet",
+        "no": "nicht öffentlich"
+      }
+    },
+    "noise": {
+      "sensor": "Lärmsensor #{{id}}",
+      "min": "Min.",
+      "max": "Max.",
+      "level": {
+        "quiet": "Leise",
+        "moderate": "Mäßig",
+        "loud": "Laut",
+        "veryLoud": "Sehr laut"
+      }
+    },
+    "socialAtlas": {
+      "unemployment": "Arbeitslosigkeit",
+      "singleParent": "Alleinerziehende",
+      "welfare": "Transferbezug",
+      "childPoverty": "Kinderarmut"
+    }
+  },
   "nina": {
     "severity": {
       "extreme": "Extrem",

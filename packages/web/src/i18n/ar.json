@@ -413,6 +413,66 @@
       "landesparlament": "برلمان الولاية"
     }
   },
+  "mapPopup": {
+    "readMore": "اقرأ المزيد",
+    "details": "التفاصيل",
+    "directions": "الاتجاهات",
+    "profile": "الملف الشخصي",
+    "phone": "هاتف",
+    "today": "اليوم",
+    "tomorrow": "غداً",
+    "delay": "التأخير: ~{{minutes}} دقيقة",
+    "roadEvent": {
+      "jam": "ازدحام مروري",
+      "closure": "إغلاق طريق",
+      "construction": "أعمال طرق",
+      "accident": "حادث",
+      "disruption": "عرقلة مرورية",
+      "other": "بلاغ مروري"
+    },
+    "transitType": {
+      "delay": "تأخير",
+      "disruption": "اضطراب",
+      "cancellation": "إلغاء",
+      "planned-work": "أعمال مخطط لها"
+    },
+    "bathing": {
+      "quality": "الجودة",
+      "waterTemp": "حرارة الماء",
+      "visibility": "عمق الرؤية",
+      "euClass": "تصنيف الاتحاد الأوروبي: {{value}}"
+    },
+    "aed": {
+      "title": "جهاز إزالة الرجفان (AED)",
+      "indoor": "داخلي",
+      "outdoor": "خارجي",
+      "access": "الوصول",
+      "accessValue": {
+        "public": "عام",
+        "customers": "للزبائن فقط",
+        "private": "خاص",
+        "permissive": "مسموح",
+        "no": "غير عام"
+      }
+    },
+    "noise": {
+      "sensor": "مستشعر الضوضاء #{{id}}",
+      "min": "الأدنى",
+      "max": "الأقصى",
+      "level": {
+        "quiet": "هادئ",
+        "moderate": "معتدل",
+        "loud": "صاخب",
+        "veryLoud": "صاخب جداً"
+      }
+    },
+    "socialAtlas": {
+      "unemployment": "البطالة",
+      "singleParent": "أسر الوالد الواحد",
+      "welfare": "متلقو المساعدة الاجتماعية",
+      "childPoverty": "فقر الأطفال"
+    }
+  },
   "nina": {
     "severity": {
       "extreme": "شديد للغاية",

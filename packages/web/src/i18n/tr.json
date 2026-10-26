@@ -413,6 +413,66 @@
       "landesparlament": "Eyalet Parlamentosu"
     }
   },
+  "mapPopup": {
+    "readMore": "Devamını oku",
+    "details": "Ayrıntılar",
+    "directions": "Yol tarifi",
+    "profile": "Profil",
+    "phone": "Tel",
+    "today": "Bugün",
+    "tomorrow": "Yarın",
+    "delay": "Gecikme: ~{{minutes}} dk",
+    "roadEvent": {
+      "jam": "Trafik sıkışıklığı",
+      "closure": "Yol kapanması",
+      "construction": "Yol çalışması",
+      "accident": "Kaza",
+      "disruption": "Aksama",
+      "other": "Trafik olayı"
+    },
+    "transitType": {
+      "delay": "gecikme",
+      "disruption": "aksama",
+      "cancellation": "iptal",
+      "planned-work": "planlı çalışma"
+    },
+    "bathing": {
+      "quality": "Kalite",
+      "waterTemp": "Su sıcaklığı",
+      "visibility": "Görüş derinliği",
+      "euClass": "AB: {{value}}"
+    },
+    "aed": {
+      "title": "OED / Defibrilatör",
+      "indoor": "İç mekân",
+      "outdoor": "Dış mekân",
+      "access": "Erişim",
+      "accessValue": {
+        "public": "herkese açık",
+        "customers": "yalnızca müşteriler",
+        "private": "özel",
+        "permissive": "izinli",
+        "no": "herkese kapalı"
+      }
+    },
+    "noise": {
+      "sensor": "Gürültü sensörü #{{id}}",
+      "min": "Min.",
+      "max": "Maks.",
+      "level": {
+        "quiet": "Sessiz",
+        "moderate": "Orta",
+        "loud": "Gürültülü",
+        "veryLoud": "Çok gürültülü"
+      }
+    },
+    "socialAtlas": {
+      "unemployment": "İşsizlik",
+      "singleParent": "Tek ebeveynli hane",
+      "welfare": "Sosyal yardım alanlar",
+      "childPoverty": "Çocuk yoksulluğu"
+    }
+  },
   "nina": {
     "severity": {
       "extreme": "Aşırı",

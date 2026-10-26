@@ -3,6 +3,7 @@
  */
 
 import * as maplibregl from 'maplibre-gl';
+import i18n from 'i18next';
 import type { TrafficIncident, ConstructionSite } from '../../../lib/api.js';
 import { CONSTRUCTION_SUBTYPE_COLORS } from '../../../lib/map-icons.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
@@ -77,24 +78,40 @@ export function updateTrafficLayers(map: maplibregl.Map, incidents: TrafficIncid
 
   registerPopupHandlers(map, 'traffic-line', (e) => {
     if (!e.features?.length) return null;
-    const props = e.features[0].properties!;
-    const delayMin = props.delay ? Math.round(Number(props.delay) / 60) : 0;
-    const html = `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.type)}${props.road ? ` — ${escapeHtml(props.road)}` : ''}</div>
-      ${props.description ? `<div style="font-size:12px">${escapeHtml(props.description)}</div>` : ''}
-      ${props.from && props.to ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${escapeHtml(props.from)} → ${escapeHtml(props.to)}</div>` : ''}
-      ${delayMin > 0 ? `<div style="font-size:11px;margin-top:2px">Delay: ~${delayMin} min</div>` : ''}
-    </div>`;
-    return { html, lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
+    return { html: trafficPopupHtml(e.features[0].properties!), lngLat: [e.lngLat.lng, e.lngLat.lat] as [number, number] };
   });
 
   raiseTransitLayers(map);
 }
 
-function constructionPopupHtml(p: Record<string, unknown>): string {
-  const subtypeLabel = String(p.subtype ?? '').replace(/^./, (c: string) => c.toUpperCase());
+/**
+ * Name of a traffic incident type or roadworks subtype in the current UI
+ * language. A type the bundles do not know is shown as the feed sent it.
+ */
+function roadEventLabel(type: unknown): string {
+  const raw = String(type ?? '');
+  return i18n.t(`mapPopup.roadEvent.${raw}`, raw);
+}
+
+/**
+ * Popup markup for a traffic incident, from its feature properties. Road,
+ * description and place names come from the traffic feed and the words from
+ * the current UI language; all of it is escaped (see `escapeHtml`).
+ */
+export function trafficPopupHtml(props: Record<string, unknown>): string {
+  const delayMin = props.delay ? Math.round(Number(props.delay) / 60) : 0;
   return `<div style="font-size:13px;max-width:280px">
-    <div style="font-weight:600;margin-bottom:4px">${escapeHtml(subtypeLabel)}: ${escapeHtml(p.street)}</div>
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(roadEventLabel(props.type))}${props.road ? ` — ${escapeHtml(props.road)}` : ''}</div>
+      ${props.description ? `<div style="font-size:12px">${escapeHtml(props.description)}</div>` : ''}
+      ${props.from && props.to ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${escapeHtml(props.from)} → ${escapeHtml(props.to)}</div>` : ''}
+      ${delayMin > 0 ? `<div style="font-size:11px;margin-top:2px">${escapeHtml(i18n.t('mapPopup.delay', { minutes: delayMin }))}</div>` : ''}
+    </div>`;
+}
+
+/** Popup markup for a roadworks site, escaped like `trafficPopupHtml`. */
+export function constructionPopupHtml(p: Record<string, unknown>): string {
+  return `<div style="font-size:13px;max-width:280px">
+    <div style="font-weight:600;margin-bottom:4px">${escapeHtml(roadEventLabel(p.subtype))}: ${escapeHtml(p.street)}</div>
     ${p.section ? `<div style="font-size:12px;opacity:0.7">${escapeHtml(p.section)}</div>` : ''}
     ${p.description ? `<div style="font-size:12px;margin-top:2px">${escapeHtml(p.description)}</div>` : ''}
     ${p.validFrom ? `<div style="font-size:11px;opacity:0.6;margin-top:4px">${escapeHtml(p.validFrom)}${p.validUntil ? ` – ${escapeHtml(p.validUntil)}` : ''}</div>` : ''}

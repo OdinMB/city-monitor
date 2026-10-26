@@ -413,6 +413,66 @@
       "landesparlament": "State Parliament"
     }
   },
+  "mapPopup": {
+    "readMore": "Read more",
+    "details": "Details",
+    "directions": "Directions",
+    "profile": "Profile",
+    "phone": "Tel",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "delay": "Delay: ~{{minutes}} min",
+    "roadEvent": {
+      "jam": "Traffic jam",
+      "closure": "Road closure",
+      "construction": "Roadworks",
+      "accident": "Accident",
+      "disruption": "Disruption",
+      "other": "Incident"
+    },
+    "transitType": {
+      "delay": "delay",
+      "disruption": "disruption",
+      "cancellation": "cancellation",
+      "planned-work": "planned work"
+    },
+    "bathing": {
+      "quality": "Quality",
+      "waterTemp": "Water temp",
+      "visibility": "Visibility",
+      "euClass": "EU: {{value}}"
+    },
+    "aed": {
+      "title": "AED / Defibrillator",
+      "indoor": "Indoor",
+      "outdoor": "Outdoor",
+      "access": "Access",
+      "accessValue": {
+        "public": "public",
+        "customers": "customers only",
+        "private": "private",
+        "permissive": "permitted",
+        "no": "not public"
+      }
+    },
+    "noise": {
+      "sensor": "Noise Sensor #{{id}}",
+      "min": "Min",
+      "max": "Max",
+      "level": {
+        "quiet": "Quiet",
+        "moderate": "Moderate",
+        "loud": "Loud",
+        "veryLoud": "Very Loud"
+      }
+    },
+    "socialAtlas": {
+      "unemployment": "Unemployment",
+      "singleParent": "Single-parent HH",
+      "welfare": "Welfare recipients",
+      "childPoverty": "Child poverty"
+    }
+  },
   "nina": {
     "severity": {
       "extreme": "Extreme",

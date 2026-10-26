@@ -173,10 +173,13 @@ function placeLine(label: unknown): string {
   return `<div style="font-size:11px;margin-top:2px">📍 <bdi>${escapeHtml(label)}</bdi> · ${escapeHtml(note)}</div>`;
 }
 
-/** Outbound link, or nothing when the URL is not an ordinary web address. */
-function popupLink(url: unknown, text: string): string {
+/**
+ * Outbound link labelled with a translated word and an arrow, or nothing when
+ * the URL is not an ordinary web address.
+ */
+function popupLink(url: unknown, labelKey: string): string {
   const href = safeUrl(typeof url === 'string' ? url : undefined);
-  return href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">${text}</a>` : '';
+  return href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">${escapeHtml(i18n.t(labelKey))} →</a>` : '';
 }
 
 /**
@@ -190,7 +193,7 @@ export function newsPopupHtml(props: Record<string, unknown>): string {
       <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.title)}</div>
       <div style="opacity:0.6;font-size:11px">${escapeHtml(props.sourceName)} · ${escapeHtml(props.categoryLabel)}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
       ${placeLine(props.locationLabel)}
-      ${popupLink(props.url, 'Read more →')}
+      ${popupLink(props.url, 'mapPopup.readMore')}
     </div>`;
 }
 
@@ -200,7 +203,7 @@ export function safetyPopupHtml(props: Record<string, unknown>): string {
       <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.title)}</div>
       ${props.district ? `<div style="opacity:0.6;font-size:11px">${escapeHtml(props.district)}</div>` : ''}
       ${placeLine(props.locationLabel)}
-      ${popupLink(props.url, 'Details →')}
+      ${popupLink(props.url, 'mapPopup.details')}
     </div>`;
 }
 

@@ -3,6 +3,7 @@
  */
 
 import * as maplibregl from 'maplibre-gl';
+import i18n from 'i18next';
 import { TrainFront } from 'lucide';
 import type { TransitAlert } from '../../../lib/api.js';
 import { SEVERITY_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
@@ -71,7 +72,12 @@ function alertsToGeoJSON(alerts: TransitAlert[]): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features };
 }
 
-function buildPopupHtml(props: Record<string, unknown>): string {
+/**
+ * Popup markup for a station's transit alerts, from its feature properties.
+ * Station, line and detail text come from the transit feed and the alert type
+ * from the current UI language; all of it is escaped (see `escapeHtml`).
+ */
+export function transitPopupHtml(props: Record<string, unknown>): string {
   const alertsRaw = props.alertsJson as string;
   let alerts: Array<{ line: string; type: string; severity: string; message: string; detail: string }>;
   try {
@@ -86,7 +92,7 @@ function buildPopupHtml(props: Record<string, unknown>): string {
 
   for (const a of alerts) {
     const sevColor = SEVERITY_COLORS[a.severity] ?? SEVERITY_COLORS.low;
-    const typeLabel = a.type.replace('-', ' ');
+    const typeLabel = i18n.t(`mapPopup.transitType.${a.type}`, a.type.replace('-', ' '));
     parts.push(
       `<div style="border-left:3px solid ${sevColor};padding-left:8px;margin-bottom:8px">` +
       `<strong>${escapeHtml(a.line)}</strong> <span style="opacity:0.6;font-size:11px">${escapeHtml(typeLabel)}</span><br>` +
@@ -144,7 +150,7 @@ export function updateTransitMarkers(map: maplibregl.Map, alerts: TransitAlert[]
     const props = e.features[0].properties;
     if (!props) return null;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-    const html = buildPopupHtml(props);
+    const html = transitPopupHtml(props);
     if (!html) return null;
     return { html, lngLat: coords };
   };
