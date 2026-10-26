@@ -6,10 +6,9 @@ This guide walks you through deploying City Monitor from scratch on [Render.com]
 
 - A [Render account](https://dashboard.render.com/register) (free tier works for the static site; database and API need the Starter plan at $7/mo each)
 - The repository pushed to GitHub (public or connected to Render via GitHub app)
-- (Optional) An [OpenAI API key](https://platform.openai.com/api-keys) for AI news summaries
+- (Optional) An [OpenAI API key](https://platform.openai.com/api-keys) for news classification and the AI briefing — without it the news tile stays empty
 - (Optional) A [Firecrawl API key](https://firecrawl.dev) for Berlin appointment scraping
 - (Optional) A [LocationIQ token](https://locationiq.com) for geocoding fallback
-- (Optional) A [Sentry DSN](https://sentry.io) for error tracking
 
 ## Overview
 
@@ -32,8 +31,8 @@ The repo includes a `render.yaml` blueprint that creates all three services auto
 3. Pick the branch: **`main`**
 4. Render reads `render.yaml` and shows the three services. Review them.
 5. Fill in the prompted environment variables:
-   - `OPENAI_API_KEY` — paste your key, or leave blank to skip AI summaries
-   - `SENTRY_DSN` — paste your DSN, or leave blank
+   - `OPENAI_API_KEY` — paste your key, or leave blank (the news tile then stays empty and there is no briefing)
+   - `SENTRY_DSN` — leave blank: `render.yaml` declares it, but no code reads it
 6. Click **Apply**
 7. Wait for the database to spin up first (~2 min), then the API and static site will build
 
@@ -88,10 +87,11 @@ After the blueprint deploys, skip to [Post-Deploy Verification](#post-deploy-ver
 | `PORT` | `3001` | Required |
 | `ACTIVE_CITIES` | `berlin` | Required. Use `berlin,hamburg` for multi-city |
 | `DATABASE_URL` | *(paste the Internal Database URL from Step 1)* | Required. Or use "Connect a Database" button to auto-inject |
-| `OPENAI_API_KEY` | *(your key)* | Optional — enables AI news summaries |
+| `OPENAI_API_KEY` | *(your key)* | Optional, but news needs it — without it the news tile stays empty and there is no briefing |
 | `FIRECRAWL_API_KEY` | *(your key)* | Optional — enables Berlin appointment scraping |
 | `LOCATIONIQ_TOKEN` | *(your token)* | Optional — geocoding fallback |
-| `SENTRY_DSN` | *(your DSN)* | Optional — error tracking |
+
+The other optional keys (TomTom traffic, WAQI air quality, Ticketmaster events, CORS origins) and what each one gates are listed in [deployment.md](deployment.md#environment-variables).
 
 > **Tip:** Instead of pasting `DATABASE_URL` manually, scroll down to "Connect a Database", select `city-monitor-db`, and Render injects the connection string automatically.
 
@@ -181,7 +181,7 @@ To enable Hamburg alongside Berlin:
 | API returns 503 or health check fails | Check Render logs for the API service. Common cause: `DATABASE_URL` not set or database not ready yet |
 | Frontend loads but shows no data | Wait 5–10 min for cron jobs to run. Check `/api/health` to confirm the API is up |
 | API rewrite not working on static site | Verify the `/api/*` rewrite rule is listed **before** the `/*` rule |
-| `OPENAI_API_KEY` errors in logs | Key is optional — remove it or set a valid key. Summaries degrade to headline-only mode without it |
+| `OPENAI_API_KEY` errors in logs | Key is optional — remove it or set a valid key. Without it news items are not classified and all dropped, so the news tile stays empty |
 | Deploy fails at build step | Check that `npm ci` succeeds — Render needs the `package-lock.json` committed. The build log should show `Version 5.9.3`, the repo's pinned TypeScript; see [deployment.md](deployment.md) for why the builds install devDependencies |
 | Migrations fail on start | Check `DATABASE_URL` points to a running Postgres instance. Verify the database user has schema permissions |
 | Render free tier spins down | Free-tier web services spin down after 15 min of inactivity. Use Starter plan for always-on. Static sites are always available |

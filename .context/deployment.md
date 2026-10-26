@@ -71,14 +71,24 @@ Link targets from ingested feeds pass through `safeUrl()` (`packages/web/src/lib
 
 ## Environment Variables
 
-| Variable | Service | Required | Source |
-|---|---|---|---|
-| `DATABASE_URL` | API | Yes | Auto-injected from Render Postgres |
-| `OPENAI_API_KEY` | API | No | Manual (enables AI summaries) |
-| `SENTRY_DSN` | API + Web | No | Manual (enables error tracking) |
-| `ACTIVE_CITIES` | API | Yes | Default: `berlin`. Set `berlin,hamburg` for multi-city. |
-| `NODE_ENV` | API | Yes | `production` |
-| `PORT` | API | Yes | `3001` |
+The full list: every variable the code reads (`process.env` in `packages/server`). The web app reads none. Locally the server's npm scripts load `packages/server/.env` if it exists.
+
+| Variable | Required | Without it |
+|---|---|---|
+| `DATABASE_URL` | In production (Render injects it from the Postgres service) | The server runs cache-only: nothing persists and every job re-fetches on each start. The start command's `db:migrate` and the other `db:*` scripts fail. |
+| `NODE_ENV` | In production: `production` | Any other value adds `http://localhost:5173` to CORS, turns off rate limiting and exposes `POST /api/health/trigger/:jobName`. |
+| `PORT` | No | Listens on `3001`. |
+| `ACTIVE_CITIES` | No | Defaults to `berlin`. Comma-separated city IDs the jobs ingest and the API serves. |
+| `ALLOWED_ORIGINS` | No | CORS allows only `https://citymonitor.app` (plus localhost outside production). Set your frontend's origins, comma-separated, if a browser calls the API cross-origin; the static site's `/api/*` rewrite is same-origin. |
+| `OPENAI_API_KEY` | No, but news needs it | New news items get no AI assessment and are dropped, so the news tile and news map markers stay empty (with a database, items classified earlier keep showing until they leave the feeds). No daily briefing, and police reports get no AI map location. |
+| `OPENAI_MODEL`, `OPENAI_SUMMARY_EFFORT`, `OPENAI_FILTER_MODEL`, `OPENAI_FILTER_EFFORT`, `OPENAI_GEO_MODEL`, `OPENAI_GEO_EFFORT` | No | Code defaults in `lib/llm-client.ts` apply: `gpt-6-luna` at effort `high` (briefing), `medium` (news), `none` (police locations). `OPENAI_GEO_MODEL` falls back to `OPENAI_FILTER_MODEL`. See below and `server.md`. |
+| `TOMTOM_API_KEY` | No | Traffic job skipped: no traffic incidents. |
+| `WAQI_API_TOKEN` | No | Air-quality grid job skipped: no WAQI stations on the map or in the air-quality tile. The grid endpoint still fetches the city's configured Sensor.Community sensors when its cache is empty, and the tile's city-wide index (Open-Meteo, fetched by the weather job) still shows. |
+| `TICKETMASTER_CONSUMER_KEY` | No | Events skip Ticketmaster; Berlin's other sources (kulturdaten.berlin, gomus) still load. |
+| `FIRECRAWL_API_KEY` | No | Appointments job skipped: the Bürgeramt tile stays empty. |
+| `LOCATIONIQ_TOKEN` | No | Geocoding waits for Nominatim's 1 request/second instead of falling back to LocationIQ. |
+
+`render.yaml` also declares `SENTRY_DSN`, but no code reads it: there is no Sentry integration.
 
 **LLM model and effort variables** (`OPENAI_MODEL`, `OPENAI_FILTER_MODEL`, `OPENAI_GEO_MODEL` and their `*_EFFORT` vars; see `server.md`) are left unset in production, so the code defaults in `lib/llm-client.ts` apply. A value set in the Render dashboard, on the service or in a linked Environment Group, overrides the default silently and survives every deploy. `render.yaml` cannot show it, so check the dashboard after any model change. Secret files cannot override it: `node packages/server/dist/index.js` loads no env file (only the npm scripts pass `--env-file-if-exists=.env`). `/api/health` → `ai` names the model that actually ran (keys are `model:city`).
 
@@ -92,4 +102,3 @@ Link targets from ingested feeds pass through `safeUrl()` (`packages/web/src/lib
 
 - **Health endpoint:** `GET /api/health` — uptime, DB status, cache stats, AI cost tracking
 - **Render Dashboard:** CPU, memory, request count, Postgres metrics
-- **Sentry (optional):** Error tracking, performance monitoring

@@ -9,7 +9,7 @@ import { useTheme } from './hooks/useTheme.js';
 import { useBootstrap } from './hooks/useBootstrap.js';
 import { Shell } from './components/layout/Shell.js';
 import { CommandLayout } from './components/layout/CommandLayout.js';
-import { getCityConfig } from './config/index.js';
+import { getCityConfig, getDefaultCityId } from './config/index.js';
 import { ImprintPage } from './pages/ImprintPage.js';
 import { PrivacyPage } from './pages/PrivacyPage.js';
 import { NoTrackingPage } from './pages/NoTrackingPage.js';
@@ -82,7 +82,7 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary FallbackComponent={AppErrorFallback}>
           <Routes>
-            <Route path="/" element={<Navigate to="/berlin" replace />} />
+            <Route path="/" element={<Navigate to={`/${getDefaultCityId()}`} replace />} />
             <Route path="/imprint" element={<ImprintPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/no-ads-no-tracking" element={<NoTrackingPage />} />

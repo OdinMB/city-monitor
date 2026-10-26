@@ -78,7 +78,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 
 | Type | Source |
 |---|---|
-| `open-meteo` | Open-Meteo weather API |
+| `open-meteo` | Weather from BrightSky + DWD (historical key name, see `weather.md`) |
 | `pegelonline` | PEGELONLINE/WSV water levels |
 | `service-berlin` | service.berlin.de appointments (via Firecrawl) |
 | `berlin-haushalt` | Berlin Doppelhaushalt budget CSV |
