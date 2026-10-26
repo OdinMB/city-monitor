@@ -6,6 +6,8 @@ vi.mock('drizzle-orm', () => ({
   and: vi.fn((...args: unknown[]) => ({ op: 'and', args })),
   eq: vi.fn((col, val) => ({ op: 'eq', col, val })),
   notExists: vi.fn((subquery) => ({ op: 'notExists', subquery })),
+  notInArray: vi.fn((col, values) => ({ op: 'notInArray', col, values })),
+  desc: vi.fn((col) => ({ op: 'desc', col })),
   sql: Object.assign(vi.fn(() => ({ __sql: true })), {
     raw: vi.fn((s: string) => ({ __raw: s })),
   }),
@@ -19,18 +21,28 @@ const TOTAL_SNAPSHOT_TYPES = HISTORY_RETENTION.length + CAPPED_RETENTION.length;
 const NON_SNAPSHOT_TASKS = 5; // news, events, safety, summaries, orphan_summaries
 const TOTAL_TIME_TASKS = TOTAL_SNAPSHOT_TYPES + NON_SNAPSHOT_TASKS;
 
+/**
+ * Sub-select chains: db.select().from().where() inside notExists, and
+ * db.selectDistinctOn().from().where().orderBy() for the newest row per city.
+ */
+function mockSubqueries() {
+  const subWhere = vi.fn().mockReturnValue({ __subquery: true });
+  const from = vi.fn().mockReturnValue({ where: subWhere });
+  const select = vi.fn().mockReturnValue({ from });
+  const orderBy = vi.fn().mockReturnValue({ __subquery: true });
+  const distinctFrom = vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ orderBy }) });
+  const selectDistinctOn = vi.fn().mockReturnValue({ from: distinctFrom });
+  return { select, selectDistinctOn };
+}
+
 function createMockDb() {
   const returning = vi.fn().mockResolvedValue([]);
   const where = vi.fn().mockReturnValue({ returning });
   const deleteFn = vi.fn().mockReturnValue({ where });
-  // Sub-select chain: db.select().from().where() used inside notExists
-  const subWhere = vi.fn().mockReturnValue({ __subquery: true });
-  const from = vi.fn().mockReturnValue({ where: subWhere });
-  const select = vi.fn().mockReturnValue({ from });
   // db.execute for raw SQL row-count pruning
   const execute = vi.fn().mockResolvedValue([]);
   return {
-    db: { delete: deleteFn, select, execute } as unknown as Db,
+    db: { delete: deleteFn, ...mockSubqueries(), execute } as unknown as Db,
     deleteFn,
     where,
     returning,
@@ -102,6 +114,8 @@ describe('data-retention', () => {
     expect((cutoff.val as Date).getTime()).toBe(Date.now() - 6 * 3_600_000);
     expect((cutoff.val as Date).getTime()).toBe(Date.now() - AQ_GRID_MAX_AGE_MS);
     expect(HISTORY_RETENTION.map((c) => c.type)).not.toContain('aqi-grid');
+    // No exemption for the newest row: the grid is not kept past 6 hours.
+    expect(aqGrid[0][2]).toBeUndefined();
   });
 
   it('uses 3-day retention for non-snapshot tables', async () => {
@@ -141,11 +155,8 @@ describe('data-retention', () => {
       .mockResolvedValue([]);       // rest OK
     const where = vi.fn().mockReturnValue({ returning });
     const deleteFn = vi.fn().mockReturnValue({ where });
-    const subWhere = vi.fn().mockReturnValue({ __subquery: true });
-    const from = vi.fn().mockReturnValue({ where: subWhere });
-    const select = vi.fn().mockReturnValue({ from });
     const execute = vi.fn().mockResolvedValue([]);
-    const db = { delete: deleteFn, select, execute } as unknown as Db;
+    const db = { delete: deleteFn, ...mockSubqueries(), execute } as unknown as Db;
 
     const handler = createDataRetention(db);
     await expect(handler()).resolves.not.toThrow();
@@ -156,13 +167,10 @@ describe('data-retention', () => {
     const returning = vi.fn().mockResolvedValue([]);
     const where = vi.fn().mockReturnValue({ returning });
     const deleteFn = vi.fn().mockReturnValue({ where });
-    const subWhere = vi.fn().mockReturnValue({ __subquery: true });
-    const from = vi.fn().mockReturnValue({ where: subWhere });
-    const select = vi.fn().mockReturnValue({ from });
     const execute = vi.fn()
       .mockRejectedValueOnce(new Error('SQL error'))
       .mockResolvedValue([]);
-    const db = { delete: deleteFn, select, execute } as unknown as Db;
+    const db = { delete: deleteFn, ...mockSubqueries(), execute } as unknown as Db;
 
     const handler = createDataRetention(db);
     await expect(handler()).resolves.not.toThrow();

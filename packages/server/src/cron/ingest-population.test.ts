@@ -305,9 +305,9 @@ describe('ingest-population', () => {
     expect(summary!.total).toBe(10000);
   });
 
-  // The job runs at 06:00 on the 1st. Retention deletes the DB row after 7 days,
-  // so the routes cannot fall back to it: the cache alone has to last until the
-  // next run, which after a 31-day month is 31 days later.
+  // The job runs at 06:00 on the 1st. The cache has to last until the next run,
+  // which after a 31-day month is 31 days later (without a database it is the
+  // only copy).
   it('keeps summary and GeoJSON cached until the next run after a 31-day month', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),

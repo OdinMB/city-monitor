@@ -30,7 +30,7 @@ Berlin-only (hardcoded, same pattern as wastewater/labor market). The cron job f
 - **Cron**: `ingest-population` — `0 6 1 * *` (monthly on the 1st at 6 AM; data is semi-annual but we check monthly)
 - **DB**: Unified `snapshots` table, type `afstat-population` (data JSONB contains `{ geojson, summary }`)
 - **Cache keys**: `${cityId}:population:geojson`, `${cityId}:population:summary`
-- **TTL**: 3214080 seconds (37.2 days: the longest gap between runs, 31 days, × 1.2). It has to outlast that gap on its own: data retention deletes `afstat-population` rows after 7 days, so the routes' DB fallback is empty for most of the month. Shared by ingestion, routes and cache warming as `POPULATION_TTL_SECONDS`
+- **TTL**: 3214080 seconds (37.2 days: the longest gap between runs, 31 days, × 1.2), so an entry lasts until the next run. Data retention deletes `afstat-population` rows after 7 days but keeps the newest one (`keepLatest`), so the routes' DB fallback and cache warming after a restart still find the latest data, and the next run has a previous snapshot for the change figure. Shared by ingestion, routes and cache warming as `POPULATION_TTL_SECONDS`
 - **Bootstrap**: `populationSummary` (~200B) included in bootstrap for instant tile display
 - **Lazy fetch**: GeoJSON (~500KB) fetched only when a population map sub-layer is active
 
