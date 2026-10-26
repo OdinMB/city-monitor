@@ -24,7 +24,10 @@
     <!-- Preload CARTO map style based on theme preference -->
     <script>
       (function() {
-        var t = localStorage.getItem('theme');
+        // Storage access throws when the browser blocks site data; fall back
+        // to the system preference so the style is still preloaded.
+        var t = null;
+        try { t = localStorage.getItem('theme'); } catch (e) {}
         var dark = t === 'dark' || (!t && matchMedia('(prefers-color-scheme:dark)').matches);
         var style = dark
           ? 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json'

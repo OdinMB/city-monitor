@@ -4,6 +4,24 @@ import { useIsTouchOnly } from '../../hooks/useMediaQuery.js';
 
 const STORAGE_KEY = 'hasSeenKeyboardHints';
 
+// With site storage blocked every access throws: the hint then counts as not
+// seen and shows once per page view.
+function hasSeenHint(): boolean {
+  try {
+    return Boolean(localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return false;
+  }
+}
+
+function markHintSeen() {
+  try {
+    localStorage.setItem(STORAGE_KEY, '1');
+  } catch {
+    // Storage blocked: nothing to remember the hint in.
+  }
+}
+
 /**
  * One-time toast in bottom-right: "Press ? for keyboard shortcuts".
  * Not shown on touch-only devices, which have no keyboard to use the
@@ -19,7 +37,7 @@ export function ShortcutToast() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (touchOnly) return;
-    if (localStorage.getItem(STORAGE_KEY)) return;
+    if (hasSeenHint()) return;
 
     // Show after a brief delay so it doesn't appear during initial load
     const showTimer = setTimeout(() => setVisible(true), 1500);
@@ -27,7 +45,7 @@ export function ShortcutToast() {
     // Auto-dismiss after 5 seconds
     const hideTimer = setTimeout(() => {
       setVisible(false);
-      localStorage.setItem(STORAGE_KEY, '1');
+      markHintSeen();
     }, 6500);
 
     return () => {
@@ -38,7 +56,7 @@ export function ShortcutToast() {
 
   const dismiss = () => {
     setVisible(false);
-    localStorage.setItem(STORAGE_KEY, '1');
+    markHintSeen();
   };
 
   if (!visible || touchOnly) return null;
