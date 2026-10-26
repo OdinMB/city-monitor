@@ -17,7 +17,7 @@ export default defineConfig({
         {
           path: '/privacy',
           title: 'Privacy Policy — City Monitor',
-          description: 'Privacy policy for City Monitor. No cookies, no tracking, no analytics.',
+          description: 'Privacy policy for City Monitor. No cookies, no user tracking, privacy-friendly analytics.',
         },
         {
           path: '/no-ads-no-tracking',

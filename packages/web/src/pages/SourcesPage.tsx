@@ -21,9 +21,9 @@ const SHARED_SOURCES: SourceGroup[] = [
     category: 'Weather & Environment',
     sources: [
       {
-        name: 'Open-Meteo',
-        url: 'https://open-meteo.com/',
-        description: 'Current weather conditions, 7-day forecast (temperature, humidity, wind, precipitation), and UV index.',
+        name: 'Bright Sky',
+        url: 'https://brightsky.dev/',
+        description: 'Current weather conditions (temperature, humidity, wind, precipitation) and 7-day forecast — a free, open-source API for Deutscher Wetterdienst (DWD) open data.',
       },
       {
         name: 'Open-Meteo Air Quality',
@@ -38,7 +38,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'DWD (Deutscher Wetterdienst)',
         url: 'https://www.dwd.de/',
-        description: 'Official German severe weather warnings, pollen forecast (Pollenflug-Gefahrenindex), and UV index alerts.',
+        description: 'Weather observations and forecast (via Bright Sky), official severe weather warnings, pollen forecast (Pollenflug-Gefahrenindex), and UV index forecast. Source: Deutscher Wetterdienst. City Monitor derives the daily summaries and feels-like temperature from this data.',
       },
       {
         name: 'WAQI (World Air Quality Index)',
@@ -124,7 +124,6 @@ const BERLIN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'rbb24', url: 'https://www.rbb24.de/', description: 'Regional public broadcaster for Berlin-Brandenburg.' },
       { name: 'Tagesspiegel', url: 'https://www.tagesspiegel.de/', description: 'Major Berlin daily newspaper.' },
-      { name: 'Berlin.de', url: 'https://www.berlin.de/news/', description: 'Official Berlin state government news.' },
       { name: 'Berliner Morgenpost', url: 'https://www.morgenpost.de/', description: 'Berlin daily newspaper.' },
       { name: 'Berliner Zeitung', url: 'https://www.berliner-zeitung.de/', description: 'Berlin daily newspaper.' },
       { name: 'taz Berlin', url: 'https://taz.de/', description: 'Left-leaning national daily, Berlin section.' },
