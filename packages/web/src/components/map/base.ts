@@ -74,17 +74,6 @@ export async function loadStyle(url: string): Promise<StyleSpecification> {
   return processed;
 }
 
-/** Strip city prefix and constituency suffixes so API names match Bezirke GeoJSON.
- *  e.g. "Berlin-Spandau – Charlottenburg Nord" → "spandau" */
-export function normalizePoliticalName(name: string): string {
-  let n = name.toLowerCase();
-  const dash = n.indexOf('-');
-  if (dash > 0 && dash < 10) n = n.slice(dash + 1);
-  const em = n.indexOf(' – ');
-  if (em > 0) n = n.slice(0, em);
-  return n.trim();
-}
-
 export function simplifyMap(map: maplibregl.Map) {
   const style = map.getStyle();
   if (!style?.layers) return;
