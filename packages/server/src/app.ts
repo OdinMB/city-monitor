@@ -246,7 +246,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(43200), createAedsRouter(cache, db));
   app.use('/api', cacheFor(43200), createSocialAtlasRouter(cache, db));
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
-  app.use('/api', cacheFor(3600), createPoliticalRouter(cache));
+  app.use('/api', cacheFor(3600), createPoliticalRouter(cache, db));
   app.use('/api', cacheFor(3600), createBudgetRouter(cache, db));
   app.use('/api', cacheFor(3600), createAppointmentsRouter(cache, db));
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));

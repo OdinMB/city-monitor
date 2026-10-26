@@ -14,6 +14,14 @@ export type { PoliticalDistrict, Representative };
 const API_BASE = 'https://www.abgeordnetenwatch.de/api/v2';
 const TIMEOUT_MS = 30_000;
 const TTL_SECONDS = 604800; // 7 days
+/**
+ * The API fetch is skipped when the stored data is younger than this. It is a
+ * day shorter than the weekly cron interval: the previous run stored its data a
+ * few seconds after 04:00, so a 7-day cut-off made every other weekly run skip
+ * and stretched the refresh to 14 days, past both the cache TTL and the 7-day
+ * snapshot retention.
+ */
+const SKIP_FETCH_IF_YOUNGER_THAN_MS = 6 * 86_400_000;
 
 /** Date the BEZIRKSBUERGERMEISTER data was last manually verified. */
 const BEZIRKSBUERGERMEISTER_LAST_VERIFIED = new Date('2026-03-02');
@@ -143,7 +151,8 @@ export function createPoliticalIngestion(cache: Cache, db: Db | null) {
   };
 }
 
-async function fetchMandates(periodId: number): Promise<AW_Mandate[]> {
+/** Returns null when any page fails, so a partial list never replaces stored data. */
+async function fetchMandates(periodId: number): Promise<AW_Mandate[] | null> {
   const mandates: AW_Mandate[] = [];
   let page = 0;
   const pageSize = 100;
@@ -161,8 +170,8 @@ async function fetchMandates(periodId: number): Promise<AW_Mandate[]> {
     });
 
     if (!response.ok) {
-      log.warn(`abgeordnetenwatch returned ${response.status}`);
-      break;
+      log.warn(`abgeordnetenwatch returned ${response.status} for mandates page ${page}`);
+      return null;
     }
 
     const data = (await response.json()) as AW_Response;
@@ -299,14 +308,14 @@ async function ingestCityPolitical(
     log.info(`${city.id}: ${bmData.length} Bezirksbürgermeister cached`);
   }
 
-  // Skip API calls if DB data is still fresh (fetched within the 7-day TTL)
+  // Skip API calls if DB data was fetched within the current weekly cycle
   if (db) {
     const fetchedAt = await loadPoliticalFetchedAt(db, city.id, 'bundestag');
     if (fetchedAt) {
       const ageMs = Date.now() - fetchedAt.getTime();
-      if (ageMs < TTL_SECONDS * 1000) {
+      if (ageMs < SKIP_FETCH_IF_YOUNGER_THAN_MS) {
         const ageDays = Math.round(ageMs / 86_400_000);
-        log.info(`${city.id}: political data is ${ageDays}d old (TTL 7d), skipping API fetch`);
+        log.info(`${city.id}: political data is ${ageDays}d old (refetch after 6d), skipping API fetch`);
         return;
       }
     }
@@ -320,6 +329,10 @@ async function ingestCityPolitical(
   }
 
   const allBundestag = await fetchMandates(bundestagPeriodId);
+  if (!allBundestag?.length) {
+    log.warn(`${city.id}: Bundestag mandates unavailable, keeping previous data`);
+    return;
+  }
   const cityBundestag = deduplicateMandates(filterBundestagForCity(allBundestag, city.name));
 
   const bundestagDistricts: PoliticalDistrict[] = [];
@@ -348,8 +361,11 @@ async function ingestCityPolitical(
 
   // State parliament mandates
   const statePeriodId = await fetchCurrentPeriod(config.state.parliamentId);
-  if (statePeriodId) {
-    const stateMandates = deduplicateMandates(await fetchMandates(statePeriodId));
+  const allState = statePeriodId ? await fetchMandates(statePeriodId) : null;
+  if (!allState?.length) {
+    log.warn(`${city.id}: ${config.state.label} mandates unavailable, keeping previous data`);
+  } else {
+    const stateMandates = deduplicateMandates(allState);
     const stateReps = stateMandates.map((m) =>
       mandateToRepresentative(m, config.state.role),
     );
