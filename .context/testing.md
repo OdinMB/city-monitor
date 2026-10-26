@@ -42,6 +42,8 @@ To run the app with data but without production access, use the synthetic dev da
 - **Environment:** Node (default)
 - **Test location:** Co-located (e.g., `src/lib/parse-history.test.ts`)
 - **No setup file** needed for most tests
+- **Config:** `pool: 'forks'` capped at 3 workers (`maxForks`), `silent: true` (console output suppressed)
+- **Needs a built `shared`:** server code imports `@city-monitor/shared/schemas.js` at runtime, so `npx vitest run` in a fresh checkout fails most route files with "Cannot find package" until `npm run build --workspace=shared` has run. `turbo run test` builds it first (`dependsOn: ["^build"]`).
 
 ## Conventions
 
@@ -50,3 +52,4 @@ To run the app with data but without production access, use the synthetic dev da
 - Import from `vitest` for `describe`, `it`, `expect`, `vi` (even when globals are enabled)
 - Use `@testing-library/react` `render`/`screen` for component tests
 - No snapshot tests — prefer explicit assertions
+- Import the module under test statically, at the top of the file. Vitest's 5 s per-test timeout covers the test body but not file collection, so an `await import('./module.js')` inside a test makes the first test pay for loading the module graph (Drizzle, the DB schema, city configs), and on a busy machine that overran the timeout. Use a dynamic import only after `vi.resetModules()`, when a test needs a fresh module instance.
