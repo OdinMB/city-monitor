@@ -197,13 +197,10 @@ export function EventsStrip() {
 
   return (
     <>
-      {/* Source filter. Both chip rows scroll sideways, and a scroll container
-          clips at its padding edge, so the 4px padding (with scroll-padding
-          for chips scrolled into view) leaves room for the chips' focus ring
-          (2px outline at 2px offset). The negative margins keep the chips
-          where they were. */}
+      {/* Source filter. Both chip rows wrap instead of scrolling sideways, so
+          no scroll container clips the chips' focus ring. */}
       {showSourceFilter && (
-        <div role="tablist" className="flex gap-1 overflow-x-auto p-1 -mx-1 -mt-1 mb-1 scroll-px-1">
+        <div role="tablist" className="flex flex-wrap gap-1 pb-1 mb-1">
           {activeSourceFilters.map((sf, i) => {
             const count = sf.key === 'all'
               ? allEvents.length
@@ -233,7 +230,7 @@ export function EventsStrip() {
 
       {/* Category filter */}
       {availableCategories.length > 2 && (
-        <div role="tablist" className="flex gap-1 overflow-x-auto px-1 pt-1 pb-1.5 -mx-1 -mt-1 mb-1.5 scroll-px-1">
+        <div role="tablist" className="flex flex-wrap gap-1 pb-1.5 mb-1.5">
           {availableCategories.map((cat, i) => {
             const count = cat === 'all' ? sourceFiltered.length : (categoryCounts[cat] ?? 0);
             return (

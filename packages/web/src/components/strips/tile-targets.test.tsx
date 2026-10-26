@@ -124,17 +124,13 @@ describe('tile tap targets are at least 24px (WCAG 2.5.8)', () => {
 });
 
 describe('Events filter chips keep a visible focus ring (WCAG 2.4.7)', () => {
-  it('pads each scrolling chip row by 4px, so the 2px outline at 2px offset is not clipped', () => {
+  it('wraps each chip row instead of scrolling it, so no scroll container clips the outline', () => {
     render(<EventsStrip />);
     const rows = screen.getAllByRole('tablist');
     expect(rows).toHaveLength(2); // source and category
     for (const row of rows) {
-      expect(row.classList.contains('overflow-x-auto')).toBe(true);
-      const padded = row.classList.contains('p-1') || (row.classList.contains('px-1') && row.classList.contains('pt-1'));
-      expect(padded).toBe(true);
-      // Negative margins keep the chips in place; scroll padding keeps a chip
-      // scrolled into view by keyboard focus clear of the edge.
-      expectClasses(row, ['-mx-1', '-mt-1', 'scroll-px-1']);
+      expect(row.classList.contains('flex-wrap')).toBe(true);
+      expect(row.classList.contains('overflow-x-auto')).toBe(false);
     }
   });
 });

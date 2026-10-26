@@ -48,7 +48,7 @@ Ingestion fetches the Lageso CSV (small, fast) then the AMELAG TSV (large, strea
 
 - Hook: `useWastewater(cityId, enabled = true)` — 24h polling, 12h stale
 - Strip: `WastewaterStrip({ expanded })` — expandable tile; the Berlin-only gate is in `CommandLayout.tsx`
-  - **Collapsed:** horizontal row showing each pathogen with level badge and trend arrow (e.g. "Flu A High ->")
+  - **Collapsed:** horizontal row showing each pathogen with level badge and trend arrow (e.g. "Flu A High ->"). Pathogens sit in pairs: one line when all fit, otherwise the pairs wrap into a 2x2 grid (2 + 1 for an odd count). `min-w-fit` makes the wrap follow the rendered text, and `basis-0` with a grow equal to the pair's size gives every pathogen an equal share of the line, so wrapped columns line up. The Tile clips overflow, so a non-wrapping row loses the last trend arrow on phone-width and single-column desktop tiles
   - **Expanded:** vertically stacked pathogens with bold name titles, compact measurement values (gc/L with k/M suffixes), level/trend badges, full-width sparkline charts (12-week history), date labels, and per-pathogen sample date when it differs from the main date
 - Tile placed in the environment row after Pollen; starts collapsed (no `defaultExpanded`)
 - Bootstrap seeded via `wastewater` field
