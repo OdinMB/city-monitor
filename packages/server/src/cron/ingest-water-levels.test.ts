@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import type { WaterLevelData } from '@city-monitor/shared';
+// Static, not `await import()` in each test: loading the module graph
+// (Drizzle, city configs) inside the first test overran its 5 s timeout on a
+// busy machine. Collection has no such timeout.
+import { createWaterLevelIngestion } from './ingest-water-levels.js';
 
 // Mock PEGELONLINE API response matching real shape
 const mockPegelonlineResponse = [
@@ -68,7 +72,6 @@ describe('ingest-water-levels', () => {
     );
 
     const cache = createCache();
-    const { createWaterLevelIngestion } = await import('./ingest-water-levels.js');
     const ingest = createWaterLevelIngestion(cache);
     await ingest();
 
@@ -84,7 +87,6 @@ describe('ingest-water-levels', () => {
     );
 
     const cache = createCache();
-    const { createWaterLevelIngestion } = await import('./ingest-water-levels.js');
     const ingest = createWaterLevelIngestion(cache);
     await ingest();
 
@@ -115,7 +117,6 @@ describe('ingest-water-levels', () => {
     );
 
     const cache = createCache();
-    const { createWaterLevelIngestion } = await import('./ingest-water-levels.js');
     const ingest = createWaterLevelIngestion(cache);
     await ingest();
 
@@ -147,7 +148,6 @@ describe('ingest-water-levels', () => {
     );
 
     const cache = createCache();
-    const { createWaterLevelIngestion } = await import('./ingest-water-levels.js');
     const ingest = createWaterLevelIngestion(cache);
     await ingest();
 
@@ -161,7 +161,6 @@ describe('ingest-water-levels', () => {
     );
 
     const cache = createCache();
-    const { createWaterLevelIngestion } = await import('./ingest-water-levels.js');
     const ingest = createWaterLevelIngestion(cache);
     await ingest(); // should not throw
 
@@ -175,7 +174,6 @@ describe('ingest-water-levels', () => {
     );
 
     const cache = createCache();
-    const { createWaterLevelIngestion } = await import('./ingest-water-levels.js');
     const ingest = createWaterLevelIngestion(cache);
     await ingest();
 
@@ -192,7 +190,6 @@ describe('ingest-water-levels', () => {
     );
 
     const cache = createCache();
-    const { createWaterLevelIngestion } = await import('./ingest-water-levels.js');
     const ingest = createWaterLevelIngestion(cache);
     await ingest();
 

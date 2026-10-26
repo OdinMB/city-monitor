@@ -28,10 +28,10 @@ Features with `kom !== 'gultig'` (uninhabited areas) are filtered out.
 - **API:** `GET /api/:city/social-atlas` - full GeoJSON FeatureCollection (for map layer)
 
 ### Frontend Map Layer
-- **DataLayer:** `'social-atlas'` - Berlin-only, gated by `cities: ['berlin']`
-- **Lazy fetch:** GeoJSON only fetched when user toggles the layer on (`useSocialAtlas` with `enabled` flag)
-- **Choropleth:** Fill layer colored by composite status index (1=green, 2=yellow, 3=orange, 4=red) + thin line borders
-- **Popup:** Shows area name, status badge, and all 4 indicator percentages
+- **DataLayer:** `'social'` - Berlin-only, gated by `cities: ['berlin']` in `DataLayerToggles.tsx` and `city.id === 'berlin'` in `CityMap.tsx`. Sub-layers (`SocialLayer`): `unemployment` (default), `single-parent`, `welfare`, `child-poverty` draw this choropleth; `rent` swaps it for the rent-map WMS overlay instead.
+- **Lazy fetch:** GeoJSON only fetched while one of the four indicator sub-layers is on (`useSocialAtlas` with `enabled` flag)
+- **Choropleth:** Fill layer colored by the selected indicator's percentage, each with its own 5-stop ramp (`SOCIAL_ATLAS_COLOR_RAMPS` in `map/constants.ts`) + thin line borders. The composite status index (`statusIndex`/`statusLabel`) is in the data but not drawn.
+- **Popup:** Shows area name and all 4 indicator percentages (`socialAtlasPopupHtml`); no status index
 
 ## Labor Market Dashboard Tile (BA Monthly)
 
@@ -64,7 +64,7 @@ Berlin-only (hardcoded, like wastewater).
 - Data pre-populated from bootstrap for instant display
 
 ### i18n
-- Map layer: keys under `sidebar.layers.social-atlas`
+- Map layer: `sidebar.layers.social`, sub-layer labels under `sidebar.social.*`, popup labels under `mapPopup.socialAtlas.*`
 - Dashboard tile: keys under `panel.laborMarket.*`
 - All 4 languages: EN, DE, TR, AR
 
@@ -79,4 +79,4 @@ Berlin-only (hardcoded, like wastewater).
 | `packages/web/src/hooks/useSocialAtlas.ts` | Lazy GeoJSON hook (map layer) |
 | `packages/web/src/hooks/useLaborMarket.ts` | Labor market hook (dashboard tile) |
 | `packages/web/src/components/strips/LaborMarketStrip.tsx` | Dashboard tile |
-| `packages/web/src/components/map/CityMap.tsx` | `updateSocialAtlasLayer` function |
+| `packages/web/src/components/map/layers/choropleth.ts` | `updateSocialAtlasLayer` and `socialAtlasPopupHtml` (map layer) |

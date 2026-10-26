@@ -8,7 +8,7 @@
 
 2. **API** (`packages/server/src/routes/weather.ts`) — `GET /api/:city/weather` returns cached data, falls back to Postgres, then to an empty structure.
 
-3. **Frontend** (`packages/web/src/components/panels/WeatherPanel.tsx`) — Uses `useWeather()` (refetch 15 min). Renders current conditions via WMO weather code → emoji/label (`packages/web/src/lib/weather-codes.ts`).
+3. **Frontend** (`packages/web/src/components/strips/WeatherStrip.tsx`) — Uses `useWeather()` (refetch 15 min). Renders current conditions via WMO weather code → emoji/label (`packages/web/src/lib/weather-codes.ts`).
 
 ## Data Sources
 

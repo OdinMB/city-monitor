@@ -8,12 +8,12 @@
 
 2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/digest` returns cached digest, falls back to Postgres (with `applyDropLogic`), then empty structure.
 
-3. **Frontend** (`packages/web/src/components/strips/NewsStrip.tsx`) — Uses `useNewsDigest()` hook (refetch 5 min). Category tabs (All, Transit, Politics, Culture, Crime, Economy, Sports); "local" and "weather" categories hidden from tabs but items still shown under "All". Max 10 items per view.
+3. **Frontend** (`packages/web/src/components/strips/NewsStrip.tsx`) — Uses `useNewsDigest()` hook (refetch 5 min). Category tabs in `ALL_CATEGORIES` order (All, Politics, Economy, Culture, Local, Transit, Crime, Sports); a category's tab appears only when the digest has items in it. "weather" items (`HIDDEN_CATEGORIES`) get no tab and are left out of "All" too. Max 15 items per view (`MAX_ITEMS`).
 
 ### Feed Configuration
 
 Feeds are defined in city config files (e.g. `packages/server/src/config/cities/berlin.ts`). Each feed has:
-- `name`, `url`, `tier` (1=primary, 2=secondary, 3=tertiary), `type` ('rss'|'atom'), `lang`, optional `category` override
+- `name`, `url`, `tier` (1=primary, 2=secondary, 3=tertiary; the type also allows 4), `type` (kind of source: 'wire'|'gov'|'mainstream'|'tech'|'other' — the parser detects RSS vs Atom itself), `lang`, optional `category` (the item's category until the LLM classifier assigns one, which replaces it; default `local`)
 
 Berlin has 7 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, Berliner Zeitung, taz Berlin, Polizei Berlin (category=crime), Gründerszene.
 
@@ -84,7 +84,7 @@ interface NewsItem {
   sourceName: string;
   sourceUrl: string;
   description?: string;
-  category: string;     // LLM-assigned (transit, crime, politics, culture, economy, sports, local)
+  category: string;     // LLM-assigned (transit, crime, politics, culture, economy, sports, local, weather)
   tier: number;         // 1 (primary) to 3 (tertiary)
   lang: string;
   location?: { lat: number; lon: number; label?: string };

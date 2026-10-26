@@ -209,7 +209,7 @@ export interface EmergencyPharmacy {
   distance?: number;
 }
 
-// Air quality grid (WAQI stations + Open-Meteo supplements)
+// Air quality grid (WAQI stations + configured Sensor.Community sensors)
 export interface AirQualityGridPoint {
   lat: number;
   lon: number;

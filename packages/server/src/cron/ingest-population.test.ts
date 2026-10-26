@@ -1,7 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import ExcelJS from 'exceljs';
 import { createCache } from '../lib/cache.js';
 import type { PopulationSummary } from '@city-monitor/shared';
+// A static import loads the module graph (Drizzle, the DB schema) while the
+// file is collected. An `await import()` inside a test put that load inside the
+// first test's 5 s timeout, which it overran on a busy machine.
+import { createPopulationIngestion } from './ingest-population.js';
 
 // Build a mock XLSX workbook with T2 (age groups) and Schlüssel (PLR names)
 async function buildMockXlsx(): Promise<ArrayBuffer> {
@@ -114,12 +118,18 @@ function buildMockSocialAtlasGeojson() {
 }
 
 describe('ingest-population', () => {
+  // Built once rather than in every test. Each Response copies the bytes, so
+  // sharing the buffer cannot couple the tests.
+  let xlsxBuf: ArrayBuffer;
+  beforeAll(async () => {
+    xlsxBuf = await buildMockXlsx();
+  });
+
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
   it('parses XLSX and caches PopulationSummary', async () => {
-    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -128,7 +138,6 @@ describe('ingest-population', () => {
     // Seed social atlas geometry
     cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
 
-    const { createPopulationIngestion } = await import('./ingest-population.js');
     const ingest = createPopulationIngestion(cache);
     await ingest();
 
@@ -151,7 +160,6 @@ describe('ingest-population', () => {
   });
 
   it('caches GeoJSON FeatureCollection with per-PLR properties', async () => {
-    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -159,7 +167,6 @@ describe('ingest-population', () => {
     const cache = createCache();
     cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
 
-    const { createPopulationIngestion } = await import('./ingest-population.js');
     const ingest = createPopulationIngestion(cache);
     await ingest();
 
@@ -183,7 +190,6 @@ describe('ingest-population', () => {
   });
 
   it('skips aggregation rows (missing PLR column)', async () => {
-    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -191,7 +197,6 @@ describe('ingest-population', () => {
     const cache = createCache();
     cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
 
-    const { createPopulationIngestion } = await import('./ingest-population.js');
     const ingest = createPopulationIngestion(cache);
     await ingest();
 
@@ -207,7 +212,6 @@ describe('ingest-population', () => {
     );
 
     const cache = createCache();
-    const { createPopulationIngestion } = await import('./ingest-population.js');
     const ingest = createPopulationIngestion(cache);
     await ingest(); // should not throw
 
@@ -218,7 +222,6 @@ describe('ingest-population', () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'));
 
     const cache = createCache();
-    const { createPopulationIngestion } = await import('./ingest-population.js');
     const ingest = createPopulationIngestion(cache);
     await ingest(); // should not throw
 
@@ -226,7 +229,6 @@ describe('ingest-population', () => {
   });
 
   it('parses German space-separated thousands correctly', async () => {
-    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -234,7 +236,6 @@ describe('ingest-population', () => {
     const cache = createCache();
     cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
 
-    const { createPopulationIngestion } = await import('./ingest-population.js');
     const ingest = createPopulationIngestion(cache);
     await ingest();
 
@@ -244,7 +245,6 @@ describe('ingest-population', () => {
   });
 
   it('uses 30-day TTL for cache', async () => {
-    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -253,7 +253,6 @@ describe('ingest-population', () => {
     cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
     const setSpy = vi.spyOn(cache, 'set');
 
-    const { createPopulationIngestion } = await import('./ingest-population.js');
     const ingest = createPopulationIngestion(cache);
     await ingest();
 
@@ -266,7 +265,6 @@ describe('ingest-population', () => {
   });
 
   it('sets change to 0 when no previous snapshot exists', async () => {
-    const xlsxBuf = await buildMockXlsx();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -274,7 +272,6 @@ describe('ingest-population', () => {
     const cache = createCache();
     cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
 
-    const { createPopulationIngestion } = await import('./ingest-population.js');
     const ingest = createPopulationIngestion(cache);
     await ingest();
 
