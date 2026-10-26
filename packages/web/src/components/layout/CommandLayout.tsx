@@ -61,6 +61,7 @@ export function CommandLayout() {
   const { t } = useTranslation();
   const { id: cityId } = useCityConfig();
   const isDesktop = useIsDesktop();
+  const isPhone = !isDesktop;
 
   // NINA warnings are fetched for the topbar badge; the default active layers
   // (traffic + weather + warnings) are set in useCommandCenter defaults.
@@ -72,8 +73,10 @@ export function CommandLayout() {
 
   return (
     <>
-      {/* Upper zone: hero map — one *visible* screen tall, not 100vh (see @utility h-hero) */}
-      <div className="relative flex h-hero overflow-hidden">
+      {/* Upper zone: hero map — one *visible* screen tall, not 100vh (see @utility h-hero).
+          On phones the sticky top bar and ticker take the top of that screen
+          and the map the rest (see @utility h-hero-below-header). */}
+      <div className="relative flex h-hero max-sm:h-hero-below-header overflow-hidden">
         <Sidebar />
         <div ref={mapRef} className="flex-1 min-w-0 relative">
           <ErrorBoundary FallbackComponent={MapErrorFallback}>
@@ -81,6 +84,13 @@ export function CommandLayout() {
               <CityMap />
             </Suspense>
           </ErrorBoundary>
+          {/* Phones: active warnings as compact pills over the top of the map.
+              The side insets keep them clear of the attribution control. */}
+          {isPhone && (
+            <div className="absolute top-2 inset-x-12 z-30 pointer-events-none">
+              <NinaBanner compact />
+            </div>
+          )}
           <MobileLayerDrawer />
         </div>
         {/* Skyline + scroll indicator overlaid at bottom of hero */}
@@ -90,11 +100,14 @@ export function CommandLayout() {
         </div>
       </div>
 
-      {/* Lower zone: dashboard tiles */}
-      <div ref={dashboardRef} className="bg-surface-0">
-        <div className="px-4 pt-4">
-          <NinaBanner />
-        </div>
+      {/* Lower zone: dashboard tiles. On phones the scroll margin keeps the
+          scroll indicator's target clear of the sticky top bar. */}
+      <div ref={dashboardRef} className="bg-surface-0 max-sm:scroll-mt-[var(--phone-header-h)]">
+        {!isPhone && (
+          <div className="px-4 pt-4">
+            <NinaBanner />
+          </div>
+        )}
         <DashboardGrid>
           {/* Row 1-2: Hero briefing + Weather + AQI + Transit */}
           <Tile title={t('panel.news.briefing')} titleBadge={<AiLabel />} span={2} rowSpan={2}>

@@ -87,4 +87,35 @@ describe('NinaBanner', () => {
     const rule = css.match(/\.nina-warning button:focus-visible \{[^}]*\}/)?.[0] ?? '';
     expect(rule).toContain('outline-color: currentColor;');
   });
+
+  describe('compact', () => {
+    it('shows a one-line pill whose source and severity only screen readers get', () => {
+      render(<NinaBanner compact />, { wrapper: createWrapper() });
+
+      const alert = screen.getByRole('alert');
+      expect(alert.classList.contains('rounded-full')).toBe(true);
+      expect(screen.getByText(warning.headline).classList.contains('truncate')).toBe(true);
+      expect(screen.getByText('DWD · Moderate').classList.contains('sr-only')).toBe(true);
+    });
+
+    it('expands to the full card with the details', () => {
+      render(<NinaBanner compact />, { wrapper: createWrapper() });
+
+      fireEvent.click(screen.getByRole('button', { name: 'expand' }));
+
+      const alert = screen.getByRole('alert');
+      expect(alert.classList.contains('rounded-full')).toBe(false);
+      expect(screen.getByText('DWD · Moderate').classList.contains('sr-only')).toBe(false);
+      expect(screen.getByText(warning.description!)).toBeTruthy();
+    });
+
+    it('dismisses from the pill', () => {
+      render(<NinaBanner compact />, { wrapper: createWrapper() });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+
+      expect(screen.queryByText(warning.headline)).toBeNull();
+      expect(JSON.parse(localStorage.getItem('nina-dismissed') ?? '[]')).toEqual([warning.id]);
+    });
+  });
 });

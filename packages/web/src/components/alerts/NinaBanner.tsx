@@ -37,7 +37,12 @@ function setDismissedIds(ids: Set<string>) {
   }
 }
 
-export function NinaBanner() {
+/**
+ * Active NINA warnings. `compact` renders each as a one-line pill (headline
+ * only, source and severity for screen readers) that expands to the full
+ * card; CommandLayout uses it over the map on phones.
+ */
+export function NinaBanner({ compact = false }: { compact?: boolean }) {
   const { id: cityId, country } = useCityConfig();
   const { data: warnings } = useNina(cityId);
   const [dismissed, setDismissed] = useState(getDismissedIds);
@@ -58,29 +63,46 @@ export function NinaBanner() {
   if (active.length === 0) return null;
 
   return (
-    <div className="space-y-2 mb-4" aria-live="polite">
+    <div className={compact ? 'flex flex-col items-center gap-1' : 'space-y-2 mb-4'} aria-live="polite">
       {active.map((warning) => (
-        <NinaWarningCard key={warning.id} warning={warning} onDismiss={dismiss} />
+        <NinaWarningCard key={warning.id} warning={warning} onDismiss={dismiss} compact={compact} />
       ))}
     </div>
   );
 }
 
-function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismiss: (id: string) => void }) {
+function NinaWarningCard({
+  warning,
+  onDismiss,
+  compact,
+}: {
+  warning: NinaWarning;
+  onDismiss: (id: string) => void;
+  compact: boolean;
+}) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const style = SEVERITY_STYLES[warning.severity] ?? SEVERITY_STYLES.minor;
   const icon = SEVERITY_ICONS[warning.severity] ?? '';
+  const meta = `${warning.source.toUpperCase()} · ${t(`nina.severity.${warning.severity}`, warning.severity)}`;
+  // Compact cards sit over the map: a one-line pill until expanded, then a card
+  // as wide as the overlay. Both take pointer events back from the overlay.
+  const pill = compact && !expanded;
+  const shape = !compact
+    ? 'rounded-lg px-4 py-3'
+    : pill
+      ? 'max-w-full rounded-full px-3 py-1 shadow-lg pointer-events-auto'
+      : 'self-stretch rounded-lg px-3 py-2 shadow-lg pointer-events-auto';
 
   return (
-    <div className={`nina-warning rounded-lg px-4 py-3 ${style}`} role="alert">
-      <div className="flex items-start gap-2">
-        <span className="text-lg shrink-0">{icon}</span>
+    <div className={`nina-warning ${shape} ${style}`} role="alert">
+      <div className={`flex ${pill ? 'items-center' : 'items-start'} gap-2`}>
+        <span className={`${compact ? 'text-sm' : 'text-lg'} shrink-0`}>{icon}</span>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm leading-tight">{warning.headline}</div>
-          <div className="text-xs mt-0.5">
-            {warning.source.toUpperCase()} · {t(`nina.severity.${warning.severity}`, warning.severity)}
+          <div className={pill ? 'font-semibold text-xs leading-tight truncate' : 'font-semibold text-sm leading-tight'}>
+            {warning.headline}
           </div>
+          {pill ? <span className="sr-only">{meta}</span> : <div className="text-xs mt-0.5">{meta}</div>}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {(warning.description || warning.instruction) && (
@@ -103,7 +125,7 @@ function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismi
         </div>
       </div>
       {expanded && (
-        <div className="mt-2 text-sm space-y-2">
+        <div className={compact ? 'mt-2 text-xs space-y-2 max-h-[40vh] overflow-y-auto overscroll-contain' : 'mt-2 text-sm space-y-2'}>
           {warning.description && <p>{warning.description}</p>}
           {warning.instruction && (
             <p className="font-medium">{warning.instruction}</p>

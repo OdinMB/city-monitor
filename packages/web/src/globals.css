@@ -308,6 +308,14 @@ select:focus-visible,
 .maplibregl-ctrl-top-right {
   top: 3rem !important;
 }
+/* Phones (below sm, see Shell): the top bar and ticker sit above the map in the
+   page flow, so nothing covers the map's top edge. MobileLayerDrawer drops its
+   matching top padding at the same width. */
+@media (max-width: 639px) {
+  .maplibregl-ctrl-top-right {
+    top: 0 !important;
+  }
+}
 
 /* Hide map zoom controls on mobile — finger gestures handle zoom */
 @media (max-width: 1023px) {
@@ -347,6 +355,17 @@ select:focus-visible,
   height: 100vh;
   @supports (height: 100svh) {
     height: 100svh;
+  }
+}
+
+/* Phone hero (CommandLayout, below sm): the sticky top bar and ticker sit above
+   the map in the page flow, so the map takes what is left of one visible
+   screen. Shell measures that block into --phone-header-h. Same svh choice and
+   @supports fallback shape as h-hero, for the same reasons. */
+@utility h-hero-below-header {
+  height: calc(100vh - var(--phone-header-h, 0px));
+  @supports (height: 100svh) {
+    height: calc(100svh - var(--phone-header-h, 0px));
   }
 }
 
