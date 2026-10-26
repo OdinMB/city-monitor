@@ -6,7 +6,7 @@ import type { Db } from '../db/index.js';
 // A static import loads the module graph (Drizzle, the DB schema) while the
 // file is collected. An `await import()` inside a test put that load inside the
 // first test's 5 s timeout, which it overran on a busy machine.
-import { createPopulationIngestion } from './ingest-population.js';
+import { createPopulationIngestion, POPULATION_TTL_SECONDS } from './ingest-population.js';
 
 const mockSavePopulation = vi.fn().mockResolvedValue(undefined);
 const mockLoadPopulationSummary = vi.fn().mockResolvedValue(null);
@@ -182,8 +182,8 @@ describe('ingest-population', () => {
       );
       expect(mockLoadPopulationSummary).toHaveBeenCalledWith(db, 'berlin');
       expect(setSpy.mock.calls.map((c) => [c[0], c[2]])).toEqual([
-        ['berlin:population:summary', 2592000],
-        ['berlin:population:geojson', 2592000],
+        ['berlin:population:summary', POPULATION_TTL_SECONDS],
+        ['berlin:population:geojson', POPULATION_TTL_SECONDS],
       ]);
       expect(mockSavePopulation).toHaveBeenCalledTimes(1);
       expect(mockSavePopulation).toHaveBeenCalledWith(db, 'berlin', setSpy.mock.calls[1]![1], setSpy.mock.calls[0]![1]);
@@ -305,24 +305,30 @@ describe('ingest-population', () => {
     expect(summary!.total).toBe(10000);
   });
 
-  it('uses 30-day TTL for cache', async () => {
+  // The job runs at 06:00 on the 1st. Retention deletes the DB row after 7 days,
+  // so the routes cannot fall back to it: the cache alone has to last until the
+  // next run, which after a 31-day month is 31 days later.
+  it('keeps summary and GeoJSON cached until the next run after a 31-day month', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
 
-    const cache = createCache();
-    cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
-    const setSpy = vi.spyOn(cache, 'set');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-01-01T06:00:00Z'));
+      const cache = createCache();
+      cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
 
-    const ingest = createPopulationIngestion(cache);
-    await ingest();
+      const ingest = createPopulationIngestion(cache);
+      await ingest();
 
-    // Check that population summary was cached with 30-day TTL (2592000 seconds)
-    expect(setSpy).toHaveBeenCalledWith(
-      'berlin:population:summary',
-      expect.any(Object),
-      2592000,
-    );
+      // Half an hour into the next run on 1 February
+      vi.setSystemTime(new Date('2026-02-01T06:30:00Z'));
+      expect(cache.get('berlin:population:summary')).not.toBeNull();
+      expect(cache.get('berlin:population:geojson')).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('sets change to 0 when no previous snapshot exists', async () => {

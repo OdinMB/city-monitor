@@ -6,6 +6,7 @@ import type { PopulationSummary } from '@city-monitor/shared';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
 
 const log = createLogger('route:population');
 
@@ -29,7 +30,7 @@ export function createPopulationRouter(cache: Cache, db: Db | null = null) {
       try {
         const result = await loadPopulationGeojson(db, city.id);
         if (result) {
-          cache.set(CK.populationGeojson(city.id), result.data, 2592000, result.fetchedAt);
+          cache.set(CK.populationGeojson(city.id), result.data, POPULATION_TTL_SECONDS, result.fetchedAt);
           res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
@@ -58,7 +59,7 @@ export function createPopulationRouter(cache: Cache, db: Db | null = null) {
       try {
         const result = await loadPopulationSummary(db, city.id);
         if (result) {
-          cache.set(CK.populationSummary(city.id), result.data, 2592000, result.fetchedAt);
+          cache.set(CK.populationSummary(city.id), result.data, POPULATION_TTL_SECONDS, result.fetchedAt);
           res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }

@@ -49,8 +49,8 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:labor-market` | 86400s (24h) | ingest-labor-market (Berlin-only) |
 | `{cityId}:appointments` | 21600s (6h) | ingest-appointments |
 | `{cityId}:nina:warnings` | 600s (10 min) | ingest-nina |
-| `{cityId}:population:geojson` | 2592000s (30 days) | ingest-population (Berlin-only) |
-| `{cityId}:population:summary` | 2592000s (30 days) | ingest-population (Berlin-only) |
+| `{cityId}:population:geojson` | 3214080s (37.2 days) | ingest-population (Berlin-only) |
+| `{cityId}:population:summary` | 3214080s (37.2 days) | ingest-population (Berlin-only) |
 | `{cityId}:feuerwehr` | 86400s (24h) | ingest-feuerwehr (Berlin-only) |
 | `{cityId}:pollen` | 86400s (24h) | ingest-pollen |
 | `{cityId}:noise-sensors` | 1200s (20 min) | ingest-noise-sensors |
@@ -62,6 +62,8 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `feed:{hash of feed URL}` | 1200s (20 min) | ingest-feeds (the feed's parsed `NewsItem[]`, via `cache.fetch`) |
 
 Keys are built with the `CK.*` helpers in `lib/cache-keys.ts`. Cache warming and DB fallbacks in the routes may set a different TTL than the cron job (see Cache Warming).
+
+A TTL must outlast the longest gap between the runs that refresh the key, or the key goes empty before the next run. Population (monthly, so up to 31 days) is cached for that gap × 1.2 (`POPULATION_TTL_SECONDS`, shared by ingestion, the routes' DB fallback and cache warming): its routes cannot cover an expired entry, because retention deletes `afstat-population` rows after 7 days.
 
 ## Database (`packages/server/src/db/`)
 

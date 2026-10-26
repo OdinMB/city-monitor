@@ -14,7 +14,12 @@ const log = createLogger('ingest-population');
 // Must be updated manually each semester when a new file is published.
 const XLSX_URL = 'https://download.statistik-berlin-brandenburg.de/1df9da7ea6dbfa3a/f6ac408f14cd/SB_A01-16-00_2025h02_BE.xlsx';
 const FETCH_TIMEOUT_MS = 60_000;
-const POPULATION_TTL_SECONDS = 2592000; // 30 days
+/**
+ * 37.2 days: the longest gap between monthly runs (31 days) × 1.2. Must outlast
+ * that gap: data retention deletes `afstat-population` rows after 7 days, so the
+ * routes' DB fallback is empty by the time an entry would expire.
+ */
+export const POPULATION_TTL_SECONDS = 3214080;
 
 interface PlrData {
   plrId: string;
