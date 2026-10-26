@@ -77,7 +77,8 @@
       "title": "Public Transport",
       "empty": "All clear — no disruptions",
       "affectedStops": "Affected stops",
-      "more": "more"
+      "more": "more",
+      "station": "Reported at"
     },
     "events": {
       "title": "Events",

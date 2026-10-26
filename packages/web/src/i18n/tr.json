@@ -77,7 +77,8 @@
       "title": "Toplu Taşıma",
       "empty": "Her şey yolunda — aksama yok",
       "affectedStops": "Etkilenen duraklar",
-      "more": "daha fazla"
+      "more": "daha fazla",
+      "station": "Bildirildiği durak"
     },
     "events": {
       "title": "Etkinlikler",

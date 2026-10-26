@@ -6,13 +6,13 @@ Transit data flows from the VBB transport.rest API through a server-side cron jo
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-transit.ts`) — Runs every 15 minutes. Polls departures with disruption remarks from 12 interchange stations covering all Berlin U+S lines via `v6.vbb.transport.rest`. Stations are polled one after another, 1.5 s apart. Extracts warning-type remarks with station name, location (lat/lon), and full detail text (`remark.text`). Groups by `summary:station` key (see Deduplication), classifies type and severity from keywords, and writes `TransitAlert[]` to cache (`{cityId}:transit:alerts`, TTL 1200s) + DB. Skips cache write if all stations fail.
+1. **Ingestion** (`packages/server/src/cron/ingest-transit.ts`) — Runs every 15 minutes. Polls departures with disruption remarks from 12 interchange stations covering all Berlin U+S lines via `v6.vbb.transport.rest`. Stations are polled one after another, 1.5 s apart. Extracts warning-type remarks with station name, location (lat/lon), and full detail text (`remark.text`). Only `type`, `summary` and `text` are read from each remark; validity fields the API may send on warnings (e.g. `validFrom`/`validUntil`) are not captured, so alerts carry no start/end time. Groups by `summary:station` key (see Deduplication), classifies type and severity from keywords, and writes `TransitAlert[]` to cache (`{cityId}:transit:alerts`, TTL 1200s) + DB. Skips cache write if all stations fail.
 
 2. **API** (`packages/server/src/routes/transit.ts`) — `GET /api/:city/transit` returns cached alerts, falls back to the DB (`loadTransitAlerts`), then `[]`.
 
 3. **Frontend** — Two display surfaces:
-   - **TransitStrip** (`components/strips/TransitStrip.tsx`) — Compact alert cards with station name, summary, and expandable detail text on click. Severity-colored left border.
-   - **CityMap** (`components/map/layers/transit.ts`) — Transit markers as severity-colored TrainFront badge icons, with the line label, at each alert's station location. Click popup shows line, type, station, and message.
+   - **TransitStrip** (`components/strips/TransitStrip.tsx`) — One row per alert: severity dot, line badges and the summary clamped to one line (6 rows collapsed, 12 when the tile is expanded). Each row is a `<button aria-expanded>` that expands in place to the full summary, the full `detail` text (skipped when it equals the summary) and the station ("Reported at", `panel.transit.station`); long words wrap (`wrap-anywhere`). Rows expand independently and start collapsed in both tile modes. There is no time-range field: any "bis …" validity only appears inside `detail`.
+   - **CityMap** (`components/map/layers/transit.ts`) — Transit markers as severity-colored TrainFront badge icons, with the line label, at each alert's station location. Click popup shows the station as heading, then for each alert its line, translated type label and the full `detail` text.
 
 ### Key Types
 
@@ -40,7 +40,7 @@ Stations are configured in `packages/server/src/config/cities/berlin.ts` as `dat
 
 ### Deduplication
 
-Alerts are keyed by `${summary}:${station}`. The same remark at the same station on several lines becomes one alert whose `lines` lists each line (and `line` joins them). The same remark at two different stations stays two alerts.
+Alerts are keyed by `${summary}:${station}`. The same remark at the same station on several lines becomes one alert whose `lines` lists each line (and `line` joins them). The same remark at two different stations stays two alerts, which is why the expanded row names the station.
 
 ### Classification
 
