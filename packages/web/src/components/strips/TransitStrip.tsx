@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTransit } from '../../hooks/useTransit.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -44,7 +45,7 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
   );
 });
 
-const FRESH_MAX_AGE = 20 * 60 * 1000; // 20 min (cron every 15 min)
+const FRESH_MAX_AGE = staleAfter('transit');
 
 export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();

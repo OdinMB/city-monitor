@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAppointments } from '../../hooks/useAppointments.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
@@ -59,7 +60,7 @@ const STATUS_PRIORITY: Record<string, number> = { none: 0, scarce: 1, unknown: 2
 const COLLAPSED_SERVICES = 5;
 const EXPANDED_SERVICES = 10;
 
-const FRESH_MAX_AGE = 8 * 60 * 60 * 1000; // 8h (cron every 6h)
+const FRESH_MAX_AGE = staleAfter('appointments');
 
 export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();

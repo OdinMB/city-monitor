@@ -2,12 +2,13 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useLaborMarket } from '../../hooks/useLaborMarket.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { formatYoy } from '../../lib/format-stats.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
-const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
+const FRESH_MAX_AGE = staleAfter('laborMarket');
 
 export function LaborMarketStrip() {
   const { id: cityId } = useCityConfig();

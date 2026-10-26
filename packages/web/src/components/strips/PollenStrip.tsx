@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePollen } from '../../hooks/usePollen.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -38,7 +39,7 @@ function Badge({ value, t }: { value: PollenIntensity; t: (k: string) => string 
   );
 }
 
-const FRESH_MAX_AGE = 26 * 60 * 60 * 1000; // 26 hours (cron every 6h, DWD updates daily)
+const FRESH_MAX_AGE = staleAfter('pollen');
 
 export function PollenStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useFeuerwehr } from '../../hooks/useFeuerwehr.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { formatDelta, formatTime } from '../../lib/format-stats.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
@@ -41,7 +42,7 @@ function StatRow({
 }
 
 
-const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
+const FRESH_MAX_AGE = staleAfter('feuerwehr');
 
 export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();

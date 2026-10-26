@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "City Monitor",
-    "noscript": "يتطلب هذا الموقع JavaScript."
+    "noscript": "يتطلب هذا الموقع JavaScript.",
+    "scrollToDashboard": "الانتقال إلى لوحة المعلومات"
   },
   "aiLabel": {
     "generated": "مُنشأ بالذكاء الاصطناعي",
@@ -28,6 +29,7 @@
   },
   "topbar": {
     "language": "اللغة",
+    "menu": "القائمة",
     "theme": {
       "light": "فاتح",
       "dark": "داكن",
@@ -176,6 +178,7 @@
       "elderly": "65 سنة فما فوق",
       "youth": "تحت 18 سنة",
       "workingAge": "سن العمل",
+      "ageBreakdown": "التوزيع العمري",
       "change": "مقارنة بالنصف السابق",
       "empty": "لا توجد بيانات متاحة",
       "source": "إحصائيات برلين-براندنبورغ",
@@ -309,6 +312,7 @@
       "bvv": "مجلس المنطقة",
       "parliament": "برلمان الولاية",
       "agendaItems": "{{count}} بنود جدول الأعمال",
+      "openDetails": "فتح تفاصيل الجلسة",
       "today": "اليوم",
       "tomorrow": "غداً"
     }
@@ -337,7 +341,8 @@
     "collapse": "طي"
   },
   "stale": {
-    "updated": "تم التحديث {{time}}"
+    "updated": "تم التحديث {{time}}",
+    "outdated": "قديمة"
   },
   "time": {
     "justNow": "الآن",
@@ -350,6 +355,7 @@
       "single": "فردي",
       "multi": "متعدد"
     },
+    "toggleLayers": "إظهار لوحة الطبقات أو إخفاؤها",
     "layers": {
       "label": "الطبقات",
       "events": "الفعاليات",
@@ -428,6 +434,8 @@
     "sourceCode": "الكود المصدري",
     "inspiredBy": "مستوحى من World Monitor",
     "license": "AGPL-3.0",
+    "navLabel": "تذييل الصفحة",
+    "legalLabel": "معلومات قانونية",
     "weatherTiles": "\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0623\u0645\u0637\u0627\u0631 \u00a9 RainViewer",
     "imprint": "إشعار قانوني / Impressum",
     "privacy": "الخصوصية",

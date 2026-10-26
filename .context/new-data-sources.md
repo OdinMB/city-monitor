@@ -25,7 +25,7 @@ Follow every step when adding a new data source. Skip items marked with a surfac
 14. **Zustand state** (map layer) — extend layer types in `packages/web/src/hooks/useCommandCenter.ts`
 15. **Sidebar toggles** (map layer) — add sub-layer entry in `packages/web/src/components/sidebar/DataLayerToggles.tsx`
 16. **Map rendering** (map layer) — add `update*Layer()` function + reactive wiring in `packages/web/src/components/map/CityMap.tsx`
-17. **Dashboard tile** (tile) — create strip component in `packages/web/src/components/strips/<Name>Strip.tsx`, mount in `packages/web/src/components/layout/CommandLayout.tsx`
+17. **Dashboard tile** (tile) — create strip component in `packages/web/src/components/strips/<Name>Strip.tsx`, mount in `packages/web/src/components/layout/CommandLayout.tsx`. If it shows freshness, add a row for its feed to `packages/web/src/lib/freshness.ts` and use `staleAfter()`
 18. **i18n** — add translation keys in all 4 locale files (`en.json`, `de.json`, `tr.json`, `ar.json`)
 
 ### Favicons (if adding news feeds)

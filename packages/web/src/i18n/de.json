@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "City Monitor",
-    "noscript": "Diese Seite benötigt JavaScript."
+    "noscript": "Diese Seite benötigt JavaScript.",
+    "scrollToDashboard": "Zum Dashboard scrollen"
   },
   "aiLabel": {
     "generated": "KI-generiert",
@@ -28,6 +29,7 @@
   },
   "topbar": {
     "language": "Sprache",
+    "menu": "Menü",
     "theme": {
       "light": "Hell",
       "dark": "Dunkel",
@@ -176,6 +178,7 @@
       "elderly": "65 Jahre und älter",
       "youth": "Unter 18",
       "workingAge": "Erwerbsfähiges Alter",
+      "ageBreakdown": "Altersstruktur",
       "change": "ggü. Vorhalbjahr",
       "empty": "Keine Daten verfügbar",
       "source": "Statistik Berlin-Brandenburg",
@@ -309,6 +312,7 @@
       "bvv": "Bezirksverordnetenversammlung",
       "parliament": "Abgeordnetenhaus",
       "agendaItems": "{{count}} Tagesordnungspunkte",
+      "openDetails": "Sitzungsdetails öffnen",
       "today": "Heute",
       "tomorrow": "Morgen"
     }
@@ -337,7 +341,8 @@
     "collapse": "zuklappen"
   },
   "stale": {
-    "updated": "Aktualisiert {{time}}"
+    "updated": "Aktualisiert {{time}}",
+    "outdated": "veraltet"
   },
   "time": {
     "justNow": "gerade eben",
@@ -350,6 +355,7 @@
       "single": "Einzeln",
       "multi": "Multi"
     },
+    "toggleLayers": "Ebenenleiste ein-/ausblenden",
     "layers": {
       "label": "Ebenen",
       "events": "Veranstaltungen",
@@ -428,6 +434,8 @@
     "sourceCode": "Quellcode",
     "inspiredBy": "Inspiriert von World Monitor",
     "license": "AGPL-3.0",
+    "navLabel": "Fußzeile",
+    "legalLabel": "Rechtliches",
     "weatherTiles": "Regenradar \u00a9 RainViewer",
     "imprint": "Impressum",
     "privacy": "Datenschutz",

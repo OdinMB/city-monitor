@@ -4,6 +4,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
@@ -56,7 +57,7 @@ const FAVICON_SLUGS: Record<string, string> = {
 
 const MAX_ITEMS = 15;
 
-const FRESH_MAX_AGE = 15 * 60 * 1000; // 15 min (cron every 10 min)
+const FRESH_MAX_AGE = staleAfter('news');
 
 export function NewsStrip() {
   const { id: cityId } = useCityConfig();

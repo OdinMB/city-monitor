@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePopulationSummary } from '../../hooks/usePopulationSummary.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -39,11 +40,12 @@ function polarToCartesian(cx: number, cy: number, r: number, angle: number): [nu
 }
 
 function AgeDonut({ slices }: { slices: DonutSlice[] }) {
+  const { t } = useTranslation();
   const cx = 60, cy = 60, r = 52, innerR = 30;
   const labelR = (r + innerR) / 2;
 
   return (
-    <svg role="img" aria-label="Age breakdown" viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
+    <svg role="img" aria-label={t('panel.population.ageBreakdown')} viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
       {slices.map((slice, i) => {
         const sweep = slice.endAngle - slice.startAngle;
         const large = sweep > Math.PI ? 1 : 0;
@@ -76,7 +78,7 @@ function AgeDonut({ slices }: { slices: DonutSlice[] }) {
   );
 }
 
-const FRESH_MAX_AGE = 60 * 24 * 60 * 60 * 1000; // 60 days (cron monthly)
+const FRESH_MAX_AGE = staleAfter('population');
 
 export function PopulationStrip() {
   const { id: cityId } = useCityConfig();

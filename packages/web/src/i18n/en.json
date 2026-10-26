@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "City Monitor",
-    "noscript": "This site requires JavaScript."
+    "noscript": "This site requires JavaScript.",
+    "scrollToDashboard": "Scroll to dashboard"
   },
   "aiLabel": {
     "generated": "AI-generated",
@@ -28,6 +29,7 @@
   },
   "topbar": {
     "language": "Language",
+    "menu": "Menu",
     "theme": {
       "light": "Light",
       "dark": "Dark",
@@ -176,6 +178,7 @@
       "elderly": "Aged 65+",
       "youth": "Under 18",
       "workingAge": "Working age",
+      "ageBreakdown": "Age breakdown",
       "change": "vs. previous half-year",
       "empty": "No data available",
       "source": "Statistik Berlin-Brandenburg",
@@ -309,6 +312,7 @@
       "bvv": "District Assembly",
       "parliament": "State Parliament",
       "agendaItems": "{{count}} agenda items",
+      "openDetails": "Open meeting details",
       "today": "Today",
       "tomorrow": "Tomorrow"
     }
@@ -337,7 +341,8 @@
     "collapse": "collapse"
   },
   "stale": {
-    "updated": "Updated {{time}}"
+    "updated": "Updated {{time}}",
+    "outdated": "outdated"
   },
   "time": {
     "justNow": "just now",
@@ -350,6 +355,7 @@
       "single": "Single",
       "multi": "Multi"
     },
+    "toggleLayers": "Toggle layers panel",
     "layers": {
       "label": "Layers",
       "events": "Events",
@@ -428,6 +434,8 @@
     "sourceCode": "Source Code",
     "inspiredBy": "Inspired by World Monitor",
     "license": "AGPL-3.0",
+    "navLabel": "Footer",
+    "legalLabel": "Legal",
     "weatherTiles": "Rain radar \u00a9 RainViewer",
     "imprint": "Legal Notice / Impressum",
     "privacy": "Privacy",

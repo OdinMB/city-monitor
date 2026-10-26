@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNewsSummary } from '../../hooks/useNewsSummary.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { formatRelativeTimeI18n } from '../../lib/format-time.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
@@ -22,7 +23,7 @@ function BriefingContent({ text }: { text: string }) {
   );
 }
 
-const FRESH_MAX_AGE = 30 * 60 * 1000; // 30 min (summary cron runs every 15 min)
+const FRESH_MAX_AGE = staleAfter('briefing');
 
 export function BriefingStrip() {
   const { id: cityId } = useCityConfig();

@@ -4,10 +4,12 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useNina } from '../../hooks/useNina.js';
 import type { NinaWarning } from '../../lib/api.js';
 
+// Every pair meets WCAG AA (4.5:1) for the banner's small text. The text is
+// drawn at full opacity because white at 80-90% drops below 4.5:1 on red.
 const SEVERITY_STYLES: Record<string, string> = {
-  extreme: 'bg-red-600 text-white dark:bg-red-700',
-  severe: 'bg-red-500 text-white dark:bg-red-600',
-  moderate: 'bg-amber-500 text-white dark:bg-amber-600',
+  extreme: 'bg-red-700 text-white dark:bg-red-800',
+  severe: 'bg-red-600 text-white dark:bg-red-700',
+  moderate: 'bg-amber-500 text-amber-950 dark:bg-amber-600',
   minor: 'bg-yellow-400 text-yellow-900 dark:bg-yellow-500 dark:text-yellow-900',
 };
 
@@ -28,7 +30,11 @@ function getDismissedIds(): Set<string> {
 }
 
 function setDismissedIds(ids: Set<string>) {
-  localStorage.setItem('nina-dismissed', JSON.stringify([...ids]));
+  try {
+    localStorage.setItem('nina-dismissed', JSON.stringify([...ids]));
+  } catch {
+    // Storage blocked: the dismissal still holds for this page view.
+  }
 }
 
 export function NinaBanner() {
@@ -67,12 +73,12 @@ function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismi
   const icon = SEVERITY_ICONS[warning.severity] ?? '';
 
   return (
-    <div className={`rounded-lg px-4 py-3 ${style}`} role="alert">
+    <div className={`nina-warning rounded-lg px-4 py-3 ${style}`} role="alert">
       <div className="flex items-start gap-2">
         <span className="text-lg shrink-0">{icon}</span>
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm leading-tight">{warning.headline}</div>
-          <div className="text-xs opacity-80 mt-0.5">
+          <div className="text-xs mt-0.5">
             {warning.source.toUpperCase()} · {t(`nina.severity.${warning.severity}`, warning.severity)}
           </div>
         </div>
@@ -81,7 +87,8 @@ function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismi
             <button
               onClick={() => setExpanded(!expanded)}
               className="p-1 rounded hover:bg-white/20 text-xs"
-              aria-label={expanded ? 'Collapse' : 'Expand'}
+              aria-expanded={expanded}
+              aria-label={expanded ? t('tile.collapse') : t('tile.expand')}
             >
               {expanded ? '▲' : '▼'}
             </button>
@@ -96,7 +103,7 @@ function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismi
         </div>
       </div>
       {expanded && (
-        <div className="mt-2 text-sm opacity-90 space-y-2">
+        <div className="mt-2 text-sm space-y-2">
           {warning.description && <p>{warning.description}</p>}
           {warning.instruction && (
             <p className="font-medium">{warning.instruction}</p>

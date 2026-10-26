@@ -4,6 +4,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBudget } from '../../hooks/useBudget.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -182,7 +183,7 @@ function AreaSelect({
 
 /* ── Main component ──────────────────────────────────────── */
 
-const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
+const FRESH_MAX_AGE = staleAfter('budget');
 
 export function BudgetStrip() {
   const { id: cityId } = useCityConfig();

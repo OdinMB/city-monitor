@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWeather } from '../../hooks/useWeather.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getUvLevel } from '../../lib/uv-levels.js';
 import { formatDayName } from '../../lib/format-day-name.js';
@@ -47,7 +48,7 @@ function sampleHourly<T extends { time: string }>(hourly: T[], now: string): T[]
 
 const DAILY_COUNT = 7;
 
-const FRESH_MAX_AGE = 45 * 60 * 1000; // 45 min (cron every 30 min)
+const FRESH_MAX_AGE = staleAfter('weather');
 
 export function WeatherStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();

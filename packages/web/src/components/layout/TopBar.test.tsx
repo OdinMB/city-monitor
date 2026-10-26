@@ -72,4 +72,10 @@ describe('TopBar', () => {
     render(<TopBar />, { wrapper: createWrapper({ weather: mockWeather }) });
     expect(screen.getByText(/13°/)).toBeTruthy();
   });
+
+  it('gives the weather and AQI buttons accessible names that include their values', () => {
+    render(<TopBar />, { wrapper: createWrapper({ weather: mockWeather, airQuality: mockAirQuality }) });
+    expect(screen.getByRole('button', { name: 'Weather: 13°' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Air Quality: 18 AQI, Good' })).toBeTruthy();
+  });
 });

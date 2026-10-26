@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "City Monitor",
-    "noscript": "Bu site JavaScript gerektirir."
+    "noscript": "Bu site JavaScript gerektirir.",
+    "scrollToDashboard": "Gösterge paneline kaydır"
   },
   "aiLabel": {
     "generated": "Yapay zekâ ile oluşturuldu",
@@ -28,6 +29,7 @@
   },
   "topbar": {
     "language": "Dil",
+    "menu": "Menü",
     "theme": {
       "light": "Açık",
       "dark": "Koyu",
@@ -176,6 +178,7 @@
       "elderly": "65 yaş ve üzeri",
       "youth": "18 yaş altı",
       "workingAge": "Çalışma yaşı",
+      "ageBreakdown": "Yaş dağılımı",
       "change": "önceki yarıyıla göre",
       "empty": "Veri mevcut değil",
       "source": "Berlin-Brandenburg İstatistik",
@@ -309,6 +312,7 @@
       "bvv": "İlçe Meclisi",
       "parliament": "Eyalet Parlamentosu",
       "agendaItems": "{{count}} gündem maddesi",
+      "openDetails": "Toplantı ayrıntılarını aç",
       "today": "Bugün",
       "tomorrow": "Yarın"
     }
@@ -333,11 +337,12 @@
     "museum": "Müze"
   },
   "tile": {
-    "expand": "genislet",
+    "expand": "genişlet",
     "collapse": "daralt"
   },
   "stale": {
-    "updated": "Güncellendi {{time}}"
+    "updated": "Güncellendi {{time}}",
+    "outdated": "güncel değil"
   },
   "time": {
     "justNow": "az önce",
@@ -350,6 +355,7 @@
       "single": "Tekli",
       "multi": "Çoklu"
     },
+    "toggleLayers": "Katman panelini aç/kapat",
     "layers": {
       "label": "Katmanlar",
       "events": "Etkinlikler",
@@ -428,6 +434,8 @@
     "sourceCode": "Kaynak Kodu",
     "inspiredBy": "World Monitor'den ilham alınmıştır",
     "license": "AGPL-3.0",
+    "navLabel": "Alt bilgi",
+    "legalLabel": "Yasal",
     "weatherTiles": "Ya\u011f\u0131\u015f radar\u0131 \u00a9 RainViewer",
     "imprint": "Yasal Bildirim / Impressum",
     "privacy": "Gizlilik",
