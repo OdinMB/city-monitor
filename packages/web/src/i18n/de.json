@@ -77,7 +77,8 @@
       "title": "Nahverkehr",
       "empty": "Alles in Ordnung — keine Störungen",
       "affectedStops": "Betroffene Haltestellen",
-      "more": "weitere"
+      "more": "weitere",
+      "station": "Gemeldet an der Haltestelle"
     },
     "events": {
       "title": "Veranstaltungen",

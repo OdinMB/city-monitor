@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTransit } from '../../hooks/useTransit.js';
@@ -27,20 +27,63 @@ function getSeverityDot(severity: TransitAlert['severity']): string {
   return 'bg-gray-400';
 }
 
+/**
+ * One disruption. Collapsed, the summary is clamped to a single line; the row
+ * is a button that expands in place to the full summary, the full remark text
+ * (when it differs from the summary) and the station the remark was reported at.
+ */
 const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const detailId = useId();
+  const detail = alert.detail?.trim();
+  const showDetail = !!detail && detail !== alert.message.trim();
+
   return (
-    <div className="flex items-start gap-2 py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
-      <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${getSeverityDot(alert.severity)}`} />
-      <div className="flex items-center gap-1 shrink-0 flex-wrap">
-        {(alert.lines ?? [alert.line]).map((ln) => (
-          <span key={ln} className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold leading-none ${getLineBadgeColor(ln)}`}>
-            {ln}
-          </span>
-        ))}
-      </div>
-      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-1 min-w-0">
-        {alert.message}
-      </p>
+    <div className="border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={open ? detailId : undefined}
+        className="w-full flex items-start gap-2 py-1.5 text-start cursor-pointer appearance-none bg-transparent rounded-sm hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+      >
+        <span aria-hidden="true" className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${getSeverityDot(alert.severity)}`} />
+        <span className="flex items-center gap-1 shrink-0 flex-wrap">
+          {(alert.lines ?? [alert.line]).map((ln) => (
+            <span key={ln} className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold leading-none ${getLineBadgeColor(ln)}`}>
+              {ln}
+            </span>
+          ))}
+        </span>
+        <span className={`flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 ${open ? 'wrap-anywhere' : 'line-clamp-1'}`}>
+          {alert.message}
+        </span>
+        <svg
+          width={14}
+          height={14}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`mt-1 shrink-0 text-gray-400 dark:text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`}
+          aria-hidden="true"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open && (
+        <div id={detailId} className="ps-4 pb-2 space-y-1 text-xs text-gray-600 dark:text-gray-400 wrap-anywhere">
+          {showDetail && <p className="whitespace-pre-line">{detail}</p>}
+          {alert.station && (
+            <p>
+              <span className="font-medium">{t('panel.transit.station')}:</span> <bdi>{alert.station}</bdi>
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 });
