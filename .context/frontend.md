@@ -126,6 +126,8 @@ Zustand store in `useTheme.ts`:
 - Persistence: writes to `localStorage` on toggle
 - Effect: `App` component toggles `dark` class on `<html>` element
 
+**Browser storage:** the privacy page lists every `localStorage` key the app uses (`STORED_VALUES` in `pages/PrivacyPage.tsx`: `theme`, `language`, `nina-dismissed`, `cm-drawer-seen`, `hasSeenKeyboardHints`). `PrivacyPage.test.tsx` scans the web source for storage keys and fails when the two lists differ, so a new key needs a line there. Write keys as a string literal or a same-file `const` so the scan can read them.
+
 Tailwind v4 dark mode requires `@custom-variant dark (&:where(.dark, .dark *));` in `globals.css` for class-based toggling (v4 defaults to `prefers-color-scheme` media query). Smooth 150ms transitions on `background-color`, `color`, and `border-color`.
 
 City accent colors are set via CSS custom property `--accent` with `[data-city='berlin']` / `[data-city='hamburg']` selectors.

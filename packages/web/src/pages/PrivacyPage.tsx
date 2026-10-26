@@ -3,24 +3,82 @@ import { Link } from 'react-router-dom';
 import { PageShell } from '../components/layout/PageShell.js';
 import { ObfuscatedEmail } from '../components/ObfuscatedContact.js';
 
-const SERVICES = [
+interface Service {
+  name: string;
+  url?: string;
+  /** Third-party hosts the visitor's browser contacts for this service. */
+  hosts: string[];
+  purpose: string;
+  data: string;
+}
+
+// Every third-party host the browser contacts must be named here. The deployed
+// Content-Security-Policy (render.yaml) and index.html are checked against
+// this list in PrivacyPage.test.tsx.
+const SERVICES: Service[] = [
   {
     name: 'Simple Analytics',
     url: 'https://www.simpleanalytics.com/',
+    hosts: ['scripts.simpleanalyticscdn.com', 'queue.simpleanalyticscdn.com'],
     purpose: 'Privacy-friendly analytics',
-    data: 'Counts page views without cookies, personal data, or tracking. EU-based and GDPR compliant by design. No data is shared with third parties.',
+    data: 'Your browser loads the analytics script and reports page views directly to Simple Analytics servers, which receive your IP address, as with any web request. Simple Analytics says it counts page views without cookies and without storing IP addresses or other personal data. According to Simple Analytics, it is EU-based, GDPR compliant by design, and shares no data with third parties.',
   },
   {
     name: 'Render',
     url: 'https://render.com/',
+    hosts: [],
     purpose: 'Website hosting',
     data: 'Standard HTTP data (IP address, user agent) as part of hosting infrastructure.',
   },
   {
     name: 'CARTO',
     url: 'https://carto.com/',
-    purpose: 'Base map tiles',
-    data: 'Your browser loads map tiles directly from CARTO servers, exposing your IP address to them.',
+    hosts: ['basemaps.cartocdn.com', '*.basemaps.cartocdn.com'],
+    purpose: 'Base map',
+    data: 'Your browser loads the map style, map tiles, and the fonts for map labels directly from CARTO servers, exposing your IP address to them.',
+  },
+  {
+    name: 'City geodata services',
+    hosts: ['gdi.berlin.de', 'geodienste.hamburg.de'],
+    purpose: 'Noise and rent map layers',
+    data: "Only while the noise map or the rent map layer is switched on, your browser loads those map images directly from the city's official geodata service, exposing your IP address to it.",
+  },
+  {
+    name: 'GitHub',
+    url: 'https://github.com/',
+    hosts: ['github.com', 'avatars.githubusercontent.com'],
+    purpose: 'Profile photo',
+    data: "Only on the Legal Notice page, your browser loads the site owner's profile photo from GitHub, exposing your IP address to them.",
+  },
+];
+
+// Exactly the localStorage keys the app reads or writes; PrivacyPage.test.tsx
+// scans the web source for keys and fails when the two lists differ.
+const STORED_VALUES = [
+  {
+    key: 'theme',
+    title: 'Theme preference',
+    description: '"light" or "dark" — persists your color scheme.',
+  },
+  {
+    key: 'language',
+    title: 'Language preference',
+    description: 'e.g. "en", "de" — keeps the interface in your language.',
+  },
+  {
+    key: 'nina-dismissed',
+    title: 'Dismissed warnings',
+    description: 'The IDs of official warnings you closed, so they stay hidden.',
+  },
+  {
+    key: 'cm-drawer-seen',
+    title: 'Map layer tip',
+    description: 'Set once you open the map layer panel on a small screen, so its button stops pulsing.',
+  },
+  {
+    key: 'hasSeenKeyboardHints',
+    title: 'Keyboard shortcuts tip',
+    description: 'Set once the keyboard shortcuts tip has been shown, so it appears only once.',
   },
 ];
 
@@ -40,7 +98,8 @@ export function PrivacyPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400 text-base">
             We do not use cookies, tracking pixels, advertising scripts, or any other data
             collection that identifies you. When you visit this site, nothing is stored on your
-            device except two preferences you control.
+            device except your theme and language settings and three small flags that remember which
+            warnings you dismissed and which tips you have already seen.
           </p>
         </header>
 
@@ -56,9 +115,9 @@ export function PrivacyPage() {
                 <a href="https://www.simpleanalytics.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
                   Simple Analytics
                 </a>
-                , a privacy-friendly, EU-based analytics service. It counts page views without
-                cookies, without personal data, and without tracking you across sites. We see
-                aggregate numbers — never individual visitors.
+                , a privacy-friendly analytics service. According to Simple Analytics, it is
+                EU-based and counts page views without cookies, without storing personal data, and
+                without tracking you across sites. We see aggregate numbers — never individual visitors.
               </p>
             </div>
             <div className="p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
@@ -75,23 +134,22 @@ export function PrivacyPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">What We Store on Your Device</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            We store exactly two values in <code className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs font-mono">localStorage</code>, both under your control:
+            We store these values in <code className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs font-mono">localStorage</code>, all under your control:
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
-              <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-1">theme</p>
-              <p className="text-sm font-medium">Theme preference</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">&quot;light&quot; or &quot;dark&quot; — persists your color scheme.</p>
-            </div>
-            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
-              <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-1">language</p>
-              <p className="text-sm font-medium">Language preference</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">e.g. &quot;en&quot;, &quot;de&quot; — keeps the interface in your language.</p>
-            </div>
+            {STORED_VALUES.map((v) => (
+              <div key={v.key} className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-1">{v.key}</p>
+                <p className="text-sm font-medium">{v.title}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{v.description}</p>
+              </div>
+            ))}
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            These values never leave your browser. They are not sent to our servers or any third party.
-            You can clear them at any time in your browser settings.
+            None of these values identifies you, and none is sent to any third party. The only one
+            our server sees is your language: the dashboard includes it when it asks for the daily
+            briefing, so the briefing comes back in your language. You can clear them at any time in
+            your browser settings.
           </p>
         </section>
 
@@ -116,6 +174,11 @@ export function PrivacyPage() {
                           {s.name}
                         </a>
                       ) : s.name}
+                      {s.hosts.map((host) => (
+                        <span key={host} className="block mt-1 text-xs font-mono font-normal text-gray-500 dark:text-gray-400">
+                          {host}
+                        </span>
+                      ))}
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{s.purpose}</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{s.data}</td>
@@ -126,7 +189,11 @@ export function PrivacyPage() {
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             See our <Link to="/berlin/sources" className="text-blue-600 dark:text-blue-400 hover:underline">data sources</Link> page for a full list of APIs we use.
-            All fonts are self-hosted. We do not load fonts, scripts, or other resources from external CDNs.
+            Everything else on the dashboard, including the rain radar, comes through our own server,
+            so those data providers never receive requests from your browser when the dashboard loads
+            its data. The interface uses your
+            device&apos;s built-in fonts. Apart from the services listed above, we do not load fonts,
+            scripts, or other resources from external servers.
           </p>
         </section>
 
