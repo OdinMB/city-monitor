@@ -20,8 +20,9 @@ export function ImprintPage() {
 
         {/* Profile card */}
         <aside className="flex items-center gap-5 p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
+          {/* Served from public/ so the CSP's img-src 'self' covers it. */}
           <img
-            src="https://github.com/OdinMB.png"
+            src="/imprint-photo.jpg"
             alt="Odin Mühlenbein"
             width={72}
             height={72}
