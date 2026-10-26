@@ -62,7 +62,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 
 Keys are built with the `CK.*` helpers in `lib/cache-keys.ts`. Cache warming and DB fallbacks in the routes may set a different TTL than the cron job (see Cache Warming).
 
-A TTL must outlast the longest gap between the runs that refresh the key, or the key goes empty before the next run. Population (monthly, so up to 31 days) is cached for that gap × 1.2 (`POPULATION_TTL_SECONDS`, shared by ingestion, the routes' DB fallback and cache warming): its routes cannot cover an expired entry, because retention deletes `afstat-population` rows after 7 days.
+A TTL must outlast the longest gap between the runs that refresh the key, or the key goes empty before the next run. Population (monthly, so up to 31 days) is cached for that gap × 1.2 (`POPULATION_TTL_SECONDS`, shared by ingestion, the routes' DB fallback and cache warming). Retention keeps the newest `afstat-population` row (see Data Retention), so with a database the routes' fallback can also refill an expired entry; without one the cache is the only copy.
 
 ## Database (`packages/server/src/db/`)
 
@@ -142,16 +142,19 @@ Runs on server start if DB is connected. First loads every geocode lookup into t
 
 ### Data Retention (`cron/data-retention.ts`)
 
-Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion for all snapshot types + non-snapshot tables. Phase 2: row-count cap (100 rows per cityId/type) for non-history snapshot types, using `ROW_NUMBER() OVER (PARTITION BY city_id)` raw SQL. Each cleanup task is independent — one failure doesn't block others. Config is split into `HISTORY_RETENTION` (3 time-only entries) and `CAPPED_RETENTION` (21 entries: time + row cap).
+Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion for all snapshot types + non-snapshot tables. Phase 2: row-count cap (100 rows per cityId/type) for non-history snapshot types, using `ROW_NUMBER() OVER (PARTITION BY city_id ORDER BY fetched_at DESC)` raw SQL; it keeps rows 1–100, so it never removes the newest. Each cleanup task is independent — one failure doesn't block others. Config is split into `HISTORY_RETENTION` (3 time-only entries) and `CAPPED_RETENTION` (21 entries: time + row cap).
+
+**Keep-latest is opt-in (`keepLatest: true` on a config entry).** By default Phase 1 deletes snapshot rows by age alone, the newest included. A `keepLatest` type never loses its newest row per (cityId, type) by age: Phase 1 skips the row with the latest `fetchedAt`, and of rows tied on it the highest `id`, so exactly one stays (`id NOT IN` a `SELECT DISTINCT ON (city_id) id … ORDER BY city_id, fetched_at DESC, id DESC` subquery of the same type). Only types whose job runs no more often than their retention period get it, since those lose their only row after one failed run (or, if monthly, every month): `mss-social-atlas` and `abgwatch-*` (weekly, 7-day retention) and `afstat-population` (monthly). They so keep a row for cache warming and the routes' DB fallback after a restart, and population's change figure has a previous snapshot to compare with. Their reads have no `maxAgeMs` guard, so after a long outage the kept row is served old, with its real `fetchedAt`. Frequently fetched types stay age-only, so a stopped job leaves them empty rather than stale; `aqi-grid` must stay age-only ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)).
 
 | Category | Snapshot types / tables | Retention |
 |---|---|---|
 | History | open-meteo | 7 days |
 | History | pegelonline | 30 days (history endpoint) |
 | History | ba-labor-market | 730 days / ~24 months (history endpoints) |
-| Non-history (short-lived) | aqi-grid | 6 hours, the age limit of `loadAirQualityGrid` (`AQ_GRID_MAX_AGE_MS`) + 100 row cap. Kept no longer than a read can use it, so no air-quality archive builds up ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
+| Non-history (short-lived) | aqi-grid | 6 hours, the age limit of `loadAirQualityGrid` (`AQ_GRID_MAX_AGE_MS`), newest row included (never `keepLatest`) + 100 row cap. Kept no longer than a read can use it, so no air-quality archive builds up ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
 | Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings | 2 days + 100 row cap |
-| Non-history (infrequent) | berlin-haushalt, osm-aeds, mss-social-atlas, bf-feuerwehr, afstat-population, abgwatch-* | 7 days + 100 row cap |
+| Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr | 7 days + 100 row cap |
+| Non-history (infrequent, weekly/monthly jobs) | mss-social-atlas, afstat-population, abgwatch-* | 7 days, newest row per city kept (`keepLatest`) + 100 row cap |
 | Non-snapshot | news, events, safety | 3 days |
 | Summaries | AI summaries; also any whose city has no news items left | 7 days |
 

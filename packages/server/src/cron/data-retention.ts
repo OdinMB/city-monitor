@@ -3,9 +3,13 @@
  * Two strategies:
  * - History types: time-based retention matching their max query range
  * - Non-history types: tighter time-based + row-count cap per (cityId, type)
+ *
+ * Types marked `keepLatest` keep their newest row per (cityId, type) however
+ * old. Every other type is deleted by age alone.
  */
 
-import { and, eq, lt, notExists, sql } from 'drizzle-orm';
+import { and, desc, eq, lt, notExists, notInArray, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import type { Db } from '../db/index.js';
 import {
   snapshots,
@@ -25,17 +29,32 @@ const DAY_MS = 86_400_000;
 /** Row-count cap for non-history snapshot types */
 export const ROW_CAP = 100;
 
+export interface SnapshotRetention {
+  type: SnapshotType;
+  retentionMs: number;
+  /**
+   * Never delete a city's newest row by age. Only for types whose job runs no
+   * more often than the retention period: without it they lose their only row
+   * after one failed run (or, if monthly, every month), and cache warming and
+   * the routes' DB fallback find nothing. Leave it off for frequently fetched
+   * types, whose reads mostly have no age limit and would serve a kept row
+   * however old.
+   */
+  keepLatest?: boolean;
+}
+
 /** History types: time-based only, matching their max query range */
-export const HISTORY_RETENTION: Array<{ type: SnapshotType; retentionMs: number }> = [
+export const HISTORY_RETENTION: SnapshotRetention[] = [
   { type: 'open-meteo',      retentionMs: 7 * DAY_MS },
   { type: 'pegelonline',     retentionMs: 30 * DAY_MS },
   { type: 'ba-labor-market', retentionMs: 730 * DAY_MS },
 ];
 
 /** Non-history types: tighter time-based + row-count cap */
-export const CAPPED_RETENTION: Array<{ type: SnapshotType; retentionMs: number }> = [
-  // Kept only as long as the grid read serves a row (6 hours). Rows written
-  // before WAQI stations were left out of the stored grid still hold them.
+export const CAPPED_RETENTION: SnapshotRetention[] = [
+  // Kept only as long as the grid read serves a row (6 hours), the newest one
+  // included, so never keepLatest. Rows written before WAQI stations were left
+  // out of the stored grid still hold them.
   { type: 'aqi-grid',           retentionMs: AQ_GRID_MAX_AGE_MS },
 
   // High/medium frequency (2 days)
@@ -51,16 +70,17 @@ export const CAPPED_RETENTION: Array<{ type: SnapshotType; retentionMs: number }
   { type: 'sc-dnms',            retentionMs: 2 * DAY_MS },
   { type: 'oparl-meetings',     retentionMs: 2 * DAY_MS },
 
-  // Infrequent (7 days)
-  { type: 'berlin-haushalt',    retentionMs: 7 * DAY_MS },
-  { type: 'osm-aeds',           retentionMs: 7 * DAY_MS },
-  { type: 'mss-social-atlas',   retentionMs: 7 * DAY_MS },
-  { type: 'bf-feuerwehr',       retentionMs: 7 * DAY_MS },
-  { type: 'afstat-population',  retentionMs: 7 * DAY_MS },
-  { type: 'abgwatch-bezirke',       retentionMs: 7 * DAY_MS },
-  { type: 'abgwatch-bundestag',     retentionMs: 7 * DAY_MS },
-  { type: 'abgwatch-state',         retentionMs: 7 * DAY_MS },
-  { type: 'abgwatch-state-bezirke', retentionMs: 7 * DAY_MS },
+  // Infrequent (7 days). keepLatest where the job runs weekly or monthly; the
+  // daily jobs write a fresh row each run.
+  { type: 'berlin-haushalt',    retentionMs: 7 * DAY_MS },                   // daily
+  { type: 'osm-aeds',           retentionMs: 7 * DAY_MS },                   // daily
+  { type: 'mss-social-atlas',   retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'bf-feuerwehr',       retentionMs: 7 * DAY_MS },                   // daily
+  { type: 'afstat-population',  retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
+  { type: 'abgwatch-bezirke',       retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'abgwatch-bundestag',     retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'abgwatch-state',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'abgwatch-state-bezirke', retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
 ];
 
 export async function runDataRetention(db: Db) {
@@ -69,11 +89,24 @@ export async function runDataRetention(db: Db) {
   type Task = { name: string; fn: () => Promise<{ id: number }[]> };
 
   // --- Phase 1: time-based deletion for ALL snapshot types ---
+  // For keepLatest types the newest row of each city is exempt: the latest
+  // fetched_at, and of rows tied on it the highest id, so exactly one stays.
+  const latest = alias(snapshots, 'latest');
+  const newestPerCity = (type: SnapshotType) => db
+    .selectDistinctOn([latest.cityId], { id: latest.id })
+    .from(latest)
+    .where(eq(latest.type, type))
+    .orderBy(latest.cityId, desc(latest.fetchedAt), desc(latest.id));
+
   const allSnapshotConfigs = [...HISTORY_RETENTION, ...CAPPED_RETENTION];
-  const snapshotTasks: Task[] = allSnapshotConfigs.map(({ type, retentionMs }) => ({
+  const snapshotTasks: Task[] = allSnapshotConfigs.map(({ type, retentionMs, keepLatest }) => ({
     name: type,
     fn: () => db.delete(snapshots).where(
-      and(eq(snapshots.type, type), lt(snapshots.fetchedAt, new Date(now - retentionMs))),
+      and(
+        eq(snapshots.type, type),
+        lt(snapshots.fetchedAt, new Date(now - retentionMs)),
+        keepLatest ? notInArray(snapshots.id, newestPerCity(type)) : undefined,
+      ),
     ).returning({ id: snapshots.id }),
   }));
 
@@ -118,6 +151,8 @@ export async function runDataRetention(db: Db) {
   }
 
   // --- Phase 2: row-count cap for non-history types ---
+  // Keeps the ROW_CAP newest rows per city; rn = 1 is the newest, so the cap
+  // never removes it.
   const capTypes = CAPPED_RETENTION.map((c) => c.type);
   const capResults = await Promise.allSettled(
     capTypes.map((type) =>
