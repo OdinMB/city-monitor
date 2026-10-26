@@ -51,6 +51,7 @@ export async function saveWeather(db: Db, cityId: string, data: WeatherData): Pr
     hourly: data.hourly,
     daily: data.daily,
     alerts: data.alerts ?? [],
+    ...(data.dwdUv ? { dwdUv: data.dwdUv } : {}),
   });
 }
 

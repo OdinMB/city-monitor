@@ -49,11 +49,20 @@ export const WeatherAlertSchema = z.object({
   validUntil: z.string(),
 });
 
+export const DwdUvForecastSchema = z.object({
+  today: z.number(),
+  tomorrow: z.number(),
+  dayAfter: z.number(),
+  forecastDay: z.string().optional(),
+});
+
 export const WeatherDataSchema = z.object({
   current: CurrentWeatherSchema,
   hourly: z.array(HourlyForecastSchema),
   daily: z.array(DailyForecastSchema),
   alerts: z.array(WeatherAlertSchema),
+  // A malformed UV forecast is dropped rather than failing the whole weather read.
+  dwdUv: DwdUvForecastSchema.optional().catch(undefined),
 });
 
 // --- Water Levels ---

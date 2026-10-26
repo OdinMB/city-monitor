@@ -60,7 +60,8 @@
       "low": "D",
       "alerts": "Uyarılar",
       "validUntil": "{{time}} tarihine kadar geçerli",
-      "uv": "UV",
+      "uvMax": "Maks. UV",
+      "uvTodayHint": "Bugünün en yüksek UV indeksi (DWD tahmini)",
       "uvClearSky": "Güneşliyse UV",
       "uvLevel": {
         "low": "Düşük",

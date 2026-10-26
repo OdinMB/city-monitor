@@ -60,7 +60,8 @@
       "low": "أدنى",
       "alerts": "تنبيهات",
       "validUntil": "صالح حتى {{time}}",
-      "uv": "UV",
+      "uvMax": "أقصى UV",
+      "uvTodayHint": "أعلى مؤشر للأشعة فوق البنفسجية اليوم (توقعات DWD)",
       "uvClearSky": "UV في الشمس",
       "uvLevel": {
         "low": "منخفض",

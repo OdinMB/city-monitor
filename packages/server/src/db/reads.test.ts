@@ -91,6 +91,27 @@ describe('DB reads', () => {
     expect(result!.data.daily[0].uvIndexClearSkyMax).toBe(8.1);
   });
 
+  const baseWeather = {
+    current: { temp: 10, feelsLike: 8, humidity: 65, precipitation: 0, weatherCode: 3, windSpeed: 12, windDirection: 270 },
+    hourly: [],
+    daily: [],
+    alerts: [],
+  };
+
+  it('loadWeather keeps the DWD UV forecast from DB', async () => {
+    const dwdUv = { today: 5, tomorrow: 6, dayAfter: 4, forecastDay: '2026-05-01' };
+    const db = createMockDb([{ data: { ...baseWeather, dwdUv }, fetchedAt: new Date() }]);
+    const result = await loadWeather(db, 'berlin');
+    expect(result!.data.dwdUv).toEqual(dwdUv);
+  });
+
+  it('loadWeather drops a malformed DWD UV forecast but keeps the weather', async () => {
+    const db = createMockDb([{ data: { ...baseWeather, dwdUv: { today: 'high' } }, fetchedAt: new Date() }]);
+    const result = await loadWeather(db, 'berlin');
+    expect(result!.data.current.temp).toBe(10);
+    expect(result!.data.dwdUv).toBeUndefined();
+  });
+
   it('loadTransitAlerts returns null when no rows', async () => {
     const db = createMockDb([]);
     const result = await loadTransitAlerts(db, 'berlin');

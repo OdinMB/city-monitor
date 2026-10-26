@@ -8,7 +8,7 @@
 
 2. **API** (`packages/server/src/routes/weather.ts`) — `GET /api/:city/weather` returns cached data, falls back to Postgres, then to an empty structure.
 
-3. **Frontend** (`packages/web/src/components/strips/WeatherStrip.tsx`) — Uses `useWeather()` (refetch 15 min). Renders current conditions via WMO weather code → emoji/label (`packages/web/src/lib/weather-codes.ts`).
+3. **Frontend** — the dashboard tile `packages/web/src/components/strips/WeatherStrip.tsx` and the top-bar popover `packages/web/src/components/layout/WeatherPopover.tsx`. Both use `useWeather()` (refetch 15 min) and render current conditions via WMO weather code → emoji/label (`packages/web/src/lib/weather-codes.ts`). Both show today's DWD UV index in the conditions row through `components/UvIndexToday.tsx` (see "DWD UV index" below).
 
 ## Data Sources
 
@@ -30,8 +30,12 @@
 
 ### DWD UV index (German cities)
 
-- **Endpoint**: `https://opendata.dwd.de/climate_environment/health/alerts/uvi.json`
-- 3-day forecast (today/tomorrow/dayAfter). Stored as `data.dwdUv`. Per-hour and per-day UV from the old Open-Meteo path are no longer populated post-migration; the dashboard's UV widget reads `dwdUv` instead.
+- **Endpoint**: `https://opendata.dwd.de/climate_environment/health/alerts/uvi.json` (no auth). One file for many German cities, updated once a day in the morning.
+- **Format**: `{ forecast_day: "YYYY-MM-DD", last_update, next_update, content: [{ city: "Berlin", forecast: { today, tomorrow, dayafter_to } }] }`. Each value is the expected daily maximum UV index (whole numbers). The test fixture in `ingest-weather.test.ts` follows this shape; `npm run check:weather` prints the live `forecast_day` and values.
+- **Parsing**: `parseDwdUv(json, city.name)` in `ingest-weather.ts` matches the city by name (case-insensitive) and returns `{ today, tomorrow, dayAfter, forecastDay }`, or null when the city is missing or a value is not a non-negative number. `forecastDay` comes from `forecast_day`, falling back to the date of `last_update`, and is left out when neither has one.
+- **Storage**: `data.dwdUv` in the cache and in the weather snapshot (`saveWeather`). `WeatherDataSchema` keeps it on DB reads; a malformed `dwdUv` is dropped without failing the weather read. Snapshots written before 2026-10 have no `dwdUv`.
+- **Display**: `uvIndexForToday()` (`packages/web/src/lib/uv-levels.ts`) picks today's value in the city's time zone: `today` on `forecastDay`, `tomorrow` the day after (before DWD's next morning update), `dayAfter` the day after that, and nothing later. `UvIndexToday` renders it as "UV max 4 ● Moderate": the label `panel.weather.uvMax` (it says "max" because the row's humidity and wind are current readings), value, WHO colour dot (`getUvLevel`) and the translated level (`panel.weather.uvLevel.*`), with `panel.weather.uvTodayHint` as tooltip. Hidden for cities without DWD data.
+- Per-hour and per-day UV from the old Open-Meteo path are no longer populated post-migration.
 
 ### Air quality (all cities)
 
@@ -49,11 +53,11 @@ interface WeatherData {
   hourly: HourlyForecast[];  // time, temp, precipProb (null→0), weatherCode
   daily: DailyForecast[];    // date (local), high, low, weatherCode, precip, sunrise, sunset (UTC ISO)
   alerts: WeatherAlert[];    // populated by DWD direct call for German cities
-  dwdUv?: DwdUvForecast;     // today, tomorrow, dayAfter (German cities only)
+  dwdUv?: DwdUvForecast;     // today, tomorrow, dayAfter, forecastDay? (German cities only)
 }
 ```
 
-Optional fields `current.uvIndex`, `current.uvIndexClearSky`, `hourly[].uvIndex`, `daily[].uvIndexMax`, `daily[].uvIndexClearSkyMax` are no longer populated post-migration (BrightSky doesn't expose UV). Frontend reads `dwdUv` instead.
+Optional fields `current.uvIndex`, `current.uvIndexClearSky`, `hourly[].uvIndex`, `daily[].uvIndexMax`, `daily[].uvIndexClearSkyMax` are no longer populated post-migration (BrightSky doesn't expose UV). The conditions row reads `dwdUv` instead; the hourly and daily UV cells in the tile and popover still read the old fields and stay empty.
 
 ## DB Schema
 

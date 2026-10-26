@@ -5,6 +5,7 @@ import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getUvLevel } from '../../lib/uv-levels.js';
 import { formatDayName } from '../../lib/format-day-name.js';
 import { Skeleton } from './Skeleton.js';
+import { UvIndexToday } from '../UvIndexToday.js';
 
 export function WeatherPopover() {
   const { id: cityId } = useCityConfig();
@@ -66,16 +67,7 @@ export function WeatherPopover() {
         <span>{t('panel.weather.humidity')} {current.humidity}%</span>
         <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
         {current.precipitation > 0 && <span>Precip {current.precipitation} mm</span>}
-        {current.uvIndex != null && (() => {
-          const uv = getUvLevel(current.uvIndex);
-          return (
-            <span className="inline-flex items-center gap-1">
-              {t('panel.weather.uv')} {Math.round(current.uvIndex)}
-              <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: uv.color }} />
-              <span style={{ color: uv.color }}>{t(`panel.weather.uvLevel.${uv.level}`)}</span>
-            </span>
-          );
-        })()}
+        <UvIndexToday forecast={data?.dwdUv} />
       </div>
 
       {/* Hourly — horizontal scroll */}

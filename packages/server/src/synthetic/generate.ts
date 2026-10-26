@@ -519,7 +519,23 @@ function generateWeather(rng: Rng, model: WeatherModel, now: Date): WeatherData 
       description: 'Synthetische Wetterwarnung für die lokale Entwicklung. Es besteht keine Gefahr.',
       validUntil: new Date(now.getTime() + 6 * HOUR).toISOString(),
     }],
+    dwdUv: {
+      today: syntheticUv(model, today),
+      tomorrow: syntheticUv(model, shiftDate(today, 1)),
+      dayAfter: syntheticUv(model, shiftDate(today, 2)),
+      forecastDay: today,
+    },
   };
+}
+
+/** Whole-number daily UV maximum: about 1 in midwinter and 8 in midsummer, lower under cloud or rain. */
+function syntheticUv(model: WeatherModel, date: string): number {
+  const noon = new Date(`${date}T12:00:00Z`);
+  const dayOfYear = (noon.getTime() - Date.UTC(noon.getUTCFullYear(), 0, 1)) / DAY;
+  const clearSky = 4.5 - 3.5 * Math.cos((2 * Math.PI * (dayOfYear + 10)) / 365);
+  const code = model.code(noon);
+  const cloud = RAIN_CODES.has(code) ? 0.5 : code >= 3 ? 0.7 : 1;
+  return Math.max(0, Math.round(clearSky * cloud));
 }
 
 function generateAirQuality(rng: Rng, now: Date): AirQuality {

@@ -79,7 +79,6 @@ After that those tiles go empty. Run `npm run db:seed` again and restart `dev:sy
 - **Rain radar:** the RainViewer router is not mounted.
 - **Browser-side layers:** the web app still loads the CARTO base map tiles and the gdi.berlin.de WMS overlays (noise, rent) from the internet.
 - **Hamburg:** only Berlin is seeded.
-- **DWD UV values:** the database read drops them anyway.
 
 ## Adding a data source
 
