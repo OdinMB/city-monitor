@@ -116,6 +116,8 @@ Two write patterns (no transactions, no deletes — retention cron handles clean
 - **Hash-keyed tables** (news, events, safety): UPSERT via `onConflictDoUpdate` on (cityId, hash). Refreshes assessment fields and fetchedAt on conflict.
 - **AI summaries**: Plain INSERT.
 
+The synthetic dev seed (`synthetic/seed.ts`, see [dev-database.md](dev-database.md)) writes through these same functions into a local database only.
+
 ### Cache Warming (`warm-cache.ts`)
 
 Runs on server start if DB is connected. Loads all data types for all active cities from Postgres into cache with their standard TTLs. Berlin-only domains (wastewater, bathing, labor market) are guarded with `cityId === 'berlin'`. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.

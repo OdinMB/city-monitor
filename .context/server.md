@@ -2,7 +2,7 @@
 
 ## App Factory (`packages/server/src/app.ts`)
 
-`createApp(options?)` builds the Express app. Accepts `{ skipScheduler?: boolean }` for tests.
+`createApp(options?)` builds the Express app. Accepts `{ skipScheduler?: boolean }` for tests and `{ synthetic?: boolean }` for the synthetic dev mode ([dev-database.md](dev-database.md)), which also skips the freshness check, the weather-tiles router and `preCacheBezirke`.
 
 ### Startup Sequence
 
@@ -16,7 +16,7 @@
 8. Mount routers under `/api` with per-route Cache-Control headers
 9. Return `{ app, cache, db, scheduler }`
 
-Entry point (`index.ts`) calls `createApp()` and listens on `PORT` (default 3001).
+Entry point (`index.ts`) calls `createApp()` and listens on `PORT` (default 3001). `dev-synthetic.ts` is the dev-only entry for `npm run dev:synthetic`; production never loads it.
 
 ### Cache-Control Headers
 
@@ -140,6 +140,8 @@ Adding a city = adding a config file + registering in `ALL_CITIES` + setting `AC
 | `WAQI_API_TOKEN` | No | — | WAQI air quality API token. AQ grid skipped if not set. |
 | `TOMTOM_API_KEY` | No | — | TomTom traffic API key. Traffic skipped if not set. |
 | `FIRECRAWL_API_KEY` | No | — | Firecrawl v2 API key for Bürgeramt appointment scraping. Appointments skipped if not set. |
+| `SYNTHETIC_DATABASE_URL` | No | docker-compose `db` | Dev only, never set in production: the database for `db:seed` and `dev:synthetic`. It must be on localhost or 127.0.0.1 ([dev-database.md](dev-database.md)). |
+| `SYNTHETIC_ALLOW_DATABASE_NAME` | No | — | Dev only: a local database other than `city_monitor_dev` that `db:seed` may wipe. |
 
 **Reasoning effort values** depend on the model family. `gpt-5`, `gpt-5-mini`, `gpt-5-nano` (dated or not): `minimal | low | medium | high`. `gpt-5.<n>-*` and `gpt-6-*`: `none | low | medium | high | xhigh | max` (GPT-6 rejects `minimal`). A value outside the model's set is logged and treated as unset. Unset falls back to the site's default effort (summaries `high`, news `medium`, police `none`) when the model supports it; otherwise no effort is sent and the API default applies. So a rollback such as `OPENAI_GEO_MODEL=gpt-5-nano` sends exactly the pre-GPT-6 request. `OPENAI_FILTER_MODEL=gpt-5-nano` rolls back both sites, but news then sends `reasoning_effort: medium` explicitly, because gpt-5-nano supports it; that is the family's API default, so behaviour matches the old request. A briefing rollback needs both variables: `OPENAI_MODEL=gpt-5-mini` alone sends `gpt-5-mini@high` (gpt-5-mini supports `high`), so add `OPENAI_SUMMARY_EFFORT=medium` to get the old request's effort. `OPENAI_FILTER_MODEL=gpt-5.6-luna` alone gives news `gpt-5.6-luna@medium` and police `gpt-5.6-luna@none`. Effort reaches the API through `modelKwargs.reasoning_effort` — LangChain's own `reasoning` option is silently dropped for `gpt-6-*` IDs by @langchain/openai 1.2.x. Max tokens, temperature and top_p are never set.
 

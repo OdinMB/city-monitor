@@ -26,6 +26,8 @@ npx turbo run test --filter=@city-monitor/server -- src/lib/parse-history.test.t
 1. Use `npx turbo run test --filter=<package>`, or
 2. Run `npx vitest run` from within the package directory itself
 
+To run the app with data but without production access, use the synthetic dev database ([dev-database.md](dev-database.md)).
+
 ## Web Package (`@city-monitor/web`)
 
 - **Environment:** jsdom (simulated DOM via happy-dom/jsdom)

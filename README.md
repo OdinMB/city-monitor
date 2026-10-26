@@ -45,6 +45,19 @@ npm run dev          # Starts web (port 5173) + API (port 3001) via Turborepo
 
 Requires a `.env` file in `packages/server/` with at least `DATABASE_URL` pointing to a PostgreSQL instance. See [`.context/deployment.md`](.context/deployment.md) for the full list of environment variables.
 
+### With synthetic data
+
+You don't need API keys, a `.env` file or access to a real database to run a local copy with data in every tile and map layer. Docker runs a local Postgres, and the app serves made-up Berlin data from it:
+
+```bash
+docker compose up -d db                 # local Postgres on port 5434
+npm run db:seed                         # migrate it and fill it with synthetic data
+npm run dev:synthetic                   # API on port 3001: no cron jobs, no outbound requests
+npm run dev --workspace=packages/web    # in a second terminal: web on port 5173
+```
+
+`db:seed` wipes the docker database without asking, and it refuses any database other than `city_monitor_dev` on localhost. The data is dated when you seed it, so seed again when tiles go empty. If the seed fails with "relation already exists", the volume was set up with `db:push`: run `docker compose down -v` to delete it, then start over. See [`.context/dev-database.md`](.context/dev-database.md).
+
 ## Project Structure
 
 ```
