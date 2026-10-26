@@ -16,6 +16,12 @@ interface SourceGroup {
   sources: Source[];
 }
 
+/**
+ * Year in the Copernicus licence notice: the year of the CAMS data shown,
+ * which is always current because the air quality values are a live forecast.
+ */
+const CAMS_NOTICE_YEAR = new Date().getFullYear();
+
 const SHARED_SOURCES: SourceGroup[] = [
   {
     category: 'Weather & Environment',
@@ -28,7 +34,12 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'Open-Meteo Air Quality',
         url: 'https://open-meteo.com/en/docs/air-quality-api',
-        description: 'European Air Quality Index (AQI), PM2.5, PM10, NO2, and ozone levels.',
+        description: 'European Air Quality Index (AQI), PM2.5, PM10, NO2, and ozone levels, based on the CAMS European air quality forecast.',
+      },
+      {
+        name: 'Copernicus Atmosphere Monitoring Service (CAMS)',
+        url: 'https://atmosphere.copernicus.eu/',
+        description: `CAMS European air quality forecasts (ENSEMBLE data), the source of the Open-Meteo air quality values. Contains modified Copernicus Atmosphere Monitoring Service information ${CAMS_NOTICE_YEAR}. Neither the European Commission nor ECMWF is responsible for any use that may be made of the Copernicus information or data it contains.`,
       },
       {
         name: 'RainViewer',

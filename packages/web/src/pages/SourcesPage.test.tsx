@@ -16,6 +16,36 @@ function renderPage() {
   );
 }
 
+describe('SourcesPage air quality credit', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  // Source entries are English in every UI language (only the AI section is
+  // localized), so the credit must render unchanged whichever language is set.
+  it.each(['en', 'de', 'tr', 'ar'])('credits CAMS next to Open-Meteo air quality (%s)', async (lang) => {
+    await i18n.changeLanguage(lang);
+    renderPage();
+
+    const openMeteo = screen.getByRole('link', { name: 'Open-Meteo Air Quality' });
+    const cams = screen.getByRole('link', { name: 'Copernicus Atmosphere Monitoring Service (CAMS)' });
+    expect(cams.getAttribute('href')).toBe('https://atmosphere.copernicus.eu/');
+
+    // The CAMS card directly follows the Open-Meteo air quality card.
+    expect(openMeteo.parentElement!.nextElementSibling).toBe(cams.parentElement);
+
+    const year = new Date().getFullYear();
+    expect(
+      within(cams.parentElement!).getByText(
+        new RegExp(`Contains modified Copernicus Atmosphere Monitoring Service information ${year}\\.`),
+      ),
+    ).toBeTruthy();
+    expect(
+      within(cams.parentElement!).getByText(/Neither the European Commission nor ECMWF is responsible/),
+    ).toBeTruthy();
+  });
+});
+
 describe('SourcesPage AI section', () => {
   afterEach(async () => {
     await i18n.changeLanguage('en');
