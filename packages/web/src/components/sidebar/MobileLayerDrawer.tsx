@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DataLayerToggles } from './DataLayerToggles.js';
 
 const PANEL_W = 200;
@@ -8,6 +9,7 @@ const MID = (CLOSED_X + OPEN_X) / 2;
 
 /** Mobile-only slide-from-left drawer for data layer controls. */
 export function MobileLayerDrawer() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [hasBeenOpened, setHasBeenOpened] = useState(() => {
     try { return localStorage.getItem('cm-drawer-seen') === '1'; } catch { return false; }
@@ -87,7 +89,7 @@ export function MobileLayerDrawer() {
         {/* Panel content */}
         <div
           role="dialog"
-          aria-label="Data layers"
+          aria-label={t('sidebar.layers.label')}
           className="h-full shrink-0 bg-surface-1 border-r border-border p-3 pt-12 overflow-y-auto space-y-4"
           style={{ width: PANEL_W }}
         >
@@ -104,7 +106,7 @@ export function MobileLayerDrawer() {
               try { localStorage.setItem('cm-drawer-seen', '1'); } catch { /* noop */ }
             }
           }}
-          aria-label="Toggle layers panel"
+          aria-label={t('sidebar.toggleLayers')}
         >
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-300">
             <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />

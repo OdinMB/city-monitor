@@ -3,13 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useCouncilMeetings } from '../../hooks/useCouncilMeetings.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { CouncilMeeting } from '../../lib/api.js';
 
-const FRESH_MAX_AGE = 12 * 60 * 60 * 1000; // 12h (cron every 6h)
+const FRESH_MAX_AGE = staleAfter('councilMeetings');
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ function MeetingRow({ meeting, t, locale }: { meeting: CouncilMeeting; t: (key: 
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-1"
-            aria-label="Open meeting details"
+            aria-label={t('panel.councilMeetings.openDetails')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

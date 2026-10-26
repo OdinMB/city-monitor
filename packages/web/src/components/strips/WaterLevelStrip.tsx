@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -53,7 +54,7 @@ const StationRow = memo(function StationRow({ station, t }: { station: WaterLeve
   );
 });
 
-const FRESH_MAX_AGE = 20 * 60 * 1000; // 20 min (cron every 15 min)
+const FRESH_MAX_AGE = staleAfter('waterLevels');
 
 export function WaterLevelStrip() {
   const { id: cityId } = useCityConfig();

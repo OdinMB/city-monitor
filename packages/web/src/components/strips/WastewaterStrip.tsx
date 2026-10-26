@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWastewater } from '../../hooks/useWastewater.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -82,7 +83,7 @@ const Sparkline = memo(function Sparkline({ data, color, sampleDate, label }: { 
   );
 });
 
-const FRESH_MAX_AGE = 8 * 24 * 60 * 60 * 1000; // 8 days (cron weekly)
+const FRESH_MAX_AGE = staleAfter('wastewater');
 
 export function WastewaterStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();

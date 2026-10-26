@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBathing } from '../../hooks/useBathing.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -48,7 +49,7 @@ const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: s
   );
 });
 
-const FRESH_MAX_AGE = 36 * 60 * 60 * 1000; // 36h (cron daily)
+const FRESH_MAX_AGE = staleAfter('bathing');
 
 export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   const { id: cityId } = useCityConfig();

@@ -103,7 +103,7 @@ Frontend type definitions for `NewsDigest`, `TransitAlert`, `CityEvent`, `Safety
 
 ## Layout
 
-- **Shell** — Full-height flex column: TopBar, main content, Footer. Dark mode via Tailwind `dark:` classes.
+- **Shell** — Full-height flex column: TopBar, main content, Footer. Dark mode via Tailwind `dark:` classes. The TopBar slides in on scroll through an inline transform, but its buttons stay in the Tab order, so `.topbar-slide` in `globals.css` shows it while it holds keyboard focus (`:focus-visible`, not `:focus-within`, so mouse and touch scrolling are unchanged). Keep the class names if you rework the slide; `topbar-focus.test.ts` guards the wiring.
 - **DashboardGrid** — CSS Grid: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 p-4`. No 3-column breakpoint to avoid gaps with span-2 tiles.
 - **Tile** — Card wrapper with `title`, `span` (1 | 2 | 'full'), optional `expandable` (chevron toggle in header, render-function children receiving `expanded` boolean), optional `height` ('auto' | 'sm' | 'md' | 'lg'). Rounded border, shadow, `@container` body for container queries. Maps span to `col-span-*` classes.
 - **TopBar** — City name (link back to `/`), current weather + AQI popovers, `HeaderControls` (language switcher + theme toggle).
@@ -164,7 +164,7 @@ API responses include `fetchedAt` (ISO string) indicating when data was last ing
 
 - **`useFreshness(fetchedAt, freshMaxAge)`** — hook that returns `{ isStale, agoText }`. Re-evaluates every 60s. `agoText` uses i18n `time.*` keys.
 - **`TileFooter`** — unified footnote component (`text-[10px]`, gray, centered). Used for staleness badges and domain-specific notes (measurement dates, generation times).
-- Each strip has a `FRESH_MAX_AGE` constant (ms) defining when its data is considered stale. When stale, a `TileFooter` with "Updated X ago" (translated) appears at the bottom.
+- Each strip's `FRESH_MAX_AGE` comes from `staleAfter(feed)` in `lib/freshness.ts`: the feeding cron job's interval plus half an interval of grace (at least 15 min), plus the hook's refetch interval and the route's HTTP max-age, so data counts as stale only after a scheduled run was missed. Update its table when a cron schedule, `cacheFor()` value or hook refetch interval changes. When stale, a `TileFooter` with "Updated X ago" (translated) appears at the bottom. `TileFooter stale` turns the text amber (`amber-700` light, AA on white) and appends the translated word `stale.outdated`, so staleness isn't shown by colour alone.
 - Strips with domain-specific footnotes (BriefingStrip, WastewaterStrip, BathingStrip, LaborMarketStrip, PopulationStrip) use `TileFooter` for those notes as well, ensuring consistent styling.
 
 ## Reusable Components

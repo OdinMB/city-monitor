@@ -23,6 +23,9 @@ export function TopBar() {
   const aqiLevel = airQuality?.current
     ? getAqiLevel(airQuality.current.europeanAqi)
     : null;
+  const temp = current ? Math.round(current.temp) : null;
+  const aqi = airQuality?.current ? Math.round(airQuality.current.europeanAqi) : null;
+  const aqiLevelText = aqiLevel ? t(`panel.airQuality.level.${aqiLevel.label}`) : '';
 
   return (
     <header className="relative flex items-center justify-between px-4 py-1.5 border-b border-border bg-surface-1">
@@ -51,9 +54,9 @@ export function TopBar() {
                 ref={ref as React.Ref<HTMLButtonElement>}
                 {...props}
                 className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                aria-label={t('panel.weather.title')}
+                aria-label={`${t('panel.weather.title')}: ${temp}°`}
               >
-                {weatherInfo.icon} {Math.round(current.temp)}°
+                {weatherInfo.icon} {temp}°
               </button>
             )}
             className="max-h-[80vh] overflow-y-auto bg-surface-1 border border-border rounded-lg shadow-lg"
@@ -71,14 +74,14 @@ export function TopBar() {
                 ref={ref as React.Ref<HTMLButtonElement>}
                 {...props}
                 className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                aria-label={t('panel.airQuality.title')}
+                aria-label={`${t('panel.airQuality.title')}: ${aqi} AQI, ${aqiLevelText}`}
               >
                 <span className="font-semibold" style={{ color: aqiLevel.color }}>
-                  {Math.round(airQuality.current.europeanAqi)}
+                  {aqi}
                 </span>
                 {' '}
                 <span className="text-gray-500 dark:text-gray-400">
-                  AQI · {t(`panel.airQuality.level.${aqiLevel.label}`)}
+                  AQI · {aqiLevelText}
                 </span>
               </button>
             )}

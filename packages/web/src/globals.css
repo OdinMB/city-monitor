@@ -180,6 +180,21 @@ select:focus-visible,
   outline-offset: 2px;
 }
 
+/* Warning banners (NinaBanner): the accent ring vanishes on a red banner, so
+   use the banner's text colour, which has at least 4.5:1 on its background. */
+.nina-warning button:focus-visible {
+  outline-color: currentColor;
+}
+
+/* Slide-in top bar (Shell): an inline transform keeps it off-screen until the
+   user scrolls, but its buttons stay in the Tab order. While one of them has
+   keyboard focus, show the bar. :focus-visible rather than :focus-within, so a
+   mouse click doesn't pin the bar and scrolling behaves as before for mouse and
+   touch. !important is what beats the inline style. */
+.topbar-slide:has(.topbar-slide-bar :focus-visible) {
+  transform: none !important;
+}
+
 /* Custom thin scrollbar for tile content areas */
 .scrollbar-thin {
   scrollbar-width: thin;

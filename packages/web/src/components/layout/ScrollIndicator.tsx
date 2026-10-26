@@ -1,4 +1,5 @@
 import { type RefObject, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ScrollIndicatorProps {
   targetRef: RefObject<HTMLDivElement | null>;
@@ -6,6 +7,7 @@ interface ScrollIndicatorProps {
 
 /** Scroll-down indicator: mouse icon on desktop, chevron on mobile. Fades out on scroll. */
 export function ScrollIndicator({ targetRef }: ScrollIndicatorProps) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export function ScrollIndicator({ targetRef }: ScrollIndicatorProps) {
       type="button"
       onClick={handleClick}
       className={`relative z-20 mx-auto lg:mr-[45%] mb-1 lg:mb-6 flex flex-col items-center gap-2 cursor-pointer pointer-events-auto transition-opacity duration-500 ${visible ? 'opacity-90 hover:opacity-100' : 'opacity-0 pointer-events-none'}`}
-      aria-label="Scroll to dashboard"
+      aria-label={t('app.scrollToDashboard')}
     >
       {/* Dark chip behind the chevron: a white glyph alone is unreadable over the
           pale light-mode basemap. The ring keeps it delineated on dark tiles too. */}

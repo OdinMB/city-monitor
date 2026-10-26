@@ -2,13 +2,14 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useSafety } from '../../hooks/useSafety.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { formatRelativeTime } from '../../lib/format-time.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
-const FRESH_MAX_AGE = 15 * 60 * 1000; // 15 min (cron every 10 min)
+const FRESH_MAX_AGE = staleAfter('safety');
 
 export function SafetyStrip() {
   const { id: cityId } = useCityConfig();

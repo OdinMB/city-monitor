@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { getPartyColor } from '../../lib/party-colors.js';
 import { safeUrl } from '../../lib/safe-url.js';
@@ -173,7 +174,7 @@ function SeatChart({ districts, seatsLabel }: { districts: PoliticalDistrict[]; 
 
 const PREVIEW_COUNT = 5;
 
-const FRESH_MAX_AGE = 8 * 24 * 60 * 60 * 1000; // 8 days (cron weekly)
+const FRESH_MAX_AGE = staleAfter('political');
 
 export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onExpand?: () => void }) {
   const [view, setView] = useState<View>('state');

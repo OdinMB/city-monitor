@@ -4,6 +4,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useEvents } from '../../hooks/useEvents.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
@@ -35,7 +36,7 @@ const SOURCE_FILTERS: { key: SourceFilter; labelKey: string }[] = [
 
 const MAX_VISIBLE = 25;
 
-const FRESH_MAX_AGE = 8 * 60 * 60 * 1000; // 8h (cron every 6h)
+const FRESH_MAX_AGE = staleAfter('events');
 
 function formatEventTime(dateStr: string, lang: string): string {
   try {

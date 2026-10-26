@@ -4,6 +4,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { getAqiLevel } from '../../lib/aqi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
@@ -102,7 +103,7 @@ const StationEntry = memo(function StationEntry({ name, aqi }: { name: string; a
 
 /* ── Main component ───────────────────────────────────────── */
 
-const FRESH_MAX_AGE = 45 * 60 * 1000; // 45 min (cron every 30 min)
+const FRESH_MAX_AGE = staleAfter('airQuality');
 
 export function AirQualityStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
