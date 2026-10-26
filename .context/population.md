@@ -25,7 +25,7 @@ Numbers use spaces as thousands separators. PLR-level rows are identified by all
 
 ## Architecture
 
-Berlin-only (hardcoded, same pattern as wastewater/labor market).
+Berlin-only (hardcoded, same pattern as wastewater/labor market). The cron job fetches nothing when Berlin is not active.
 
 - **Cron**: `ingest-population` — `0 6 1 * *` (monthly on the 1st at 6 AM; data is semi-annual but we check monthly)
 - **DB**: Unified `snapshots` table, type `afstat-population` (data JSONB contains `{ geojson, summary }`)

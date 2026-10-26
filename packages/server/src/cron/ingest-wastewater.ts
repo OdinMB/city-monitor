@@ -2,6 +2,7 @@ import type { WastewaterPathogen, WastewaterSummary } from '@city-monitor/shared
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveWastewater } from '../db/writes.js';
+import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -263,6 +264,9 @@ export function buildCovidPathogen(rows: AmelagRow[]): (WastewaterPathogen & { s
 
 export function createWastewaterIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestWastewater(): Promise<void> {
+    // Lageso and the AMELAG BE filter cover Berlin only: nothing to fetch unless Berlin is active.
+    if (!getCityConfig('berlin')) return;
+
     try {
       const res = await log.fetch(CSV_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
       if (!res.ok) {

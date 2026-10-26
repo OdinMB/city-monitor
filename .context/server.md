@@ -2,7 +2,7 @@
 
 ## App Factory (`packages/server/src/app.ts`)
 
-`createApp(options?)` builds the Express app. Accepts `{ skipScheduler?: boolean }` for tests and `{ synthetic?: boolean }` for the synthetic dev mode ([dev-database.md](dev-database.md)), which also skips the freshness check, the weather-tiles router and `preCacheBezirke`.
+`createApp(options?)` builds the Express app. Accepts `{ skipScheduler?: boolean }` for tests and `{ synthetic?: boolean }` for the synthetic dev mode ([dev-database.md](dev-database.md)), which also skips the freshness check, the weather-tiles router and `preCacheBezirke`. `preCacheBezirke` caches the hardcoded Berlin district mayors and logs the re-verify reminder only when Berlin is active.
 
 ### Startup Sequence
 
@@ -10,7 +10,7 @@
 2. Create in-memory cache (always)
 3. Create DB connection if `DATABASE_URL` set (returns `null` otherwise)
 4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`
-5. Run freshness check (`findStaleJobs`) — queries `fetched_at` from each domain's table. Domains with data newer than their cron interval are considered fresh; stale or missing domains are flagged for startup ingestion
+5. Run freshness check (`findStaleJobs`) — queries `fetched_at` from each domain's table. Domains with data newer than their cron interval are considered fresh; stale or missing domains are flagged for startup ingestion. When Berlin is not active, the Berlin-only jobs (`BERLIN_ONLY_JOBS`, see below) are left out of the check
 6. Create ingestion functions — each receives cache and optionally db
 7. Create scheduler with cron jobs. Only stale domains get `runOnStart: true`; fresh domains skip startup API calls. Without a DB, all domains are marked stale (preserves cache-only behavior). Startup runs execute **in parallel**, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`)
 8. Mount routers under `/api` with per-route Cache-Control headers
@@ -84,6 +84,8 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `data-retention` | `0 3 * * *` | Prune old data (nightly) |
 
 Ingestion jobs use conditional `runOnStart` based on DB freshness checks — only stale/missing domains trigger startup API calls. `data-retention` never runs on start. `summarize-news` has `dependsOn: ['ingest-feeds']`, `ingest-population` has `dependsOn: ['ingest-social-atlas']`.
+
+**Which cities a job serves.** Most jobs loop over `getActiveCities()` and skip a city without the matching `dataSources` entry (budget, appointments, social atlas, council meetings, noise sensors, roadworks, transit, events…), so they fetch nothing for a city that lacks the source. Five jobs have no config entry because their source covers Berlin only, with a hardcoded URL and rows written under `'berlin'`: `ingest-bathing`, `ingest-wastewater`, `ingest-labor-market`, `ingest-population` and `ingest-feuerwehr`. Each handler returns before any request when `getCityConfig('berlin')` is undefined, and `app.ts` lists them in `BERLIN_ONLY_JOBS` so that, without Berlin, they are left out of the freshness check and get no startup run. They stay scheduled (the health endpoint lists all 26 jobs) and their ticks do nothing. With Berlin active, alone or with other cities, they make the same requests and writes as before. A new Berlin-only source without a config entry follows the same two steps ([new-data-sources.md](new-data-sources.md)).
 
 ### API
 

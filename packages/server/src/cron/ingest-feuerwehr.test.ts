@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { parseMissionCsv } from './ingest-feuerwehr.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createFeuerwehrIngestion, parseMissionCsv } from './ingest-feuerwehr.js';
+import { createCache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+
+const mockSaveFeuerwehr = vi.fn().mockResolvedValue(undefined);
+vi.mock('../db/writes.js', () => ({
+  saveFeuerwehr: (...args: unknown[]) => mockSaveFeuerwehr(...args),
+}));
 
 // Representative sample of the monthly CSV (header + 3 data rows)
 const SAMPLE_CSV = `mission_created_month,mission_count_all,mission_count_ems,mission_count_ems_critical,mission_count_ems_critical_cpr,mission_count_fire,mission_count_technical_rescue,mission_count_rd1,mission_count_rd2,mission_count_rd3,mission_count_rd4,mission_count_rd5,response_time_ems_critical_mean,response_time_ems_critical_median,response_time_ems_critical_std,response_time_ems_critical_cpr_mean,response_time_ems_critical_cpr_median,response_time_ems_critical_cpr_std,response_time_fire_time_to_first_pump_mean,response_time_fire_time_to_first_pump_median,response_time_fire_time_to_first_pump_std,response_time_fire_time_to_first_ladder_mean,response_time_fire_time_to_first_ladder_median,response_time_fire_time_to_first_ladder_std,response_time_fire_time_to_full_crew_mean,response_time_fire_time_to_full_crew_median,response_time_fire_time_to_full_crew_std,response_time_technical_rescue_mean,response_time_technical_rescue_median,response_time_technical_rescue_std
@@ -46,4 +53,54 @@ describe('parseMissionCsv', () => {
     expect(result!.partial).toBeNull();
     expect(result!.previous!.reportMonth).toBe('2026-02');
   });
+});
+
+describe('createFeuerwehrIngestion', () => {
+  const CSV_URL = 'https://raw.githubusercontent.com/Berliner-Feuerwehr/BF-Open-Data/main/Datasets/Daily_Data/BFw_mission_data_monthly.csv';
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockSaveFeuerwehr.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('makes no request and writes nothing when Berlin is not active', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(SAMPLE_CSV, { status: 200 }),
+    );
+
+    const cache = createCache();
+    const setSpy = vi.spyOn(cache, 'set');
+    await createFeuerwehrIngestion(cache, {} as Db)();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(mockSaveFeuerwehr).not.toHaveBeenCalled();
+  });
+
+  it.each(['berlin', 'berlin,hamburg', 'hamburg,berlin'])(
+    'fetches the Feuerwehr CSV and writes Berlin rows when ACTIVE_CITIES=%s',
+    async (activeCities) => {
+      vi.stubEnv('ACTIVE_CITIES', activeCities);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(SAMPLE_CSV, { status: 200 }),
+      );
+
+      const cache = createCache();
+      const setSpy = vi.spyOn(cache, 'set');
+      const db = {} as Db;
+      await createFeuerwehrIngestion(cache, db)();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]![0]).toBe(CSV_URL);
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledWith('berlin:feuerwehr', expect.any(Object), 86400);
+      expect(mockSaveFeuerwehr).toHaveBeenCalledTimes(1);
+      expect(mockSaveFeuerwehr).toHaveBeenCalledWith(db, 'berlin', setSpy.mock.calls[0]![1]);
+    },
+  );
 });

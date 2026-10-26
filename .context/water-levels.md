@@ -66,7 +66,7 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 
 ## Server Pipeline
 
-1. **Cron** (`0 6 * * *`, daily at 6 AM): `createBathingIngestion(cache)` fetches CSV, parses to `BathingSpot[]`, writes to cache (key: `{cityId}:bathing:spots`, TTL: 86400s/24h). Cache-only, no DB table
+1. **Cron** (`0 6 * * *`, daily at 6 AM): `createBathingIngestion(cache)` fetches CSV, parses to `BathingSpot[]`, writes to cache (key: `{cityId}:bathing:spots`, TTL: 86400s/24h) and saves a `lageso-bathing` snapshot via `saveBathingSpots`. Does nothing when Berlin is not active (the CSV covers Berlin only)
 2. **Route** (`GET /api/:city/bathing`): Cache read, empty array fallback. 12h Cache-Control
 3. **Season flag**: `inSeason` boolean computed server-side (May 15 – Sep 15). Data available year-round but UI shows off-season badge
 

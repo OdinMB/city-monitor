@@ -4,6 +4,7 @@ import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { savePopulation } from '../db/writes.js';
 import { loadPopulationSummary } from '../db/reads.js';
+import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -186,6 +187,9 @@ function extractSnapshotDate(rows: unknown[][]): string {
 
 export function createPopulationIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestPopulation(): Promise<void> {
+    // The EWR XLSX and the PLR geometry cover Berlin only: nothing to fetch unless Berlin is active.
+    if (!getCityConfig('berlin')) return;
+
     try {
       const res = await log.fetch(XLSX_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
       if (!res.ok) {

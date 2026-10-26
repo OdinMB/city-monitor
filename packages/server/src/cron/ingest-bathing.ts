@@ -2,6 +2,7 @@ import type { BathingSpot } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveBathingSpots } from '../db/writes.js';
+import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -86,6 +87,9 @@ function parseCsv(text: string): BathingSpot[] {
 
 export function createBathingIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestBathing(): Promise<void> {
+    // The LAGeSo CSV covers Berlin only: nothing to fetch unless Berlin is active.
+    if (!getCityConfig('berlin')) return;
+
     try {
       const response = await log.fetch(CSV_URL, {
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),

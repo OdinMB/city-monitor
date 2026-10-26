@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   normalizeParty,
   normalizeConstituencyName,
@@ -6,7 +6,49 @@ import {
   filterBundestagForCity,
   deduplicateMandates,
   constituencyToBezirk,
+  preCacheBezirke,
 } from './ingest-political.js';
+import { createCache } from '../lib/cache.js';
+
+describe('preCacheBezirke', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  // Well past the 180-day re-verify threshold for the hardcoded mayors
+  function pinClockPastThreshold() {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2027-06-01T00:00:00Z'));
+  }
+
+  it.each(['berlin', 'berlin,hamburg'])('caches the Berlin mayors and warns when stale (ACTIVE_CITIES=%s)', (activeCities) => {
+    vi.stubEnv('ACTIVE_CITIES', activeCities);
+    pinClockPastThreshold();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const cache = createCache();
+    preCacheBezirke(cache);
+
+    expect(cache.get<unknown[]>('berlin:political:bezirke')).toHaveLength(12);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0]![0]).toContain('Bezirksbuergermeister data was last verified');
+  });
+
+  it('caches nothing and does not warn when Berlin is not active', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    pinClockPastThreshold();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const cache = createCache();
+    const setSpy = vi.spyOn(cache, 'set');
+    preCacheBezirke(cache);
+
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+});
 
 describe('normalizeParty', () => {
   it('extracts SPD', () => expect(normalizeParty('Fraktion der SPD')).toBe('SPD'));

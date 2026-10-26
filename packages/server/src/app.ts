@@ -62,6 +62,20 @@ import { createNoiseSensorIngestion } from './cron/ingest-noise-sensors.js';
 import { createCouncilMeetingIngestion } from './cron/ingest-council-meetings.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
+import { getCityConfig } from './config/index.js';
+
+/**
+ * Jobs whose source covers Berlin only (hardcoded URL, rows written under
+ * 'berlin'). Their handlers return early when Berlin is not active, so they
+ * also get no freshness check and no startup run then.
+ */
+const BERLIN_ONLY_JOBS = new Set([
+  'ingest-bathing',
+  'ingest-wastewater',
+  'ingest-labor-market',
+  'ingest-population',
+  'ingest-feuerwehr',
+]);
 
 export async function createApp(options?: {
   skipScheduler?: boolean;
@@ -138,11 +152,14 @@ export async function createApp(options?: {
     { jobName: 'ingest-council-meetings', tableName: 'snapshots', maxAgeSeconds: 21600, filter: { column: 'type', value: 'oparl-meetings' } },
   ];
 
+  const berlinActive = getCityConfig('berlin') !== undefined;
+  const freshnessSpecs = FRESHNESS_SPECS.filter((spec) => berlinActive || !BERLIN_ONLY_JOBS.has(spec.jobName));
+
   const stale = synthetic
     ? new Set<string>() // synthetic mode never refreshes
     : db
-      ? await findStaleJobs(db, FRESHNESS_SPECS)
-      : new Set(FRESHNESS_SPECS.map((s) => s.jobName)); // no DB = refresh everything
+      ? await findStaleJobs(db, freshnessSpecs)
+      : new Set(freshnessSpecs.map((s) => s.jobName)); // no DB = refresh everything
 
   const ingestFeeds = createFeedIngestion(cache, db);
   const ingestWeather = createWeatherIngestion(cache, db);

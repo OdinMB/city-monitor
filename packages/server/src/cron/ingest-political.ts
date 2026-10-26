@@ -109,12 +109,17 @@ interface AW_Response {
  * on server start, before the full political cron job runs.
  */
 export function preCacheBezirke(cache: Cache): void {
+  let cachedAny = false;
   for (const city of getActiveCities()) {
     const bmData = BEZIRKSBUERGERMEISTER[city.id];
     if (bmData) {
       cache.set(CK.political(city.id, 'bezirke'), bmData, TTL_SECONDS);
+      cachedAny = true;
     }
   }
+
+  // The re-verify reminder is only relevant when the hardcoded list is served
+  if (!cachedAny) return;
 
   const ageMs = Date.now() - BEZIRKSBUERGERMEISTER_LAST_VERIFIED.getTime();
   const ageDays = Math.round(ageMs / 86_400_000);

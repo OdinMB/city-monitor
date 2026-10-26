@@ -147,4 +147,4 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 - **Append-only writes:** DB writes INSERT new rows without deleting old ones. Historical data is cleaned by the nightly retention cron. Hash-keyed tables (news, events, safety, NINA) use UPSERT to avoid duplicates.
 - **Optional DB:** Everything works without `DATABASE_URL` — cache-only mode with no persistence across restarts.
 - **City isolation:** All cache keys and DB queries are prefixed/filtered by `cityId`. No cross-city data leaks.
-- **Berlin-only domains:** Wastewater, bathing, and labor market ingestion hardcode `'berlin'` as cityId. Warm-cache guards these with `cityId === 'berlin'`.
+- **Berlin-only domains:** Wastewater, bathing, labor market, population and Feuerwehr ingestion hardcode `'berlin'` as cityId. Each job returns before fetching when Berlin is not active, and gets no freshness check or startup run then ([server.md](server.md#jobs-26-defined-in-appts)). Warm-cache guards these with `cityId === 'berlin'`.

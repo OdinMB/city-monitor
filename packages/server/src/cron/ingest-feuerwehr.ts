@@ -2,6 +2,7 @@ import type { FeuerwehrSummary, FeuerwehrMonthData } from '@city-monitor/shared'
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveFeuerwehr } from '../db/writes.js';
+import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -82,6 +83,9 @@ export function parseMissionCsv(text: string, currentYearMonth: string): Feuerwe
 
 export function createFeuerwehrIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestFeuerwehr(): Promise<void> {
+    // The Berliner Feuerwehr CSV covers Berlin only: nothing to fetch unless Berlin is active.
+    if (!getCityConfig('berlin')) return;
+
     try {
       const res = await log.fetch(CSV_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
       if (!res.ok) {

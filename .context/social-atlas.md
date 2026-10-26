@@ -45,7 +45,7 @@ Features with `kom !== 'gultig'` (uninhabited areas) are filtered out.
 
 ### Architecture
 
-Berlin-only (hardcoded, like wastewater).
+Berlin-only (hardcoded, like wastewater). The cron job fetches nothing when Berlin is not active.
 
 - **Cron:** `ingest-labor-market` runs daily (7AM), conditional `runOnStart` based on DB freshness
 - **DB:** Unified `snapshots` table, type `ba-labor-market` (JSONB snapshot, one row per city)

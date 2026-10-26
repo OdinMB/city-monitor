@@ -1,7 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createBathingIngestion } from './ingest-bathing.js';
 import type { BathingSpot } from '@city-monitor/shared';
+import type { Db } from '../db/index.js';
+
+const mockSaveBathingSpots = vi.fn().mockResolvedValue(undefined);
+vi.mock('../db/writes.js', () => ({
+  saveBathingSpots: (...args: unknown[]) => mockSaveBathingSpots(...args),
+}));
 
 const GOOD_ROW = [
   'Strandbad Wannsee', 'Steglitz-Zehlendorf', 'Unterhavel', 'Strandbad Wannsee',
@@ -44,7 +50,50 @@ function buildCsv(...rows: string[]): string {
 describe('ingest-bathing', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    mockSaveBathingSpots.mockClear();
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
   });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('makes no request and writes nothing when Berlin is not active', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(buildCsv(GOOD_ROW), { status: 200 }),
+    );
+
+    const cache = createCache();
+    const setSpy = vi.spyOn(cache, 'set');
+    await createBathingIngestion(cache, {} as Db)();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(mockSaveBathingSpots).not.toHaveBeenCalled();
+  });
+
+  it.each(['berlin', 'berlin,hamburg', 'hamburg,berlin'])(
+    'fetches the LAGeSo CSV and writes Berlin rows when ACTIVE_CITIES=%s',
+    async (activeCities) => {
+      vi.stubEnv('ACTIVE_CITIES', activeCities);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(buildCsv(GOOD_ROW), { status: 200 }),
+      );
+
+      const cache = createCache();
+      const setSpy = vi.spyOn(cache, 'set');
+      const db = {} as Db;
+      await createBathingIngestion(cache, db)();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]![0]).toBe('https://data.lageso.de/baden/0_letzte/letzte.csv');
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledWith('berlin:bathing:spots', expect.any(Array), 86400);
+      expect(mockSaveBathingSpots).toHaveBeenCalledTimes(1);
+      expect(mockSaveBathingSpots).toHaveBeenCalledWith(db, 'berlin', setSpy.mock.calls[0]![1]);
+    },
+  );
 
   it('fetches CSV and writes BathingSpot[] to cache', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(

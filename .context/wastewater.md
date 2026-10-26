@@ -75,4 +75,4 @@ interface WastewaterSummary {
 
 ## Berlin-Only
 
-Hardcoded to Berlin (Lageso CSV is Berlin-only; AMELAG filtered to `bundesland=BE`). No `CityDataSources` config entry — gated by `cityId === 'berlin'` in the frontend strip and tile. Hamburg AMELAG data (`bundesland=HH`) could be added later with the same stream parser.
+Hardcoded to Berlin (Lageso CSV is Berlin-only; AMELAG filtered to `bundesland=BE`). No `CityDataSources` config entry — gated by `cityId === 'berlin'` in the frontend strip and tile; the cron job fetches nothing when Berlin is not active. Hamburg AMELAG data (`bundesland=HH`) could be added later with the same stream parser.

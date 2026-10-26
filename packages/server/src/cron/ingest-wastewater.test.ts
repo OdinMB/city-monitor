@@ -1,7 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createWastewaterIngestion, parseAmelagBerlinCovid, buildCovidPathogen, computeTrend, computeLevel } from './ingest-wastewater.js';
 import type { WastewaterSummary } from '@city-monitor/shared';
+import type { Db } from '../db/index.js';
+
+const mockSaveWastewater = vi.fn().mockResolvedValue(undefined);
+vi.mock('../db/writes.js', () => ({
+  saveWastewater: (...args: unknown[]) => mockSaveWastewater(...args),
+}));
 
 // --- Lageso CSV helpers ---
 
@@ -87,9 +93,60 @@ const mockCsvMultiWeek = buildCsv(
   row('2025-12-07', 'Ruhleben', 'Influenza A', '0,00'),
 );
 
+describe('ingest-wastewater (active cities)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockSaveWastewater.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('makes no request and writes nothing when Berlin is not active', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    mockFetch(mockCsvFull);
+
+    const cache = createCache();
+    const setSpy = vi.spyOn(cache, 'set');
+    await createWastewaterIngestion(cache, {} as Db)();
+
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(mockSaveWastewater).not.toHaveBeenCalled();
+  });
+
+  it.each(['berlin', 'berlin,hamburg', 'hamburg,berlin'])(
+    'fetches Lageso then AMELAG and writes Berlin rows when ACTIVE_CITIES=%s',
+    async (activeCities) => {
+      vi.stubEnv('ACTIVE_CITIES', activeCities);
+      mockFetch(mockCsvFull);
+
+      const cache = createCache();
+      const setSpy = vi.spyOn(cache, 'set');
+      const db = {} as Db;
+      await createWastewaterIngestion(cache, db)();
+
+      expect(vi.mocked(globalThis.fetch).mock.calls.map((c) => c[0])).toEqual([
+        'https://data.lageso.de/infektionsschutz/opendata/abwassermonitoring/BEWAC_abwassermonitoring_berlin.csv',
+        'https://raw.githubusercontent.com/robert-koch-institut/Abwassersurveillance_AMELAG/main/amelag_einzelstandorte.tsv',
+      ]);
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledWith('berlin:wastewater:summary', expect.any(Object), 604800);
+      expect(mockSaveWastewater).toHaveBeenCalledTimes(1);
+      expect(mockSaveWastewater).toHaveBeenCalledWith(db, 'berlin', setSpy.mock.calls[0]![1]);
+    },
+  );
+});
+
 describe('ingest-wastewater (Lageso)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('parses CSV and caches WastewaterSummary', async () => {
@@ -371,6 +428,11 @@ describe('ingest-wastewater (Lageso)', () => {
 describe('ingest-wastewater (AMELAG SARS-CoV-2)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('merges SARS-CoV-2 from AMELAG into Lageso summary', async () => {

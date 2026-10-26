@@ -1,11 +1,21 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import ExcelJS from 'exceljs';
 import { createCache } from '../lib/cache.js';
 import type { PopulationSummary } from '@city-monitor/shared';
+import type { Db } from '../db/index.js';
 // A static import loads the module graph (Drizzle, the DB schema) while the
 // file is collected. An `await import()` inside a test put that load inside the
 // first test's 5 s timeout, which it overran on a busy machine.
 import { createPopulationIngestion } from './ingest-population.js';
+
+const mockSavePopulation = vi.fn().mockResolvedValue(undefined);
+const mockLoadPopulationSummary = vi.fn().mockResolvedValue(null);
+vi.mock('../db/writes.js', () => ({
+  savePopulation: (...args: unknown[]) => mockSavePopulation(...args),
+}));
+vi.mock('../db/reads.js', () => ({
+  loadPopulationSummary: (...args: unknown[]) => mockLoadPopulationSummary(...args),
+}));
 
 // Build a mock XLSX workbook with T2 (age groups) and Schlüssel (PLR names)
 async function buildMockXlsx(): Promise<ArrayBuffer> {
@@ -127,7 +137,58 @@ describe('ingest-population', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    mockSavePopulation.mockClear();
+    mockLoadPopulationSummary.mockClear();
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
   });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('makes no request, reads nothing and writes nothing when Berlin is not active', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(xlsxBuf, { status: 200 }),
+    );
+
+    const cache = createCache();
+    const setSpy = vi.spyOn(cache, 'set');
+    await createPopulationIngestion(cache, {} as Db)();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(mockLoadPopulationSummary).not.toHaveBeenCalled();
+    expect(mockSavePopulation).not.toHaveBeenCalled();
+  });
+
+  it.each(['berlin', 'berlin,hamburg', 'hamburg,berlin'])(
+    'fetches the EWR XLSX and writes Berlin rows when ACTIVE_CITIES=%s',
+    async (activeCities) => {
+      vi.stubEnv('ACTIVE_CITIES', activeCities);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(xlsxBuf, { status: 200 }),
+      );
+
+      const cache = createCache();
+      cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
+      const setSpy = vi.spyOn(cache, 'set');
+      const db = {} as Db;
+      await createPopulationIngestion(cache, db)();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]![0]).toBe(
+        'https://download.statistik-berlin-brandenburg.de/1df9da7ea6dbfa3a/f6ac408f14cd/SB_A01-16-00_2025h02_BE.xlsx',
+      );
+      expect(mockLoadPopulationSummary).toHaveBeenCalledWith(db, 'berlin');
+      expect(setSpy.mock.calls.map((c) => [c[0], c[2]])).toEqual([
+        ['berlin:population:summary', 2592000],
+        ['berlin:population:geojson', 2592000],
+      ]);
+      expect(mockSavePopulation).toHaveBeenCalledTimes(1);
+      expect(mockSavePopulation).toHaveBeenCalledWith(db, 'berlin', setSpy.mock.calls[1]![1], setSpy.mock.calls[0]![1]);
+    },
+  );
 
   it('parses XLSX and caches PopulationSummary', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(

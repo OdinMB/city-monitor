@@ -2,6 +2,7 @@ import type { LaborMarketSummary } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveLaborMarket } from '../db/writes.js';
+import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -72,6 +73,9 @@ function parseCsv(text: string): { reportMonth: string | null; rows: ParsedRow[]
 
 export function createLaborMarketIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestLaborMarket(): Promise<void> {
+    // BA_URL asks for Bundesland=Berlin: nothing to fetch unless Berlin is active.
+    if (!getCityConfig('berlin')) return;
+
     try {
       const res = await log.fetch(BA_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
       if (!res.ok) {

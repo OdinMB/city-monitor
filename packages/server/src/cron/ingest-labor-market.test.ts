@@ -1,7 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createLaborMarketIngestion } from './ingest-labor-market.js';
 import type { LaborMarketSummary } from '@city-monitor/shared';
+import type { Db } from '../db/index.js';
+
+const mockSaveLaborMarket = vi.fn().mockResolvedValue(undefined);
+vi.mock('../db/writes.js', () => ({
+  saveLaborMarket: (...args: unknown[]) => mockSaveLaborMarket(...args),
+}));
 
 // Realistic BA CSV: metadata header, trailing semicolons, copyright footer
 const MOCK_CSV = [
@@ -29,7 +35,52 @@ const MOCK_CSV = [
 describe('ingest-labor-market', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    mockSaveLaborMarket.mockClear();
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
   });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('makes no request and writes nothing when Berlin is not active', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(MOCK_CSV, { status: 200 }),
+    );
+
+    const cache = createCache();
+    const setSpy = vi.spyOn(cache, 'set');
+    await createLaborMarketIngestion(cache, {} as Db)();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(mockSaveLaborMarket).not.toHaveBeenCalled();
+  });
+
+  it.each(['berlin', 'berlin,hamburg', 'hamburg,berlin'])(
+    'fetches the Berlin BA table and writes Berlin rows when ACTIVE_CITIES=%s',
+    async (activeCities) => {
+      vi.stubEnv('ACTIVE_CITIES', activeCities);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(MOCK_CSV, { status: 200 }),
+      );
+
+      const cache = createCache();
+      const setSpy = vi.spyOn(cache, 'set');
+      const db = {} as Db;
+      await createLaborMarketIngestion(cache, db)();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]![0]).toBe(
+        'https://statistik-dr.arbeitsagentur.de/bifrontend/bids-api/ct/v1/tableFetch/csv/EckwerteTabelleALOBL?Bundesland=Berlin',
+      );
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledWith('berlin:labor-market', expect.any(Object), 86400);
+      expect(mockSaveLaborMarket).toHaveBeenCalledTimes(1);
+      expect(mockSaveLaborMarket).toHaveBeenCalledWith(db, 'berlin', setSpy.mock.calls[0]![1]);
+    },
+  );
 
   it('parses BA CSV and caches LaborMarketSummary', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
