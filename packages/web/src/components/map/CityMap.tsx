@@ -386,8 +386,9 @@ export function CityMap() {
               if (map.getSource('districts')) return; // already added
               addDistrictSource(map, geojson, resolved.nameField, isDark);
               activeNameFieldRef.current = resolved.nameField;
+              politicalGeoFeaturesRef.current = geojson.features;
               const freshData = politicalDataRef.current;
-              if (freshData) applyPoliticalStyling(map, freshData, isDark, resolved.nameField);
+              if (freshData) applyPoliticalStyling(map, freshData, geojson.features, isDark, resolved.nameField);
             })
             .catch(() => { /* GeoJSON fetch failed — fall back to default districts */ addDistrictLayer(map, city.id, isDark); });
         } else {
@@ -698,7 +699,7 @@ export function CityMap() {
         // Apply party colors + markers if data is already available
         const freshData = politicalDataRef.current;
         if (freshData) {
-          applyPoliticalStyling(map, freshData, isDarkRef.current, resolved.nameField);
+          applyPoliticalStyling(map, freshData, geojson.features, isDarkRef.current, resolved.nameField);
           updatePoliticalMarkers(map, freshData, geojson.features, politicalLayer as 'bezirke' | 'bundestag' | 'landesparlament', resolved.nameField, isDarkRef.current);
         }
       } catch (e: unknown) {
@@ -714,7 +715,7 @@ export function CityMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded() || !politicalActive || !politicalData) return;
-    applyPoliticalStyling(map, politicalData, isDarkRef.current, activeNameFieldRef.current);
+    applyPoliticalStyling(map, politicalData, politicalGeoFeaturesRef.current, isDarkRef.current, activeNameFieldRef.current);
     if (politicalGeoFeaturesRef.current.length) {
       updatePoliticalMarkers(map, politicalData, politicalGeoFeaturesRef.current, politicalLayer, activeNameFieldRef.current, isDarkRef.current);
     }

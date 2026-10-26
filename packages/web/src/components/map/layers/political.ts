@@ -12,7 +12,52 @@ import { safeUrl } from '../../../lib/safe-url.js';
 import { forwardArrow } from '../../../lib/bidi.js';
 import { registerPoliticalIcons, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
-import { normalizePoliticalName } from '../base.js';
+
+/** A spaced dash joins the areas a constituency covers
+ *  ("Hamburg-Bergedorf – Harburg"); hyphens inside a name have no spaces. */
+const AREA_SEPARATOR = /\s+[–—-]\s+/;
+
+/** How well an area of a district's name names a boundary: 0 exactly,
+ *  1 after dropping a leading city segment ("Berlin-Mitte" → "mitte"). */
+function areaRank(area: string, boundary: string): number | undefined {
+  if (area === boundary) return 0;
+  const dash = area.indexOf('-');
+  if (dash > 0 && area.slice(dash + 1) === boundary) return 1;
+  return undefined;
+}
+
+/**
+ * The political district whose data belongs on a Bezirk boundary.
+ *
+ * Boundary names ("Steglitz-Zehlendorf", "Hamburg-Nord", "Harburg") and data
+ * names differ: the Bezirk levels use the boundary name itself, Bundestag
+ * constituencies put the city in front ("Berlin-Steglitz-Zehlendorf",
+ * "Hamburg-Altona") and may name more areas after a spaced dash
+ * ("Berlin-Spandau – Charlottenburg Nord", "Hamburg-Bergedorf – Harburg").
+ * A constituency's first area wins over one named after the dash.
+ */
+export function findPoliticalDistrict<T extends { name: string }>(
+  boundaryName: string,
+  districts: T[],
+): T | undefined {
+  const boundary = boundaryName.trim().toLowerCase();
+  if (!boundary) return undefined;
+  let best: T | undefined;
+  let bestRank = Infinity;
+  for (const d of districts) {
+    const areas = d.name.trim().toLowerCase().split(AREA_SEPARATOR);
+    areas.forEach((area, i) => {
+      const rank = areaRank(area, boundary);
+      if (rank === undefined) return;
+      const total = i === 0 ? rank : 2 + rank;
+      if (total < bestRank) {
+        best = d;
+        bestRank = total;
+      }
+    });
+  }
+  return best;
+}
 
 /** District paint values derived from dark/light theme. */
 function districtPaint(isDark: boolean) {
@@ -176,25 +221,33 @@ export function addDistrictSource(
   ensureDistrictLabelsBelow(map);
 }
 
+/**
+ * Fill each Bezirk boundary with its majority party's colour. The match
+ * expression is keyed by the boundary names in `geojsonFeatures`, each resolved
+ * to its district with `findPoliticalDistrict`.
+ */
 export function applyPoliticalStyling(
   map: maplibregl.Map,
   districts: PoliticalDistrict[],
+  geojsonFeatures: GeoJSON.Feature[],
   isDark: boolean,
   nameField: string,
 ) {
   if (!map.getLayer('district-fill') || !map.getSource('districts')) return;
 
   const colorMap = new Map<string, string>();
-  for (const d of districts) {
-    const majorityParty = getMajorityParty(d.representatives);
+  for (const f of geojsonFeatures) {
+    const name = f.properties?.[nameField];
+    if (typeof name !== 'string' || colorMap.has(name)) continue;
+    const majorityParty = getMajorityParty(findPoliticalDistrict(name, districts)?.representatives ?? []);
     if (majorityParty) {
-      colorMap.set(normalizePoliticalName(d.name), getPartyColor(majorityParty));
+      colorMap.set(name, getPartyColor(majorityParty));
     }
   }
 
   if (colorMap.size > 0) {
     const dp = districtPaint(isDark);
-    const matchExpr: unknown[] = ['match', ['downcase', ['get', nameField]]];
+    const matchExpr: unknown[] = ['match', ['get', nameField]];
     for (const [name, color] of colorMap) {
       matchExpr.push(name, color);
     }
@@ -235,10 +288,7 @@ export function sortRepsByPartyMajority(reps: PoliticalDistrict['representatives
  * it is escaped (see `escapeHtml`).
  */
 export function buildPoliticalPopupHtml(districtName: string, districts: PoliticalDistrict[]): string {
-  const normalized = normalizePoliticalName(districtName);
-  const match = districts.find(
-    (d) => normalizePoliticalName(d.name) === normalized,
-  );
+  const match = findPoliticalDistrict(districtName, districts);
   if (!match || match.representatives.length === 0) {
     return `<div style="font-size:13px"><strong>${escapeHtml(districtName)}</strong><br><em>${escapeHtml(i18n.t('panel.political.empty'))}</em></div>`;
   }
@@ -315,19 +365,11 @@ export function updatePoliticalMarkers(
 
   if (!districts.length || !geojsonFeatures.length) return;
 
-  const colorMap = new Map<string, string>();
-  const mayorMap = new Map<string, string>();
-  const uniqueColors = new Set<string>();
-  for (const d of districts) {
-    const party = getMajorityParty(d.representatives);
-    const color = party ? getPartyColor(party) : '#808080';
-    const norm = normalizePoliticalName(d.name);
-    colorMap.set(norm, color);
-    uniqueColors.add(color);
-    if (d.representatives.length > 0) {
-      mayorMap.set(norm, d.representatives[0].name);
-    }
-  }
+  const districtColor = (d: PoliticalDistrict | undefined): string => {
+    const party = d ? getMajorityParty(d.representatives) : undefined;
+    return party ? getPartyColor(party) : '#808080';
+  };
+  const uniqueColors = new Set<string>(districts.map(districtColor));
 
   uniqueColors.add('#808080');
   const useBadges = subLayer === 'bezirke';
@@ -357,11 +399,12 @@ export function updatePoliticalMarkers(
       continue;
     }
 
-    const color = colorMap.get(normalizePoliticalName(name)) ?? '#808080';
+    const district = findPoliticalDistrict(name, districts);
+    const color = districtColor(district);
     let iconId: string;
 
     if (useBadges) {
-      const mayor = mayorMap.get(normalizePoliticalName(name)) ?? name;
+      const mayor = district?.representatives[0]?.name ?? name;
       iconId = `pol-badge-${encodeURIComponent(mayor)}-${color.replace('#', '')}`;
       if (!map.hasImage(iconId)) {
         map.addImage(iconId, createVerticalBadgeIcon(Landmark as IconNode, color, stroke, mayor));
