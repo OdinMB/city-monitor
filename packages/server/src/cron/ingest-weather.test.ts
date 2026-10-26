@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { CityConfig } from '@city-monitor/shared';
 import { createCache } from '../lib/cache.js';
-import { createWeatherIngestion, type WeatherData } from './ingest-weather.js';
+import { createWeatherIngestion, parseDwdUv, type WeatherData } from './ingest-weather.js';
 import * as configModule from '../config/index.js';
 
 const mockCurrentResponse = {
@@ -28,6 +28,22 @@ const mockForecastResponse = {
   })),
 };
 
+// Shape of DWD's uvi.json (opendata.dwd.de/climate_environment/health/alerts/uvi.json):
+// one daily-maximum forecast per city for today, tomorrow and the day after.
+const dwdUviFixture = {
+  sender: 'Deutscher Wetterdienst - Medizin-Meteorologie',
+  name: 'UV-Index',
+  forecast_day: '2026-05-01',
+  last_update: '2026-05-01T09:30',
+  next_update: '2026-05-02T09:30',
+  content: [
+    { city: 'Kiel', forecast: { today: 4, tomorrow: 5, dayafter_to: 5 } },
+    { city: 'Hamburg', forecast: { today: 4, tomorrow: 5, dayafter_to: 4 } },
+    { city: 'Berlin', forecast: { today: 5, tomorrow: 6, dayafter_to: 4 } },
+    { city: 'München', forecast: { today: 6, tomorrow: 6, dayafter_to: 7 } },
+  ],
+};
+
 function brightSkyMock(input: RequestInfo | URL): Response {
   const url = typeof input === 'string' ? input : input.toString();
   if (url.includes('/current_weather')) {
@@ -36,12 +52,12 @@ function brightSkyMock(input: RequestInfo | URL): Response {
   if (url.includes('/weather?')) {
     return new Response(JSON.stringify(mockForecastResponse), { status: 200 });
   }
-  // DWD alerts (JSONP wrapper) and DWD UV — return harmless empty payloads.
+  // DWD alerts (JSONP wrapper) — return a harmless empty payload.
   if (url.includes('warnings.json')) {
     return new Response('warnWetter.loadWarnings({});', { status: 200 });
   }
   if (url.includes('uvi.json')) {
-    return new Response(JSON.stringify({ content: [] }), { status: 200 });
+    return new Response(JSON.stringify(dwdUviFixture), { status: 200 });
   }
   // Open-Meteo air-quality
   if (url.includes('air-quality-api.open-meteo.com')) {
@@ -76,6 +92,22 @@ describe('ingest-weather', () => {
     expect(data!.daily.length).toBeGreaterThanOrEqual(7);
     // First three hourlies have null precipitation_probability — must be coerced to 0.
     expect(data!.hourly[0]!.precipProb).toBe(0);
+    expect(data!.dwdUv).toEqual({ today: 5, tomorrow: 6, dayAfter: 4, forecastDay: '2026-05-01' });
+  });
+
+  it('still writes the weather when the DWD UV forecast fails', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('uvi.json')) return new Response('gone', { status: 503 });
+      return brightSkyMock(input);
+    });
+
+    const cache = createCache();
+    await createWeatherIngestion(cache)();
+
+    const data = cache.get<WeatherData>('berlin:weather');
+    expect(data!.current.temp).toBe(18.5);
+    expect(data!.dwdUv).toBeUndefined();
   });
 
   it('throws when BrightSky returns a non-OK response', async () => {
@@ -147,5 +179,48 @@ describe('ingest-weather', () => {
       const matchingWarns = warnSpy.mock.calls.filter(([msg]) => typeof msg === 'string' && /london.*provider 'open-meteo'/.test(msg));
       expect(matchingWarns).toHaveLength(1);
     });
+  });
+});
+
+describe('parseDwdUv', () => {
+  it('picks the city by name, case-insensitively, with the date of its first day', () => {
+    expect(parseDwdUv(dwdUviFixture, 'Berlin')).toEqual({ today: 5, tomorrow: 6, dayAfter: 4, forecastDay: '2026-05-01' });
+    expect(parseDwdUv(dwdUviFixture, 'hamburg')).toEqual({ today: 4, tomorrow: 5, dayAfter: 4, forecastDay: '2026-05-01' });
+  });
+
+  it('falls back to the date of last_update when forecast_day is missing', () => {
+    const { forecast_day: _omit, ...rest } = dwdUviFixture;
+    expect(parseDwdUv(rest, 'Berlin')?.forecastDay).toBe('2026-05-01');
+  });
+
+  it('leaves forecastDay out when the file carries no date', () => {
+    expect(parseDwdUv({ content: dwdUviFixture.content }, 'Berlin')).toEqual({ today: 5, tomorrow: 6, dayAfter: 4 });
+  });
+
+  it('accepts numeric strings and zero', () => {
+    const json = { forecast_day: '2026-12-21', content: [{ city: 'Berlin', forecast: { today: '0', tomorrow: 1, dayafter_to: '1' } }] };
+    expect(parseDwdUv(json, 'Berlin')).toEqual({ today: 0, tomorrow: 1, dayAfter: 1, forecastDay: '2026-12-21' });
+  });
+
+  it('returns null when the city is missing', () => {
+    expect(parseDwdUv(dwdUviFixture, 'Potsdam')).toBeNull();
+  });
+
+  it('returns null when a value is missing or not a number', () => {
+    for (const forecast of [
+      { today: 5, tomorrow: 6 },
+      { today: null, tomorrow: 6, dayafter_to: 4 },
+      { today: 'hoch', tomorrow: 6, dayafter_to: 4 },
+      { today: -1, tomorrow: 6, dayafter_to: 4 },
+    ]) {
+      expect(parseDwdUv({ content: [{ city: 'Berlin', forecast }] }, 'Berlin'), JSON.stringify(forecast)).toBeNull();
+    }
+  });
+
+  it('returns null for payloads without a content array', () => {
+    expect(parseDwdUv(null, 'Berlin')).toBeNull();
+    expect(parseDwdUv('not json', 'Berlin')).toBeNull();
+    expect(parseDwdUv({ content: {} }, 'Berlin')).toBeNull();
+    expect(parseDwdUv({ content: [null, 'Berlin', { city: 'Berlin' }] }, 'Berlin')).toBeNull();
   });
 });

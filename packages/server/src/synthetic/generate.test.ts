@@ -204,6 +204,8 @@ describe('generateSyntheticData', () => {
     expect(ms(`${d.weather.hourly[0]!.time}Z`)).toBeLessThanOrEqual(t);
     expect(ms(`${d.weather.hourly.at(-1)!.time}Z`)).toBeGreaterThan(t + 2 * DAY);
     expect(d.weather.daily[0]!.date).toBe(today);
+    expect(d.weather.dwdUv!.forecastDay).toBe(today);
+    expect(WeatherDataSchema.parse(d.weather).dwdUv).toEqual(d.weather.dwdUv);
     expect(d.airQuality.current.updatedAt).toBe(now.toISOString());
     for (const w of d.nina) {
       expect(ms(w.startDate)).toBeLessThanOrEqual(t);

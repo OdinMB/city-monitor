@@ -186,11 +186,41 @@ async function fetchDwdAlerts(city: CityConfig): Promise<WeatherAlert[]> {
   return alerts;
 }
 
-interface DwdUviResponse {
-  content: Array<{
-    city: string;
-    forecast: { today: number; tomorrow: number; dayafter_to: number };
-  }>;
+const YMD = /^(\d{4}-\d{2}-\d{2})/;
+
+function uvValue(value: unknown): number | null {
+  const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+/**
+ * Picks one city's forecast out of DWD's uvi.json:
+ * `{ forecast_day, last_update, content: [{ city, forecast: { today, tomorrow, dayafter_to } }] }`.
+ * `forecastDay` comes from `forecast_day`, or else from the date of `last_update`.
+ * Returns null when the city is missing or a value is not a non-negative number.
+ */
+export function parseDwdUv(json: unknown, cityName: string): DwdUvForecast | null {
+  if (!json || typeof json !== 'object') return null;
+  const { content, forecast_day, last_update } = json as Record<string, unknown>;
+  if (!Array.isArray(content)) return null;
+
+  const name = cityName.toLowerCase();
+  const entry = (content as unknown[]).find((c) =>
+    typeof c === 'object' && c !== null && String((c as { city?: unknown }).city ?? '').toLowerCase() === name,
+  ) as { forecast?: unknown } | undefined;
+  if (!entry || typeof entry.forecast !== 'object' || entry.forecast === null) return null;
+
+  const forecast = entry.forecast as Record<string, unknown>;
+  const today = uvValue(forecast.today);
+  const tomorrow = uvValue(forecast.tomorrow);
+  const dayAfter = uvValue(forecast.dayafter_to);
+  if (today === null || tomorrow === null || dayAfter === null) return null;
+
+  const day = [forecast_day, last_update]
+    .map((v) => (typeof v === 'string' ? YMD.exec(v)?.[1] : undefined))
+    .find((v) => v !== undefined);
+
+  return day ? { today, tomorrow, dayAfter, forecastDay: day } : { today, tomorrow, dayAfter };
 }
 
 async function fetchDwdUv(city: CityConfig): Promise<DwdUvForecast | null> {
@@ -201,15 +231,7 @@ async function fetchDwdUv(city: CityConfig): Promise<DwdUvForecast | null> {
 
   if (!response.ok) return null;
 
-  const data: DwdUviResponse = await response.json();
-  const entry = data.content?.find(
-    (c) => c.city.toLowerCase() === city.name.toLowerCase(),
-  );
-  if (!entry) return null;
-
-  return {
-    today: entry.forecast.today,
-    tomorrow: entry.forecast.tomorrow,
-    dayAfter: entry.forecast.dayafter_to,
-  };
+  const forecast = parseDwdUv(await response.json(), city.name);
+  if (!forecast) log.warn(`${city.id}: no usable UV forecast in DWD uvi.json`);
+  return forecast;
 }

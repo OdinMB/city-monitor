@@ -1,5 +1,37 @@
 import { describe, it, expect } from 'vitest';
-import { getUvLevel } from './uv-levels.js';
+import { getUvLevel, uvIndexForToday } from './uv-levels.js';
+
+describe('uvIndexForToday', () => {
+  const forecast = { today: 3, tomorrow: 5, dayAfter: 7, forecastDay: '2026-06-10' };
+  const tz = 'Europe/Berlin';
+
+  it('returns null without a forecast', () => {
+    expect(uvIndexForToday(undefined, tz)).toBeNull();
+  });
+
+  it('uses today on the forecast day', () => {
+    expect(uvIndexForToday(forecast, tz, new Date('2026-06-10T10:00:00Z'))).toBe(3);
+  });
+
+  it('moves on a day before DWD publishes the next forecast', () => {
+    expect(uvIndexForToday(forecast, tz, new Date('2026-06-11T05:00:00Z'))).toBe(5);
+    expect(uvIndexForToday(forecast, tz, new Date('2026-06-12T05:00:00Z'))).toBe(7);
+  });
+
+  it('counts days in the city time zone, not UTC', () => {
+    // 23:30 UTC on the 10th is already 01:30 on the 11th in Berlin
+    expect(uvIndexForToday(forecast, tz, new Date('2026-06-10T23:30:00Z'))).toBe(5);
+  });
+
+  it('returns null once the forecast no longer covers today', () => {
+    expect(uvIndexForToday(forecast, tz, new Date('2026-06-13T10:00:00Z'))).toBeNull();
+    expect(uvIndexForToday(forecast, tz, new Date('2026-06-09T10:00:00Z'))).toBeNull();
+  });
+
+  it('takes a forecast without a date as starting today', () => {
+    expect(uvIndexForToday({ today: 2, tomorrow: 4, dayAfter: 4 }, tz, new Date('2026-06-13T10:00:00Z'))).toBe(2);
+  });
+});
 
 describe('getUvLevel', () => {
   it('returns low for UV index 0-2', () => {

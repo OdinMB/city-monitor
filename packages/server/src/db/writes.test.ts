@@ -45,6 +45,15 @@ describe('DB writes', () => {
     await saveWeather(db, 'berlin', data as unknown as WeatherData);
     expect(insert).toHaveBeenCalledOnce();
     expect(values).toHaveBeenCalledOnce();
+    expect(values.mock.calls[0]![0].data).not.toHaveProperty('dwdUv');
+  });
+
+  it('saveWeather keeps the DWD UV forecast in the snapshot', async () => {
+    const dwdUv = { today: 5, tomorrow: 6, dayAfter: 4, forecastDay: '2026-05-01' };
+    const data = { current: { temp: 10 }, hourly: [], daily: [], alerts: [], dwdUv };
+
+    await saveWeather(db, 'berlin', data as unknown as WeatherData);
+    expect(values.mock.calls[0]![0].data.dwdUv).toEqual(dwdUv);
   });
 
   it('saveTransitAlerts inserts disruptions', async () => {

@@ -8,6 +8,7 @@ import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getUvLevel } from '../../lib/uv-levels.js';
 import { formatDayName } from '../../lib/format-day-name.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { UvIndexToday } from '../UvIndexToday.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
@@ -107,19 +108,11 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
           </div>
         </div>
 
-        <div className="flex justify-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-2">
+        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mt-2">
           <span>{t('panel.weather.humidity')} {current.humidity}%</span>
           <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
           {current.precipitation > 0 && <span>{current.precipitation} mm</span>}
-          {current.uvIndex != null && (() => {
-            const uv = getUvLevel(current.uvIndex);
-            return (
-              <span className="inline-flex items-center gap-1">
-                {t('panel.weather.uv')} {Math.round(current.uvIndex)}
-                <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: uv.color }} />
-              </span>
-            );
-          })()}
+          <UvIndexToday forecast={data?.dwdUv} />
         </div>
       </div>
 

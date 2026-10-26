@@ -149,10 +149,17 @@ export interface WeatherAlert {
   validUntil: string;
 }
 
+/** DWD UV index forecast: the expected daily maximum for three days. */
 export interface DwdUvForecast {
   today: number;
   tomorrow: number;
   dayAfter: number;
+  /**
+   * The date ("YYYY-MM-DD") that `today` refers to. DWD publishes once a day,
+   * so before the morning update `today` still means the previous day.
+   * Missing when DWD's file gave no date, and in data stored before it was added.
+   */
+  forecastDay?: string;
 }
 
 export interface WeatherData {

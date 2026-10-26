@@ -138,13 +138,16 @@ function checkDwdUv(city: CityConfig) {
       return { status: 200, detail: 'skipped (non-DE city)' };
     }
     const { status, body } = await fetchJson('https://opendata.dwd.de/climate_environment/health/alerts/uvi.json');
-    const data = body as { content?: Array<{ city: string; forecast: { today: number; tomorrow: number; dayafter_to: number } }> };
+    const data = body as {
+      forecast_day?: string;
+      content?: Array<{ city: string; forecast: { today: number; tomorrow: number; dayafter_to: number } }>;
+    };
     if (!Array.isArray(data.content)) throw new Error('missing content array');
     const entry = data.content.find((c) => c.city.toLowerCase() === city.name.toLowerCase());
     if (!entry) throw new Error(`no entry for "${city.name}" (${data.content.length} cities in payload)`);
     return {
       status,
-      detail: `today=${entry.forecast.today}, tomorrow=${entry.forecast.tomorrow}, dayAfter=${entry.forecast.dayafter_to}`,
+      detail: `forecast_day=${data.forecast_day ?? 'missing'}, today=${entry.forecast.today}, tomorrow=${entry.forecast.tomorrow}, dayAfter=${entry.forecast.dayafter_to}`,
     };
   });
 }

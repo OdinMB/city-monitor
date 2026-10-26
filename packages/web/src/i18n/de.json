@@ -60,7 +60,8 @@
       "low": "T",
       "alerts": "Warnungen",
       "validUntil": "Gültig bis {{time}}",
-      "uv": "UV",
+      "uvMax": "UV max.",
+      "uvTodayHint": "Höchster UV-Index heute (DWD-Vorhersage)",
       "uvClearSky": "UV bei Sonne",
       "uvLevel": {
         "low": "Niedrig",
