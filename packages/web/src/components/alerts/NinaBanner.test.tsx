@@ -21,9 +21,9 @@ const warning: NinaWarning = {
   description: 'Es treten Sturmböen mit Geschwindigkeiten um 70 km/h auf.',
 };
 
-function createWrapper() {
+function createWrapper(warnings: NinaWarning[] = [warning]) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  queryClient.setQueryData(['nina', 'berlin'], { data: [warning], fetchedAt: new Date().toISOString() });
+  queryClient.setQueryData(['nina', 'berlin'], { data: warnings, fetchedAt: new Date().toISOString() });
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
@@ -86,5 +86,67 @@ describe('NinaBanner', () => {
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../globals.css'), 'utf8');
     const rule = css.match(/\.nina-warning button:focus-visible \{[^}]*\}/)?.[0] ?? '';
     expect(rule).toContain('outline-color: currentColor;');
+  });
+
+  describe('compact', () => {
+    it('shows a one-line pill with the severity in words, the source for screen readers', () => {
+      render(<NinaBanner compact />, { wrapper: createWrapper() });
+
+      const alert = screen.getByRole('alert');
+      expect(alert.classList.contains('rounded-full')).toBe(true);
+      expect(screen.getByText(warning.headline).parentElement?.classList.contains('truncate')).toBe(true);
+      expect(screen.getByText('Moderate').classList.contains('sr-only')).toBe(false);
+      expect(screen.getByText('· DWD').classList.contains('sr-only')).toBe(true);
+    });
+
+    it('gives the pill buttons a 24px minimum target', () => {
+      render(<NinaBanner compact />, { wrapper: createWrapper() });
+
+      for (const name of ['expand', 'Dismiss']) {
+        const button = screen.getByRole('button', { name });
+        expect(button.classList.contains('min-w-6')).toBe(true);
+        expect(button.classList.contains('min-h-6')).toBe(true);
+      }
+    });
+
+    it('lets a headline-only warning expand to its full headline', () => {
+      const headlineOnly: NinaWarning = { ...warning, id: 'headline-only', description: undefined, instruction: undefined };
+      render(<NinaBanner compact />, { wrapper: createWrapper([headlineOnly]) });
+
+      const toggle = screen.getByRole('button', { name: 'expand' });
+      fireEvent.click(toggle);
+
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getByText(warning.headline).classList.contains('truncate')).toBe(false);
+      expect(screen.getByText('DWD · Moderate')).toBeTruthy();
+    });
+
+    it('keeps the full banner without a toggle for a headline-only warning', () => {
+      const headlineOnly: NinaWarning = { ...warning, id: 'headline-only', description: undefined, instruction: undefined };
+      render(<NinaBanner />, { wrapper: createWrapper([headlineOnly]) });
+
+      expect(screen.queryByRole('button', { name: 'expand' })).toBeNull();
+      expect(screen.getByText(warning.headline)).toBeTruthy();
+    });
+
+    it('expands to the full card with the details', () => {
+      render(<NinaBanner compact />, { wrapper: createWrapper() });
+
+      fireEvent.click(screen.getByRole('button', { name: 'expand' }));
+
+      const alert = screen.getByRole('alert');
+      expect(alert.classList.contains('rounded-full')).toBe(false);
+      expect(screen.getByText('DWD · Moderate').classList.contains('sr-only')).toBe(false);
+      expect(screen.getByText(warning.description!)).toBeTruthy();
+    });
+
+    it('dismisses from the pill', () => {
+      render(<NinaBanner compact />, { wrapper: createWrapper() });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+
+      expect(screen.queryByText(warning.headline)).toBeNull();
+      expect(JSON.parse(localStorage.getItem('nina-dismissed') ?? '[]')).toEqual([warning.id]);
+    });
   });
 });

@@ -37,7 +37,12 @@ function setDismissedIds(ids: Set<string>) {
   }
 }
 
-export function NinaBanner() {
+/**
+ * Active NINA warnings. `compact` renders each as a one-line pill (severity
+ * word and headline, source for screen readers) that always expands to the
+ * full card; CommandLayout uses it over the map on phones.
+ */
+export function NinaBanner({ compact = false }: { compact?: boolean }) {
   const { id: cityId, country } = useCityConfig();
   const { data: warnings } = useNina(cityId);
   const [dismissed, setDismissed] = useState(getDismissedIds);
@@ -58,35 +63,69 @@ export function NinaBanner() {
   if (active.length === 0) return null;
 
   return (
-    <div className="space-y-2 mb-4" aria-live="polite">
+    <div className={compact ? 'flex flex-col items-center gap-1' : 'space-y-2 mb-4'} aria-live="polite">
       {active.map((warning) => (
-        <NinaWarningCard key={warning.id} warning={warning} onDismiss={dismiss} />
+        <NinaWarningCard key={warning.id} warning={warning} onDismiss={dismiss} compact={compact} />
       ))}
     </div>
   );
 }
 
-function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismiss: (id: string) => void }) {
+function NinaWarningCard({
+  warning,
+  onDismiss,
+  compact,
+}: {
+  warning: NinaWarning;
+  onDismiss: (id: string) => void;
+  compact: boolean;
+}) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const style = SEVERITY_STYLES[warning.severity] ?? SEVERITY_STYLES.minor;
   const icon = SEVERITY_ICONS[warning.severity] ?? '';
+  const source = warning.source.toUpperCase();
+  const severity = t(`nina.severity.${warning.severity}`, warning.severity);
+  const hasDetails = Boolean(warning.description || warning.instruction);
+  // Compact cards sit over the map: a one-line pill (severity word, then the
+  // headline cut to fit) until expanded, then a card as wide as the overlay
+  // with the full headline. A pill can always expand, because its headline may
+  // be cut off even when the warning has no details. Both take pointer events
+  // back from the overlay, and their buttons get a 24px minimum target.
+  const pill = compact && !expanded;
+  const shape = !compact
+    ? 'rounded-lg px-4 py-3'
+    : pill
+      ? 'max-w-full rounded-full px-3 py-1 shadow-lg pointer-events-auto'
+      : 'self-stretch rounded-lg px-3 py-2 shadow-lg pointer-events-auto';
+  const buttonClass = `p-1 rounded hover:bg-white/20 text-xs${compact ? ' inline-flex items-center justify-center min-w-6 min-h-6' : ''}`;
 
   return (
-    <div className={`nina-warning rounded-lg px-4 py-3 ${style}`} role="alert">
-      <div className="flex items-start gap-2">
-        <span className="text-lg shrink-0">{icon}</span>
+    <div className={`nina-warning ${shape} ${style}`} role="alert">
+      <div className={`flex ${pill ? 'items-center' : 'items-start'} gap-2`}>
+        <span className={`${compact ? 'text-sm' : 'text-lg'} shrink-0`}>{icon}</span>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm leading-tight">{warning.headline}</div>
-          <div className="text-xs mt-0.5">
-            {warning.source.toUpperCase()} · {t(`nina.severity.${warning.severity}`, warning.severity)}
-          </div>
+          {pill ? (
+            <div className="text-xs leading-tight truncate">
+              <span className="font-bold">{severity}</span>
+              {' · '}
+              <span className="font-semibold">{warning.headline}</span>
+              <span className="sr-only">{` · ${source}`}</span>
+            </div>
+          ) : (
+            <>
+              <div className="font-semibold text-sm leading-tight">{warning.headline}</div>
+              <div className="text-xs mt-0.5">
+                {source} · {severity}
+              </div>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {(warning.description || warning.instruction) && (
+          {(compact || hasDetails) && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-1 rounded hover:bg-white/20 text-xs"
+              className={buttonClass}
               aria-expanded={expanded}
               aria-label={expanded ? t('tile.collapse') : t('tile.expand')}
             >
@@ -95,15 +134,15 @@ function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismi
           )}
           <button
             onClick={() => onDismiss(warning.id)}
-            className="p-1 rounded hover:bg-white/20 text-xs"
+            className={buttonClass}
             aria-label={t('nina.dismiss', 'Dismiss')}
           >
             ✕
           </button>
         </div>
       </div>
-      {expanded && (
-        <div className="mt-2 text-sm space-y-2">
+      {expanded && hasDetails && (
+        <div className={compact ? 'mt-2 text-xs space-y-2 max-h-[40vh] overflow-y-auto overscroll-contain' : 'mt-2 text-sm space-y-2'}>
           {warning.description && <p>{warning.description}</p>}
           {warning.instruction && (
             <p className="font-medium">{warning.instruction}</p>
