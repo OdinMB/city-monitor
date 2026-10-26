@@ -196,7 +196,7 @@ export function EventsStrip() {
     <>
       {/* Source filter */}
       {showSourceFilter && (
-        <div role="tablist" className="flex gap-1 overflow-x-auto pb-1 mb-1">
+        <div role="tablist" className="flex flex-wrap gap-1 pb-1 mb-1">
           {activeSourceFilters.map((sf, i) => {
             const count = sf.key === 'all'
               ? allEvents.length
@@ -226,7 +226,7 @@ export function EventsStrip() {
 
       {/* Category filter */}
       {availableCategories.length > 2 && (
-        <div role="tablist" className="flex gap-1 overflow-x-auto pb-1.5 mb-1.5">
+        <div role="tablist" className="flex flex-wrap gap-1 pb-1.5 mb-1.5">
           {availableCategories.map((cat, i) => {
             const count = cat === 'all' ? sourceFiltered.length : (categoryCounts[cat] ?? 0);
             return (

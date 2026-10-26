@@ -46,6 +46,12 @@ function formatValue(v: number): string {
   return v.toFixed(0);
 }
 
+function pairsOf<T>(items: T[]): T[][] {
+  const pairs: T[][] = [];
+  for (let i = 0; i < items.length; i += 2) pairs.push(items.slice(i, i + 2));
+  return pairs;
+}
+
 function formatWeekLabel(date: Date): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
@@ -99,22 +105,34 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
     return (
       <>
         <div className="flex-1 flex flex-col justify-center">
-          <div className="flex justify-around text-center">
-            {data.pathogens.map((p) => (
-              <div key={p.name}>
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {pathogenLabel(p.name, t)}
-                </div>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className={`text-2xl font-extrabold ${LEVEL_COLORS[p.level]}`}>
-                    {t(`panel.wastewater.level.${p.level}`)}
-                  </span>
-                  {(p.value > 0 || p.trend === 'gone') && (
-                    <span className={`text-lg font-bold ${LEVEL_COLORS[p.level]}`}>
-                      {TREND_ARROWS[p.trend]}
-                    </span>
-                  )}
-                </div>
+          {/* One line when every pathogen fits; otherwise the pairs wrap into
+              a 2x2 grid (2 + 1 for an odd count) rather than overflowing, since
+              the tile clips overflow. min-w-fit makes the wrap depend on the
+              rendered text; basis-0 with grow-per-item gives every pathogen an
+              equal share of the line, so the wrapped columns line up. */}
+          <div className="flex flex-wrap gap-x-2 gap-y-3 text-center">
+            {pairsOf(data.pathogens).map((pair) => (
+              <div
+                key={pair[0]!.name}
+                className={`flex flex-wrap basis-0 min-w-fit gap-x-2 gap-y-3 ${pair.length === 2 ? 'grow-2' : 'grow'}`}
+              >
+                {pair.map((p) => (
+                  <div key={p.name} className="flex-1 min-w-fit">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {pathogenLabel(p.name, t)}
+                    </div>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className={`text-2xl font-extrabold ${LEVEL_COLORS[p.level]}`}>
+                        {t(`panel.wastewater.level.${p.level}`)}
+                      </span>
+                      {(p.value > 0 || p.trend === 'gone') && (
+                        <span className={`text-lg font-bold ${LEVEL_COLORS[p.level]}`}>
+                          {TREND_ARROWS[p.trend]}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
