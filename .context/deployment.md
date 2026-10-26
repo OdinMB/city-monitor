@@ -22,16 +22,27 @@ Infrastructure defined in `render.yaml` (Blueprint spec).
 
 ### Client address and `trust proxy`
 
-Requests reach the API through Render's proxies, so the socket address is a proxy's. Express's `trust proxy` is a hop count, `TRUST_PROXY_HOPS` in `packages/server/src/app.ts`: `req.ip`, which the rate limits count by, is the `X-Forwarded-For` entry that many places from the right. It is 1 and not yet measured. Two paths reach the API: the static site's `/api/*` rewrite (on `citymonitor.app` and `city-monitor-web.onrender.com`) and the API's own `city-monitor-api.onrender.com` address. One count is right only if both pass the same number of proxies. The temporary check page at `/api/connection-check/page` measures it on each path ([server.md](server.md#connection-check-temporary)). When the check is removed (server.md, "Removing it"), this note stays, with the measured count and which path it holds for in place of "not yet measured" and the pointer to the check.
+Requests reach the API through Render's proxies, so the socket address is a proxy's. Express's `trust proxy` is a hop count, `TRUST_PROXY_HOPS` in `packages/server/src/app.ts`: `req.ip`, which the rate limits count by, is the `X-Forwarded-For` entry that many places from the right. Too low puts every visitor in one proxy's rate-limit bucket; too high lets a caller pick their own address with a forged header, and only a forged header shows it.
+
+It is **2**. Measured on 2026-10-26 with a forged `X-Forwarded-For` (a temporary check page, since removed):
+
+| Path into the API | Hops |
+|---|---|
+| `https://api.citymonitor.app` (the API's custom domain) | 2 |
+| `https://city-monitor-api.onrender.com` | 2 |
+| The static site's `/api/*` rewrite, on `citymonitor.app` and `city-monitor-web.onrender.com` (arrives with host `api.citymonitor.app`) | 3 |
+
+One count cannot fit both lengths, so real traffic takes one path: the web app calls `https://api.citymonitor.app/api` directly (`VITE_API_BASE`, below), and the count is set for that path. A request that still comes through the rewrite is read one hop too low and lands in a proxy's shared bucket, which is harmless. Measure again after changing domains, putting another proxy or CDN in front, or moving the frontend back behind a rewrite.
 
 ### Static Frontend
 
 - **Build:** `npm ci --include=dev && npm run build --workspace=packages/web`
 - **Publish path:** `packages/web/dist`
+- **API base:** `VITE_API_BASE=https://api.citymonitor.app/api`, a fixed build-time value in `render.yaml`. The browser calls the API on its own address, cross-origin: plain `GET`s with no custom headers, so no CORS preflight, and the API answers with `Access-Control-Allow-Origin` for the site's origins (`ALLOWED_ORIGINS`, below). The build also adds a `<link rel="preconnect">` to that origin (`vite.config.ts`). Unset, the base is the same-origin `/api` (local dev through the Vite proxy, CI builds).
 - **SPA fallback:** `/* → /index.html` rewrite
-- **API proxy:** `/api/* → https://city-monitor-api.onrender.com/api/*` rewrite
+- **API proxy:** `/api/* → https://city-monitor-api.onrender.com/api/*` rewrite. It now serves only browser tabs opened before `VITE_API_BASE` was set, whose old bundle still calls `/api`; their requests are rate-limited in a shared bucket (see above). It can be removed a while after that deploy (from 2026-10-26), once such tabs are gone. Point any outside monitor that uses `citymonitor.app/api/...` at `api.citymonitor.app` first.
 - **Cache headers:** `/assets/*` immutable (1 year), everything else 5 min
-- **CSP header:** Restrictive Content-Security-Policy on all paths. Allows `'self'` + `'unsafe-inline'` for scripts/styles (needed for theme-detection inline script and Tailwind/MapLibre), CARTO tile domains, WMS overlay domains (gdi.berlin.de, geodienste.hamburg.de), Simple Analytics CDN, and `blob:` in `worker-src` (MapLibre v5 built its worker from a blob; v6 loads a same-origin `/assets/maplibre-gl-worker-*.js`, which `'self'` covers). Blocks frames, objects, and external fonts. Every external host it allows must also be named in the privacy page's third-party table (`SERVICES` in `packages/web/src/pages/PrivacyPage.tsx`); `PrivacyPage.test.tsx` fails otherwise, and checks the third-party hosts in `index.html` the same way.
+- **CSP header:** Restrictive Content-Security-Policy on all paths. Allows `'self'` + `'unsafe-inline'` for scripts/styles (needed for theme-detection inline script and Tailwind/MapLibre), the site's own API (`api.citymonitor.app` in `connect-src`, and in `img-src` for the rain-radar tiles), CARTO tile domains, WMS overlay domains (gdi.berlin.de, geodienste.hamburg.de), Simple Analytics CDN, and `blob:` in `worker-src` (MapLibre v5 built its worker from a blob; v6 loads a same-origin `/assets/maplibre-gl-worker-*.js`, which `'self'` covers). Blocks frames, objects, and external fonts. Every third-party host it allows must also be named in the privacy page's third-party table (`SERVICES` in `packages/web/src/pages/PrivacyPage.tsx`); `PrivacyPage.test.tsx` fails otherwise, and checks the third-party hosts in `index.html` the same way. `citymonitor.app` and its subdomains are first party and exempt.
 
 ### Why the builds install devDependencies and call the pinned compiler
 
@@ -75,7 +86,9 @@ Link targets from ingested feeds pass through `safeUrl()` (`packages/web/src/lib
 
 ## Environment Variables
 
-The full list: every variable the code reads (`process.env` in `packages/server`). The web app reads none. Locally the server's npm scripts load `packages/server/.env` if it exists.
+The full list: every variable the code reads (`process.env` in `packages/server`). Locally the server's npm scripts load `packages/server/.env` if it exists.
+
+The web app reads one, at build time only: `VITE_API_BASE`, the API's base URL (`packages/web/src/lib/api-base.ts`). `render.yaml` sets it on the static site to `https://api.citymonitor.app/api`. Unset or blank, the app calls the same-origin `/api`. A change takes a rebuild of the static site, and the API's origin also has to be in the CSP's `connect-src` and `img-src` in `render.yaml`, and the site's origin in the API's `ALLOWED_ORIGINS`.
 
 | Variable | Required | Without it |
 |---|---|---|
@@ -83,7 +96,7 @@ The full list: every variable the code reads (`process.env` in `packages/server`
 | `NODE_ENV` | In production: `production` | Any other value adds `http://localhost:5173` to CORS, turns off rate limiting and exposes `POST /api/health/trigger/:jobName`. |
 | `PORT` | No | Listens on `3001`. |
 | `ACTIVE_CITIES` | No | Defaults to `berlin`. Comma-separated city IDs the jobs ingest and the API serves. |
-| `ALLOWED_ORIGINS` | No | CORS allows only `https://citymonitor.app` (plus localhost outside production). Set your frontend's origins, comma-separated, if a browser calls the API cross-origin; the static site's `/api/*` rewrite is same-origin. |
+| `ALLOWED_ORIGINS` | No, for citymonitor.app | CORS allows the production site's own origins: `https://citymonitor.app`, `https://www.citymonitor.app` and `https://city-monitor-web.onrender.com` (`DEFAULT_ALLOWED_ORIGINS` in `app.ts`), plus `http://localhost:5173` outside production. The browser calls the API cross-origin (`VITE_API_BASE`), so a value set here replaces that list and must hold every origin the site is served on, comma-separated; a missing one gets no data. A fork on its own domains sets it. |
 | `OPENAI_API_KEY` | No, but news needs it | New news items get no AI assessment and are dropped, so the news tile and news map markers stay empty (with a database, items classified earlier keep showing until they leave the feeds). No daily briefing, and police reports get no AI map location. |
 | `OPENAI_MODEL`, `OPENAI_SUMMARY_EFFORT`, `OPENAI_FILTER_MODEL`, `OPENAI_FILTER_EFFORT`, `OPENAI_GEO_MODEL`, `OPENAI_GEO_EFFORT` | No | Code defaults in `lib/llm-client.ts` apply: `gpt-6-luna` at effort `high` (briefing), `medium` (news), `none` (police locations). `OPENAI_GEO_MODEL` falls back to `OPENAI_FILTER_MODEL`. See below and `server.md`. |
 | `TOMTOM_API_KEY` | No | Traffic job skipped: no traffic incidents. |
@@ -103,6 +116,7 @@ The full list: every variable the code reads (`process.env` in `packages/server`
 1. Add custom domain in Render → Static Site → Settings → Custom Domain
 2. Render auto-provisions TLS via Let's Encrypt
 3. For subdomains: add `*.domain.com` as wildcard
+4. The API has its own: `api.citymonitor.app` on the `city-monitor-api` web service, which the web app calls (`VITE_API_BASE`). A new site domain also goes into `ALLOWED_ORIGINS` (or `DEFAULT_ALLOWED_ORIGINS`); a new API domain into `VITE_API_BASE` and the CSP, and the hop count is measured again on it (above).
 
 ## Monitoring
 

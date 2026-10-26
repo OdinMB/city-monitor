@@ -42,6 +42,11 @@ services:
     # --include=dev: Vite, TypeScript and @types/* are devDependencies. See .context/deployment.md.
     buildCommand: npm ci --include=dev && npm run build --workspace=packages/web
     staticPublishPath: packages/web/dist
+    envVars:
+      # Build time: the browser calls the API on its own address, not through
+      # the /api/* rewrite below. See .context/deployment.md.
+      - key: VITE_API_BASE
+        value: https://api.citymonitor.app/api
     headers:
       - path: /assets/*
         name: Cache-Control
@@ -51,8 +56,10 @@ services:
         value: public, max-age=300
       - path: /*
         name: Content-Security-Policy
-        value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://scripts.simpleanalyticscdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://gdi.berlin.de https://geodienste.hamburg.de; font-src 'self'; connect-src 'self' https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://gdi.berlin.de https://geodienste.hamburg.de https://queue.simpleanalyticscdn.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+        value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://scripts.simpleanalyticscdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://api.citymonitor.app https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://gdi.berlin.de https://geodienste.hamburg.de; font-src 'self'; connect-src 'self' https://api.citymonitor.app https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://gdi.berlin.de https://geodienste.hamburg.de https://queue.simpleanalyticscdn.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
     routes:
+      # Serves only tabs opened before VITE_API_BASE was set (they still call
+      # /api); can go once those are gone. See .context/deployment.md.
       - type: rewrite
         source: /api/*
         destination: https://city-monitor-api.onrender.com/api/*

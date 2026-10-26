@@ -138,6 +138,58 @@ describe('createApp startup runs with fresh stored data', () => {
   });
 });
 
+describe('production CORS and client address', () => {
+  let server: Server;
+  let baseUrl: string;
+
+  beforeAll(async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('ALLOWED_ORIGINS', '');
+    vi.stubEnv('DATABASE_URL', '');
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+    const { app } = await createApp({ synthetic: true });
+    await new Promise<void>((resolve) => {
+      server = app.listen(0, () => {
+        const addr = server.address();
+        const port = typeof addr === 'object' && addr ? addr.port : 0;
+        baseUrl = `http://localhost:${port}`;
+        resolve();
+      });
+    });
+  });
+
+  afterAll(async () => {
+    vi.unstubAllEnvs();
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    });
+  });
+
+  it.each(['https://citymonitor.app', 'https://www.citymonitor.app', 'https://city-monitor-web.onrender.com'])(
+    'lets the site on %s call the API without ALLOWED_ORIGINS',
+    async (origin) => {
+      const res = await fetch(`${baseUrl}/api/health`, { headers: { Origin: origin } });
+      expect(res.headers.get('access-control-allow-origin')).toBe(origin);
+    },
+  );
+
+  it.each(['https://example.org', 'http://localhost:5173'])('does not let %s call the API', async (origin) => {
+    const res = await fetch(`${baseUrl}/api/health`, { headers: { Origin: origin } });
+    expect(res.headers.get('access-control-allow-origin')).toBeNull();
+  });
+
+  it('rate-limits by the address two proxies back, ignoring entries the caller adds in front', async () => {
+    const remaining = async (forwardedFor: string) => {
+      const res = await fetch(`${baseUrl}/api/health`, { headers: { 'X-Forwarded-For': forwardedFor } });
+      return res.headers.get('ratelimit-remaining');
+    };
+    // The test socket stands in for the nearest proxy, 172.16.0.2 for the one before it
+    expect(await remaining('198.51.100.23, 172.16.0.2')).toBe('99');
+    expect(await remaining('203.0.113.7, 198.51.100.23, 172.16.0.2')).toBe('98');
+    expect(await remaining('198.51.100.24, 172.16.0.2')).toBe('99');
+  });
+});
+
 describe('request bodies', () => {
   let server: Server;
   let baseUrl: string;

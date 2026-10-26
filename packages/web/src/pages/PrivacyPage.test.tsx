@@ -52,8 +52,14 @@ function storageKeys(): string[] {
   return [...keys];
 }
 
-function hostsIn(text: string): string[] {
-  const hosts = [...text.matchAll(/https:\/\/(?:\*\.)?([a-z0-9.-]+)/g)].map((m) => m[1]);
+/**
+ * Third-party hosts only: the site's own domain and its subdomains, such as
+ * the API on api.citymonitor.app, are first party and need no row.
+ */
+function thirdPartyHostsIn(text: string): string[] {
+  const hosts = [...text.matchAll(/https:\/\/(?:\*\.)?([a-z0-9.-]+)/g)]
+    .map((m) => m[1])
+    .filter((host) => host !== 'citymonitor.app' && !host.endsWith('.citymonitor.app'));
   return [...new Set(hosts)];
 }
 
@@ -61,13 +67,11 @@ function cspHosts(): string[] {
   const blueprint = read('../../../../render.yaml');
   const csp = blueprint.match(/name: Content-Security-Policy\s+value: "([^"]+)"/)?.[1];
   if (!csp) throw new Error('Content-Security-Policy header not found in render.yaml');
-  return hostsIn(csp);
+  return thirdPartyHostsIn(csp);
 }
 
 function htmlShellHosts(): string[] {
-  return hostsIn(read('../../index.html')).filter(
-    (host) => host !== 'citymonitor.app' && !host.endsWith('.citymonitor.app'),
-  );
+  return thirdPartyHostsIn(read('../../index.html'));
 }
 
 function renderPage(): HTMLElement {
@@ -85,7 +89,7 @@ function pageText(): string {
 }
 
 describe('PrivacyPage third-party hosts', () => {
-  it('names every external host the deployed Content-Security-Policy allows', () => {
+  it('names every third-party host the deployed Content-Security-Policy allows', () => {
     const hosts = cspHosts();
     expect(hosts.length).toBeGreaterThan(0);
     const text = pageText();

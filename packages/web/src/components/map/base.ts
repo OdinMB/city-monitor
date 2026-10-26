@@ -18,6 +18,7 @@ import {
   NOISE_LAYER,
   getNoiseWmsUrl,
 } from './constants.js';
+import { API_BASE } from '../../lib/api.js';
 
 /** Check whether a style layer should be visible on initial load */
 function isKeptLayer(layer: LayerSpecification): boolean {
@@ -142,7 +143,7 @@ export function setWeatherOverlay(map: maplibregl.Map, visible: boolean) {
     if (!map.getSource(WEATHER_SOURCE)) {
       map.addSource(WEATHER_SOURCE, {
         type: 'raster',
-        tiles: ['/api/weather-tiles/{z}/{x}/{y}.png'],
+        tiles: [`${API_BASE}/weather-tiles/{z}/{x}/{y}.png`],
         tileSize: 256,
         maxzoom: 7, // RainViewer max zoom; MapLibre upscales for higher zooms
         attribution: '&copy; <a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>',

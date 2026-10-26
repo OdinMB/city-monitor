@@ -1,12 +1,27 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { seoPlugin } from './vite-plugin-seo.js';
+import { apiOrigin, resolveApiBase } from './src/lib/api-base.js';
 
-export default defineConfig({
+/**
+ * Preconnect to the API's origin when VITE_API_BASE points the app at another
+ * host. With the default same-origin '/api' there is nothing to add.
+ */
+function apiPreconnect(base: string): Plugin {
+  const origin = apiOrigin(base);
+  return {
+    name: 'api-preconnect',
+    transformIndexHtml: () =>
+      origin ? [{ tag: 'link', attrs: { rel: 'preconnect', href: origin, crossorigin: true }, injectTo: 'head' }] : [],
+  };
+}
+
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
+    apiPreconnect(resolveApiBase(loadEnv(mode, process.cwd(), 'VITE_').VITE_API_BASE)),
     seoPlugin(
       [
         {
@@ -72,4 +87,4 @@ export default defineConfig({
   server: {
     proxy: { '/api': 'http://localhost:3001' },
   },
-});
+}));
