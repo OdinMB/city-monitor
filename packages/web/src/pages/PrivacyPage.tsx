@@ -43,13 +43,6 @@ const SERVICES: Service[] = [
     purpose: 'Noise and rent map layers',
     data: "Only while the noise map or the rent map layer is switched on, your browser loads those map images directly from the city's official geodata service, exposing your IP address to it.",
   },
-  {
-    name: 'GitHub',
-    url: 'https://github.com/',
-    hosts: ['github.com', 'avatars.githubusercontent.com'],
-    purpose: 'Profile photo',
-    data: "Only on the Legal Notice page, your browser loads the site owner's profile photo from GitHub, exposing your IP address to them.",
-  },
 ];
 
 // Exactly the localStorage keys the app reads or writes; PrivacyPage.test.tsx
