@@ -61,4 +61,23 @@ describe('NewsMarquee', () => {
 
     vi.restoreAllMocks();
   });
+
+  it('holds its height while the news loads only when asked to reserve space', async () => {
+    const mod = await import('../../hooks/useNewsDigest.js');
+    vi.spyOn(mod, 'useNewsDigest').mockReturnValue({
+      data: undefined,
+      fetchedAt: null,
+      isPending: true,
+    } as unknown as ReturnType<typeof mod.useNewsDigest>);
+
+    const { container, rerender } = render(<NewsMarquee reserveSpace />);
+    const placeholder = container.firstElementChild;
+    expect(placeholder?.classList.contains('h-9')).toBe(true);
+    expect(placeholder?.getAttribute('aria-hidden')).toBe('true');
+
+    rerender(<NewsMarquee />);
+    expect(container.innerHTML).toBe('');
+
+    vi.restoreAllMocks();
+  });
 });
