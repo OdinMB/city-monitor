@@ -6,6 +6,7 @@ import { SUPPORT_URL } from '../../lib/constants.js';
 import { Sidebar } from '../sidebar/Sidebar.js';
 import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
 import { NinaBanner } from '../alerts/NinaBanner.js';
+import { NewsMarquee } from './NewsMarquee.js';
 import { DashboardGrid } from './DashboardGrid.js';
 import { Tile } from './Tile.js';
 import { TileFooter } from './TileFooter.js';
@@ -61,6 +62,7 @@ export function CommandLayout() {
   const { t } = useTranslation();
   const { id: cityId } = useCityConfig();
   const isDesktop = useIsDesktop();
+  const isPhone = !isDesktop;
 
   // NINA warnings are fetched for the topbar badge; the default active layers
   // (traffic + weather + warnings) are set in useCommandCenter defaults.
@@ -72,8 +74,22 @@ export function CommandLayout() {
 
   return (
     <>
-      {/* Upper zone: hero map — one *visible* screen tall, not 100vh (see @utility h-hero) */}
-      <div className="relative flex h-hero overflow-hidden">
+      {/* Phones: warnings and the news ticker sit under the sticky top bar,
+          above the map, so they are on the first screen. */}
+      {isPhone && (
+        <>
+          <div className="px-4 pt-4 empty:hidden">
+            <NinaBanner />
+          </div>
+          <NewsMarquee />
+        </>
+      )}
+
+      {/* Upper zone: hero map — one *visible* screen tall, not 100vh (see @utility h-hero).
+          Phones get a shorter band so the first tiles show under it; vh is safe
+          there because nothing is anchored to the bottom of the screen. The
+          300px floor matches CityMap's min-height, which the hero would clip. */}
+      <div className="relative flex h-hero max-sm:h-[max(40vh,300px)] overflow-hidden">
         <Sidebar />
         <div ref={mapRef} className="flex-1 min-w-0 relative">
           <ErrorBoundary FallbackComponent={MapErrorFallback}>
@@ -83,18 +99,21 @@ export function CommandLayout() {
           </ErrorBoundary>
           <MobileLayerDrawer />
         </div>
-        {/* Skyline + scroll indicator overlaid at bottom of hero */}
+        {/* Skyline + scroll indicator overlaid at bottom of hero. Phones see the
+            tiles below the shorter map already, so they get no indicator. */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
-          <ScrollIndicator targetRef={dashboardRef} />
+          {!isPhone && <ScrollIndicator targetRef={dashboardRef} />}
           <SkylineSeparator cityId={cityId} />
         </div>
       </div>
 
       {/* Lower zone: dashboard tiles */}
       <div ref={dashboardRef} className="bg-surface-0">
-        <div className="px-4 pt-4">
-          <NinaBanner />
-        </div>
+        {!isPhone && (
+          <div className="px-4 pt-4">
+            <NinaBanner />
+          </div>
+        )}
         <DashboardGrid>
           {/* Row 1-2: Hero briefing + Weather + AQI + Transit */}
           <Tile title={t('panel.news.briefing')} titleBadge={<AiLabel />} span={2} rowSpan={2}>

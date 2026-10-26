@@ -1,6 +1,7 @@
 import { type ReactNode, useState, useEffect, useRef, useCallback } from 'react';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js';
+import { useIsDesktop } from '../../hooks/useMediaQuery.js';
 import { TopBar } from './TopBar.js';
 import { NewsMarquee } from './NewsMarquee.js';
 import { KeyboardHints } from './KeyboardHints.js';
@@ -10,6 +11,9 @@ import { Footer } from './Footer.js';
 export function Shell({ children }: { children: ReactNode }) {
   const city = useCityConfig();
   const { hintsOpen, closeHints } = useKeyboardShortcuts();
+  // Phones (below sm) don't slide the bar: it starts at the top of the page and
+  // sticks there, and CommandLayout puts the warnings and the ticker under it.
+  const isPhone = !useIsDesktop();
   const topBarRef = useRef<HTMLDivElement>(null);
   const [topBarH, setTopBarH] = useState(0);
   const [progress, setProgress] = useState(0); // 0 = hidden, 1 = fully visible
@@ -52,13 +56,13 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col bg-surface-0 dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(var(--accent-rgb),0.04),var(--surface-0))] text-gray-900 dark:text-gray-100">
       {/* topbar-slide: globals.css pins the bar on screen while it holds keyboard focus */}
       <div
-        className="topbar-slide fixed top-0 left-0 right-0 z-50"
-        style={{ transform: `translateY(${translateY}px)` }}
+        className={`topbar-slide ${isPhone ? 'sticky top-0' : 'fixed top-0 left-0 right-0'} z-50`}
+        style={isPhone ? undefined : { transform: `translateY(${translateY}px)` }}
       >
         <div ref={topBarRef} className="topbar-slide-bar">
           <TopBar />
         </div>
-        <NewsMarquee />
+        {!isPhone && <NewsMarquee />}
       </div>
       <main className="flex-1">
         <h1 className="sr-only">City Monitor — {city.name}</h1>
