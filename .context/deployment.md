@@ -35,7 +35,7 @@ The API service sets `NODE_ENV=production`, which makes `npm ci` omit devDepende
 
 - `render.yaml` installs with `npm ci --include=dev`.
 - A dashboard build command can drift from `render.yaml`, so every workspace `build` script (`shared`, `packages/server`, `packages/web`) also starts with `scripts/ensure-dev-deps.mjs`. If any direct devDependency of the root or a workspace is missing, it runs `npm install --include=dev --no-save` at the repo root, which installs the lockfile's versions and leaves the lockfile alone. If none is missing (every local, CI and `--include=dev` build), it runs nothing. That no-op is also what lets turbo build `server` and `web` in parallel without two npm installs racing.
-- The build scripts call `node …/node_modules/typescript/bin/tsc` and `…/vite/bin/vite.js`, never a bare `tsc` or `vite`, and print the compiler version first. A good Render log shows `Version 5.9.3`, plus `vite v6.4.3 building for production...` for the static site.
+- The build scripts call `node …/node_modules/typescript/bin/tsc` and `…/vite/bin/vite.js`, never a bare `tsc` or `vite`, and print the compiler version first. A good Render log shows `Version 5.9.3`, plus `vite v6.4.5 building for production...` for the static site.
 
 The start command's `db:migrate` runs drizzle-kit, so the API also needs its devDependencies at runtime. The build leaves them installed. Upgrade TypeScript or Vite through the lockfile, not the platform's PATH.
 

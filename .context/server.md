@@ -6,7 +6,7 @@
 
 ### Startup Sequence
 
-1. Create Express app with compression, helmet, CORS (`ALLOWED_ORIGINS`, plus `localhost:5173` outside production), rate limiting in production (100 requests/min per IP; 10/min for bootstrap, and 10/min shared by social-atlas, population, aeds and budget) and JSON middleware
+1. Create Express app with compression, helmet, CORS (`ALLOWED_ORIGINS`, plus `localhost:5173` outside production), rate limiting in production (100 requests/min per IP; 10/min for bootstrap, and 10/min shared by social-atlas, population, aeds and budget) and JSON middleware. No route reads a request body, so the JSON parser runs with `inflate: false` and `limit: '10kb'`: a compressed body gets 415 without being decompressed, an oversized one 413
 2. Create in-memory cache (always)
 3. Create DB connection if `DATABASE_URL` set (returns `null` otherwise)
 4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`

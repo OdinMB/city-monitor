@@ -104,7 +104,9 @@ export async function createApp(options?: {
   if (!isDev) {
     app.use(rateLimit({ windowMs: 60_000, max: 100, standardHeaders: true, legacyHeaders: false }));
   }
-  app.use(express.json());
+  // No route reads a request body. Refuse compressed bodies (415) instead of
+  // decompressing them, and cap the rest at 10kb (413).
+  app.use(express.json({ inflate: false, limit: '10kb' }));
 
   const cache = createCache();
   const dbResult = createDb();
