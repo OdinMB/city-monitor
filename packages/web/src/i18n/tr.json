@@ -112,9 +112,10 @@
     "political": {
       "empty": "Veri bulunamadı",
       "districts": "seçim bölgesi",
-      "representatives": "temsilci",
-      "districtMayors": "ilçe başkanları",
-      "seats": "sandalye"
+      "representatives": "{{count}} temsilci",
+      "districtMayors": "{{count}} ilçe başkanı",
+      "seats": "sandalye",
+      "showMore": "+{{count}} daha…"
     },
     "budget": {
       "title": "Kent Bütçesi",
@@ -417,7 +418,7 @@
     "phone": "Tel",
     "today": "Bugün",
     "tomorrow": "Yarın",
-    "delay": "Gecikme: ~{{minutes}} dk",
+    "delay": "Gecikme: ~{{count}} dk",
     "roadEvent": {
       "jam": "Trafik sıkışıklığı",
       "closure": "Yol kapanması",

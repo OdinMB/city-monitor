@@ -5,6 +5,7 @@ import { useAppointments } from '../../hooks/useAppointments.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { safeUrl } from '../../lib/safe-url.js';
+import { forwardArrow } from '../../lib/bidi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -65,8 +66,9 @@ const FRESH_MAX_AGE = staleAfter('appointments');
 export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useAppointments(cityId);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
+  const arrow = forwardArrow(i18n.language);
 
   if (isLoading) {
     return <Skeleton lines={4} />;
@@ -83,7 +85,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
           rel="noopener noreferrer"
           className="text-xs text-blue-500 hover:underline mt-1 inline-block"
         >
-          {t('panel.appointments.bookAppointment')} →
+          {t('panel.appointments.bookAppointment')} {arrow}
         </a>
       </div>
     );
@@ -149,7 +151,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
             rel="noopener noreferrer"
             className="text-xs text-blue-500 hover:underline"
           >
-            {t('panel.appointments.bookAppointment')} →
+            {t('panel.appointments.bookAppointment')} {arrow}
           </a>
         </div>
       </div>

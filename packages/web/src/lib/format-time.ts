@@ -8,7 +8,7 @@ const DAY = 86400;
  * Relative time ("5 min ago", "vor 5 Min.", "5 dk önce") in the UI language,
  * from the `time.*` translation keys. Future timestamps read as "just now".
  * The result already carries its "ago" word, so a sentence that embeds it
- * must not add one.
+ * must not add one. The count picks the plural form (six in Arabic).
  */
 export function formatRelativeTimeI18n(isoString: string, t: TFunction): string {
   if (!isoString) return '';

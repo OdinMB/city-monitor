@@ -7,6 +7,7 @@ import { staleAfter } from '../../lib/freshness.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { getPartyColor } from '../../lib/party-colors.js';
 import { safeUrl } from '../../lib/safe-url.js';
+import { forwardArrow } from '../../lib/bidi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -53,6 +54,7 @@ function flatReps(districts: PoliticalDistrict[]): (Representative & { district:
 /* ── sub-components ───────────────────────────────────────── */
 
 function RepRow({ rep }: { rep: Representative & { district: string } }) {
+  const { i18n } = useTranslation();
   return (
     <div className="flex items-center gap-1.5 py-1 px-1.5 text-[11px]">
       <span
@@ -69,7 +71,7 @@ function RepRow({ rep }: { rep: Representative & { district: string } }) {
           rel="noopener noreferrer"
           className="text-blue-500 hover:text-blue-400 ml-auto shrink-0 @xs:ml-1"
         >
-          &rarr;
+          {forwardArrow(i18n.language)}
         </a>
       )}
     </div>
@@ -77,6 +79,7 @@ function RepRow({ rep }: { rep: Representative & { district: string } }) {
 }
 
 function RepList({ districts, limit, onExpand }: { districts: PoliticalDistrict[]; limit?: number; onExpand?: () => void }) {
+  const { t } = useTranslation();
   const reps = flatReps(districts);
   const shown = limit ? reps.slice(0, limit) : reps;
   const remaining = limit ? reps.length - shown.length : 0;
@@ -91,7 +94,7 @@ function RepList({ districts, limit, onExpand }: { districts: PoliticalDistrict[
           onClick={onExpand}
           className="w-full py-1.5 px-2 text-xs text-blue-500 hover:text-blue-400 text-left cursor-pointer"
         >
-          +{remaining} more…
+          {t('panel.political.showMore', { count: remaining })}
         </button>
       )}
     </div>
@@ -120,7 +123,8 @@ function arcPath(
   ].join(' ');
 }
 
-function SeatChart({ districts, seatsLabel }: { districts: PoliticalDistrict[]; seatsLabel: string }) {
+function SeatChart({ districts }: { districts: PoliticalDistrict[] }) {
+  const { t } = useTranslation();
   const parties = countByParty(districts);
   const total = parties.reduce((s, [, c]) => s + c, 0);
   if (total === 0) return null;
@@ -153,7 +157,7 @@ function SeatChart({ districts, seatsLabel }: { districts: PoliticalDistrict[]; 
         </text>
         <text x={cx} y={cy + 6} textAnchor="middle" dominantBaseline="auto"
           className="fill-gray-400 dark:fill-gray-500" style={{ fontSize: 10 }}>
-          {seatsLabel}
+          {t('panel.political.seats', { count: total })}
         </text>
       </svg>
 
@@ -232,17 +236,16 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
         ) : view === 'state' ? (
           /* State Parliament: always show seat chart */
           <div className="flex-1 flex items-center justify-center">
-            <SeatChart districts={data} seatsLabel={t('panel.political.seats')} />
+            <SeatChart districts={data} />
           </div>
         ) : (
           /* Bezirke / Bundestag: summary + rep list */
           <>
             <div className="mb-1">
               <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                {totalReps}{' '}
                 {view === 'bezirke'
-                  ? t('panel.political.districtMayors')
-                  : t('panel.political.representatives')}
+                  ? t('panel.political.districtMayors', { count: totalReps })
+                  : t('panel.political.representatives', { count: totalReps })}
               </span>
             </div>
             <RepList districts={data} limit={expanded ? undefined : PREVIEW_COUNT} onExpand={onExpand} />

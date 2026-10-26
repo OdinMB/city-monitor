@@ -112,9 +112,11 @@
     "political": {
       "empty": "Keine Daten verfügbar",
       "districts": "Wahlkreise",
-      "representatives": "Abgeordnete",
-      "districtMayors": "Bezirksbürgermeister",
-      "seats": "Sitze"
+      "representatives": "{{count}} Abgeordnete",
+      "districtMayors": "{{count}} Bezirksbürgermeister",
+      "seats_one": "Sitz",
+      "seats_other": "Sitze",
+      "showMore": "+{{count}} weitere…"
     },
     "budget": {
       "title": "Stadthaushalt",
@@ -307,7 +309,8 @@
       "filterLabel": "Nach Gremium filtern",
       "bvv": "Bezirksverordnetenversammlung",
       "parliament": "Abgeordnetenhaus",
-      "agendaItems": "{{count}} Tagesordnungspunkte",
+      "agendaItems_one": "{{count}} Tagesordnungspunkt",
+      "agendaItems_other": "{{count}} Tagesordnungspunkte",
       "openDetails": "Sitzungsdetails öffnen",
       "today": "Heute",
       "tomorrow": "Morgen"
@@ -417,7 +420,7 @@
     "phone": "Tel.",
     "today": "Heute",
     "tomorrow": "Morgen",
-    "delay": "Verzögerung: ~{{minutes}} Min.",
+    "delay": "Verzögerung: ~{{count}} Min.",
     "roadEvent": {
       "jam": "Stau",
       "closure": "Sperrung",

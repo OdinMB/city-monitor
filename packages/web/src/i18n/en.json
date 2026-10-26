@@ -112,9 +112,13 @@
     "political": {
       "empty": "No data available",
       "districts": "districts",
-      "representatives": "representatives",
-      "districtMayors": "district mayors",
-      "seats": "seats"
+      "representatives_one": "{{count}} representative",
+      "representatives_other": "{{count}} representatives",
+      "districtMayors_one": "{{count}} district mayor",
+      "districtMayors_other": "{{count}} district mayors",
+      "seats_one": "seat",
+      "seats_other": "seats",
+      "showMore": "+{{count}} more…"
     },
     "budget": {
       "title": "City Budget",
@@ -307,7 +311,8 @@
       "filterLabel": "Filter by body",
       "bvv": "District Assembly",
       "parliament": "State Parliament",
-      "agendaItems": "{{count}} agenda items",
+      "agendaItems_one": "{{count}} agenda item",
+      "agendaItems_other": "{{count}} agenda items",
       "openDetails": "Open meeting details",
       "today": "Today",
       "tomorrow": "Tomorrow"
@@ -417,7 +422,7 @@
     "phone": "Tel",
     "today": "Today",
     "tomorrow": "Tomorrow",
-    "delay": "Delay: ~{{minutes}} min",
+    "delay": "Delay: ~{{count}} min",
     "roadEvent": {
       "jam": "Traffic jam",
       "closure": "Road closure",

@@ -9,6 +9,7 @@ import { NEWS_CATEGORY_COLORS } from '../../../lib/map-icons.js';
 import { MAP_NEWS } from '../../../lib/map-settings.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
 import { safeUrl } from '../../../lib/safe-url.js';
+import { forwardArrow } from '../../../lib/bidi.js';
 import { showMapPopup, scheduleHoverClose } from '../popups.js';
 import {
   _newsSpider, _newsH, _safetySpider, _safetyH,
@@ -174,12 +175,12 @@ function placeLine(label: unknown): string {
 }
 
 /**
- * Outbound link labelled with a translated word and an arrow, or nothing when
- * the URL is not an ordinary web address.
+ * Outbound link labelled with a translated word and an arrow pointing along
+ * the reading direction, or nothing when the URL is not an ordinary web address.
  */
 function popupLink(url: unknown, labelKey: string): string {
   const href = safeUrl(typeof url === 'string' ? url : undefined);
-  return href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">${escapeHtml(i18n.t(labelKey))} →</a>` : '';
+  return href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">${escapeHtml(i18n.t(labelKey))} ${forwardArrow()}</a>` : '';
 }
 
 /**

@@ -114,7 +114,7 @@ describe('BriefingStrip', () => {
       ['en', 'Generated 7 min ago · Updated just now'],
       ['de', 'Erstellt vor 7 Min. · Aktualisiert gerade eben'],
       ['tr', '7 dk önce oluşturuldu · Güncellendi az önce'],
-      ['ar', 'تم الإنشاء منذ 7 دقيقة · تم التحديث الآن'],
+      ['ar', 'تم الإنشاء منذ 7 دقائق · تم التحديث الآن'],
     ])('shows when the briefing was generated without a doubled "ago" (%s)', async (lang, expected) => {
       await i18n.changeLanguage(lang);
       const now = Date.now();

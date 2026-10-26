@@ -9,6 +9,7 @@ import type { PoliticalDistrict } from '../../../lib/api.js';
 import { getPartyColor, getMajorityParty } from '../../../lib/party-colors.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
 import { safeUrl } from '../../../lib/safe-url.js';
+import { forwardArrow } from '../../../lib/bidi.js';
 import { registerPoliticalIcons, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
 import { normalizePoliticalName } from '../base.js';
@@ -242,7 +243,7 @@ export function buildPoliticalPopupHtml(districtName: string, districts: Politic
     return `<div style="font-size:13px"><strong>${escapeHtml(districtName)}</strong><br><em>${escapeHtml(i18n.t('panel.political.empty'))}</em></div>`;
   }
 
-  const profileLabel = escapeHtml(i18n.t('mapPopup.profile'));
+  const profileLabel = `${escapeHtml(i18n.t('mapPopup.profile'))} ${forwardArrow()}`;
   const sorted = sortRepsByPartyMajority(match.representatives);
 
   const parts = [`<div style="font-size:13px;max-height:400px;overflow-y:auto">`];
@@ -255,7 +256,7 @@ export function buildPoliticalPopupHtml(districtName: string, districts: Politic
       `<div style="border-left:3px solid ${color};padding-left:8px;margin-bottom:6px">` +
       `<strong>${escapeHtml(rep.name)}</strong> <span style="opacity:0.6;font-size:11px">${escapeHtml(rep.party)}</span><br>` +
       `<span style="font-size:11px;opacity:0.7">${escapeHtml(rep.role)}${rep.constituency ? ` — ${escapeHtml(rep.constituency)}` : ''}</span>` +
-      (profileUrl ? `<br><a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">${profileLabel} →</a>` : '') +
+      (profileUrl ? `<br><a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">${profileLabel}</a>` : '') +
       `</div>`,
     );
   }

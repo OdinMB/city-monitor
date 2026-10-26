@@ -159,7 +159,7 @@ function localAt(offsetDays: number, hour: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(hour)}:00:00`;
 }
 
-describe('values after a translated label in Arabic (right-to-left)', () => {
+describe('numbers that stay left-to-right in Arabic (right-to-left)', () => {
   /** Text of every element marked left-to-right, so its digits and unit keep their order. */
   function ltrTexts(html: string): string[] {
     return [...parse(html).querySelectorAll('[dir="ltr"]')].map((n) => n.textContent!);
@@ -167,6 +167,8 @@ describe('values after a translated label in Arabic (right-to-left)', () => {
 
   it.each([
     ['pharmacy phone', () => pharmacyPopupHtml({ ...PHARMACY, phone: '+49 30 2827871' }, COORDS), ['+49 30 2827871']],
+    ['roadworks validity range', () => constructionPopupHtml({ ...CONSTRUCTION, validFrom: '01.03.2026 06:00', validUntil: '30.11.2026 17:00' }), ['01.03.2026 06:00 – 30.11.2026 17:00']],
+    ['roadworks start date alone', () => constructionPopupHtml({ ...CONSTRUCTION, validUntil: '' }), ['01.10.2026']],
     ['water level', () => waterLevelPopupHtml(GAUGE), ['412 cm']],
     ['bathing temperature and visibility', () => bathingPopupHtml(BATHING), ['21°C', '1.5m']],
     ['noise readings', () => noisePopupHtml(NOISE, false), ['58.2 dB', '40.1 dB', '75.3 dB']],
@@ -193,6 +195,27 @@ describe('map popups in Turkish and Arabic', () => {
     expect(text).toContain('جهاز إزالة الرجفان (AED)');
     expect(text).toContain('الوصول: للزبائن فقط');
     expect(text).toContain('الاتجاهات ↗');
+  });
+
+  it.each([
+    [1, 'التأخير: نحو دقيقة واحدة'],
+    [2, 'التأخير: نحو دقيقتين'],
+    [5, 'التأخير: نحو 5 دقائق'],
+    [12, 'التأخير: نحو 12 دقيقة'],
+  ])('gives a %i-minute traffic delay its Arabic plural form', async (minutes, expected) => {
+    await i18n.changeLanguage('ar');
+    expect(textOf(trafficPopupHtml({ ...TRAFFIC, delay: minutes * 60 }))).toContain(expected);
+  });
+
+  it.each([
+    ['news', () => newsPopupHtml(NEWS), 'اقرأ المزيد ←'],
+    ['police', () => safetyPopupHtml(SAFETY), 'التفاصيل ←'],
+    ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS), 'الملف الشخصي ←'],
+  ] as const)('points the %s link arrow along the Arabic reading direction', async (_name, build, expected) => {
+    await i18n.changeLanguage('ar');
+    const text = textOf(build());
+    expect(text).toContain(expected);
+    expect(text).not.toContain('→');
   });
 });
 

@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { TileFooter } from '../layout/TileFooter.js';
+import { Ltr } from '../Ltr.js';
 
 type Tab = 'citywide' | 'local';
 
@@ -127,7 +128,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
                   href={`tel:${s.phone.replace(/[\s-]/g, '')}`}
                   className="shrink-0 text-[12px] font-semibold tabular-nums text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  {s.phone}
+                  <Ltr>{s.phone}</Ltr>
                 </a>
               </div>
             ))}
@@ -160,7 +161,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
                   href={`tel:${r.phone.replace(/[\s-]/g, '')}`}
                   className="shrink-0 text-[12px] font-semibold tabular-nums text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  {r.phone}
+                  <Ltr>{r.phone}</Ltr>
                 </a>
               </div>
             ))}

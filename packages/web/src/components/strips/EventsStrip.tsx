@@ -6,6 +6,7 @@ import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { safeUrl } from '../../lib/safe-url.js';
+import { forwardArrow } from '../../lib/bidi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -62,6 +63,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
   const time = formatEventTime(event.date, lang);
   const day = formatEventDay(event.date, lang);
   const showTime = time !== '00:00';
+  const arrow = forwardArrow(lang);
 
   const content = (
     <>
@@ -89,7 +91,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
           {event.venue && <div>{event.venue}</div>}
           {event.description && <div className="line-clamp-3">{event.description}</div>}
           {event.endDate && (
-            <div>→ {formatEventDay(event.endDate, lang)} {formatEventTime(event.endDate, lang)}</div>
+            <div>{arrow} {formatEventDay(event.endDate, lang)} {formatEventTime(event.endDate, lang)}</div>
           )}
           {event.price && <div>{event.price}</div>}
           {event.url && (
@@ -100,7 +102,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
               className="inline-block text-blue-600 dark:text-blue-400 hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
-              {t('panel.events.moreInfo')} →
+              {t('panel.events.moreInfo')} {arrow}
             </a>
           )}
         </div>

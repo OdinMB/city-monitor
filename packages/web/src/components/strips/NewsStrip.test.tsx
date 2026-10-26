@@ -93,10 +93,21 @@ describe('NewsStrip item timestamps', () => {
     ['en', '9 min ago'],
     ['de', 'vor 9 Min.'],
     ['tr', '9 dk önce'],
-    ['ar', 'منذ 9 دقيقة'],
+    ['ar', 'منذ 9 دقائق'],
   ])('shows the publication time in the UI language (%s)', async (lang, expected) => {
     await i18n.changeLanguage(lang);
     const publishedAt = new Date(Date.now() - 9 * 60_000).toISOString();
+    render(<NewsStrip />, { wrapper: createWrapper([{ ...ITEM, publishedAt }]) });
+    expect(screen.getByText(expected)).toBeTruthy();
+  });
+
+  it.each([
+    [2, 'منذ ساعتين'],
+    [3, 'منذ 3 ساعات'],
+    [11, 'منذ 11 ساعة'],
+  ])('uses the Arabic plural form for an item %i h old', async (hours, expected) => {
+    await i18n.changeLanguage('ar');
+    const publishedAt = new Date(Date.now() - hours * 3_600_000).toISOString();
     render(<NewsStrip />, { wrapper: createWrapper([{ ...ITEM, publishedAt }]) });
     expect(screen.getByText(expected)).toBeTruthy();
   });
