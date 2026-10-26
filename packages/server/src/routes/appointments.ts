@@ -35,7 +35,7 @@ export function createAppointmentsRouter(cache: Cache, db: Db | null = null) {
       try {
         const result = await loadAppointments(db, city.id);
         if (result) {
-          cache.set(CK.appointments(city.id), result.data, 21600, result.fetchedAt);
+          cache.set(CK.appointments(city.id), result.data, 7200, result.fetchedAt);
           res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
           return;
         }

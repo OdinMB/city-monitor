@@ -180,7 +180,7 @@ async function ingestCityAppointments(
     bookingUrl: BOOKING_URL,
   };
 
-  cache.set(CK.appointments(cityId), data, 21600); // 6h TTL
+  cache.set(CK.appointments(cityId), data, 7200); // 2h TTL
 
   if (db) {
     try {

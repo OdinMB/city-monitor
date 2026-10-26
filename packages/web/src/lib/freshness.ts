@@ -34,7 +34,7 @@ export const FEED_TIMINGS = {
   transit:         { job: 15 * MIN,  refetch: 5 * MIN,  httpMaxAge: 2 * MIN },  // ingest-transit */15
   waterLevels:     { job: 15 * MIN,  refetch: 15 * MIN, httpMaxAge: 5 * MIN },  // ingest-water-levels */15
   events:          { job: 6 * HOUR,  refetch: 30 * MIN, httpMaxAge: 30 * MIN }, // ingest-events every 6 h
-  appointments:    { job: 6 * HOUR,  refetch: 30 * MIN, httpMaxAge: HOUR },     // ingest-appointments every 6 h
+  appointments:    { job: 2 * HOUR,  refetch: 30 * MIN, httpMaxAge: 30 * MIN }, // ingest-appointments every 2 h
   pollen:          { job: 6 * HOUR,  refetch: HOUR,     httpMaxAge: 12 * HOUR }, // ingest-pollen every 6 h
   councilMeetings: { job: 6 * HOUR,  refetch: HOUR,     httpMaxAge: HOUR },     // ingest-council-meetings every 6 h
   bathing:         { job: DAY,       refetch: DAY,      httpMaxAge: 12 * HOUR }, // ingest-bathing daily

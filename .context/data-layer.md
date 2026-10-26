@@ -47,7 +47,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:wastewater:summary` | 604800s (7 days) | ingest-wastewater (Berlin-only) |
 | `{cityId}:bathing:spots` | 86400s (24h) | ingest-bathing (Berlin-only) |
 | `{cityId}:labor-market` | 86400s (24h) | ingest-labor-market (Berlin-only) |
-| `{cityId}:appointments` | 21600s (6h) | ingest-appointments |
+| `{cityId}:appointments` | 7200s (2h) | ingest-appointments |
 | `{cityId}:nina:warnings` | 600s (10 min) | ingest-nina |
 | `{cityId}:population:geojson` | 3214080s (37.2 days) | ingest-population (Berlin-only) |
 | `{cityId}:population:summary` | 3214080s (37.2 days) | ingest-population (Berlin-only) |
@@ -134,7 +134,7 @@ The synthetic dev seed (`synthetic/seed.ts`, see [dev-database.md](dev-database.
 
 ### Cache Warming (`warm-cache.ts`)
 
-Runs on server start if DB is connected. First loads every geocode lookup into the geocoder's in-process map, then all data types for all active cities from Postgres into cache. Frequently refreshed domains get their cron interval plus 20% as TTL (weather 4320s, transit and water levels 1080s, news and safety 720s, NINA and traffic 360s, AQ grid and construction 2160s, events, appointments and pharmacies 25920s); the rest get the cron job's own TTL. Berlin-only domains (wastewater, bathing, labor market, population GeoJSON and summary, Feuerwehr, noise sensors, council meetings) are guarded with `cityId === 'berlin'`. The warmed AQ grid, like the air-quality route's DB fallback, has Sensor.Community points only; the WAQI stations come back with the `ingest-aq-grid` run that every start triggers. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
+Runs on server start if DB is connected. First loads every geocode lookup into the geocoder's in-process map, then all data types for all active cities from Postgres into cache. Frequently refreshed domains get their cron interval plus 20% as TTL (weather 4320s, transit and water levels 1080s, news and safety 720s, NINA and traffic 360s, AQ grid and construction 2160s, events and pharmacies 25920s, appointments 8640s); the rest get the cron job's own TTL. Berlin-only domains (wastewater, bathing, labor market, population GeoJSON and summary, Feuerwehr, noise sensors, council meetings) are guarded with `cityId === 'berlin'`. The warmed AQ grid, like the air-quality route's DB fallback, has Sensor.Community points only; the WAQI stations come back with the `ingest-aq-grid` run that every start triggers. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
 
 ### Freshness Checks (`warm-cache.ts`)
 
