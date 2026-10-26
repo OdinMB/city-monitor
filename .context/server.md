@@ -2,7 +2,7 @@
 
 ## App Factory (`packages/server/src/app.ts`)
 
-`createApp(options?)` builds the Express app. Accepts `{ skipScheduler?: boolean }` for tests.
+`createApp(options?)` builds the Express app. Accepts `{ skipScheduler?: boolean }` for tests and `{ synthetic?: boolean }` for the synthetic dev mode ([dev-database.md](dev-database.md)), which also skips the freshness check, the weather-tiles router and `preCacheBezirke`.
 
 ### Startup Sequence
 
@@ -16,7 +16,7 @@
 8. Mount routers under `/api` with per-route Cache-Control headers
 9. Return `{ app, cache, db, scheduler }`
 
-Entry point (`index.ts`) calls `createApp()` and listens on `PORT` (default 3001).
+Entry point (`index.ts`) calls `createApp()` and listens on `PORT` (default 3001). `dev-synthetic.ts` is the dev-only entry for `npm run dev:synthetic`; production never loads it.
 
 ### Cache-Control Headers
 

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "dev:synthetic": "tsx watch src/dev-synthetic.ts",
     "build": "node ../../scripts/ensure-dev-deps.mjs && node ../../node_modules/typescript/bin/tsc --version && node ../../node_modules/typescript/bin/tsc",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
@@ -16,6 +17,7 @@
     "db:studio": "node --env-file-if-exists=.env ../../node_modules/drizzle-kit/bin.cjs studio",
     "db:invalidate": "tsx --env-file-if-exists=.env src/scripts/invalidate-cache.ts",
     "db:retain": "tsx --env-file-if-exists=.env src/scripts/data-retention.ts",
+    "db:seed": "tsx src/scripts/seed-synthetic.ts",
     "check:weather": "tsx --env-file-if-exists=.env src/scripts/check-weather-sources.ts",
     "eval:models": "tsx --env-file-if-exists=.env src/scripts/model-eval/run.ts"
   },

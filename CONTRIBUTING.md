@@ -6,7 +6,7 @@ Thanks for your interest in contributing! Here's how to get started.
 
 1. **Fork** the repository
 2. **Create a branch** from `main` for your change
-3. **Make your changes** — see [Getting Started](README.md#getting-started) for dev setup
+3. **Make your changes** — see [Getting Started](README.md#getting-started) for dev setup. Without API keys or a database, use the [synthetic data](README.md#with-synthetic-data) setup.
 4. **Run checks** before submitting:
    ```bash
    npm run typecheck

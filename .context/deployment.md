@@ -87,6 +87,8 @@ The full list: every variable the code reads (`process.env` in `packages/server`
 | `TICKETMASTER_CONSUMER_KEY` | No | Events skip Ticketmaster; Berlin's other sources (kulturdaten.berlin, gomus) still load. |
 | `FIRECRAWL_API_KEY` | No | Appointments job skipped: the Bürgeramt tile stays empty. |
 | `LOCATIONIQ_TOKEN` | No | Geocoding waits for Nominatim's 1 request/second instead of falling back to LocationIQ. |
+| `SYNTHETIC_DATABASE_URL` | Dev only, never set in production | `db:seed` and `dev:synthetic` use the docker-compose `db`. It must be on localhost or 127.0.0.1 ([dev-database.md](dev-database.md)). |
+| `SYNTHETIC_ALLOW_DATABASE_NAME` | Dev only | `db:seed` wipes only a local database named `city_monitor_dev`. |
 
 `render.yaml` also declares `SENTRY_DSN`, but no code reads it: there is no Sentry integration.
 

@@ -63,7 +63,15 @@ import { createCouncilMeetingIngestion } from './cron/ingest-council-meetings.js
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
 
-export async function createApp(options?: { skipScheduler?: boolean }) {
+export async function createApp(options?: {
+  skipScheduler?: boolean;
+  /**
+   * Synthetic dev mode (dev-synthetic.ts): serve the database as seeded. No cron
+   * jobs, no startup refresh, no radar fetches, no hardcoded political names.
+   */
+  synthetic?: boolean;
+}) {
+  const synthetic = options?.synthetic ?? false;
   const app = express();
   app.set('trust proxy', 1); // Render reverse proxy
   app.use(compression());
@@ -95,7 +103,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
   }
 
   // Pre-cache hardcoded political data so it's available before cron jobs finish
-  preCacheBezirke(cache);
+  if (!synthetic) preCacheBezirke(cache);
 
   // Check which domains have stale/missing data and need a startup refresh.
   // Max age is roughly the cron interval — data older than that is overdue.
@@ -130,9 +138,11 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { jobName: 'ingest-council-meetings', tableName: 'snapshots', maxAgeSeconds: 21600, filter: { column: 'type', value: 'oparl-meetings' } },
   ];
 
-  const stale = db
-    ? await findStaleJobs(db, FRESHNESS_SPECS)
-    : new Set(FRESHNESS_SPECS.map((s) => s.jobName)); // no DB = refresh everything
+  const stale = synthetic
+    ? new Set<string>() // synthetic mode never refreshes
+    : db
+      ? await findStaleJobs(db, FRESHNESS_SPECS)
+      : new Set(FRESHNESS_SPECS.map((s) => s.jobName)); // no DB = refresh everything
 
   const ingestFeeds = createFeedIngestion(cache, db);
   const ingestWeather = createWeatherIngestion(cache, db);
@@ -193,7 +203,7 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
     { name: 'data-retention', schedule: '0 3 * * *', handler: retainData },
   ];
 
-  const scheduler = options?.skipScheduler
+  const scheduler = options?.skipScheduler || synthetic
     ? { getJobs: () => [] as JobInfo[], stop: () => {}, triggerJob: async () => false as boolean }
     : createScheduler(jobs);
 
@@ -203,7 +213,8 @@ export async function createApp(options?: { skipScheduler?: boolean }) {
 
   // Non-city routes (mounted before validateCity so /api/health, /api/weather-tiles aren't rejected)
   app.use('/api', createHealthRouter(cache, scheduler));
-  app.use('/api', cacheFor(300), createWeatherTilesRouter());
+  // The tiles router fetches RainViewer as soon as it is created
+  if (!synthetic) app.use('/api', cacheFor(300), createWeatherTilesRouter());
 
   // Validate :city param on all /:city/* routes
   app.use('/api/:city', validateCity);

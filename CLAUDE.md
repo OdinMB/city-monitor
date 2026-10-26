@@ -54,9 +54,10 @@ Adding a city = adding a config file (server + web) + registering in `ALL_CITIES
 - [`.context/pollen.md`](.context/pollen.md) — DWD Pollenflug-Gefahrenindex 3-day pollen forecast for 8 types (both cities). Pollen uses a string-based intensity scale ('0' to '3' with half-steps, '-1' for off-season) and a seasonal UI that shows off-season messages in winter.
 - [`.context/noise.md`](.context/noise.md) — WMS strategic noise maps (both cities, frontend-only) and Sensor.Community DNMS live noise sensors (Berlin only). Noise has two layers: a WMS raster overlay with 4 sub-layers (total/road/rail/air) and colored circle markers for live dB readings.
 - [`.context/council-meetings.md`](.context/council-meetings.md) — Council meetings require browser-like headers for OParl servers and DST-aware timezone handling for PARDOK XML. Berlin-only feature combining BVV district assembly OParl 1.0 APIs (11 districts) and Abgeordnetenhaus PARDOK XML feeds into a 14-day meeting calendar.
-- [`.context/new-data-sources.md`](.context/new-data-sources.md) — **When adding a new data source, follow the checklist in this file.** It covers all 27 integration points (server, frontend, favicons, docs, tests, migration) and includes a data freshness inventory for sources with hardcoded URLs. Also contains research on potential Berlin data sources.
+- [`.context/new-data-sources.md`](.context/new-data-sources.md) — **When adding a new data source, follow the checklist in this file.** It covers all 28 integration points (server, frontend, favicons, docs, tests, migration) and includes a data freshness inventory for sources with hardcoded URLs. Also contains research on potential Berlin data sources.
 - [`.context/deploy-on-render.md`](.context/deploy-on-render.md) — Step-by-step Render.com deployment guide: Blueprint (automated) and manual setup for PostgreSQL, API web service, and static frontend. Covers env vars, rewrites, headers, custom domains, multi-city, troubleshooting, and costs.
 - [`.context/testing.md`](.context/testing.md) — Vitest setup for both packages, how to run tests (turbo vs direct), web jsdom environment, co-located test file conventions.
+- [`.context/dev-database.md`](.context/dev-database.md) — Local Postgres with synthetic Berlin data (`npm run db:seed`) and an API mode that serves it with no cron jobs, API keys, `.env` or outbound calls (`npm run dev:synthetic`). The seed wipes without asking and refuses any database other than `city_monitor_dev` on localhost. A new data source has to be added to its generator.
 - [`.context/model-eval.md`](.context/model-eval.md) — Before changing an LLM model, effort or prompt, rerun the model-eval harness (`npm run eval:models`); it is read-only against the DB and budget-capped. Covers the arms, flags, decision rules, output files and known sample limits.
 - [`.context/ai-transparency.md`](.context/ai-transparency.md) — Changing an AI feature, a model, an AI label or where AI text is served? Update this EU AI Act (Art. 50) record in the same change. It holds the AI feature inventory with model ids, each duty's measure and verdict, the text-watermark decision with its 2026-11-15 re-test, and the owner's open decisions.
 
@@ -82,6 +83,10 @@ npm run db:generate    # Generate migrations from schema changes
 npm run db:migrate     # Apply migrations
 npm run db:push        # Push schema directly (dev only)
 npm run db:studio      # Open Drizzle Studio (DB browser)
+
+# Synthetic dev database (from the repo root, after `docker compose up -d db`)
+npm run db:seed        # Migrate, wipe and seed the local DB (refuses anything but local city_monitor_dev)
+npm run dev:synthetic  # API on port 3001 against it: no cron jobs, no keys, no .env
 ```
 
 **Before every commit, run `npm run typecheck`, `npm run lint`, AND `npm test`.** All three must pass. Do not commit on red — CI on `main` is not a gating check, so a red push lingers until someone notices. If a test fails for a reason unrelated to your change, fix it or revert; do not push past it.
