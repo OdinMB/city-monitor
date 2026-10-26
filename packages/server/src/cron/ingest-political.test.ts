@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   normalizeParty,
   normalizeConstituencyName,
@@ -7,8 +7,21 @@ import {
   deduplicateMandates,
   constituencyToBezirk,
   preCacheBezirke,
+  createPoliticalIngestion,
 } from './ingest-political.js';
 import { createCache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+
+vi.mock('../db/reads.js', () => ({
+  loadPoliticalFetchedAt: vi.fn(),
+}));
+
+vi.mock('../db/writes.js', () => ({
+  savePoliticalDistricts: vi.fn().mockResolvedValue(undefined),
+}));
+
+import { loadPoliticalFetchedAt } from '../db/reads.js';
+import { savePoliticalDistricts } from '../db/writes.js';
 
 describe('preCacheBezirke', () => {
   afterEach(() => {
@@ -213,5 +226,97 @@ describe('constituencyToBezirk', () => {
 
   it('matches case-insensitively', () => {
     expect(constituencyToBezirk('mitte 1', bezirke)).toBe('Mitte');
+  });
+});
+
+describe('createPoliticalIngestion — weekly refresh', () => {
+  const DAY_MS = 86_400_000;
+  const db = {} as Db;
+  const previous = [{ id: 'old', name: 'Previous', level: 'bundestag', representatives: [] }];
+
+  const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
+  const unavailable = () => new Response('unavailable', { status: 503 });
+  const mitteMandate = (politicianId = 1) => makeMandateObj({
+    politicianId,
+    fractionLabel: 'Fraktion der SPD',
+    constituencyLabel: '75 - Berlin-Mitte (Bundestag 2025 - 2029)',
+  });
+  const onePage = () => ok({ data: [mitteMandate()], meta: { result: { total: 1, count: 1 } } });
+
+  /** Bundestag period 111, Berlin state period 222; `mandates` answers the mandate requests. */
+  function mockAbgeordnetenwatch(mandates: (url: string) => Response = onePage) {
+    return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/parliament-periods')) {
+        return ok({ data: [{ id: url.includes('parliament=5&') ? 111 : 222, type: 'legislature' }] });
+      }
+      return mandates(url);
+    });
+  }
+
+  const savedLevels = () => vi.mocked(savePoliticalDistricts).mock.calls.map((call) => call[2]);
+
+  beforeEach(() => {
+    vi.mocked(loadPoliticalFetchedAt).mockReset();
+    vi.mocked(savePoliticalDistricts).mockClear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('refetches on the weekly run when the last fetch is a few seconds under 7 days old', async () => {
+    vi.mocked(loadPoliticalFetchedAt).mockResolvedValue(new Date(Date.now() - 7 * DAY_MS + 30_000));
+    const fetchSpy = mockAbgeordnetenwatch();
+    const cache = createCache();
+
+    await createPoliticalIngestion(cache, db)();
+
+    expect(fetchSpy).toHaveBeenCalled();
+    const bundestag = cache.get<{ name: string }[]>('berlin:political:bundestag');
+    expect(bundestag?.map((d) => d.name)).toEqual(['Berlin-Mitte']);
+  });
+
+  it('skips the API when the stored data is from the current weekly cycle', async () => {
+    vi.mocked(loadPoliticalFetchedAt).mockResolvedValue(new Date(Date.now() - 3600_000));
+    const fetchSpy = mockAbgeordnetenwatch();
+    const cache = createCache();
+
+    await createPoliticalIngestion(cache, db)();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('keeps the previous data when a later mandates page fails', async () => {
+    vi.mocked(loadPoliticalFetchedAt).mockResolvedValue(new Date(Date.now() - 8 * DAY_MS));
+    const firstPage = Array.from({ length: 100 }, (_, i) => mitteMandate(i + 1));
+    mockAbgeordnetenwatch((url) => url.includes('range_start=0&')
+      ? ok({ data: firstPage, meta: { result: { total: 250, count: 100 } } })
+      : unavailable());
+    const cache = createCache();
+    cache.set('berlin:political:bundestag', previous, 604800);
+    cache.set('berlin:political:state', previous, 604800);
+
+    await createPoliticalIngestion(cache, db)();
+
+    expect(cache.get('berlin:political:bundestag')).toEqual(previous);
+    expect(cache.get('berlin:political:state')).toEqual(previous);
+    expect(savedLevels()).toEqual(['bezirke']);
+  });
+
+  it('updates the Bundestag but keeps the previous state data when the state fetch fails', async () => {
+    vi.mocked(loadPoliticalFetchedAt).mockResolvedValue(new Date(Date.now() - 8 * DAY_MS));
+    mockAbgeordnetenwatch((url) => (url.includes('parliament_period=111&') ? onePage() : unavailable()));
+    const cache = createCache();
+    cache.set('berlin:political:state', previous, 604800);
+    cache.set('berlin:political:state-bezirke', previous, 604800);
+
+    await createPoliticalIngestion(cache, db)();
+
+    const bundestag = cache.get<{ name: string }[]>('berlin:political:bundestag');
+    expect(bundestag?.map((d) => d.name)).toEqual(['Berlin-Mitte']);
+    expect(cache.get('berlin:political:state')).toEqual(previous);
+    expect(cache.get('berlin:political:state-bezirke')).toEqual(previous);
+    expect(savedLevels()).toEqual(['bezirke', 'bundestag']);
   });
 });

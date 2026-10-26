@@ -84,7 +84,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-bathing` | `0 6 * * *` | LAGeSo bathing water quality (daily, Berlin-only) |
 | `ingest-wastewater` | `0 6 * * *` | LAGeSo wastewater viral loads (daily, Berlin-only) |
 | `ingest-labor-market` | `0 7 * * *` | BA unemployment statistics (daily, Berlin-only) |
-| `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly) |
+| `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly; skips the API only when the stored data is under 6 days old, so every weekly run refreshes) |
 | `ingest-population` | `0 6 1 * *` | Amt für Statistik population demographics (monthly, Berlin-only) |
 | `ingest-feuerwehr` | `0 8 * * *` | Berliner Feuerwehr operations (daily, Berlin-only) |
 | `ingest-pollen` | `0 */6 * * *` | DWD pollen forecast |

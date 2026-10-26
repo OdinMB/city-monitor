@@ -42,9 +42,7 @@ export const FEED_TIMINGS = {
   budget:          { job: DAY,       refetch: HOUR,     httpMaxAge: HOUR },     // ingest-budget daily
   feuerwehr:       { job: DAY,       refetch: DAY,      httpMaxAge: 12 * HOUR }, // ingest-feuerwehr daily
   wastewater:      { job: DAY,       refetch: DAY,      httpMaxAge: 12 * HOUR }, // ingest-wastewater daily
-  // ingest-political runs weekly but skips the API while the stored data is
-  // under 7 days old, so new data lands every second week.
-  political:       { job: 14 * DAY,  refetch: DAY,      httpMaxAge: HOUR },
+  political:       { job: 7 * DAY,   refetch: DAY,      httpMaxAge: HOUR },     // ingest-political weekly
   population:      { job: 31 * DAY,  refetch: 12 * HOUR, httpMaxAge: 12 * HOUR }, // ingest-population on the 1st of each month
 } satisfies Record<string, FeedTiming>;
 
