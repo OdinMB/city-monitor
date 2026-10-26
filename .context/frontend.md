@@ -164,7 +164,7 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 API responses include `fetchedAt` (ISO string) indicating when data was last ingested from external sources. The frontend uses this to show staleness indicators.
 
 - **`useFreshness(fetchedAt, freshMaxAge)`** — hook that returns `{ isStale, agoText }`. Re-evaluates every 60s. `agoText` uses i18n `time.*` keys.
-- **`TileFooter`** — unified footnote component (`text-[10px]`, gray, centered). Used for staleness badges and domain-specific notes (measurement dates, generation times).
+- **`TileFooter`** — unified footnote component (`text-[11px]`, centered; `gray-500` light / `gray-400` dark, at least 4.5:1 on the tile surface in both themes). Used for staleness badges and domain-specific notes (measurement dates, generation times).
 - Each strip's `FRESH_MAX_AGE` comes from `staleAfter(feed)` in `lib/freshness.ts`: the feeding cron job's interval plus half an interval of grace (at least 15 min), plus the hook's refetch interval and the route's HTTP max-age, so data counts as stale only after a scheduled run was missed. Update its table when a cron schedule, `cacheFor()` value or hook refetch interval changes. When stale, a `TileFooter` with "Updated X ago" (translated) appears at the bottom. `TileFooter stale` turns the text amber (`amber-700` light, AA on white) and appends the translated word `stale.outdated`, so staleness isn't shown by colour alone.
 - Strips with domain-specific footnotes (BriefingStrip, WastewaterStrip, BathingStrip, LaborMarketStrip, PopulationStrip) use `TileFooter` for those notes as well, ensuring consistent styling.
 

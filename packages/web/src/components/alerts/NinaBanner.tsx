@@ -82,11 +82,12 @@ function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismi
             {warning.source.toUpperCase()} · {t(`nina.severity.${warning.severity}`, warning.severity)}
           </div>
         </div>
+        {/* min-w-6 min-h-6: each button is at least a 24px tap target (WCAG 2.5.8). */}
         <div className="flex items-center gap-1 shrink-0">
           {(warning.description || warning.instruction) && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-1 rounded hover:bg-white/20 text-xs"
+              className="inline-flex items-center justify-center min-w-6 min-h-6 p-1 rounded hover:bg-white/20 text-xs"
               aria-expanded={expanded}
               aria-label={expanded ? t('tile.collapse') : t('tile.expand')}
             >
@@ -95,7 +96,7 @@ function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismi
           )}
           <button
             onClick={() => onDismiss(warning.id)}
-            className="p-1 rounded hover:bg-white/20 text-xs"
+            className="inline-flex items-center justify-center min-w-6 min-h-6 p-1 rounded hover:bg-white/20 text-xs"
             aria-label={t('nina.dismiss', 'Dismiss')}
           >
             ✕

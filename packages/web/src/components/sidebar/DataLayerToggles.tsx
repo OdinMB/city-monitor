@@ -141,10 +141,11 @@ export function DataLayerToggles() {
         <span className="hidden sm:inline text-[11px] text-gray-500 dark:text-gray-400">
           {t('shortcuts.title')}
         </span>
+        {/* py-1 -my-1 pads the tap target to 24px tall (WCAG 2.5.8) without moving the row. */}
         <button
           onClick={toggleSingleView}
           aria-pressed={singleView}
-          className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
+          className="flex items-center gap-1.5 py-1 -my-1 text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
         >
           <span className={singleView ? 'text-gray-700 dark:text-gray-200 font-medium' : ''}>
             {t('sidebar.viewMode.single')}

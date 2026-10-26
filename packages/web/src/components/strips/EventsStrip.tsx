@@ -175,6 +175,7 @@ export function EventsStrip() {
 
   const events = filtered.slice(0, MAX_VISIBLE);
 
+  // Filter chips are min-h-6 so each tap target is at least 24px tall (WCAG 2.5.8).
   const pillActive = 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900';
   const pillInactive = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700';
 
@@ -212,7 +213,7 @@ export function EventsStrip() {
                 tabIndex={resolvedSource === sf.key ? 0 : -1}
                 onClick={() => { setSourceFilter(sf.key); setCategoryFilter('all'); }}
                 onKeyDown={onSrcKeyDown}
-                className={`shrink-0 flex items-center gap-1 px-2 py-0.5 text-xs rounded-full transition-colors ${
+                className={`shrink-0 flex items-center gap-1 min-h-6 px-2 py-0.5 text-xs rounded-full transition-colors ${
                   resolvedSource === sf.key ? pillActive : pillInactive
                 }`}
               >
@@ -240,7 +241,7 @@ export function EventsStrip() {
                 tabIndex={resolvedCategory === cat ? 0 : -1}
                 onClick={() => setCategoryFilter(cat)}
                 onKeyDown={onCatKeyDown}
-                className={`shrink-0 flex items-center gap-1 px-2 py-0.5 text-xs rounded-full transition-colors ${
+                className={`shrink-0 flex items-center gap-1 min-h-6 px-2 py-0.5 text-xs rounded-full transition-colors ${
                   resolvedCategory === cat ? pillActive : pillInactive
                 }`}
               >
