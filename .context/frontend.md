@@ -134,7 +134,7 @@ City accent colors are set via CSS custom property `--accent` with `[data-city='
 
 `CityProvider` wraps each city dashboard, provides `useCityConfig()` hook that returns the active `CityConfig` object. City ID comes from the URL `:cityId` param. Config loaded from `packages/web/src/config/` (mirrors server config structure).
 
-`getAllCities()` returns the active city configs (used by CityPicker). `getDefaultCityId()` returns `'berlin'` while Berlin is active, otherwise the first active city, so the home redirect never targets an inactive city (which would redirect back to `/` in a loop).
+`getAllCities()` returns the active city configs. `getDefaultCityId()` returns `'berlin'` while Berlin is active, otherwise the first active city, so the home redirect never targets an inactive city (which would redirect back to `/` in a loop).
 
 ## Map (`packages/web/src/components/map/CityMap.tsx`)
 

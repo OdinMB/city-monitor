@@ -94,10 +94,6 @@
       "moreInfo": "المزيد",
       "showMore": "{{count}} أخرى"
     },
-    "safety": {
-      "title": "السلامة",
-      "empty": "لا توجد تقارير حديثة"
-    },
     "airQuality": {
       "title": "جودة الهواء",
       "trend": "اتجاه ٢٤ ساعة",

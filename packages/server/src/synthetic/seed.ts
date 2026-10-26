@@ -36,16 +36,19 @@ export interface LocalDatabase {
 
 const checked = new WeakSet<LocalDatabase>();
 
-/** Connects to `url` after assertLocalDatabaseUrl, which throws for anything not local. */
+/**
+ * Connects to `url` after assertLocalDatabaseUrl, which throws for anything not local.
+ * The handle is frozen, so its connection cannot be swapped after the check.
+ */
 export function openLocalDatabase(url: string, env: NodeJS.ProcessEnv = process.env): LocalDatabase {
   assertLocalDatabaseUrl(url, env);
   const client = postgres(url, { max: 1, onnotice: () => {} });
   const { host, pathname } = new URL(url);
-  const local: LocalDatabase = {
+  const local: LocalDatabase = Object.freeze({
     db: drizzle(client, { schema }),
     target: host + pathname,
     close: () => client.end(),
-  };
+  });
   checked.add(local);
   return local;
 }

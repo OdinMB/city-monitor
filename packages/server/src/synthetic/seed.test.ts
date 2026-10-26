@@ -64,6 +64,24 @@ describe('wipeDatabase and seedDatabase', () => {
     expect(executed).toEqual([]);
     expect(rows).toEqual({});
   });
+
+  it('keep the connection a checked handle was opened with', async () => {
+    const { local, rows, executed } = fakeDb();
+    const checkedDb = local.db;
+    const otherExecuted: unknown[] = [];
+    const other = { execute: async (query: unknown) => { otherExecuted.push(query); } };
+
+    expect(Object.isFrozen(local)).toBe(true);
+    expect(() => { (local as { db: unknown }).db = other; }).toThrow(TypeError);
+    expect(() => Object.defineProperty(local, 'db', { value: other })).toThrow(TypeError);
+    expect(local.db).toBe(checkedDb);
+
+    await wipeDatabase(local);
+    await seedDatabase(local, generateSyntheticData({ now: new Date() }));
+    expect(executed).toHaveLength(1);
+    expect(rows.snapshots?.length).toBeGreaterThan(0);
+    expect(otherExecuted).toEqual([]);
+  });
 });
 
 describe('wipeDatabase', () => {

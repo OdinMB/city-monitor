@@ -94,10 +94,6 @@
       "moreInfo": "More info",
       "showMore": "{{count}} more"
     },
-    "safety": {
-      "title": "Safety",
-      "empty": "No recent reports"
-    },
     "airQuality": {
       "title": "Air Quality",
       "trend": "24h trend",

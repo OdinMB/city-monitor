@@ -94,10 +94,6 @@
       "moreInfo": "Daha fazla",
       "showMore": "{{count}} daha"
     },
-    "safety": {
-      "title": "Güvenlik",
-      "empty": "Güncel rapor yok"
-    },
     "airQuality": {
       "title": "Hava Kalitesi",
       "trend": "24s e\u011filim",

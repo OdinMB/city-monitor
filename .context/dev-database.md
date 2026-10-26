@@ -25,7 +25,7 @@ Both root scripts build `shared` first, because the server imports its compiled 
   - Shapes come from `shared/types.ts`. Budget, appointments, wastewater and council meetings reuse the ingestion helpers.
   - The briefing's model is `synthetic-seed-<seed>`, so the database records which seed it holds.
 - `synthetic/seed.ts`
-  - `openLocalDatabase(url)` runs the guard and connects. `wipeDatabase` and `seedDatabase` take only a handle it returned, and throw for anything else.
+  - `openLocalDatabase(url)` runs the guard and connects. `wipeDatabase` and `seedDatabase` take only a handle it returned, and throw for anything else. The handle is frozen, so its `db` cannot be swapped for another connection after the guard ran.
   - `wipeDatabase` truncates every table in the Drizzle schema, but not Drizzle's migrations journal.
   - `seedDatabase` writes through the `save*` functions in `db/writes.ts`.
   - For the history charts it also writes a week of hourly weather, AQI and water-level snapshots and 23 months of labour-market snapshots.

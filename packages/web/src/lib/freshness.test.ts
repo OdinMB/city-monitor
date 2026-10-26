@@ -18,7 +18,6 @@ const CRON_INTERVAL: Record<Feed, number> = {
   airQuality: HOUR,       // ingest-weather        0 * * * *
   transit: 15 * MIN,      // ingest-transit        */15 * * * *
   waterLevels: 15 * MIN,  // ingest-water-levels   */15 * * * *
-  safety: 10 * MIN,       // ingest-safety         */10 * * * *
   events: 6 * HOUR,       // ingest-events         0 */6 * * *
   appointments: 6 * HOUR, // ingest-appointments   0 */6 * * *
   pollen: 6 * HOUR,       // ingest-pollen         0 */6 * * *
