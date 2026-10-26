@@ -47,7 +47,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (isLoading) return <Skeleton lines={2} />;
-  if (isError) return <StripErrorFallback domain="Pollen" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.pollen.title')} onRetry={refetch} />;
   if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.pollen.empty')}</p>;
 
   const offSeason = isOffSeason(data.pollen);

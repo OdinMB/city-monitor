@@ -22,7 +22,7 @@
     "title": "Etwas ist schiefgelaufen",
     "reload": "Neu laden",
     "details": "Fehlerdetails",
-    "loadFailed": "{{domain}} konnte nicht geladen werden",
+    "loadFailed": "{{domain}}: Laden fehlgeschlagen",
     "retry": "Erneut versuchen",
     "mapUnavailable": "Karte nicht verfügbar"
   },

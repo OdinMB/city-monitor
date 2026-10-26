@@ -16,7 +16,7 @@ export function LaborMarketStrip() {
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (isLoading) return <Skeleton lines={2} />;
-  if (isError) return <StripErrorFallback domain="Unemployment" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.laborMarket.title')} onRetry={refetch} />;
   if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.laborMarket.empty')}</p>;
 
   const totalYoy = formatYoy(data.yoyChangePercent);

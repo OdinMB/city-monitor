@@ -64,7 +64,7 @@ export function WaterLevelStrip() {
   if (isLoading) {
     return <Skeleton lines={3} />;
   }
-  if (isError) return <StripErrorFallback domain="Water Levels" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.waterLevels.title')} onRetry={refetch} />;
 
   if (!data || data.stations.length === 0) {
     return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.waterLevels.empty')}</p>;

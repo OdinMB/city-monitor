@@ -124,7 +124,7 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
   if (isLoading) {
     return <Skeleton lines={2} />;
   }
-  if (isError) return <StripErrorFallback domain="Air Quality" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.airQuality.title')} onRetry={refetch} />;
 
   if (!data) return null;
 

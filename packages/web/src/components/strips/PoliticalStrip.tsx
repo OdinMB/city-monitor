@@ -193,7 +193,7 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
   const { setTabRef, onKeyDown } = useTabKeys(views.length, viewIdx, selectViewByIdx);
 
   if (isLoading) return <Skeleton lines={2} />;
-  if (isError) return <StripErrorFallback domain="Political" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('sidebar.layers.political')} onRetry={refetch} />;
 
   const totalReps = data ? data.reduce((sum, d) => sum + d.representatives.length, 0) : 0;
 

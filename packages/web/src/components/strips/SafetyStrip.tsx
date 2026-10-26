@@ -21,7 +21,7 @@ export function SafetyStrip() {
   return (
     <>
       {isError ? (
-        <StripErrorFallback domain="Safety" onRetry={refetch} />
+        <StripErrorFallback domain={t('panel.safety.title')} onRetry={refetch} />
       ) : isLoading ? (
         <Skeleton lines={4} />
       ) : reports.length === 0 ? (

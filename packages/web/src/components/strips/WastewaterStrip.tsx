@@ -91,7 +91,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   if (isLoading) return <Skeleton lines={2} />;
-  if (isError) return <StripErrorFallback domain="Wastewater" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.wastewater.title')} onRetry={refetch} />;
   if (!data) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.wastewater.empty')}</p>;
 
   if (!expanded) {

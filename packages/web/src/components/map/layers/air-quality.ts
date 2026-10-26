@@ -3,6 +3,7 @@
  */
 
 import * as maplibregl from 'maplibre-gl';
+import i18n from 'i18next';
 import { Wind } from 'lucide';
 import type { AirQualityGridPoint } from '../../../lib/api.js';
 import { createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
@@ -29,6 +30,25 @@ function aqGridToGeoJSON(points: AirQualityGridPoint[]): GeoJSON.FeatureCollecti
     });
   }
   return { type: 'FeatureCollection', features };
+}
+
+/**
+ * Popup markup for an air-quality station, from its feature properties. The
+ * station name and link come from third-party feeds, so every value is escaped
+ * (see `escapeHtml`). The level label is looked up when the popup opens, so it
+ * follows the current UI language, like the top bar's.
+ */
+export function aqPopupHtml(props: Record<string, unknown>): string {
+  const level = getAqiLevel(Number(props.aqi));
+  const levelLabel = i18n.t(`panel.airQuality.level.${level.label}`);
+  const href = safeUrl(typeof props.url === 'string' ? props.url : undefined);
+  const linkIcon = href
+    ? ` <a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="display:inline;color:#3b82f6;text-decoration:none;margin-left:3px;vertical-align:middle"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`
+    : '';
+  return `<div style="font-size:13px;max-width:240px">
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.station)}${linkIcon}</div>
+      <div style="font-size:12px">AQI: <strong style="color:${level.color}">${escapeHtml(props.aqi)}</strong> (${escapeHtml(levelLabel)})</div>
+    </div>`;
 }
 
 export function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoint[], isDark: boolean) {
@@ -69,18 +89,8 @@ export function updateAqGridLayer(map: maplibregl.Map, points: AirQualityGridPoi
 
   const getAqContent: PopupContentFn = (e) => {
     if (!e.features?.length) return null;
-    const props = e.features[0].properties!;
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-    const level = getAqiLevel(Number(props.aqi));
-    const href = safeUrl(props.url);
-    const linkIcon = href
-      ? ` <a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="display:inline;color:#3b82f6;text-decoration:none;margin-left:3px;vertical-align:middle"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`
-      : '';
-    const html = `<div style="font-size:13px;max-width:240px">
-      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.station)}${linkIcon}</div>
-      <div style="font-size:12px">AQI: <strong style="color:${level.color}">${escapeHtml(props.aqi)}</strong> (${level.label})</div>
-    </div>`;
-    return { html, lngLat: coords };
+    return { html: aqPopupHtml(e.features[0].properties!), lngLat: coords };
   };
   registerPopupHandlers(map, 'aq-marker-icon', getAqContent, { offset: 16, maxWidth: '260px' });
 }

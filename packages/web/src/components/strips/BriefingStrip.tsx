@@ -30,7 +30,7 @@ export function BriefingStrip() {
   const { data: summary, fetchedAt, isLoading: summaryLoading, isError: summaryError, refetch: summaryRefetch } = useNewsSummary(cityId, i18n.language);
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  if (summaryError) return <StripErrorFallback domain="Briefing" onRetry={summaryRefetch} />;
+  if (summaryError) return <StripErrorFallback domain={t('panel.news.briefing')} onRetry={summaryRefetch} />;
 
   return (
     <>

@@ -251,7 +251,7 @@ export function EventsStrip() {
         </div>
       )}
 
-      {isError && <StripErrorFallback domain="Events" onRetry={refetch} />}
+      {isError && <StripErrorFallback domain={t('panel.events.title')} onRetry={refetch} />}
 
       <div id="events-panel" role="tabpanel" aria-labelledby={`events-cat-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pr-2">
         {isLoading ? (

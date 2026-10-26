@@ -22,7 +22,7 @@
     "title": "حدث خطأ ما",
     "reload": "إعادة تحميل",
     "details": "تفاصيل الخطأ",
-    "loadFailed": "فشل تحميل {{domain}}",
+    "loadFailed": "{{domain}}: فشل التحميل",
     "retry": "إعادة المحاولة",
     "mapUnavailable": "الخريطة غير متاحة"
   },
