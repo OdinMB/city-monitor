@@ -125,6 +125,11 @@ Zustand store in `useTheme.ts`:
 - Initial: reads `localStorage.theme`, falls back to `prefers-color-scheme` media query
 - Persistence: writes to `localStorage` on toggle
 - Effect: `App` component toggles `dark` class on `<html>` element
+- An inline script in `index.html` reads the same key to preload the matching CARTO style before the app loads
+
+## Browser Storage
+
+Browsers that block site data (cookie blocking, some private modes, sandboxed iframes) throw a `SecurityError` on any `localStorage` access, and some older private modes throw from its methods. Every read and write therefore sits in its own `try`/`catch` and falls back to the default (system theme, browser language, hint not yet seen, nothing dismissed), so the setting simply isn't remembered. `useTheme` reads storage when its module loads, so an unguarded read there blanks the whole app. Keep each call in the shape `localStorage.getItem('key')` or `localStorage.getItem(KEY)` with a `const KEY` in the same file, not a generic wrapper that takes the key from elsewhere, so every stored key can be found at its call site. `src/storage-blocked.test.tsx` renders the app and each storage-using component with storage blocked both ways; extend it when adding a key.
 
 Tailwind v4 dark mode requires `@custom-variant dark (&:where(.dark, .dark *));` in `globals.css` for class-based toggling (v4 defaults to `prefers-color-scheme` media query). Smooth 150ms transitions on `background-color`, `color`, and `border-color`.
 

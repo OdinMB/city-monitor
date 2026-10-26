@@ -7,9 +7,28 @@ interface ThemeState {
   toggle: (event?: MouseEvent | React.MouseEvent) => void;
 }
 
+// Browsers that block site data throw a SecurityError on any storage access,
+// so both helpers fail soft: the theme follows the system preference and a
+// toggle lasts only for the current page view.
+function readStoredTheme(): string | null {
+  try {
+    return localStorage.getItem('theme');
+  } catch {
+    return null;
+  }
+}
+
+function storeTheme(theme: Theme) {
+  try {
+    localStorage.setItem('theme', theme);
+  } catch {
+    // Storage blocked: nothing to persist to.
+  }
+}
+
 function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'light';
-  const stored = localStorage.getItem('theme');
+  const stored = readStoredTheme();
   if (stored === 'dark' || stored === 'light') return stored;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
@@ -44,7 +63,7 @@ export const useTheme = create<ThemeState>((set) => ({
   toggle: (event) =>
     set((state) => {
       const next = state.theme === 'light' ? 'dark' : 'light';
-      localStorage.setItem('theme', next);
+      storeTheme(next);
       applyTheme(next, event);
       return { theme: next };
     }),
