@@ -26,7 +26,7 @@ const ROWS = [
 const CARDS = [
   { title: 'No Ads', icon: '🚫', body: 'Not now, not ever. No display ads, sponsored content, or "recommended" links.' },
   { title: 'No Tracking', icon: '👤', body: "No cookies, no pixels, no fingerprinting. We use Simple Analytics for privacy-friendly page views — they don't track you either." },
-  { title: 'No Cookies', icon: '🍪', body: 'Zero cookies. Two preferences (theme & language) live in localStorage only.' },
+  { title: 'No Cookies', icon: '🍪', body: "Zero cookies. Your theme and language, plus three flags for warnings you dismissed and tips you've seen, live in localStorage only." },
   { title: 'No Paywalls', icon: '🔓', body: 'Everything is free. The dashboard, the API, the source code. No premium tiers.' },
 ];
 
