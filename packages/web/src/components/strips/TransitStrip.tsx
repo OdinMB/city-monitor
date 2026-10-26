@@ -62,7 +62,7 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
   const visible = sorted.slice(0, limit);
   const hiddenCount = sorted.length - visible.length;
 
-  if (isError) return <StripErrorFallback domain="Transit" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.transit.title')} onRetry={refetch} />;
 
   if (isLoading) return <Skeleton lines={4} />;
 

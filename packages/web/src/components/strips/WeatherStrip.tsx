@@ -64,7 +64,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
   }, [rawHourly]);
 
   if (isLoading) return <Skeleton lines={2} />;
-  if (isError) return <StripErrorFallback domain="Weather" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.weather.title')} onRetry={refetch} />;
 
   const current = data?.current;
   if (!current) return null;

@@ -71,7 +71,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
   if (isLoading) {
     return <Skeleton lines={4} />;
   }
-  if (isError) return <StripErrorFallback domain="Appointments" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.appointments.title')} onRetry={refetch} />;
 
   if (!data || data.services.length === 0) {
     return (

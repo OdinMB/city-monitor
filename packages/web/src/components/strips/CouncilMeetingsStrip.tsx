@@ -128,7 +128,7 @@ export function CouncilMeetingsStrip() {
   }, [allMeetings, filter]);
 
   if (isLoading) return <Skeleton lines={3} />;
-  if (isError) return <StripErrorFallback domain="Council Meetings" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.councilMeetings.title')} onRetry={refetch} />;
   if (!allMeetings.length) return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.councilMeetings.empty')}</p>;
 
   const dayGroups = groupByDay(filtered);

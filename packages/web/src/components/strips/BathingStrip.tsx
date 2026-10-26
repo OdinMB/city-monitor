@@ -89,7 +89,7 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   if (isLoading) {
     return <Skeleton lines={3} />;
   }
-  if (isError) return <StripErrorFallback domain="Bathing" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.bathing.title')} onRetry={refetch} />;
 
   if (!data || data.length === 0) {
     return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.bathing.empty')}</p>;

@@ -24,7 +24,10 @@ export function AppErrorFallback({ error }: { error: unknown; resetErrorBoundary
   );
 }
 
-/** Compact inline error shown inside a dashboard tile when a data hook fails. */
+/**
+ * Compact inline error shown inside a dashboard tile when a data hook fails.
+ * `domain` is the tile's translated title, e.g. `t('panel.weather.title')`.
+ */
 export function StripErrorFallback({ domain, onRetry }: { domain: string; onRetry: () => void }) {
   const { t } = useTranslation();
   return (

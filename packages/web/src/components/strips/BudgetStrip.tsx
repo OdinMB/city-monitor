@@ -208,7 +208,7 @@ export function BudgetStrip() {
   const { setTabRef: setModeRef, onKeyDown: onModeKeyDown } = useTabKeys(modes.length, modeIdx, selectModeByIdx);
 
   if (isLoading) return <Skeleton lines={3} />;
-  if (isError) return <StripErrorFallback domain="Budget" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.budget.title')} onRetry={refetch} />;
   if (!data || data.areas.length === 0) {
     return <p className="text-sm text-gray-400 py-2 text-center">{t('panel.budget.empty')}</p>;
   }

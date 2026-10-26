@@ -96,7 +96,7 @@ export function NewsStrip() {
   const { setTabRef, onKeyDown } = useTabKeys(availableCategories.length, activeIndex, selectByIndex);
 
   if (isLoading) return <Skeleton lines={6} />;
-  if (isError) return <StripErrorFallback domain="News" onRetry={refetch} />;
+  if (isError) return <StripErrorFallback domain={t('panel.news.title')} onRetry={refetch} />;
 
   return (
     <>
