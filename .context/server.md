@@ -6,7 +6,7 @@
 
 ### Startup Sequence
 
-1. Create Express app with compression, helmet, CORS (`ALLOWED_ORIGINS`, plus `localhost:5173` outside production), rate limiting in production (100 requests/min per IP; 10/min for bootstrap, and 10/min shared by social-atlas, population, aeds and budget) and JSON middleware. No route reads a request body, so the JSON parser runs with `inflate: false` and `limit: '10kb'`: a compressed body gets 415 without being decompressed, an oversized one 413
+1. Create Express app with `trust proxy` set to the hop count `TRUST_PROXY_HOPS` (1, not yet measured: see [Connection Check](#connection-check-temporary)), compression, helmet, CORS (`ALLOWED_ORIGINS`, plus `localhost:5173` outside production), rate limiting in production (100 requests/min per IP; 10/min for bootstrap, and 10/min shared by social-atlas, population, aeds and budget) and JSON middleware. No route reads a request body, so the JSON parser runs with `inflate: false` and `limit: '10kb'`: a compressed body gets 415 without being decompressed, an oversized one 413
 2. Create in-memory cache (always)
 3. Create DB connection if `DATABASE_URL` set (returns `null` otherwise)
 4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`
@@ -54,7 +54,7 @@ Applied via middleware per route tier:
 | `/api/:city/water-levels/history` | 300s (5 min) | Inherits the water-levels router's value; up to 30d |
 | `/api/:city/labor-market/history` | 3600s (1h) | Inherits the labor-market router's value; up to 730d |
 
-`/api/health` sets no Cache-Control.
+`/api/health` sets no Cache-Control. `/api/connection-check` sends `private, no-store`, and its page and script `no-store`.
 
 ## Scheduler (`packages/server/src/lib/scheduler.ts`)
 
@@ -126,6 +126,23 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 ```
 
 `ai` comes from `getUsageStats()` in `lib/openai.ts`, keyed `{model}:{city}`. Outside production the router also exposes `POST /api/health/trigger/:jobName`, which calls `scheduler.triggerJob()`.
+
+## Connection Check (temporary)
+
+`routes/connection-check.ts` and `lib/connection-check.ts` measure the `trust proxy` hop count, `TRUST_PROXY_HOPS` in `app.ts`. Express takes `req.ip`, which the rate limits count by, from the `X-Forwarded-For` entry that many places from the right (0: the socket). Too low puts every visitor in one rate-limit bucket. Too high lets a caller choose their own address with a forged header, and only a forged header shows it. **Remove both files, their tests and the mount in `app.ts` once the count is set from the measurement.**
+
+- `GET /api/connection-check` describes the caller's own request, with exactly these keys: `address` (`req.ip`), `trustProxy`, `connectionAddress` (the socket: the nearest proxy, or the caller when there is none), `forwardedFor` (the raw chain, left to right), `candidates` (for each hop count from 0 to the chain's length, the address that count would give), `host` and `protocol`. It sends `Cache-Control: private, no-store`, reads, stores and logs nothing, and sits behind the global rate limit like every route.
+- `GET /api/connection-check/page` runs the check in the browser. It fetches the JSON twice, plainly and with `X-Forwarded-For: 203.0.113.7` (TEST-NET-3, so no visitor or proxy has it), and `connectionVerdict` reads the forged answer. The proxies append to the forged entry, so the correct count is the forged entry's hop index minus one. The page shows the derived address, the configured count, the verdict (**right**, **too high (n): set it to m**, **too low (n): set it to m**, or **header removed**) and the raw chains. "Header removed" is not a pass: something in front stripped the header and the count cannot be read from it; compare the derived address with your own instead.
+- Helmet's CSP blocks inline script, so the page loads its script from `/api/connection-check/page.js`. That script inlines `connectionVerdict` through `toString()`, so the function stays self-contained: no imports, no outside references, no inner functions.
+
+**Running it.** After a deploy, open the page on every path into the server, from home and again from a phone on mobile data, and compare the derived address with whatismyip in the same address family:
+
+- `https://citymonitor.app/api/connection-check/page`: the static site's `/api/*` rewrite, the path real traffic takes
+- `https://city-monitor-web.onrender.com/api/connection-check/page`: the same rewrite on the static site's own address
+- `https://city-monitor-api.onrender.com/api/connection-check/page`: the API directly
+- the same path on `www.citymonitor.app` or `api.citymonitor.app`, if either serves this API
+
+A hop count holds only if every path has the same number of proxies. If the paths disagree, or the rewrite answers "header removed", no single count is right for all of them ([deployment.md](deployment.md#client-address-and-trust-proxy)).
 
 ## Bootstrap Endpoint
 
