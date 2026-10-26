@@ -39,7 +39,7 @@ Applied via middleware per route tier:
 | `/api/:city/aeds` | 43200s (12h) | AEDs update daily |
 | `/api/:city/social-atlas` | 43200s (12h) | Social atlas updates weekly |
 | `/api/:city/budget` | 3600s (1h) | Budget updates daily |
-| `/api/:city/appointments` | 1800s (30min) | Appointments update every 2h |
+| `/api/:city/appointments` | 3600s (1h) | Appointments update every 12h |
 | `/api/:city/bathing` | 43200s (12h) | Bathing quality updates daily |
 | `/api/:city/wastewater` | 43200s (12h) | Wastewater updates daily |
 | `/api/:city/labor-market` | 3600s (1h) | Labor market updates daily |
@@ -76,7 +76,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-traffic` | `*/5 * * * *` | TomTom traffic incidents |
 | `ingest-construction` | `*/30 * * * *` | VIZ Berlin construction/roadworks |
 | `ingest-water-levels` | `*/15 * * * *` | PEGELONLINE river gauge stations |
-| `ingest-appointments` | `0 */2 * * *` | Firecrawl-scraped Bürgeramt appointment availability (one scrape per service per run, ~3,600 a month for Berlin's 10) |
+| `ingest-appointments` | `0 6,18 * * *` | Firecrawl-scraped Bürgeramt appointment availability. One scrape per service per run (~600 a month for Berlin's 10); twice a day to keep Firecrawl usage down, the morning run after offices release new slots |
 | `ingest-aeds` | `0 0 * * *` | OpenStreetMap AED locations (daily) |
 | `ingest-social-atlas` | `0 5 * * 0` | MSS WFS social atlas GeoJSON (weekly) |
 | `ingest-budget` | `0 6 * * *` | Berlin Haushalt budget data (daily) |

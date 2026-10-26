@@ -161,7 +161,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' } },
     { jobName: 'ingest-water-levels', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'pegelonline' } },
     { jobName: 'ingest-budget',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'berlin-haushalt' } },
-    { jobName: 'ingest-appointments', tableName: 'snapshots', maxAgeSeconds: 7200,  filter: { column: 'type', value: 'service-berlin' } },
+    { jobName: 'ingest-appointments', tableName: 'snapshots', maxAgeSeconds: 43200,filter: { column: 'type', value: 'service-berlin' } },
     { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' } },
     { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' } },
     { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' } },
@@ -230,7 +230,7 @@ export async function createApp(options?: {
     { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },
     { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: s('ingest-water-levels') },
     { name: 'ingest-budget', schedule: '0 6 * * *', handler: ingestBudget, runOnStart: s('ingest-budget') },
-    { name: 'ingest-appointments', schedule: '0 */2 * * *', handler: ingestAppointments, runOnStart: s('ingest-appointments') },
+    { name: 'ingest-appointments', schedule: '0 6,18 * * *', handler: ingestAppointments, runOnStart: s('ingest-appointments') },
     { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing, runOnStart: s('ingest-bathing') },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
@@ -287,7 +287,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache, db));
   app.use('/api', cacheFor(3600), createBudgetRouter(cache, db));
-  app.use('/api', cacheFor(1800), createAppointmentsRouter(cache, db));
+  app.use('/api', cacheFor(3600), createAppointmentsRouter(cache, db));
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));

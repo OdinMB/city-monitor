@@ -87,7 +87,7 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
 
     (async () => {
       const r = await loadAppointments(db, cityId);
-      if (r) cache.set(CK.appointments(cityId), r.data, 8640, r.fetchedAt);  // 2h cron + 20%
+      if (r) cache.set(CK.appointments(cityId), r.data, 51840, r.fetchedAt);  // 12h cron + 20%
     })().catch((err) => log.error(`${cityId} appointments failed`, err)),
 
     ...(['bezirke', 'bundestag', 'state', 'state-bezirke'] as const).map((level) =>
