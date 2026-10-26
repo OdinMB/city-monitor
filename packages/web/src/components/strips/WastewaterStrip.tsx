@@ -46,11 +46,17 @@ function formatValue(v: number): string {
   return v.toFixed(0);
 }
 
-function formatWeekLabel(date: Date): string {
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+/** Day and short month in the UI language, e.g. "Oct 20" or "20. Okt.". */
+function formatShortDate(date: Date, locale: string): string {
+  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-const Sparkline = memo(function Sparkline({ data, color, sampleDate, label }: { data: number[]; color: string; sampleDate: string; label: string }) {
+/** A sample date with the month named in the UI language, e.g. "Oct 20, 2026" or "20. Okt. 2026". */
+function formatSampleDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+const Sparkline = memo(function Sparkline({ data, color, sampleDate, label, locale }: { data: number[]; color: string; sampleDate: string; label: string; locale: string }) {
   if (data.length < 2) return null;
 
   const max = Math.max(...data);
@@ -76,8 +82,8 @@ const Sparkline = memo(function Sparkline({ data, color, sampleDate, label }: { 
         )}
       </svg>
       <div className="flex justify-between mt-0.5">
-        <span className="text-[10px] text-gray-500 dark:text-gray-400">{formatWeekLabel(startDate)}</span>
-        <span className="text-[10px] text-gray-500 dark:text-gray-400">{formatWeekLabel(endDate)}</span>
+        <span className="text-[10px] text-gray-500 dark:text-gray-400">{formatShortDate(startDate, locale)}</span>
+        <span className="text-[10px] text-gray-500 dark:text-gray-400">{formatShortDate(endDate, locale)}</span>
       </div>
     </div>
   );
@@ -88,8 +94,9 @@ const FRESH_MAX_AGE = staleAfter('wastewater');
 export function WastewaterStrip({ expanded }: { expanded: boolean }) {
   const { id: cityId } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useWastewater(cityId);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
+  const locale = i18n.language;
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.wastewater.title')} onRetry={refetch} />;
@@ -120,7 +127,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
           </div>
         </div>
         <TileFooter stale={isStale}>
-          {t('panel.wastewater.sampleDate', { date: new Date(data.sampleDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
+          {t('panel.wastewater.sampleDate', { date: formatSampleDate(data.sampleDate, locale) })}
           {agoText && (' · ' + t('stale.updated', { time: agoText }))}
         </TileFooter>
       </>
@@ -142,7 +149,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
                 </span>
                 {p.sampleDate && (
                   <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                    ({new Date(p.sampleDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })})
+                    ({formatShortDate(new Date(p.sampleDate), locale)})
                   </span>
                 )}
               </div>
@@ -157,12 +164,12 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
                 )}
               </div>
             </div>
-            <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={p.sampleDate ?? data.sampleDate} label={`${pathogenLabel(p.name, t)} trend`} />
+            <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={p.sampleDate ?? data.sampleDate} label={`${pathogenLabel(p.name, t)} trend`} locale={locale} />
           </div>
         ))}
       </div>
       <TileFooter stale={isStale}>
-        {t('panel.wastewater.sampleDate', { date: new Date(data.sampleDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
+        {t('panel.wastewater.sampleDate', { date: formatSampleDate(data.sampleDate, locale) })}
         {agoText && (' · ' + t('stale.updated', { time: agoText }))}
       </TileFooter>
     </>

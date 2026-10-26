@@ -54,7 +54,7 @@ const FRESH_MAX_AGE = staleAfter('bathing');
 export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   const { id: cityId } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useBathing(cityId);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   // Must be above early returns to satisfy Rules of Hooks
@@ -137,7 +137,7 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
         </div>
       </div>
       <TileFooter stale={isStale}>
-        {latestMeasuredAt && t('panel.bathing.measuredAt', { date: new Date(latestMeasuredAt + 'T00:00:00Z').toLocaleDateString(undefined, { timeZone: 'UTC' }) })}
+        {latestMeasuredAt && t('panel.bathing.measuredAt', { date: new Date(latestMeasuredAt + 'T00:00:00Z').toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) })}
         {latestMeasuredAt && agoText && ' · '}
         {agoText && t('stale.updated', { time: agoText })}
       </TileFooter>

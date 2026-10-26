@@ -36,14 +36,16 @@ export function socialAtlasPopupHtml(p: SocialAtlasFeatureProps): string {
 
 /**
  * Popup markup for a population planning area, escaped like
- * `socialAtlasPopupHtml`. The labels are the population tile's.
+ * `socialAtlasPopupHtml`. The labels are the population tile's, and the
+ * counts are grouped the way the current UI language writes them.
  */
 export function populationPopupHtml(p: PopulationFeatureProps): string {
+  const locale = i18n.language;
   return `<div style="font-size:13px;max-width:300px">
       <div style="font-weight:600;margin-bottom:6px">${escapeHtml(p.plrName)}</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
-        ${row('panel.population.title', p.population?.toLocaleString() ?? '–')}
-        ${row('panel.population.densityLabel', `${p.density?.toLocaleString() ?? '–'}/km²`)}
+        ${row('panel.population.title', p.population?.toLocaleString(locale) ?? '–')}
+        ${row('panel.population.densityLabel', `${p.density?.toLocaleString(locale) ?? '–'}/km²`)}
         ${row('panel.population.foreign', `${p.foreignPct?.toFixed(1) ?? '–'}%`)}
         ${row('panel.population.elderly', `${p.elderlyPct?.toFixed(1) ?? '–'}%`)}
         ${row('panel.population.youth', `${p.youthPct?.toFixed(1) ?? '–'}%`)}

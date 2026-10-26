@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import i18n from 'i18next';
 import en from '../../../i18n/en.json';
 import type { PoliticalDistrict, SocialAtlasFeatureProps, PopulationFeatureProps } from '../../../lib/api.js';
@@ -134,7 +134,7 @@ describe('map popups in German', () => {
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Innen', 'Zugang: nur für Kunden', 'Route ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Lärmsensor #4711', '58.2 dB (Laut)', 'Min.: 40.1 dB · Max.: 75.3 dB']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Alleinerziehende20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%']],
-    ['population', () => populationPopupHtml(POPULATION), ['Bevölkerung', 'Dichte', 'Ausländische Staatsangehörigkeit30.5%', '65 Jahre und älter15.2%', 'Unter 1812.1%']],
+    ['population', () => populationPopupHtml(POPULATION), ['Bevölkerung3.400', 'Dichte12.000/km²', 'Ausländische Staatsangehörigkeit30.5%', '65 Jahre und älter15.2%', 'Unter 1812.1%']],
     ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS), ['Profil →']],
     ['political, no data', () => buildPoliticalPopupHtml('Spandau', DISTRICTS), ['Keine Daten verfügbar']],
     ['news', () => newsPopupHtml(NEWS), ['Weiterlesen →']],
@@ -173,7 +173,7 @@ describe('numbers that stay left-to-right in Arabic (right-to-left)', () => {
     ['bathing temperature and visibility', () => bathingPopupHtml(BATHING), ['21°C', '1.5m']],
     ['noise readings', () => noisePopupHtml(NOISE, false), ['58.2 dB', '40.1 dB', '75.3 dB']],
     ['social atlas values', () => socialAtlasPopupHtml(SOCIAL), ['5.2%', '20.1%', '10.3%', '15.4%']],
-    ['population density', () => populationPopupHtml(POPULATION), [`${(12000).toLocaleString()}/km²`]],
+    ['population density', () => populationPopupHtml(POPULATION), [`${(12000).toLocaleString('ar')}/km²`]],
   ] as const)('%s stay left-to-right', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     const texts = ltrTexts(build());
@@ -217,6 +217,19 @@ describe('map popups in Turkish and Arabic', () => {
     expect(text).toContain(expected);
     expect(text).not.toContain('→');
   });
+
+  // ICU's Arabic grouping can match the test machine's default (Latin digits,
+  // comma groups), so the output alone can't show which locale was used.
+  it('groups the population counts with the Arabic locale', async () => {
+    await i18n.changeLanguage('ar');
+    const spy = vi.spyOn(Number.prototype, 'toLocaleString');
+    try {
+      populationPopupHtml(POPULATION);
+      expect(spy.mock.calls.map((args) => args[0])).toEqual(['ar', 'ar']);
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe('map popups in English', () => {
@@ -230,7 +243,7 @@ describe('map popups in English', () => {
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Indoor', 'Access: customers only', 'Directions ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Noise Sensor #4711', '58.2 dB (Loud)', 'Min: 40.1 dB · Max: 75.3 dB']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Single-parent HH20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%']],
-    ['population', () => populationPopupHtml(POPULATION), ['Population', 'Density', 'Aged 65+15.2%', 'Under 1812.1%']],
+    ['population', () => populationPopupHtml(POPULATION), ['Population3,400', 'Density12,000/km²', 'Aged 65+15.2%', 'Under 1812.1%']],
     ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS), ['Profile →']],
     ['political, no data', () => buildPoliticalPopupHtml('Spandau', DISTRICTS), ['No data available']],
     ['news', () => newsPopupHtml(NEWS), ['Read more →']],

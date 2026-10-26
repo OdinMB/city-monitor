@@ -8,9 +8,9 @@ import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
-function formatChange(n: number): string {
+function formatChange(n: number, locale: string): string {
   const sign = n >= 0 ? '+' : '';
-  return `${sign}${n.toLocaleString()}`;
+  return `${sign}${n.toLocaleString(locale)}`;
 }
 
 function formatPct(n: number): string {
@@ -83,7 +83,7 @@ const FRESH_MAX_AGE = staleAfter('population');
 export function PopulationStrip() {
   const { id: cityId } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = usePopulationSummary(cityId);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   const ageSlices = useMemo(() => {
@@ -122,11 +122,11 @@ export function PopulationStrip() {
       {/* Total + change */}
       <div className="text-center">
         <div className="text-3xl font-extrabold tabular-nums text-gray-900 dark:text-gray-100">
-          {data.total.toLocaleString()}
+          {data.total.toLocaleString(i18n.language)}
         </div>
         {data.changeAbsolute !== 0 && (
           <div className={`text-sm font-medium mt-0.5 ${changeColor}`}>
-            {formatChange(data.changeAbsolute)} ({formatPct(data.changePct)}) {t('panel.population.change')}
+            {formatChange(data.changeAbsolute, i18n.language)} ({formatPct(data.changePct)}) {t('panel.population.change')}
           </div>
         )}
       </div>
@@ -149,7 +149,7 @@ export function PopulationStrip() {
         <div className="mt-4 flex items-baseline justify-between">
           <span className="text-sm text-gray-600 dark:text-gray-400">{t('panel.population.densityLabel')}</span>
           <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-            {data.density.toLocaleString()} {t('panel.population.density')}
+            {data.density.toLocaleString(i18n.language)} {t('panel.population.density')}
           </span>
         </div>
       )}
