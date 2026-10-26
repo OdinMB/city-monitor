@@ -8,8 +8,10 @@ export function Footer() {
   const { cityId } = useParams<{ cityId: string }>();
   const city = cityId ? getCityConfig(cityId) : null;
 
+  // Sits on bg-surface-0. gray-500 is the lightest gray with 4.5:1 there in
+  // light mode (gray-400 is about 2.5:1); dark mode keeps gray-400 (about 7:1).
   return (
-    <footer className="px-4 py-3 text-xs text-gray-400 border-t border-border flex justify-between gap-4">
+    <footer className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 border-t border-border flex justify-between gap-4">
       <nav aria-label={t('footer.navLabel')} className="flex flex-col sm:flex-row gap-1 sm:gap-4">
         <a href="https://github.com/OdinMB/city-monitor" target="_blank" rel="noopener noreferrer" className="hover:underline">
           {t('footer.sourceCode')}
