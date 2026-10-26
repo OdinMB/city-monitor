@@ -103,6 +103,38 @@ describe('BriefingStrip', () => {
     });
   });
 
+  describe('footer', () => {
+    afterEach(async () => {
+      await i18n.changeLanguage('en');
+    });
+
+    // The relative time already carries its "ago" word, so the sentence around
+    // it must not add another one (e.g. "7 dk önce önce oluşturuldu").
+    it.each([
+      ['en', 'Generated 7 min ago · Updated just now'],
+      ['de', 'Erstellt vor 7 Min. · Aktualisiert gerade eben'],
+      ['tr', '7 dk önce oluşturuldu · Güncellendi az önce'],
+      ['ar', 'تم الإنشاء منذ 7 دقيقة · تم التحديث الآن'],
+    ])('shows when the briefing was generated without a doubled "ago" (%s)', async (lang, expected) => {
+      await i18n.changeLanguage(lang);
+      const now = Date.now();
+      const summary: ApiResponse<NewsSummaryData> = {
+        data: {
+          briefing: 'Only paragraph.',
+          generatedAt: new Date(now - 7 * 60_000).toISOString(),
+          headlineCount: 3,
+          cached: false,
+          aiGenerated: true,
+          generator: 'gpt-6-luna',
+        },
+        fetchedAt: new Date(now).toISOString(),
+      };
+
+      render(<BriefingStrip />, { wrapper: createWrapper({ summary, lang }) });
+      expect(screen.getByText(expected)).toBeTruthy();
+    });
+  });
+
   it('renders empty message when briefing is null', () => {
     const summary: ApiResponse<NewsSummaryData> = {
       data: {

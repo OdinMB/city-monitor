@@ -5,7 +5,7 @@ import { useNewsDigest } from '../../hooks/useNewsDigest.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
-import { formatRelativeTime } from '../../lib/format-time.js';
+import { formatRelativeTimeI18n } from '../../lib/format-time.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { sourceFaviconUrl } from '../../lib/news-favicons.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
@@ -182,7 +182,7 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
             📍
           </span>
         )}
-        <span className="ml-auto">{formatRelativeTime(item.publishedAt)}</span>
+        <span className="ml-auto">{formatRelativeTimeI18n(item.publishedAt, t)}</span>
       </div>
     </li>
   );

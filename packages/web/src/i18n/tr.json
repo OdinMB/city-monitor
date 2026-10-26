@@ -43,7 +43,7 @@
       "briefing": "Özet",
       "headlines": "Başlıklar",
       "empty": "Makale bulunamadı",
-      "generatedAgo": "{{time}} önce oluşturuldu",
+      "generatedAgo": "{{time}} oluşturuldu",
       "headlines_count": "{{count}} başlık",
       "all": "Tümü",
       "retry": "Tekrar dene",

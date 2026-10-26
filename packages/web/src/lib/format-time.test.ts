@@ -1,32 +1,39 @@
 import { describe, it, expect } from 'vitest';
-import { formatRelativeTime } from './format-time.js';
+import i18n from 'i18next';
+import { formatRelativeTimeI18n } from './format-time.js';
 
-describe('formatRelativeTime', () => {
-  it('returns "just now" for timestamps less than 60 seconds ago', () => {
-    const now = Date.now();
-    expect(formatRelativeTime(new Date(now - 30_000).toISOString())).toBe('just now');
+function ago(ms: number): string {
+  return new Date(Date.now() - ms).toISOString();
+}
+
+const MIN = 60_000;
+const HOUR = 60 * MIN;
+const DAY = 24 * HOUR;
+
+describe('formatRelativeTimeI18n', () => {
+  const cases = {
+    en: { justNow: 'just now', minutes: '5 min ago', hours: '3h ago', days: '2d ago' },
+    de: { justNow: 'gerade eben', minutes: 'vor 5 Min.', hours: 'vor 3 Std.', days: 'vor 2 T.' },
+    tr: { justNow: 'az önce', minutes: '5 dk önce', hours: '3 sa önce', days: '2 gün önce' },
+    ar: { justNow: 'الآن', minutes: 'منذ 5 دقيقة', hours: 'منذ 3 ساعة', days: 'منذ 2 يوم' },
+  } as const;
+
+  it.each(Object.keys(cases) as (keyof typeof cases)[])('formats in the given language (%s)', (lang) => {
+    const t = i18n.getFixedT(lang);
+    const expected = cases[lang];
+    expect(formatRelativeTimeI18n(ago(30_000), t)).toBe(expected.justNow);
+    expect(formatRelativeTimeI18n(ago(5 * MIN), t)).toBe(expected.minutes);
+    expect(formatRelativeTimeI18n(ago(3 * HOUR), t)).toBe(expected.hours);
+    expect(formatRelativeTimeI18n(ago(2 * DAY), t)).toBe(expected.days);
   });
 
-  it('returns minutes for timestamps less than 60 minutes ago', () => {
-    const now = Date.now();
-    const result = formatRelativeTime(new Date(now - 5 * 60_000).toISOString());
-    expect(result).toMatch(/5\s*min/);
-  });
-
-  it('returns hours for timestamps less than 24 hours ago', () => {
-    const now = Date.now();
-    const result = formatRelativeTime(new Date(now - 3 * 3600_000).toISOString());
-    expect(result).toMatch(/3\s*h/);
-  });
-
-  it('returns days for timestamps more than 24 hours ago', () => {
-    const now = Date.now();
-    const result = formatRelativeTime(new Date(now - 2 * 86400_000).toISOString());
-    expect(result).toMatch(/2\s*d/);
+  it('treats a future timestamp as just now', () => {
+    expect(formatRelativeTimeI18n(ago(-5 * MIN), i18n.getFixedT('en'))).toBe('just now');
   });
 
   it('handles invalid dates gracefully', () => {
-    expect(formatRelativeTime('')).toBe('');
-    expect(formatRelativeTime('not-a-date')).toBe('');
+    const t = i18n.getFixedT('en');
+    expect(formatRelativeTimeI18n('', t)).toBe('');
+    expect(formatRelativeTimeI18n('not-a-date', t)).toBe('');
   });
 });

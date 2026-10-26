@@ -178,7 +178,7 @@ API responses include `fetchedAt` (ISO string) indicating when data was last ing
 
 | File | Purpose |
 |---|---|
-| `lib/format-time.ts` | `formatRelativeTime(iso)` — English-only "just now", "5 min ago"; `formatRelativeTimeI18n(iso, t)` — i18n-aware variant using `time.*` keys |
+| `lib/format-time.ts` | `formatRelativeTimeI18n(iso, t)` — relative time in the UI language from the `time.*` keys ("5 min ago", "vor 5 Min.", "5 dk önce"). The result already holds the "ago" word, so a string that embeds it (`panel.news.generatedAgo`, `stale.updated`) must not add one. |
 | `lib/map-icons.ts` | Lucide-to-canvas icon renderer, `registerAllMapIcons()`, color maps, exports `IconNode` type |
 | `lib/weather-codes.ts` | WMO code to emoji + label mapping |
 

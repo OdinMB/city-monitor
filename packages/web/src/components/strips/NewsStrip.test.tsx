@@ -78,3 +78,26 @@ describe('NewsStrip AI disclosures', () => {
     expect(screen.queryByRole('img', { name: APPROVED_AI_COPY.en.locationEstimated })).toBeNull();
   });
 });
+
+describe('NewsStrip item timestamps', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}));
+  });
+
+  afterEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it.each([
+    ['en', '9 min ago'],
+    ['de', 'vor 9 Min.'],
+    ['tr', '9 dk önce'],
+    ['ar', 'منذ 9 دقيقة'],
+  ])('shows the publication time in the UI language (%s)', async (lang, expected) => {
+    await i18n.changeLanguage(lang);
+    const publishedAt = new Date(Date.now() - 9 * 60_000).toISOString();
+    render(<NewsStrip />, { wrapper: createWrapper([{ ...ITEM, publishedAt }]) });
+    expect(screen.getByText(expected)).toBeTruthy();
+  });
+});
