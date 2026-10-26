@@ -4,6 +4,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWastewater } from '../../hooks/useWastewater.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
+import { formatCompactReading, withUnit } from '../../lib/format-value.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -37,13 +38,6 @@ function pathogenLabel(name: string, t: (key: string) => string): string {
   if (name === 'RSV') return t('panel.wastewater.rsv');
   if (name === 'SARS-CoV-2') return t('panel.wastewater.covid');
   return name;
-}
-
-function formatValue(v: number): string {
-  if (v === 0) return '0';
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}k`;
-  return v.toFixed(0);
 }
 
 function pairsOf<T>(items: T[]): T[][] {
@@ -163,7 +157,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
                   {pathogenLabel(p.name, t)}
                 </span>
                 <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
-                  {formatValue(p.value)} gc/L
+                  {withUnit(formatCompactReading(p.value), 'gc/L')}
                 </span>
                 {p.sampleDate && (
                   <span className="text-[10px] text-gray-500 dark:text-gray-400">

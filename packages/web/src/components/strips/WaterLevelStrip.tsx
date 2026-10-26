@@ -4,6 +4,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
+import { formatDecimal, withUnit } from '../../lib/format-value.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -41,7 +42,7 @@ const StationRow = memo(function StationRow({ station, t }: { station: WaterLeve
       {/* Right: current level + state badge */}
       <div className="shrink-0 flex items-center gap-1.5">
         <span className="text-sm font-semibold tabular-nums" style={{ color }}>
-          {station.currentLevel} cm
+          {withUnit(formatDecimal(station.currentLevel), 'cm')}
         </span>
         <span
           className="px-1 py-0.5 rounded text-[9px] font-medium text-white leading-tight"

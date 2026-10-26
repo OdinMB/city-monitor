@@ -77,6 +77,33 @@ describe('WastewaterStrip dates follow the UI language, not the browser', () => 
   });
 });
 
+describe('WastewaterStrip readings', () => {
+  beforeEach(() => {
+    const reading = (name: string, value: number): WastewaterPathogen => (
+      { name, value, previousValue: value, trend: 'stable', level: 'low', history: [value, value] }
+    );
+    summary = {
+      sampleDate: '2026-10-20',
+      plantCount: 3,
+      pathogens: [reading('Influenza A', 1_500_000), reading('Influenza B', 1_200), reading('RSV', 500.4), reading('SARS-CoV-2', 0)],
+    };
+  });
+
+  afterEach(async () => {
+    cleanup();
+    await i18n.changeLanguage('en');
+  });
+
+  // Shortened with one decimal and a point in every language, then the unit.
+  it.each(['en', 'de', 'tr', 'ar'])('expanded tile in %s', async (lang) => {
+    await i18n.changeLanguage(lang);
+    render(<WastewaterStrip expanded />);
+    for (const text of ['1.5M gc/L', '1.2k gc/L', '500 gc/L', '0 gc/L']) {
+      expect(screen.getByText(text)).toBeTruthy();
+    }
+  });
+});
+
 function withPathogens(count: number) {
   summary = { sampleDate: '2026-10-22', plantCount: 3, pathogens: ALL.slice(0, count) };
 }

@@ -4,20 +4,10 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePopulationSummary } from '../../hooks/usePopulationSummary.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
+import { formatCount, formatPercent, formatSignedCount, formatSignedPercent, withUnit } from '../../lib/format-value.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
-
-function formatChange(n: number, locale: string): string {
-  const sign = n >= 0 ? '+' : '';
-  return `${sign}${n.toLocaleString(locale)}`;
-}
-
-function formatPct(n: number): string {
-  const sign = n >= 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)}%`;
-}
-
 
 const SEGMENT_COLORS = {
   youth: '#3b82f6',      // blue
@@ -65,11 +55,11 @@ function AgeDonut({ slices }: { slices: DonutSlice[] }) {
         return (
           <g key={i}>
             <path d={d} fill={slice.color} opacity={0.85}>
-              <title>{slice.label}: {slice.pct.toFixed(1)}%</title>
+              <title>{slice.label}: {formatPercent(slice.pct, 1)}</title>
             </path>
             <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
               fill="#fff" style={{ fontSize: 7, fontWeight: 700 }} pointerEvents="none">
-              {slice.pct.toFixed(1)}%
+              {formatPercent(slice.pct, 1)}
             </text>
           </g>
         );
@@ -122,11 +112,11 @@ export function PopulationStrip() {
       {/* Total + change */}
       <div className="text-center">
         <div className="text-3xl font-extrabold tabular-nums text-gray-900 dark:text-gray-100">
-          {data.total.toLocaleString(i18n.language)}
+          {formatCount(data.total, i18n.language)}
         </div>
         {data.changeAbsolute !== 0 && (
           <div className={`text-sm font-medium mt-0.5 ${changeColor}`}>
-            {formatChange(data.changeAbsolute, i18n.language)} ({formatPct(data.changePct)}) {t('panel.population.change')}
+            {formatSignedCount(data.changeAbsolute, i18n.language, { plusOnZero: true })} ({formatSignedPercent(data.changePct, 1, { plusOnZero: true })}) {t('panel.population.change')}
           </div>
         )}
       </div>
@@ -149,7 +139,7 @@ export function PopulationStrip() {
         <div className="mt-4 flex items-baseline justify-between">
           <span className="text-sm text-gray-600 dark:text-gray-400">{t('panel.population.densityLabel')}</span>
           <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-            {data.density.toLocaleString(i18n.language)} {t('panel.population.density')}
+            {withUnit(formatCount(data.density, i18n.language), t('panel.population.density'))}
           </span>
         </div>
       )}
@@ -158,7 +148,7 @@ export function PopulationStrip() {
       <div className="mt-1.5 flex items-baseline justify-between">
         <span className="text-sm text-gray-600 dark:text-gray-400">{t('panel.population.foreign')}</span>
         <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-          {data.foreignPct.toFixed(1)}%
+          {formatPercent(data.foreignPct, 1)}
         </span>
       </div>
 

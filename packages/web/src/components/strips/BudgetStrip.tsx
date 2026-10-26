@@ -5,6 +5,7 @@ import { useBudget } from '../../hooks/useBudget.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
+import { formatCompactAmount, formatPercent } from '../../lib/format-value.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -27,14 +28,6 @@ const CATEGORY_COLORS: Record<number, string> = {
 };
 
 /* ── helpers ──────────────────────────────────────────────── */
-
-function formatAmount(amount: number): string {
-  const abs = Math.abs(amount);
-  if (abs >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)} bn`;
-  if (abs >= 1_000_000) return `${(amount / 1_000_000).toFixed(0)} M`;
-  if (abs >= 1_000) return `${(amount / 1_000).toFixed(0)} K`;
-  return String(amount);
-}
 
 function mergeCategories(a: BudgetCategoryAmount[], b: BudgetCategoryAmount[]): BudgetCategoryAmount[] {
   const map = new Map<number, BudgetCategoryAmount>();
@@ -99,12 +92,12 @@ function PieChart({
       <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 text-center mb-1">
         {label}
       </div>
-      <svg role="img" aria-label={`${label}: ${formatAmount(total)}`} viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
+      <svg role="img" aria-label={`${label}: ${formatCompactAmount(total)}`} viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
         {slices.length === 1 ? (
           /* Single-slice case: full circle (SVG arc can't draw 360°) */
           <>
             <circle cx={cx} cy={cy} r={r} fill={slices[0]!.color} opacity={0.85}>
-              <title>{t(`panel.budget.category.${slices[0]!.code}`)}: {formatAmount(slices[0]!.amount)} (100%)</title>
+              <title>{t(`panel.budget.category.${slices[0]!.code}`)}: {formatCompactAmount(slices[0]!.amount)} (100%)</title>
             </circle>
             <circle cx={cx} cy={cy} r={innerR} className="fill-white dark:fill-gray-900" />
           </>
@@ -125,14 +118,14 @@ function PieChart({
             ].join(' ');
             return (
               <path key={i} d={d} fill={slice.color} opacity={0.85}>
-                <title>{t(`panel.budget.category.${slice.code}`)}: {formatAmount(slice.amount)} ({(slice.pct * 100).toFixed(1)}%)</title>
+                <title>{t(`panel.budget.category.${slice.code}`)}: {formatCompactAmount(slice.amount)} ({formatPercent(slice.pct * 100, 1)})</title>
               </path>
             );
           })
         )}
         <text x={cx} y={cy + 2} textAnchor="middle" dominantBaseline="middle"
           className="fill-gray-800 dark:fill-gray-200" style={{ fontSize: 11, fontWeight: 700 }}>
-          {formatAmount(total)}
+          {formatCompactAmount(total)}
         </text>
       </svg>
     </div>
@@ -284,12 +277,12 @@ function CityView({ area, t }: { area: BudgetAreaSummary; t: (k: string) => stri
             {isDeficit ? t('panel.budget.newDebt') : t('panel.budget.surplus')}:{' '}
           </span>
           <span className={`font-semibold ${isDeficit ? 'text-red-500' : 'text-green-500'}`}>
-            {formatAmount(Math.abs(deficit))}
+            {formatCompactAmount(Math.abs(deficit))}
           </span>
         </div>
         <div className="text-[11px]">
           <span className="text-gray-500 dark:text-gray-400">{t('panel.budget.totalBudget')}: </span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{formatAmount(area.totalExpense)}</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCompactAmount(area.totalExpense)}</span>
         </div>
       </div>
     </>

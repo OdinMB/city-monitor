@@ -4,6 +4,7 @@ import { useFeuerwehr } from '../../hooks/useFeuerwehr.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { formatDelta, formatTime } from '../../lib/format-stats.js';
+import { formatCount } from '../../lib/format-value.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -56,32 +57,49 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
 
   const { current, partial, previous } = data;
 
+  // Each stat: the last complete month, the running month when there is one, and the change on the month before.
+  const stats = [
+    {
+      current: formatCount(current.missionCountAll, i18n.language),
+      partial: partial ? formatCount(partial.missionCountAll, i18n.language) : null,
+      label: t('panel.feuerwehr.missions'),
+      delta: formatDelta(current.missionCountAll, previous?.missionCountAll),
+      accent: 'text-red-600 dark:text-red-400',
+      size: 'text-4xl',
+    },
+    {
+      current: formatTime(current.responseTimeEmsCriticalMedian),
+      partial: partial ? formatTime(partial.responseTimeEmsCriticalMedian) : null,
+      label: t('panel.feuerwehr.emsResponseTime'),
+      delta: formatDelta(current.responseTimeEmsCriticalMedian, previous?.responseTimeEmsCriticalMedian),
+      accent: 'text-blue-600 dark:text-blue-400',
+      size: 'text-3xl',
+    },
+    {
+      current: formatTime(current.responseTimeFirePumpMedian),
+      partial: partial ? formatTime(partial.responseTimeFirePumpMedian) : null,
+      label: t('panel.feuerwehr.fireResponseTime'),
+      delta: formatDelta(current.responseTimeFirePumpMedian, previous?.responseTimeFirePumpMedian),
+      accent: 'text-orange-600 dark:text-orange-400',
+      size: 'text-3xl',
+    },
+  ];
+
   if (!expanded) {
     // Collapsed: compact rows for 3 stats
     return (
       <>
         <div className="flex flex-col gap-3 py-1">
-          <StatRow
-            label={t('panel.feuerwehr.missions')}
-            current={current.missionCountAll.toLocaleString(i18n.language)}
-            partial={partial ? partial.missionCountAll.toLocaleString(i18n.language) : null}
-            accent="text-red-600 dark:text-red-400"
-            delta={formatDelta(current.missionCountAll, previous?.missionCountAll)}
-          />
-          <StatRow
-            label={t('panel.feuerwehr.emsResponseTime')}
-            current={formatTime(current.responseTimeEmsCriticalMedian)}
-            partial={partial ? formatTime(partial.responseTimeEmsCriticalMedian) : null}
-            accent="text-blue-600 dark:text-blue-400"
-            delta={formatDelta(current.responseTimeEmsCriticalMedian, previous?.responseTimeEmsCriticalMedian)}
-          />
-          <StatRow
-            label={t('panel.feuerwehr.fireResponseTime')}
-            current={formatTime(current.responseTimeFirePumpMedian)}
-            partial={partial ? formatTime(partial.responseTimeFirePumpMedian) : null}
-            accent="text-orange-600 dark:text-orange-400"
-            delta={formatDelta(current.responseTimeFirePumpMedian, previous?.responseTimeFirePumpMedian)}
-          />
+          {stats.map((stat) => (
+            <StatRow
+              key={stat.label}
+              label={stat.label}
+              current={stat.current}
+              partial={stat.partial}
+              accent={stat.accent}
+              delta={stat.delta}
+            />
+          ))}
           <div className="text-center text-xs text-gray-500 dark:text-gray-400">
             {current.reportMonth}
           </div>
@@ -92,33 +110,6 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
   }
 
   // Expanded: row-based layout — left has number + label + delta, right has just the number
-  const stats = [
-    {
-      left: current.missionCountAll.toLocaleString(i18n.language),
-      right: partial?.missionCountAll.toLocaleString(i18n.language),
-      label: t('panel.feuerwehr.missions'),
-      delta: formatDelta(current.missionCountAll, previous?.missionCountAll),
-      accent: 'text-red-600 dark:text-red-400',
-      size: 'text-4xl',
-    },
-    {
-      left: formatTime(current.responseTimeEmsCriticalMedian),
-      right: partial ? formatTime(partial.responseTimeEmsCriticalMedian) : undefined,
-      label: t('panel.feuerwehr.emsResponseTime'),
-      delta: formatDelta(current.responseTimeEmsCriticalMedian, previous?.responseTimeEmsCriticalMedian),
-      accent: 'text-blue-600 dark:text-blue-400',
-      size: 'text-3xl',
-    },
-    {
-      left: formatTime(current.responseTimeFirePumpMedian),
-      right: partial ? formatTime(partial.responseTimeFirePumpMedian) : undefined,
-      label: t('panel.feuerwehr.fireResponseTime'),
-      delta: formatDelta(current.responseTimeFirePumpMedian, previous?.responseTimeFirePumpMedian),
-      accent: 'text-orange-600 dark:text-orange-400',
-      size: 'text-3xl',
-    },
-  ];
-
   return (
     <>
       <div className="flex flex-col gap-4 py-1">
@@ -145,19 +136,19 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
           <div key={stat.label} className="flex items-start">
             <div className="flex-1 text-center">
               <div className={`${stat.size} font-extrabold tabular-nums leading-none ${stat.accent}`}>
-                {stat.left}
+                {stat.current}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
               {stat.delta && (
                 <div className={`text-xs font-medium tabular-nums ${stat.delta.color}`}>{stat.delta.text}</div>
               )}
             </div>
-            {stat.right !== undefined && (
+            {stat.partial !== null && (
               <>
                 <div className="w-px bg-gray-200 dark:bg-gray-700 self-stretch mx-3" />
                 <div className="flex-1 text-center">
                   <div className={`${stat.size} font-extrabold tabular-nums leading-none ${stat.accent}`}>
-                    {stat.right}
+                    {stat.partial}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
                 </div>
