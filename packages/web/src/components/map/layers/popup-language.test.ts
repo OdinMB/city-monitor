@@ -11,6 +11,7 @@ import { noisePopupHtml } from './noise-sensors';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { buildPoliticalPopupHtml } from './political';
 import { newsPopupHtml, safetyPopupHtml } from './news-safety';
+import { aqPopupHtml } from './air-quality';
 
 /**
  * Map popups are HTML strings built outside React, so they look their words
@@ -72,6 +73,7 @@ const DISTRICTS: PoliticalDistrict[] = [{
 }];
 const NEWS = { title: 'Tram M10 eingestellt', sourceName: 'rbb24', categoryLabel: 'Verkehr', url: 'https://www.rbb24.de/a/1', locationLabel: '', importance: 0.5 };
 const SAFETY = { title: 'Einbruch in Wohnung', district: 'Mitte', url: 'https://www.berlin.de/polizei/1', locationLabel: '' };
+const AQ_STATION = { aqi: 85, station: 'Berlin Mitte', url: 'https://aqicn.org/station/@6132/' };
 
 /** Every popup builder, rendered from its fixture. */
 const POPUPS: Array<[string, () => string]> = [
@@ -90,6 +92,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['political, no data', () => buildPoliticalPopupHtml('Spandau', DISTRICTS)],
   ['news', () => newsPopupHtml(NEWS)],
   ['police', () => safetyPopupHtml(SAFETY)],
+  ['air quality station', () => aqPopupHtml(AQ_STATION)],
 ];
 
 /**
@@ -139,6 +142,7 @@ describe('map popups in German', () => {
     ['political, no data', () => buildPoliticalPopupHtml('Spandau', DISTRICTS), ['Keine Daten verfügbar']],
     ['news', () => newsPopupHtml(NEWS), ['Weiterlesen →']],
     ['police', () => safetyPopupHtml(SAFETY), ['Details →']],
+    ['air quality station', () => aqPopupHtml(AQ_STATION), ['US AQI: 85 (Mäßig)']],
   ] as const)('%s popup', async (_name, build, expected) => {
     await i18n.changeLanguage('de');
     const text = textOf(build());
@@ -248,6 +252,7 @@ describe('map popups in English', () => {
     ['political, no data', () => buildPoliticalPopupHtml('Spandau', DISTRICTS), ['No data available']],
     ['news', () => newsPopupHtml(NEWS), ['Read more →']],
     ['police', () => safetyPopupHtml(SAFETY), ['Details →']],
+    ['air quality station', () => aqPopupHtml(AQ_STATION), ['US AQI: 85 (Moderate)']],
   ] as const)('%s popup', (_name, build, expected) => {
     const text = textOf(build());
     for (const s of expected) expect(text).toContain(s);

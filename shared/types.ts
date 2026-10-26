@@ -220,6 +220,11 @@ export interface EmergencyPharmacy {
 export interface AirQualityGridPoint {
   lat: number;
   lon: number;
+  /**
+   * Index value. Despite the name, WAQI points (url on aqicn.org) carry the
+   * US EPA AQI as WAQI reports it; Sensor.Community points carry a European
+   * AQI computed from PM. See .context/weather.md, "AQI scales on screen".
+   */
   europeanAqi: number;
   station: string;
   /** Link to station detail page */

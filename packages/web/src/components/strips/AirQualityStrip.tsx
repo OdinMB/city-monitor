@@ -5,7 +5,7 @@ import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
-import { getAqiLevel } from '../../lib/aqi.js';
+import { AQI_SCALE_NAME, getAqiLevel, getUsAqiLevel, isWaqiStation } from '../../lib/aqi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -88,11 +88,12 @@ const PollutantCard = memo(function PollutantCard({ label, value, max, color }: 
 
 /* ── Station row ──────────────────────────────────────────── */
 
+/** A WAQI station; its value is on the US AQI scale, not the European one above. */
 const StationEntry = memo(function StationEntry({ name, aqi }: { name: string; aqi: number }) {
-  const level = getAqiLevel(aqi);
+  const level = getUsAqiLevel(aqi);
   return (
     <div className="flex items-center gap-1.5 min-w-0">
-      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: level.color }} />
+      <div className="w-2 h-2 rounded-full shrink-0 ring-1 ring-black/20 dark:ring-white/20" style={{ backgroundColor: level.color }} />
       <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate">{name}</span>
       <span className="text-[11px] tabular-nums font-semibold text-gray-700 dark:text-gray-200 ml-auto shrink-0">
         {aqi}
@@ -112,11 +113,11 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
   const { t } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  // Filter to WAQI stations (have aqicn.org URL), sort by name for stable order, take 8
+  // Filter to WAQI stations, sort by name for stable order, take 8
   // Must be above early returns to satisfy Rules of Hooks
   const stations = useMemo(
     () => (gridData ?? [])
-      .filter((s) => s.url?.includes('aqicn.org'))
+      .filter((s) => isWaqiStation(s))
       .sort((a, b) => a.station.localeCompare(b.station))
       .slice(0, 8),
     [gridData],
@@ -160,9 +161,12 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
             <PollutantCard label="O&#x2083;" value={data.current.o3} max={180} color={level.color} />
           </div>
 
-          {/* Station measurements */}
+          {/* Station measurements (WAQI, US AQI) */}
           {stations.length > 0 && (
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <div className="mb-1.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                {AQI_SCALE_NAME.us}
+              </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {stations.map((s) => (
                   <StationEntry
@@ -172,6 +176,9 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
                   />
                 ))}
               </div>
+              <p className="mt-2 text-[10px] text-gray-500 dark:text-gray-400">
+                {t('panel.airQuality.stationCredit')}
+              </p>
             </div>
           )}
         </>

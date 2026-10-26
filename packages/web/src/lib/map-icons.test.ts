@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wrapText } from './map-icons.js';
+import { wrapText, createVerticalBadgeIcon, type IconNode } from './map-icons.js';
 
 /**
  * jsdom's canvas doesn't implement measureText, so we create a mock context
@@ -59,5 +59,40 @@ describe('wrapText', () => {
     // "Hello" = 35px fits, "Hello World" = 77px doesn't
     const result = wrapText(ctx, 'Hello World', 50, 3);
     expect(result).toEqual(['Hello', 'World']);
+  });
+});
+
+describe('createVerticalBadgeIcon', () => {
+  const ICON: IconNode = [['line', { x1: 0, y1: 0, x2: 24, y2: 24 }]];
+
+  /** Draws a badge on a recording canvas; returns the glyph stroke and text fill colours. */
+  function drawnColours(fgColor?: string): { glyph: string[]; text: string[] } {
+    const out = { glyph: [] as string[], text: [] as string[] };
+    let inGlyph = false;
+    const ctx: Record<string, unknown> = {
+      measureText: (t: string) => ({ width: t.length * 7 }),
+      beginPath() {}, roundRect() {}, fill() {}, fillRect() {}, moveTo() {}, lineTo() {}, translate() {}, scale() {},
+      save() { inGlyph = true; },
+      restore() { inGlyph = false; },
+      stroke() { if (inGlyph) out.glyph.push(ctx.strokeStyle as string); },
+      fillText() { out.text.push(ctx.fillStyle as string); },
+      getImageData: () => ({}),
+    };
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = (() => ctx) as unknown as typeof original;
+    try {
+      createVerticalBadgeIcon(ICON, '#FFFF00', '#ffffff', '85 US AQI', undefined, fgColor);
+    } finally {
+      HTMLCanvasElement.prototype.getContext = original;
+    }
+    return out;
+  }
+
+  it('draws glyph and text in white by default', () => {
+    expect(drawnColours()).toEqual({ glyph: ['#ffffff'], text: ['#ffffff'] });
+  });
+
+  it('draws glyph and text in the foreground colour it is given', () => {
+    expect(drawnColours('#1f2937')).toEqual({ glyph: ['#1f2937'], text: ['#1f2937'] });
   });
 });

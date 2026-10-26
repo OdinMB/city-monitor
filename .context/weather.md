@@ -43,6 +43,20 @@
 - This is a separate Open-Meteo host with its own quota; still working today. Migrating off Open-Meteo for AQ is a future decision if the same shared-IP issue manifests here.
 - **Upstream data and attribution**: Open-Meteo serves the CAMS European air quality forecast (Copernicus Atmosphere Monitoring Service, ENSEMBLE data) and computes the European AQI from it. Open-Meteo asks users to credit both itself and the CAMS data provider, and the Copernicus licence asks for the notice "Contains modified Copernicus Atmosphere Monitoring Service information [year]" plus a statement that neither the European Commission nor ECMWF is responsible for its use. Both credits are on the Sources page (`packages/web/src/pages/SourcesPage.tsx`); keep them there while this endpoint is in use.
 
+### AQI scales on screen
+
+Two index scales are on screen. `packages/web/src/lib/aqi.ts` holds both band sets; never colour or name a value with the other scale's bands.
+
+| Display | Values from | Scale |
+|---|---|---|
+| Header AQI chip and popover, air-quality tile headline and scale bar | Open-Meteo `european_aqi` (weather job above) | European AQI, `getAqiLevel`: good ≤20, fair ≤40, moderate ≤60, poor ≤80, very poor ≤100, extremely poor above |
+| Map badges and popups of Sensor.Community points | PM2.5/PM10 converted on the server (`pmToEuropeanAqi` in `ingest-air-quality-grid.ts`) | European AQI, labelled "AQI" |
+| Map badges and popups of WAQI points; the tile's station list | WAQI `map/bounds` (`ingest-air-quality-grid.ts`), stored unconverted | US EPA AQI, `getUsAqiLevel`: good 0–50, moderate 51–100, unhealthy for sensitive groups 101–150, unhealthy 151–200, very unhealthy 201–300, hazardous 301+, in the standard AirNow colours; labelled "US AQI" |
+
+The grid keeps both kinds in the field `europeanAqi`. The web tells a WAQI point by its aqicn.org link (`isWaqiStation`, `gridPointScale`). The US band names are `panel.airQuality.usLevel.*`, separate from the European `panel.airQuality.level.*`. The tile's station list (WAQI only) has a "US AQI" heading and credits the World Air Quality Index Project under the list (`panel.airQuality.stationCredit`).
+
+The server's AQI history (`loadAqiHistory`, `/api/:city/air-quality/history`) averages `europeanAqi` over all grid points, so it mixes the two scales; no web component shows it today. Convert or split the scales before charting it.
+
 ## Key Types
 
 `WeatherData` (in `@city-monitor/shared`) — the contract:

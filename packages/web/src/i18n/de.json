@@ -105,8 +105,17 @@
         "moderate": "Mittel",
         "poor": "Schlecht",
         "veryPoor": "Sehr schlecht",
-        "extremelyPoor": "Gef\u00e4hrlich"
-      }
+        "extremelyPoor": "Extrem schlecht"
+      },
+      "usLevel": {
+        "good": "Gut",
+        "moderate": "M\u00e4\u00dfig",
+        "unhealthySensitive": "Ungesund f\u00fcr empfindliche Gruppen",
+        "unhealthy": "Ungesund",
+        "veryUnhealthy": "Sehr ungesund",
+        "hazardous": "Gef\u00e4hrlich"
+      },
+      "stationCredit": "Messstationen: World Air Quality Index Project"
     },
     "map": {
       "title": "Karte"
