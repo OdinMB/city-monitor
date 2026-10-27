@@ -319,22 +319,29 @@
         "local": "Lokal"
       },
       "hours24_7": "24/7",
-      "hoursDaily": "tägl. 16–0 Uhr",
       "hoursMoSa": "Mo–Sa 14–20",
+      "hoursDaily17_19": "tägl. 17–19 Uhr",
+      "hoursMoFr9_19": "Mo–Fr 9–19 Uhr",
       "showMore": "{{count}} weitere",
-      "localNote": "Berliner Krisendienst — 9 regionale Anlaufstellen für psychiatrische Soforthilfe. Täglich 16–0 Uhr · Psychiatrische Notaufnahmen außerhalb der Zeiten.",
+      "emergency": "Notrufnummern",
+      "website": "Offizielle Website: {{name}}",
+      "regionalSites": "Regionale Standorte",
+      "localNote": "Berliner Krisendienst — Soforthilfe in seelischen Krisen: Rufen Sie unten die Nummer Ihrer Region an. Nachts (0–8 Uhr) sowie an Wochenenden und Feiertagen (8–16 Uhr) antwortet der Bereitschaftsdienst unter <ltr>{{onCall}}</ltr> oder der Nummer Ihrer Region. Mo–Fr 8–16 Uhr: Information und Vermittlung unter denselben Nummern.",
+      "checked": "Nummern zuletzt geprüft: {{date}}",
       "service": {
+        "fireAmbulance": "Feuerwehr & Rettungsdienst",
+        "police": "Polizei",
         "telefonSeelsorge": "TelefonSeelsorge",
         "krisendienst": "Berliner Krisendienst",
         "bigHotline": "BIG Hotline (häusl. Gewalt)",
+        "hilfetelefon": "Hilfetelefon Gewalt gegen Frauen",
         "kindernotdienst": "Kindernotdienst",
         "jugendnotdienst": "Jugendnotdienst",
         "kinderJugendtelefon": "Kinder-/Jugendtelefon",
         "drogennotdienst": "Drogennotdienst",
         "maneo": "Maneo (Anti-Gewalt)",
-        "schwulenberatung": "Schwulenberatung"
-      },
-      "source": "berlin.de"
+        "schwulenberatung": "Schwulenberatung Berlin"
+      }
     },
     "bathing": {
       "title": "Badegewässer",
