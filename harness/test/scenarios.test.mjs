@@ -6,8 +6,8 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
-  applyScenario, DEFAULT_SCENARIO, leftOutTypes, newestFirst, planScenario, SCENARIO_NAMES, SCENARIOS, scenarioPlace,
-  scenarioTypes, SNAPSHOT, stormAlerts, stormArea, stormNina,
+  applyScenario, DEFAULT_SCENARIO, FROST_WARMEST, frostWeather, leftOutTypes, newestFirst, ninaWarnings, planScenario, SCENARIO_NAMES,
+  SCENARIOS, scenarioPlace, scenarioTypes, SNAPSHOT, SNOW_FOR_RAIN, stormAlerts, stormArea, stormNina,
 } from '../lib/scenarios.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -238,6 +238,134 @@ describe('a scenario on one city', () => {
       assert.ok(!touchedTypes(changes).includes(SNAPSHOT.transit), name);
       assert.equal(store.state[SNAPSHOT.transit], undefined, name);
     }
+  });
+});
+
+describe('nina-warnings', () => {
+  const SEVERITY_ORDER = { extreme: 0, severe: 1, moderate: 2, minor: 3 };
+  /** The order the NINA ingestion stores warnings in (packages/server/src/cron/ingest-nina.ts). */
+  const ingestionOrder = (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || Date.parse(b.startDate) - Date.parse(a.startDate);
+
+  it('is a scenario of its own that changes civil-protection warnings only', () => {
+    assert.ok(SCENARIO_NAMES.includes('nina-warnings'));
+    assert.deepEqual(scenarioTypes('nina-warnings'), [SNAPSHOT.nina]);
+  });
+
+  it('puts five warnings in place of the seeded ones, fetched now: one at each severity and an all-clear', () => {
+    const rows = seedLikeRows();
+    const { rows: after, changes } = planScenario('nina-warnings', rows, NOW, PLACE);
+    assert.deepEqual(after[SNAPSHOT.nina], [{ id: null, fetchedAt: NOW, data: ninaWarnings(NOW, PLACE.center) }]);
+    assert.deepEqual(changes.deletes, rows[SNAPSHOT.nina].map((row) => ({ type: SNAPSHOT.nina, id: row.id })));
+    assert.deepEqual(changes.updates, []);
+    const warnings = after[SNAPSHOT.nina][0].data;
+    assert.equal(warnings.length, 5);
+    assert.deepEqual(new Set(warnings.map((w) => w.severity)), new Set(['minor', 'moderate', 'severe', 'extreme']));
+    const allClear = warnings.filter((w) => w.type === 'Cancel');
+    assert.equal(allClear.length, 1);
+    assert.equal(allClear[0].severity, 'severe', 'an all-clear at a severity that would otherwise open the warning');
+    assert.ok(warnings.some((w) => w.type === 'Update' && w.version > 1), 'an updated warning');
+    assert.ok(warnings.some((w) => w.expiresAt === undefined), 'one with no expiry');
+    assert.equal(new Set(warnings.map((w) => w.id)).size, 5);
+  });
+
+  it('comes in the order the ingestion stores warnings: most severe first, then the newest', () => {
+    const warnings = ninaWarnings(NOW, PLACE.center);
+    assert.deepEqual(warnings.map((w) => w.id), [...warnings].sort(ingestionOrder).map((w) => w.id));
+  });
+
+  it('is long: every headline and description runs over several lines on a phone', () => {
+    for (const w of ninaWarnings(NOW, PLACE.center)) {
+      assert.match(w.headline, /^\[Synthetisch\] /, w.id);
+      assert.ok(w.headline.length > 140, `${w.id} headline ${w.headline.length}`);
+      assert.ok(w.description.length > 180, `${w.id} description ${w.description.length}`);
+      assert.match(w.description, /keine Gefahr/, w.id);
+      assert.ok(w.instruction.length > 0, w.id);
+      assert.ok(Date.parse(w.startDate) < NOW, w.id);
+      if (w.expiresAt !== undefined) assert.ok(Date.parse(w.expiresAt) > NOW, w.id);
+    }
+    assert.ok(ninaWarnings(NOW, PLACE.center).some((w) => w.description.length > 500 && w.instruction.length > 250));
+  });
+
+  it('gives each warning its own closed area near the centre, and depends on the time and the place alone', () => {
+    for (const place of [PLACE, NO_TRANSIT]) {
+      const rings = ninaWarnings(NOW, place.center).map((w) => w.area.geometry.coordinates[0]);
+      assert.equal(new Set(rings.map((ring) => JSON.stringify(ring))).size, 5);
+      for (const ring of rings) {
+        assert.equal(ring.length, 5);
+        assert.deepEqual(ring[0], ring[4]);
+        for (const [lon, lat] of ring) {
+          assert.ok(Math.abs(lon - place.center.lon) <= 0.11 + 1e-9 && Math.abs(lat - place.center.lat) <= 0.06 + 1e-9, `${lon} ${lat}`);
+        }
+      }
+    }
+    assert.deepEqual(ninaWarnings(NOW, PLACE.center), ninaWarnings(NOW, PLACE.center));
+    assert.notDeepEqual(ninaWarnings(NOW, PLACE.center), ninaWarnings(NOW + HOUR, PLACE.center));
+    assert.notDeepEqual(ninaWarnings(NOW, PLACE.center), ninaWarnings(NOW, NO_TRANSIT.center));
+  });
+});
+
+describe('frost', () => {
+  /** Weather shaped as the seed writes it, above zero, with rain in it. */
+  const weather = () => ({
+    current: { temp: 7.4, feelsLike: 5.9, humidity: 80, precipitation: 0.6, weatherCode: 61, windSpeed: 15, windDirection: 200 },
+    hourly: [
+      { time: '2026-10-27T06:00', temp: 6.1, precipProb: 70, weatherCode: 61 },
+      { time: '2026-10-27T07:00', temp: 7.4, precipProb: 10, weatherCode: 3 },
+      { time: '2026-10-27T13:00', temp: 12.8, precipProb: 60, weatherCode: 80 },
+    ],
+    daily: [
+      { date: '2026-10-27', high: 12.5, low: 4.2, weatherCode: 80, precip: 3.1, sunrise: 's', sunset: 'e' },
+      { date: '2026-10-28', high: 9.9, low: 1.0, weatherCode: 0, precip: 0, sunrise: 's', sunset: 'e' },
+    ],
+    alerts: [{ headline: 'seed', severity: 'moderate', description: '', validUntil: '' }],
+    dwdUv: { today: 1, tomorrow: 1, dayAfter: 0 },
+  });
+  const temperatures = (d) => [d.current.temp, d.current.feelsLike, ...d.hourly.map((h) => h.temp), ...d.daily.flatMap((x) => [x.high, x.low])];
+
+  it('is a scenario of its own that changes the newest weather row only', () => {
+    assert.ok(SCENARIO_NAMES.includes('frost'));
+    assert.deepEqual(scenarioTypes('frost'), [SNAPSHOT.weather]);
+    const rows = seedLikeRows();
+    const { rows: after, changes } = planScenario('frost', rows, NOW, PLACE);
+    assert.deepEqual(changes.deletes, []);
+    assert.deepEqual(changes.inserts, []);
+    assert.deepEqual(changes.updates.map((u) => [u.type, u.id]), [[SNAPSHOT.weather, rows[SNAPSHOT.weather].at(-1).id]]);
+    assert.equal(after[SNAPSHOT.weather][0].data.current.temp, FROST_WARMEST);
+    assert.deepEqual(after[SNAPSHOT.weather].slice(1), [...rows[SNAPSHOT.weather]].sort(newestFirst).slice(1), 'the history stays as seeded');
+  });
+
+  it('puts every temperature below zero, the warmest just below, and keeps the forecast\'s shape', () => {
+    const before = weather();
+    const after = frostWeather(before);
+    const was = temperatures(before);
+    const now = temperatures(after);
+    assert.ok(now.every((t) => t < 0), now.join(' '));
+    assert.equal(Math.max(...now), FROST_WARMEST);
+    assert.equal(Math.round(FROST_WARMEST), -0, 'whole degrees round the warmest to -0');
+    const shift = now[0] - was[0];
+    for (const [i, t] of now.entries()) assert.equal(Math.round((t - was[i]) * 10), Math.round(shift * 10), `temperature ${i} moved by the same amount`);
+    for (const t of now) assert.equal(t, Math.round(t * 10) / 10, 'one decimal, as the seed writes them');
+  });
+
+  it('lets rain fall as snow and changes nothing but temperatures and weather codes', () => {
+    const before = weather();
+    const after = frostWeather(before);
+    assert.deepEqual([after.current.weatherCode, ...after.hourly.map((h) => h.weatherCode), ...after.daily.map((d) => d.weatherCode)], [71, 71, 3, 85, 85, 0]);
+    for (const code of Object.values(SNOW_FOR_RAIN)) assert.ok(code >= 56 && code <= 86 && !(code in SNOW_FOR_RAIN), code);
+    const without = (d) => ({
+      ...d,
+      current: { ...d.current, temp: 0, feelsLike: 0, weatherCode: 0 },
+      hourly: d.hourly.map((h) => ({ ...h, temp: 0, weatherCode: 0 })),
+      daily: d.daily.map((x) => ({ ...x, high: 0, low: 0, weatherCode: 0 })),
+    });
+    assert.deepEqual(without(after), without(before));
+    assert.deepEqual(before, weather(), 'the input is not changed');
+  });
+
+  it('adds no field the data did not have, and refuses weather with no temperature in it', () => {
+    const partial = { current: { temp: 20 }, hourly: [{ time: 'x' }], daily: [], alerts: [] };
+    assert.deepEqual(frostWeather(partial), { current: { temp: FROST_WARMEST }, hourly: [{ time: 'x' }], daily: [], alerts: [] });
+    assert.throws(() => frostWeather({ current: {}, hourly: [], daily: [], alerts: [] }), /no temperature/);
   });
 });
 

@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkPagePath, parseArgs, parseViewport, USAGE, UsageError, validateSteps } from '../lib/args.mjs';
+import { MAP_STYLE_NAMES } from '../lib/map-style.mjs';
 import { SCENARIO_NAMES } from '../lib/scenarios.mjs';
 
 describe('parseArgs', () => {
@@ -86,6 +87,26 @@ describe('parseArgs', () => {
     assert.match(USAGE, /--path <path> .*default \/<city>/);
   });
 
+  it('takes a map style by name, local by default, and refuses others with the list', () => {
+    assert.equal(parseArgs(['--out', 'o']).mapStyle, 'local');
+    for (const mode of MAP_STYLE_NAMES) {
+      assert.equal(parseArgs(['--out', 'o', '--map-style', mode]).mapStyle, mode);
+      assert.equal(parseArgs(['--out', 'o', `--map-style=${mode}`]).mapStyle, mode);
+    }
+    for (const bad of ['offline', 'Fail', 'fail,local', '__proto__', '']) {
+      assert.throws(() => parseArgs(['--out', 'o', `--map-style=${bad}`]), (err) => err instanceof UsageError
+        && err.message === `--map-style ${bad}: use one of ${MAP_STYLE_NAMES.join(', ')}`, JSON.stringify(bad));
+    }
+    assert.throws(() => parseArgs(['--out', 'o', '--map-style', 'fail', '--map-style', 'local']), /given twice/);
+    assert.throws(() => parseArgs(['--out', 'o', '--map-style']), /needs a value/);
+    assert.match(USAGE, new RegExp(`--map-style <mode> .*${MAP_STYLE_NAMES.join(' \\| ')} \\(default local\\)`));
+  });
+
+  it('keeps the new options apart from the scenario and the guard test', () => {
+    const args = parseArgs(['--out', 'o', '--scenario', 'frost', '--map-style', 'fail-once', '--guard-test=env']);
+    assert.deepEqual([args.scenario, args.mapStyle, args.guardTest], ['frost', 'fail-once', 'env']);
+  });
+
   it('accepts each guard test case and refuses others', () => {
     for (const c of ['env', 'target', 'target-loopback', 'network']) assert.equal(parseArgs(['--out', 'o', `--guard-test=${c}`]).guardTest, c);
     assert.throws(() => parseArgs(['--out', 'o', '--guard-test=other']), UsageError);
@@ -149,5 +170,44 @@ describe('validateSteps', () => {
       [{ action: 'click', selector: 'a', timeout: 0 }],
     ];
     for (const steps of bad) assert.throws(() => validateSteps(steps), UsageError, JSON.stringify(steps));
+  });
+
+  it('accepts a swipe on the viewport or on an element, with one finger or two', () => {
+    const steps = validateSteps([
+      { action: 'swipe', from: [300, 500], to: [60, 500] },
+      { action: 'swipe', selector: '[data-testid=map-container]', from: [200, 150], to: [200, 40], fingers: 2, ms: 600 },
+      { action: 'swipe', text: 'News', nth: 1, from: [0, 0], to: [7680, 7680], fingers: 1, ms: 0, timeout: 5000 },
+      { action: 'swipe', from: [10.5, 20.25], to: [11, 20.25], ms: 10_000 },
+    ]);
+    assert.equal(steps.length, 4);
+    assert.deepEqual(steps[1].from, [200, 150]);
+  });
+
+  it('refuses a swipe it cannot run, and swipe fields on other actions', () => {
+    const bad = [
+      { action: 'swipe' },
+      { action: 'swipe', from: [1, 2] },
+      { action: 'swipe', to: [1, 2] },
+      { action: 'swipe', from: [1, 2], to: [1, 2] },
+      { action: 'swipe', from: [1], to: [1, 2] },
+      { action: 'swipe', from: [1, 2, 3], to: [1, 2] },
+      { action: 'swipe', from: { x: 1, y: 2 }, to: [3, 4] },
+      { action: 'swipe', from: ['1', 2], to: [3, 4] },
+      { action: 'swipe', from: [-1, 2], to: [3, 4] },
+      { action: 'swipe', from: [1, 2], to: [7681, 4] },
+      { action: 'swipe', from: [1, 2], to: [Number.NaN, 4] },
+      { action: 'swipe', from: [1, 2], to: [3, 4], fingers: 3 },
+      { action: 'swipe', from: [1, 2], to: [3, 4], fingers: 0 },
+      { action: 'swipe', from: [1, 2], to: [3, 4], fingers: '2' },
+      { action: 'swipe', from: [1, 2], to: [3, 4], ms: -1 },
+      { action: 'swipe', from: [1, 2], to: [3, 4], ms: 10_001 },
+      { action: 'swipe', from: [1, 2], to: [3, 4], ms: 1.5 },
+      { action: 'swipe', from: [1, 2], to: [3, 4], selector: 'a', text: 'b' },
+      { action: 'swipe', from: [1, 2], to: [3, 4], direction: 'left' },
+      { action: 'tap', text: 'x', from: [1, 2] },
+      { action: 'click', selector: 'a', fingers: 2 },
+      { action: 'wait', ms: 5, to: [1, 2] },
+    ];
+    for (const step of bad) assert.throws(() => validateSteps([step]), UsageError, JSON.stringify(step));
   });
 });

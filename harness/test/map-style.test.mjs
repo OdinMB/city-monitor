@@ -1,9 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { BACKGROUND, baseMapStyleName, localMapStyle, localResponse, styleTheme } from '../lib/map-style.mjs';
+import {
+  BACKGROUND, baseMapStyleName, DEFAULT_MAP_STYLE, localMapStyle, localResponse, MAP_STYLE_NAMES, MAP_STYLES, STYLE_FAILURE_STATUS, styleFails, styleTheme,
+} from '../lib/map-style.mjs';
 import { REPO } from '../lib/paths.mjs';
 
 /** The base-map style URLs the app requests, read from its map constants. */
@@ -109,5 +113,62 @@ describe('localResponse', () => {
   it('has no answer for anything else', () => {
     assert.equal(localResponse('https://example.com/'), null);
     assert.equal(localResponse('https://tiles.basemaps.cartocdn.com/fonts/Open Sans Regular/0-255.pbf'), null);
+  });
+
+  it('answers a failing style with an error status and no style, readable from the app\'s origin, under a key of its own', () => {
+    for (const url of Object.values(appStyleUrls())) {
+      const failed = localResponse(url, { fail: true });
+      assert.equal(failed.fulfil.status, STYLE_FAILURE_STATUS);
+      assert.ok(failed.fulfil.status >= 500);
+      assert.equal(failed.fulfil.headers['access-control-allow-origin'], '*');
+      assert.throws(() => JSON.parse(failed.fulfil.body), 'the body is not a style');
+      assert.equal(failed.key, `${localResponse(url).key} as ${STYLE_FAILURE_STATUS}`);
+      assert.deepEqual(localResponse(url, { fail: false }), localResponse(url));
+    }
+  });
+
+  it('still has no answer for anything else when failing', () => {
+    assert.equal(localResponse('https://example.com/', { fail: true }), null);
+    assert.equal(localResponse('https://tiles.basemaps.cartocdn.com/vectortiles/carto.streets/v1/12/2200/1343.mvt', { fail: true }), null);
+  });
+});
+
+describe('the map style modes (--map-style)', () => {
+  it('are local (the default), fail and fail-once, each described', () => {
+    assert.deepEqual(MAP_STYLE_NAMES, ['local', 'fail', 'fail-once']);
+    assert.equal(DEFAULT_MAP_STYLE, 'local');
+    for (const name of MAP_STYLE_NAMES) assert.ok(MAP_STYLES[name].length > 10, name);
+  });
+
+  it('local never fails, fail always does, fail-once only the first style request', () => {
+    for (const answered of [0, 1, 2, 5]) {
+      assert.equal(styleFails('local', answered), false);
+      assert.equal(styleFails('fail', answered), true);
+      assert.equal(styleFails('fail-once', answered), answered === 0);
+    }
+  });
+
+  it('refuses an unknown mode with the list', () => {
+    for (const bad of ['offline', 'Fail', '__proto__', 'constructor', '', undefined]) {
+      assert.throws(() => styleFails(bad, 0), (err) => MAP_STYLE_NAMES.every((n) => err.message.includes(n)), String(bad));
+    }
+  });
+
+  it('see.mjs exits 1 with the list for an unknown mode, before it starts or writes anything', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'harness-test-'));
+    try {
+      const out = path.join(tmp, 'out');
+      const result = spawnSync(process.execPath, [path.join(REPO.harness, 'see.mjs'), '--out', out, '--map-style', 'offline'], {
+        env: { PATH: process.env.PATH ?? '', HOME: tmp, TMPDIR: tmp },
+        encoding: 'utf8',
+        timeout: 30_000,
+      });
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /--map-style offline: use one of local, fail, fail-once/);
+      assert.doesNotMatch(result.stdout, /hermetic-guard|run folder/);
+      assert.equal(fs.existsSync(out), false);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
