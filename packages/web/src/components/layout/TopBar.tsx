@@ -3,8 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWeather } from '../../hooks/useWeather.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
+import { useWarningsInForce } from '../../hooks/useWarningsInForce.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getAqiLevel } from '../../lib/aqi.js';
+import { highestWarningLevel } from '../../lib/weather-warnings.js';
+import { WarningLevelBadge } from '../WeatherWarnings.js';
 import { Popover } from './Popover.js';
 import { WeatherPopover } from './WeatherPopover.js';
 import { AqiTooltip } from './AqiTooltip.js';
@@ -24,6 +27,8 @@ export function TopBar() {
     ? getAqiLevel(airQuality.current.europeanAqi)
     : null;
   const temp = current ? Math.round(current.temp) : null;
+  const warning = highestWarningLevel(useWarningsInForce(weather?.alerts ?? []));
+  const weatherName = `${t('panel.weather.title')}: ${temp}°${warning ? `, ${t(`panel.weather.warning.level.${warning}`)}` : ''}`;
   const aqi = airQuality?.current ? Math.round(airQuality.current.europeanAqi) : null;
   const aqiLevelText = aqiLevel ? t(`panel.airQuality.level.${aqiLevel.label}`) : '';
   const aqiName = t('panel.airQuality.aqi');
@@ -56,9 +61,14 @@ export function TopBar() {
                 ref={ref as React.Ref<HTMLButtonElement>}
                 {...props}
                 className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                aria-label={`${t('panel.weather.title')}: ${temp}°`}
+                aria-label={weatherName}
               >
                 {weatherInfo.icon} {temp}°
+                {warning && (
+                  <WarningLevelBadge level={warning} className="ms-1.5 px-1 py-px">
+                    {t(`panel.weather.warning.short.${warning}`)}
+                  </WarningLevelBadge>
+                )}
               </button>
             )}
             className="max-h-[80vh] overflow-y-auto bg-surface-1 border border-border rounded-lg shadow-lg"
@@ -76,14 +86,16 @@ export function TopBar() {
               <button
                 ref={ref as React.Ref<HTMLButtonElement>}
                 {...props}
-                className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                // On a narrow phone this chip gives way: min-w-0 lets it shrink and its words end in "…",
+                // while its number, the weather chip and its warning badge stay whole and nothing runs
+                // under the menu button.
+                className="inline-flex items-center gap-1 min-w-0 px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap"
                 aria-label={`${t('panel.airQuality.title')}: ${aqi} ${aqiName}, ${aqiLevelText}`}
               >
-                <span className="font-semibold" style={{ color: aqiLevel.color }}>
+                <span className="shrink-0 font-semibold" style={{ color: aqiLevel.color }}>
                   {aqi}
                 </span>
-                {' '}
-                <span className="text-muted">
+                <span className="min-w-0 truncate text-muted">
                   {aqiName} · {aqiLevelText}
                 </span>
               </button>

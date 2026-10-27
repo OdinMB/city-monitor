@@ -59,7 +59,25 @@
       "high": "H",
       "low": "L",
       "alerts": "Alerts",
-      "validUntil": "Valid until {{time}}",
+      "warning": {
+        "level": {
+          "moderate": "Significant weather warning",
+          "severe": "Severe weather warning",
+          "extreme": "Extreme weather warning",
+          "unknown": "Weather warning"
+        },
+        "short": {
+          "moderate": "Warning",
+          "severe": "Severe",
+          "extreme": "Extreme",
+          "unknown": "Warning"
+        },
+        "untilTime": "Until {{time}}",
+        "untilTomorrow": "Until tomorrow, {{time}}",
+        "untilDay": "Until {{day}}, {{time}}",
+        "noEnd": "Until further notice",
+        "source": "Source: Deutscher Wetterdienst (DWD)"
+      },
       "uvMax": "UV max",
       "uvTodayHint": "Today's highest UV index (DWD forecast)",
       "uvClearSky": "UV if sunny",
