@@ -4,7 +4,7 @@
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (7 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, deduplicates by URL+title hash, sorts by tier → importance (desc) → recency. **Before LLM filtering, loads existing assessments from DB** — only genuinely new items (hash not in DB) are sent through the LLM filter. The LLM assigns `category`, `relevant_to_city`, and `importance` (0–1). After filtering, writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s), then persists all items with their assessments to Postgres via UPSERT (dedup on cityId+hash). Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 20 min (TTL 1200s).
+1. **Ingestion** (`packages/server/src/cron/ingest-feeds.ts`) — Runs every 10 minutes. Fetches RSS/Atom feeds from city-configured sources (7 feeds for Berlin across 3 tiers). Parses with `fast-xml-parser`, deduplicates by URL+title hash, sorts by tier → importance (desc) → recency. **Before LLM filtering, loads existing assessments from DB** — only genuinely new items (hash not in DB) are sent through the LLM filter. The LLM assigns `category`, `relevant_to_city`, and `importance` (0–1). After filtering, writes to cache keys `{cityId}:news:digest` and `{cityId}:news:{category}` (TTL 900s), then persists all items with their assessments to Postgres via UPSERT (dedup on cityId+hash), without the description of items from a `storeText: false` feed. Uses in-flight coalescing via `cache.fetch()` to avoid re-fetching the same feed within 20 min (TTL 1200s).
 
 2. **API** (`packages/server/src/routes/news.ts`) — `GET /api/:city/news/digest` returns cached digest, falls back to Postgres (with `applyDropLogic`), then empty structure.
 
@@ -14,6 +14,7 @@
 
 Feeds are defined in city config files (e.g. `packages/server/src/config/cities/berlin.ts`). Each feed has:
 - `name`, `url`, `tier` (1=primary, 2=secondary, 3=tertiary; the type also allows 4), `type` (kind of source: 'wire'|'gov'|'mainstream'|'tech'|'other' — the parser detects RSS vs Atom itself), `lang`, optional `category` (the item's category until the LLM classifier assigns one, which replaces it; default `local`)
+- optional `storeText: false` for a feed whose terms forbid archiving its content. Its items are classified with their description and the cached digest keeps it, but `news_items` stores only title and link (with the verdict and location). `ingest-feeds.ts` drops the description just before `saveNewsItems`, matching items to the feed by `sourceUrl`. Set it on any feed with such terms.
 
 Berlin has 7 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, Berliner Zeitung, taz Berlin, Polizei Berlin (category=crime), Gründerszene.
 
@@ -22,7 +23,7 @@ Feed status (checked 2026-09-24):
 - **BZ Berlin: removed 2026-09-24 for licensing; do not re-add it.** A working feed exists (`/feed/berlin.xml`), but BZ's RSL licence (`/rsl.xml`, linked from `robots.txt`) prohibits `ai-input`, and every news item here goes through the LLM classifier.
 - **Exberliner: removed 2026-09-24.** It rebranded as The Berliner and no longer publishes a feed; every WordPress feed URL 302s to the homepage.
 - taz: `!p<id>` picks the section and the path slug is cosmetic. Berlin is `!p4649`; the old `!p4610` was the Öko section.
-- rbb24 notes in its feed that the content is for non-commercial sites only and must not be archived. `robots.txt` reserves AI training but allows retrieval/grounding with attribution.
+- **rbb24: `storeText: false` since 2026-10-27.** Its feed says the content is for non-commercial sites only and must not be archived; `robots.txt` reserves AI training but allows retrieval/grounding with attribution. So its items are classified with their description as they arrive and the live digest carries it, but Postgres keeps only title and link. Where the digest comes from Postgres (cache warming after a restart, the route's DB fallback), rbb24 items have no description until the next ingest run; the dashboard shows no news descriptions, so only API readers see the gap. Classification never reads a description from Postgres (stored rows give only their verdict), so it is unaffected. A briefing written on a digest warmed from Postgres (summarize stale at start while news is fresh, so it does not wait for ingestion) sees rbb24 headlines without their teaser. The briefing stores only its own text, never its inputs. Rows stored before the change lose their description the next time the feed lists the item (the upsert refreshes `description`); the rest go with the 3-day retention, so no migration or deletion was needed. The model-eval harness still writes the live feed text, rbb24's included, into `inputs.json` under the gitignored `DOCS/` it is pointed at.
 
 Use Node's `fetch` to probe a feed, not curl. Some CDN front ends (BZ's Akamai, for one) return 403 to curl even for the homepage, but serve Node's fetch, which is what production uses.
 
@@ -113,7 +114,7 @@ interface NewsSummary {
 
 ## DB Schema
 
-- `newsItems` table — cityId, hash (dedup key via unique index `news_city_hash_idx`), title, url, publishedAt, sourceName, sourceUrl, description, category, tier, lang, relevantToCity (bool), importance (real, 0–1), lat, lon, locationLabel, fetchedAt. UPSERT on (cityId, hash). 3-day retention (`cron/data-retention.ts`). The cache-miss read (`loadNewsItems` in `db/reads.ts`) returns the 200 most recent rows with `relevantToCity = true`.
+- `newsItems` table — cityId, hash (dedup key via unique index `news_city_hash_idx`), title, url, publishedAt, sourceName, sourceUrl, description (null for a `storeText: false` feed such as rbb24), category, tier, lang, relevantToCity (bool), importance (real, 0–1), lat, lon, locationLabel, fetchedAt. UPSERT on (cityId, hash); a conflict refreshes description, the verdict fields, location and fetchedAt. 3-day retention (`cron/data-retention.ts`). The cache-miss read (`loadNewsItems` in `db/reads.ts`) returns the 200 most recent rows with `relevantToCity = true`.
 - `aiSummaries` table — cityId, lang, headlineHash, summary, model, inputTokens, outputTokens, generatedAt. One row per language per generation batch (rows share the same generatedAt). INSERT-only. Retention at most 7 days (`cron/data-retention.ts`); the same job also deletes a city's briefings once that city has no `newsItems` rows left. `headlineHash` is only the change detector for the top-10 briefing titles (`cron/summarize.ts`), not a reference to any `newsItems.hash`: never join the two tables on it. Until 2026-09-25 the orphan cleanup did exactly that, and so deleted every stored briefing on each run.
 
 ## Drop Logic

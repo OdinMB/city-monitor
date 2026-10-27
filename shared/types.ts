@@ -41,6 +41,12 @@ export interface FeedConfig {
   type: 'wire' | 'gov' | 'mainstream' | 'tech' | 'other';
   lang: string;
   category?: string;
+  /**
+   * false for a feed whose terms forbid archiving its content: its item
+   * descriptions still reach the classifier and the in-memory digest, but
+   * Postgres keeps only the title and link. Default true.
+   */
+  storeText?: boolean;
 }
 
 export interface CityMapLayer {

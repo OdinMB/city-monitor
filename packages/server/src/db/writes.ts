@@ -200,6 +200,9 @@ export async function saveNewsItems(db: Db, cityId: string, items: PersistedNews
   ).onConflictDoUpdate({
     target: [newsItems.cityId, newsItems.hash],
     set: {
+      // Follows the feed, and clears the text of a row from a feed whose text
+      // is no longer stored (`storeText: false`) the next time it is seen
+      description: sql`excluded.description`,
       category: sql`excluded.category`,
       relevantToCity: sql`excluded.relevant_to_city`,
       importance: sql`excluded.importance`,
