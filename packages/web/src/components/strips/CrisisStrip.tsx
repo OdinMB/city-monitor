@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import { Ltr } from '../Ltr.js';
+import { SourceText } from '../SourceText.js';
 
 type Tab = 'citywide' | 'local';
 
@@ -224,7 +225,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
                   {/* German district names: isolated so an Arabic page keeps their
                       order, inside a block so they still start at the page's start side */}
                   <div className="flex-1 min-w-0 text-[11px] text-gray-600 dark:text-gray-400">
-                    <bdi>{site.districts.join(', ')}</bdi>
+                    <SourceText lang="de">{site.districts.join(', ')}</SourceText>
                   </div>
                   <a
                     href={telHref(site.phone)}
