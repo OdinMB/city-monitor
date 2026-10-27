@@ -7,6 +7,7 @@ import ar from '../i18n/ar.json';
 import { getAqiLevel, getUsAqiLevel, getAqiLevelOnScale, gridPointScale, isWaqiStation, waqiAgencies } from './aqi.js';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
+import { koeln } from '../config/cities/koeln.js';
 
 afterEach(async () => {
   await i18n.changeLanguage('en');
@@ -100,7 +101,7 @@ describe('grid point scale', () => {
 });
 
 describe('WAQI originating agencies', () => {
-  it.each([berlin.id, hamburg.id])('lists the agencies for every configured city (%s)', (cityId) => {
+  it.each([berlin.id, hamburg.id, koeln.id])('lists the agencies for every configured city (%s)', (cityId) => {
     const agencies = waqiAgencies(cityId);
     expect(agencies?.short).toMatch(/^Umweltbundesamt, \w+$/);
     expect(agencies?.full).toContain('Umweltbundesamt');

@@ -105,6 +105,10 @@ const WAQI_AGENCIES: Record<string, WaqiAgencies> = {
     short: 'Umweltbundesamt, HaLm',
     full: 'the Umweltbundesamt (German Environment Agency) and the Hamburg air quality monitoring network (HaLm)',
   },
+  koeln: {
+    short: 'Umweltbundesamt, LANUK',
+    full: 'the Umweltbundesamt (German Environment Agency) and the North Rhine-Westphalia air quality monitoring network (LUQS) of the Landesamt für Natur, Umwelt und Klima (LANUK)',
+  },
 };
 
 /** The city's WAQI originating agencies, or undefined for a city without an entry. */

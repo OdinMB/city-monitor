@@ -57,6 +57,18 @@ describe('App', () => {
     });
   });
 
+  it('redirects /koeln to /berlin (Köln not active)', async () => {
+    render(
+      <MemoryRouter initialEntries={['/koeln']}>
+        <App />
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
+    });
+    expect(screen.queryByText('KÖLN')).toBeNull();
+  });
+
   it('redirects unknown city to /berlin', async () => {
     render(
       <MemoryRouter initialEntries={['/unknown-city']}>

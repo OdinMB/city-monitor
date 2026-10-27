@@ -136,8 +136,9 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 - `index.ts` — `getActiveCities()` reads `ACTIVE_CITIES` env var (comma-separated IDs, default "berlin"), returns matching `CityConfig[]`. `getCityConfig(id)` for single lookup.
 - `cities/berlin.ts` — Berlin config with 7 RSS feeds, weather (BrightSky), transit (VBB via `v6.vbb.transport.rest`, 12 stations), events (kulturdaten.berlin, Ticketmaster, gomus), police (berlin.de press-release RSS of Polizei Berlin).
 - `cities/hamburg.ts` — Hamburg config with 4 RSS feeds (NDR, Abendblatt, MOPO, hamburg.de), weather (BrightSky), police (presseportal.de RSS). No transit config, so Hamburg has no transit alerts.
+- `cities/koeln.ts` — Köln config with the Germany-wide sources only: weather (BrightSky, DWD warnings and UV matched by the name `Köln`), NINA (ARS `053150000000`), DWD pollen (region 40/41) and the PEGELONLINE Rhein gauge Köln. No feeds, police, transit, events or council meetings. Inactive on the server unless `ACTIVE_CITIES` names `koeln`, and inactive in the web build.
 
-Adding a city = adding a config file + registering in `ALL_CITIES` + setting `ACTIVE_CITIES` env var.
+Adding a city = adding a config file + registering in `ALL_CITIES` + setting `ACTIVE_CITIES` env var, plus the web side (its own config file, `ALL_CITIES` and the hardcoded `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts`). The full steps, including the code keyed to a city ID, are in the README's "Adding a City".
 
 ## Environment Variables
 

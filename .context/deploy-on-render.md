@@ -175,13 +175,16 @@ To serve the API on its own subdomain (e.g. `api.citymonitor.app`, as citymonito
 5. On the **Static Site**, set `VITE_API_BASE` to `https://api.citymonitor.app/api` and put `https://api.citymonitor.app` in the CSP's `connect-src` and `img-src` (in `render.yaml` with the blueprint), then rebuild the static site
 6. Check the rate limits' hop count on the new domain ([deployment.md](deployment.md#client-address-and-trust-proxy)): it was 2 on `api.citymonitor.app`, the same as on `onrender.com`, but a proxy or CDN of your own in front of the domain adds hops
 
-## Adding Hamburg (Multi-City)
+## Adding a City (Multi-City)
 
-To enable Hamburg alongside Berlin:
+To enable a configured city such as Hamburg (`hamburg`) or Köln (`koeln`) alongside Berlin:
 
-1. Go to **API Web Service** → **Environment**
-2. Change `ACTIVE_CITIES` from `berlin` to `berlin,hamburg`
-3. Save — Render auto-redeploys. Hamburg data starts populating via cron jobs.
+1. In the code, add the city ID to `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` and push: the web build hardcodes its active cities, so without this the static site keeps redirecting the city's page to Berlin
+2. Go to **API Web Service** → **Environment**
+3. Change `ACTIVE_CITIES` from `berlin` to e.g. `berlin,hamburg`
+4. Save — Render auto-redeploys. The city's data starts populating via cron jobs; a job whose stored data is still fresh for Berlin skips its startup run, so that city's tile fills at the job's next scheduled run
+
+A city that is not configured yet needs its config files first (README, "Adding a City").
 
 ## Troubleshooting
 

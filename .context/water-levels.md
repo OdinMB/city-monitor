@@ -15,6 +15,7 @@ Water level stations are configured per city in `packages/server/src/config/citi
 
 - **Berlin** — 5 stations: Muhlendamm, Charlottenburg, Kopenick (Spree), Spandau (Havel), Schmockwitz (Dahme)
 - **Hamburg** — 3 tidal Elbe stations: St. Pauli, Bunthaus, Seemannshoft
+- **Köln** (configured, not active) — 1 Rhein station: Köln (Rhein-km 688)
 
 Config shape: `waterLevels.stations[].{ uuid, name, waterBody, tidal? }` in `CityDataSources`.
 

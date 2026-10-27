@@ -141,7 +141,7 @@ Zustand store in `useTheme.ts`:
 
 Tailwind v4 dark mode requires `@custom-variant dark (&:where(.dark, .dark *));` in `globals.css` for class-based toggling (v4 defaults to `prefers-color-scheme` media query). Smooth 150ms transitions on `background-color`, `color`, and `border-color`.
 
-City accent colors are set via CSS custom property `--accent` with `[data-city='berlin']` / `[data-city='hamburg']` selectors.
+City accent colors are set via CSS custom property `--accent` with `[data-city='berlin']` / `[data-city='hamburg']` / `[data-city='koeln']` selectors in `globals.css`; the web never reads `theme.accent` from the city config.
 
 **Colour roles.** `globals.css` names what a colour means, with its light value on `:root` and its dark value on `.dark`. Code writes the role (`text-link`, `bg-signal-good`, `badge-good`), with no `dark:` partner, so a contrast fix is one value in `globals.css`. Each value is a Tailwind palette variable (`var(--color-blue-600)`, or the `color-mix()` Tailwind writes for `bg-green-900/30`) or the literal a tile used to set inline, so a role paints exactly what the classes it replaced painted. Where two tiles showed one state in different shades, each kept its shade under its own role; making them agree is a visible change. Four families:
 

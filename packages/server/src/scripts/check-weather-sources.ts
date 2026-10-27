@@ -16,9 +16,10 @@
 import type { CityConfig } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
+import { koeln } from '../config/cities/koeln.js';
 import { DWD_WARNINGS_URL, assertDwdWarningsShape, parseDwdWarnings, parseDwdWarningsJsonp } from '../lib/dwd-warnings.js';
 
-const CITIES: Record<string, CityConfig> = { berlin, hamburg };
+const CITIES: Record<string, CityConfig> = { berlin, hamburg, koeln };
 
 const TIMEOUT_MS = 15_000;
 

@@ -86,6 +86,15 @@
   --border-subtle: #1a2030;  /* cool-tinted subtle border */
 }
 
+[data-city='koeln'] {
+  --accent: #c8102e;
+  --accent-rgb: 200, 16, 46;
+}
+.dark[data-city='koeln'] {
+  --accent: #ff5a6a;
+  --accent-rgb: 255, 90, 106;
+}
+
 /* Colour roles: what a colour means, set once for light and dark. A component
    writes text-link, bg-signal-good or badge-good rather than a palette colour
    and its dark: partner, so a contrast fix is one value here. Values are

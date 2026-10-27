@@ -263,9 +263,25 @@ const HAMBURG_SOURCES: SourceGroup[] = [
   },
 ];
 
+const KOELN_SOURCES: SourceGroup[] = [
+  {
+    category: 'Transit & Traffic',
+    sources: [
+      { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
+    ],
+  },
+  {
+    category: 'Water',
+    sources: [
+      { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time Rhine water level from the Köln gauge.' },
+    ],
+  },
+];
+
 const CITY_SOURCES: Record<string, SourceGroup[]> = {
   berlin: BERLIN_SOURCES,
   hamburg: HAMBURG_SOURCES,
+  koeln: KOELN_SOURCES,
 };
 
 function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] {
