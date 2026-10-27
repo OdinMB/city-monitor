@@ -117,4 +117,4 @@ npx turbo run test --filter=@city-monitor/web -- --reporter=verbose
 - **Remote:** https://github.com/OdinMB/city-monitor
 - **URL:** https://citymonitor.app
 - **Main branch:** main
-- **License:** AGPL-3.0-or-later (dual copyright — see LICENSE)
+- **License:** AGPL-3.0-or-later (copyright Odin Mühlenbein and contributors — see LICENSE; inbound terms in CONTRIBUTING.md)

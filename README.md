@@ -130,4 +130,4 @@ If you find this project useful, consider [supporting it on Ko-fi](https://ko-fi
 
 ## License
 
-[AGPL-3.0-or-later](LICENSE) — Copyright (C) 2026 Odin Muhlenbein
+[AGPL-3.0-or-later](LICENSE) — Copyright (C) 2026 Odin Mühlenbein and contributors

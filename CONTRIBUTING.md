@@ -136,6 +136,7 @@ You can also run `npx vitest run <path>` from inside `packages/web` or `packages
 ## Open a pull request
 
 - Work on a branch of your fork, based on `main`, and open the pull request against `main`. One change per pull request.
+- Sign off every commit with `git commit -s`. That is how you agree to the [contribution terms](#contributor-license-agreement).
 - Fill in the checklist in the pull request template. It lists the project's gates that are easy to miss.
 - For a visible change, add before and after screenshots, in Arabic too if the layout changed.
 
@@ -231,10 +232,10 @@ To suggest one, open an issue that describes the change and what it is for. For 
 
 ## Contributor License Agreement
 
-By submitting a pull request, you agree to the following:
+You keep the copyright in your contribution. By submitting one (a pull request, or code or text you send for inclusion in the project), you agree to these terms:
 
-- Your contribution is licensed under **AGPL-3.0-or-later**, the same license as the project.
-- You waive any exclusive copyright claim over your contribution, granting the project maintainer (Odin Muhlenbein) the right to relicense the project or transfer stewardship in the future.
-- You confirm that you have the right to submit the contribution and that it does not violate any third-party rights.
+- **Everyone can use it under AGPL-3.0-or-later.** You license your contribution to everyone under the GNU Affero General Public License, version 3 or any later version, the same licence as the rest of the project.
+- **The maintainer and successor stewards can relicense it.** You also grant Odin Mühlenbein, the project's maintainer, and any successor steward of the project a perpetual, worldwide, non-exclusive, royalty-free, irrevocable licence to use, copy, modify, distribute, sublicense and relicense your contribution under other terms, including other open-source licences. This lets the project change its licence or pass to a new steward without having to ask every past contributor.
+- **You have the right to make it.** The contribution is your own work, or you have the right to submit it under these terms (if an employer or client owns your work, they have agreed), and to your knowledge it doesn't infringe anyone else's rights.
 
-This is a lightweight "inbound = outbound + waiver" approach — no separate CLA signing required.
+You confirm this by signing off every commit in your pull request: `git commit -s` adds the line `Signed-off-by: Your Name <you@example.com>`, with the name and email from your git config. Commits without a sign-off aren't merged. There is nothing else to sign.
