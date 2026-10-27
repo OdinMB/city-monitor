@@ -64,12 +64,16 @@ function preprocessStyle(style: StyleSpecification): StyleSpecification {
 const styleCache = new Map<string, StyleSpecification>();
 
 /** Fetch a CARTO style URL, pre-process it to hide unwanted layers, and return
- *  a style object ready for the Map constructor or setStyle(). */
+ *  a style object ready for the Map constructor or setStyle(). Rejects on a
+ *  network error, an error status or a body that is not a style; only a style
+ *  that loaded is cached, so the next call asks again. */
 export async function loadStyle(url: string): Promise<StyleSpecification> {
   const cached = styleCache.get(url);
   if (cached) return cached;
   const res = await fetch(url);
+  if (!res.ok) throw new Error(`Base-map style request failed: ${res.status}`);
   const raw: StyleSpecification = await res.json();
+  if (!Array.isArray(raw?.layers)) throw new Error('Base-map style has no layers');
   const processed = preprocessStyle(raw);
   styleCache.set(url, processed);
   return processed;

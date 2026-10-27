@@ -5,7 +5,7 @@
  * Does NOT port worldmonitor's DeckGLMap component.
  */
 
-import { useRef, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -31,11 +31,13 @@ import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { usePopulation } from '../../hooks/usePopulation.js';
 import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
+import { useIsTouchPhone } from '../../hooks/useMediaQuery.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
 import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
+import { gestureHintLocale, setCooperativeGestures } from './gestures.js';
 import { addDistrictLayer, addDistrictSource, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
 import { filterNewsForMap, updateNewsMarkers, updateSafetyMarkers } from './layers/news-safety.js';
 import { updateTransitMarkers } from './layers/transit.js';
@@ -105,10 +107,18 @@ function animateMarkerEntrance(map: maplibregl.Map) {
   }
 }
 
+function asError(err: unknown): Error {
+  return err instanceof Error ? err : new Error(String(err));
+}
+
 export function CityMap() {
   const city = useCityConfig();
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const isTouchPhone = useIsTouchPhone();
+  // A base-map style that fails to load rejects a promise, which no error
+  // boundary sees; it is kept here and thrown during render (see the end).
+  const [styleError, setStyleError] = useState<Error | null>(null);
   const catLabel = useCallback((cat: string) => t(`category.${cat}`, cat), [t]);
   const { data: transitAlerts } = useTransit(city.id);
   const { data: newsDigest } = useNewsDigest(city.id);
@@ -225,6 +235,10 @@ export function CityMap() {
   cityCoordRef.current = city.coordinates;
   const catLabelRef = useRef(catLabel);
   catLabelRef.current = catLabel;
+  const isTouchPhoneRef = useRef(isTouchPhone);
+  isTouchPhoneRef.current = isTouchPhone;
+  const tRef = useRef(t);
+  tRef.current = t;
   const transitItemsRef = useRef(transitItems);
   transitItemsRef.current = transitItems;
   const newsItemsRef = useRef(newsItems);
@@ -296,6 +310,9 @@ export function CityMap() {
         maxZoom: mapConfig.maxZoom ?? 16,
         maxBounds: bounds,
         attributionControl: false,
+        // Touch phones: one finger scrolls the page, two move the map
+        cooperativeGestures: isTouchPhoneRef.current,
+        locale: gestureHintLocale(tRef.current),
       });
 
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
@@ -345,6 +362,8 @@ export function CityMap() {
       });
 
       mapRef.current = map;
+    }).catch((err: unknown) => {
+      if (!cancelled) setStyleError(asError(err));
     });
 
     return () => {
@@ -369,7 +388,9 @@ export function CityMap() {
     const map = mapRef.current;
     if (!map) return;
     const styleUrl = isDark ? DARK_STYLE : LIGHT_STYLE;
-    loadStyle(styleUrl).then((style) => map.setStyle(style));
+    loadStyle(styleUrl)
+      .then((style) => map.setStyle(style))
+      .catch((err: unknown) => setStyleError(asError(err)));
     map.once('style.load', () => {
       simplifyMap(map);
       setTrafficRoadVisibility(map, roadsActiveRef.current, isDark);
@@ -418,6 +439,14 @@ export function CityMap() {
       ensureDistrictLabelsBelow(map);
     });
   }, [isDark, city.id]);
+
+  // Follow a phone turning (the phone breakpoint) and a language switch (the
+  // hint's words). The constructor above set both for the first style load.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    setCooperativeGestures(map, isTouchPhone, gestureHintLocale(t));
+  }, [isTouchPhone, t]);
 
   // Show/hide weather precipitation overlay when layer is toggled
   useEffect(() => {
@@ -783,8 +812,14 @@ export function CityMap() {
     };
   }, []);
 
+  // Hands a failed style load to the map's error boundary (MapErrorFallback,
+  // whose Retry mounts the map again and so loads the style again).
+  if (styleError) throw styleError;
+
+  // isolate: MapLibre's gesture hint sits at z-index 99999; this keeps it
+  // under the sticky top bar and the layer drawer when they overlap the map.
   return (
-    <div className="relative w-full h-full min-h-[300px]">
+    <div className="relative isolate w-full h-full min-h-[300px]">
       <div
         ref={containerRef}
         data-testid="map-container"

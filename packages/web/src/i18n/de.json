@@ -152,7 +152,12 @@
       "stationCredit": "Messstationen: World Air Quality Index Project und die Messnetzbetreiber"
     },
     "map": {
-      "title": "Karte"
+      "title": "Karte",
+      "gestureHint": {
+        "touch": "Karte mit zwei Fingern bewegen",
+        "ctrlScroll": "Karte mit Strg + Scrollen zoomen",
+        "cmdScroll": "Karte mit ⌘ + Scrollen zoomen"
+      }
     },
     "political": {
       "empty": "Keine Daten verfügbar",

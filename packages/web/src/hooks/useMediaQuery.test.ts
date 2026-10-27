@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useMediaQuery, useIsDesktop, useIsTouchOnly } from './useMediaQuery.js';
+import { useMediaQuery, useIsDesktop, useIsTouchOnly, useIsTouchPhone } from './useMediaQuery.js';
 
 describe('useMediaQuery', () => {
   it('returns false by default in jsdom', () => {
@@ -93,6 +93,42 @@ describe('useIsTouchOnly', () => {
   it('is false when any input can hover', () => {
     stubAnyHoverNone(false);
     const { result } = renderHook(() => useIsTouchOnly());
+    expect(result.current).toBe(false);
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('useIsTouchPhone', () => {
+  function stubMatching(...queries: string[]) {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: queries.includes(query),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  }
+
+  it('is true below the phone breakpoint when the main pointer is a finger', () => {
+    stubMatching('(pointer: coarse)');
+    const { result } = renderHook(() => useIsTouchPhone());
+    expect(result.current).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('is false from the phone breakpoint up, touch or not (tablets, phones held sideways)', () => {
+    stubMatching('(pointer: coarse)', '(min-width: 640px)');
+    const { result } = renderHook(() => useIsTouchPhone());
+    expect(result.current).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
+  it('is false in a narrow window driven by a mouse', () => {
+    stubMatching();
+    const { result } = renderHook(() => useIsTouchPhone());
     expect(result.current).toBe(false);
     vi.unstubAllGlobals();
   });

@@ -73,6 +73,16 @@ vi.mock('maplibre-gl', () => {
     addImage: vi.fn(),
     removeImage: vi.fn(),
     loadImage: vi.fn().mockResolvedValue({ data: new Uint8Array(4), width: 1, height: 1 }),
+    // Cooperative gestures (map/gestures.ts): on/off state and the UI-string table
+    cooperativeGestures: (() => {
+      let enabled = false;
+      return {
+        enable: vi.fn(() => { enabled = true; }),
+        disable: vi.fn(() => { enabled = false; }),
+        isEnabled: vi.fn(() => enabled),
+      };
+    })(),
+    _locale: {},
   }));
   const MockPopup = vi.fn().mockImplementation(() => ({
     setLngLat: vi.fn().mockReturnThis(),
