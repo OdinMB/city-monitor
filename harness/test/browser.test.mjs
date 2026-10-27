@@ -15,6 +15,7 @@ import {
   sumCounts,
 } from '../lib/browser.mjs';
 import { PLANTED } from '../lib/guard.mjs';
+import { MAP_STYLE_NAMES, STYLE_FAILURE_STATUS } from '../lib/map-style.mjs';
 
 const OWN = 'http://127.0.0.1:4321';
 const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
@@ -155,6 +156,77 @@ describe('newBlockingContext', () => {
     const own = fakeRoute(`${OWN}/api/berlin/bootstrap`);
     await context.handlers[0].handler(own);
     assert.deepEqual(own.calls, [{ action: 'continue' }]);
+  });
+});
+
+describe('the base map\'s style under --map-style', () => {
+  const statusOf = (route) => route.calls[0].response.status;
+  async function contextWith(mapStyle) {
+    const browser = fakeBrowser();
+    const blocked = {};
+    const served = {};
+    await newBlockingContext(browser, { allowedOrigins: [OWN], blocked, served, mapStyle });
+    return { handler: browser.contexts[0].handlers[0].handler, blocked, served };
+  }
+
+  it('in every mode, sends nothing off the run\'s port: each request is answered locally or aborted', async () => {
+    for (const mapStyle of MAP_STYLE_NAMES) {
+      const { handler, blocked } = await contextWith(mapStyle);
+      const routes = [LIGHT_STYLE, ...OFF_PORT, DARK_STYLE, LIGHT_STYLE].map(fakeRoute);
+      for (const route of routes) await handler(route);
+      for (const route of routes) {
+        assert.equal(route.calls.length, 1, mapStyle);
+        assert.notEqual(route.calls[0].action, 'continue', `${mapStyle} ${route.request().url()}`);
+      }
+      for (const route of routes.slice(1, -2)) assert.deepEqual(route.calls[0], { action: 'abort', reason: 'blockedbyclient' }, mapStyle);
+      assert.equal(blocked['example.com'], 1, mapStyle);
+      for (const url of OFF_PORT) assert.equal(decideRoute(url, [OWN], { failStyle: true }).action, 'abort', url);
+      const own = fakeRoute(`${OWN}/api/berlin/nina`);
+      await handler(own);
+      assert.deepEqual(own.calls, [{ action: 'continue' }], mapStyle);
+    }
+  });
+
+  it('local answers every style request with the stand-in', async () => {
+    const { handler, served } = await contextWith('local');
+    const routes = [LIGHT_STYLE, LIGHT_STYLE, DARK_STYLE].map(fakeRoute);
+    for (const route of routes) await handler(route);
+    assert.deepEqual(routes.map(statusOf), [200, 200, 200]);
+    assert.deepEqual(Object.keys(served).sort(), [
+      'basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json',
+      'basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json',
+    ]);
+  });
+
+  it('fail answers every style request with an error and no style, counted as failed', async () => {
+    const { handler, served } = await contextWith('fail');
+    const routes = [LIGHT_STYLE, LIGHT_STYLE, DARK_STYLE].map(fakeRoute);
+    for (const route of routes) await handler(route);
+    assert.deepEqual(routes.map(statusOf), [STYLE_FAILURE_STATUS, STYLE_FAILURE_STATUS, STYLE_FAILURE_STATUS]);
+    for (const route of routes) assert.throws(() => JSON.parse(route.calls[0].response.body));
+    assert.deepEqual(served, {
+      [`basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json as ${STYLE_FAILURE_STATUS}`]: 2,
+      [`basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json as ${STYLE_FAILURE_STATUS}`]: 1,
+    });
+  });
+
+  it('fail-once fails the first style request of each context, then answers with the stand-in, so a retry loads', async () => {
+    for (let page = 0; page < 2; page += 1) {
+      const { handler, served } = await contextWith('fail-once');
+      const tile = fakeRoute(OFF_PORT[0]);
+      await handler(tile);
+      const routes = [LIGHT_STYLE, LIGHT_STYLE, DARK_STYLE].map(fakeRoute);
+      for (const route of routes) await handler(route);
+      assert.deepEqual(routes.map(statusOf), [STYLE_FAILURE_STATUS, 200, 200], 'a blocked tile first does not use up the failure');
+      assert.equal(JSON.parse(routes[1].calls[0].response.body).version, 8);
+      assert.deepEqual(Object.values(served), [1, 1, 1]);
+    }
+  });
+
+  it('an unknown mode is refused before a context is made', async () => {
+    const browser = fakeBrowser();
+    await assert.rejects(newBlockingContext(browser, { allowedOrigins: [OWN], blocked: {}, mapStyle: 'offline' }), /unknown map style offline/);
+    assert.equal(browser.contexts.length, 0);
   });
 });
 

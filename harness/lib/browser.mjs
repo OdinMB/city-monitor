@@ -3,15 +3,17 @@
  * repository: it loads from --playwright, the checkout, NODE_PATH or the
  * global folder of the running Node. Every request not to the run's own web
  * server is aborted and counted by host, except the base map's style, which
- * the routes answer from memory without sending it (lib/map-style.mjs);
- * anything that slips past the routes (browser-internal traffic, a service
- * worker, a WebSocket) meets a proxy on a closed loopback port.
+ * the routes answer from memory without sending it (lib/map-style.mjs), with
+ * the stand-in or, under --map-style, an error; anything that slips past the
+ * routes (browser-internal traffic, a service worker, a WebSocket) meets a
+ * proxy on a closed loopback port.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { localResponse } from './map-style.mjs';
+import { DEFAULT_MAP_STYLE, localResponse, styleFails } from './map-style.mjs';
+import { runSwipe } from './swipe.mjs';
 
 /** Folders that may hold the Playwright package, in the order they are tried. */
 export function playwrightCandidates({ explicit, repoRoot, nodePath = process.env.NODE_PATH ?? '', execPath = process.execPath, platform = process.platform }) {
@@ -57,12 +59,12 @@ function hostOf(url) {
 
 /**
  * What the browser does with a request to `url`: `continue` to one of the
- * run's own origins, `fulfil` it from memory (the base map's style), or
- * `abort` it. Nothing else is ever sent.
+ * run's own origins, `fulfil` it from memory (the base map's style, as an
+ * error when `failStyle`), or `abort` it. Nothing else is ever sent.
  */
-export function decideRoute(url, allowedOrigins) {
+export function decideRoute(url, allowedOrigins, { failStyle = false } = {}) {
   if (isAllowedUrl(url, allowedOrigins)) return { action: 'continue' };
-  const local = localResponse(url);
+  const local = localResponse(url, { fail: failStyle });
   if (local) return { action: 'fulfil', key: local.key, response: local.fulfil };
   return { action: 'abort', host: hostOf(url) };
 }
@@ -121,14 +123,18 @@ export async function launchBrowser({ playwright, env, proxyPort }) {
 /**
  * A context that blocks every request outside `allowedOrigins`, counting
  * blocked hosts into `blocked` (host -> count), and answers the base map's
- * style from memory, counting it into `served` (host and path -> count).
+ * style from memory as `mapStyle` says (lib/map-style.mjs), counting it into
+ * `served` (host and path, plus the status when it failed -> count).
  */
-export async function newBlockingContext(browser, { allowedOrigins, blocked, served = {}, options = {} }) {
+export async function newBlockingContext(browser, { allowedOrigins, blocked, served = {}, mapStyle = DEFAULT_MAP_STYLE, options = {} }) {
+  styleFails(mapStyle, 0); // an unknown mode throws before the context exists
   const context = await browser.newContext({ serviceWorkers: 'block', acceptDownloads: false, ...options });
+  let styleAnswers = 0;
   await context.route('**/*', (route) => {
-    const decision = decideRoute(route.request().url(), allowedOrigins);
+    const decision = decideRoute(route.request().url(), allowedOrigins, { failStyle: styleFails(mapStyle, styleAnswers) });
     if (decision.action === 'continue') return route.continue();
     if (decision.action === 'fulfil') {
+      styleAnswers += 1;
       served[decision.key] = (served[decision.key] ?? 0) + 1;
       return route.fulfill(decision.response);
     }
@@ -182,13 +188,15 @@ function locate(page, step) {
   return base.nth(step.nth ?? 0);
 }
 
-async function runStep(page, step, { baseUrl, timeoutMs, shoot }) {
+async function runStep(page, step, { baseUrl, timeoutMs, touch, shoot }) {
   const timeout = step.timeout ?? timeoutMs;
   switch (step.action) {
     case 'click':
       return locate(page, step).click({ timeout });
     case 'tap':
       return locate(page, step).tap({ timeout });
+    case 'swipe':
+      return runSwipe(page, step, { touch, timeout, locate });
     case 'hover':
       return locate(page, step).hover({ timeout });
     case 'wait':
@@ -211,9 +219,10 @@ async function runStep(page, step, { baseUrl, timeoutMs, shoot }) {
 
 /**
  * Opens every combination in its own context, screenshots it, runs the steps
- * and returns one report entry per combination.
+ * and returns one report entry per combination. `mapStyle` is how each
+ * context answers the base map's style (lib/map-style.mjs).
  */
-export async function runPages({ browser, baseUrl, combos, steps, scroll, fullPage, settleMs, timezone, shotsDir, runDir, actionTimeoutMs = 15_000 }) {
+export async function runPages({ browser, baseUrl, combos, steps, scroll, fullPage, settleMs, timezone, shotsDir, runDir, mapStyle = DEFAULT_MAP_STYLE, actionTimeoutMs = 15_000 }) {
   const origin = new URL(baseUrl).origin;
   const results = [];
   for (const combo of combos) {
@@ -240,6 +249,7 @@ export async function runPages({ browser, baseUrl, combos, steps, scroll, fullPa
       allowedOrigins: [origin],
       blocked,
       served,
+      mapStyle,
       options: {
         viewport,
         isMobile: touch,
@@ -295,7 +305,7 @@ export async function runPages({ browser, baseUrl, combos, steps, scroll, fullPa
       await shoot();
       for (const [index, step] of steps.entries()) {
         try {
-          await runStep(page, step, { baseUrl, timeoutMs: actionTimeoutMs, shoot: (s) => shoot({ ...s, index }) });
+          await runStep(page, step, { baseUrl, timeoutMs: actionTimeoutMs, touch, shoot: (s) => shoot({ ...s, index }) });
           if (step.action !== 'screenshot' && step.action !== 'wait') await page.waitForTimeout(settleMs);
         } catch (err) {
           entry.stepErrors.push({ step: index + 1, action: step.action, error: String(err?.message ?? err).split('\n')[0] });

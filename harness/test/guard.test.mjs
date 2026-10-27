@@ -1,6 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   assertGuard,
@@ -180,6 +183,39 @@ describe('the negative test cases', () => {
   });
 
   it('an unknown case is an error', () => assert.throws(() => plantGuardTest('nope', {}), /unknown guard test/));
+});
+
+describe('see.mjs --guard-test', () => {
+  // The cases refused before anything starts, run through the entry point
+  // itself, alone and with each scenario, map style and city option: none of
+  // them may get a planted case past the guard. (The network case starts a
+  // browser, so it is left to the reviewer's run.)
+  const extras = [[], ['--scenario', 'nina-warnings'], ['--scenario', 'frost', '--map-style', 'fail'], ['--map-style', 'fail-once', '--city', 'hamburg']];
+  const planted = { env: PLANTED.envName, target: 'guard-test.invalid', 'target-loopback': 'port 9' };
+
+  for (const [kind, named] of Object.entries(planted)) {
+    it(`${kind}: exits 2 with the refusal, before it starts or writes anything`, () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'harness-test-'));
+      try {
+        for (const extra of extras) {
+          const out = path.join(tmp, 'out');
+          const result = spawnSync(process.execPath, [path.join(HARNESS, 'see.mjs'), '--out', out, `--guard-test=${kind}`, ...extra], {
+            env: { PATH: process.env.PATH ?? '', HOME: tmp, TMPDIR: tmp },
+            encoding: 'utf8',
+            timeout: 30_000,
+          });
+          const what = [kind, ...extra].join(' ');
+          assert.equal(result.status, 2, `${what}: ${result.stderr}`);
+          assert.match(result.stderr, /^hermetic-guard: refused: /m, what);
+          assert.ok(result.stderr.includes(named), what);
+          assert.doesNotMatch(result.stdout, /hermetic-guard: ok|run folder/, what);
+          assert.equal(fs.existsSync(out), false, `${what}: nothing written`);
+        }
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    });
+  }
 });
 
 describe('fixtures', () => {

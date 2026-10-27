@@ -8,6 +8,9 @@ node harness/see.mjs --out /tmp/see-out --viewport 390x844,1440x900 --lang de,en
 node harness/see.mjs --out /tmp/see-out --path /berlin --steps steps.json --full-page
 node harness/see.mjs --out /tmp/see-out --scenario storm --viewport 390x844 --scroll
 node harness/see.mjs --out /tmp/see-out --city hamburg --scenario quiet --scroll
+node harness/see.mjs --out /tmp/see-out --scenario nina-warnings --viewport 390x844,1440x900 --lang de,ar
+node harness/see.mjs --out /tmp/see-out --scenario frost --lang ar --scroll
+node harness/see.mjs --out /tmp/see-out --map-style fail-once --viewport 390x844 --steps reload.json
 ```
 
 It needs Node, the repo's installed dependencies (`npm ci`), Postgres server binaries (`initdb`, `postgres`, `createdb`) and Playwright with its Chromium. Playwright is not a dependency of this repository; the harness loads an installed copy. Nothing is added to any `package.json` or the lockfile.
@@ -38,7 +41,8 @@ The server processes load the product's TypeScript through `tsx` and `shared/*.t
 | `--lang <de\|en\|tr\|ar>` | `de` | The app's language (set in `localStorage` before load) and the browser locale. Repeatable or comma-separated. |
 | `--theme <light\|dark>` | `light` | The app's theme (set in `localStorage` before load) and the browser's color scheme. Repeatable or comma-separated. |
 | `--seed <n>` | `1` | The synthetic data set. The same seed gives the same data, dated relative to the run. |
-| `--scenario <name>` | `default` | The state of the data: `default` (the seed as generated), `quiet`, `outage`, `storm` or `no-data` (see "Scenarios"). Any other name exits 1 with the list. |
+| `--scenario <name>` | `default` | The state of the data: `default` (the seed as generated), `quiet`, `outage`, `storm`, `no-data`, `nina-warnings` or `frost` (see "Scenarios"). Any other name exits 1 with the list. |
+| `--map-style <mode>` | `local` | How the browser answers the base map's style: `local` (the stand-in), `fail` or `fail-once` (see "The map"). Any other mode exits 1 with the list. |
 | `--scroll` | off | Scroll each page to the bottom and back before the first screenshot, so lazily loaded tiles load. |
 | `--full-page` | off | Screenshot the whole page instead of the viewport. |
 | `--steps <file.json>` | none | Steps run on every page after its first screenshot (below). |
@@ -59,6 +63,7 @@ A JSON array; each step has an `action` and the fields it needs. Elements are fo
 |---|---|---|
 | `click` | `selector` or `text` | Clicks the element. |
 | `tap` | `selector` or `text` | Taps it; needs a touch viewport (width under 768). |
+| `swipe` | `from`, `to`; optional `selector` or `text`, `fingers`, `ms` | Drags one finger (`fingers: 1`, the default) or two (`fingers: 2`) on the touchscreen from `from` to `to`, each `[x, y]` in CSS pixels: of the viewport, or, with `selector` or `text`, from that element's top-left corner, after scrolling it into view. The second finger keeps 40 px beside the first, at right angles to the swipe, and moves with it. `ms` is how long it takes (default 300, 0 to 10000). Needs a touch viewport; every point has to lie inside the viewport. |
 | `hover` | `selector` or `text` | Moves the mouse over it. |
 | `wait` | `ms`, or `selector` or `text` | Waits that long, or until the element is visible. |
 | `scroll-to` | `selector` or `text`, or `position`: `top` / `bottom` | Scrolls the element into view, or the page to its top or bottom. |
@@ -77,6 +82,19 @@ A JSON array; each step has an `action` and the fields it needs. Elements are fo
 ```
 
 A failing step is recorded in the report with a screenshot named `...__<NN>-error.png`; the remaining steps of that page are skipped and the next page runs.
+
+Playwright's own touch input only taps, so `swipe` ([`lib/swipe.mjs`](lib/swipe.mjs)) sends the drag the way Playwright sends a tap in Chromium: as trusted touch input through the DevTools protocol (`Input.dispatchTouchEvent`) on a CDP session of the page, a touch start, ten moves spaced over `ms`, and a touch end. Chromium takes several touch points at once, so two fingers work; a pinch (fingers moving apart) is not a step. A swipe cut short lifts its fingers. In the app as it is, one finger on the map pans it and two fingers move it, and one finger anywhere outside the map scrolls the page (by about 290 px in one checked run). The example pans the map with one finger, then with two, then scrolls the page below the map:
+
+```json
+[
+  { "action": "swipe", "selector": "[data-testid=map-container]", "from": [260, 120], "to": [80, 120] },
+  { "action": "screenshot", "name": "map-one-finger" },
+  { "action": "swipe", "selector": "[data-testid=map-container]", "from": [260, 120], "to": [80, 120], "fingers": 2, "ms": 500 },
+  { "action": "screenshot", "name": "map-two-fingers" },
+  { "action": "swipe", "from": [195, 760], "to": [195, 460] },
+  { "action": "screenshot", "name": "page-scrolled" }
+]
+```
 
 ## Cities
 
@@ -97,7 +115,7 @@ Every coordinate lies inside the city's bounding box. Where the web app has dist
 
 The seed holds one ordinary day: six transit disruptions (in a city with transit data), one moderate weather warning and one minor civil-protection warning, all just fetched. `--scenario <name>` changes that in the run's own database after the seed and before the API starts, so the API and the app read the result like any other data. Each scenario is a fixed change to the seed's snapshot rows ([`lib/scenarios.mjs`](lib/scenarios.mjs)), with times counted from when it is applied, a few seconds after the seed: the same seed and the same moment give the same data, and nothing in it is random. It touches only the run city's rows of the snapshot types it names; every other tile shows the seed.
 
-A scenario works on any city, for the snapshot types that city's seed holds. A change to a type the city has no data for at all is left out, so that tile stays as the real app shows it for the city: Hamburg has no transit source, so `quiet`, `outage` and `no-data` leave transit out there, and `storm` and `default` apply in full. The transit tile is still on Hamburg's dashboard in every scenario, as in the real app: `/api/hamburg/transit` answers `{ "data": [], "fetchedAt": null }`, and the tile shows its empty text, "Alles in Ordnung — keine Störungen" (`panel.transit.empty`), with no update time. The run says so on standard output and in the report (`scenarioLeftOut`). In Berlin nothing is left out.
+A scenario works on any city, for the snapshot types that city's seed holds. A change to a type the city has no data for at all is left out, so that tile stays as the real app shows it for the city: Hamburg has no transit source, so `quiet`, `outage` and `no-data` leave transit out there, and `storm`, `nina-warnings`, `frost` and `default` apply in full. The transit tile is still on Hamburg's dashboard in every scenario, as in the real app: `/api/hamburg/transit` answers `{ "data": [], "fetchedAt": null }`, and the tile shows its empty text, "Alles in Ordnung — keine Störungen" (`panel.transit.empty`), with no update time. The run says so on standard output and in the report (`scenarioLeftOut`). In Berlin nothing is left out.
 
 The API serves the newest snapshot row of a type, with its `fetched_at` as `fetchedAt`, and the app marks a tile outdated once that is older than the tile's limit in `packages/web/src/lib/freshness.ts` (transit about 37 minutes, weather about 110). Where an ingestion run finds nothing, it keeps the empty list in the cache and writes no row; synthetic mode has no ingestion and warms its cache from the database, so a scenario writes a row holding the empty list, and the API answers `{ "data": [], "fetchedAt": "<when the scenario ran>" }` as it would after such a run.
 
@@ -108,6 +126,8 @@ The API serves the newest snapshot row of a type, with its `fetched_at` as `fetc
 | `outage` | Transit: the seeded disruptions, fetched 4 hours ago. Weather: the seeded forecast, fetched 6 hours ago, and no weather history from the last 6 hours. Water levels: no rows at all. | The transit and weather tiles on stale data (fetched 4 and 6 hours ago, past their limits), the water-level tile with no data and no river gauges on the map (bathing spots stay). |
 | `storm` | Weather: the seeded forecast with the five warnings below. Civil-protection warnings: the one below, fetched now. Transit as seeded. | Weather warnings at each level, several at once and out of order, one with no end, one already over; a severe warning in the banner and its area on the map. |
 | `no-data` | No transit, weather or civil-protection rows at all. | The transit tile with no update time and the same empty text as `quiet`, "Alles in Ordnung — keine Störungen" (`/api/<city>/transit` answers `{ "data": [], "fetchedAt": null }`, and the tile does not tell no data from no disruptions), no current weather anywhere (the header hides its weather chip, as it does whenever there is no current weather), no warnings banner. |
+| `nina-warnings` | Civil-protection warnings: the five below, fetched now. Everything else as seeded. | Several long warnings at once in the banner, in each severity's colours and with an all-clear among them, more than a banner with a height limit holds; long text wrapping, collapsed and expanded; five areas on the map. |
+| `frost` | Weather: the seeded forecast with every temperature below zero and rain falling as snow. The older weather rows stay as seeded. | Negative temperatures in the header, the weather tile's current values, every hour and every day, and somewhere in the forecast -0.3 °C, which rounds to -0 at whole degrees: how signs read, in Arabic too. |
 
 The storm's weather warnings, in the order the API serves them. Each headline starts with `[Synthetisch]`, and the shape is the one the DWD ingestion writes: `severity` `moderate`, `severe` or `extreme`, and an empty `validUntil` for a warning with no end.
 
@@ -121,6 +141,18 @@ The storm's weather warnings, in the order the API serves them. Each headline st
 
 The storm's civil-protection warning: `[Synthetisch] Probewarnung Sturm: Aufenthalt im Freien meiden`, `severity` `severe`, `source` `mowas`, issued 30 minutes before and expiring 12 hours after the scenario ran, over a rectangle about 10 by 9 km around the city's centre (the coordinates in its config): central Berlin for Berlin, the same rectangle as before `--city` existed. The storm changes no weather values: wind, temperature and the forecast stay as seeded.
 
+The `nina-warnings` warnings, in the order the API serves them, which is the order the NINA ingestion stores them in (most severe first, then the newest). Each headline starts with `[Synthetisch]` and runs to about 170 to 210 characters, each description says there is no danger and runs to 200 to 600, and each warning has an instruction and an area of its own: a rectangle within about 7.5 km east or west and 7 km north or south of the city's centre, inside the city's bounding box.
+
+| Headline (start) | `severity` | `type` | `version` | `source` | Issued, expires |
+|---|---|---|---|---|---|
+| Probewarnung Gefahrstoffaustritt nach einem Brand … | `extreme` | `Alert` | 1 | `mowas` | 5 min ago, in 6 hours |
+| Probewarnung Großbrand mit starker Rauchentwicklung … | `severe` | `Alert` | 1 | `katwarn` | 20 min ago, in 3 hours |
+| Entwarnung: Die Probewarnung vor einer Störung der Trinkwasserversorgung ist aufgehoben … | `severe` | `Cancel` (an all-clear) | 3 | `mowas` | 50 min ago, in 1 hour |
+| Probewarnung Unwetterfolgen, aktualisiert … | `moderate` | `Update` | 2 | `biwapp` | 90 min ago, no expiry |
+| Probehinweis Großveranstaltung im Stadtzentrum … | `minor` | `Alert` | 1 | `police` | 3 hours ago, in 12 hours |
+
+The `frost` forecast is the seeded one moved down: every temperature (current and feels-like, each hour, each day's high and low) drops by the one amount that puts the warmest of them at -0.3 °C, so the forecast keeps its shape, from -0.3 down to about -13 °C for the default seed (the coldest depends on the day the run starts). Rain codes become the matching snow codes (61 → 71, 80 → 85, and so on; drizzle becomes freezing drizzle). Wind, humidity, precipitation amounts, sunrise, sunset, UV and the seeded weather warning stay as seeded, and so do the older weather rows behind `/api/<city>/weather/history`, whose newest point is the frosty current temperature.
+
 How a tile presents each state is up to the app; a scenario only sets the data. The seed process prints how many rows the scenario deleted, changed and added to `logs/seed.log`, then `harness-scenario: left out <types>` when it left any out, then `harness-scenario: applied <name>`; without that last line the run stops with exit 1 before the API starts.
 
 ## Output
@@ -128,17 +160,37 @@ How a tile presents each state is up to the app; a scenario only sets the data. 
 Under `<out>/<run id>/`:
 
 - `screenshots/<path>__<WxH>__<lang>__<theme>.png`, plus `__<NN>-<name>.png` for each screenshot step. The path `/berlin/sources` becomes `berlin-sources`.
-- `report.json`: the city, the seed and the scenario with the types it left out (`scenarioLeftOut`), ports, parameters, every blocked host with its count, every request answered locally (`servedLocally`, see "The map") with its count, and per page its screenshots, console errors (flagged when they come from a blocked request), page errors, failed or 4xx/5xx requests to the run's own server, blocked hosts, requests answered locally and step errors. `portsFreeAfterStop` says whether each port was free once everything stopped.
+- `report.json`: the city, the seed and the scenario with the types it left out (`scenarioLeftOut`), the map style (`mapStyle`), ports, parameters, every blocked host with its count, every request answered locally (`servedLocally`, see "The map") with its count, and per page its screenshots, console errors (flagged when they come from a blocked request), page errors, failed or 4xx/5xx requests to the run's own server, blocked hosts, requests answered locally and step errors. `portsFreeAfterStop` says whether each port was free once everything stopped.
 - `logs/`: output of Postgres, the seed, the API and the web build.
 - `pg/`, `home/`, `tmp/`, `web/`, `vite-cache/`, `guard/`: the database, the temporary home and temp folder (the browser profile included), the built app, Vite's cache and the guard files the server processes check themselves against. Delete the run folder when done.
 
-Standard output prints `run folder: ...`, `city: <id>`, `scenario: <name> (<what it holds>)` (followed by `; left out, as <city> has no such data: <types>` when the scenario left a type out), then `hermetic-guard: ok port <web port>`, one summary line per page, the blocked hosts, the requests served locally, whether the ports were free after stopping and `report: ...`.
+Standard output prints `run folder: ...`, `city: <id>`, `scenario: <name> (<what it holds>)` (followed by `; left out, as <city> has no such data: <types>` when the scenario left a type out), `map style: <mode> (<what it does>)` when it is not `local`, then `hermetic-guard: ok port <web port>`, one summary line per page, the blocked hosts, the requests served locally, whether the ports were free after stopping and `report: ...`.
 
 Exit codes: `0` done, `1` error or timeout, `2` the guard refused, `3` a step failed (screenshots and report are still written), `130`/`143` stopped by SIGINT/SIGTERM.
 
 ### The map
 
 The app creates its map only once its base-map style has loaded from `basemaps.cartocdn.com`. The browser's routes answer that one request (`https://basemaps.cartocdn.com/gl/<style>/style.json`, the light and the dark style) from memory with a stand-in built in [`lib/map-style.mjs`](lib/map-style.mjs), and never send it; the report counts it under `servedLocally`. The stand-in is a plain background in the theme's colour with no sources, no sprite and no glyphs URL, so MapLibre asks for no tiles, sprites or fonts.
+
+`--map-style` changes that answer, never whether the request is sent (it never is):
+
+| Mode | The style request is answered with | What it lets you see |
+|---|---|---|
+| `local` (default) | the stand-in, every time | the map with its own layers (below) |
+| `fail` | `503` and a body that is not a style, every time | the map when its base map cannot load, and that loading it again fails again |
+| `fail-once` | `503` for the first style request of each page's browser context, the stand-in for every later one (a reload with `goto`, the other theme's style) | the same failure, and the map loading once the page asks again |
+
+The report counts a failed answer under `servedLocally` as `basemaps.cartocdn.com/gl/<style>/style.json as 503`, and standard output says `map style: <mode> (...)` after the scenario line when the mode is not `local`. The page's first screenshot shows the failure. Steps that then reload the page in the same browser context, so the style is asked for a second time, and screenshot the map that loads (use the run's own city in the path):
+
+```json
+[
+  { "action": "goto", "path": "/berlin" },
+  { "action": "wait", "ms": 1500 },
+  { "action": "screenshot", "name": "after-reload" }
+]
+```
+
+Clicking a retry button in place of the reload needs the app to offer one where the map failed.
 
 On that background the app's own map layers draw on the synthetic data: the district outlines and their name labels, the markers, polygons and choropleths of each data layer switched on in the layer rail, and their popups on hover or click. MapLibre draws label text itself from the browser's local fonts, as it does for any style without a glyphs URL, so labels show in the local sans-serif rather than the live site's map font.
 
@@ -173,7 +225,7 @@ Before anything starts, the parent checks each of those environments, and each s
 
 Postgres is checked through its `postmaster.pid`: the process the harness started, its port, 127.0.0.1 only, no Unix socket.
 
-In the browser, every request outside the run's web server is aborted, except the base map's style, which the route answers from memory without sending it ("The map"); WebSockets are closed, service workers are blocked, and Chromium's proxy is the closed port with only loopback bypassing it.
+In the browser, every request outside the run's web server is aborted, except the base map's style, which the route answers from memory without sending it, with the stand-in or, under `--map-style`, an error ("The map"); WebSockets are closed, service workers are blocked, and Chromium's proxy is the closed port with only loopback bypassing it. The `swipe` step's touch input goes to Chromium over a DevTools session of the page and makes no request.
 
 On success the run prints exactly one line `hermetic-guard: ok port <web port>`. A refusal prints `hermetic-guard: refused: <what>` (names, never values) and exits 2.
 
@@ -188,9 +240,9 @@ On success the run prints exactly one line `hermetic-guard: ok port <web port>`.
 | `target-loopback` | `SYNTHETIC_DATABASE_URL=postgres://127.0.0.1:9/x` | before anything starts or is written |
 | `network` | one GET to `https://example.com/`, from the browser and from a Node process with the cleared environment | after both requests failed; creates a run folder with a browser profile |
 
-If a planted case got through, the run would carry on as a normal run, so a guard-test run that does not exit 2 means the guard is broken.
+If a planted case got through, the run would carry on as a normal run, so a guard-test run that does not exit 2 means the guard is broken. The scenario, `--map-style` and `--city` change nothing about it: `test/guard.test.mjs` runs `see.mjs` with `env`, `target` and `target-loopback`, alone and with those options, and each exits 2 before anything starts or is written.
 
-`node --test harness/test/*.test.mjs` runs the harness's unit tests (the guard refusing each case, the allowlist, port picking, the static server, the listen guard, the parameter checks, the `--out` checks against the checkout and the main checkout, the base map's stand-in and the browser's routes answering it locally while aborting everything else, the cities: reading both registries, making the run's city the active one in the build only, and `see.mjs` exiting 1 with the list for an unknown city; and the scenarios: their names, `see.mjs` exiting 1 with the list for an unknown one, the types left out for a city without them, and each scenario applied to the real seed's rows of Berlin and of Hamburg, checked against the shared schemas and the app's stale limits, with the statements a run would send). They start no database, API, build or browser; the scenario test loads the product's TypeScript through tsx in a child process and connects to nothing. `npm test` does not run them.
+`node --test harness/test/*.test.mjs` runs the harness's unit tests (the guard refusing each case, also through `see.mjs` as above, the allowlist, port picking, the static server, the listen guard, the parameter checks, the `--out` checks against the checkout and the main checkout, the base map's stand-in and the browser's routes answering it locally, as an error under `fail` and `fail-once`, while aborting everything else in every mode, and `see.mjs` exiting 1 with the list for an unknown mode; the swipe step's touch events and their path through a stand-in page's DevTools session; the cities: reading both registries, making the run's city the active one in the build only, and `see.mjs` exiting 1 with the list for an unknown city; and the scenarios: their names, `see.mjs` exiting 1 with the list for an unknown one, the types left out for a city without them, and each scenario applied to the real seed's rows of Berlin and of Hamburg, checked against the shared schemas and the app's stale limits, with the statements a run would send). They start no database, API, build or browser; the scenario test loads the product's TypeScript through tsx in a child process and connects to nothing. `npm test` does not run them.
 
 ## Running as root
 

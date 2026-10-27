@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { OUTAGE_AGE, SCENARIO_NAMES, SNAPSHOT } from '../lib/scenarios.mjs';
+import { FROST_WARMEST, OUTAGE_AGE, SCENARIO_NAMES, SNAPSHOT, SNOW_FOR_RAIN } from '../lib/scenarios.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const HOUR = 3_600_000;
@@ -147,6 +147,48 @@ describe('the scenarios on the synthetic seed', () => {
     for (const type of [SNAPSHOT.transit, SNAPSHOT.weather, SNAPSHOT.nina]) {
       assert.equal(out.scenarios['no-data'].served[type].rowCount, 0, type);
       assert.equal(servedOf('no-data', type), null, type);
+    }
+  });
+});
+
+describe('nina-warnings and frost on the synthetic seed of each city', () => {
+  const cities = () => [out, hamburg];
+  const inBox = ({ north, south, east, west }) => ([lon, lat]) => lat > south && lat < north && lon > west && lon < east;
+
+  it('nina-warnings: five warnings the loader accepts, fetched now, each area inside the city', () => {
+    for (const result of cities()) {
+      const { rowCount, served } = result.scenarios['nina-warnings'].served[SNAPSHOT.nina];
+      assert.equal(rowCount, 1, result.city);
+      assert.equal(served.ageMs, 0, result.city);
+      assert.equal(served.valid, true, result.city);
+      assert.equal(served.data.length, 5, result.city);
+      assert.deepEqual(served.data.map((w) => w.severity), ['extreme', 'severe', 'severe', 'moderate', 'minor'], result.city);
+      assert.deepEqual(served.data.map((w) => w.type), ['Alert', 'Alert', 'Cancel', 'Update', 'Alert'], result.city);
+      for (const w of served.data) assert.ok(w.area.geometry.coordinates[0].every(inBox(result.boundingBox)), `${result.city} ${w.id}`);
+      assert.deepEqual(result.scenarios['nina-warnings'].served[SNAPSHOT.weather], result.seed[SNAPSHOT.weather], 'weather as seeded');
+    }
+  });
+
+  it('frost: the seeded forecast below zero everywhere, warmest at FROST_WARMEST, with no rain', () => {
+    for (const result of cities()) {
+      const seeded = result.seed[SNAPSHOT.weather].served.data;
+      const frost = result.scenarios.frost.served[SNAPSHOT.weather].served;
+      assert.equal(frost.valid, true, result.city);
+      assert.ok(frost.ageMs < result.staleAfter.weather, result.city);
+      const { current, hourly, daily } = frost.data;
+      assert.equal(hourly.length, seeded.hourly.length, result.city);
+      assert.equal(daily.length, seeded.daily.length, result.city);
+      const temps = [current.temp, current.feelsLike, ...hourly.map((h) => h.temp), ...daily.flatMap((d) => [d.high, d.low])];
+      assert.ok(temps.every((t) => t < 0), `${result.city}: ${temps.filter((t) => t >= 0).join(' ')}`);
+      assert.equal(Math.max(...temps), FROST_WARMEST, result.city);
+      assert.ok(Math.min(...temps) < -5, `${result.city}: a hard frost somewhere (${Math.min(...temps)})`);
+      for (const code of [current.weatherCode, ...hourly.map((h) => h.weatherCode), ...daily.map((d) => d.weatherCode)]) {
+        assert.ok(!(code in SNOW_FOR_RAIN), `${result.city}: rain code ${code} left`);
+      }
+      assert.deepEqual(hourly.map((h) => h.time), seeded.hourly.map((h) => h.time), result.city);
+      assert.deepEqual(daily.map((d) => [d.date, d.sunrise, d.sunset, d.precip]), seeded.daily.map((d) => [d.date, d.sunrise, d.sunset, d.precip]), result.city);
+      assert.deepEqual(frost.data.alerts, seeded.alerts, result.city);
+      assert.equal(result.scenarios.frost.served[SNAPSHOT.weather].rowCount, result.seed[SNAPSHOT.weather].rowCount, 'the history stays');
     }
   });
 });

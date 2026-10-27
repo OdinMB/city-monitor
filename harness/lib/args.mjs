@@ -5,13 +5,14 @@
 
 import { configuredCities, DEFAULT_CITY } from './cities.mjs';
 import { GUARD_TESTS } from './guard.mjs';
+import { DEFAULT_MAP_STYLE, MAP_STYLE_NAMES } from './map-style.mjs';
 import { DEFAULT_SCENARIO, SCENARIO_NAMES } from './scenarios.mjs';
 
 export const LANGS = Object.freeze(['de', 'en', 'tr', 'ar']);
 export const THEMES = Object.freeze(['light', 'dark']);
 
 const VALUE_OPTIONS = new Set([
-  'out', 'city', 'path', 'viewport', 'lang', 'theme', 'seed', 'scenario', 'timeout', 'steps', 'settle', 'timezone',
+  'out', 'city', 'path', 'viewport', 'lang', 'theme', 'seed', 'scenario', 'map-style', 'timeout', 'steps', 'settle', 'timezone',
   'pg-bin', 'pg-user', 'playwright', 'guard-test',
 ]);
 const FLAG_OPTIONS = new Set(['scroll', 'full-page', 'help']);
@@ -27,6 +28,7 @@ export const DEFAULTS = Object.freeze({
   themes: ['light'],
   seed: 1,
   scenario: DEFAULT_SCENARIO,
+  mapStyle: DEFAULT_MAP_STYLE,
   timeoutSeconds: 480,
   settleMs: 1500,
   timezone: 'Europe/Berlin',
@@ -127,6 +129,8 @@ export function parseArgs(argv, { cities } = {}) {
   const seed = raw.seed === undefined ? DEFAULTS.seed : positiveInteger('seed', raw.seed, { min: 0, max: 2 ** 31 - 1 });
   const scenario = raw.scenario ?? DEFAULTS.scenario;
   if (!SCENARIO_NAMES.includes(scenario)) throw new UsageError(`--scenario ${scenario}: use one of ${SCENARIO_NAMES.join(', ')}`);
+  const mapStyle = raw['map-style'] ?? DEFAULTS.mapStyle;
+  if (!MAP_STYLE_NAMES.includes(mapStyle)) throw new UsageError(`--map-style ${mapStyle}: use one of ${MAP_STYLE_NAMES.join(', ')}`);
   const timeoutSeconds = raw.timeout === undefined ? DEFAULTS.timeoutSeconds : positiveInteger('timeout', raw.timeout, { min: 30, max: 3600 });
   const settleMs = raw.settle === undefined ? DEFAULTS.settleMs : positiveInteger('settle', raw.settle, { min: 0, max: 60_000 });
 
@@ -151,6 +155,7 @@ export function parseArgs(argv, { cities } = {}) {
     themes,
     seed,
     scenario,
+    mapStyle,
     scroll: raw.scroll === true,
     fullPage: raw['full-page'] === true,
     timeoutSeconds,
@@ -164,12 +169,18 @@ export function parseArgs(argv, { cities } = {}) {
   };
 }
 
-export const STEP_ACTIONS = Object.freeze(['click', 'tap', 'hover', 'wait', 'scroll-to', 'press', 'screenshot', 'goto']);
+export const STEP_ACTIONS = Object.freeze(['click', 'tap', 'swipe', 'hover', 'wait', 'scroll-to', 'press', 'screenshot', 'goto']);
 const LOCATOR_ACTIONS = new Set(['click', 'tap', 'hover', 'scroll-to']);
+const SWIPE_FIELDS = ['from', 'to', 'fingers'];
+
+/** A swipe point: [x, y], CSS pixels from 0 to 7680. */
+function isPoint(value) {
+  return Array.isArray(value) && value.length === 2 && value.every((n) => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 7680);
+}
 
 /**
  * Validates a steps file's parsed JSON: an array of
- * { action, selector? | text?, nth?, ms?, key?, path?, name?, position? }.
+ * { action, selector? | text?, nth?, ms?, key?, path?, name?, position?, from?, to?, fingers? }.
  * Returns the steps, or throws a UsageError naming the first bad one.
  */
 export function validateSteps(parsed) {
@@ -180,7 +191,7 @@ export function validateSteps(parsed) {
     if (!step || typeof step !== 'object' || Array.isArray(step)) throw new UsageError(`${where} must be an object`);
     const { action } = step;
     if (!STEP_ACTIONS.includes(action)) throw new UsageError(`${where}: action must be one of ${STEP_ACTIONS.join(', ')}`);
-    const allowed = new Set(['action', 'selector', 'text', 'exact', 'nth', 'ms', 'key', 'path', 'name', 'position', 'timeout']);
+    const allowed = new Set(['action', 'selector', 'text', 'exact', 'nth', 'ms', 'key', 'path', 'name', 'position', 'timeout', ...SWIPE_FIELDS]);
     for (const key of Object.keys(step)) if (!allowed.has(key)) throw new UsageError(`${where}: unknown field ${key}`);
     if (step.selector !== undefined && typeof step.selector !== 'string') throw new UsageError(`${where}: selector must be a string`);
     if (step.text !== undefined && typeof step.text !== 'string') throw new UsageError(`${where}: text must be a string`);
@@ -198,6 +209,17 @@ export function validateSteps(parsed) {
     }
     if (action === 'wait' && !hasLocator && !(Number.isInteger(step.ms) && step.ms >= 0 && step.ms <= 60_000)) {
       throw new UsageError(`${where}: wait needs ms (0 to 60000) or a selector or text to wait for`);
+    }
+    if (action === 'swipe') {
+      if (!isPoint(step.from) || !isPoint(step.to)) throw new UsageError(`${where}: swipe needs from and to, each [x, y] in CSS pixels (0 to 7680)`);
+      if (step.from[0] === step.to[0] && step.from[1] === step.to[1]) throw new UsageError(`${where}: swipe needs from and to to differ`);
+      if (step.fingers !== undefined && step.fingers !== 1 && step.fingers !== 2) throw new UsageError(`${where}: fingers is 1 or 2`);
+      if (step.ms !== undefined && !(Number.isInteger(step.ms) && step.ms >= 0 && step.ms <= 10_000)) {
+        throw new UsageError(`${where}: a swipe's ms is its duration, 0 to 10000`);
+      }
+    } else {
+      const stray = SWIPE_FIELDS.filter((key) => step[key] !== undefined);
+      if (stray.length > 0) throw new UsageError(`${where}: ${stray.join(', ')} on swipe only`);
     }
     if (action === 'press' && (typeof step.key !== 'string' || !step.key)) throw new UsageError(`${where}: press needs a key, e.g. Escape`);
     if (action === 'goto') {
@@ -229,6 +251,7 @@ request off this machine is blocked. See harness/README.md.
   --theme <light|dark>    repeatable or comma-separated (default light)
   --seed <n>              synthetic data set (default 1)
   --scenario <name>       data state: ${SCENARIO_NAMES.join(' | ')} (default ${DEFAULT_SCENARIO})
+  --map-style <mode>      base-map style answer: ${MAP_STYLE_NAMES.join(' | ')} (default ${DEFAULT_MAP_STYLE})
   --scroll                scroll each page to the bottom first, so lazy tiles load
   --full-page             screenshot the whole page, not only the viewport
   --steps <file.json>     steps to run on each page after it loads

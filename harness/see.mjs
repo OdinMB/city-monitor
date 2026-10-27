@@ -19,6 +19,7 @@ import crypto from 'node:crypto';
 import { parseArgs, validateSteps, UsageError, USAGE } from './lib/args.mjs';
 import { GuardError, loadFixtures, PLANTED, prepareChildEnvs } from './lib/guard.mjs';
 import { checkOutFolder, createRunFolders, newRunId, REPO, runLayout } from './lib/paths.mjs';
+import { DEFAULT_MAP_STYLE, MAP_STYLES } from './lib/map-style.mjs';
 import { pickFreePorts, isPortFree } from './lib/ports.mjs';
 import { databaseUrl, findPgBin, lookupSystemUser, startPostgres } from './lib/postgres.mjs';
 import { MARKERS, spawnNode, stopAll, track, waitForExit } from './lib/processes.mjs';
@@ -201,6 +202,7 @@ async function main() {
   const leftOutLine = seed.lines.find((line) => line.startsWith(`${MARKERS.scenarioLeftOut} `));
   const leftOut = leftOutLine ? leftOutLine.slice(MARKERS.scenarioLeftOut.length + 1).split(',') : [];
   console.log(`scenario: ${args.scenario} (${SCENARIOS[args.scenario].summary})${leftOut.length ? `; left out, as ${args.city} has no such data: ${leftOut.join(', ')}` : ''}`);
+  if (args.mapStyle !== DEFAULT_MAP_STYLE) console.log(`map style: ${args.mapStyle} (${MAP_STYLES[args.mapStyle]})`);
 
   const apiSpec = writeGuardFile(layout.guard, 'api', { expected: expected.api, databasePort: pgPort, apiPort, city: args.city });
   const api = startChild({ name: 'api', script: PRODUCT_CHILD, args: ['api', apiSpec], env: envs.api, cwd: REPO.server, logsDir: layout.logs });
@@ -227,6 +229,7 @@ async function main() {
     timezone: args.timezone,
     shotsDir: layout.shots,
     runDir: layout.run,
+    mapStyle: args.mapStyle,
   });
 
   const blockedHosts = sumCounts(runs.map((r) => r.blockedHosts));
@@ -244,6 +247,7 @@ async function main() {
     seed: args.seed,
     scenario: args.scenario,
     scenarioLeftOut: leftOut,
+    mapStyle: args.mapStyle,
     ports: { web: webPort, api: apiPort, postgres: pgPort },
     portsFreeAfterStop,
     params: {

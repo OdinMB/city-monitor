@@ -69,14 +69,26 @@ export function stormAlerts(now) {
 }
 
 const round5 = (n) => Math.round(n * 1e5) / 1e5;
+const round1 = (n) => Math.round(n * 10) / 10;
+
+/**
+ * A rectangle reaching `halfLon` and `halfLat` degrees either side of the
+ * point `dLon`, `dLat` degrees from the centre, as a closed GeoJSON ring of
+ * [lon, lat].
+ */
+function rectangle({ lat, lon }, [halfLon, halfLat], [dLon, dLat] = [0, 0]) {
+  const [w, e, s, n] = [lon + dLon - halfLon, lon + dLon + halfLon, lat + dLat - halfLat, lat + dLat + halfLat].map(round5);
+  return [[w, s], [e, s], [e, n], [w, n], [w, s]];
+}
+
+const polygon = (ring) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: {} });
 
 /**
  * A rectangle over the city centre, 0.15° wide and 0.08° high (about 10 by
  * 9 km), as a closed GeoJSON ring of [lon, lat].
  */
-export function stormArea({ lat, lon }) {
-  const [w, e, s, n] = [lon - 0.075, lon + 0.075, lat - 0.04, lat + 0.04].map(round5);
-  return [[w, s], [e, s], [e, n], [w, n], [w, s]];
+export function stormArea(center) {
+  return rectangle(center, [0.075, 0.04]);
 }
 
 /** One severe civil-protection (MoWaS) warning over the centre, issued half an hour before `now`. */
@@ -93,8 +105,128 @@ export function stormNina(now, center) {
     headline: `${MARK} Probewarnung Sturm: Aufenthalt im Freien meiden`,
     description: 'Synthetische Warnung für die lokale Entwicklung. Es besteht keine Gefahr.',
     instruction: 'Es ist nichts zu tun.',
-    area: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [stormArea(center)] }, properties: {} },
+    area: polygon(stormArea(center)),
   }];
+}
+
+const NOT_REAL = 'es besteht keine Gefahr. Dieser Text ist absichtlich lang.';
+const IF_IT_WERE_REAL = 'Es ist nichts zu tun, dies ist eine Probewarnung. Im Ernstfall stünde hier:';
+
+/**
+ * Five long civil-protection warnings at once, one at each severity and an
+ * all-clear (type Cancel) at severe, in the order the NINA ingestion stores
+ * them (packages/server/src/cron/ingest-nina.ts: most severe first, then the
+ * newest first). Each has an area of its own around the centre, within
+ * 0.11° of longitude and 0.06° of latitude of it; one has no expiry.
+ */
+export function ninaWarnings(now, center) {
+  return [
+    {
+      id: 'mow.synthetic-nina-extreme',
+      version: 1,
+      startDate: iso(now - 5 * MINUTE),
+      expiresAt: iso(now + 6 * HOUR),
+      severity: 'extreme',
+      urgency: 'Immediate',
+      type: 'Alert',
+      source: 'mowas',
+      headline: `${MARK} Probewarnung Gefahrstoffaustritt nach einem Brand in einem Industriebetrieb: Fenster und Türen geschlossen halten, Lüftungs- und Klimaanlagen ausschalten, das betroffene Gebiet weiträumig meiden`,
+      description: `Synthetische Warnung für die lokale Entwicklung, ${NOT_REAL} Bei einem Brand in einem Industriebetrieb sind nach Angaben der Einsatzleitung Rauchgase ausgetreten, die der Wind über mehrere Stadtteile trägt. Messfahrzeuge der Feuerwehr sind unterwegs, erste Ergebnisse werden in den nächsten Stunden erwartet. Bis dahin gilt die Warnung für das gesamte markierte Gebiet. Bitte wählen Sie den Notruf nur in dringenden Fällen, damit die Leitungen für Menschen in Not frei bleiben. Weitere Informationen folgen, sobald die Lage neu bewertet ist.`,
+      instruction: `${IF_IT_WERE_REAL} Suchen Sie geschlossene Räume auf und bleiben Sie dort. Schließen Sie Fenster und Türen, schalten Sie Lüftungs- und Klimaanlagen aus. Informieren Sie Ihre Nachbarinnen und Nachbarn, besonders ältere Menschen. Verfolgen Sie die Meldungen in Radio, Fernsehen und Warn-Apps.`,
+      area: polygon(rectangle(center, [0.05, 0.03])),
+    },
+    {
+      id: 'katwarn.synthetic-nina-severe',
+      version: 1,
+      startDate: iso(now - 20 * MINUTE),
+      expiresAt: iso(now + 3 * HOUR),
+      severity: 'severe',
+      urgency: 'Immediate',
+      type: 'Alert',
+      source: 'katwarn',
+      headline: `${MARK} Probewarnung Großbrand mit starker Rauchentwicklung: Rauchgase können Augen und Atemwege reizen, der Bereich um die Einsatzstelle ist großräumig abgesperrt`,
+      description: `Synthetische Warnung für die lokale Entwicklung, ${NOT_REAL} In einer Lagerhalle ist ein Großbrand ausgebrochen, die Rauchwolke ist weithin sichtbar. Die Feuerwehr ist mit einem Großaufgebot vor Ort und rechnet mit Löscharbeiten bis in die Nacht. Straßen rund um die Einsatzstelle sind gesperrt, Busse werden umgeleitet.`,
+      instruction: `${IF_IT_WERE_REAL} Meiden Sie das Gebiet und folgen Sie den Anweisungen der Einsatzkräfte. Halten Sie Fenster und Türen geschlossen, solange Sie Brandgeruch wahrnehmen.`,
+      area: polygon(rectangle(center, [0.03, 0.02], [0.07, 0.035])),
+    },
+    {
+      id: 'mow.synthetic-nina-all-clear',
+      version: 3,
+      startDate: iso(now - 50 * MINUTE),
+      expiresAt: iso(now + HOUR),
+      severity: 'severe',
+      urgency: 'Past',
+      type: 'Cancel',
+      source: 'mowas',
+      headline: `${MARK} Entwarnung: Die Probewarnung vor einer Störung der Trinkwasserversorgung ist aufgehoben, Leitungswasser kann wieder ohne Einschränkungen verwendet werden`,
+      description: 'Synthetische Entwarnung für die lokale Entwicklung, es bestand keine Gefahr. Die Untersuchungen des Trinkwassers haben keine Auffälligkeiten mehr ergeben. Das Abkochgebot für die betroffenen Stadtteile ist aufgehoben.',
+      instruction: 'Es ist nichts zu tun.',
+      area: polygon(rectangle(center, [0.03, 0.02], [-0.07, 0.035])),
+    },
+    {
+      id: 'biwapp.synthetic-nina-moderate',
+      version: 2,
+      startDate: iso(now - 90 * MINUTE),
+      severity: 'moderate',
+      urgency: 'Expected',
+      type: 'Update',
+      source: 'biwapp',
+      headline: `${MARK} Probewarnung Unwetterfolgen, aktualisiert: umgestürzte Bäume und gesperrte Straßen in mehreren Stadtteilen, Einsatzkräfte räumen die Fahrbahnen, Verzögerungen im Verkehr bis zum Abend`,
+      description: `Synthetische Warnung für die lokale Entwicklung, ${NOT_REAL} Nach dem Sturm der vergangenen Nacht liegen in mehreren Stadtteilen Bäume und Äste auf Straßen, Gehwegen und Gleisen. Die Aufräumarbeiten dauern an. Diese Meldung ersetzt die vorherige Fassung: Inzwischen sind weitere Straßen betroffen.`,
+      instruction: `${IF_IT_WERE_REAL} Meiden Sie Parks und Wälder. Achten Sie auf herabfallende Äste und folgen Sie den Umleitungen.`,
+      area: polygon(rectangle(center, [0.04, 0.025], [-0.07, -0.035])),
+    },
+    {
+      id: 'police.synthetic-nina-minor',
+      version: 1,
+      startDate: iso(now - 3 * HOUR),
+      expiresAt: iso(now + 12 * HOUR),
+      severity: 'minor',
+      urgency: 'Future',
+      type: 'Alert',
+      source: 'police',
+      headline: `${MARK} Probehinweis Großveranstaltung im Stadtzentrum: weiträumige Straßensperrungen und volle Bahnen bis in die späten Abendstunden, bitte planen Sie mehr Zeit für Ihre Wege ein`,
+      description: `Synthetischer Hinweis für die lokale Entwicklung, ${NOT_REAL} Zu einer Großveranstaltung werden mehrere hunderttausend Besucherinnen und Besucher erwartet. Rund um das Veranstaltungsgelände gelten ab dem Mittag Sperrungen für den Autoverkehr.`,
+      instruction: `${IF_IT_WERE_REAL} Nutzen Sie nach Möglichkeit Bus und Bahn und folgen Sie den Hinweisen der Polizei vor Ort.`,
+      area: polygon(rectangle(center, [0.02, 0.012], [0.07, -0.035])),
+    },
+  ];
+}
+
+/**
+ * The warmest temperature anywhere in the frost scenario's weather (°C):
+ * just below zero, so a display rounding to whole degrees meets -0 there.
+ */
+export const FROST_WARMEST = -0.3;
+
+/** WMO rain codes and the code for the same precipitation below zero: snow, or freezing drizzle. */
+export const SNOW_FOR_RAIN = Object.freeze({ 51: 56, 53: 56, 55: 57, 61: 71, 63: 73, 65: 75, 80: 85, 81: 86, 82: 86 });
+
+const isNumber = (n) => typeof n === 'number' && Number.isFinite(n);
+
+/**
+ * The weather `data` on a day of frost: every temperature (current and
+ * feels-like, each hour's, each day's high and low) moves down by the one
+ * amount that makes the warmest of them FROST_WARMEST, so the forecast keeps
+ * its shape below zero, and rain falls as snow. Nothing else changes.
+ */
+export function frostWeather(data) {
+  const hourly = data.hourly ?? [];
+  const daily = data.daily ?? [];
+  const temps = [data.current?.temp, data.current?.feelsLike, ...hourly.map((h) => h.temp), ...daily.flatMap((d) => [d.high, d.low])].filter(isNumber);
+  if (temps.length === 0) throw new Error('frost: the weather holds no temperature to lower');
+  const shift = FROST_WARMEST - Math.max(...temps);
+  const freeze = (item, keys) => {
+    const out = { ...item };
+    for (const key of keys) if (isNumber(item[key])) out[key] = round1(item[key] + shift);
+    if (Object.hasOwn(SNOW_FOR_RAIN, item.weatherCode)) out.weatherCode = SNOW_FOR_RAIN[item.weatherCode];
+    return out;
+  };
+  const frozen = { ...data };
+  if (data.current) frozen.current = freeze(data.current, ['temp', 'feelsLike']);
+  if (data.hourly) frozen.hourly = hourly.map((h) => freeze(h, ['temp']));
+  if (data.daily) frozen.daily = daily.map((d) => freeze(d, ['high', 'low']));
+  return frozen;
 }
 
 /**
@@ -145,6 +277,18 @@ export const SCENARIOS = Object.freeze({
       remove(SNAPSHOT.transit),
       remove(SNAPSHOT.weather),
       remove(SNAPSHOT.nina),
+    ],
+  },
+  'nina-warnings': {
+    summary: 'five long civil-protection warnings at once: extreme, severe, an all-clear, moderate and minor',
+    changes: (now, center) => [
+      put(SNAPSHOT.nina, ninaWarnings(now, center)),
+    ],
+  },
+  frost: {
+    summary: `every temperature below zero (current, hourly and daily, the warmest ${FROST_WARMEST} °C), rain falling as snow`,
+    changes: () => [
+      patchLatest(SNAPSHOT.weather, frostWeather),
     ],
   },
 });
