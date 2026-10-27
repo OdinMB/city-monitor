@@ -4,12 +4,13 @@
  */
 
 import { GUARD_TESTS } from './guard.mjs';
+import { DEFAULT_SCENARIO, SCENARIO_NAMES } from './scenarios.mjs';
 
 export const LANGS = Object.freeze(['de', 'en', 'tr', 'ar']);
 export const THEMES = Object.freeze(['light', 'dark']);
 
 const VALUE_OPTIONS = new Set([
-  'out', 'path', 'viewport', 'lang', 'theme', 'seed', 'timeout', 'steps', 'settle', 'timezone',
+  'out', 'path', 'viewport', 'lang', 'theme', 'seed', 'scenario', 'timeout', 'steps', 'settle', 'timezone',
   'pg-bin', 'pg-user', 'playwright', 'guard-test',
 ]);
 const FLAG_OPTIONS = new Set(['scroll', 'full-page', 'help']);
@@ -22,6 +23,7 @@ export const DEFAULTS = Object.freeze({
   langs: ['de'],
   themes: ['light'],
   seed: 1,
+  scenario: DEFAULT_SCENARIO,
   timeoutSeconds: 480,
   settleMs: 1500,
   timezone: 'Europe/Berlin',
@@ -111,6 +113,8 @@ export function parseArgs(argv) {
   for (const theme of themes) if (!THEMES.includes(theme)) throw new UsageError(`--theme ${theme}: use light or dark`);
 
   const seed = raw.seed === undefined ? DEFAULTS.seed : positiveInteger('seed', raw.seed, { min: 0, max: 2 ** 31 - 1 });
+  const scenario = raw.scenario ?? DEFAULTS.scenario;
+  if (!SCENARIO_NAMES.includes(scenario)) throw new UsageError(`--scenario ${scenario}: use one of ${SCENARIO_NAMES.join(', ')}`);
   const timeoutSeconds = raw.timeout === undefined ? DEFAULTS.timeoutSeconds : positiveInteger('timeout', raw.timeout, { min: 30, max: 3600 });
   const settleMs = raw.settle === undefined ? DEFAULTS.settleMs : positiveInteger('settle', raw.settle, { min: 0, max: 60_000 });
 
@@ -133,6 +137,7 @@ export function parseArgs(argv) {
     langs,
     themes,
     seed,
+    scenario,
     scroll: raw.scroll === true,
     fullPage: raw['full-page'] === true,
     timeoutSeconds,
@@ -209,6 +214,7 @@ request off this machine is blocked. See harness/README.md.
   --lang <de|en|tr|ar>    repeatable or comma-separated (default de)
   --theme <light|dark>    repeatable or comma-separated (default light)
   --seed <n>              synthetic data set (default 1)
+  --scenario <name>       data state: ${SCENARIO_NAMES.join(' | ')} (default ${DEFAULT_SCENARIO})
   --scroll                scroll each page to the bottom first, so lazy tiles load
   --full-page             screenshot the whole page, not only the viewport
   --steps <file.json>     steps to run on each page after it loads

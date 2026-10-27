@@ -12,6 +12,12 @@
  * Then it prints "harness-child-guard: ok <role>" and imports the product's
  * entry: the synthetic seed script or dev-synthetic.ts. No dotenv loading:
  * the product's scripts with --env-file-if-exists are never used.
+ *
+ * (seed) Once the seed script has finished, the same process applies the
+ * run's scenario (lib/scenarios.mjs) to the database it seeded: it checks
+ * the database target again, opens it with the product's openLocalDatabase
+ * and prints "harness-scenario: applied <name>". The default scenario
+ * changes nothing and opens nothing.
  */
 
 import fs from 'node:fs';
@@ -20,8 +26,12 @@ import { fileURLToPath } from 'node:url';
 import { assertGuard, checkDatabaseTarget, GuardError, PLANTED } from './guard.mjs';
 import { enforceLoopbackListen } from './listen-guard.mjs';
 import { MARKERS } from './processes.mjs';
+import { applyScenario, DEFAULT_SCENARIO, SCENARIO_NAMES, scenarioTypes } from './scenarios.mjs';
+import { snapshotStore } from './snapshot-store.mjs';
 
 const SERVER_SRC = new URL('../../packages/server/src/', import.meta.url);
+/** The city the synthetic seed writes (generate.ts, dev-synthetic.ts). */
+const SEED_CITY = 'berlin';
 
 function refuse(problem) {
   console.error(problem instanceof GuardError ? problem.message : `hermetic-guard: refused: ${problem}`);
@@ -37,6 +47,8 @@ try {
 } catch (err) {
   refuse(err);
 }
+const scenario = spec.scenario ?? DEFAULT_SCENARIO;
+if (role === 'seed' && !SCENARIO_NAMES.includes(scenario)) refuse(`unknown scenario ${scenario}`);
 
 if (role === 'network-probe') {
   // The negative test's one GET from inside the run, through Node's own fetch
@@ -93,3 +105,30 @@ process.argv = role === 'seed'
   ? [process.argv[0], fileURLToPath(entry), '--seed', String(spec.seed)]
   : [process.argv[0], fileURLToPath(entry)];
 await import(entry.href);
+
+if (role === 'seed') {
+  // The seed script reports a failure through the exit code, after printing why
+  if (process.exitCode) process.exit(process.exitCode);
+  if (scenarioTypes(scenario).length > 0) {
+    // Checked again right before this process opens the database itself
+    const target = localGuard.syntheticDatabaseUrl();
+    const problem = checkDatabaseTarget(target, { port: spec.databasePort });
+    if (problem) refuse(problem);
+    try {
+      localGuard.assertLocalDatabaseUrl(target);
+    } catch (err) {
+      refuse(err.message);
+    }
+    const { openLocalDatabase } = await import(new URL('synthetic/seed.ts', SERVER_SRC).href);
+    const { snapshots } = await import(new URL('db/schema.ts', SERVER_SRC).href);
+    const { and, desc, eq, inArray } = await import('drizzle-orm');
+    const local = openLocalDatabase(target);
+    try {
+      const changes = await applyScenario(snapshotStore(local.db, { table: snapshots, and, desc, eq, inArray }, SEED_CITY), scenario, new Date());
+      console.log(`scenario ${scenario}: ${changes.deletes.length} row(s) deleted, ${changes.updates.length} changed, ${changes.inserts.length} added`);
+    } finally {
+      await local.close();
+    }
+  }
+  console.log(`${MARKERS.scenarioApplied} ${scenario}`);
+}

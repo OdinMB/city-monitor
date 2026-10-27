@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkPagePath, parseArgs, parseViewport, UsageError, validateSteps } from '../lib/args.mjs';
+import { checkPagePath, parseArgs, parseViewport, USAGE, UsageError, validateSteps } from '../lib/args.mjs';
+import { SCENARIO_NAMES } from '../lib/scenarios.mjs';
 
 describe('parseArgs', () => {
   it('needs --out', () => assert.throws(() => parseArgs([]), UsageError));
@@ -12,6 +13,7 @@ describe('parseArgs', () => {
     assert.deepEqual(args.langs, ['de']);
     assert.deepEqual(args.themes, ['light']);
     assert.equal(args.seed, 1);
+    assert.equal(args.scenario, 'default');
     assert.equal(args.scroll, false);
     assert.equal(args.fullPage, false);
     assert.equal(args.timeoutSeconds, 480);
@@ -38,6 +40,20 @@ describe('parseArgs', () => {
     assert.equal(args.pgBin, '/pg');
     assert.equal(args.pgUser, 'pg');
     assert.equal(args.playwright, '/pw');
+  });
+
+  it('takes one scenario by name and refuses others with the list', () => {
+    for (const name of SCENARIO_NAMES) {
+      assert.equal(parseArgs(['--out', 'o', '--scenario', name]).scenario, name);
+      assert.equal(parseArgs(['--out', 'o', `--scenario=${name}`]).scenario, name);
+    }
+    for (const bad of ['hurricane', 'Quiet', 'quiet,storm', '__proto__']) {
+      assert.throws(() => parseArgs(['--out', 'o', '--scenario', bad]), (err) => err instanceof UsageError
+        && err.message === `--scenario ${bad}: use one of ${SCENARIO_NAMES.join(', ')}`, bad);
+    }
+    assert.throws(() => parseArgs(['--out', 'o', '--scenario', 'quiet', '--scenario', 'storm']), /given twice/);
+    assert.throws(() => parseArgs(['--out', 'o', '--scenario']), /needs a value/);
+    assert.match(USAGE, new RegExp(`--scenario <name> .*${SCENARIO_NAMES.join(' \\| ')}`));
   });
 
   it('accepts each guard test case and refuses others', () => {

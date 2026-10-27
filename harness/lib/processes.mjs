@@ -115,4 +115,5 @@ export const MARKERS = Object.freeze({
   guardOk: 'harness-child-guard: ok',
   apiListening: 'harness-api-listening',
   networkProbe: 'harness-network-probe:',
+  scenarioApplied: 'harness-scenario: applied',
 });

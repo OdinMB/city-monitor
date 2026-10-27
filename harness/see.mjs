@@ -5,9 +5,10 @@
  *
  *   node harness/see.mjs --out <folder> [--path /berlin] [--viewport 390x844] ...
  *
- * It starts its own Postgres, seeds it, starts the API in synthetic mode,
- * builds and serves the web app, all on 127.0.0.1 on ports it picks, and
- * stops everything on exit, timeout, error, SIGINT or SIGTERM. Each run
+ * It starts its own Postgres, seeds it (reshaped by --scenario), starts the
+ * API in synthetic mode, builds and serves the web app, all on 127.0.0.1 on
+ * ports it picks, and stops everything on exit, timeout, error, SIGINT or
+ * SIGTERM. Each run
  * writes only under <out>/<run id>. See harness/README.md.
  */
 
@@ -21,6 +22,7 @@ import { checkOutFolder, createRunFolders, newRunId, REPO, runLayout } from './l
 import { pickFreePorts, isPortFree } from './lib/ports.mjs';
 import { databaseUrl, findPgBin, lookupSystemUser, startPostgres } from './lib/postgres.mjs';
 import { MARKERS, spawnNode, stopAll, track, waitForExit } from './lib/processes.mjs';
+import { SCENARIOS } from './lib/scenarios.mjs';
 import { loopbackAgent, startStaticServer, stopStaticServer } from './lib/static-server.mjs';
 import { combinations, formatCounts, launchBrowser, loadPlaywright, probeBrowserNetwork, runPages, sumCounts } from './lib/browser.mjs';
 
@@ -187,11 +189,15 @@ async function main() {
   const pgLog = fs.createWriteStream(path.join(layout.logs, 'postgres.log'), { flags: 'a' });
   await startPostgres({ bin: pgBin, layout, port: pgPort, password, env: envs.postgres, asRoot, user: pgUser, logStream: pgLog, track });
 
-  const seedSpec = writeGuardFile(layout.guard, 'seed', { expected: expected.seed, databasePort: pgPort, seed: args.seed });
+  const seedSpec = writeGuardFile(layout.guard, 'seed', { expected: expected.seed, databasePort: pgPort, seed: args.seed, scenario: args.scenario });
   const seed = startChild({ name: 'seed', script: PRODUCT_CHILD, args: ['seed', seedSpec], env: envs.seed, cwd: REPO.server, logsDir: layout.logs });
   await seed.waitFor(`${MARKERS.guardOk} seed`, 120_000, 'seed guard');
   const seedCode = await waitForExit(seed.child, 240_000);
-  if (seedCode !== 0) return finish(EXIT.error, `the seed failed (exit ${seedCode}); see ${seed.logPath}`);
+  if (seedCode !== 0) return finish(seedCode === EXIT.guard ? EXIT.guard : EXIT.error, `the seed failed (exit ${seedCode}); see ${seed.logPath}`);
+  // Its last stdout lines can arrive just after the exit
+  const applied = await seed.waitFor(`${MARKERS.scenarioApplied} ${args.scenario}`, 10_000, 'scenario').then(() => true, () => false);
+  if (!applied) return finish(EXIT.error, `the scenario ${args.scenario} was not applied; see ${seed.logPath}`);
+  console.log(`scenario: ${args.scenario} (${SCENARIOS[args.scenario].summary})`);
 
   const apiSpec = writeGuardFile(layout.guard, 'api', { expected: expected.api, databasePort: pgPort, apiPort });
   const api = startChild({ name: 'api', script: PRODUCT_CHILD, args: ['api', apiSpec], env: envs.api, cwd: REPO.server, logsDir: layout.logs });
@@ -232,6 +238,7 @@ async function main() {
     startedAt: startedAt.toISOString(),
     finishedAt: new Date().toISOString(),
     seed: args.seed,
+    scenario: args.scenario,
     ports: { web: webPort, api: apiPort, postgres: pgPort },
     portsFreeAfterStop,
     params: {
