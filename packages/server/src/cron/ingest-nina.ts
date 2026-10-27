@@ -20,16 +20,41 @@ export interface DashboardWarning {
   type: string;
   i18nTitle: { de: string };
   transKeys?: { event?: string };
+  /** The CAP summary the published API description gives dashboard entries. */
+  payload?: { type?: string; data?: { msgType?: string } };
 }
 
 interface WarningDetail {
+  msgType?: string;
   info?: Array<{
     headline?: string;
     description?: string;
     instruction?: string;
     urgency?: string;
     event?: string;
+    expires?: string;
   }>;
+}
+
+/** CAP's msgType for a message that withdraws an earlier warning. */
+function isCancel(msgType: string | undefined): boolean {
+  return msgType?.toLowerCase() === 'cancel';
+}
+
+/**
+ * Whether a warning is over at `now`: withdrawn (its type is CAP's Cancel)
+ * or past its own expiry. One without an expiry, or with one that is not a
+ * date, lasts until NINA stops listing it.
+ */
+export function hasEnded(warning: Pick<NinaWarning, 'type' | 'expiresAt'>, now: number = Date.now()): boolean {
+  if (isCancel(warning.type)) return true;
+  const expires = warning.expiresAt ? Date.parse(warning.expiresAt) : NaN;
+  return expires <= now;
+}
+
+/** The warnings that have not ended at `now`, for serving a stored or cached list. */
+export function currentWarnings(warnings: NinaWarning[], now: number = Date.now()): NinaWarning[] {
+  return warnings.filter((warning) => !hasEnded(warning, now));
 }
 
 export function createNinaIngestion(cache: Cache, db: Db | null = null) {
@@ -65,22 +90,27 @@ async function ingestCityNina(cityId: string, ars: string, cache: Cache, db: Db 
   const nonDwdWarnings = rawWarnings.filter((w) => !isDwdSource(w));
 
   const warnings: NinaWarning[] = [];
+  const now = Date.now();
 
   for (const raw of nonDwdWarnings) {
     const warning = parseDashboardWarning(raw);
-    if (!warning) continue;
+    // NINA can go on listing a warning after it was withdrawn or expired
+    if (!warning || hasEnded(warning, now) || isCancel(raw.payload?.data?.msgType)) continue;
 
-    // Fetch full detail for description + instructions
+    // Fetch full detail for description + instructions, and the expiry if the entry has none
     try {
       const detail = await fetchWarningDetail(raw.id);
       if (detail) {
+        if (isCancel(detail.msgType)) continue;
         warning.description = detail.description;
         warning.instruction = detail.instruction;
         if (detail.urgency) warning.urgency = detail.urgency;
+        if (!warning.expiresAt && detail.expires) warning.expiresAt = detail.expires;
       }
     } catch {
       // Detail fetch is optional — continue with headline-only
     }
+    if (hasEnded(warning, now)) continue;
 
     // Fetch GeoJSON area
     try {
@@ -104,7 +134,10 @@ async function ingestCityNina(cityId: string, ars: string, cache: Cache, db: Db 
 
   cache.set(CK.ninaWarnings(cityId), warnings, 600);
 
-  if (db && warnings.length > 0) {
+  // Stored even when empty: the newest row is what the last successful run
+  // found, so a cache miss or a restart cannot bring back a cleared warning.
+  // A failed request returns or throws above and stores nothing.
+  if (db) {
     try {
       await saveNinaWarnings(db, cityId, warnings);
     } catch (err) {
@@ -161,7 +194,7 @@ export function mapSeverity(raw: string): NinaWarning['severity'] {
   return 'minor';
 }
 
-async function fetchWarningDetail(id: string): Promise<{ description?: string; instruction?: string; urgency?: string } | null> {
+async function fetchWarningDetail(id: string): Promise<{ msgType?: string; description?: string; instruction?: string; urgency?: string; expires?: string } | null> {
   const url = `${NINA_BASE}/warnings/${id}.json`;
   const response = await fetch(url, {
     signal: AbortSignal.timeout(5000),
@@ -171,12 +204,13 @@ async function fetchWarningDetail(id: string): Promise<{ description?: string; i
 
   const data: WarningDetail = await response.json();
   const info = data.info?.[0];
-  if (!info) return null;
 
   return {
-    description: info.description,
-    instruction: info.instruction,
-    urgency: info.urgency,
+    msgType: data.msgType,
+    description: info?.description,
+    instruction: info?.instruction,
+    urgency: info?.urgency,
+    expires: typeof info?.expires === 'string' ? info.expires : undefined,
   };
 }
 

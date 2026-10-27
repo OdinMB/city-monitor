@@ -126,7 +126,7 @@ All route-facing read functions return `DbResult<T>` (`{ data: T; fetchedAt: Dat
 ### Writes (`writes.ts`)
 
 Two write patterns (no transactions, no deletes — retention cron handles cleanup):
-- **Unified snapshots** (21 data sources): Internal `saveSnapshot(db, cityId, type, data)` inserts one JSONB row per ingestion. Named wrappers preserve original signatures. Transit, air quality, NINA, and political data now store arrays/objects as JSONB instead of multi-row batches.
+- **Unified snapshots** (21 data sources): Internal `saveSnapshot(db, cityId, type, data)` inserts one JSONB row per ingestion. Named wrappers preserve original signatures. Transit, air quality, NINA, and political data now store arrays/objects as JSONB instead of multi-row batches. `saveTransitAlerts` and `saveAirQualityGrid` skip an empty list; `saveNinaWarnings` stores it, so a run that found no warnings replaces the last list ([events-safety.md](events-safety.md#ended-warnings-and-found-nothing-vs-failed)).
 - **Hash-keyed tables** (news, events, safety): UPSERT via `onConflictDoUpdate` on (cityId, hash). Refreshes assessment fields and fetchedAt on conflict.
 - **AI summaries**: Plain INSERT.
 

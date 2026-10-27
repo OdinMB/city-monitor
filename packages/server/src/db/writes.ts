@@ -128,8 +128,8 @@ export async function saveTransitAlerts(db: Db, cityId: string, alerts: TransitA
   await saveSnapshot(db, cityId, 'vbb-disruptions', alerts);
 }
 
+/** An empty list is stored too: it says the last successful run found no warnings (see ingest-nina.ts). */
 export async function saveNinaWarnings(db: Db, cityId: string, warnings: NinaWarning[]): Promise<void> {
-  if (warnings.length === 0) return;
   await saveSnapshot(db, cityId, 'bbk-nina', warnings);
 }
 
