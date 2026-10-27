@@ -29,7 +29,7 @@ The server processes load the product's TypeScript through `tsx` and `shared/*.t
 
 | Parameter | Default | What it varies |
 |---|---|---|
-| `--out <folder>` | required | Where the run writes. Each run makes `<folder>/<run id>/`, so one folder can hold several runs. Refused when it is inside the checkout or holds it. |
+| `--out <folder>` | required | Where the run writes. Each run makes `<folder>/<run id>/`, so one folder can hold several runs. Refused when it is inside the checkout or holds it, and, from a linked worktree (such as one under `.claude/worktrees/`), when it is inside the main checkout (the folder with the common `.git`) or holds it. |
 | `--path <path>` | `/berlin` | A page on the run's own web server. Repeatable. Must start with one `/`. |
 | `--viewport <WxH>` | `1440x900` | Browser viewport. Repeatable or comma-separated, e.g. `390x844,1440x900`. Widths under 768 get touch and mobile emulation. |
 | `--lang <de\|en\|tr\|ar>` | `de` | The app's language (set in `localStorage` before load) and the browser locale. Repeatable or comma-separated. |
@@ -79,17 +79,29 @@ A failing step is recorded in the report with a screenshot named `...__<NN>-erro
 Under `<out>/<run id>/`:
 
 - `screenshots/<path>__<WxH>__<lang>__<theme>.png`, plus `__<NN>-<name>.png` for each screenshot step. The path `/berlin/sources` becomes `berlin-sources`.
-- `report.json`: ports, parameters, every blocked host with its count, and per page its screenshots, console errors (flagged when they come from a blocked request), page errors, failed or 4xx/5xx requests to the run's own server, blocked hosts and step errors. `portsFreeAfterStop` says whether each port was free once everything stopped.
+- `report.json`: ports, parameters, every blocked host with its count, every request answered locally (`servedLocally`, see "The map") with its count, and per page its screenshots, console errors (flagged when they come from a blocked request), page errors, failed or 4xx/5xx requests to the run's own server, blocked hosts, requests answered locally and step errors. `portsFreeAfterStop` says whether each port was free once everything stopped.
 - `logs/`: output of Postgres, the seed, the API and the web build.
 - `pg/`, `home/`, `tmp/`, `web/`, `vite-cache/`, `guard/`: the database, the temporary home and temp folder (the browser profile included), the built app, Vite's cache and the guard files the server processes check themselves against. Delete the run folder when done.
 
-Standard output prints `run folder: ...`, then `hermetic-guard: ok port <web port>`, one summary line per page, the blocked hosts and `report: ...`.
+Standard output prints `run folder: ...`, then `hermetic-guard: ok port <web port>`, one summary line per page, the blocked hosts, the requests served locally, whether the ports were free after stopping and `report: ...`.
 
 Exit codes: `0` done, `1` error or timeout, `2` the guard refused, `3` a step failed (screenshots and report are still written), `130`/`143` stopped by SIGINT/SIGTERM.
 
+### The map
+
+The app creates its map only once its base-map style has loaded from `basemaps.cartocdn.com`. The browser's routes answer that one request (`https://basemaps.cartocdn.com/gl/<style>/style.json`, the light and the dark style) from memory with a stand-in built in [`lib/map-style.mjs`](lib/map-style.mjs), and never send it; the report counts it under `servedLocally`. The stand-in is a plain background in the theme's colour with no sources, no sprite and no glyphs URL, so MapLibre asks for no tiles, sprites or fonts.
+
+On that background the app's own map layers draw on the synthetic data: the district outlines and their name labels, the markers, polygons and choropleths of each data layer switched on in the layer rail, and their popups on hover or click. MapLibre draws label text itself from the browser's local fonts, as it does for any style without a glyphs URL, so labels show in the local sans-serif rather than the live site's map font.
+
+What the map still can't show:
+
+- the base map itself: no streets, water, parks, boundaries or place names, so markers sit on a plain background, and the roads and water areas the traffic and water layers highlight are not there to highlight;
+- the WMS overlays (rent map and noise map, from gdi.berlin.de and geodienste.hamburg.de), which stay blocked;
+- the rain radar, which is not mounted in synthetic mode ([dev-database.md](../.context/dev-database.md)).
+
 ### Blocked, as expected
 
-The browser aborts every request that is not to the run's own web server. The CARTO base map (`basemaps.cartocdn.com` and its tile hosts), the gdi.berlin.de WMS overlays and the analytics script (`scripts.simpleanalyticscdn.com`) show up under blocked hosts, so the map has no base tiles. The rain radar is not mounted in synthetic mode ([dev-database.md](../.context/dev-database.md)).
+The browser aborts every other request that is not to the run's own web server. The WMS overlays and the analytics script (`scripts.simpleanalyticscdn.com`) show up under blocked hosts, and so would CARTO's tile, font and sprite hosts if anything asked for them.
 
 ## Guard
 
@@ -110,7 +122,7 @@ Before anything starts, the parent checks each of those environments, and each s
 
 Postgres is checked through its `postmaster.pid`: the process the harness started, its port, 127.0.0.1 only, no Unix socket.
 
-In the browser, every request outside the run's web server is aborted, WebSockets are closed, service workers are blocked, and Chromium's proxy is the closed port with only loopback bypassing it.
+In the browser, every request outside the run's web server is aborted, except the base map's style, which the route answers from memory without sending it ("The map"); WebSockets are closed, service workers are blocked, and Chromium's proxy is the closed port with only loopback bypassing it.
 
 On success the run prints exactly one line `hermetic-guard: ok port <web port>`. A refusal prints `hermetic-guard: refused: <what>` (names, never values) and exits 2.
 
@@ -127,7 +139,7 @@ On success the run prints exactly one line `hermetic-guard: ok port <web port>`.
 
 If a planted case got through, the run would carry on as a normal run, so a guard-test run that does not exit 2 means the guard is broken.
 
-`node --test harness/test/*.test.mjs` runs the harness's unit tests (the guard refusing each case, the allowlist, port picking, the static server, the listen guard, the parameter checks). They start no database, API, build or browser. `npm test` does not run them.
+`node --test harness/test/*.test.mjs` runs the harness's unit tests (the guard refusing each case, the allowlist, port picking, the static server, the listen guard, the parameter checks, the `--out` checks against the checkout and the main checkout, the base map's stand-in and the browser's routes answering it locally while aborting everything else). They start no database, API, build or browser. `npm test` does not run them.
 
 ## Running as root
 

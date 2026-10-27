@@ -41,14 +41,53 @@ export function isInside(child, parent) {
 }
 
 /**
- * The absolute --out folder, or a refusal: never inside the checkout (where
- * it would show in git status) and never a folder the checkout sits in.
+ * The main checkout of the repository `checkoutRoot` belongs to: the folder
+ * that holds the common .git. That is `checkoutRoot` itself when its .git is
+ * a folder. For a linked worktree, whose .git is a file naming its git folder
+ * (`<main>/.git/worktrees/<name>`), it is the folder above the common .git
+ * that git folder's `commondir` names. Null when there is none: no .git, a
+ * bare repository, a submodule. Reads files only; runs no git.
  */
-export function checkOutFolder(out, repoRoot = REPO_ROOT) {
+export function mainCheckoutOf(checkoutRoot) {
+  const dotGit = path.join(checkoutRoot, '.git');
+  let stat;
+  try {
+    stat = fs.statSync(dotGit);
+  } catch {
+    return null;
+  }
+  if (stat.isDirectory()) return checkoutRoot;
+  if (!stat.isFile()) return null;
+  const match = /^gitdir:\s*(.+?)\s*$/m.exec(fs.readFileSync(dotGit, 'utf8'));
+  if (!match) return null;
+  const gitDir = path.resolve(checkoutRoot, match[1]);
+  let commonDir;
+  try {
+    commonDir = path.resolve(gitDir, fs.readFileSync(path.join(gitDir, 'commondir'), 'utf8').trim());
+  } catch {
+    // No commondir to read: a worktree's git folder still sits at <common>/worktrees/<name>.
+    commonDir = path.basename(path.dirname(gitDir)) === 'worktrees' ? path.dirname(path.dirname(gitDir)) : gitDir;
+  }
+  return path.basename(commonDir) === '.git' ? path.dirname(commonDir) : null;
+}
+
+/**
+ * The absolute --out folder, or a refusal: never inside the checkout (where
+ * it would show in git status) and never a folder the checkout sits in. Run
+ * from a linked worktree, the same holds for the main checkout, whose status
+ * a folder inside it would show in, even when the worktree is nested in it.
+ */
+export function checkOutFolder(out, repoRoot = REPO_ROOT, mainRoot = mainCheckoutOf(repoRoot)) {
   const resolved = realPathOfNearest(out);
   const root = realPathOfNearest(repoRoot);
   if (isInside(resolved, root)) return { error: `--out ${resolved} is inside the checkout ${root}; give a folder outside it` };
   if (isInside(root, resolved)) return { error: `--out ${resolved} holds the checkout ${root}; give a folder outside it` };
+  const main = mainRoot ? realPathOfNearest(mainRoot) : root;
+  if (main !== root) {
+    const from = `this run is from its worktree ${root}`;
+    if (isInside(resolved, main)) return { error: `--out ${resolved} is inside the main checkout ${main} (${from}); give a folder outside it` };
+    if (isInside(main, resolved)) return { error: `--out ${resolved} holds the main checkout ${main} (${from}); give a folder outside it` };
+  }
   if (fs.existsSync(resolved) && !fs.statSync(resolved).isDirectory()) return { error: `--out ${resolved} is not a folder` };
   return { out: resolved };
 }

@@ -2,14 +2,16 @@
  * Headless Chromium through Playwright, which is not a dependency of this
  * repository: it loads from --playwright, the checkout, NODE_PATH or the
  * global folder of the running Node. Every request not to the run's own web
- * server is aborted and counted by host; anything that slips past the routes
- * (browser-internal traffic, a service worker, a WebSocket) meets a proxy on
- * a closed loopback port.
+ * server is aborted and counted by host, except the base map's style, which
+ * the routes answer from memory without sending it (lib/map-style.mjs);
+ * anything that slips past the routes (browser-internal traffic, a service
+ * worker, a WebSocket) meets a proxy on a closed loopback port.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { localResponse } from './map-style.mjs';
 
 /** Folders that may hold the Playwright package, in the order they are tried. */
 export function playwrightCandidates({ explicit, repoRoot, nodePath = process.env.NODE_PATH ?? '', execPath = process.execPath, platform = process.platform }) {
@@ -53,6 +55,18 @@ function hostOf(url) {
   }
 }
 
+/**
+ * What the browser does with a request to `url`: `continue` to one of the
+ * run's own origins, `fulfil` it from memory (the base map's style), or
+ * `abort` it. Nothing else is ever sent.
+ */
+export function decideRoute(url, allowedOrigins) {
+  if (isAllowedUrl(url, allowedOrigins)) return { action: 'continue' };
+  const local = localResponse(url);
+  if (local) return { action: 'fulfil', key: local.key, response: local.fulfil };
+  return { action: 'abort', host: hostOf(url) };
+}
+
 /** "/berlin/sources?x=1" to "berlin-sources-x-1"; "/" to "root". */
 export function pathSlug(pagePath) {
   const slug = pagePath.replace(/^\/+/, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
@@ -64,6 +78,18 @@ export function screenshotName({ pagePath, viewport, lang, theme, stepIndex, ste
   const base = `${pathSlug(pagePath)}__${viewport.width}x${viewport.height}__${lang}__${theme}`;
   if (stepName === undefined) return `${base}.png`;
   return `${base}__${String(stepIndex + 1).padStart(2, '0')}-${stepName}.png`;
+}
+
+/** Adds up several { name: count } maps, such as each page's blocked hosts. */
+export function sumCounts(maps) {
+  const total = {};
+  for (const counts of maps) for (const [name, n] of Object.entries(counts ?? {})) total[name] = (total[name] ?? 0) + n;
+  return total;
+}
+
+/** "a (2), b (1)", or "none". */
+export function formatCounts(counts) {
+  return Object.entries(counts).map(([name, n]) => `${name} (${n})`).join(', ') || 'none';
 }
 
 /** Phone and tablet widths get touch and mobile emulation. */
@@ -94,15 +120,19 @@ export async function launchBrowser({ playwright, env, proxyPort }) {
 
 /**
  * A context that blocks every request outside `allowedOrigins`, counting
- * blocked hosts into `blocked` (host -> count).
+ * blocked hosts into `blocked` (host -> count), and answers the base map's
+ * style from memory, counting it into `served` (host and path -> count).
  */
-export async function newBlockingContext(browser, { allowedOrigins, blocked, options = {} }) {
+export async function newBlockingContext(browser, { allowedOrigins, blocked, served = {}, options = {} }) {
   const context = await browser.newContext({ serviceWorkers: 'block', acceptDownloads: false, ...options });
   await context.route('**/*', (route) => {
-    const url = route.request().url();
-    if (isAllowedUrl(url, allowedOrigins)) return route.continue();
-    const host = hostOf(url);
-    blocked[host] = (blocked[host] ?? 0) + 1;
+    const decision = decideRoute(route.request().url(), allowedOrigins);
+    if (decision.action === 'continue') return route.continue();
+    if (decision.action === 'fulfil') {
+      served[decision.key] = (served[decision.key] ?? 0) + 1;
+      return route.fulfill(decision.response);
+    }
+    blocked[decision.host] = (blocked[decision.host] ?? 0) + 1;
     return route.abort('blockedbyclient');
   });
   await context.routeWebSocket(/.*/, (ws) => {
@@ -189,6 +219,7 @@ export async function runPages({ browser, baseUrl, combos, steps, scroll, fullPa
   for (const combo of combos) {
     const { pagePath, viewport, lang, theme } = combo;
     const blocked = {};
+    const served = {};
     const entry = {
       path: pagePath,
       viewport: `${viewport.width}x${viewport.height}`,
@@ -200,6 +231,7 @@ export async function runPages({ browser, baseUrl, combos, steps, scroll, fullPa
       pageErrors: [],
       failedRequests: [],
       blockedHosts: blocked,
+      servedLocally: served,
       stepErrors: [],
     };
     results.push(entry);
@@ -207,6 +239,7 @@ export async function runPages({ browser, baseUrl, combos, steps, scroll, fullPa
     const context = await newBlockingContext(browser, {
       allowedOrigins: [origin],
       blocked,
+      served,
       options: {
         viewport,
         isMobile: touch,

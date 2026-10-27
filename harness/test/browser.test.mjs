@@ -3,12 +3,81 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import {
   combinations,
+  decideRoute,
+  formatCounts,
   isAllowedUrl,
   isTouchViewport,
+  newBlockingContext,
   pathSlug,
   playwrightCandidates,
+  probeBrowserNetwork,
   screenshotName,
+  sumCounts,
 } from '../lib/browser.mjs';
+import { PLANTED } from '../lib/guard.mjs';
+
+const OWN = 'http://127.0.0.1:4321';
+const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
+const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
+
+/** Off-port requests a page on the map can make, the base map's style aside. */
+const OFF_PORT = [
+  'https://tiles.basemaps.cartocdn.com/vectortiles/carto.streets/v1/12/2200/1343.mvt',
+  'https://tiles.basemaps.cartocdn.com/fonts/Open Sans Regular/0-255.pbf',
+  'https://basemaps.cartocdn.com/gl/positron-gl-style/sprite.json',
+  'http://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json',
+  'https://gdi.berlin.de/services/wms/wohnlagenadr2024?service=WMS&request=GetMap',
+  'https://scripts.simpleanalyticscdn.com/latest.js',
+  PLANTED.networkUrl,
+  'http://127.0.0.1:3001/api/health',
+  'http://localhost:4321/',
+];
+
+/** A route as Playwright hands it to a handler, recording what the handler did. */
+function fakeRoute(url) {
+  const calls = [];
+  return {
+    calls,
+    request: () => ({ url: () => url }),
+    continue: async () => { calls.push({ action: 'continue' }); },
+    fulfill: async (response) => { calls.push({ action: 'fulfill', response }); },
+    abort: async (reason) => { calls.push({ action: 'abort', reason }); },
+  };
+}
+
+/**
+ * Enough of a Playwright browser for newBlockingContext: a page's goto sends
+ * its URL through the context's route handler and fails when it is aborted,
+ * as Chromium's does. Nothing is launched.
+ */
+function fakeBrowser() {
+  const contexts = [];
+  return {
+    contexts,
+    async newContext(options) {
+      const context = {
+        options,
+        handlers: [],
+        closed: false,
+        async route(pattern, handler) { this.handlers.push({ pattern, handler }); },
+        async routeWebSocket() {},
+        async close() { this.closed = true; },
+        async newPage() {
+          return {
+            goto: async (url) => {
+              const route = fakeRoute(url);
+              await context.handlers[0].handler(route);
+              if (route.calls[0].action === 'abort') throw new Error(`net::ERR_BLOCKED_BY_CLIENT at ${url}`);
+              return {};
+            },
+          };
+        },
+      };
+      contexts.push(context);
+      return context;
+    },
+  };
+}
 
 describe('isAllowedUrl', () => {
   const own = ['http://127.0.0.1:4321'];
@@ -30,6 +99,84 @@ describe('isAllowedUrl', () => {
       'ws://127.0.0.1:4321/',
       'not a url',
     ]) assert.equal(isAllowedUrl(url, own), false, url);
+  });
+});
+
+describe('decideRoute', () => {
+  it('lets the run\'s own origin through', () => {
+    assert.deepEqual(decideRoute(`${OWN}/berlin`, [OWN]), { action: 'continue' });
+  });
+
+  it('answers the base map\'s style from memory', () => {
+    for (const url of [LIGHT_STYLE, DARK_STYLE]) {
+      const decision = decideRoute(url, [OWN]);
+      assert.equal(decision.action, 'fulfil', url);
+      assert.equal(decision.key, url.replace('https://', ''));
+      assert.equal(JSON.parse(decision.response.body).version, 8);
+    }
+  });
+
+  it('aborts every other request off the run\'s port', () => {
+    for (const url of OFF_PORT) assert.equal(decideRoute(url, [OWN]).action, 'abort', url);
+    assert.equal(decideRoute(PLANTED.networkUrl, []).host, 'example.com');
+  });
+});
+
+describe('newBlockingContext', () => {
+  it('never sends a request off the run\'s port: each is answered locally or aborted', async () => {
+    const browser = fakeBrowser();
+    const blocked = {};
+    const served = {};
+    await newBlockingContext(browser, { allowedOrigins: [OWN], blocked, served });
+    const [context] = browser.contexts;
+    assert.equal(context.options.serviceWorkers, 'block');
+    assert.equal(context.handlers.length, 1);
+    assert.equal(context.handlers[0].pattern, '**/*');
+
+    const routes = [LIGHT_STYLE, DARK_STYLE, LIGHT_STYLE, ...OFF_PORT].map(fakeRoute);
+    for (const route of routes) await context.handlers[0].handler(route);
+    for (const route of routes) {
+      assert.equal(route.calls.length, 1);
+      assert.notEqual(route.calls[0].action, 'continue', route.request().url());
+    }
+    assert.deepEqual(routes.slice(0, 3).map((r) => r.calls[0].action), ['fulfill', 'fulfill', 'fulfill']);
+    assert.deepEqual(JSON.parse(routes[1].calls[0].response.body).layers.map((l) => l.id), ['background']);
+    for (const route of routes.slice(3)) assert.deepEqual(route.calls[0], { action: 'abort', reason: 'blockedbyclient' });
+
+    assert.deepEqual(served, {
+      'basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json': 2,
+      'basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json': 1,
+    });
+    assert.equal(blocked['tiles.basemaps.cartocdn.com'], 2);
+    assert.equal(blocked['basemaps.cartocdn.com'], 2);
+    assert.equal(blocked['example.com'], 1);
+    assert.equal(blocked['127.0.0.1:3001'], 1);
+
+    const own = fakeRoute(`${OWN}/api/berlin/bootstrap`);
+    await context.handlers[0].handler(own);
+    assert.deepEqual(own.calls, [{ action: 'continue' }]);
+  });
+});
+
+describe('probeBrowserNetwork (the network case, browser side)', () => {
+  it('reports the planted GET as blocked, with the base map\'s stand-in in place', async () => {
+    const browser = fakeBrowser();
+    assert.equal(await probeBrowserNetwork({ browser, url: PLANTED.networkUrl }), true);
+    assert.equal(browser.contexts[0].closed, true);
+  });
+
+  it('would report a GET that got an answer as not blocked', async () => {
+    // The control: the stand-in is answered, so the probe does tell the two apart.
+    assert.equal(await probeBrowserNetwork({ browser: fakeBrowser(), url: LIGHT_STYLE }), false);
+  });
+});
+
+describe('counts', () => {
+  it('adds up per-page counts and prints them', () => {
+    const total = sumCounts([{ a: 1, b: 2 }, { a: 3 }, undefined]);
+    assert.deepEqual(total, { a: 4, b: 2 });
+    assert.equal(formatCounts(total), 'a (4), b (2)');
+    assert.equal(formatCounts({}), 'none');
   });
 });
 

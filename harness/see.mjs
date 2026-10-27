@@ -22,7 +22,7 @@ import { pickFreePorts, isPortFree } from './lib/ports.mjs';
 import { databaseUrl, findPgBin, lookupSystemUser, startPostgres } from './lib/postgres.mjs';
 import { MARKERS, spawnNode, stopAll, track, waitForExit } from './lib/processes.mjs';
 import { loopbackAgent, startStaticServer, stopStaticServer } from './lib/static-server.mjs';
-import { combinations, launchBrowser, loadPlaywright, probeBrowserNetwork, runPages } from './lib/browser.mjs';
+import { combinations, formatCounts, launchBrowser, loadPlaywright, probeBrowserNetwork, runPages, sumCounts } from './lib/browser.mjs';
 
 const EXIT = { ok: 0, error: 1, guard: 2, steps: 3 };
 const PRODUCT_CHILD = path.join(REPO.harness, 'lib', 'product-child.mjs');
@@ -220,8 +220,8 @@ async function main() {
     runDir: layout.run,
   });
 
-  const blockedHosts = {};
-  for (const r of runs) for (const [host, n] of Object.entries(r.blockedHosts)) blockedHosts[host] = (blockedHosts[host] ?? 0) + n;
+  const blockedHosts = sumCounts(runs.map((r) => r.blockedHosts));
+  const servedLocally = sumCounts(runs.map((r) => r.servedLocally));
   const stepFailed = runs.some((r) => r.stepErrors.length > 0);
   await cleanup();
   const portsFreeAfterStop = {};
@@ -246,6 +246,7 @@ async function main() {
       steps: steps.length,
     },
     blockedHosts,
+    servedLocally,
     runs,
   };
   fs.writeFileSync(layout.report, `${JSON.stringify(report, null, 2)}\n`);
@@ -254,7 +255,8 @@ async function main() {
     const stepNote = r.stepErrors.length ? `, step errors: ${r.stepErrors.map((e) => `${e.step} ${e.error}`).join(' | ')}` : '';
     console.log(`${r.path} ${r.viewport} ${r.lang} ${r.theme}: ${r.screenshots.length} screenshot(s), ${r.consoleErrors.length} console error(s), ${r.pageErrors.length} page error(s), ${r.failedRequests.length} failed request(s) to this run${stepNote}`);
   }
-  console.log(`blocked hosts: ${Object.entries(blockedHosts).map(([h, n]) => `${h} (${n})`).join(', ') || 'none'}`);
+  console.log(`blocked hosts: ${formatCounts(blockedHosts)}`);
+  console.log(`served locally: ${formatCounts(servedLocally)}`);
   console.log(`ports free after stop: ${Object.values(portsFreeAfterStop).every(Boolean) ? 'yes' : JSON.stringify(portsFreeAfterStop)}`);
   console.log(`report: ${layout.report}`);
   return finish(stepFailed ? EXIT.steps : EXIT.ok);
