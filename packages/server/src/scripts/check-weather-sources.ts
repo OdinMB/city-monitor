@@ -16,6 +16,7 @@
 import type { CityConfig } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
+import { DWD_WARNINGS_URL, assertDwdWarningsShape, parseDwdWarnings, parseDwdWarningsJsonp } from '../lib/dwd-warnings.js';
 
 const CITIES: Record<string, CityConfig> = { berlin, hamburg };
 
@@ -98,7 +99,7 @@ function checkBrightSkyForecast(city: CityConfig) {
 }
 
 // BrightSky's /alerts endpoint exists and works, but production currently uses
-// DWD's JSONP /warnings.json directly (see fetchDwdAlerts in ingest-weather.ts).
+// DWD's JSONP /warnings.json directly (see lib/dwd-warnings.ts).
 // `checkDwdWarnings` below is the canonical alerts probe.
 
 function checkOpenMeteoAirQuality(city: CityConfig) {
@@ -123,12 +124,15 @@ function checkDwdWarnings(city: CityConfig) {
     if (city.country !== 'DE') {
       return { status: 200, detail: 'skipped (non-DE city)' };
     }
-    const { status, body } = await fetchText('https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json');
+    const { status, body } = await fetchText(DWD_WARNINGS_URL);
     if (!body.startsWith('warnWetter.loadWarnings(')) throw new Error('expected JSONP wrapper warnWetter.loadWarnings(');
-    const jsonStr = body.replace(/^warnWetter\.loadWarnings\(/, '').replace(/\);?\s*$/, '');
-    const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
-    const regions = Object.keys(parsed).length;
-    return { status, detail: `${regions} regions in payload` };
+    const json = parseDwdWarningsJsonp(body);
+    // Throws when the payload is not in the shape the ingestion reads.
+    const { cells, entries } = assertDwdWarningsShape(json);
+    const name = city.name.toLowerCase();
+    const named = entries.filter((e) => e.regionName.toLowerCase().includes(name)).length;
+    const shown = parseDwdWarnings(json, city.name)?.length ?? 0;
+    return { status, detail: `${entries.length} warnings in ${cells} warncells; ${named} name ${city.name}, ${shown} shown` };
   });
 }
 

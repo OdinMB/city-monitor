@@ -6,6 +6,7 @@ import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { fetchBrightSkyForecast } from '../lib/brightsky.js';
+import { DWD_WARNINGS_URL, parseDwdWarnings, parseDwdWarningsJsonp } from '../lib/dwd-warnings.js';
 
 const log = createLogger('ingest-weather');
 
@@ -138,51 +139,24 @@ export async function ingestCityAirQuality(city: CityConfig, cache: Cache): Prom
 }
 
 async function fetchDwdAlerts(city: CityConfig): Promise<WeatherAlert[]> {
-  const response = await log.fetch('https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json', {
+  const response = await log.fetch(DWD_WARNINGS_URL, {
     signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
     headers: { 'User-Agent': 'CityMonitor/1.0' },
   });
 
   if (!response.ok) return [];
 
-  // DWD wraps JSON in a JSONP callback: warnWetter.loadWarnings(...)
   const text = await response.text();
-  const jsonStr = text.replace(/^warnWetter\.loadWarnings\(/, '').replace(/\);?\s*$/, '');
-
-  let parsed: Record<string, Array<{
-    headline: string;
-    description: string;
-    severity: number;
-    end: number;
-    regionName: string;
-  }>>;
-
+  let alerts: WeatherAlert[] | null = null;
   try {
-    parsed = JSON.parse(jsonStr);
+    alerts = parseDwdWarnings(parseDwdWarningsJsonp(text), city.name);
   } catch {
+    // not JSON: reported below like any other unexpected shape
+  }
+  if (!alerts) {
+    log.warn(`${city.id}: DWD warnings.json is not in the expected shape — run npm run check:weather`);
     return [];
   }
-
-  const alerts: WeatherAlert[] = [];
-
-  // DWD warnings are keyed by region code
-  for (const warnings of Object.values(parsed)) {
-    if (!Array.isArray(warnings)) continue;
-    for (const w of warnings) {
-      // Skip minor advisories (severity 1) — only surface meaningful warnings
-      if (w.severity < 2) continue;
-      // DWD doesn't provide lat/lon per warning, so we filter by region name containing city name
-      if (!w.regionName?.toLowerCase().includes(city.name.toLowerCase())) continue;
-
-      alerts.push({
-        headline: w.headline,
-        severity: w.severity >= 3 ? 'extreme' : w.severity >= 2 ? 'severe' : 'moderate',
-        description: w.description,
-        validUntil: new Date(w.end).toISOString(),
-      });
-    }
-  }
-
   return alerts;
 }
 

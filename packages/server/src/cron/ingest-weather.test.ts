@@ -44,6 +44,36 @@ const dwdUviFixture = {
   ],
 };
 
+// Shape of DWD's warnings.json (JSONP, warnings keyed by warncell id), invented values.
+// lib/dwd-warnings.test.ts covers the level mapping and the edge cases.
+const dwdWarningsJsonp = `warnWetter.loadWarnings(${JSON.stringify({
+  time: Date.UTC(2026, 4, 1, 10),
+  warnings: {
+    '102000000': [{
+      state: 'Hamburg', stateShort: 'HH', regionName: 'Hamburg', type: 2, level: 3,
+      start: Date.UTC(2026, 4, 1, 10), end: Date.UTC(2026, 4, 1, 20),
+      event: 'DAUERREGEN', headline: 'Amtliche WARNUNG vor DAUERREGEN', description: 'Es tritt Dauerregen auf.',
+      instruction: '', altitudeStart: null, altitudeEnd: null,
+    }],
+    '111000000': [
+      {
+        state: 'Berlin', stateShort: 'BE', regionName: 'Berlin', type: 1, level: 3,
+        start: Date.UTC(2026, 4, 1, 10), end: Date.UTC(2026, 4, 1, 18),
+        event: 'STURMBÖEN', headline: 'Amtliche WARNUNG vor STURMBÖEN', description: 'Es treten Sturmböen um 70 km/h auf.',
+        instruction: '', altitudeStart: null, altitudeEnd: null,
+      },
+      {
+        state: 'Berlin', stateShort: 'BE', regionName: 'Berlin', type: 1, level: 2,
+        start: Date.UTC(2026, 4, 1, 6), end: Date.UTC(2026, 4, 1, 10),
+        event: 'WINDBÖEN', headline: 'Amtliche WARNUNG vor WINDBÖEN', description: 'Es treten Windböen um 55 km/h auf.',
+        instruction: '', altitudeStart: null, altitudeEnd: null,
+      },
+    ],
+  },
+  vorabInformation: {},
+  copyright: 'Copyright Deutscher Wetterdienst',
+})});`;
+
 function brightSkyMock(input: RequestInfo | URL): Response {
   const url = typeof input === 'string' ? input : input.toString();
   if (url.includes('/current_weather')) {
@@ -52,9 +82,8 @@ function brightSkyMock(input: RequestInfo | URL): Response {
   if (url.includes('/weather?')) {
     return new Response(JSON.stringify(mockForecastResponse), { status: 200 });
   }
-  // DWD alerts (JSONP wrapper) — return a harmless empty payload.
   if (url.includes('warnings.json')) {
-    return new Response('warnWetter.loadWarnings({});', { status: 200 });
+    return new Response(dwdWarningsJsonp, { status: 200 });
   }
   if (url.includes('uvi.json')) {
     return new Response(JSON.stringify(dwdUviFixture), { status: 200 });
@@ -93,6 +122,37 @@ describe('ingest-weather', () => {
     // First three hourlies have null precipitation_probability — must be coerced to 0.
     expect(data!.hourly[0]!.precipProb).toBe(0);
     expect(data!.dwdUv).toEqual({ today: 5, tomorrow: 6, dayAfter: 4, forecastDay: '2026-05-01' });
+  });
+
+  it("puts the city's DWD warnings into the weather", async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => brightSkyMock(input));
+
+    const cache = createCache();
+    await createWeatherIngestion(cache)();
+
+    expect(cache.get<WeatherData>('berlin:weather')!.alerts).toEqual([{
+      headline: 'Amtliche WARNUNG vor STURMBÖEN',
+      severity: 'moderate',
+      description: 'Es treten Sturmböen um 70 km/h auf.',
+      validUntil: '2026-05-01T18:00:00.000Z',
+    }]);
+  });
+
+  it('still writes the weather, without warnings, when warnings.json is not in the expected shape', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('warnings.json')) return new Response('warnWetter.loadWarnings({});', { status: 200 });
+      return brightSkyMock(input);
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const cache = createCache();
+    await createWeatherIngestion(cache)();
+
+    const data = cache.get<WeatherData>('berlin:weather');
+    expect(data!.current.temp).toBe(18.5);
+    expect(data!.alerts).toEqual([]);
+    expect(warnSpy.mock.calls.some(([msg]) => typeof msg === 'string' && /berlin.*warnings\.json/.test(msg))).toBe(true);
   });
 
   it('still writes the weather when the DWD UV forecast fails', async () => {
