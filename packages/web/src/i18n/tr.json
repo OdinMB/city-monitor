@@ -552,7 +552,12 @@
       "moderate": "Orta",
       "minor": "Hafif"
     },
-    "dismiss": "Kapat"
+    "dismiss": "Kapat: {{headline}}",
+    "showInstruction": "Ne yapılması gerektiğini göster: {{headline}}",
+    "hideInstruction": "Ne yapılması gerektiğini gizle: {{headline}}",
+    "showDetails": "Ayrıntıları göster: {{headline}}",
+    "hideDetails": "Ayrıntıları gizle: {{headline}}",
+    "officialGerman": "Almanca resmî metin"
   },
   "support": {
     "title": "Bizi Destekle",

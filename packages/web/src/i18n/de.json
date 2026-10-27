@@ -554,7 +554,12 @@
       "moderate": "Mittel",
       "minor": "Gering"
     },
-    "dismiss": "Ausblenden"
+    "dismiss": "Ausblenden: {{headline}}",
+    "showInstruction": "Handlungsempfehlungen anzeigen: {{headline}}",
+    "hideInstruction": "Handlungsempfehlungen ausblenden: {{headline}}",
+    "showDetails": "Details anzeigen: {{headline}}",
+    "hideDetails": "Details ausblenden: {{headline}}",
+    "officialGerman": "Amtlicher Text auf Deutsch"
   },
   "support": {
     "title": "Unterstütze uns",

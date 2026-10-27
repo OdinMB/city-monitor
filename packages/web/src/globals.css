@@ -185,6 +185,28 @@
 @utility tag-line-tram { background-color: var(--tag-line-tram-bg); color: var(--tag-line-tram-text); }
 @utility tag-line-other { background-color: var(--tag-line-other-bg); color: var(--tag-line-other-text); }
 
+/* Warning banners: alert-<severity> sets the solid background and the text on
+   it for an official warning (NinaBanner), by its severity. Every pair is at
+   least 4.5:1 for the banner's 12px text, so the text stays at full opacity:
+   white at 80-90% drops below 4.5:1 on red. */
+@utility alert-extreme { background-color: var(--alert-extreme-bg); color: var(--alert-extreme-text); }
+@utility alert-severe { background-color: var(--alert-severe-bg); color: var(--alert-severe-text); }
+@utility alert-moderate { background-color: var(--alert-moderate-bg); color: var(--alert-moderate-text); }
+@utility alert-minor { background-color: var(--alert-minor-bg); color: var(--alert-minor-text); }
+
+:root {
+  --alert-extreme-bg: var(--color-red-700);          --alert-extreme-text: var(--color-white);
+  --alert-severe-bg: var(--color-red-600);           --alert-severe-text: var(--color-white);
+  --alert-moderate-bg: var(--color-amber-500);       --alert-moderate-text: var(--color-amber-950);
+  --alert-minor-bg: var(--color-yellow-400);         --alert-minor-text: var(--color-yellow-900);
+}
+.dark {
+  --alert-extreme-bg: var(--color-red-800);
+  --alert-severe-bg: var(--color-red-700);
+  --alert-moderate-bg: var(--color-amber-600);
+  --alert-minor-bg: var(--color-yellow-500);
+}
+
 :root {
   --badge-neutral-bg: var(--color-gray-100);         --badge-neutral-text: var(--color-gray-600);
   --badge-good-bg: var(--color-green-50);            --badge-good-text: var(--color-green-600);
@@ -525,6 +547,16 @@ select:focus-visible,
   .maplibregl-ctrl-top-right {
     top: 0 !important;
   }
+}
+/* From sm up, warnings at the top of the map column (CommandLayout) push the
+   map below the ticker, so its controls and the layer drawer's panel
+   (MobileLayerDrawer, pt-12) need no offset either. Unlayered, this rule
+   outranks the panel's utility classes. */
+.hero-warnings:not(:empty) + * .maplibregl-ctrl-top-right {
+  top: 0 !important;
+}
+.hero-warnings:not(:empty) + * .layer-drawer-panel {
+  padding-top: 0.75rem;
 }
 
 /* Hide map zoom controls on mobile — finger gestures handle zoom */

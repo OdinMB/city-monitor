@@ -73,6 +73,11 @@ const PAIRS: Record<string, { light: [Colour, Colour]; dark: [Colour, Colour] }>
   'tag-line-s': { light: ['green-700', 'white'], dark: ['green-700', 'white'] },
   'tag-line-tram': { light: ['red-600', 'white'], dark: ['red-600', 'white'] },
   'tag-line-other': { light: ['yellow-600', 'gray-900'], dark: ['yellow-600', 'gray-900'] },
+  // Warning banners: the text stays the same in dark; each pair at 4.5:1.
+  'alert-extreme': { light: ['red-700', 'white'], dark: ['red-800', 'white'] },
+  'alert-severe': { light: ['red-600', 'white'], dark: ['red-700', 'white'] },
+  'alert-moderate': { light: ['amber-500', 'amber-950'], dark: ['amber-600', 'amber-950'] },
+  'alert-minor': { light: ['yellow-400', 'yellow-900'], dark: ['yellow-500', 'yellow-900'] },
 };
 
 const SRC_DIR = dirname(fileURLToPath(import.meta.url));
