@@ -11,17 +11,46 @@ const log = createLogger('ingest-nina');
 const NINA_BASE = 'https://warnung.bund.de/api31';
 const NINA_TIMEOUT_MS = 10_000;
 
+/**
+ * A dashboard entry, in either of two shapes: the map-data endpoints' fields
+ * at the top level, or the published API description's, which keeps `id`,
+ * `i18nTitle` and the send time `sent` at the top level and puts headline,
+ * severity and msgType under `payload.data` and the version under `payload`.
+ * `entryFields` reads both.
+ */
 export interface DashboardWarning {
   id: string;
-  version: number;
-  startDate: string;
+  version?: number;
+  startDate?: string;
+  sent?: string;
   expiresDate?: string;
-  severity: string;
-  type: string;
-  i18nTitle: { de: string };
+  severity?: string;
+  type?: string;
+  i18nTitle?: { de?: string };
   transKeys?: { event?: string };
-  /** The CAP summary the published API description gives dashboard entries. */
-  payload?: { type?: string; data?: { msgType?: string } };
+  payload?: {
+    version?: number;
+    type?: string;
+    data?: { headline?: string; severity?: string; msgType?: string };
+  };
+}
+
+/**
+ * The fields read from a dashboard entry: the top-level value where there is
+ * one, else its counterpart in the API description's shape. The map-data
+ * `type` is CAP's message type, so it falls back to `msgType`, not to the
+ * payload kind `payload.type`.
+ */
+function entryFields(raw: DashboardWarning) {
+  const data = raw.payload?.data;
+  return {
+    headline: raw.i18nTitle?.de ?? data?.headline,
+    version: raw.version ?? raw.payload?.version,
+    startDate: raw.startDate ?? raw.sent,
+    severity: raw.severity ?? data?.severity,
+    type: raw.type ?? data?.msgType,
+    msgType: data?.msgType,
+  };
 }
 
 interface WarningDetail {
@@ -95,7 +124,7 @@ async function ingestCityNina(cityId: string, ars: string, cache: Cache, db: Db 
   for (const raw of nonDwdWarnings) {
     const warning = parseDashboardWarning(raw);
     // NINA can go on listing a warning after it was withdrawn or expired
-    if (!warning || hasEnded(warning, now) || isCancel(raw.payload?.data?.msgType)) continue;
+    if (!warning || hasEnded(warning, now) || isCancel(entryFields(raw).msgType)) continue;
 
     // Fetch full detail for description + instructions, and the expiry if the entry has none
     try {
@@ -155,19 +184,20 @@ export function isDwdSource(warning: DashboardWarning): boolean {
 
 export function parseDashboardWarning(raw: DashboardWarning): NinaWarning | null {
   try {
-    const headline = raw.i18nTitle?.de;
+    const fields = entryFields(raw);
+    const headline = fields.headline;
     if (!headline) return null;
 
     const source = detectSource(raw.id);
-    const severity = mapSeverity(raw.severity);
+    const severity = mapSeverity(fields.severity);
 
     return {
       id: raw.id,
-      version: raw.version ?? 1,
-      startDate: raw.startDate ?? new Date().toISOString(),
+      version: fields.version ?? 1,
+      startDate: fields.startDate ?? new Date().toISOString(),
       expiresAt: raw.expiresDate,
       severity,
-      type: raw.type ?? 'unknown',
+      type: fields.type ?? 'unknown',
       source,
       headline,
     };
@@ -186,7 +216,7 @@ export function detectSource(id: string): NinaWarning['source'] {
   return 'mowas'; // default
 }
 
-export function mapSeverity(raw: string): NinaWarning['severity'] {
+export function mapSeverity(raw: string | undefined): NinaWarning['severity'] {
   const lower = raw?.toLowerCase() ?? '';
   if (lower.includes('extreme')) return 'extreme';
   if (lower.includes('severe')) return 'severe';

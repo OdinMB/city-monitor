@@ -190,6 +190,61 @@ describe('parseDashboardWarning', () => {
     const result = parseDashboardWarning(noHeadline);
     expect(result).toBeNull();
   });
+
+  /** The same warning in the shape the published API description gives dashboard entries. */
+  const describedWarning: DashboardWarning = {
+    id: 'mow.DE-NW-BN-SE030-20210714-30-001',
+    i18nTitle: { de: 'Warnung vor Hochwasser' },
+    sent: '2026-01-01T00:00:00+01:00',
+    payload: { version: 2, type: 'ALERT', data: { headline: 'Warnung vor Hochwasser', severity: 'Extreme', msgType: 'Alert' } },
+  };
+
+  it('reads severity, start, type and version from the payload when the entry has them only there', () => {
+    expect(parseDashboardWarning(describedWarning)).toEqual({
+      id: describedWarning.id,
+      version: 2,
+      startDate: '2026-01-01T00:00:00+01:00',
+      expiresAt: undefined,
+      severity: 'extreme',
+      type: 'Alert',
+      source: 'mowas',
+      headline: 'Warnung vor Hochwasser',
+    });
+    expect(parseDashboardWarning({ ...describedWarning, payload: { data: { severity: 'Severe' } } })!.severity).toBe('severe');
+  });
+
+  it('takes the headline from the payload when the entry has no title', () => {
+    const { i18nTitle: _, ...untitled } = describedWarning;
+    expect(parseDashboardWarning(untitled)!.headline).toBe('Warnung vor Hochwasser');
+  });
+
+  it('prefers the top-level value where an entry has both', () => {
+    const both: DashboardWarning = {
+      ...validWarning,
+      sent: '2025-12-31T00:00:00Z',
+      payload: { version: 7, type: 'ALERT', data: { headline: 'Andere Warnung', severity: 'Minor', msgType: 'Update' } },
+    };
+    expect(parseDashboardWarning(both)).toEqual(parseDashboardWarning(validWarning));
+  });
+
+  it('maps an entry with neither as before: minor, starting now, type unknown, version 1', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-27T06:00:00Z'));
+    try {
+      expect(parseDashboardWarning({ id: 'mow.bare', i18nTitle: { de: 'Warnung' } })).toEqual({
+        id: 'mow.bare',
+        version: 1,
+        startDate: '2026-10-27T06:00:00.000Z',
+        expiresAt: undefined,
+        severity: 'minor',
+        type: 'unknown',
+        source: 'mowas',
+        headline: 'Warnung',
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('hasEnded', () => {
@@ -292,6 +347,29 @@ describe('createNinaIngestion', () => {
 
     expect(ids(cache.get(KEY))).toEqual(['mow.current']);
     expect(ids(rows[0]!.data)).toEqual(['mow.current']);
+  });
+
+  it('keeps the severity and start of entries in the shape the published API description gives, and leaves out withdrawn ones', async () => {
+    const sent = new Date(Date.now() - HOUR).toISOString();
+    const described = (id: string, severity: string, msgType = 'Alert'): DashboardWarning => ({
+      id,
+      i18nTitle: { de: `Warnung ${id}` },
+      sent,
+      payload: { version: 1, type: 'ALERT', data: { headline: `Warnung ${id}`, severity, msgType } },
+    });
+    stubNina([
+      described('mow.severe', 'Severe'),
+      described('mow.extreme', 'Extreme'),
+      described('mow.withdrawn', 'Extreme', 'Cancel'),
+    ]);
+    const cache = createCache();
+
+    await createNinaIngestion(cache, null)();
+
+    expect(cache.get<NinaWarning[]>(KEY)!.map((w) => [w.id, w.severity, w.startDate])).toEqual([
+      ['mow.extreme', 'extreme', sent],
+      ['mow.severe', 'severe', sent],
+    ]);
   });
 
   it('leaves out a warning past its expiry, whether the dashboard entry or its detail gives it', async () => {
