@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { saveWeather, saveTransitAlerts, saveNinaWarnings, saveEvents, saveSafetyReports, saveSummary, saveAirQualityGrid } from './writes.js';
+import { saveWeather, saveTransitAlerts, saveNinaWarnings, saveEvents, saveSafetyReports, saveNewsItems, saveSummary, saveAirQualityGrid, type PersistedNewsItem } from './writes.js';
 import type { Db } from './index.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { NinaWarning, TransitAlert } from '@city-monitor/shared';
@@ -120,6 +120,16 @@ describe('DB writes', () => {
       expect.objectContaining({ hash: 'placed', geoAttempted: false }),
     ]);
     expect(onConflictDoUpdate.mock.calls[0]![0].set).toHaveProperty('geoAttempted');
+  });
+
+  it('saveNewsItems refreshes the stored description on conflict, so a row seen again without one loses it', async () => {
+    const items = [
+      { id: 'h1', title: 'Headline', url: 'https://example.com/a', publishedAt: '2026-03-01T00:00:00Z', sourceName: 'Feed', sourceUrl: 'https://example.com/feed', category: 'local', tier: 1, lang: 'de' },
+    ] as PersistedNewsItem[];
+
+    await saveNewsItems(db, 'berlin', items);
+    expect(values.mock.calls[0]![0]).toEqual([expect.objectContaining({ hash: 'h1', description: null })]);
+    expect(onConflictDoUpdate.mock.calls[0]![0].set).toHaveProperty('description');
   });
 
   it('saveSummary inserts a new summary row', async () => {

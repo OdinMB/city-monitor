@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createFeedIngestion, type NewsDigest } from './ingest-feeds.js';
 import { hashString } from '../lib/hash.js';
+import { berlin } from '../config/cities/berlin.js';
 
 vi.mock('../lib/openai.js', () => ({
   filterAndGeolocateNews: vi.fn().mockResolvedValue(null),
@@ -303,6 +304,76 @@ describe('ingest-feeds — DB assessment reuse', () => {
     expect(digest).toBeTruthy();
     // No DB, LLM returns null → no assessment → all items dropped
     expect(digest!.items.length).toBe(0);
+  });
+});
+
+describe('ingest-feeds — feeds whose text is not stored', () => {
+  const rbb24 = berlin.feeds.find((f) => f.name === 'rbb24')!;
+  const tagesspiegel = berlin.feeds.find((f) => f.name === 'Tagesspiegel')!;
+
+  function oneItemFeed(title: string, link: string, description: string): string {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Feed</title>
+  <item>
+    <title>${title}</title>
+    <link>${link}</link>
+    <pubDate>Mon, 02 Mar 2026 10:00:00 GMT</pubDate>
+    <description>${description}</description>
+  </item>
+</channel></rss>`;
+  }
+
+  async function ingestRbb24AndTagesspiegel() {
+    const { filterAndGeolocateNews } = await import('../lib/openai.js');
+    const { saveNewsItems } = await import('../db/writes.js');
+    const { loadAllNewsAssessments } = await import('../db/reads.js');
+
+    vi.mocked(loadAllNewsAssessments).mockResolvedValue(null);
+    vi.mocked(filterAndGeolocateNews).mockImplementation(async (_cityId, _cityName, items) =>
+      items.map((_item, index) => ({ index, relevant_to_city: true, category: 'local', importance: 0.6 })),
+    );
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      if (input === rbb24.url) {
+        return new Response(oneItemFeed('Neue Tramlinie in Mitte', 'https://www.rbb24.de/a/1', 'Teaser von rbb24'), { status: 200 });
+      }
+      if (input === tagesspiegel.url) {
+        return new Response(oneItemFeed('Senat beschließt Haushalt', 'https://www.tagesspiegel.de/a/2', 'Teaser vom Tagesspiegel'), { status: 200 });
+      }
+      return new Response('', { status: 404 });
+    });
+
+    const cache = createCache();
+    const mockDb = {} as Parameters<typeof createFeedIngestion>[1];
+    await createFeedIngestion(cache, mockDb)();
+
+    return {
+      classified: vi.mocked(filterAndGeolocateNews).mock.calls[0]![2],
+      stored: vi.mocked(saveNewsItems).mock.calls[0]![2],
+      digest: cache.get<NewsDigest>('berlin:news:digest')!,
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('classifies an rbb24 item with its description but stores only its title and link', async () => {
+    const { classified, stored, digest } = await ingestRbb24AndTagesspiegel();
+
+    expect(classified).toContainEqual({ title: 'Neue Tramlinie in Mitte', description: 'Teaser von rbb24', sourceName: 'rbb24' });
+
+    const row = stored.find((item) => item.sourceName === 'rbb24')!;
+    expect(row).toMatchObject({ title: 'Neue Tramlinie in Mitte', url: 'https://www.rbb24.de/a/1' });
+    expect(row.description).toBeUndefined();
+
+    // The live digest, held in memory only, keeps the description
+    expect(digest.items.find((item) => item.sourceName === 'rbb24')?.description).toBe('Teaser von rbb24');
+  });
+
+  it('still stores the description of a feed that allows it', async () => {
+    const { stored } = await ingestRbb24AndTagesspiegel();
+
+    expect(stored.find((item) => item.sourceName === 'Tagesspiegel')?.description).toBe('Teaser vom Tagesspiegel');
   });
 });
 

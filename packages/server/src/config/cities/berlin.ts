@@ -20,7 +20,8 @@ export const berlin: CityConfig = {
   },
   theme: { accent: '#E2001A' },
   feeds: [
-    { name: 'rbb24', url: 'https://www.rbb24.de/index.xml/feed=rss.xml', tier: 1, type: 'mainstream', lang: 'de' },
+    // rbb24's feed says its content must not be archived (see .context/news.md)
+    { name: 'rbb24', url: 'https://www.rbb24.de/index.xml/feed=rss.xml', tier: 1, type: 'mainstream', lang: 'de', storeText: false },
     { name: 'Tagesspiegel', url: 'https://www.tagesspiegel.de/contentexport/feed/home', tier: 1, type: 'mainstream', lang: 'de' },
     { name: 'Berliner Morgenpost', url: 'https://www.morgenpost.de/berlin/rss', tier: 2, type: 'mainstream', lang: 'de' },
     { name: 'Berliner Zeitung', url: 'https://www.berliner-zeitung.de/feed.xml', tier: 2, type: 'mainstream', lang: 'de' },

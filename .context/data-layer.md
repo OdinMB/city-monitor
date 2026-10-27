@@ -83,7 +83,7 @@ Historical data accumulates and is cleaned by the data-retention cron.
 | `snapshots` | cityId, type, data (JSONB), fetchedAt (timestamptz) | `snapshots_city_type_fetched_idx(cityId, type, fetchedAt)` |
 | `events` | cityId, title, venue, date, endDate, category, url, description, free, hash, source, price | `events_city_date_idx(cityId, date)`, `events_city_source_idx(cityId, source, date)`, unique `events_city_hash_idx(cityId, hash)` |
 | `safetyReports` | cityId, title, description, publishedAt, url, district, lat/lon, locationLabel, geoAttempted, hash | `safety_city_published_idx(cityId, publishedAt)`, unique `safety_city_hash_idx(cityId, hash)` |
-| `newsItems` | cityId, hash, title, url, publishedAt, category, tier, relevantToCity, importance, lat/lon | `news_city_idx(cityId)`, `news_city_published_idx(cityId, publishedAt)`, unique `news_city_hash_idx(cityId, hash)` |
+| `newsItems` | cityId, hash, title, url, publishedAt, description, category, tier, relevantToCity, importance, lat/lon. Description is never stored for a `storeText: false` feed (rbb24): cached, not stored ([news.md](news.md#feed-configuration)) | `news_city_idx(cityId)`, `news_city_published_idx(cityId, publishedAt)`, unique `news_city_hash_idx(cityId, hash)` |
 | `geocodeLookups` | query, lat, lon, displayName, provider | `geocode_query_idx(query)` (unique) |
 | `aiSummaries` | cityId, lang, headlineHash, summary, model, inputTokens, outputTokens | `summaries_city_generated_idx(cityId, generatedAt)` |
 
@@ -127,7 +127,7 @@ All route-facing read functions return `DbResult<T>` (`{ data: T; fetchedAt: Dat
 
 Two write patterns (no transactions, no deletes — retention cron handles cleanup):
 - **Unified snapshots** (21 data sources): Internal `saveSnapshot(db, cityId, type, data)` inserts one JSONB row per ingestion. Named wrappers preserve original signatures. Transit, air quality, NINA, and political data now store arrays/objects as JSONB instead of multi-row batches. `saveTransitAlerts` and `saveAirQualityGrid` skip an empty list; `saveNinaWarnings` stores it, so a run that found no warnings replaces the last list ([events-safety.md](events-safety.md#ended-warnings-and-found-nothing-vs-failed)).
-- **Hash-keyed tables** (news, events, safety): UPSERT via `onConflictDoUpdate` on (cityId, hash). Refreshes assessment fields and fetchedAt on conflict.
+- **Hash-keyed tables** (news, events, safety): UPSERT via `onConflictDoUpdate` on (cityId, hash). Refreshes assessment fields, description and fetchedAt on conflict. News items from a `storeText: false` feed reach `saveNewsItems` without their description (`ingest-feeds.ts`), so the refresh also clears one stored before the flag was set.
 - **AI summaries**: Plain INSERT.
 
 The synthetic dev seed (`synthetic/seed.ts`, see [dev-database.md](dev-database.md)) writes through these same functions into a local database only.

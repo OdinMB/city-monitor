@@ -97,10 +97,10 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache, db: Db | null): P
     cache.set(CK.newsCategory(city.id, cat), items, 900);
   }
 
-  // 9. Persist to DB
+  // 9. Persist to DB, without the text of feeds that may not be archived
   if (db) {
     try {
-      await saveNewsItems(db, city.id, merged);
+      await saveNewsItems(db, city.id, withoutUnstoredText(merged, city.feeds));
     } catch (err) {
       log.error(`${city.id} DB write failed`, err);
     }
@@ -109,6 +109,21 @@ async function ingestCityFeeds(city: CityConfig, cache: Cache, db: Db | null): P
   log.info(
     `${city.id}: ${visible.length} articles (${known.length} from DB, ${fresh.length} new, ${merged.length - visible.length} filtered) from ${city.feeds.length} feeds`,
   );
+}
+
+/**
+ * The items as they may be stored: an item from a feed with `storeText: false`
+ * loses its description, so Postgres keeps only its title and link. The
+ * classifier and the cached digest have already seen the full item.
+ */
+function withoutUnstoredText(items: PersistedNewsItem[], feeds: readonly FeedConfig[]): PersistedNewsItem[] {
+  const textNotStored = new Set(feeds.filter((feed) => feed.storeText === false).map((feed) => feed.url));
+  if (textNotStored.size === 0) return items;
+  return items.map((item) => {
+    if (!textNotStored.has(item.sourceUrl)) return item;
+    const { description: _description, ...stored } = item;
+    return stored;
+  });
 }
 
 // ---------------------------------------------------------------------------
