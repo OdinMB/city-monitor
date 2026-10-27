@@ -7,16 +7,13 @@ import { staleAfter } from '../../lib/freshness.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getUvLevel } from '../../lib/uv-levels.js';
 import { formatDayName } from '../../lib/format-day-name.js';
+import { cityDate, cityHour, forecastInstant, formatCityClock, upcomingHourly } from '../../lib/city-time.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { UvIndexToday } from '../UvIndexToday.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
-function isToday(dateStr: string): boolean {
-  return dateStr === new Date().toISOString().slice(0, 10);
-}
-
-/** Step size (hours) by time-of-day bucket: 0-6→4h, 6-12→3h, 12-18→2h, 18-24→1h */
+/** Step size (hours) by the city's time of day: 0-6→4h, 6-12→3h, 12-18→2h, 18-24→1h */
 function stepForHour(h: number): number {
   if (h < 6) return 4;
   if (h < 12) return 3;
@@ -25,23 +22,19 @@ function stepForHour(h: number): number {
 }
 
 const MAX_HOURLY = 7;
+const HOUR_MS = 3_600_000;
 
-/** Pick 5-7 future hourly entries using adaptive step sizes to cover rest of day. */
-function sampleHourly<T extends { time: string }>(hourly: T[], now: string): T[] {
-  const future = hourly.filter((h) => h.time >= now);
-  if (future.length === 0) return [];
-
+/** Pick 5-7 upcoming hourly entries using adaptive step sizes to cover rest of day. */
+function sampleHourly<T extends { time: string }>(hourly: T[], now: Date, timeZone: string): T[] {
   const result: T[] = [];
-  let nextAllowedTime = '';
+  let nextAllowed = -Infinity;
 
-  for (const entry of future) {
+  for (const entry of upcomingHourly(hourly, now)) {
     if (result.length >= MAX_HOURLY) break;
-    if (nextAllowedTime && entry.time < nextAllowedTime) continue;
+    const at = forecastInstant(entry.time);
+    if (at < nextAllowed) continue;
     result.push(entry);
-    const hour = parseInt(entry.time.split('T')[1]?.slice(0, 2) ?? '0', 10);
-    const d = new Date(entry.time + ':00Z');
-    d.setUTCHours(d.getUTCHours() + stepForHour(hour));
-    nextAllowedTime = d.toISOString().slice(0, 16);
+    nextAllowed = at + stepForHour(cityHour(at, timeZone)) * HOUR_MS;
   }
 
   return result;
@@ -52,7 +45,7 @@ const DAILY_COUNT = 7;
 const FRESH_MAX_AGE = staleAfter('weather');
 
 export function WeatherStrip({ expanded }: { expanded: boolean }) {
-  const { id: cityId } = useCityConfig();
+  const { id: cityId, timezone } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useWeather(cityId);
   const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
@@ -60,9 +53,8 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
   const rawHourly = data?.hourly;
   const sampledHourly = useMemo(() => {
     if (!rawHourly || rawHourly.length === 0) return [];
-    const nowStr = new Date().toISOString().slice(0, 16);
-    return sampleHourly(rawHourly, nowStr);
-  }, [rawHourly]);
+    return sampleHourly(rawHourly, new Date(), timezone);
+  }, [rawHourly, timezone]);
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.weather.title')} onRetry={refetch} />;
@@ -74,6 +66,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
   const locale = i18n.language;
   const daily = data?.daily ?? [];
   const alerts = data?.alerts ?? [];
+  const today = cityDate(new Date(), timezone);
 
   return (
     <>
@@ -123,7 +116,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
             <div className="mt-4 flex justify-center overflow-x-auto">
               <div className="flex gap-3 shrink-0">
                 {sampledHourly.map((h) => {
-                  const hour = h.time.split('T')[1]?.slice(0, 5) ?? h.time;
+                  const hour = formatCityClock(forecastInstant(h.time), timezone);
                   const info = getWeatherInfo(h.weatherCode);
                   return (
                     <div key={h.time} className="shrink-0 text-center text-xs">
@@ -145,7 +138,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
           {daily.length > 0 && (
             <div className="mt-3 flex justify-center overflow-x-auto">
               <div className="flex gap-3 shrink-0">
-                {daily.filter((d) => !isToday(d.date)).slice(0, DAILY_COUNT).map((d) => {
+                {daily.filter((d) => d.date !== today).slice(0, DAILY_COUNT).map((d) => {
                   const dayName = formatDayName(d.date, locale);
                   const info = getWeatherInfo(d.weatherCode);
                   return (

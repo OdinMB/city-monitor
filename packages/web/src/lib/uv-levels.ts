@@ -1,4 +1,5 @@
 import type { DwdUvForecast } from '@city-monitor/shared';
+import { cityDate } from './city-time.js';
 
 export interface UvLevel {
   level: 'low' | 'moderate' | 'high' | 'veryHigh' | 'extreme';
@@ -16,17 +17,6 @@ export function getUvLevel(index: number): UvLevel {
 
 const DAY_MS = 86_400_000;
 
-/** The calendar date ("YYYY-MM-DD") of `now` in `timeZone`. */
-function localDate(now: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
-    .formatToParts(now);
-  const p: Record<string, string> = {};
-  for (const part of parts) {
-    if (part.type !== 'literal') p[part.type] = part.value;
-  }
-  return `${p.year}-${p.month}-${p.day}`;
-}
-
 /**
  * Today's UV index maximum from the DWD forecast, in the city's time zone.
  * DWD publishes once a day, so until its morning update the forecast still
@@ -42,7 +32,7 @@ export function uvIndexForToday(
   if (!forecast) return null;
   if (!forecast.forecastDay) return forecast.today;
   const start = Date.parse(`${forecast.forecastDay}T00:00:00Z`);
-  const today = Date.parse(`${localDate(now, timeZone)}T00:00:00Z`);
+  const today = Date.parse(`${cityDate(now, timeZone)}T00:00:00Z`);
   if (Number.isNaN(start)) return forecast.today;
   const offset = Math.round((today - start) / DAY_MS);
   if (offset === 0) return forecast.today;

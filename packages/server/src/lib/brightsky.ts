@@ -198,9 +198,9 @@ function transformCurrent(raw: BrightSkyCurrent['weather']): CurrentWeather {
 
 function transformHourly(raw: BrightSkyHourly[]): HourlyForecast[] {
   return raw.map((h) => ({
-    // Frontend (WeatherStrip, WeatherPopover) compares time strings and does
-    // `entry.time + ':00Z'` to build a Date. Use the same offset-less
-    // YYYY-MM-DDTHH:MM shape Open-Meteo produced so existing code keeps working.
+    // UTC as YYYY-MM-DDTHH:MM without an offset. Stored snapshots and the API
+    // keep this shape; the web reads it as UTC and shows it on the city's
+    // clock (packages/web/src/lib/city-time.ts).
     time: new Date(h.timestamp).toISOString().slice(0, 16),
     temp: h.temperature,
     precipProb: h.precipitation_probability ?? 0,
