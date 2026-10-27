@@ -1,7 +1,10 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Server } from 'node:http';
 import { gzipSync } from 'node:zlib';
+import type { SQL } from 'drizzle-orm';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { createApp } from './app.js';
+import { hamburg } from './config/cities/hamburg.js';
 import { CK } from './lib/cache-keys.js';
 import type { ScheduledJob } from './lib/scheduler.js';
 
@@ -16,22 +19,42 @@ vi.mock('./lib/scheduler.js', () => ({
 
 // Stand-in for a connected database whose stored data is all fresh; off by default
 const freshDb = vi.hoisted(() => ({ on: false }));
+// Stand-in for a connected database that answers the real freshness queries
+// with `stored.execute`; off (null) by default
+const stored = vi.hoisted(() => ({ execute: null as null | ((query: SQL) => Promise<unknown[]>) }));
 vi.mock('./db/index.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./db/index.js')>();
+  const fake = () => freshDb.on || stored.execute !== null;
   return {
     ...actual,
-    createDb: () => (freshDb.on ? { db: {}, client: {} } : actual.createDb()),
-    testConnection: async (db: Parameters<typeof actual.testConnection>[0]) => (freshDb.on ? undefined : actual.testConnection(db)),
+    createDb: () => (fake() ? { db: { execute: (query: SQL) => stored.execute?.(query) }, client: {} } : actual.createDb()),
+    testConnection: async (db: Parameters<typeof actual.testConnection>[0]) => (fake() ? undefined : actual.testConnection(db)),
   };
 });
 vi.mock('./db/warm-cache.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./db/warm-cache.js')>();
   return {
     ...actual,
-    warmCache: async (...args: Parameters<typeof actual.warmCache>) => (freshDb.on ? undefined : actual.warmCache(...args)),
+    warmCache: async (...args: Parameters<typeof actual.warmCache>) => (freshDb.on || stored.execute ? undefined : actual.warmCache(...args)),
     findStaleJobs: async (...args: Parameters<typeof actual.findStaleJobs>) => (freshDb.on ? new Set<string>() : actual.findStaleJobs(...args)),
   };
 });
+
+/**
+ * Answers the startup freshness queries as a database would that holds a fresh
+ * row of every source for each city in `freshCities` and no row for any other
+ * city. A query with a city condition gets one row per listed fresh city; the
+ * table-wide query gets the newest row of any city.
+ */
+function rowsFreshFor(freshCities: string[]) {
+  const dialect = new PgDialect();
+  return async (query: SQL) => {
+    const { sql: text, params } = dialect.sqlToQuery(query);
+    const epoch = Date.now() / 1000;
+    if (!text.includes('"city_id" IN')) return freshCities.length > 0 ? [{ epoch }] : [];
+    return freshCities.filter((id) => params.includes(id)).map((id) => ({ city_id: id, epoch }));
+  };
+}
 
 describe('createApp in synthetic mode', () => {
   afterEach(() => {
@@ -135,6 +158,71 @@ describe('createApp startup runs with fresh stored data', () => {
     expect(scheduled.jobs).toHaveLength(26);
     const startup = scheduled.jobs.filter((j) => j.runOnStart).map((j) => j.name);
     expect(startup).toEqual(['ingest-aq-grid']);
+  });
+});
+
+describe('createApp startup runs per active city', () => {
+  const startupRuns = () => scheduled.jobs.filter((j) => j.runOnStart).map((j) => j.name);
+  const ingestionJobs = () => scheduled.jobs.filter((j) => j.name !== 'data-retention').map((j) => j.name);
+
+  beforeEach(() => {
+    scheduled.jobs = [];
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}')));
+  });
+
+  afterEach(() => {
+    stored.execute = null;
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('runs only the air-quality grid job when Berlin, the only active city, has fresh data', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+    stored.execute = rowsFreshFor(['berlin']);
+    await createApp();
+
+    expect(startupRuns()).toEqual(['ingest-aq-grid']);
+  });
+
+  it('runs every ingestion job when Berlin, the only active city, has no data', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+    stored.execute = rowsFreshFor([]);
+    await createApp();
+
+    expect(startupRuns()).toEqual(ingestionJobs());
+  });
+
+  it('runs only the air-quality grid job when every active city has fresh data', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    stored.execute = rowsFreshFor(['berlin', 'hamburg']);
+    await createApp();
+
+    expect(startupRuns()).toEqual(['ingest-aq-grid']);
+  });
+
+  it('runs the jobs that serve a newly activated city without data, and no Berlin-only job', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    stored.execute = rowsFreshFor(['berlin']);
+    await createApp();
+
+    expect(startupRuns()).toEqual([
+      'ingest-feeds', 'summarize-news', 'ingest-weather', 'ingest-safety', 'ingest-nina',
+      'ingest-pharmacies', 'ingest-traffic', 'ingest-political', 'ingest-aq-grid', 'ingest-aeds',
+      'ingest-water-levels', 'ingest-pollen',
+    ]);
+  });
+
+  it('does not run the appointments job for a city with an appointments source but no rows while another city\'s rows are fresh', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    stored.execute = rowsFreshFor(['berlin']);
+    hamburg.dataSources.appointments = { provider: 'service-berlin', services: [{ id: '1', name: 'Test' }] };
+    try {
+      await createApp();
+    } finally {
+      delete hamburg.dataSources.appointments;
+    }
+
+    expect(startupRuns()).not.toContain('ingest-appointments');
   });
 });
 
