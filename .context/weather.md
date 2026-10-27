@@ -25,8 +25,13 @@
 
 ### DWD severe weather alerts (German cities)
 
-- **Endpoint**: `https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json` (JSONP-wrapped)
-- Direct call inside `ingest-weather.ts:fetchDwdAlerts`. Filters by `regionName.includes(city.name)`; severity ≥ 2 only. Could be replaced with BrightSky's cleaner JSON `/alerts` endpoint as a follow-up.
+- **Endpoint**: `https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json` (no auth), the feed behind DWD's WarnWetter app; one file for all of Germany.
+- **Format**: JSONP, `warnWetter.loadWarnings({ time, warnings, vorabInformation, copyright });`. `warnings` maps each warncell id to a list of entries `{ state, stateShort, regionName, type, level, start, end, event, headline, description, instruction, altitudeStart, altitudeEnd }`; `start`/`end` are epoch milliseconds and `end` is null for an open-ended warning. `vorabInformation` holds pre-announcements in the same shape. Never verified against a live payload from the dev VM (dwd.de is blocked there); the shape and level scale come from other open-source readers of this feed.
+- **Levels**: DWD's warning tiers plus one: 1 pre-announcement, 2 Wetterwarnung (yellow), 3 markantes Wetter (orange), 4 Unwetter (red), 5 extremes Unwetter (violet); heat warnings use 10 (starke) and 11 (extreme Wärmebelastung).
+- **Parsing**: `lib/dwd-warnings.ts`. `fetchDwdAlerts` in `ingest-weather.ts` fetches the file; `parseDwdWarnings(json, city.name)` keeps entries whose `regionName` contains the city name (case-insensitive) and maps levels to `severity`: 3 → `moderate`, 4 → `severe`, 5 → `extreme`, 10 → `moderate`, 11 → `severe`. Levels 1 and 2, unknown levels and `vorabInformation` are left out. A warning covering several of the city's warncells (same level, headline, start and end) is kept once. `validUntil` is `end` as ISO, or `''` when open-ended. A payload without a `warnings` object logs a warning and yields no alerts.
+- **Diagnostics**: `npm run check:weather` fails when the payload lacks the `warnings` object or an entry lacks a numeric `level` or a string `headline`/`regionName` (`assertDwdWarningsShape`), and prints how many entries name the city and how many are shown.
+- **Display**: the tile and the top-bar popover show each alert's `headline` (German, as DWD issues it); `severity`, `description` and `validUntil` are in the API response but not rendered. NINA skips DWD-sourced warnings because they arrive here.
+- Could be replaced with BrightSky's cleaner JSON `/alerts` endpoint as a follow-up.
 
 ### DWD UV index (German cities)
 
