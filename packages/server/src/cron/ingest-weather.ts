@@ -14,6 +14,9 @@ export type { WeatherData, AirQuality };
 
 const WEATHER_TIMEOUT_MS = 15_000;
 
+/** Cache TTL of the current air quality; shared with the route that refills it on a miss. */
+export const AIR_QUALITY_TTL_SECONDS = 3600;
+
 export function createWeatherIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestWeather(): Promise<void> {
     const cities = getActiveCities();
@@ -134,7 +137,7 @@ export async function ingestCityAirQuality(city: CityConfig, cache: Cache): Prom
     })),
   };
 
-  cache.set(CK.airQuality(city.id), airQuality, 3600);
+  cache.set(CK.airQuality(city.id), airQuality, AIR_QUALITY_TTL_SECONDS);
   log.info(`${city.id}: air quality updated (AQI: ${airQuality.current.europeanAqi})`);
 }
 
