@@ -173,7 +173,12 @@
       "stationCredit": "المحطات: World Air Quality Index Project والجهات المصدرة للبيانات"
     },
     "map": {
-      "title": "الخريطة"
+      "title": "الخريطة",
+      "gestureHint": {
+        "touch": "استخدم إصبعين لتحريك الخريطة",
+        "ctrlScroll": "استخدم Ctrl + التمرير لتكبير الخريطة أو تصغيرها",
+        "cmdScroll": "استخدم ⌘ + التمرير لتكبير الخريطة أو تصغيرها"
+      }
     },
     "political": {
       "empty": "لا توجد بيانات",

@@ -173,7 +173,12 @@
       "stationCredit": "\u0130stasyonlar: World Air Quality Index Project ve kaynak kurumlar"
     },
     "map": {
-      "title": "Harita"
+      "title": "Harita",
+      "gestureHint": {
+        "touch": "Haritayı hareket ettirmek için iki parmağınızı kullanın",
+        "ctrlScroll": "Haritayı yakınlaştırıp uzaklaştırmak için Ctrl + kaydırma kullanın",
+        "cmdScroll": "Haritayı yakınlaştırıp uzaklaştırmak için ⌘ + kaydırma kullanın"
+      }
     },
     "political": {
       "empty": "Veri bulunamadı",

@@ -30,3 +30,17 @@ export function useIsDesktop(): boolean {
 export function useIsTouchOnly(): boolean {
   return useMediaQuery('(any-hover: none)');
 }
+
+/**
+ * True for the phone layout (below `sm`, `useIsDesktop()` false, where the map
+ * is a band in the scrolling page) on a device whose main pointer is a finger.
+ * The main `pointer` rather than `any-hover`: a phone with a stylus that can
+ * hover still reports its touchscreen as the main pointer. A narrow desktop
+ * window has a fine pointer, and a phone held sideways is `sm` wide, so both
+ * stay false.
+ */
+export function useIsTouchPhone(): boolean {
+  const isDesktop = useIsDesktop();
+  const coarsePointer = useMediaQuery('(pointer: coarse)');
+  return !isDesktop && coarsePointer;
+}

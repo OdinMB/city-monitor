@@ -572,6 +572,14 @@ select:focus-visible,
   bottom: 5rem;
 }
 
+/* Touch phones' gesture hint (map/gestures.ts): white text on MapLibre's 40%
+   black is about 3:1 over the light map; 60% gives about 5.9:1 (AA 4.5:1).
+   Two classes, because maplibre-gl.css loads later (inside CityMap.tsx) with
+   the same single-class selector. gesture-hint.test.ts checks both. */
+.maplibregl-map .maplibregl-cooperative-gesture-screen {
+  background: rgba(0, 0, 0, 0.6);
+}
+
 /* Hero height — one *visible* screen tall.
 
    Not `h-screen`/100vh: the spec defines unprefixed viewport units against the

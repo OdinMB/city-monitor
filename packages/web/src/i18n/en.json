@@ -173,7 +173,12 @@
       "stationCredit": "Stations: World Air Quality Index Project and originating agencies"
     },
     "map": {
-      "title": "Map"
+      "title": "Map",
+      "gestureHint": {
+        "touch": "Use two fingers to move the map",
+        "ctrlScroll": "Use Ctrl + scroll to zoom the map",
+        "cmdScroll": "Use ⌘ + scroll to zoom the map"
+      }
     },
     "political": {
       "empty": "No data available",
