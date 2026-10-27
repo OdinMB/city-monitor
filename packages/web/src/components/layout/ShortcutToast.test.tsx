@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
+import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { ShortcutToast } from './ShortcutToast.js';
 
 const STORAGE_KEY = 'hasSeenKeyboardHints';
@@ -22,6 +23,7 @@ describe('ShortcutToast', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     localStorage.clear();
+    useShortcutSettings.setState({ enabled: true });
   });
 
   afterEach(() => {
@@ -56,6 +58,16 @@ describe('ShortcutToast', () => {
     expect(container.innerHTML).toBe('');
 
     act(() => { vi.advanceTimersByTime(5000); });
+    expect(container.innerHTML).toBe('');
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it('does not advertise the shortcuts while they are switched off, and keeps the hint for later', () => {
+    stubMatchMedia([]);
+    useShortcutSettings.setState({ enabled: false });
+    const { container } = render(<ShortcutToast />);
+
+    act(() => { vi.advanceTimersByTime(6500); });
     expect(container.innerHTML).toBe('');
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });

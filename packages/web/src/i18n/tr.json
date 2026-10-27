@@ -47,7 +47,9 @@
       "headlines_count": "{{count}} başlık",
       "all": "Tümü",
       "retry": "Tekrar dene",
-      "showMore": "{{count}} daha"
+      "showMore": "{{count}} daha",
+      "pauseTicker": "Haber bandını duraklat",
+      "resumeTicker": "Haber bandını sürdür"
     },
     "weather": {
       "title": "Hava Durumu",
@@ -408,7 +410,8 @@
   },
   "tile": {
     "expand": "genişlet",
-    "collapse": "daralt"
+    "collapse": "daralt",
+    "loading": "Yükleniyor…"
   },
   "stale": {
     "updated": "Güncellendi {{time}}",
@@ -591,6 +594,10 @@
     "toggleLayer": "Veri katmanı 1–9 değiştir",
     "clearLayers": "Tüm katmanları temizle",
     "close": "Kapat",
-    "toastHint": "Klavye kısayolları"
+    "toastHint": "Klavye kısayolları",
+    "singleKey": "Tek tuşlu kısayollar",
+    "singleKeyHint": "Tek tuşlar işinize engel oluyorsa, örneğin sesli girişte, bunları kapatın.",
+    "on": "Açık",
+    "off": "Kapalı"
   }
 }

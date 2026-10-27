@@ -86,27 +86,32 @@ export function NewsStrip() {
   return (
     <>
       <div role="tablist" className="flex gap-0.5 mb-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-        {availableCategories.map((cat, i) => (
-          <button
-            key={cat}
-            ref={setTabRef(i)}
-            id={`news-tab-${cat}`}
-            role="tab"
-            aria-selected={resolvedCategory === cat}
-            aria-controls="news-panel"
-            tabIndex={resolvedCategory === cat ? 0 : -1}
-            onClick={() => setActiveCategory(cat)}
-            onKeyDown={onKeyDown}
-            title={cat === 'all' ? t('panel.news.all') : t(`category.${cat}`, cat)}
-            className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
-              resolvedCategory === cat
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-          >
-            {CATEGORY_ICONS[cat] ?? '📰'}
-          </button>
-        ))}
+        {availableCategories.map((cat, i) => {
+          // The tab shows only an emoji; its name is the category, as in the tooltip.
+          const label = cat === 'all' ? t('panel.news.all') : t(`category.${cat}`, cat);
+          return (
+            <button
+              key={cat}
+              ref={setTabRef(i)}
+              id={`news-tab-${cat}`}
+              role="tab"
+              aria-selected={resolvedCategory === cat}
+              aria-controls="news-panel"
+              aria-label={label}
+              tabIndex={resolvedCategory === cat ? 0 : -1}
+              onClick={() => setActiveCategory(cat)}
+              onKeyDown={onKeyDown}
+              title={label}
+              className={`flex-1 px-1.5 py-1 rounded-md text-[11px] font-medium text-center transition-colors ${
+                resolvedCategory === cat
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              <span aria-hidden="true">{CATEGORY_ICONS[cat] ?? '📰'}</span>
+            </button>
+          );
+        })}
       </div>
 
       <p role="note" className="mb-2 text-[11px] text-muted">{t('aiNotice.newsLegend')}</p>

@@ -15,9 +15,15 @@ i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
+// The DOM mocks below are for jsdom. A test file that runs in Node instead
+// (`// @vitest-environment node`, such as built-css.test.ts) has no window.
+const hasDom = typeof window !== 'undefined';
+
 // Mock URL.createObjectURL/revokeObjectURL for maplibre-gl in jsdom
-window.URL.createObjectURL = window.URL.createObjectURL || (() => '');
-window.URL.revokeObjectURL = window.URL.revokeObjectURL || (() => {});
+if (hasDom) {
+  window.URL.createObjectURL = window.URL.createObjectURL || (() => '');
+  window.URL.revokeObjectURL = window.URL.revokeObjectURL || (() => {});
+}
 
 // Mock canvas 2D context for map icon generation (jsdom doesn't support canvas)
 const mockCtx = {
@@ -43,7 +49,9 @@ const mockCtx = {
   lineCap: 'butt',
   lineJoin: 'miter',
 };
-HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(mockCtx) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+if (hasDom) {
+  HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(mockCtx) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+}
 
 // Mock maplibre-gl globally — WebGL is not available in jsdom
 vi.mock('maplibre-gl', () => {
@@ -107,16 +115,18 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 })) as unknown as typeof ResizeObserver;
 
 // Mock window.matchMedia for jsdom environment
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: (query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    dispatchEvent: () => false,
-  }),
-});
+if (hasDom) {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}

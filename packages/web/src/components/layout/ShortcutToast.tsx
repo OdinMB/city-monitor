@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIsTouchOnly } from '../../hooks/useMediaQuery.js';
+import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 
 const STORAGE_KEY = 'hasSeenKeyboardHints';
 
@@ -26,18 +27,20 @@ function markHintSeen() {
  * One-time toast in the bottom corner at the inline end (bottom-right, or
  * bottom-left in Arabic): "Press ? for keyboard shortcuts".
  * Not shown on touch-only devices, which have no keyboard to use the
- * shortcuts with; the shortcuts themselves still work everywhere. The seen
- * flag is left unset there, so the toast can still appear once if a mouse
- * or trackpad is attached later.
+ * shortcuts with; the shortcuts themselves still work everywhere. Nor while
+ * the single-key shortcuts are switched off, since ? then does nothing. The
+ * seen flag is left unset in both cases, so the toast can still appear once
+ * if a mouse or trackpad is attached later or the shortcuts come back on.
  */
 export function ShortcutToast() {
   const { t } = useTranslation();
   const touchOnly = useIsTouchOnly();
+  const shortcutsOn = useShortcutSettings((s) => s.enabled);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (touchOnly) return;
+    if (touchOnly || !shortcutsOn) return;
     if (hasSeenHint()) return;
 
     // Show after a brief delay so it doesn't appear during initial load
@@ -53,14 +56,14 @@ export function ShortcutToast() {
       clearTimeout(showTimer);
       clearTimeout(hideTimer);
     };
-  }, [touchOnly]);
+  }, [touchOnly, shortcutsOn]);
 
   const dismiss = () => {
     setVisible(false);
     markHintSeen();
   };
 
-  if (!visible || touchOnly) return null;
+  if (!visible || touchOnly || !shortcutsOn) return null;
 
   return (
     <button

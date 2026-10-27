@@ -32,8 +32,8 @@ The guarded browser run under `harness/` has its own `node:test` suite, outside 
 
 ## Web Package (`@city-monitor/web`)
 
-- **Environment:** jsdom
-- **Setup file:** `src/test-setup.ts` — initializes i18n (all four bundles, English active), stubs `URL.createObjectURL`, the canvas 2D context, `ResizeObserver` and `matchMedia`, and mocks `maplibre-gl`. It does not load `@testing-library/jest-dom` (listed in devDependencies but imported nowhere), so use plain `expect` assertions
+- **Environment:** jsdom. A file can run in Node instead with `// @vitest-environment node` as its first line: `src/built-css.test.ts` does, since it runs the production CSS build (Vite with the Tailwind plugin, nothing written to disk), and esbuild refuses to run under jsdom's globals
+- **Setup file:** `src/test-setup.ts` — initializes i18n (all four bundles, English active), stubs `URL.createObjectURL`, the canvas 2D context, `ResizeObserver` and `matchMedia` (the DOM stubs only where there is a `window`), and mocks `maplibre-gl`. It does not load `@testing-library/jest-dom` (listed in devDependencies but imported nowhere), so use plain `expect` assertions
 - **Libraries:** `@testing-library/react` (no `user-event`; tests use `fireEvent`)
 - **Globals:** `true` — `describe`, `it`, `expect` are available without imports (but explicit imports from `vitest` also work)
 - **Test location:** Co-located with source files (e.g., `src/components/Foo.test.tsx`)

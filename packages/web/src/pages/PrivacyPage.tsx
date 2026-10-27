@@ -73,6 +73,11 @@ const STORED_VALUES = [
     title: 'Keyboard shortcuts tip',
     description: 'Set once the keyboard shortcuts tip has been shown, so it appears only once.',
   },
+  {
+    key: 'keyboard-shortcuts',
+    title: 'Single-key shortcuts setting',
+    description: '"off" or "on" — set only when you switch the single-key shortcuts off (or back on), so the choice stays.',
+  },
 ];
 
 export function PrivacyPage() {
@@ -91,8 +96,8 @@ export function PrivacyPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400 text-base">
             We do not use cookies, tracking pixels, advertising scripts, or any other data
             collection that identifies you. When you visit this site, nothing is stored on your
-            device except your theme and language settings and three small flags that remember which
-            warnings you dismissed and which tips you have already seen.
+            device except your theme, language and keyboard shortcut settings and three small flags
+            that remember which warnings you dismissed and which tips you have already seen.
           </p>
         </header>
 
