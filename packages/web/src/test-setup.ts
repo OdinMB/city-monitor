@@ -55,7 +55,8 @@ if (hasDom) {
 
 // Mock maplibre-gl globally — WebGL is not available in jsdom
 vi.mock('maplibre-gl', () => {
-  const MockMap = vi.fn().mockImplementation(() => ({
+  // Constructor mocks need a `function` implementation: Vitest 4 refuses `new` on an arrow
+  const MockMap = vi.fn().mockImplementation(function () { return {
     addControl: vi.fn(),
     remove: vi.fn(),
     setStyle: vi.fn(),
@@ -91,12 +92,12 @@ vi.mock('maplibre-gl', () => {
       };
     })(),
     _locale: {},
-  }));
-  const MockPopup = vi.fn().mockImplementation(() => ({
+  }; });
+  const MockPopup = vi.fn().mockImplementation(function () { return {
     setLngLat: vi.fn().mockReturnThis(),
     setHTML: vi.fn().mockReturnThis(),
     addTo: vi.fn().mockReturnThis(),
-  }));
+  }; });
   // maplibre-gl v6 is ESM-only with named exports (no default export)
   return {
     Map: MockMap,
@@ -108,11 +109,11 @@ vi.mock('maplibre-gl', () => {
 });
 
 // Mock ResizeObserver for jsdom environment (used by Shell.tsx)
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+global.ResizeObserver = vi.fn().mockImplementation(function () { return {
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-})) as unknown as typeof ResizeObserver;
+}; }) as unknown as typeof ResizeObserver;
 
 // Mock window.matchMedia for jsdom environment
 if (hasDom) {

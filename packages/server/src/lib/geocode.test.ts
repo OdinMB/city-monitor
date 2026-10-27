@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Stub env before importing geocode
 vi.stubEnv('LOCATIONIQ_TOKEN', '');
 
-// Mock DB modules before importing geocode
+// Mock DB modules before importing geocode. Since Vitest 4, restoreAllMocks only
+// restores spies, so each beforeEach also calls resetAllMocks to clear these.
 vi.mock('../db/reads.js', () => ({
   loadGeocodeLookup: vi.fn().mockResolvedValue(null),
 }));
@@ -38,6 +39,7 @@ function mockOk(body: unknown) {
 describe('geocode (Nominatim only — no LOCATIONIQ_TOKEN)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.resetAllMocks();
     clearGeocodeCache();
   });
 
@@ -78,6 +80,7 @@ describe('geocode (Nominatim only — no LOCATIONIQ_TOKEN)', () => {
 describe('geocode in-process cache', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.resetAllMocks();
     clearGeocodeCache();
   });
 
@@ -138,6 +141,7 @@ describe('geocode in-process cache', () => {
 describe('geocode DB layer', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.resetAllMocks();
     clearGeocodeCache();
     vi.mocked(loadGeocodeLookup).mockResolvedValue(null);
     vi.mocked(saveGeocodeLookup).mockResolvedValue(undefined);

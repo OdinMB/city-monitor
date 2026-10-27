@@ -41,10 +41,10 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
     "jsdom": "^26",
-    "satori": "^0.24.1",
+    "satori": "^0.33.5",
     "sharp": "^0.35.5",
     "tailwindcss": "^4",
     "vite": "^6",
-    "vitest": "^3"
+    "vitest": "^4.1.12"
   }
 }

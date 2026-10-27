@@ -4,6 +4,8 @@ import { createSafetyIngestion, type SafetyReport } from './ingest-safety.js';
 import { hashString } from '../lib/hash.js';
 import type { GeolocatedReport } from '../lib/openai.js';
 
+// Since Vitest 4, restoreAllMocks only restores spies, so each beforeEach also
+// calls resetAllMocks to clear these module mocks between tests.
 vi.mock('../lib/openai.js', () => ({
   geolocateReports: vi.fn().mockResolvedValue(null),
 }));
@@ -41,6 +43,7 @@ const mockPoliceFeedXml = `<?xml version="1.0" encoding="UTF-8"?>
 describe('ingest-safety', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.resetAllMocks();
   });
 
   it('fetches police RSS and writes SafetyReport[] to cache', async () => {
@@ -92,6 +95,7 @@ describe('ingest-safety', () => {
 describe('ingest-safety — DB coordinate reuse', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.resetAllMocks();
   });
 
   it('carries over coordinates from DB and skips geocoding for known items', async () => {
@@ -187,6 +191,7 @@ describe('ingest-safety — attempted-without-location marker', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.resetAllMocks();
     vi.clearAllMocks();
   });
 

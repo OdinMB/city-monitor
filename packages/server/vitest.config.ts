@@ -4,12 +4,8 @@ export default defineConfig({
   test: {
     silent: true,
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        // Limit parallel workers to avoid OOM — each fork loads the full
-        // server module graph (express, drizzle, openai, etc.)
-        maxForks: 3,
-      },
-    },
+    // Limit parallel workers to avoid OOM — each fork loads the full
+    // server module graph (express, drizzle, openai, etc.)
+    maxWorkers: 3,
   },
 });

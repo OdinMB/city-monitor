@@ -2,7 +2,7 @@
 
 ## Framework
 
-Both packages use **Vitest 3.x** with separate configs:
+Both packages use **Vitest 4.x** with separate configs:
 
 - `packages/web/vitest.config.ts` — jsdom environment, `@vitejs/plugin-react`, setup file `src/test-setup.ts`
 - `packages/server/vitest.config.ts` — Node environment, no DOM
@@ -44,7 +44,7 @@ The guarded browser run under `harness/` has its own `node:test` suite, outside 
 - **Environment:** Node (default)
 - **Test location:** Co-located (e.g., `src/lib/parse-history.test.ts`)
 - **No setup file** needed for most tests
-- **Config:** `pool: 'forks'` capped at 3 workers (`maxForks`), `silent: true` (console output suppressed)
+- **Config:** `pool: 'forks'` capped at 3 workers (`maxWorkers`), `silent: true` (console output suppressed)
 - **Needs a built `shared`:** server code imports `@city-monitor/shared/schemas.js` at runtime, so `npx vitest run` in a fresh checkout fails most route files with "Cannot find package" until `npm run build --workspace=shared` has run. `turbo run test` builds it first (`dependsOn: ["^build"]`).
 
 ## Conventions
@@ -54,4 +54,6 @@ The guarded browser run under `harness/` has its own `node:test` suite, outside 
 - Import from `vitest` for `describe`, `it`, `expect`, `vi` (even when globals are enabled)
 - Use `@testing-library/react` `render`/`screen` for component tests
 - No snapshot tests — prefer explicit assertions
+- A mock that code calls with `new` (a class such as `ResizeObserver` or maplibre's `Map`) needs a `function` or `class` implementation: Vitest 4 throws "is not a constructor" for an arrow
+- `vi.restoreAllMocks()` only restores `vi.spyOn` spies since Vitest 4; it no longer clears `vi.fn()` mocks from `vi.mock` factories. Add `vi.resetAllMocks()` (or `clearAllMocks`) where a test counts calls on those
 - Import the module under test statically, at the top of the file. Vitest's 5 s per-test timeout covers the test body but not file collection, so an `await import('./module.js')` inside a test makes the first test pay for loading the module graph (Drizzle, the DB schema, city configs), and on a busy machine that overran the timeout. Use a dynamic import only after `vi.resetModules()`, when a test needs a fresh module instance.
