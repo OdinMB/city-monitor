@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import i18n from 'i18next';
 import {
   formatCount,
   formatDecimal,
@@ -82,6 +83,8 @@ describe('formatSignedPercent', () => {
 });
 
 describe('formatCompactAmount', () => {
+  const en = i18n.getFixedT('en');
+
   it.each([
     [38_500_000_000, '38.5 bn'],
     [40_000_000_000, '40.0 bn'],
@@ -93,7 +96,17 @@ describe('formatCompactAmount', () => {
     [-2_500_000_000, '-2.5 bn'],
     [-450_000, '-450 K'],
   ])('%d reads "%s"', (amount, expected) => {
-    expect(formatCompactAmount(amount)).toBe(expected);
+    expect(formatCompactAmount(amount, en)).toBe(expected);
+  });
+
+  // Same numbers and rounding in every language; only the scale word changes.
+  it.each([
+    ['de', ['38.5 Mrd.', '450 Mio.', '12 Tsd.', '999']],
+    ['tr', ['38.5 Mr', '450 Mn', '12 bin', '999']],
+    ['ar', ['38.5 مليار', '450 مليون', '12 ألف', '999']],
+  ])('names the scale in %s', (lang, expected) => {
+    const t = i18n.getFixedT(lang);
+    expect([38_500_000_000, 450_000_000, 12_400, 999].map((n) => formatCompactAmount(n, t))).toEqual(expected);
   });
 });
 

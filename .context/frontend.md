@@ -202,11 +202,11 @@ There is no shared chart component: `TrendChart` was removed, and the wastewater
 | File | Purpose |
 |---|---|
 | `lib/format-time.ts` | `formatRelativeTimeI18n(iso, t)` — relative time in the UI language from the `time.*` keys ("5 min ago", "vor 5 Min.", "5 dk önce"). The result already holds the "ago" word, so a string that embeds it (`panel.news.generatedAgo`, `stale.updated`) must not add one. |
-| `lib/format-value.ts` | How a value is shown: `formatCount(n, lang)` (grouped in the UI language), `formatDecimal` and `formatPercent` (Latin digits and a point in every language), `formatSignedCount`/`formatSignedPercent`, the shortened `formatCompactAmount` ("38.5 bn") and `formatCompactReading` ("1.2k") and `withUnit` ("412 cm"). The water level, labour market, population, budget, wastewater and fire brigade tiles and `lib/format-stats.ts` format through it |
+| `lib/format-value.ts` | How a value is shown: `formatCount(n, lang)` (grouped in the UI language), `formatDecimal` and `formatPercent` (Latin digits and a point in every language), `formatSignedCount`/`formatSignedPercent`, the shortened `formatCompactAmount(n, t)` ("38.5 bn", "38.5 Mrd.": the scale word from `number.scale.*`) and `formatCompactReading` ("1.2k") and `withUnit` ("412 cm"). The water level, labour market, population, budget, wastewater and fire brigade tiles and `lib/format-stats.ts` format through it |
 | `lib/bidi.ts` | `forwardArrow(lng)` — "→", or "←" in a right-to-left language, for "more / until" marks (see i18n.md → Right-to-left) |
 | `components/Ltr.tsx` | `<Ltr>` — isolates a phone number or numeric range left-to-right in an Arabic layout; React counterpart of the popups' `ltr()` |
 | `lib/map-icons.ts` | Lucide-to-canvas icon renderer, `registerAllMapIcons()`, color maps, exports `IconNode` type |
-| `lib/weather-codes.ts` | WMO code to emoji + label mapping |
+| `lib/weather-codes.ts` | WMO code to emoji and the i18n key of its name (`panel.weather.code.<n>`, `…code.unknown` for a code not in the table) |
 | `lib/api-base.ts` | `resolveApiBase(raw)` — `VITE_API_BASE` without trailing slashes, or `/api`; `apiOrigin(base)` — the origin of an absolute base, or `null`. Pure, so `vite.config.ts` uses them too: its `apiPreconnect` plugin adds `<link rel="preconnect" crossorigin>` for a cross-origin API |
 
 ## SEO & PWA

@@ -77,6 +77,28 @@ describe('WastewaterStrip dates follow the UI language, not the browser', () => 
   });
 });
 
+describe('WastewaterStrip sparkline names', () => {
+  beforeEach(() => {
+    summary = SUMMARY;
+  });
+
+  afterEach(async () => {
+    cleanup();
+    await i18n.changeLanguage('en');
+  });
+
+  it.each([
+    ['en', ['Flu A trend', 'RSV trend']],
+    ['de', ['Verlauf Grippe A', 'Verlauf RSV']],
+    ['tr', ['Grip A eğilimi', 'RSV eğilimi']],
+    ['ar', ['اتجاه إنفلونزا أ', 'اتجاه RSV']],
+  ])('name the pathogen and its trend in %s', async (lang, names) => {
+    await i18n.changeLanguage(lang);
+    render(<WastewaterStrip expanded />);
+    for (const name of names) expect(screen.getByRole('img', { name })).toBeTruthy();
+  });
+});
+
 describe('WastewaterStrip readings', () => {
   beforeEach(() => {
     const reading = (name: string, value: number): WastewaterPathogen => (

@@ -72,7 +72,40 @@
       },
       "today": "Bugün",
       "tomorrow": "Yarın",
-      "dwdForecast": "DWD Tahmini"
+      "dwdForecast": "DWD Tahmini",
+      "precip": "Yağış",
+      "empty": "Hava durumu verisi yok",
+      "code": {
+        "0": "Açık",
+        "1": "Az bulutlu",
+        "2": "Parçalı bulutlu",
+        "3": "Kapalı",
+        "45": "Sis",
+        "48": "Kırağılı sis",
+        "51": "Hafif çisenti",
+        "53": "Çisenti",
+        "55": "Yoğun çisenti",
+        "56": "Donan çisenti",
+        "57": "Yoğun donan çisenti",
+        "61": "Hafif yağmur",
+        "63": "Yağmur",
+        "65": "Kuvvetli yağmur",
+        "66": "Donan yağmur",
+        "67": "Kuvvetli donan yağmur",
+        "71": "Hafif kar",
+        "73": "Kar",
+        "75": "Yoğun kar",
+        "77": "Kar tanecikleri",
+        "80": "Hafif sağanak",
+        "81": "Sağanak",
+        "82": "Kuvvetli sağanak",
+        "85": "Hafif kar sağanağı",
+        "86": "Yoğun kar sağanağı",
+        "95": "Gök gürültülü fırtına",
+        "96": "Dolulu fırtına",
+        "99": "Kuvvetli dolulu fırtına",
+        "unknown": "Bilinmiyor"
+      }
     },
     "transit": {
       "title": "Toplu Taşıma",
@@ -98,6 +131,7 @@
     },
     "airQuality": {
       "title": "Hava Kalitesi",
+      "aqi": "AQI",
       "trend": "24s e\u011filim",
       "level": {
         "good": "\u0130yi",
@@ -126,7 +160,8 @@
       "representatives": "{{count}} temsilci",
       "districtMayors": "{{count}} ilçe başkanı",
       "seats": "sandalye",
-      "showMore": "+{{count}} daha…"
+      "showMore": "+{{count}} daha…",
+      "profileLink": "Profil: {{name}}"
     },
     "budget": {
       "title": "Kent Bütçesi",
@@ -222,6 +257,7 @@
       "rsv": "RSV",
       "covid": "COVID-19",
       "sampleDate": "Örnek: {{date}}",
+      "trendLabel": "{{pathogen}} eğilimi",
       "level": {
         "none": "Yok",
         "low": "Düşük",
@@ -357,6 +393,13 @@
     "minutesAgo": "{{count}} dk önce",
     "hoursAgo": "{{count}} sa önce",
     "daysAgo": "{{count}} gün önce"
+  },
+  "number": {
+    "scale": {
+      "thousand": "bin",
+      "million": "Mn",
+      "billion": "Mr"
+    }
   },
   "sidebar": {
     "viewMode": {

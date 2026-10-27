@@ -8,7 +8,7 @@
 
 2. **API** (`packages/server/src/routes/weather.ts`) — `GET /api/:city/weather` returns cached data, falls back to Postgres, then to an empty structure.
 
-3. **Frontend** — the dashboard tile `packages/web/src/components/strips/WeatherStrip.tsx` and the top-bar popover `packages/web/src/components/layout/WeatherPopover.tsx`. Both use `useWeather()` (refetch 15 min) and render current conditions via WMO weather code → emoji/label (`packages/web/src/lib/weather-codes.ts`). Both show today's DWD UV index in the conditions row through `components/UvIndexToday.tsx` (see "DWD UV index" below).
+3. **Frontend** — the dashboard tile `packages/web/src/components/strips/WeatherStrip.tsx` and the top-bar popover `packages/web/src/components/layout/WeatherPopover.tsx`. Both use `useWeather()` (refetch 15 min) and render current conditions via WMO weather code → emoji and translated name (`packages/web/src/lib/weather-codes.ts`, names under `panel.weather.code.*`). Both show today's DWD UV index in the conditions row through `components/UvIndexToday.tsx` (see "DWD UV index" below).
 
 ## Data Sources
 

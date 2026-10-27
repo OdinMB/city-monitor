@@ -92,12 +92,12 @@ function PieChart({
       <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 text-center mb-1">
         {label}
       </div>
-      <svg role="img" aria-label={`${label}: ${formatCompactAmount(total)}`} viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
+      <svg role="img" aria-label={`${label}: ${formatCompactAmount(total, t)}`} viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
         {slices.length === 1 ? (
           /* Single-slice case: full circle (SVG arc can't draw 360°) */
           <>
             <circle cx={cx} cy={cy} r={r} fill={slices[0]!.color} opacity={0.85}>
-              <title>{t(`panel.budget.category.${slices[0]!.code}`)}: {formatCompactAmount(slices[0]!.amount)} (100%)</title>
+              <title>{t(`panel.budget.category.${slices[0]!.code}`)}: {formatCompactAmount(slices[0]!.amount, t)} (100%)</title>
             </circle>
             <circle cx={cx} cy={cy} r={innerR} className="fill-white dark:fill-gray-900" />
           </>
@@ -118,14 +118,14 @@ function PieChart({
             ].join(' ');
             return (
               <path key={i} d={d} fill={slice.color} opacity={0.85}>
-                <title>{t(`panel.budget.category.${slice.code}`)}: {formatCompactAmount(slice.amount)} ({formatPercent(slice.pct * 100, 1)})</title>
+                <title>{t(`panel.budget.category.${slice.code}`)}: {formatCompactAmount(slice.amount, t)} ({formatPercent(slice.pct * 100, 1)})</title>
               </path>
             );
           })
         )}
         <text x={cx} y={cy + 2} textAnchor="middle" dominantBaseline="middle"
           className="fill-gray-800 dark:fill-gray-200" style={{ fontSize: 11, fontWeight: 700 }}>
-          {formatCompactAmount(total)}
+          {formatCompactAmount(total, t)}
         </text>
       </svg>
     </div>
@@ -277,12 +277,12 @@ function CityView({ area, t }: { area: BudgetAreaSummary; t: (k: string) => stri
             {isDeficit ? t('panel.budget.newDebt') : t('panel.budget.surplus')}:{' '}
           </span>
           <span className={`font-semibold ${isDeficit ? 'text-red-500' : 'text-green-500'}`}>
-            {formatCompactAmount(Math.abs(deficit))}
+            {formatCompactAmount(Math.abs(deficit), t)}
           </span>
         </div>
         <div className="text-[11px]">
           <span className="text-gray-500 dark:text-gray-400">{t('panel.budget.totalBudget')}: </span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCompactAmount(area.totalExpense)}</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCompactAmount(area.totalExpense, t)}</span>
         </div>
       </div>
     </>

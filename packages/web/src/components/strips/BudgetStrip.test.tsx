@@ -54,7 +54,15 @@ vi.mock('../../hooks/useBudget.js', () => ({
 const category = (code: number) => i18n.t(`panel.budget.category.${code}`);
 const titles = (container: HTMLElement) => [...container.querySelectorAll('svg title')].map((el) => el.textContent);
 
-/** Amounts are shortened with English scale words and a point in every language. */
+/** Scale words for thousand, million and billion in each UI language. */
+const SCALE: Record<string, { k: string; m: string; bn: string }> = {
+  en: { k: 'K', m: 'M', bn: 'bn' },
+  de: { k: 'Tsd.', m: 'Mio.', bn: 'Mrd.' },
+  tr: { k: 'bin', m: 'Mn', bn: 'Mr' },
+  ar: { k: 'ألف', m: 'مليون', bn: 'مليار' },
+};
+
+/** Amounts are shortened with a point in every language and the scale word of the UI language. */
 describe('BudgetStrip amounts', () => {
   afterEach(async () => {
     cleanup();
@@ -63,33 +71,35 @@ describe('BudgetStrip amounts', () => {
 
   it.each(['en', 'de', 'tr', 'ar'])('city view in %s', async (lang) => {
     await i18n.changeLanguage(lang);
+    const { k, m, bn } = SCALE[lang]!;
     const { container } = render(<BudgetStrip />);
 
-    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.revenues')}: 38.5 bn` })).toBeTruthy();
-    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: 40.5 bn` })).toBeTruthy();
-    expect(screen.getByText('38.5 bn')).toBeTruthy();
-    expect(screen.getAllByText('40.5 bn')).toHaveLength(2); // pie centre and total budget
-    expect(screen.getByText('2.0 bn')).toBeTruthy(); // new debt
+    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.revenues')}: 38.5 ${bn}` })).toBeTruthy();
+    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: 40.5 ${bn}` })).toBeTruthy();
+    expect(screen.getByText(`38.5 ${bn}`)).toBeTruthy();
+    expect(screen.getAllByText(`40.5 ${bn}`)).toHaveLength(2); // pie centre and total budget
+    expect(screen.getByText(`2.0 ${bn}`)).toBeTruthy(); // new debt
 
     expect(titles(container)).toEqual([
-      `${category(0)}: 30.0 bn (77.9%)`,
-      `${category(8)}: 8.5 bn (22.1%)`,
-      `${category(1)}: 40.0 bn (98.9%)`,
-      `${category(2)}: 450 M (1.1%)`,
-      `${category(7)}: 12 K (0.0%)`,
+      `${category(0)}: 30.0 ${bn} (77.9%)`,
+      `${category(8)}: 8.5 ${bn} (22.1%)`,
+      `${category(1)}: 40.0 ${bn} (98.9%)`,
+      `${category(2)}: 450 ${m} (1.1%)`,
+      `${category(7)}: 12 ${k} (0.0%)`,
       `${category(3)}: 500 (0.0%)`,
     ]);
   });
 
   it.each(['en', 'de', 'tr', 'ar'])('district view in %s', async (lang) => {
     await i18n.changeLanguage(lang);
+    const { m } = SCALE[lang]!;
     const { container } = render(<BudgetStrip />);
     fireEvent.click(screen.getByRole('tab', { name: i18n.t('panel.budget.districts') }));
 
-    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: 2 M` })).toBeTruthy();
+    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: 2 ${m}` })).toBeTruthy();
     expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: 999` })).toBeTruthy();
     expect(titles(container)).toEqual([
-      `${category(1)}: 2 M (100%)`,
+      `${category(1)}: 2 ${m} (100%)`,
       `${category(2)}: 999 (100%)`,
     ]);
   });

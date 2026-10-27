@@ -5,7 +5,8 @@
  * Digits come from two places. Counts are grouped in the UI language
  * (`formatCount`), so pass `i18n.language`, never `undefined`. Everything
  * else goes through `formatDecimal`, which keeps Latin digits and a point in
- * every language: percentages, shortened amounts and readings.
+ * every language: percentages, shortened amounts and readings. A shortened
+ * amount's scale word follows the UI language (`formatCompactAmount`).
  */
 
 /** A count grouped the way the UI language groups it: "3,850,809", "3.850.809". */
@@ -48,14 +49,15 @@ export function formatSignedPercent(n: number, fractionDigits?: number, options:
 }
 
 /**
- * A large amount shortened with an English scale word: "38.5 bn", "450 M",
- * "12 K", or as it comes below a thousand. Billions keep one decimal.
+ * A large amount shortened with the scale word of the UI language, looked up
+ * with `t` under `number.scale.*`: "38.5 bn", "450 Mio.", "12 bin", or as it
+ * comes below a thousand. Billions keep one decimal.
  */
-export function formatCompactAmount(amount: number): string {
+export function formatCompactAmount(amount: number, t: (key: string) => string): string {
   const abs = Math.abs(amount);
-  if (abs >= 1_000_000_000) return withUnit(formatDecimal(amount / 1_000_000_000, 1), 'bn');
-  if (abs >= 1_000_000) return withUnit(formatDecimal(amount / 1_000_000, 0), 'M');
-  if (abs >= 1_000) return withUnit(formatDecimal(amount / 1_000, 0), 'K');
+  if (abs >= 1_000_000_000) return withUnit(formatDecimal(amount / 1_000_000_000, 1), t('number.scale.billion'));
+  if (abs >= 1_000_000) return withUnit(formatDecimal(amount / 1_000_000, 0), t('number.scale.million'));
+  if (abs >= 1_000) return withUnit(formatDecimal(amount / 1_000, 0), t('number.scale.thousand'));
   return formatDecimal(amount);
 }
 

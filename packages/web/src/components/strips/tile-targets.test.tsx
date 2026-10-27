@@ -111,7 +111,7 @@ describe('tile tap targets are at least 24px (WCAG 2.5.8)', () => {
   it('Political: each representative\'s arrow link is a 24px box that keeps the row height', () => {
     render(<PoliticalStrip expanded={false} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Districts' }));
-    const links = screen.getAllByRole('link', { name: '→' });
+    const links = screen.getAllByRole('link', { name: /^Profile of Person \d$/ });
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) expectClasses(link, ['min-w-6', 'min-h-6', '-my-1']);
   });

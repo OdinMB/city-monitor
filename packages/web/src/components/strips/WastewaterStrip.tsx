@@ -176,7 +176,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
                 )}
               </div>
             </div>
-            <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={p.sampleDate ?? data.sampleDate} label={`${pathogenLabel(p.name, t)} trend`} locale={locale} />
+            <Sparkline data={p.history} color={SPARKLINE_STROKES[p.level]} sampleDate={p.sampleDate ?? data.sampleDate} label={t('panel.wastewater.trendLabel', { pathogen: pathogenLabel(p.name, t) })} locale={locale} />
           </div>
         ))}
       </div>

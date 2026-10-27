@@ -104,7 +104,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
           </div>
           <div className="flex flex-col items-center">
             <div className="text-3xl leading-tight">{weatherInfo.icon}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{weatherInfo.label}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t(weatherInfo.labelKey)}</div>
           </div>
         </div>
 

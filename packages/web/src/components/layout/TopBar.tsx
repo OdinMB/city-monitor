@@ -26,6 +26,7 @@ export function TopBar() {
   const temp = current ? Math.round(current.temp) : null;
   const aqi = airQuality?.current ? Math.round(airQuality.current.europeanAqi) : null;
   const aqiLevelText = aqiLevel ? t(`panel.airQuality.level.${aqiLevel.label}`) : '';
+  const aqiName = t('panel.airQuality.aqi');
 
   return (
     <header className="relative flex items-center justify-between px-4 py-1.5 border-b border-border bg-surface-1">
@@ -74,14 +75,14 @@ export function TopBar() {
                 ref={ref as React.Ref<HTMLButtonElement>}
                 {...props}
                 className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                aria-label={`${t('panel.airQuality.title')}: ${aqi} AQI, ${aqiLevelText}`}
+                aria-label={`${t('panel.airQuality.title')}: ${aqi} ${aqiName}, ${aqiLevelText}`}
               >
                 <span className="font-semibold" style={{ color: aqiLevel.color }}>
                   {aqi}
                 </span>
                 {' '}
                 <span className="text-gray-500 dark:text-gray-400">
-                  AQI · {aqiLevelText}
+                  {aqiName} · {aqiLevelText}
                 </span>
               </button>
             )}

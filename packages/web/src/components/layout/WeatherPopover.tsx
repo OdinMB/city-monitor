@@ -22,7 +22,7 @@ export function WeatherPopover() {
   const alerts = data?.alerts ?? [];
 
   if (!current) {
-    return <div className="p-4 text-sm text-gray-400 text-center">No weather data</div>;
+    return <div className="p-4 text-sm text-gray-400 text-center">{t('panel.weather.empty')}</div>;
   }
 
   const weatherInfo = getWeatherInfo(current.weatherCode);
@@ -59,14 +59,14 @@ export function WeatherPopover() {
         </div>
         <div className="text-right">
           <div className="text-2xl">{weatherInfo.icon}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">{weatherInfo.label}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t(weatherInfo.labelKey)}</div>
         </div>
       </div>
 
       <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400 mb-4 flex-wrap">
         <span>{t('panel.weather.humidity')} {current.humidity}%</span>
         <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
-        {current.precipitation > 0 && <span>Precip {current.precipitation} mm</span>}
+        {current.precipitation > 0 && <span>{t('panel.weather.precip')} {current.precipitation} mm</span>}
         <UvIndexToday forecast={data?.dwdUv} />
       </div>
 

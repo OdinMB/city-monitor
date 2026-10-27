@@ -80,3 +80,22 @@ describe('WeatherStrip UV index', () => {
     expect(screen.queryByText(/UV/)).toBeNull();
   });
 });
+
+describe('WeatherStrip condition', () => {
+  afterEach(async () => {
+    cleanup();
+    await i18n.changeLanguage('en');
+  });
+
+  it.each([
+    ['en', 'Mainly clear'],
+    ['de', 'Überwiegend klar'],
+    ['tr', 'Az bulutlu'],
+    ['ar', 'صحو غالباً'],
+  ])('names the current condition in the reader\'s language (%s)', async (lang, name) => {
+    await i18n.changeLanguage(lang);
+    weather = weatherWith();
+    render(<WeatherStrip expanded={false} />);
+    expect(screen.getByText(name)).toBeTruthy();
+  });
+});
