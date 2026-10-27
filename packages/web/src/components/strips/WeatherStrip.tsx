@@ -7,7 +7,9 @@ import { staleAfter } from '../../lib/freshness.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getUvLevel } from '../../lib/uv-levels.js';
 import { formatDayName } from '../../lib/format-day-name.js';
+import { formatDecimal, formatDegrees, formatPercent, withUnit } from '../../lib/format-value.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { SourceText } from '../SourceText.js';
 import { UvIndexToday } from '../UvIndexToday.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -86,7 +88,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
                 key={i}
                 className="p-2 rounded text-xs bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200"
               >
-                <span className="font-semibold">{alert.headline}</span>
+                <SourceText className="font-semibold">{alert.headline}</SourceText>
               </div>
             ))}
           </div>
@@ -96,10 +98,10 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
         <div className="flex items-center justify-center gap-4">
           <div className="flex flex-col items-center">
             <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
-              {Math.round(current.temp)}°
+              {formatDegrees(Math.round(current.temp))}
             </div>
             <div className="text-xs text-muted mt-1">
-              {t('panel.weather.feelsLike')} {Math.round(current.feelsLike)}°
+              {t('panel.weather.feelsLike')} {formatDegrees(Math.round(current.feelsLike))}
             </div>
           </div>
           <div className="flex flex-col items-center">
@@ -109,9 +111,9 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
         </div>
 
         <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-muted mt-2">
-          <span>{t('panel.weather.humidity')} {current.humidity}%</span>
-          <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
-          {current.precipitation > 0 && <span>{current.precipitation} mm</span>}
+          <span>{t('panel.weather.humidity')} {formatPercent(current.humidity)}</span>
+          <span>{t('panel.weather.wind')} {withUnit(formatDecimal(Math.round(current.windSpeed)), 'km/h')}</span>
+          {current.precipitation > 0 && <span>{withUnit(formatDecimal(current.precipitation), 'mm')}</span>}
           <UvIndexToday forecast={data?.dwdUv} />
         </div>
       </div>
@@ -129,7 +131,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
                     <div key={h.time} className="shrink-0 text-center text-xs">
                       <div className="text-muted">{hour}</div>
                       <div className="text-xl my-0.5">{info.icon}</div>
-                      <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(h.temp)}°</div>
+                      <div className="text-gray-900 dark:text-gray-100 font-medium">{formatDegrees(Math.round(h.temp))}</div>
                       {h.uvIndex != null && h.uvIndex > 0 && (
                         <div className="mt-0.5" style={{ color: getUvLevel(h.uvIndex).color }}>
                           {Math.round(h.uvIndex)}
@@ -152,10 +154,10 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
                     <div key={d.date} className="shrink-0 text-center text-xs">
                       <div className="text-muted mb-0.5">{dayName}</div>
                       <div className="text-2xl my-0.5">{info.icon}</div>
-                      <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(d.high)}°</div>
-                      <div className="text-muted">{Math.round(d.low)}°</div>
+                      <div className="text-gray-900 dark:text-gray-100 font-medium">{formatDegrees(Math.round(d.high))}</div>
+                      <div className="text-muted">{formatDegrees(Math.round(d.low))}</div>
                       {d.precip > 0 && (
-                        <div className="text-blue-500 mt-0.5">{d.precip}mm</div>
+                        <div className="text-blue-500 mt-0.5">{withUnit(formatDecimal(d.precip), 'mm', { attached: true })}</div>
                       )}
                       {d.uvIndexMax != null && d.uvIndexMax > 0 && (
                         <div className="mt-0.5" style={{ color: getUvLevel(d.uvIndexMax).color }}>

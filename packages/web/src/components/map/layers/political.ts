@@ -12,6 +12,7 @@ import { safeUrl } from '../../../lib/safe-url.js';
 import { forwardArrow } from '../../../lib/bidi.js';
 import { registerPoliticalIcons, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
+import { sourceText } from '../popups.js';
 
 /** A spaced dash joins the areas a constituency covers
  *  ("Hamburg-Bergedorf – Harburg"); hyphens inside a name have no spaces. */
@@ -284,28 +285,28 @@ export function sortRepsByPartyMajority(reps: PoliticalDistrict['representatives
 
 /**
  * Popup markup for a district's representatives. Names, parties, roles and
- * links come from the API and the words from the current UI language; all of
- * it is escaped (see `escapeHtml`).
+ * links come from the API, in German (`sourceText`), and the words from the
+ * current UI language; all of it is escaped (see `escapeHtml`).
  */
 export function buildPoliticalPopupHtml(districtName: string, districts: PoliticalDistrict[]): string {
   const match = findPoliticalDistrict(districtName, districts);
   if (!match || match.representatives.length === 0) {
-    return `<div style="font-size:13px"><strong>${escapeHtml(districtName)}</strong><br><em>${escapeHtml(i18n.t('panel.political.empty'))}</em></div>`;
+    return `<div style="font-size:13px"><strong>${sourceText(districtName)}</strong><br><em>${escapeHtml(i18n.t('panel.political.empty'))}</em></div>`;
   }
 
   const profileLabel = `${escapeHtml(i18n.t('mapPopup.profile'))} ${forwardArrow()}`;
   const sorted = sortRepsByPartyMajority(match.representatives);
 
   const parts = [`<div style="font-size:13px;max-height:400px;overflow-y:auto">`];
-  parts.push(`<div style="font-weight:600;margin-bottom:6px">${escapeHtml(districtName)}</div>`);
+  parts.push(`<div style="font-weight:600;margin-bottom:6px">${sourceText(districtName)}</div>`);
 
   for (const rep of sorted) {
     const color = getPartyColor(rep.party);
     const profileUrl = safeUrl(rep.profileUrl);
     parts.push(
       `<div style="border-inline-start:3px solid ${color};padding-inline-start:8px;margin-bottom:6px">` +
-      `<strong>${escapeHtml(rep.name)}</strong> <span style="opacity:0.6;font-size:11px">${escapeHtml(rep.party)}</span><br>` +
-      `<span style="font-size:11px;opacity:0.7">${escapeHtml(rep.role)}${rep.constituency ? ` — ${escapeHtml(rep.constituency)}` : ''}</span>` +
+      `<strong>${sourceText(rep.name)}</strong> <span style="opacity:0.6;font-size:11px">${sourceText(rep.party)}</span><br>` +
+      `<span style="font-size:11px;opacity:0.7">${sourceText(rep.role)}${rep.constituency ? ` — ${sourceText(rep.constituency)}` : ''}</span>` +
       (profileUrl ? `<br><a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">${profileLabel}</a>` : '') +
       `</div>`,
     );

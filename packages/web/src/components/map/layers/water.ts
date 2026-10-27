@@ -8,7 +8,7 @@ import { Droplets } from 'lucide';
 import type { WaterLevelStation, BathingSpot } from '../../../lib/api.js';
 import { WATER_STATE_COLORS, BATHING_QUALITY_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
-import { registerPopupHandlers, ltr } from '../popups.js';
+import { registerPopupHandlers, ltr, sourceText } from '../popups.js';
 
 function waterLevelsToGeoJSON(stations: WaterLevelStation[]): GeoJSON.FeatureCollection {
   return {
@@ -76,8 +76,9 @@ export function updateWaterLevelMarkers(map: maplibregl.Map, stations: WaterLeve
 
 /**
  * Popup markup for a river gauge, from its feature properties. Station and
- * water names come from PEGELONLINE and the words from the current UI language
- * (the same as the water-level tile); all of it is escaped (see `escapeHtml`).
+ * water names come from PEGELONLINE, in German (`sourceText`), and the words
+ * from the current UI language (the same as the water-level tile); all of it
+ * is escaped (see `escapeHtml`).
  */
 export function waterLevelPopupHtml(props: Record<string, unknown>): string {
   const state = String(props.state ?? 'unknown');
@@ -88,8 +89,8 @@ export function waterLevelPopupHtml(props: Record<string, unknown>): string {
     ? ` (${escapeHtml(i18n.t('panel.waterLevels.tidal'))})`
     : '';
   return `<div style="font-size:13px;max-width:240px">
-      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.name)}</div>
-      <div style="font-size:12px;opacity:0.7">${escapeHtml(props.waterBody)}${tidal}</div>
+      <div style="font-weight:600;margin-bottom:4px">${sourceText(props.name)}</div>
+      <div style="font-size:12px;opacity:0.7">${sourceText(props.waterBody)}${tidal}</div>
       <div style="font-size:12px;margin-top:4px">${escapeHtml(i18n.t('panel.waterLevels.level'))}: <strong style="color:${stateColor}">${ltr(`${escapeHtml(props.currentLevel)} cm`)}</strong></div>
       <div style="font-size:11px;margin-top:2px;color:${stateColor}">${escapeHtml(stateLabel)}</div>
     </div>`;
@@ -161,8 +162,8 @@ export function updateBathingMarkers(map: maplibregl.Map, spots: BathingSpot[], 
 
 /**
  * Popup markup for a bathing spot, from its feature properties. Names, algae
- * and advisory notes come from LAGeSo (in German) and the words from the
- * current UI language; all of it is escaped (see `escapeHtml`).
+ * and advisory notes come from LAGeSo, in German (`sourceText`), and the words
+ * from the current UI language; all of it is escaped (see `escapeHtml`).
  */
 export function bathingPopupHtml(props: Record<string, unknown>): string {
   const t = (key: string, opts?: Record<string, unknown>) => escapeHtml(i18n.t(key, opts));
@@ -177,9 +178,9 @@ export function bathingPopupHtml(props: Record<string, unknown>): string {
   const visLine = props.visibility != null && props.visibility !== 'null'
     ? `<div style="font-size:12px">${t('mapPopup.bathing.visibility')}: ${ltr(`${escapeHtml(String(props.visibility))}m`)}</div>` : '';
   const algaeLine = props.algae && props.algae !== 'null'
-    ? `<div style="font-size:11px;color:#d97706;margin-top:4px">⚠ ${escapeHtml(String(props.algae))}</div>` : '';
+    ? `<div style="font-size:11px;color:#d97706;margin-top:4px">⚠ ${sourceText(props.algae)}</div>` : '';
   const advisoryLine = props.advisory && props.advisory !== 'null'
-    ? `<div style="font-size:11px;opacity:0.7;margin-top:2px">${escapeHtml(String(props.advisory))}</div>` : '';
+    ? `<div style="font-size:11px;opacity:0.7;margin-top:2px">${sourceText(props.advisory)}</div>` : '';
   const detailUrl = String(props.detailUrl ?? '');
   const detailLink = detailUrl.startsWith('https://')
     ? `<a href="${escapeHtml(detailUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">${t('mapPopup.details')} (LAGeSo) ↗</a>`
@@ -189,9 +190,9 @@ export function bathingPopupHtml(props: Record<string, unknown>): string {
   const euClass = props.classification && props.classification !== 'null'
     ? ` <span style="font-size:11px;opacity:0.6">(${t('mapPopup.bathing.euClass', { value: String(props.classification) })})</span>` : '';
   return `<div style="font-size:13px;max-width:300px">
-      <div style="font-weight:600;margin-bottom:2px">${escapeHtml(String(props.name))}${seasonBadge}</div>
+      <div style="font-weight:600;margin-bottom:2px">${sourceText(props.name)}${seasonBadge}</div>
       ${measuredDate}
-      <div style="font-size:12px;opacity:0.7">${escapeHtml(String(props.waterBody))} · ${escapeHtml(String(props.district))}</div>
+      <div style="font-size:12px;opacity:0.7">${sourceText(props.waterBody)} · ${sourceText(props.district)}</div>
       <div style="font-size:12px;margin-top:4px">${t('mapPopup.bathing.quality')}: <strong style="color:${qColor}">${escapeHtml(qLabel)}</strong>${euClass}</div>
       ${tempLine}${visLine}${algaeLine}${advisoryLine}
       ${detailLink}

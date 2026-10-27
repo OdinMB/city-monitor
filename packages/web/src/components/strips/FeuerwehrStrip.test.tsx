@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { FeuerwehrMonthData, FeuerwehrSummary } from '../../lib/api.js';
+import { isolate } from '../../lib/bidi.js';
 import { FeuerwehrStrip } from './FeuerwehrStrip.js';
 
 function month(reportMonth: string, missionCountAll: number, ems: number, fire: number): FeuerwehrMonthData {
@@ -46,13 +47,14 @@ const count = (n: number, lang: string) => n.toLocaleString(lang);
 
 /**
  * Mission counts are grouped in the UI language; response times read m:ss and
- * the month-on-month change keeps a point, in every language.
+ * the month-on-month change keeps a point, in every language. The change is
+ * one isolated run, so in Arabic its sign and % stay on their sides ("-3.4%").
  */
 describe.each([false, true])('FeuerwehrStrip numbers (expanded: %s)', (expanded) => {
   it.each(['en', 'de', 'tr', 'ar'])('%s', async (lang) => {
     await i18n.changeLanguage(lang);
     render(<FeuerwehrStrip expanded={expanded} />);
-    for (const text of [count(34_567, lang), count(12_345, lang), '7:32', '7:20', '1:01', '1:15', '+15%', '-3.4%', '0.0%']) {
+    for (const text of [count(34_567, lang), count(12_345, lang), '7:32', '7:20', '1:01', '1:15', isolate('+15%'), isolate('-3.4%'), isolate('0.0%')]) {
       expect(screen.getByText(text)).toBeTruthy();
     }
   });

@@ -6,9 +6,11 @@ import { useTabKeys } from '../../hooks/useTabKeys.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { formatRelativeTimeI18n } from '../../lib/format-time.js';
+import { formatPercent } from '../../lib/format-value.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { sourceFaviconUrl } from '../../lib/news-favicons.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { NewsItem } from '../../lib/api.js';
@@ -144,7 +146,7 @@ function ImportanceScore({ percent }: { percent: number }) {
       title={label}
       className="text-[10px] text-muted"
     >
-      {percent}%
+      {formatPercent(percent)}
     </span>
   );
 }
@@ -157,17 +159,17 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
   return (
     <li className="py-2 first:pt-0 last:pb-0">
       <a href={safeUrl(item.url)} target="_blank" rel="noopener noreferrer" className="block group">
-        {/* dir="auto": the feed's German headline keeps its word order in
-            Arabic, and line-clamp cuts it at its end. */}
-        <span dir="auto" className="text-sm text-gray-900 dark:text-gray-100 group-hover:text-[var(--accent)] transition-colors line-clamp-2 sm:line-clamp-1">
+        {/* The feed's German headline keeps its word order in Arabic, and
+            line-clamp cuts it at its end. */}
+        <SourceText as="span" className="text-sm text-gray-900 dark:text-gray-100 group-hover:text-[var(--accent)] transition-colors line-clamp-2 sm:line-clamp-1">
           {item.title}
-        </span>
+        </SourceText>
       </a>
       <div className="flex items-center gap-2 mt-0.5 text-xs text-muted">
         {faviconUrl && (
           <img src={faviconUrl} alt="" width={14} height={14} className="inline-block" loading="lazy" />
         )}
-        <bdi>{item.sourceName}</bdi>
+        <SourceText>{item.sourceName}</SourceText>
         <span className={`px-1.5 py-0.5 rounded text-[10px] ${colorClass}`}>
           {t(`category.${item.category}`, item.category)}
         </span>

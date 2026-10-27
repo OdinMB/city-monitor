@@ -5,6 +5,7 @@ import { useWeather } from '../../hooks/useWeather.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getAqiLevel } from '../../lib/aqi.js';
+import { formatDegrees } from '../../lib/format-value.js';
 import { Popover } from './Popover.js';
 import { WeatherPopover } from './WeatherPopover.js';
 import { AqiTooltip } from './AqiTooltip.js';
@@ -58,7 +59,7 @@ export function TopBar() {
                 className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 aria-label={`${t('panel.weather.title')}: ${temp}°`}
               >
-                {weatherInfo.icon} {temp}°
+                {weatherInfo.icon} {formatDegrees(temp!)}
               </button>
             )}
             className="max-h-[80vh] overflow-y-auto bg-surface-1 border border-border rounded-lg shadow-lg"

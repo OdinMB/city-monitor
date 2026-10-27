@@ -7,7 +7,7 @@ import i18n from 'i18next';
 import type { SocialAtlasFeatureProps, PopulationFeatureProps } from '../../../lib/api.js';
 import { SOCIAL_ATLAS_COLOR_RAMPS, POPULATION_COLOR_RAMPS, type SocialAtlasMetric, type PopulationMetric } from '../constants.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
-import { showMapPopup, scheduleHoverClose, ltr, type MapLayerEvent } from '../popups.js';
+import { showMapPopup, scheduleHoverClose, ltr, sourceText, type MapLayerEvent } from '../popups.js';
 
 /**
  * One label/value row of a choropleth popup; the label is a translation key.
@@ -19,12 +19,12 @@ function row(labelKey: string, value: string): string {
 
 /**
  * Popup markup for a social-atlas planning area. The area name comes from the
- * MSS WFS and the labels from the current UI language; all of it is escaped
- * (see `escapeHtml`).
+ * MSS WFS, in German (`sourceText`), and the labels from the current UI
+ * language; all of it is escaped (see `escapeHtml`).
  */
 export function socialAtlasPopupHtml(p: SocialAtlasFeatureProps): string {
   return `<div style="font-size:13px;max-width:300px">
-      <div style="font-weight:600;margin-bottom:6px">${escapeHtml(p.plrName)}</div>
+      <div style="font-weight:600;margin-bottom:6px">${sourceText(p.plrName)}</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         ${row('mapPopup.socialAtlas.unemployment', `${p.unemployment?.toFixed(1) ?? '–'}%`)}
         ${row('mapPopup.socialAtlas.singleParent', `${p.singleParent?.toFixed(1) ?? '–'}%`)}
@@ -42,7 +42,7 @@ export function socialAtlasPopupHtml(p: SocialAtlasFeatureProps): string {
 export function populationPopupHtml(p: PopulationFeatureProps): string {
   const locale = i18n.language;
   return `<div style="font-size:13px;max-width:300px">
-      <div style="font-weight:600;margin-bottom:6px">${escapeHtml(p.plrName)}</div>
+      <div style="font-weight:600;margin-bottom:6px">${sourceText(p.plrName)}</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         ${row('panel.population.title', p.population?.toLocaleString(locale) ?? '–')}
         ${row('panel.population.densityLabel', `${p.density?.toLocaleString(locale) ?? '–'}/km²`)}

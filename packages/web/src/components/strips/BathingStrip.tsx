@@ -4,7 +4,9 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBathing } from '../../hooks/useBathing.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
+import { formatDecimal, withUnit } from '../../lib/format-value.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { BathingSpot } from '../../lib/api.js';
@@ -26,22 +28,24 @@ const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: s
       {/* Quality dot */}
       <div className={`shrink-0 w-2.5 h-2.5 rounded-full ${color.fill}`} />
 
-      {/* Name + water body. dir="auto": the German names run in their own
-          direction in Arabic, so truncate cuts them at their end, and the
-          temperature's ms-1.5 follows that direction too, landing between the
-          water body and the temperature rather than outside them. Each line is
-          only as wide as its text, so it stays next to the quality dot. */}
+      {/* Name + water body. The German names run in their own direction in
+          Arabic, so truncate cuts them at their end, and the temperature's
+          ms-1.5 follows that direction too, landing between the water body
+          and the temperature rather than outside them. Each line is only as
+          wide as its text, so it stays next to the quality dot. */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span dir="auto" className="text-sm text-gray-900 dark:text-gray-100 truncate">
+          <SourceText as="span" className="text-sm text-gray-900 dark:text-gray-100 truncate">
             {spot.name}
-          </span>
+          </SourceText>
         </div>
         <div className="flex text-[11px] text-muted">
-          <span dir="auto" className="truncate">
+          <SourceText as="span" className="truncate">
             {spot.waterBody}
-            {spot.waterTemp != null && <span className="ms-1.5">{spot.waterTemp}°C</span>}
-          </span>
+            {spot.waterTemp != null && (
+              <span className="ms-1.5">{withUnit(formatDecimal(spot.waterTemp), '°C', { attached: true })}</span>
+            )}
+          </SourceText>
         </div>
       </div>
 

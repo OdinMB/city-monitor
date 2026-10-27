@@ -6,6 +6,7 @@ import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { CouncilMeeting } from '../../lib/api.js';
@@ -68,16 +69,16 @@ function MeetingRow({ meeting, t, locale }: { meeting: CouncilMeeting; t: (key: 
               {formatTime(meeting.start, locale)}
             </span>
           </div>
-          {/* dir="auto": the German committee and room keep their own direction
-              in Arabic, so a clamped or truncated line is cut at its end. */}
-          <p dir="auto" className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-0.5 line-clamp-2">
+          {/* The German committee and room keep their own direction in Arabic,
+              so a clamped or truncated line is cut at its end. */}
+          <SourceText as="p" className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-0.5 line-clamp-2">
             {meeting.committee}
-          </p>
+          </SourceText>
           {meeting.district && (
-            <p className="text-xs text-muted"><bdi>{meeting.district}</bdi></p>
+            <p className="text-xs text-muted"><SourceText>{meeting.district}</SourceText></p>
           )}
           {meeting.location && (
-            <p dir="auto" className="text-xs text-muted truncate">{meeting.location}</p>
+            <SourceText as="p" className="text-xs text-muted truncate">{meeting.location}</SourceText>
           )}
         </div>
         {meeting.webUrl && (

@@ -97,7 +97,7 @@ function PieChart({
           /* Single-slice case: full circle (SVG arc can't draw 360°) */
           <>
             <circle cx={cx} cy={cy} r={r} fill={slices[0]!.color} opacity={0.85}>
-              <title>{t(`panel.budget.category.${slices[0]!.code}`)}: {formatCompactAmount(slices[0]!.amount, t)} (100%)</title>
+              <title>{t(`panel.budget.category.${slices[0]!.code}`)}: {formatCompactAmount(slices[0]!.amount, t)} ({formatPercent(100)})</title>
             </circle>
             <circle cx={cx} cy={cy} r={innerR} className="fill-white dark:fill-gray-900" />
           </>

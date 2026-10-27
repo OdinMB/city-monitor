@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { getAqiLevel } from '../../lib/aqi.js';
+import { formatDecimal, withUnit } from '../../lib/format-value.js';
 
 export function AqiTooltip() {
   const { id: cityId } = useCityConfig();
@@ -44,7 +45,7 @@ function PollutantRow({ label, value, unit }: { label: string; value: number; un
   return (
     <div className="flex justify-between text-gray-600 dark:text-gray-400">
       <span>{label}</span>
-      <span>{value.toFixed(1)} {unit}</span>
+      <span>{withUnit(formatDecimal(value, 1), unit)}</span>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { WastewaterPathogen, WastewaterSummary } from '../../lib/api.js';
+import { isolate } from '../../lib/bidi.js';
 import { WastewaterStrip } from './WastewaterStrip.js';
 
 const SUMMARY: WastewaterSummary = {
@@ -116,12 +117,13 @@ describe('WastewaterStrip readings', () => {
     await i18n.changeLanguage('en');
   });
 
-  // Shortened with one decimal and a point in every language, then the unit.
+  // Shortened with one decimal and a point in every language, then the unit,
+  // in one isolated run so the unit stays after the number in Arabic.
   it.each(['en', 'de', 'tr', 'ar'])('expanded tile in %s', async (lang) => {
     await i18n.changeLanguage(lang);
     render(<WastewaterStrip expanded />);
     for (const text of ['1.5M gc/L', '1.2k gc/L', '500 gc/L', '0 gc/L']) {
-      expect(screen.getByText(text)).toBeTruthy();
+      expect(screen.getByText(isolate(text))).toBeTruthy();
     }
   });
 });

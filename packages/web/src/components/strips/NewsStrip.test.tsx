@@ -6,6 +6,7 @@ import i18n from 'i18next';
 import type { ReactNode } from 'react';
 import type { ApiResponse, NewsDigest, NewsItem } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
+import { isolate } from '../../lib/bidi.js';
 import { NewsStrip } from './NewsStrip.js';
 import { AI_COPY_LANGS, APPROVED_AI_COPY } from '../../test-fixtures/approved-ai-copy.js';
 
@@ -61,7 +62,8 @@ describe('NewsStrip AI disclosures', () => {
     render(<NewsStrip />, { wrapper: createWrapper([ITEM]) });
     const score = screen.getByRole('meter', { name: APPROVED_AI_COPY[lang].importanceScore });
     expect(score.getAttribute('title')).toBe(APPROVED_AI_COPY[lang].importanceScore);
-    expect(score.textContent).toBe('87%');
+    // Shown as one isolated run, so the % stays after the number in Arabic.
+    expect(score.textContent).toBe(isolate('87%'));
     expect(score.getAttribute('aria-valuenow')).toBe('87');
     expect(score.getAttribute('aria-valuetext')).toBe('87%');
   });

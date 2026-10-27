@@ -6,7 +6,7 @@ import * as maplibregl from 'maplibre-gl';
 import i18n from 'i18next';
 import type { EmergencyPharmacy, AedLocation } from '../../../lib/api.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
-import { registerPopupHandlers, ltr } from '../popups.js';
+import { registerPopupHandlers, ltr, sourceText } from '../popups.js';
 
 /**
  * Format a "2026-03-03T09:00:00" range as e.g. "Today 09:00 – Tomorrow 09:00"
@@ -40,14 +40,15 @@ function directionsLink([lon, lat]: [number, number]): string {
 
 /**
  * Popup markup for an emergency pharmacy at `coords`, from its feature
- * properties. Name, address and phone come from the pharmacy feed and the
- * words from the current UI language; all of it is escaped (see `escapeHtml`).
+ * properties. Name, address and phone come from the pharmacy feed (name and
+ * address in German, `sourceText`) and the words from the current UI
+ * language; all of it is escaped (see `escapeHtml`).
  */
 export function pharmacyPopupHtml(props: Record<string, unknown>, coords: [number, number]): string {
   const dutyLabel = formatPharmacyDuty(String(props.validFrom ?? ''), String(props.validUntil ?? ''));
   return `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.name)}</div>
-      <div style="font-size:12px">${escapeHtml(props.address)}</div>
+      <div style="font-weight:600;margin-bottom:4px">${sourceText(props.name)}</div>
+      <div style="font-size:12px">${sourceText(props.address)}</div>
       ${props.phone ? `<div style="font-size:12px;margin-top:2px">${escapeHtml(i18n.t('mapPopup.phone'))}: ${ltr(escapeHtml(props.phone))}</div>` : ''}
       <div style="font-size:11px;opacity:0.6;margin-top:4px">${escapeHtml(dutyLabel)}</div>
       ${directionsLink(coords)}
@@ -62,8 +63,9 @@ const AED_ACCESS_KEYS = new Map([
 
 /**
  * Popup markup for a defibrillator at `coords`, from its feature properties.
- * Description, operator and hours come from OpenStreetMap and the words from
- * the current UI language; all of it is escaped (see `escapeHtml`).
+ * Description, operator and hours come from OpenStreetMap, mostly in German
+ * (`sourceText`), and the words from the current UI language; all of it is
+ * escaped (see `escapeHtml`).
  */
 export function aedPopupHtml(props: Record<string, unknown>, coords: [number, number]): string {
   const t = (key: string) => escapeHtml(i18n.t(key));
@@ -78,9 +80,9 @@ export function aedPopupHtml(props: Record<string, unknown>, coords: [number, nu
   const accessLabel = access ? `<div style="font-size:11px;opacity:0.6">${t('mapPopup.aed.access')}: ${escapeHtml(accessText)}</div>` : '';
   return `<div style="font-size:13px;max-width:280px">
       <div style="font-weight:600;margin-bottom:4px">${t('mapPopup.aed.title')}${indoorBadge}</div>
-      ${props.description ? `<div style="font-size:12px">${escapeHtml(props.description)}</div>` : ''}
-      ${props.operator ? `<div style="font-size:12px;margin-top:2px">${escapeHtml(props.operator)}</div>` : ''}
-      ${props.openingHours ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${escapeHtml(props.openingHours)}</div>` : ''}
+      ${props.description ? `<div style="font-size:12px">${sourceText(props.description)}</div>` : ''}
+      ${props.operator ? `<div style="font-size:12px;margin-top:2px">${sourceText(props.operator)}</div>` : ''}
+      ${props.openingHours ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${sourceText(props.openingHours)}</div>` : ''}
       ${accessLabel}
       ${directionsLink(coords)}
     </div>`;

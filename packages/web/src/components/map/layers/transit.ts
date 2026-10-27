@@ -8,7 +8,7 @@ import { TrainFront } from 'lucide';
 import type { TransitAlert } from '../../../lib/api.js';
 import { SEVERITY_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
-import { registerPopupHandlers, type PopupContentFn } from '../popups.js';
+import { registerPopupHandlers, sourceText, type PopupContentFn } from '../popups.js';
 
 interface StationGroup {
   station: string;
@@ -74,8 +74,9 @@ function alertsToGeoJSON(alerts: TransitAlert[]): GeoJSON.FeatureCollection {
 
 /**
  * Popup markup for a station's transit alerts, from its feature properties.
- * Station, line and detail text come from the transit feed and the alert type
- * from the current UI language; all of it is escaped (see `escapeHtml`).
+ * Station, line and detail text come from the transit feed, in German
+ * (`sourceText`), and the alert type from the current UI language; all of it
+ * is escaped (see `escapeHtml`).
  */
 export function transitPopupHtml(props: Record<string, unknown>): string {
   const alertsRaw = props.alertsJson as string;
@@ -88,15 +89,15 @@ export function transitPopupHtml(props: Record<string, unknown>): string {
 
   const station = props.station as string;
   const parts = [`<div style="font-size:13px;max-height:240px;overflow-y:auto">`];
-  parts.push(`<div style="font-weight:600;margin-bottom:6px">${escapeHtml(station)}</div>`);
+  parts.push(`<div style="font-weight:600;margin-bottom:6px">${sourceText(station)}</div>`);
 
   for (const a of alerts) {
     const sevColor = SEVERITY_COLORS[a.severity] ?? SEVERITY_COLORS.low;
     const typeLabel = i18n.t(`mapPopup.transitType.${a.type}`, a.type.replace('-', ' '));
     parts.push(
       `<div style="border-inline-start:3px solid ${sevColor};padding-inline-start:8px;margin-bottom:8px">` +
-      `<strong>${escapeHtml(a.line)}</strong> <span style="opacity:0.6;font-size:11px">${escapeHtml(typeLabel)}</span><br>` +
-      `<span style="font-size:12px">${escapeHtml(a.detail)}</span>` +
+      `<strong>${sourceText(a.line)}</strong> <span style="opacity:0.6;font-size:11px">${escapeHtml(typeLabel)}</span><br>` +
+      `<span style="font-size:12px">${sourceText(a.detail)}</span>` +
       `</div>`,
     );
   }

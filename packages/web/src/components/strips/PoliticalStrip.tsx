@@ -9,6 +9,7 @@ import { getPartyColor } from '../../lib/party-colors.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { forwardArrow } from '../../lib/bidi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { PoliticalDistrict, Representative } from '../../lib/api.js';
@@ -55,20 +56,20 @@ function flatReps(districts: PoliticalDistrict[]): (Representative & { district:
 
 function RepRow({ rep }: { rep: Representative & { district: string } }) {
   const { t, i18n } = useTranslation();
-  // dir="auto": a German name or district runs left to right inside an Arabic
-  // row, so truncate cuts it at its end rather than its first letters. The
-  // district's ms-auto sits on a wrapper, since a margin-inline-start follows
-  // the direction of the element it is on.
+  // A German name or district runs left to right inside an Arabic row, so
+  // truncate cuts it at its end rather than its first letters. The district's
+  // ms-auto sits on a wrapper, since a margin-inline-start follows the
+  // direction of the element it is on.
   return (
     <div className="flex items-center gap-1.5 py-1 px-1.5 text-[11px]">
       <span
         className="w-2 h-2 rounded-full shrink-0"
         style={{ backgroundColor: getPartyColor(rep.party) }}
       />
-      <span dir="auto" className="text-gray-800 dark:text-gray-200 font-medium truncate">{rep.name}</span>
+      <SourceText as="span" className="text-gray-800 dark:text-gray-200 font-medium truncate">{rep.name}</SourceText>
       <span className="text-muted shrink-0">{rep.party}</span>
       <span className="text-muted hidden @xs:inline ms-auto min-w-0">
-        <span dir="auto" className="block truncate">{rep.district}</span>
+        <SourceText as="span" className="block truncate">{rep.district}</SourceText>
       </span>
       {/* min-w-6 min-h-6: a 24px target around the arrow (WCAG 2.5.8); -my-1
           keeps the row height. */}

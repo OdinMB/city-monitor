@@ -22,10 +22,13 @@ function StatRow({
   accent: string;
   delta: { text: string; color: string } | null;
 }) {
+  // Where the label and the figures don't fit on one line (a long label, a
+  // narrow tile), the figures wrap below it to the row's end instead of
+  // running past the tile's edge, which cut the change off.
   return (
-    <div className="flex items-baseline justify-between gap-2">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
       <span className="text-sm text-muted shrink-0">{label}</span>
-      <div className="flex items-baseline gap-3">
+      <div className="flex items-baseline gap-3 ms-auto">
         {partial && (
           <span className="text-lg tabular-nums text-muted">{partial}</span>
         )}

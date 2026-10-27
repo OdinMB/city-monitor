@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { BudgetSummary } from '../../lib/api.js';
+import { isolate } from '../../lib/bidi.js';
 import { BudgetStrip } from './BudgetStrip.js';
 
 const DATA: BudgetSummary = {
@@ -62,7 +63,11 @@ const SCALE: Record<string, { k: string; m: string; bn: string }> = {
   ar: { k: 'ألف', m: 'مليون', bn: 'مليار' },
 };
 
-/** Amounts are shortened with a point in every language and the scale word of the UI language. */
+/**
+ * Amounts are shortened with a point in every language and the scale word of
+ * the UI language. An amount with its scale word, and a share with its %, is
+ * one isolated run, so in Arabic the % stays after the number.
+ */
 describe('BudgetStrip amounts', () => {
   afterEach(async () => {
     cleanup();
@@ -74,19 +79,19 @@ describe('BudgetStrip amounts', () => {
     const { k, m, bn } = SCALE[lang]!;
     const { container } = render(<BudgetStrip />);
 
-    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.revenues')}: 38.5 ${bn}` })).toBeTruthy();
-    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: 40.5 ${bn}` })).toBeTruthy();
-    expect(screen.getByText(`38.5 ${bn}`)).toBeTruthy();
-    expect(screen.getAllByText(`40.5 ${bn}`)).toHaveLength(2); // pie centre and total budget
-    expect(screen.getByText(`2.0 ${bn}`)).toBeTruthy(); // new debt
+    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.revenues')}: ${isolate(`38.5 ${bn}`)}` })).toBeTruthy();
+    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: ${isolate(`40.5 ${bn}`)}` })).toBeTruthy();
+    expect(screen.getByText(isolate(`38.5 ${bn}`))).toBeTruthy();
+    expect(screen.getAllByText(isolate(`40.5 ${bn}`))).toHaveLength(2); // pie centre and total budget
+    expect(screen.getByText(isolate(`2.0 ${bn}`))).toBeTruthy(); // new debt
 
     expect(titles(container)).toEqual([
-      `${category(0)}: 30.0 ${bn} (77.9%)`,
-      `${category(8)}: 8.5 ${bn} (22.1%)`,
-      `${category(1)}: 40.0 ${bn} (98.9%)`,
-      `${category(2)}: 450 ${m} (1.1%)`,
-      `${category(7)}: 12 ${k} (0.0%)`,
-      `${category(3)}: 500 (0.0%)`,
+      `${category(0)}: ${isolate(`30.0 ${bn}`)} (${isolate('77.9%')})`,
+      `${category(8)}: ${isolate(`8.5 ${bn}`)} (${isolate('22.1%')})`,
+      `${category(1)}: ${isolate(`40.0 ${bn}`)} (${isolate('98.9%')})`,
+      `${category(2)}: ${isolate(`450 ${m}`)} (${isolate('1.1%')})`,
+      `${category(7)}: ${isolate(`12 ${k}`)} (${isolate('0.0%')})`,
+      `${category(3)}: 500 (${isolate('0.0%')})`,
     ]);
   });
 
@@ -96,11 +101,11 @@ describe('BudgetStrip amounts', () => {
     const { container } = render(<BudgetStrip />);
     fireEvent.click(screen.getByRole('tab', { name: i18n.t('panel.budget.districts') }));
 
-    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: 2 ${m}` })).toBeTruthy();
+    expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: ${isolate(`2 ${m}`)}` })).toBeTruthy();
     expect(screen.getByRole('img', { name: `${i18n.t('panel.budget.expenses')}: 999` })).toBeTruthy();
     expect(titles(container)).toEqual([
-      `${category(1)}: 2 ${m} (100%)`,
-      `${category(2)}: 999 (100%)`,
+      `${category(1)}: ${isolate(`2 ${m}`)} (${isolate('100%')})`,
+      `${category(2)}: 999 (${isolate('100%')})`,
     ]);
   });
 });

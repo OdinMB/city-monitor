@@ -10,7 +10,8 @@ import { MAP_NEWS } from '../../../lib/map-settings.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
 import { safeUrl } from '../../../lib/safe-url.js';
 import { forwardArrow } from '../../../lib/bidi.js';
-import { showMapPopup, scheduleHoverClose } from '../popups.js';
+import { formatPercent } from '../../../lib/format-value.js';
+import { showMapPopup, scheduleHoverClose, sourceText } from '../popups.js';
 import {
   _newsSpider, _newsH, _safetySpider, _safetyH,
   cleanupSpiderHandlers, initSpiderState, expandAllSpiderGroups, addSpiderHandler,
@@ -165,13 +166,13 @@ function safetyToGeoJSON(reports: SafetyReport[]): GeoJSON.FeatureCollection {
  * `📍 label · Location estimated by AI` line, or nothing when the item has no
  * place label. The model infers or extracts these places, so the note always
  * travels with the label (see .context/ai-transparency.md). It is looked up
- * when the popup opens, so it follows the current UI language; the label sits
- * in a `<bdi>` so a German street name keeps its direction in an Arabic UI.
+ * when the popup opens, so it follows the current UI language; the label is
+ * source text, so a German street name keeps its direction in an Arabic UI.
  */
 function placeLine(label: unknown): string {
   if (!label) return '';
   const note = i18n.t('aiNotice.locationEstimated');
-  return `<div style="font-size:11px;margin-top:2px">📍 <bdi>${escapeHtml(label)}</bdi> · ${escapeHtml(note)}</div>`;
+  return `<div style="font-size:11px;margin-top:2px">📍 ${sourceText(label)} · ${escapeHtml(note)}</div>`;
 }
 
 /**
@@ -186,14 +187,15 @@ function popupLink(url: unknown, labelKey: string): string {
 /**
  * Popup markup for a news marker, from its feature properties. Title, source
  * and link come from RSS feeds and the place label from the LLM, so every
- * value is escaped (see `escapeHtml`). Feed text sits in a `<bdi>`, so a
- * German headline keeps its word order in an Arabic popup.
+ * value is escaped (see `escapeHtml`). Feed text is source text
+ * (`sourceText`), so a German headline keeps its word order in an Arabic
+ * popup, and the importance score keeps its percent sign after the number.
  */
 export function newsPopupHtml(props: Record<string, unknown>): string {
   const imp = Number(props.importance) || 0;
   return `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px"><bdi>${escapeHtml(props.title)}</bdi></div>
-      <div style="opacity:0.6;font-size:11px"><bdi>${escapeHtml(props.sourceName)}</bdi> · ${escapeHtml(props.categoryLabel)}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
+      <div style="font-weight:600;margin-bottom:4px">${sourceText(props.title)}</div>
+      <div style="opacity:0.6;font-size:11px">${sourceText(props.sourceName)} · ${escapeHtml(props.categoryLabel)}${imp ? ` · ${escapeHtml(formatPercent(Math.round(imp * 100)))}` : ''}</div>
       ${placeLine(props.locationLabel)}
       ${popupLink(props.url, 'mapPopup.readMore')}
     </div>`;
@@ -202,8 +204,8 @@ export function newsPopupHtml(props: Record<string, unknown>): string {
 /** Popup markup for a police-report marker, escaped and isolated like `newsPopupHtml`. */
 export function safetyPopupHtml(props: Record<string, unknown>): string {
   return `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px"><bdi>${escapeHtml(props.title)}</bdi></div>
-      ${props.district ? `<div style="opacity:0.6;font-size:11px"><bdi>${escapeHtml(props.district)}</bdi></div>` : ''}
+      <div style="font-weight:600;margin-bottom:4px">${sourceText(props.title)}</div>
+      ${props.district ? `<div style="opacity:0.6;font-size:11px">${sourceText(props.district)}</div>` : ''}
       ${placeLine(props.locationLabel)}
       ${popupLink(props.url, 'mapPopup.details')}
     </div>`;

@@ -4,7 +4,9 @@ import { useWeather } from '../../hooks/useWeather.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getUvLevel } from '../../lib/uv-levels.js';
 import { formatDayName } from '../../lib/format-day-name.js';
+import { formatDecimal, formatDegrees, formatPercent, withUnit } from '../../lib/format-value.js';
 import { Skeleton } from './Skeleton.js';
+import { SourceText } from '../SourceText.js';
 import { UvIndexToday } from '../UvIndexToday.js';
 
 export function WeatherPopover() {
@@ -41,7 +43,7 @@ export function WeatherPopover() {
               key={i}
               className="p-2 rounded text-sm bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200"
             >
-              <span className="font-semibold">{alert.headline}</span>
+              <SourceText className="font-semibold">{alert.headline}</SourceText>
             </div>
           ))}
         </div>
@@ -51,10 +53,10 @@ export function WeatherPopover() {
       <div className="flex items-start gap-4 mb-4">
         <div>
           <div className="text-4xl font-light text-gray-900 dark:text-gray-100">
-            {Math.round(current.temp * 10) / 10}°
+            {formatDegrees(Math.round(current.temp * 10) / 10)}
           </div>
           <div className="text-xs text-muted mt-1">
-            {t('panel.weather.feelsLike')} {Math.round(current.feelsLike)}°
+            {t('panel.weather.feelsLike')} {formatDegrees(Math.round(current.feelsLike))}
           </div>
         </div>
         <div className="text-end">
@@ -64,9 +66,9 @@ export function WeatherPopover() {
       </div>
 
       <div className="flex gap-3 text-xs text-muted mb-4 flex-wrap">
-        <span>{t('panel.weather.humidity')} {current.humidity}%</span>
-        <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
-        {current.precipitation > 0 && <span>{t('panel.weather.precip')} {current.precipitation} mm</span>}
+        <span>{t('panel.weather.humidity')} {formatPercent(current.humidity)}</span>
+        <span>{t('panel.weather.wind')} {withUnit(formatDecimal(Math.round(current.windSpeed)), 'km/h')}</span>
+        {current.precipitation > 0 && <span>{t('panel.weather.precip')} {withUnit(formatDecimal(current.precipitation), 'mm')}</span>}
         <UvIndexToday forecast={data?.dwdUv} />
       </div>
 
@@ -84,7 +86,7 @@ export function WeatherPopover() {
                 <div key={h.time} className="shrink-0 text-center text-xs">
                   <div className="text-gray-400">{hour}</div>
                   <div>{info.icon}</div>
-                  <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(h.temp)}°</div>
+                  <div className="text-gray-900 dark:text-gray-100 font-medium">{formatDegrees(Math.round(h.temp))}</div>
                   {h.uvIndex != null && h.uvIndex > 0 && (
                     <div className="mt-0.5" style={{ color: getUvLevel(h.uvIndex).color }}>
                       {Math.round(h.uvIndex)}
@@ -113,10 +115,10 @@ export function WeatherPopover() {
                 <div key={d.date} className="shrink-0 text-center text-xs min-w-[3rem]">
                   <div className="text-muted mb-0.5">{dayName}</div>
                   <div>{info.icon}</div>
-                  <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(d.high)}°</div>
-                  <div className="text-gray-400">{Math.round(d.low)}°</div>
+                  <div className="text-gray-900 dark:text-gray-100 font-medium">{formatDegrees(Math.round(d.high))}</div>
+                  <div className="text-gray-400">{formatDegrees(Math.round(d.low))}</div>
                   {d.precip > 0 && (
-                    <div className="text-blue-500 mt-0.5">{d.precip}mm</div>
+                    <div className="text-blue-500 mt-0.5">{withUnit(formatDecimal(d.precip), 'mm', { attached: true })}</div>
                   )}
                 </div>
               );
@@ -132,10 +134,10 @@ export function WeatherPopover() {
                 <div key={d.date} className="flex items-center gap-2 text-sm">
                   <span className="w-12 text-muted text-xs">{dayName}</span>
                   <span>{info.icon}</span>
-                  <span className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(d.high)}°</span>
-                  <span className="text-gray-400">{Math.round(d.low)}°</span>
+                  <span className="text-gray-900 dark:text-gray-100 font-medium">{formatDegrees(Math.round(d.high))}</span>
+                  <span className="text-gray-400">{formatDegrees(Math.round(d.low))}</span>
                   {d.precip > 0 && (
-                    <span className="text-xs text-blue-500 ms-auto">{d.precip} mm</span>
+                    <span className="text-xs text-blue-500 ms-auto">{withUnit(formatDecimal(d.precip), 'mm')}</span>
                   )}
                 </div>
               );

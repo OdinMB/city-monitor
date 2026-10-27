@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { LaborMarketSummary } from '../../lib/api.js';
+import { isolate } from '../../lib/bidi.js';
 import { LaborMarketStrip } from './LaborMarketStrip.js';
 
 const SUMMARY: LaborMarketSummary = {
@@ -38,22 +39,24 @@ describe('LaborMarketStrip numbers', () => {
 
   // Rates keep one decimal with a point in every language; counts are grouped
   // in the UI language; the year-on-year change is signed, whole when whole.
+  // Each rate and change is one isolated run, so in Arabic the sign and %
+  // stay on their sides ("-1.5%").
   it.each(['en', 'de', 'tr', 'ar'])('%s', async (lang) => {
     await i18n.changeLanguage(lang);
     render(<LaborMarketStrip />);
     const yoy = i18n.t('panel.laborMarket.yoy');
 
-    expect(screen.getByText('9.8%')).toBeTruthy();
-    expect(screen.getByText('12.0%')).toBeTruthy();
-    expect(screen.getByText('15.0%')).toBeTruthy();
+    expect(screen.getByText(isolate('9.8%'))).toBeTruthy();
+    expect(screen.getByText(isolate('12.0%'))).toBeTruthy();
+    expect(screen.getByText(isolate('15.0%'))).toBeTruthy();
 
     expect(screen.getByText(count(201_234, lang))).toBeTruthy();
     expect(screen.getByText(count(260_500, lang))).toBeTruthy();
     expect(screen.getByText(count(1_234, lang))).toBeTruthy();
 
-    expect(screen.getByText(`+5% ${yoy}`)).toBeTruthy();
-    expect(screen.getByText(`-1.5% ${yoy}`)).toBeTruthy();
-    expect(screen.getByText(`0% ${yoy}`)).toBeTruthy();
+    expect(screen.getByText(`${isolate('+5%')} ${yoy}`)).toBeTruthy();
+    expect(screen.getByText(`${isolate('-1.5%')} ${yoy}`)).toBeTruthy();
+    expect(screen.getByText(`${isolate('0%')} ${yoy}`)).toBeTruthy();
   });
 
   it('groups counts the German way in German', async () => {

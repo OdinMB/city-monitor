@@ -8,6 +8,7 @@ import { staleAfter } from '../../lib/freshness.js';
 import { safeUrl } from '../../lib/safe-url.js';
 import { forwardArrow } from '../../lib/bidi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { CityEvent } from '../../lib/api.js';
@@ -72,11 +73,11 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
         <span className="shrink-0">
           {CATEGORY_ICONS[event.category] ?? '📅'}
         </span>
-        {/* dir="auto": a German or English title keeps its own direction in
-            Arabic, so truncate cuts it at its end. */}
-        <span dir="auto" className="font-medium text-gray-900 dark:text-gray-100 truncate">
+        {/* A German or English title keeps its own direction in Arabic, so
+            truncate cuts it at its end. */}
+        <SourceText as="span" className="font-medium text-gray-900 dark:text-gray-100 truncate">
           {event.title}
-        </span>
+        </SourceText>
         <span className="shrink-0 text-muted ms-auto whitespace-nowrap">
           {day}{showTime ? ` · ${time}` : ''}
         </span>
@@ -90,8 +91,8 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
       {/* Expanded detail */}
       {expanded && (
         <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700 space-y-1 text-[11px] text-muted text-start">
-          {event.venue && <div><bdi>{event.venue}</bdi></div>}
-          {event.description && <div dir="auto" className="line-clamp-3">{event.description}</div>}
+          {event.venue && <div><SourceText>{event.venue}</SourceText></div>}
+          {event.description && <SourceText as="div" className="line-clamp-3">{event.description}</SourceText>}
           {event.endDate && (
             <div>{arrow} {formatEventDay(event.endDate, lang)} {formatEventTime(event.endDate, lang)}</div>
           )}
