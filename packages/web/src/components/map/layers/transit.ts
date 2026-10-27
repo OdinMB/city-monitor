@@ -94,7 +94,7 @@ export function transitPopupHtml(props: Record<string, unknown>): string {
     const sevColor = SEVERITY_COLORS[a.severity] ?? SEVERITY_COLORS.low;
     const typeLabel = i18n.t(`mapPopup.transitType.${a.type}`, a.type.replace('-', ' '));
     parts.push(
-      `<div style="border-left:3px solid ${sevColor};padding-left:8px;margin-bottom:8px">` +
+      `<div style="border-inline-start:3px solid ${sevColor};padding-inline-start:8px;margin-bottom:8px">` +
       `<strong>${escapeHtml(a.line)}</strong> <span style="opacity:0.6;font-size:11px">${escapeHtml(typeLabel)}</span><br>` +
       `<span style="font-size:12px">${escapeHtml(a.detail)}</span>` +
       `</div>`,

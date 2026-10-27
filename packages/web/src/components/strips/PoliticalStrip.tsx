@@ -55,15 +55,21 @@ function flatReps(districts: PoliticalDistrict[]): (Representative & { district:
 
 function RepRow({ rep }: { rep: Representative & { district: string } }) {
   const { t, i18n } = useTranslation();
+  // dir="auto": a German name or district runs left to right inside an Arabic
+  // row, so truncate cuts it at its end rather than its first letters. The
+  // district's ms-auto sits on a wrapper, since a margin-inline-start follows
+  // the direction of the element it is on.
   return (
     <div className="flex items-center gap-1.5 py-1 px-1.5 text-[11px]">
       <span
         className="w-2 h-2 rounded-full shrink-0"
         style={{ backgroundColor: getPartyColor(rep.party) }}
       />
-      <span className="text-gray-800 dark:text-gray-200 font-medium truncate">{rep.name}</span>
+      <span dir="auto" className="text-gray-800 dark:text-gray-200 font-medium truncate">{rep.name}</span>
       <span className="text-gray-500 dark:text-gray-400 shrink-0">{rep.party}</span>
-      <span className="text-gray-500 dark:text-gray-400 hidden @xs:inline ml-auto truncate">{rep.district}</span>
+      <span className="text-gray-500 dark:text-gray-400 hidden @xs:inline ms-auto min-w-0">
+        <span dir="auto" className="block truncate">{rep.district}</span>
+      </span>
       {/* min-w-6 min-h-6: a 24px target around the arrow (WCAG 2.5.8); -my-1
           keeps the row height. */}
       {rep.profileUrl && (
@@ -72,7 +78,7 @@ function RepRow({ rep }: { rep: Representative & { district: string } }) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t('panel.political.profileLink', { name: rep.name })}
-          className="inline-flex items-center justify-center min-w-6 min-h-6 -my-1 text-link hover:underline ml-auto shrink-0 @xs:ml-1"
+          className="inline-flex items-center justify-center min-w-6 min-h-6 -my-1 text-link hover:underline ms-auto shrink-0 @xs:ms-1"
         >
           {forwardArrow(i18n.language)}
         </a>
@@ -95,7 +101,7 @@ function RepList({ districts, limit, onExpand }: { districts: PoliticalDistrict[
         <button
           type="button"
           onClick={onExpand}
-          className="w-full py-1.5 px-2 text-xs text-link hover:underline text-left cursor-pointer"
+          className="w-full py-1.5 px-2 text-xs text-link hover:underline text-start cursor-pointer"
         >
           {t('panel.political.showMore', { count: remaining })}
         </button>

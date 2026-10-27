@@ -72,10 +72,12 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
         <span className="shrink-0">
           {CATEGORY_ICONS[event.category] ?? '📅'}
         </span>
-        <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
+        {/* dir="auto": a German or English title keeps its own direction in
+            Arabic, so truncate cuts it at its end. */}
+        <span dir="auto" className="font-medium text-gray-900 dark:text-gray-100 truncate">
           {event.title}
         </span>
-        <span className="shrink-0 text-gray-500 dark:text-gray-400 ml-auto whitespace-nowrap">
+        <span className="shrink-0 text-gray-500 dark:text-gray-400 ms-auto whitespace-nowrap">
           {day}{showTime ? ` · ${time}` : ''}
         </span>
         {event.free && (
@@ -87,9 +89,9 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700 space-y-1 text-[11px] text-gray-500 dark:text-gray-400 text-left">
-          {event.venue && <div>{event.venue}</div>}
-          {event.description && <div className="line-clamp-3">{event.description}</div>}
+        <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700 space-y-1 text-[11px] text-gray-500 dark:text-gray-400 text-start">
+          {event.venue && <div><bdi>{event.venue}</bdi></div>}
+          {event.description && <div dir="auto" className="line-clamp-3">{event.description}</div>}
           {event.endDate && (
             <div>{arrow} {formatEventDay(event.endDate, lang)} {formatEventTime(event.endDate, lang)}</div>
           )}
@@ -114,7 +116,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
     return (
       <button
         type="button"
-        className="w-full px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 text-xs cursor-pointer appearance-none bg-transparent text-left"
+        className="w-full px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 text-xs cursor-pointer appearance-none bg-transparent text-start"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
       >
@@ -258,7 +260,7 @@ export function EventsStrip() {
 
       {isError && <StripErrorFallback domain={t('panel.events.title')} onRetry={refetch} />}
 
-      <div id="events-panel" role="tabpanel" aria-labelledby={`events-cat-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pr-2">
+      <div id="events-panel" role="tabpanel" aria-labelledby={`events-cat-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pe-2">
         {isLoading ? (
           <Skeleton lines={2} />
         ) : events.length === 0 ? (

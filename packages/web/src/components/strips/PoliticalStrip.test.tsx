@@ -44,3 +44,29 @@ describe('PoliticalStrip profile link', () => {
     expect(link.textContent).toBe(arrow);
   });
 });
+
+describe('PoliticalStrip long names in Arabic', () => {
+  afterEach(async () => {
+    cleanup();
+    await i18n.changeLanguage('en');
+  });
+
+  it('runs each name and district in its own direction, so a long one is cut at its end', async () => {
+    // In a right-to-left row a German name took the row's direction, and
+    // truncate cut its first letters off instead of its last.
+    await i18n.changeLanguage('ar');
+    render(<PoliticalStrip expanded={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('sidebar.political.bezirke') }));
+
+    for (const text of ['Erika Beispiel', 'Mitte']) {
+      const el = screen.getByText(text);
+      expect(el.classList.contains('truncate')).toBe(true);
+      expect(el.getAttribute('dir')).toBe('auto');
+    }
+    // The district is pushed to the row's end by a wrapper: on the
+    // left-to-right span itself, ms-auto would push it the other way.
+    const district = screen.getByText('Mitte');
+    expect(district.classList.contains('ms-auto')).toBe(false);
+    expect(district.parentElement!.classList.contains('ms-auto')).toBe(true);
+  });
+});

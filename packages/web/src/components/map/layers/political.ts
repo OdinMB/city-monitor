@@ -303,7 +303,7 @@ export function buildPoliticalPopupHtml(districtName: string, districts: Politic
     const color = getPartyColor(rep.party);
     const profileUrl = safeUrl(rep.profileUrl);
     parts.push(
-      `<div style="border-left:3px solid ${color};padding-left:8px;margin-bottom:6px">` +
+      `<div style="border-inline-start:3px solid ${color};padding-inline-start:8px;margin-bottom:6px">` +
       `<strong>${escapeHtml(rep.name)}</strong> <span style="opacity:0.6;font-size:11px">${escapeHtml(rep.party)}</span><br>` +
       `<span style="font-size:11px;opacity:0.7">${escapeHtml(rep.role)}${rep.constituency ? ` — ${escapeHtml(rep.constituency)}` : ''}</span>` +
       (profileUrl ? `<br><a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">${profileLabel}</a>` : '') +

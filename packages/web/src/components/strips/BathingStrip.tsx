@@ -25,16 +25,22 @@ const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: s
       {/* Quality dot */}
       <div className="shrink-0 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
 
-      {/* Name + water body */}
+      {/* Name + water body. dir="auto": the German names run in their own
+          direction in Arabic, so truncate cuts them at their end, and the
+          temperature's ms-1.5 follows that direction too, landing between the
+          water body and the temperature rather than outside them. Each line is
+          only as wide as its text, so it stays next to the quality dot. */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm text-gray-900 dark:text-gray-100 truncate">
+          <span dir="auto" className="text-sm text-gray-900 dark:text-gray-100 truncate">
             {spot.name}
           </span>
         </div>
-        <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-          {spot.waterBody}
-          {spot.waterTemp != null && <span className="ml-1.5">{spot.waterTemp}°C</span>}
+        <div className="flex text-[11px] text-gray-500 dark:text-gray-400">
+          <span dir="auto" className="truncate">
+            {spot.waterBody}
+            {spot.waterTemp != null && <span className="ms-1.5">{spot.waterTemp}°C</span>}
+          </span>
         </div>
       </div>
 

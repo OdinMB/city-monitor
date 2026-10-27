@@ -76,8 +76,10 @@ function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismi
     <div className={`nina-warning rounded-lg px-4 py-3 ${style}`} role="alert">
       <div className="flex items-start gap-2">
         <span className="text-lg shrink-0">{icon}</span>
+        {/* The warning's own text is German: each part sits in a <bdi>, so an
+            Arabic page keeps its word order. */}
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm leading-tight">{warning.headline}</div>
+          <div className="font-semibold text-sm leading-tight"><bdi>{warning.headline}</bdi></div>
           <div className="text-xs mt-0.5">
             {warning.source.toUpperCase()} · {t(`nina.severity.${warning.severity}`, warning.severity)}
           </div>
@@ -105,9 +107,9 @@ function NinaWarningCard({ warning, onDismiss }: { warning: NinaWarning; onDismi
       </div>
       {expanded && (
         <div className="mt-2 text-sm space-y-2">
-          {warning.description && <p>{warning.description}</p>}
+          {warning.description && <p><bdi>{warning.description}</bdi></p>}
           {warning.instruction && (
-            <p className="font-medium">{warning.instruction}</p>
+            <p className="font-medium"><bdi>{warning.instruction}</bdi></p>
           )}
         </div>
       )}

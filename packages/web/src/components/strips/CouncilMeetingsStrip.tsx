@@ -70,14 +70,16 @@ function MeetingRow({ meeting, t, locale }: { meeting: CouncilMeeting; t: (key: 
               {formatTime(meeting.start, locale)}
             </span>
           </div>
-          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-0.5 line-clamp-2">
+          {/* dir="auto": the German committee and room keep their own direction
+              in Arabic, so a clamped or truncated line is cut at its end. */}
+          <p dir="auto" className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-0.5 line-clamp-2">
             {meeting.committee}
           </p>
           {meeting.district && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">{meeting.district}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400"><bdi>{meeting.district}</bdi></p>
           )}
           {meeting.location && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{meeting.location}</p>
+            <p dir="auto" className="text-xs text-gray-500 dark:text-gray-400 truncate">{meeting.location}</p>
           )}
         </div>
         {meeting.webUrl && (
@@ -161,7 +163,7 @@ export function CouncilMeetingsStrip() {
                 <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
                   {formatDayHeader(group.meetings[0].start, t, i18n.language)}
                 </span>
-                <span className="text-[10px] text-gray-500 dark:text-gray-400 ml-2">{group.meetings.length}</span>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 ms-2">{group.meetings.length}</span>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {group.meetings.map((meeting) => (

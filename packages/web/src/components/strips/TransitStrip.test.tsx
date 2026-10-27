@@ -143,4 +143,19 @@ describe('TransitStrip disruption rows', () => {
     fireEvent.click(rowToggle(ALERT.message));
     expect(screen.getByText(`${label as string}:`)).toBeTruthy();
   });
+
+  it('keeps the operator\'s German text in its own direction in Arabic', async () => {
+    await i18n.changeLanguage('ar');
+    render(<TransitStrip />, { wrapper: createWrapper([ALERT]) });
+    // The clamped summary runs in its own direction, so it is cut at its end.
+    // It is only as wide as its text and the chevron takes the free space, so
+    // left-to-right text in a right-to-left row stays next to its line badges.
+    const message = screen.getByText(ALERT.message);
+    expect(message.getAttribute('dir')).toBe('auto');
+    expect(message.classList.contains('flex-1')).toBe(false);
+    expect(message.nextElementSibling!.classList.contains('ms-auto')).toBe(true);
+
+    fireEvent.click(rowToggle(ALERT.message));
+    expect(screen.getByText(ALERT.detail).tagName).toBe('BDI');
+  });
 });

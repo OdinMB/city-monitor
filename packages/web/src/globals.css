@@ -150,6 +150,13 @@
   background-color: rgba(0, 0, 0, 0.08);
   color: #374151;
 }
+/* MapLibre puts the close button top-right, where a right-to-left popup's
+   title starts; move it to the top-left. Two selectors outrank maplibre-gl.css,
+   which loads after this file. */
+[dir='rtl'] .maplibregl-popup-close-button {
+  right: auto;
+  left: 0;
+}
 
 /* MapLibre popup dark mode */
 .dark .maplibregl-popup-content {
@@ -291,7 +298,9 @@ select:focus-visible,
   animation: scroll-bounce 1.5s ease-in-out infinite;
 }
 
-/* Mobile layer drawer icon breathe — stops after first click */
+/* Mobile layer drawer icon breathe — stops after first click. It grows away
+   from the screen edge the closed drawer's button sits on: the left edge, or
+   the right edge in a right-to-left language. */
 @keyframes drawer-breathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.25); }
@@ -300,14 +309,23 @@ select:focus-visible,
   animation: drawer-breathe 2s ease-in-out infinite;
   transform-origin: left center;
 }
+[dir='rtl'] .animate-drawer-breathe {
+  transform-origin: right center;
+}
 
-/* News marquee — continuous horizontal scroll */
+/* News marquee — continuous horizontal scroll towards the inline end. The
+   track holds two copies of the headlines, so moving it by half its width
+   brings the second copy to where the first started. A right-to-left track
+   starts at the right edge and overflows to the left, so it moves right. */
 @keyframes marquee {
   from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  to { transform: translateX(var(--marquee-shift, -50%)); }
 }
 .marquee-track {
   animation: marquee var(--marquee-speed, 90s) linear infinite;
+}
+[dir='rtl'] .marquee-track {
+  --marquee-shift: 50%;
 }
 .marquee-container:hover .marquee-track {
   animation-play-state: paused;

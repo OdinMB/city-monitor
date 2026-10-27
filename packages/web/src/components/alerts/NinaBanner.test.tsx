@@ -78,6 +78,17 @@ describe('NinaBanner', () => {
     expect(screen.getByText(warning.description!)).toBeTruthy();
   });
 
+  it('isolates the warning text, so a German warning keeps its word order in Arabic', () => {
+    // Bidi moved the neutral characters of "[Synthetisch] Probewarnung, es
+    // besteht keine Gefahr" around in a right-to-left banner.
+    render(<NinaBanner />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: 'expand' }));
+
+    for (const text of [warning.headline, warning.description!]) {
+      expect(screen.getByText(text).tagName).toBe('BDI');
+    }
+  });
+
   it('rings focused controls in the banner text colour, not the accent', () => {
     // jsdom applies no stylesheet, so check the class and the rule it relies on.
     render(<NinaBanner />, { wrapper: createWrapper() });

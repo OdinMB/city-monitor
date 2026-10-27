@@ -23,7 +23,8 @@ function markHintSeen() {
 }
 
 /**
- * One-time toast in bottom-right: "Press ? for keyboard shortcuts".
+ * One-time toast in the bottom corner at the inline end (bottom-right, or
+ * bottom-left in Arabic): "Press ? for keyboard shortcuts".
  * Not shown on touch-only devices, which have no keyboard to use the
  * shortcuts with; the shortcuts themselves still work everywhere. The seen
  * flag is left unset there, so the toast can still appear once if a mouse
@@ -65,10 +66,10 @@ export function ShortcutToast() {
     <button
       type="button"
       onClick={dismiss}
-      className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-lg bg-surface-1 border border-border card-glow text-sm text-gray-700 dark:text-gray-300 shadow-lg animate-fade-in cursor-pointer hover:bg-surface-2 transition-colors"
+      className="fixed bottom-6 inset-e-6 z-50 px-4 py-2 rounded-lg bg-surface-1 border border-border card-glow text-sm text-gray-700 dark:text-gray-300 shadow-lg animate-fade-in cursor-pointer hover:bg-surface-2 transition-colors"
       aria-live="polite"
     >
-      <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-border text-xs font-mono font-semibold mr-1.5">?</kbd>
+      <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-border text-xs font-mono font-semibold me-1.5">?</kbd>
       {t('shortcuts.toastHint')}
     </button>
   );

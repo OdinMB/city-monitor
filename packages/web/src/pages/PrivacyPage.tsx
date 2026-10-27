@@ -152,7 +152,7 @@ export function PrivacyPage() {
           <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-100 dark:bg-gray-800/60 text-left">
+                <tr className="bg-gray-100 dark:bg-gray-800/60 text-start">
                   <th className="px-4 py-3 font-semibold">Service</th>
                   <th className="px-4 py-3 font-semibold">Purpose</th>
                   <th className="px-4 py-3 font-semibold">Data Shared</th>

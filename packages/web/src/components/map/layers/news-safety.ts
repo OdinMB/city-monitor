@@ -186,23 +186,24 @@ function popupLink(url: unknown, labelKey: string): string {
 /**
  * Popup markup for a news marker, from its feature properties. Title, source
  * and link come from RSS feeds and the place label from the LLM, so every
- * value is escaped (see `escapeHtml`).
+ * value is escaped (see `escapeHtml`). Feed text sits in a `<bdi>`, so a
+ * German headline keeps its word order in an Arabic popup.
  */
 export function newsPopupHtml(props: Record<string, unknown>): string {
   const imp = Number(props.importance) || 0;
   return `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.title)}</div>
-      <div style="opacity:0.6;font-size:11px">${escapeHtml(props.sourceName)} · ${escapeHtml(props.categoryLabel)}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
+      <div style="font-weight:600;margin-bottom:4px"><bdi>${escapeHtml(props.title)}</bdi></div>
+      <div style="opacity:0.6;font-size:11px"><bdi>${escapeHtml(props.sourceName)}</bdi> · ${escapeHtml(props.categoryLabel)}${imp ? ` · ${Math.round(imp * 100)}%` : ''}</div>
       ${placeLine(props.locationLabel)}
       ${popupLink(props.url, 'mapPopup.readMore')}
     </div>`;
 }
 
-/** Popup markup for a police-report marker, escaped like `newsPopupHtml`. */
+/** Popup markup for a police-report marker, escaped and isolated like `newsPopupHtml`. */
 export function safetyPopupHtml(props: Record<string, unknown>): string {
   return `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.title)}</div>
-      ${props.district ? `<div style="opacity:0.6;font-size:11px">${escapeHtml(props.district)}</div>` : ''}
+      <div style="font-weight:600;margin-bottom:4px"><bdi>${escapeHtml(props.title)}</bdi></div>
+      ${props.district ? `<div style="opacity:0.6;font-size:11px"><bdi>${escapeHtml(props.district)}</bdi></div>` : ''}
       ${placeLine(props.locationLabel)}
       ${popupLink(props.url, 'mapPopup.details')}
     </div>`;

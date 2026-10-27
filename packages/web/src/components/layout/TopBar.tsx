@@ -40,7 +40,7 @@ export function TopBar() {
 
       <div className="flex items-center gap-2 min-w-0">
         <span
-          className="md:hidden text-lg font-bold mr-1 shrink-0"
+          className="md:hidden text-lg font-bold me-1 shrink-0"
           style={{ color: 'var(--accent)' }}
         >
           {city.name.toUpperCase()}

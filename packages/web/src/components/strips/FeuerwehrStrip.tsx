@@ -33,7 +33,7 @@ function StatRow({
           {current}
         </span>
         {delta && (
-          <span className={`text-xs font-medium tabular-nums w-12 text-right ${delta.color}`}>
+          <span className={`text-xs font-medium tabular-nums w-12 text-end ${delta.color}`}>
             {delta.text}
           </span>
         )}

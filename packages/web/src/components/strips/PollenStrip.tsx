@@ -111,7 +111,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
         <table className="w-full text-xs">
           <thead>
             <tr className="text-gray-500 dark:text-gray-400">
-              <th className="text-left font-medium pb-1.5 pr-2" />
+              <th className="text-start font-medium pb-1.5 pe-2" />
               <th className="text-center font-medium pb-1.5 px-1">{t('panel.pollen.today')}</th>
               <th className="text-center font-medium pb-1.5 px-1">{t('panel.pollen.tomorrow')}</th>
               <th className="text-center font-medium pb-1.5 px-1">{t('panel.pollen.dayAfter')}</th>
@@ -126,7 +126,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
                   key={type}
                   className={rowActive ? '' : 'opacity-40'}
                 >
-                  <td className="py-1 pr-2 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                  <td className="py-1 pe-2 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                     {t(`panel.pollen.type.${type}`)}
                   </td>
                   <td className="py-1 px-1 text-center"><Badge value={p.today} t={t} /></td>

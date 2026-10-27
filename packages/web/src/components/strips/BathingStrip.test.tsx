@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { BathingSpot } from '../../lib/api.js';
 import { BathingStrip } from './BathingStrip.js';
@@ -41,5 +41,36 @@ describe('BathingStrip measurement date follows the UI language, not the browser
     const { container } = render(<BathingStrip />);
     expect(container.textContent).toContain(footer);
     if (lang === 'ar') expect(container.textContent).toContain('أغسطس');
+  });
+});
+
+describe('BathingStrip German names in Arabic', () => {
+  afterEach(async () => {
+    cleanup();
+    await i18n.changeLanguage('en');
+  });
+
+  it('runs the spot name in its own direction, so truncate cuts it at its end', async () => {
+    await i18n.changeLanguage('ar');
+    render(<BathingStrip />);
+    for (const name of screen.getAllByText(/^Spot /)) {
+      expect(name.getAttribute('dir')).toBe('auto');
+      expect(name.classList.contains('truncate')).toBe(true);
+    }
+  });
+
+  it('keeps the water body and temperature in one run whose direction the temperature\'s margin follows', async () => {
+    // In the Arabic page the span's ms-1.5 resolved to a right margin while
+    // bidi laid out "Wannsee 21°C" left to right: "Wannsee21°C".
+    await i18n.changeLanguage('ar');
+    render(<BathingStrip />);
+    const temp = screen.getAllByText('21°C')[0];
+    expect(temp.classList.contains('ms-1.5')).toBe(true);
+    const run = temp.closest('[dir]')!;
+    expect(run.getAttribute('dir')).toBe('auto');
+    expect(run.textContent).toBe('Wannsee21°C');
+    expect(run.classList.contains('truncate')).toBe(true);
+    // Only as wide as its text, so it stays at the row's start beside the quality dot.
+    expect(run.parentElement!.classList.contains('flex')).toBe(true);
   });
 });

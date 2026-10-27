@@ -12,7 +12,7 @@ function parse(html: string): HTMLElement {
   return el;
 }
 
-/** The popup templates contain only divs, a bdi, text and one link — anything else was injected. */
+/** The popup templates contain only divs, bdi isolates, text and one link — anything else was injected. */
 function expectNoInjectedMarkup(el: HTMLElement) {
   expect(el.querySelector('img, script, svg, iframe, object')).toBeNull();
   for (const node of el.querySelectorAll('*')) {
@@ -122,5 +122,20 @@ describe('safetyPopupHtml', () => {
 
   it('keeps a web link intact', () => {
     expect(parse(safetyPopupHtml(SAFETY)).querySelector('a')!.getAttribute('href')).toBe(SAFETY.url);
+  });
+});
+
+describe('feed text in an Arabic (right-to-left) popup', () => {
+  /** Text of every bdi isolate in the popup. */
+  const isolated = (html: string) => [...parse(html).querySelectorAll('bdi')].map((el) => el.textContent);
+
+  // Without an isolate, bidi reorders a German title around its neutral
+  // characters in a right-to-left popup ("[Synthetisch]" jumps to the end).
+  it('isolates the headline and source of a news item', () => {
+    expect(isolated(newsPopupHtml(NEWS))).toEqual(expect.arrayContaining([NEWS.title, NEWS.sourceName]));
+  });
+
+  it('isolates the title and district of a police report', () => {
+    expect(isolated(safetyPopupHtml(SAFETY))).toEqual(expect.arrayContaining([SAFETY.title, SAFETY.district]));
   });
 });

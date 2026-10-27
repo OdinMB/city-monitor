@@ -57,7 +57,7 @@ export function WeatherPopover() {
             {t('panel.weather.feelsLike')} {Math.round(current.feelsLike)}°
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-end">
           <div className="text-2xl">{weatherInfo.icon}</div>
           <div className="text-xs text-gray-500 dark:text-gray-400">{t(weatherInfo.labelKey)}</div>
         </div>
@@ -135,7 +135,7 @@ export function WeatherPopover() {
                   <span className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(d.high)}°</span>
                   <span className="text-gray-400">{Math.round(d.low)}°</span>
                   {d.precip > 0 && (
-                    <span className="text-xs text-blue-500 ml-auto">{d.precip} mm</span>
+                    <span className="text-xs text-blue-500 ms-auto">{d.precip} mm</span>
                   )}
                 </div>
               );

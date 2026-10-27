@@ -85,6 +85,37 @@ describe('AirQualityStrip station list', () => {
     expect(screen.getByText(credit)).toBeTruthy();
   });
 
+  it('centres the scale marker on the value from the scale\'s start, which is the right edge in Arabic', () => {
+    // The scale's segments are a flex row, so they mirror in Arabic; a marker
+    // placed with `left` did not, and pointed at the wrong end of the scale.
+    render(<AirQualityStrip expanded />);
+    const scale = screen.getByRole('img', { name: /^AQI 32/ });
+    const marker = scale.querySelector<HTMLElement>('.absolute')!;
+    expect(marker.style.insetInlineStart).toBe('32%');
+    expect(marker.style.left).toBe('');
+    // The marker box has no width, so a percentage translate moved nothing:
+    // the dot started at the value instead of sitting on it.
+    expect(marker.style.transform).toBe('');
+    expect(marker.firstElementChild!.classList.contains('-ms-1.5')).toBe(true);
+    expect(marker.firstElementChild!.classList.contains('w-3')).toBe(true);
+  });
+
+  it('keeps each pollutant reading and its unit in one left-to-right run, so the unit\'s margin falls between them', async () => {
+    // Without the isolate the unit's ms-0.5 followed the Arabic page and
+    // landed on its outer side: "8.1µg/m³".
+    await i18n.changeLanguage('ar');
+    render(<AirQualityStrip expanded />);
+    const units = screen.getAllByText('µg/m³');
+    expect(units).toHaveLength(4);
+    for (const unit of units) {
+      expect(unit.classList.contains('ms-0.5')).toBe(true);
+      const run = unit.parentElement!;
+      expect(run.tagName).toBe('BDI');
+      expect(run.getAttribute('dir')).toBe('ltr');
+    }
+    expect(units[0].parentElement!.textContent).toBe('8.1µg/m³');
+  });
+
   it('shows no heading or credit when there are no WAQI stations', () => {
     hooks.grid = [SENSOR];
     render(<AirQualityStrip expanded />);

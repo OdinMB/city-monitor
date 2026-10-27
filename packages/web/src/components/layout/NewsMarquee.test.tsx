@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { render, screen } from '@testing-library/react';
 import { NewsMarquee } from './NewsMarquee.js';
+
+const read = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
 // Mock hooks
 vi.mock('../../hooks/useCityConfig.js', () => ({
@@ -47,6 +51,38 @@ describe('NewsMarquee', () => {
     expect(contents.length).toBe(2);
     // Second copy has aria-hidden
     expect(contents[1].getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('isolates each headline and source name, so a German headline keeps its word order in Arabic', () => {
+    render(<NewsMarquee />);
+    const link = screen.getAllByRole('link')[0];
+    const isolated = [...link.querySelectorAll('bdi')].map((el) => el.textContent);
+    expect(isolated).toEqual(['Source A', 'First headline']);
+  });
+
+  it('loops without a jump: half the track is exactly one copy and the space after it', () => {
+    const { container } = render(<NewsMarquee />);
+    // The animation moves the track by half its width. With a gap between the
+    // copies, half the track is one copy plus half the gap, and the loop
+    // jumped by the other half. Each copy carries its own trailing space.
+    const track = container.querySelector('.marquee-track')!;
+    expect([...track.classList].filter((c) => c.startsWith('gap-'))).toEqual([]);
+    for (const copy of container.querySelectorAll('.marquee-content')) {
+      expect(copy.classList.contains('pe-8')).toBe(true);
+    }
+  });
+
+  it('scrolls towards the inline end: leftwards in left-to-right text, rightwards in Arabic', () => {
+    // jsdom applies no stylesheet, so this checks the rules themselves. A
+    // right-to-left track starts at the right edge; moving it left as well
+    // pushed every headline off the screen within seconds.
+    const css = read('../../globals.css');
+    const keyframes = css.match(/@keyframes marquee \{[\s\S]*?\n\}/)?.[0] ?? '';
+    expect(keyframes).toContain('to { transform: translateX(var(--marquee-shift, -50%)); }');
+    expect(css).toMatch(/\[dir='rtl'\] \.marquee-track \{\s*--marquee-shift: 50%;\s*\}/);
+    // Reduced motion still stops it in both directions: the right-to-left rule
+    // only sets the distance, not the animation.
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.marquee-track \{\s*animation: none;/);
   });
 
   it('returns null when no news data', async () => {

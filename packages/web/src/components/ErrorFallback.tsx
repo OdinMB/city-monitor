@@ -15,7 +15,7 @@ export function AppErrorFallback({ error }: { error: unknown; resetErrorBoundary
         >
           {t('error.reload')}
         </button>
-        <details className="text-left text-sm text-gray-500 dark:text-gray-400">
+        <details className="text-start text-sm text-gray-500 dark:text-gray-400">
           <summary className="cursor-pointer">{t('error.details')}</summary>
           <pre className="mt-2 whitespace-pre-wrap break-words">{message}</pre>
         </details>

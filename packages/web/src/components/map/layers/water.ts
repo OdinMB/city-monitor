@@ -171,7 +171,7 @@ export function bathingPopupHtml(props: Record<string, unknown>): string {
   const qLabel = i18n.t(`panel.bathing.quality.${quality}`, quality.charAt(0).toUpperCase() + quality.slice(1));
   const seasonBadge = props.inSeason === true || props.inSeason === 'true'
     ? ''
-    : `<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">${t('panel.bathing.offSeason')}</span>`;
+    : `<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;padding:1px 5px;border-radius:4px;margin-inline-start:4px">${t('panel.bathing.offSeason')}</span>`;
   const tempLine = props.waterTemp != null && props.waterTemp !== 'null'
     ? `<div style="font-size:12px;margin-top:4px">${t('mapPopup.bathing.waterTemp')}: <strong>${ltr(`${escapeHtml(String(props.waterTemp))}°C`)}</strong></div>` : '';
   const visLine = props.visibility != null && props.visibility !== 'null'

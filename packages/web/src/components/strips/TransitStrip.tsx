@@ -57,7 +57,11 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
             </span>
           ))}
         </span>
-        <span className={`flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 ${open ? 'wrap-anywhere' : 'line-clamp-1'}`}>
+        {/* dir="auto": the operator's German text keeps its own direction in
+            Arabic, so the clamped line is cut at its end. The text is only as
+            wide as it needs and the chevron takes the free space (ms-auto), so
+            in Arabic it stays next to its line badges. */}
+        <span dir="auto" className={`min-w-0 text-sm text-gray-700 dark:text-gray-300 ${open ? 'wrap-anywhere' : 'line-clamp-1'}`}>
           {alert.message}
         </span>
         <svg
@@ -69,7 +73,7 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`mt-1 shrink-0 text-gray-400 dark:text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`mt-1 ms-auto shrink-0 text-gray-400 dark:text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`}
           aria-hidden="true"
         >
           <polyline points="6 9 12 15 18 9" />
@@ -77,7 +81,7 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
       </button>
       {open && (
         <div id={detailId} className="ps-4 pb-2 space-y-1 text-xs text-gray-600 dark:text-gray-400 wrap-anywhere">
-          {showDetail && <p className="whitespace-pre-line">{detail}</p>}
+          {showDetail && <p className="whitespace-pre-line"><bdi>{detail}</bdi></p>}
           {alert.station && (
             <p>
               <span className="font-medium">{t('panel.transit.station')}:</span> <bdi>{alert.station}</bdi>

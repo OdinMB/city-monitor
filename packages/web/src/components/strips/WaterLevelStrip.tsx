@@ -32,7 +32,7 @@ const StationRow = memo(function StationRow({ station, t }: { station: WaterLeve
         <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
           {station.name}
           {station.tidal && (
-            <span className="ml-1.5 px-1 py-0.5 rounded text-[9px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+            <span className="ms-1.5 px-1 py-0.5 rounded text-[9px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
               {t('panel.waterLevels.tidal')}
             </span>
           )}

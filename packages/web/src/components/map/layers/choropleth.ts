@@ -14,7 +14,7 @@ import { showMapPopup, scheduleHoverClose, ltr, type MapLayerEvent } from '../po
  * The value is kept left-to-right so "12,000/km²" stays whole in Arabic.
  */
 function row(labelKey: string, value: string): string {
-  return `<tr><td style="padding:2px 0;opacity:0.7">${escapeHtml(i18n.t(labelKey))}</td><td style="text-align:right;font-weight:500">${ltr(escapeHtml(value))}</td></tr>`;
+  return `<tr><td style="padding:2px 0;opacity:0.7">${escapeHtml(i18n.t(labelKey))}</td><td style="text-align:end;font-weight:500">${ltr(escapeHtml(value))}</td></tr>`;
 }
 
 /**

@@ -53,6 +53,17 @@ describe('aqPopupHtml', () => {
     expect(el.querySelector('strong')!.style.color).toBe('');
   });
 
+  it('isolates swatch and number left to right, so the swatch\'s margin falls between them in Arabic', async () => {
+    await i18n.changeLanguage('ar');
+    const el = parse(aqPopupHtml(STATION));
+    const swatch = el.querySelector<HTMLElement>('span[aria-hidden="true"]')!;
+    expect(swatch.getAttribute('style')).toContain('margin-inline-end:4px');
+    const run = swatch.parentElement!;
+    expect(run.tagName).toBe('BDI');
+    expect(run.getAttribute('dir')).toBe('ltr');
+    expect(run.querySelector('strong')!.textContent).toBe('85');
+  });
+
   it.each([
     ['en', 'Very Poor'],
     ['de', 'Sehr schlecht'],

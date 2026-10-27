@@ -112,3 +112,29 @@ describe('NewsStrip item timestamps', () => {
     expect(screen.getByText(expected)).toBeTruthy();
   });
 });
+
+describe('NewsStrip feed text in Arabic', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}));
+  });
+
+  afterEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('runs a headline in its own direction, so its words keep their order and it is cut at its end', async () => {
+    await i18n.changeLanguage('ar');
+    const title = 'Straßenfest in Neukölln am Wochenende [Synthetisch]';
+    render(<NewsStrip />, { wrapper: createWrapper([{ ...ITEM, title }]) });
+    const headline = screen.getByText(title);
+    expect(headline.getAttribute('dir')).toBe('auto');
+    expect(headline.className).toMatch(/line-clamp-/);
+  });
+
+  it('isolates the source name from the Arabic around it', async () => {
+    await i18n.changeLanguage('ar');
+    render(<NewsStrip />, { wrapper: createWrapper([ITEM]) });
+    expect(screen.getByText('rbb24').tagName).toBe('BDI');
+  });
+});

@@ -35,6 +35,13 @@ describe('EventsStrip filter rows', () => {
     }
   });
 
+  it('runs each event title in its own direction, so a long one is cut at its end in Arabic', () => {
+    render(<EventsStrip />);
+    const title = screen.getByText('Event 0');
+    expect(title.classList.contains('truncate')).toBe(true);
+    expect(title.getAttribute('dir')).toBe('auto');
+  });
+
   it('still offers every source and category chip', () => {
     render(<EventsStrip />);
     const [sourceRow, categoryRow] = screen.getAllByRole('tablist');

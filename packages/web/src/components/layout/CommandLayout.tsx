@@ -101,7 +101,7 @@ export function CommandLayout() {
         </div>
         {/* Skyline + scroll indicator overlaid at bottom of hero. Phones see the
             tiles below the shorter map already, so they get no indicator. */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+        <div className="absolute bottom-0 inset-x-0 z-10 pointer-events-none">
           {!isPhone && <ScrollIndicator targetRef={dashboardRef} />}
           <SkylineSeparator cityId={cityId} />
         </div>

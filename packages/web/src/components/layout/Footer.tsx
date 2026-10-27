@@ -24,7 +24,7 @@ export function Footer() {
           {t('support.title')}
         </a>
       </nav>
-      <nav aria-label={t('footer.legalLabel')} className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-right sm:text-left">
+      <nav aria-label={t('footer.legalLabel')} className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-end sm:text-start">
         {city && (
           <Link to={`/${city.id}/sources`} className="hover:underline">
             {t('footer.sources')}

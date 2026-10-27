@@ -7,6 +7,7 @@ import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { AQI_SCALE_NAME, getAqiLevel, getUsAqiLevel, isWaqiStation } from '../../lib/aqi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { Ltr } from '../Ltr.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
@@ -33,13 +34,15 @@ function AqiScale({ aqi, t }: { aqi: number; t: (k: string) => string }) {
             <div key={s.key} className="flex-1" style={{ backgroundColor: s.color }} />
           ))}
         </div>
-        {/* Marker */}
+        {/* Marker: placed from the scale's start, which mirrors with the
+            segments (the right edge in Arabic). The box has no width, so the
+            dot is centred on it by pulling it back half its own width. */}
         <div
           className="absolute -top-0.5 w-0 h-0"
-          style={{ left: `${pct}%`, transform: 'translateX(-50%)' }}
+          style={{ insetInlineStart: `${pct}%` }}
         >
           <div
-            className="w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 shadow"
+            className="w-3 h-3 -ms-1.5 rounded-full border-2 border-white dark:border-gray-900 shadow"
             style={{ backgroundColor: getAqiLevel(aqi).color }}
           />
         </div>
@@ -71,9 +74,13 @@ const PollutantCard = memo(function PollutantCard({ label, value, max, color }: 
     <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-1 mb-0.5">
         <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{label}</span>
+        {/* <Ltr>: the number and its unit run left to right in Arabic too, and
+            the unit's ms-0.5 has to follow that direction to land between them. */}
         <span className="text-[11px] tabular-nums text-gray-700 dark:text-gray-200 font-semibold">
-          {value.toFixed(1)}
-          <span className="font-normal text-gray-500 dark:text-gray-400 ml-0.5">&#xb5;g/m&#xb3;</span>
+          <Ltr>
+            {value.toFixed(1)}
+            <span className="font-normal text-gray-500 dark:text-gray-400 ms-0.5">&#xb5;g/m&#xb3;</span>
+          </Ltr>
         </span>
       </div>
       <div className="h-1 bg-gray-100 dark:bg-gray-700/50 rounded-full overflow-hidden">
@@ -95,7 +102,7 @@ const StationEntry = memo(function StationEntry({ name, aqi }: { name: string; a
     <div className="flex items-center gap-1.5 min-w-0">
       <div className="w-2 h-2 rounded-full shrink-0 ring-1 ring-black/20 dark:ring-white/20" style={{ backgroundColor: level.color }} />
       <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate">{name}</span>
-      <span className="text-[11px] tabular-nums font-semibold text-gray-700 dark:text-gray-200 ml-auto shrink-0">
+      <span className="text-[11px] tabular-nums font-semibold text-gray-700 dark:text-gray-200 ms-auto shrink-0">
         {aqi}
       </span>
     </div>

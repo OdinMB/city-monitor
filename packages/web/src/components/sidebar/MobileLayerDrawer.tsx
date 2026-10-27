@@ -3,13 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { DataLayerToggles } from './DataLayerToggles.js';
 
 const PANEL_W = 200;
+// Offsets along the inline axis: negative pushes the drawer out past its start
+// edge. `dir` turns one into a screen offset (translateX), and a finger's
+// screen movement back into one.
 const CLOSED_X = -PANEL_W;
 const OPEN_X = 0;
 const MID = (CLOSED_X + OPEN_X) / 2;
 
-/** Mobile-only slide-from-left drawer for data layer controls. */
+/**
+ * Mobile-only drawer for data layer controls. It slides in from the inline
+ * start: the left edge, or the right edge in a right-to-left language.
+ */
 export function MobileLayerDrawer() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dir = i18n.dir(i18n.language) === 'rtl' ? -1 : 1;
   const [open, setOpen] = useState(false);
   const [hasBeenOpened, setHasBeenOpened] = useState(() => {
     try { return localStorage.getItem('cm-drawer-seen') === '1'; } catch { return false; }
@@ -43,8 +50,8 @@ export function MobileLayerDrawer() {
     }
     if (ref.locked !== 'x') return;
 
-    setDragX(Math.max(CLOSED_X, Math.min(OPEN_X, ref.baseX + dx)));
-  }, []);
+    setDragX(Math.max(CLOSED_X, Math.min(OPEN_X, ref.baseX + dx * dir)));
+  }, [dir]);
 
   const handleTouchEnd = useCallback(() => {
     if (dragX === null) return;
@@ -78,10 +85,10 @@ export function MobileLayerDrawer() {
 
       {/* Sliding container: panel + tab handle */}
       <div
-        className={`absolute inset-y-0 left-0 pointer-events-auto flex ${
+        className={`absolute inset-y-0 inset-s-0 pointer-events-auto flex ${
           dragX === null ? 'transition-transform duration-200 ease-out' : ''
         }`}
-        style={{ transform: `translateX(${x}px)` }}
+        style={{ transform: `translateX(${x * dir}px)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -90,7 +97,7 @@ export function MobileLayerDrawer() {
         <div
           role="dialog"
           aria-label={t('sidebar.layers.label')}
-          className="h-full shrink-0 bg-surface-1 border-r border-border p-3 pt-12 max-sm:pt-3 overflow-y-auto space-y-4"
+          className="h-full shrink-0 bg-surface-1 border-e border-border p-3 pt-12 max-sm:pt-3 overflow-y-auto space-y-4"
           style={{ width: PANEL_W }}
         >
           <DataLayerToggles />
@@ -98,7 +105,7 @@ export function MobileLayerDrawer() {
 
         {/* Tab handle */}
         <button
-          className={`self-center shrink-0 flex items-center justify-center w-9 h-20 bg-surface-1/90 backdrop-blur-sm border border-l-0 border-border rounded-r-xl shadow-lg cursor-pointer ${!hasBeenOpened ? 'animate-drawer-breathe' : ''}`}
+          className={`self-center shrink-0 flex items-center justify-center w-9 h-20 bg-surface-1/90 backdrop-blur-sm border border-s-0 border-border rounded-e-xl shadow-lg cursor-pointer ${!hasBeenOpened ? 'animate-drawer-breathe' : ''}`}
           onClick={() => {
             setOpen((v) => !v);
             if (!hasBeenOpened) {

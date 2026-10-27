@@ -76,7 +76,7 @@ export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto'
       {expandable ? (
         <button
           type="button"
-          className="w-full px-4 py-3 border-b border-border-subtle flex items-center justify-between cursor-pointer select-none appearance-none bg-transparent text-left"
+          className="w-full px-4 py-3 border-b border-border-subtle flex items-center justify-between cursor-pointer select-none appearance-none bg-transparent text-start"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-label={`${title} — ${expanded ? t('tile.collapse') : t('tile.expand')}`}

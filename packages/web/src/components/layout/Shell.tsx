@@ -56,7 +56,7 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col bg-surface-0 dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(var(--accent-rgb),0.04),var(--surface-0))] text-gray-900 dark:text-gray-100">
       {/* topbar-slide: globals.css pins the bar on screen while it holds keyboard focus */}
       <div
-        className={`topbar-slide ${isPhone ? 'sticky top-0' : 'fixed top-0 left-0 right-0'} z-50`}
+        className={`topbar-slide ${isPhone ? 'sticky top-0' : 'fixed top-0 inset-x-0'} z-50`}
         style={isPhone ? undefined : { transform: `translateY(${translateY}px)` }}
       >
         <div ref={topBarRef} className="topbar-slide-bar">

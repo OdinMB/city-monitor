@@ -54,7 +54,7 @@ export function NoTrackingPage() {
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-100 dark:bg-gray-800/60 text-left">
+              <tr className="bg-gray-100 dark:bg-gray-800/60 text-start">
                 <th className="px-4 py-3 font-semibold" />
                 <th className="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">City Monitor</th>
                 <th className="px-4 py-3 font-semibold text-gray-500 dark:text-gray-400">Typical dashboard</th>

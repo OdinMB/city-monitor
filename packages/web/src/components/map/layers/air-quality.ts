@@ -10,7 +10,7 @@ import { createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.j
 import { AQI_SCALE_NAME, getAqiLevelOnScale, gridPointScale, waqiMapAttribution } from '../../../lib/aqi.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
 import { safeUrl } from '../../../lib/safe-url.js';
-import { registerPopupHandlers, type PopupContentFn } from '../popups.js';
+import { ltr, registerPopupHandlers, type PopupContentFn } from '../popups.js';
 
 /**
  * Band and badge of a grid point. WAQI values are US AQI and Sensor.Community
@@ -53,6 +53,8 @@ function aqGridToGeoJSON(points: AirQualityGridPoint[]): GeoJSON.FeatureCollecti
  * AQI), and the level label is looked up when the popup opens, so it follows
  * the current UI language, like the top bar's. The band colour is a swatch
  * beside the number, not the number's colour: US yellow is unreadable as text.
+ * Swatch and number are isolated left to right (`ltr`), so in Arabic the
+ * swatch's margin-inline-end still falls between them.
  */
 export function aqPopupHtml(props: Record<string, unknown>): string {
   const url = typeof props.url === 'string' ? props.url : undefined;
@@ -61,11 +63,11 @@ export function aqPopupHtml(props: Record<string, unknown>): string {
   const levelLabel = i18n.t(level.labelKey);
   const href = safeUrl(url);
   const linkIcon = href
-    ? ` <a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="display:inline;color:#3b82f6;text-decoration:none;margin-left:3px;vertical-align:middle"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`
+    ? ` <a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="display:inline;color:#3b82f6;text-decoration:none;margin-inline-start:3px;vertical-align:middle"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`
     : '';
   return `<div style="font-size:13px;max-width:240px">
       <div style="font-weight:600;margin-bottom:4px">${escapeHtml(props.station)}${linkIcon}</div>
-      <div style="font-size:12px">${AQI_SCALE_NAME[scale]}: <span aria-hidden="true" style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:${level.color};box-shadow:0 0 0 1px rgba(0,0,0,.3);margin-inline-end:4px;vertical-align:middle"></span><strong>${escapeHtml(props.aqi)}</strong> (${escapeHtml(levelLabel)})</div>
+      <div style="font-size:12px">${AQI_SCALE_NAME[scale]}: ${ltr(`<span aria-hidden="true" style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:${level.color};box-shadow:0 0 0 1px rgba(0,0,0,.3);margin-inline-end:4px;vertical-align:middle"></span><strong>${escapeHtml(props.aqi)}</strong>`)} (${escapeHtml(levelLabel)})</div>
     </div>`;
 }
 

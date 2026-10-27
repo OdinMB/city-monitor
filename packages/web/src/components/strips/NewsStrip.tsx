@@ -109,7 +109,7 @@ export function NewsStrip() {
 
       <p role="note" className="mb-2 text-[11px] text-gray-500 dark:text-gray-400">{t('aiNotice.newsLegend')}</p>
 
-      <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pr-2">
+      <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pe-2">
         {filteredItems.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
         ) : (
@@ -157,7 +157,9 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
   return (
     <li className="py-2 first:pt-0 last:pb-0">
       <a href={safeUrl(item.url)} target="_blank" rel="noopener noreferrer" className="block group">
-        <span className="text-sm text-gray-900 dark:text-gray-100 group-hover:text-[var(--accent)] transition-colors line-clamp-2 sm:line-clamp-1">
+        {/* dir="auto": the feed's German headline keeps its word order in
+            Arabic, and line-clamp cuts it at its end. */}
+        <span dir="auto" className="text-sm text-gray-900 dark:text-gray-100 group-hover:text-[var(--accent)] transition-colors line-clamp-2 sm:line-clamp-1">
           {item.title}
         </span>
       </a>
@@ -165,7 +167,7 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
         {faviconUrl && (
           <img src={faviconUrl} alt="" width={14} height={14} className="inline-block" loading="lazy" />
         )}
-        <span>{item.sourceName}</span>
+        <bdi>{item.sourceName}</bdi>
         <span className={`px-1.5 py-0.5 rounded text-[10px] ${colorClass}`}>
           {t(`category.${item.category}`, item.category)}
         </span>
@@ -182,7 +184,7 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
             📍
           </span>
         )}
-        <span className="ml-auto">{formatRelativeTimeI18n(item.publishedAt, t)}</span>
+        <span className="ms-auto">{formatRelativeTimeI18n(item.publishedAt, t)}</span>
       </div>
     </li>
   );

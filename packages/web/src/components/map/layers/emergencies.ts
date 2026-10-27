@@ -68,7 +68,7 @@ const AED_ACCESS_KEYS = new Map([
 export function aedPopupHtml(props: Record<string, unknown>, coords: [number, number]): string {
   const t = (key: string) => escapeHtml(i18n.t(key));
   const badge = (text: string, bg: string, fg: string) =>
-    `<span style="display:inline-block;background:${bg};color:${fg};font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">${text}</span>`;
+    `<span style="display:inline-block;background:${bg};color:${fg};font-size:10px;padding:1px 5px;border-radius:4px;margin-inline-start:4px">${text}</span>`;
   const indoorBadge = props.indoor === true || props.indoor === 'true'
     ? badge(t('mapPopup.aed.indoor'), '#dbeafe', '#1e40af')
     : badge(t('mapPopup.aed.outdoor'), '#dcfce7', '#166534');

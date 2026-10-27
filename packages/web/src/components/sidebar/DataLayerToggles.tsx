@@ -96,7 +96,7 @@ function SubLayerItem({ icon, color, active, label, onClick, parentColor }: { ic
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 w-full pl-8 pr-2 py-1 rounded-lg cursor-pointer transition-colors text-left ${
+      className={`flex items-center gap-2 w-full ps-8 pe-2 py-1 rounded-lg cursor-pointer transition-colors text-start ${
         active ? '' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
       }`}
       style={active ? { backgroundColor: `${parentColor ?? color}12` } : undefined}
@@ -281,7 +281,7 @@ export function DataLayerToggles() {
             <div key={layer}>
               <button
                 onClick={() => toggleLayer(layer)}
-                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-left ${
+                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-start ${
                   active ? '' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
                 style={active ? { backgroundColor: `${color}18` } : undefined}
@@ -289,7 +289,7 @@ export function DataLayerToggles() {
                 <span className="relative">
                   <LayerBadge icon={icon} color={color} active={active} />
                   {LAYER_SHORTCUT[layer] != null && (
-                    <span className="hidden sm:flex absolute -top-1.5 -right-1.5 w-4 h-4 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-[9px] font-bold text-gray-500 dark:text-gray-400 leading-none">
+                    <span className="hidden sm:flex absolute -top-1.5 -inset-e-1.5 w-4 h-4 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-[9px] font-bold text-gray-500 dark:text-gray-400 leading-none">
                       {LAYER_SHORTCUT[layer]}
                     </span>
                   )}
