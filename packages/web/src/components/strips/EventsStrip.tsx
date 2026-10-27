@@ -99,7 +99,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
               href={safeUrl(event.url)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center min-h-6 -my-1 text-blue-600 dark:text-blue-400 hover:underline"
+              className="inline-flex items-center min-h-6 -my-1 text-link hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
               {t('panel.events.moreInfo')} {arrow}

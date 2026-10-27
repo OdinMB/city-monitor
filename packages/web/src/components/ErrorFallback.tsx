@@ -28,7 +28,7 @@ export function AppErrorFallback({ error }: { error: unknown; resetErrorBoundary
  * Retry is a 24px-tall target (WCAG 2.5.8); -my-1 keeps its layout height at
  * the 16px text line, so the extra height sits in the surrounding padding.
  */
-const RETRY_CLASSES = 'inline-flex items-center justify-center min-w-6 min-h-6 -my-1 text-blue-600 dark:text-blue-400 hover:underline text-xs';
+const RETRY_CLASSES = 'inline-flex items-center justify-center min-w-6 min-h-6 -my-1 text-link hover:underline text-xs';
 
 /**
  * Compact inline error shown inside a dashboard tile when a data hook fails.

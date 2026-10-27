@@ -105,7 +105,7 @@ export function PrivacyPage() {
               <h3 className="font-semibold mb-1">Website Analytics</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                 We use{' '}
-                <a href="https://www.simpleanalytics.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                <a href="https://www.simpleanalytics.com/" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
                   Simple Analytics
                 </a>
                 , a privacy-friendly analytics service. According to Simple Analytics, it is
@@ -163,7 +163,7 @@ export function PrivacyPage() {
                   <tr key={s.name} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors align-top">
                     <td className="px-4 py-3 font-medium whitespace-nowrap">
                       {s.url ? (
-                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
                           {s.name}
                         </a>
                       ) : s.name}
@@ -181,7 +181,7 @@ export function PrivacyPage() {
             </table>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            See our <Link to="/berlin/sources" className="text-blue-600 dark:text-blue-400 hover:underline">data sources</Link> page for a full list of APIs we use.
+            See our <Link to="/berlin/sources" className="text-link hover:underline">data sources</Link> page for a full list of APIs we use.
             Everything else on the dashboard, including the rain radar, comes through our own server,
             so those data providers never receive requests from your browser when the dashboard loads
             its data. The interface uses your
@@ -218,7 +218,7 @@ export function PrivacyPage() {
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               For any privacy-related questions, contact us at{' '}
-              <ObfuscatedEmail className="text-blue-600 dark:text-blue-400 hover:underline" />.
+              <ObfuscatedEmail className="text-link hover:underline" />.
             </p>
           </div>
         </section>

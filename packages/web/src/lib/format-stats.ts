@@ -10,7 +10,8 @@ export function formatTime(seconds: number): string {
 }
 
 /**
- * Percentage delta with Tailwind color classes.
+ * Percentage delta with the colour role class for its direction
+ * (`text-negative`, `text-positive`, `text-muted` for no change; globals.css).
  * @param current  - current value
  * @param previous - previous value (returns null if undefined or 0)
  * @param invert   - if true, negative change is "worse" (default: positive is worse)
@@ -25,26 +26,18 @@ export function formatDelta(
   // One decimal below ±10 %, whole percent from there.
   const text = Math.abs(pct) < 10 ? formatSignedPercent(pct, 1) : formatSignedPercent(Math.round(pct));
   const isWorse = invert ? pct < 0 : pct > 0;
-  const color = isWorse
-    ? 'text-red-500 dark:text-red-400'
-    : pct === 0
-      ? 'text-gray-500 dark:text-gray-400'
-      : 'text-green-500 dark:text-green-400';
+  const color = isWorse ? 'text-negative' : pct === 0 ? 'text-muted' : 'text-positive';
   return { text, color };
 }
 
 /**
- * Year-over-year percentage with Tailwind color classes.
+ * Year-over-year percentage with the colour role class for its direction.
  * Simplified version of formatDelta for pre-computed YoY percentages
  * where positive = worse (higher unemployment).
  */
 export function formatYoy(percent: number): { text: string; color: string } {
   // A whole percentage as it comes, otherwise one decimal.
   const text = Number.isInteger(percent) ? formatSignedPercent(percent) : formatSignedPercent(percent, 1);
-  const color = percent > 0
-    ? 'text-red-500 dark:text-red-400'
-    : percent < 0
-      ? 'text-green-500 dark:text-green-400'
-      : 'text-gray-500 dark:text-gray-400';
+  const color = percent > 0 ? 'text-negative' : percent < 0 ? 'text-positive' : 'text-muted';
   return { text, color };
 }

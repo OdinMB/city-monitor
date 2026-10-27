@@ -126,7 +126,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
                 )}
                 <a
                   href={`tel:${s.phone.replace(/[\s-]/g, '')}`}
-                  className="shrink-0 text-[12px] font-semibold tabular-nums text-blue-600 dark:text-blue-400 hover:underline"
+                  className="shrink-0 text-[12px] font-semibold tabular-nums text-link hover:underline"
                 >
                   <Ltr>{s.phone}</Ltr>
                 </a>
@@ -159,7 +159,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
                 </div>
                 <a
                   href={`tel:${r.phone.replace(/[\s-]/g, '')}`}
-                  className="shrink-0 text-[12px] font-semibold tabular-nums text-blue-600 dark:text-blue-400 hover:underline"
+                  className="shrink-0 text-[12px] font-semibold tabular-nums text-link hover:underline"
                 >
                   <Ltr>{r.phone}</Ltr>
                 </a>

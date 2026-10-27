@@ -28,24 +28,24 @@ describe('formatDelta', () => {
     expect(formatDelta(100, 0)).toBeNull();
   });
 
-  it('shows positive delta as red (worse) by default', () => {
+  it('shows a rise in the negative role (worse) by default', () => {
     const result = formatDelta(110, 100);
     expect(result).not.toBeNull();
     expect(result!.text).toBe('+10%');
-    expect(result!.color).toContain('text-red');
+    expect(result!.color).toBe('text-negative');
   });
 
-  it('shows negative delta as green (better) by default', () => {
+  it('shows a fall in the positive role (better) by default', () => {
     const result = formatDelta(90, 100);
     expect(result).not.toBeNull();
     expect(result!.text).toBe('-10%');
-    expect(result!.color).toContain('text-green');
+    expect(result!.color).toBe('text-positive');
   });
 
   it('inverts color logic when invert=true', () => {
     const result = formatDelta(90, 100, true);
     expect(result).not.toBeNull();
-    expect(result!.color).toContain('text-red');
+    expect(result!.color).toBe('text-negative');
   });
 
   it('rounds large percentages', () => {
@@ -54,32 +54,33 @@ describe('formatDelta', () => {
     expect(result!.text).toBe('+100%');
   });
 
-  it('shows gray for zero change, at AA contrast in both themes', () => {
+  it('shows zero change in the muted role, at AA contrast in both themes', () => {
     const result = formatDelta(100, 100);
     expect(result).not.toBeNull();
     expect(result!.text).toBe('0.0%');
-    // gray-400 on a white tile is 2.6:1; gray-500 light / gray-400 dark pass 4.5:1.
-    expect(result!.color).toBe('text-gray-500 dark:text-gray-400');
+    // The muted role is gray-500 light / gray-400 dark, both 4.5:1 or more;
+    // gray-400 on a white tile is 2.6:1.
+    expect(result!.color).toBe('text-muted');
   });
 });
 
 describe('formatYoy', () => {
-  it('shows positive percent as red', () => {
+  it('shows a rise in the negative role', () => {
     const result = formatYoy(5);
     expect(result.text).toBe('+5%');
-    expect(result.color).toContain('text-red');
+    expect(result.color).toBe('text-negative');
   });
 
-  it('shows negative percent as green', () => {
+  it('shows a fall in the positive role', () => {
     const result = formatYoy(-3.2);
     expect(result.text).toBe('-3.2%');
-    expect(result.color).toContain('text-green');
+    expect(result.color).toBe('text-positive');
   });
 
-  it('shows zero as gray, at AA contrast in both themes', () => {
+  it('shows zero in the muted role, at AA contrast in both themes', () => {
     const result = formatYoy(0);
     expect(result.text).toBe('0%');
-    expect(result.color).toBe('text-gray-500 dark:text-gray-400');
+    expect(result.color).toBe('text-muted');
   });
 
   it('formats decimal values', () => {

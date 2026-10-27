@@ -83,7 +83,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
           href="https://service.berlin.de/terminvereinbarung/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block"
+          className="text-xs text-link hover:underline mt-1 inline-block"
         >
           {t('panel.appointments.bookAppointment')} {arrow}
         </a>
@@ -151,7 +151,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
             href={safeUrl(data.bookingUrl)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            className="text-xs text-link hover:underline"
           >
             {t('panel.appointments.bookAppointment')} {arrow}
           </a>

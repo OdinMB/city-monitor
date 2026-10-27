@@ -3,13 +3,20 @@
 /* Use .dark class on <html> instead of prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Register surface colors as Tailwind theme tokens → bg-surface-0, border-border, etc. */
+/* Register surface colors and colour roles as Tailwind theme tokens →
+   bg-surface-0, border-border, text-link, text-positive, etc. */
 @theme {
   --color-surface-0: var(--surface-0);
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
   --color-border: var(--border);
   --color-border-subtle: var(--border-subtle);
+
+  --color-link: var(--link);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-muted: var(--muted);
 }
 
 :root {
@@ -62,6 +69,26 @@
   --surface-2: #181d2a;      /* cool-tinted elevated */
   --border: #212836;         /* cool-tinted border */
   --border-subtle: #1a2030;  /* cool-tinted subtle border */
+}
+
+/* Colour roles: what a colour means, set once for light and dark. A component
+   writes text-link or text-positive rather than a palette colour and its dark:
+   partner, so a contrast fix is one value here. Values are Tailwind palette
+   variables, so a role paints exactly what the palette class it replaced
+   painted. Pinned by colour-roles.test.ts. */
+:root {
+  --link: var(--color-blue-600);      /* links and link-styled buttons */
+  --positive: var(--color-green-500); /* good: a change for the better */
+  --negative: var(--color-red-500);   /* bad: a change for the worse */
+  --warning: var(--color-amber-700);  /* caution */
+  --muted: var(--color-gray-500);     /* secondary text; a change of zero */
+}
+.dark {
+  --link: var(--color-blue-400);
+  --positive: var(--color-green-400);
+  --negative: var(--color-red-400);
+  --warning: var(--color-amber-400);
+  --muted: var(--color-gray-400);
 }
 
 /* Skeleton shimmer — gradient sweep left-to-right */

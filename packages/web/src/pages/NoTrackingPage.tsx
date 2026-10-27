@@ -100,7 +100,7 @@ export function NoTrackingPage() {
         <div className="p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             For details on what data we collect (or rather don&apos;t collect), see our{' '}
-            <Link to="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">
+            <Link to="/privacy" className="text-link hover:underline">
               privacy policy
             </Link>.
           </p>

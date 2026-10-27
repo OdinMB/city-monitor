@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { PageShell } from '../components/layout/PageShell.js';
 import { ObfuscatedEmail, ObfuscatedAddress } from '../components/ObfuscatedContact.js';
 
-const LINK_CLASS = 'text-blue-600 dark:text-blue-400 hover:underline';
+const LINK_CLASS = 'text-link hover:underline';
 
 export function ImprintPage() {
   return (

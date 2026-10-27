@@ -333,7 +333,7 @@ export function SourcesPage() {
                     href={safeUrl(source.url)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                    className="text-sm font-semibold text-link hover:underline"
                   >
                     {source.name}
                   </a>

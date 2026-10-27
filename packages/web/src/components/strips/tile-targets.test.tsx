@@ -151,14 +151,13 @@ describe('muted tile text meets 4.5:1 (WCAG 1.4.3)', () => {
 });
 
 describe('link text meets 4.5:1 (WCAG 1.4.3)', () => {
-  // One pair for every link: blue-600 is 5.3:1 on a light tile (white), 5.0:1
-  // on the light page background; blue-400 is 6.7:1 on a dark tile, 6.9:1 in
-  // Berlin's and Hamburg's dark tiles. blue-500 on white was 3.8:1.
-  const LINK = ['text-blue-600', 'dark:text-blue-400'];
+  // Every link takes the link role (globals.css, colour-roles.test.ts):
+  // blue-600 is 5.3:1 on a light tile (white), 5.0:1 on the light page
+  // background; blue-400 is 6.7:1 on a dark tile, 6.9:1 in Berlin's and
+  // Hamburg's dark tiles. blue-500 on white was 3.8:1.
   function expectLinkColour(el: Element) {
-    expectClasses(el, LINK);
-    expect(el.classList.contains('text-blue-500'), el.className).toBe(false);
-    expect(el.classList.contains('hover:text-blue-400'), el.className).toBe(false);
+    expectClasses(el, ['text-link']);
+    expect(el.className, el.className).not.toMatch(/(^|[\s:])text-blue-\d+/);
   }
 
   it('Political: each representative\'s arrow link and the "more" button', () => {
