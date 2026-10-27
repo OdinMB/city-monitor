@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { saveWeather, saveTransitAlerts, saveEvents, saveSafetyReports, saveSummary, saveAirQualityGrid } from './writes.js';
+import { saveWeather, saveTransitAlerts, saveNinaWarnings, saveEvents, saveSafetyReports, saveSummary, saveAirQualityGrid } from './writes.js';
 import type { Db } from './index.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
-import type { TransitAlert } from '@city-monitor/shared';
+import type { NinaWarning, TransitAlert } from '@city-monitor/shared';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
 
@@ -69,6 +69,22 @@ describe('DB writes', () => {
   it('saveTransitAlerts skips insert when alerts array is empty', async () => {
     await saveTransitAlerts(db, 'berlin', []);
     expect(insert).not.toHaveBeenCalled();
+  });
+
+  it('saveNinaWarnings inserts the warnings as one snapshot row', async () => {
+    const warnings = [
+      { id: 'mow.1', version: 1, startDate: '2026-10-27T06:00:00Z', severity: 'severe', type: 'Alert', source: 'mowas', headline: 'Test' },
+    ] as NinaWarning[];
+
+    await saveNinaWarnings(db, 'berlin', warnings);
+    expect(insert).toHaveBeenCalledOnce();
+    expect(values.mock.calls[0]![0]).toEqual({ cityId: 'berlin', type: 'bbk-nina', data: warnings });
+  });
+
+  it('saveNinaWarnings stores an empty list too, so it replaces the last list as the newest row', async () => {
+    await saveNinaWarnings(db, 'berlin', []);
+    expect(insert).toHaveBeenCalledOnce();
+    expect(values.mock.calls[0]![0]).toEqual({ cityId: 'berlin', type: 'bbk-nina', data: [] });
   });
 
   it('saveEvents upserts events', async () => {

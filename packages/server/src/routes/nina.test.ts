@@ -56,6 +56,22 @@ describe('NINA API', () => {
     expect(typeof body.fetchedAt).toBe('string');
   });
 
+  it('GET /api/berlin/nina leaves out cached warnings that have ended since they were fetched', async () => {
+    const base = { version: 1, startDate: '2026-03-02T10:00:00Z', severity: 'severe', source: 'mowas', headline: 'Test' } as const;
+    const warnings: NinaWarning[] = [
+      { ...base, id: 'mow.current', type: 'Alert', expiresAt: new Date(Date.now() + 3_600_000).toISOString() },
+      { ...base, id: 'mow.expired', type: 'Alert', expiresAt: new Date(Date.now() - 1_000).toISOString() },
+      { ...base, id: 'mow.withdrawn', type: 'Cancel' },
+    ];
+    appContext.cache.set('berlin:nina:warnings', warnings, 60);
+
+    const res = await fetch(`${baseUrl}/api/berlin/nina`);
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.data.map((w: NinaWarning) => w.id)).toEqual(['mow.current']);
+    expect(typeof body.fetchedAt).toBe('string');
+  });
+
   it('GET /api/unknown/nina returns 404', async () => {
     const res = await fetch(`${baseUrl}/api/unknown/nina`);
     expect(res.status).toBe(404);

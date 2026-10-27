@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { Server } from 'node:http';
+import type { NinaWarning } from '@city-monitor/shared';
 import { createApp } from '../app.js';
 
 describe('Bootstrap API', () => {
@@ -51,6 +52,22 @@ describe('Bootstrap API', () => {
     expect(res.status).toBe(200);
     expect(body.airQuality.data).toEqual(mockAq);
     expect(typeof body.airQuality.fetchedAt).toBe('string');
+  });
+
+  it('GET /api/berlin/bootstrap leaves out NINA warnings that have ended since they were cached', async () => {
+    const base = { version: 1, startDate: '2026-03-02T10:00:00Z', severity: 'severe', source: 'mowas', headline: 'Test' } as const;
+    const warnings: NinaWarning[] = [
+      { ...base, id: 'mow.current', type: 'Alert', expiresAt: new Date(Date.now() + 3_600_000).toISOString() },
+      { ...base, id: 'mow.expired', type: 'Alert', expiresAt: new Date(Date.now() - 1_000).toISOString() },
+      { ...base, id: 'mow.withdrawn', type: 'Cancel' },
+    ];
+    appContext.cache.set('berlin:nina:warnings', warnings, 60);
+
+    const res = await fetch(`${baseUrl}/api/berlin/bootstrap`);
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.nina.data.map((w: NinaWarning) => w.id)).toEqual(['mow.current']);
+    expect(typeof body.nina.fetchedAt).toBe('string');
   });
 
   it('GET /api/unknown/bootstrap returns 404', async () => {

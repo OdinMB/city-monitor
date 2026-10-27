@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import type { NinaWarning } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import { getCityConfig } from '../config/index.js';
 import { CK } from '../lib/cache-keys.js';
+import { currentWarnings } from '../cron/ingest-nina.js';
 
 export function createBootstrapRouter(cache: Cache) {
   const router = Router();
@@ -17,6 +19,8 @@ export function createBootstrapRouter(cache: Cache) {
     }
 
     const data = cache.getBatchWithMeta(CK.bootstrapKeys(city.id));
+    // As in the NINA route: leave out the warnings that have ended since the list was cached
+    const nina = data[CK.ninaWarnings(city.id)] as { data: NinaWarning[]; fetchedAt: string } | undefined;
 
     res.json({
       news: data[CK.newsDigest(city.id)] ?? null,
@@ -24,7 +28,7 @@ export function createBootstrapRouter(cache: Cache) {
       transit: data[CK.transitAlerts(city.id)] ?? null,
       events: data[CK.eventsUpcoming(city.id)] ?? null,
       safety: data[CK.safetyRecent(city.id)] ?? null,
-      nina: data[CK.ninaWarnings(city.id)] ?? null,
+      nina: nina ? { data: currentWarnings(nina.data), fetchedAt: nina.fetchedAt } : null,
       airQuality: data[CK.airQuality(city.id)] ?? null,
       pharmacies: data[CK.pharmacies(city.id)] ?? null,
       aeds: data[CK.aedLocations(city.id)] ?? null,

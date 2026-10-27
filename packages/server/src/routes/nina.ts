@@ -6,6 +6,7 @@ import { loadNinaWarnings } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { currentWarnings } from '../cron/ingest-nina.js';
 
 const log = createLogger('route:nina');
 
@@ -25,9 +26,10 @@ export function createNinaRouter(cache: Cache, db: Db | null = null) {
       return;
     }
 
+    // A list can outlive some of its warnings, so each answer leaves out those that have ended since
     const cached = cache.getWithMeta<NinaWarning[]>(CK.ninaWarnings(city.id));
     if (cached) {
-      res.json(cached);
+      res.json({ data: currentWarnings(cached.data), fetchedAt: cached.fetchedAt });
       return;
     }
 
@@ -36,7 +38,7 @@ export function createNinaRouter(cache: Cache, db: Db | null = null) {
         const result = await loadNinaWarnings(db, city.id);
         if (result) {
           cache.set(CK.ninaWarnings(city.id), result.data, 600, result.fetchedAt);
-          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
+          res.json({ data: currentWarnings(result.data), fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {
