@@ -77,11 +77,11 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
         <span dir="auto" className="font-medium text-gray-900 dark:text-gray-100 truncate">
           {event.title}
         </span>
-        <span className="shrink-0 text-gray-500 dark:text-gray-400 ms-auto whitespace-nowrap">
+        <span className="shrink-0 text-muted ms-auto whitespace-nowrap">
           {day}{showTime ? ` · ${time}` : ''}
         </span>
         {event.free && (
-          <span className="shrink-0 px-1 py-0.5 rounded text-[10px] font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+          <span className="shrink-0 px-1 py-0.5 rounded text-[10px] font-medium tag-event-free">
             {t('panel.events.free')}
           </span>
         )}
@@ -89,7 +89,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700 space-y-1 text-[11px] text-gray-500 dark:text-gray-400 text-start">
+        <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700 space-y-1 text-[11px] text-muted text-start">
           {event.venue && <div><bdi>{event.venue}</bdi></div>}
           {event.description && <div dir="auto" className="line-clamp-3">{event.description}</div>}
           {event.endDate && (
@@ -264,7 +264,7 @@ export function EventsStrip() {
         {isLoading ? (
           <Skeleton lines={2} />
         ) : events.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400 py-1 text-center">{t('panel.events.empty')}</p>
+          <p className="text-sm text-muted py-1 text-center">{t('panel.events.empty')}</p>
         ) : (
           <div className="space-y-1.5">
             {events.map((event) => (

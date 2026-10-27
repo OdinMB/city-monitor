@@ -284,7 +284,7 @@ describe('logical sides in the web source', () => {
     const isolatedIn = (file: string) => FILES.find((f) => f.file === file)!.scan.inRunningText.filter((e) => e.isolated);
     expect(isolatedIn('components/strips/BathingStrip.tsx').map((e) => e.element)).toEqual(['<span className="ms-1.5">']);
     expect(isolatedIn('components/strips/AirQualityStrip.tsx').map((e) => e.element)).toEqual([
-      '<span className="font-normal text-gray-500 dark:text-gray-400 ms-0.5">',
+      '<span className="font-normal text-muted ms-0.5">',
     ]);
     expect(isolatedIn('components/map/layers/air-quality.ts').map((e) => e.element)).toEqual([
       expect.stringContaining('margin-inline-end:4px'),

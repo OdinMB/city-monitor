@@ -136,17 +136,19 @@ describe('Events filter chips keep a visible focus ring (WCAG 2.4.7)', () => {
 });
 
 describe('muted tile text meets 4.5:1 (WCAG 1.4.3)', () => {
-  it('uses gray-500 in light mode and gray-400 in dark mode, never gray-400 in light mode', () => {
+  // The muted role (globals.css, colour-roles.test.ts) is gray-500 in light
+  // mode and gray-400 in dark mode; gray-400 in light mode would be 2.6:1.
+  it('uses the muted role, never gray-400 in light mode', () => {
     render(<CouncilMeetingsStrip />);
     const location = screen.getByText('Abgeordnetenhaus, Plenarsaal');
-    expectClasses(location, ['text-gray-500', 'dark:text-gray-400']);
+    expectClasses(location, ['text-muted']);
     expect(location.classList.contains('text-gray-400')).toBe(false);
   });
 
   it('keeps the Appointments "checking" summary readable', () => {
     render(<AppointmentsStrip />);
     const summary = screen.getByText('Checking availability…');
-    expectClasses(summary, ['text-gray-500', 'dark:text-gray-400']);
+    expectClasses(summary, ['text-muted']);
   });
 });
 

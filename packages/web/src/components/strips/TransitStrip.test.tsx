@@ -118,19 +118,19 @@ describe('TransitStrip disruption rows', () => {
   });
 
   it.each([
-    // White 12px bold text needs 4.5:1 (WCAG 1.4.3). The badges have no dark
-    // variant, so each pair is the same in both themes.
-    ['U2', ['bg-blue-600', 'text-white']], // 5.3:1
-    ['S1', ['bg-green-700', 'text-white']], // 4.9:1 (green-600 was 3.2:1)
-    ['M10', ['bg-red-600', 'text-white']], // 4.8:1
-    ['RE1', ['bg-yellow-600', 'text-gray-900']], // 6.1:1 (white was 2.9:1)
-    ['100', ['bg-yellow-600', 'text-gray-900']],
-  ])('gives the %s line badge colours at 4.5:1', (line, classes) => {
+    // The line tags' colours, each at 4.5:1 for the badge's 12px bold text,
+    // are pinned in colour-roles.test.ts.
+    ['U2', 'tag-line-u'],
+    ['S1', 'tag-line-s'],
+    ['M10', 'tag-line-tram'],
+    ['RE1', 'tag-line-other'],
+    ['100', 'tag-line-other'],
+  ])('gives the %s line badge its mode tag', (line, tag) => {
     render(<TransitStrip />, { wrapper: createWrapper([{ ...ALERT, line, lines: [line] }]) });
     const badge = screen.getByText(line);
-    for (const cls of classes) expect(badge.classList.contains(cls), `${line}: ${badge.className}`).toBe(true);
-    expect(badge.classList.contains('bg-green-600')).toBe(false);
-    if (classes.includes('text-gray-900')) expect(badge.classList.contains('text-white')).toBe(false);
+    expect(badge.classList.contains(tag), `${line}: ${badge.className}`).toBe(true);
+    // The tag sets both colours; a palette class next to it would fight it.
+    expect(badge.className).not.toMatch(/(^|\s)(bg|text)-(white|black|[a-z]+-\d{2,3})(\s|$)/);
   });
 
   it.each(['de', 'en', 'tr', 'ar'])('has a translated station label (%s)', async (lang) => {

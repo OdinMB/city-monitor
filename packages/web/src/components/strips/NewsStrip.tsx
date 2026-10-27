@@ -28,14 +28,14 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  local: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  transit: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  politics: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-  culture: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
-  crime: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-  weather: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
-  economy: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  sports: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  local: 'tag-news-local',
+  transit: 'tag-news-transit',
+  politics: 'tag-news-politics',
+  culture: 'tag-news-culture',
+  crime: 'tag-news-crime',
+  weather: 'tag-news-weather',
+  economy: 'tag-news-economy',
+  sports: 'tag-news-sports',
 };
 
 const MAX_ITEMS = 15;
@@ -107,11 +107,11 @@ export function NewsStrip() {
         ))}
       </div>
 
-      <p role="note" className="mb-2 text-[11px] text-gray-500 dark:text-gray-400">{t('aiNotice.newsLegend')}</p>
+      <p role="note" className="mb-2 text-[11px] text-muted">{t('aiNotice.newsLegend')}</p>
 
       <div id="news-panel" role="tabpanel" aria-labelledby={`news-tab-${resolvedCategory}`} className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pe-2">
         {filteredItems.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.news.empty')}</p>
+          <p className="text-sm text-muted py-2 text-center">{t('panel.news.empty')}</p>
         ) : (
           <ul className="divide-y divide-gray-100 dark:divide-gray-800">
             {filteredItems.map((item) => (
@@ -142,7 +142,7 @@ function ImportanceScore({ percent }: { percent: number }) {
       aria-valuemax={100}
       aria-valuetext={`${percent}%`}
       title={label}
-      className="text-[10px] text-gray-500 dark:text-gray-400"
+      className="text-[10px] text-muted"
     >
       {percent}%
     </span>
@@ -163,7 +163,7 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
           {item.title}
         </span>
       </a>
-      <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+      <div className="flex items-center gap-2 mt-0.5 text-xs text-muted">
         {faviconUrl && (
           <img src={faviconUrl} alt="" width={14} height={14} className="inline-block" loading="lazy" />
         )}

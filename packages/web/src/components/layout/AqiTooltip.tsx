@@ -24,7 +24,7 @@ export function AqiTooltip() {
           <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {t(`panel.airQuality.level.${level.label}`)}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-xs text-muted">
             European AQI
           </div>
         </div>

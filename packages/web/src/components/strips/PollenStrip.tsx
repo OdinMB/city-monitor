@@ -12,15 +12,16 @@ const POLLEN_TYPES: PollenType[] = [
   'Hasel', 'Erle', 'Esche', 'Birke', 'Graeser', 'Roggen', 'Beifuss', 'Ambrosia',
 ];
 
-const INTENSITY_COLORS: Record<PollenIntensity, string> = {
-  '-1': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  '0': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  '0-1': 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  '1': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
-  '1-2': 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
-  '2': 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
-  '2-3': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
-  '3': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+/** Each intensity's state badge (globals.css): none, then soft and strong steps up to high. */
+const INTENSITY_BADGES: Record<PollenIntensity, string> = {
+  '-1': 'badge-neutral',
+  '0': 'badge-neutral',
+  '0-1': 'badge-good',
+  '1': 'badge-good-strong',
+  '1-2': 'badge-fair',
+  '2': 'badge-moderate',
+  '2-3': 'badge-moderate-strong',
+  '3': 'badge-severe',
 };
 
 function isActive(v: PollenIntensity): boolean {
@@ -33,7 +34,7 @@ function isOffSeason(pollen: Record<PollenType, { today: PollenIntensity }>): bo
 
 function Badge({ value, t }: { value: PollenIntensity; t: (k: string) => string }) {
   return (
-    <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-medium leading-tight ${INTENSITY_COLORS[value]}`}>
+    <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-medium leading-tight ${INTENSITY_BADGES[value]}`}>
       {t(`panel.pollen.level.${value}`)}
     </span>
   );
@@ -49,7 +50,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.pollen.title')} onRetry={refetch} />;
-  if (!data) return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.pollen.empty')}</p>;
+  if (!data) return <p className="text-sm text-muted py-2 text-center">{t('panel.pollen.empty')}</p>;
 
   const offSeason = isOffSeason(data.pollen);
 
@@ -57,7 +58,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
     return (
       <>
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('panel.pollen.offSeason')}</p>
+          <p className="text-sm text-muted">{t('panel.pollen.offSeason')}</p>
         </div>
         {agoText && (
           <TileFooter stale={isStale}>
@@ -76,7 +77,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
       return (
         <>
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-sm text-green-600 dark:text-green-400 font-medium">{t('panel.pollen.noActive')}</p>
+            <p className="text-sm text-success font-medium">{t('panel.pollen.noActive')}</p>
           </div>
           {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
         </>
@@ -92,7 +93,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   {t(`panel.pollen.type.${type}`)}
                 </span>
-                <span className={`inline-block px-2 py-1 rounded text-xs font-semibold leading-tight ${INTENSITY_COLORS[data.pollen[type].today]}`}>
+                <span className={`inline-block px-2 py-1 rounded text-xs font-semibold leading-tight ${INTENSITY_BADGES[data.pollen[type].today]}`}>
                   {t(`panel.pollen.level.${data.pollen[type].today}`)}
                 </span>
               </div>
@@ -110,7 +111,7 @@ export function PollenStrip({ expanded }: { expanded: boolean }) {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="text-gray-500 dark:text-gray-400">
+            <tr className="text-muted">
               <th className="text-start font-medium pb-1.5 pe-2" />
               <th className="text-center font-medium pb-1.5 px-1">{t('panel.pollen.today')}</th>
               <th className="text-center font-medium pb-1.5 px-1">{t('panel.pollen.tomorrow')}</th>

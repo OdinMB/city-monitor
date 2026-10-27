@@ -102,7 +102,7 @@ function SubLayerItem({ icon, color, active, label, onClick, parentColor }: { ic
       style={active ? { backgroundColor: `${parentColor ?? color}12` } : undefined}
     >
       <LayerBadge icon={icon} color={color} active={active} small />
-      <span className={`text-[13px] ${active ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'}`}>
+      <span className={`text-[13px] ${active ? 'text-gray-700 dark:text-gray-300' : 'text-muted'}`}>
         {label}
       </span>
     </button>
@@ -138,14 +138,14 @@ export function DataLayerToggles() {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="hidden sm:inline text-[11px] text-gray-500 dark:text-gray-400">
+        <span className="hidden sm:inline text-[11px] text-muted">
           {t('shortcuts.title')}
         </span>
         {/* py-1 -my-1 pads the tap target to 24px tall (WCAG 2.5.8) without moving the row. */}
         <button
           onClick={toggleSingleView}
           aria-pressed={singleView}
-          className="flex items-center gap-1.5 py-1 -my-1 text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
+          className="flex items-center gap-1.5 py-1 -my-1 text-[11px] text-muted hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
         >
           <span className={singleView ? 'text-gray-700 dark:text-gray-200 font-medium' : ''}>
             {t('sidebar.viewMode.single')}
@@ -289,7 +289,7 @@ export function DataLayerToggles() {
                 <span className="relative">
                   <LayerBadge icon={icon} color={color} active={active} />
                   {LAYER_SHORTCUT[layer] != null && (
-                    <span className="hidden sm:flex absolute -top-1.5 -inset-e-1.5 w-4 h-4 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-[9px] font-bold text-gray-500 dark:text-gray-400 leading-none">
+                    <span className="hidden sm:flex absolute -top-1.5 -inset-e-1.5 w-4 h-4 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-[9px] font-bold text-muted leading-none">
                       {LAYER_SHORTCUT[layer]}
                     </span>
                   )}

@@ -15,7 +15,7 @@ export function AppErrorFallback({ error }: { error: unknown; resetErrorBoundary
         >
           {t('error.reload')}
         </button>
-        <details className="text-start text-sm text-gray-500 dark:text-gray-400">
+        <details className="text-start text-sm text-muted">
           <summary className="cursor-pointer">{t('error.details')}</summary>
           <pre className="mt-2 whitespace-pre-wrap break-words">{message}</pre>
         </details>
@@ -37,7 +37,7 @@ const RETRY_CLASSES = 'inline-flex items-center justify-center min-w-6 min-h-6 -
 export function StripErrorFallback({ domain, onRetry }: { domain: string; onRetry: () => void }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 py-2">
+    <div className="flex items-center gap-2 text-sm text-muted py-2">
       <span>{t('error.loadFailed', { domain })}</span>
       <button
         type="button"
@@ -55,7 +55,7 @@ export function StripErrorFallback({ domain, onRetry }: { domain: string; onRetr
 export function MapErrorFallback({ resetErrorBoundary }: { resetErrorBoundary: () => void }) {
   const { t } = useTranslation();
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
+    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-muted">
       <span className="text-sm">{t('error.mapUnavailable')}</span>
       <button
         type="button"

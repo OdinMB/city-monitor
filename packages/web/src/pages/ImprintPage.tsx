@@ -30,7 +30,7 @@ export function ImprintPage() {
           />
           <div>
             <p className="font-semibold text-base">Odin Mühlenbein</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">AI Tinkerer</p>
+            <p className="text-sm text-muted">AI Tinkerer</p>
             <div className="flex gap-3 mt-1.5">
               <a
                 href="https://odins.website"
@@ -55,7 +55,7 @@ export function ImprintPage() {
         {/* Legal sections */}
         <div className="grid gap-6 sm:grid-cols-2">
           <section className="p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+            <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">
               Information (§ 5 DDG)
             </h2>
             <ObfuscatedAddress />
@@ -65,7 +65,7 @@ export function ImprintPage() {
           </section>
 
           <section className="p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+            <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">
               Editorially Responsible (§ 18 Abs. 2 MStV)
             </h2>
             <ObfuscatedAddress />

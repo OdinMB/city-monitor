@@ -24,14 +24,14 @@ function RateBlock({ label, rate, count, yoyPercent, accent }: {
 
   return (
     <div className="flex flex-col items-center">
-      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+      <span className="text-sm font-medium text-muted">
         {label}
       </span>
       <span className={`text-4xl font-extrabold tabular-nums leading-none ${accent} mt-1`}>
         {formatPercent(rate, 1)}
       </span>
       <div className="flex items-center gap-1.5 mt-1.5 text-xs">
-        <span className="text-gray-500 dark:text-gray-400 tabular-nums">
+        <span className="text-muted tabular-nums">
           {formatCount(count, i18n.language)}
         </span>
         <span className="text-gray-300 dark:text-gray-600">&middot;</span>
@@ -51,7 +51,7 @@ export function LaborMarketStrip() {
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.laborMarket.title')} onRetry={refetch} />;
-  if (!data) return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.laborMarket.empty')}</p>;
+  if (!data) return <p className="text-sm text-muted py-2 text-center">{t('panel.laborMarket.empty')}</p>;
 
   return (
     <>

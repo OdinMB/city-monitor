@@ -47,7 +47,7 @@ function BathingTile() {
   const { id: cityId } = useCityConfig();
   const offSeason = useBathingOffSeason(cityId);
   const badge = offSeason ? (
-    <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+    <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium badge-caution">
       {t('panel.bathing.offSeason')}
     </span>
   ) : undefined;
@@ -138,7 +138,7 @@ export function CommandLayout() {
                   {(['cost', 'ads', 'tracking'] as const).map((key) => (
                     <div key={key}>
                       <div className="text-4xl font-extrabold tabular-nums text-green-600 dark:text-green-400">0</div>
-                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">{t(`support.${key}`)}</div>
+                      <div className="text-sm font-medium text-muted mt-1">{t(`support.${key}`)}</div>
                     </div>
                   ))}
                 </div>
@@ -154,7 +154,7 @@ export function CommandLayout() {
                     </svg>
                     {t('support.title')}
                   </span>
-                  <span className="text-lg text-gray-500 dark:text-gray-400 mt-0.5">{t('support.cta')}</span>
+                  <span className="text-lg text-muted mt-0.5">{t('support.cta')}</span>
                 </a>
               </div>
               <TileFooter>{t('support.footer')}</TileFooter>

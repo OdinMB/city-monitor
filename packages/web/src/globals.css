@@ -4,7 +4,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Register surface colors and colour roles as Tailwind theme tokens →
-   bg-surface-0, border-border, text-link, text-positive, etc. */
+   bg-surface-0, border-border, text-link, text-positive, bg-signal-good, etc. */
 @theme {
   --color-surface-0: var(--surface-0);
   --color-surface-1: var(--surface-1);
@@ -17,6 +17,21 @@
   --color-negative: var(--negative);
   --color-warning: var(--warning);
   --color-muted: var(--muted);
+  --color-success: var(--success);
+  --color-caution: var(--caution);
+  --color-danger: var(--danger);
+  --color-level-low: var(--level-low);
+  --color-level-moderate: var(--level-moderate);
+  --color-level-high: var(--level-high);
+
+  --color-signal-good: var(--signal-good);
+  --color-signal-caution: var(--signal-caution);
+  --color-signal-bad: var(--signal-bad);
+  --color-signal-info: var(--signal-info);
+  --color-signal-unknown: var(--signal-unknown);
+  --color-severity-high: var(--severity-high);
+  --color-severity-medium: var(--severity-medium);
+  --color-severity-low: var(--severity-low);
 }
 
 :root {
@@ -72,16 +87,30 @@
 }
 
 /* Colour roles: what a colour means, set once for light and dark. A component
-   writes text-link or text-positive rather than a palette colour and its dark:
-   partner, so a contrast fix is one value here. Values are Tailwind palette
-   variables, so a role paints exactly what the palette class it replaced
-   painted. Pinned by colour-roles.test.ts. */
+   writes text-link, bg-signal-good or badge-good rather than a palette colour
+   and its dark: partner, so a contrast fix is one value here. Values are
+   Tailwind palette variables (or the literal a tile used to set inline), so a
+   role paints exactly what the classes it replaced painted. Where two tiles
+   showed one state in different shades, each kept its shade under its own
+   role. Pinned by colour-roles.test.ts. */
+
+/* Text roles: text-<role>. */
 :root {
   --link: var(--color-blue-600);      /* links and link-styled buttons */
   --positive: var(--color-green-500); /* good: a change for the better */
   --negative: var(--color-red-500);   /* bad: a change for the worse */
-  --warning: var(--color-amber-700);  /* caution */
+  --warning: var(--color-amber-700);  /* caution about the data itself: stale */
   --muted: var(--color-gray-500);     /* secondary text; a change of zero */
+  /* A status line in words: all clear (every Bürgeramt service bookable, no
+     pollen today), partly a problem (some appointments scarce), a problem
+     (some services unavailable). */
+  --success: var(--color-green-600);
+  --caution: var(--color-amber-600);
+  --danger: var(--color-red-500);
+  /* A measured level named in words (wastewater viral load). */
+  --level-low: var(--color-green-500);
+  --level-moderate: var(--color-amber-500);
+  --level-high: var(--color-red-500);
 }
 .dark {
   --link: var(--color-blue-400);
@@ -89,6 +118,125 @@
   --negative: var(--color-red-400);
   --warning: var(--color-amber-400);
   --muted: var(--color-gray-400);
+  --success: var(--color-green-400);
+  --caution: var(--color-amber-400);
+  --danger: var(--color-red-400);
+  --level-low: var(--color-green-400);
+  --level-moderate: var(--color-amber-400);
+  --level-high: var(--color-red-400);
+}
+
+/* Fill roles, one colour in both themes: bg-<role> for a dot or a solid badge
+   (white text), text-<role> for a figure in the same colour.
+   signal-*: the status of a water gauge, a bathing spot and a Bürgeramt
+   service (info is a low water level). severity-*: a transit disruption's dot. */
+:root {
+  --signal-good: #22c55e;
+  --signal-caution: #f59e0b;
+  --signal-bad: #ef4444;
+  --signal-info: #60a5fa;
+  --signal-unknown: #9ca3af;
+  --severity-high: var(--color-red-500);
+  --severity-medium: var(--color-amber-500);
+  --severity-low: var(--color-gray-400);
+}
+
+/* State badges: badge-<role> sets a tinted background and the text on it.
+   A scale from nothing to report up to severe (pollen intensity), plus caution
+   (provisional or out-of-season: Feuerwehr's running month, bathing off
+   season) and info (a tidal gauge). The -strong roles are the deeper tints the
+   pollen scale uses between its soft steps. */
+@utility badge-neutral { background-color: var(--badge-neutral-bg); color: var(--badge-neutral-text); }
+@utility badge-good { background-color: var(--badge-good-bg); color: var(--badge-good-text); }
+@utility badge-good-strong { background-color: var(--badge-good-strong-bg); color: var(--badge-good-strong-text); }
+@utility badge-fair { background-color: var(--badge-fair-bg); color: var(--badge-fair-text); }
+@utility badge-moderate { background-color: var(--badge-moderate-bg); color: var(--badge-moderate-text); }
+@utility badge-moderate-strong { background-color: var(--badge-moderate-strong-bg); color: var(--badge-moderate-strong-text); }
+@utility badge-severe { background-color: var(--badge-severe-bg); color: var(--badge-severe-text); }
+@utility badge-caution { background-color: var(--badge-caution-bg); color: var(--badge-caution-text); }
+@utility badge-info { background-color: var(--badge-info-bg); color: var(--badge-info-text); }
+
+/* Category tags: tag-<role> sets the background and text of a label that says
+   what kind of thing an item is (a news category, a council, free entry, a
+   transit line's mode). Line badges are the same in both themes, each pair at
+   4.5:1 for 12px bold text: U 5.3:1, S 4.9:1, tram 4.8:1, other 6.1:1. */
+@utility tag-news-local { background-color: var(--tag-news-local-bg); color: var(--tag-news-local-text); }
+@utility tag-news-transit { background-color: var(--tag-news-transit-bg); color: var(--tag-news-transit-text); }
+@utility tag-news-politics { background-color: var(--tag-news-politics-bg); color: var(--tag-news-politics-text); }
+@utility tag-news-culture { background-color: var(--tag-news-culture-bg); color: var(--tag-news-culture-text); }
+@utility tag-news-crime { background-color: var(--tag-news-crime-bg); color: var(--tag-news-crime-text); }
+@utility tag-news-weather { background-color: var(--tag-news-weather-bg); color: var(--tag-news-weather-text); }
+@utility tag-news-economy { background-color: var(--tag-news-economy-bg); color: var(--tag-news-economy-text); }
+@utility tag-news-sports { background-color: var(--tag-news-sports-bg); color: var(--tag-news-sports-text); }
+@utility tag-event-free { background-color: var(--tag-event-free-bg); color: var(--tag-event-free-text); }
+@utility tag-council-bvv { background-color: var(--tag-council-bvv-bg); color: var(--tag-council-bvv-text); }
+@utility tag-council-parliament { background-color: var(--tag-council-parliament-bg); color: var(--tag-council-parliament-text); }
+@utility tag-line-u { background-color: var(--tag-line-u-bg); color: var(--tag-line-u-text); }
+@utility tag-line-s { background-color: var(--tag-line-s-bg); color: var(--tag-line-s-text); }
+@utility tag-line-tram { background-color: var(--tag-line-tram-bg); color: var(--tag-line-tram-text); }
+@utility tag-line-other { background-color: var(--tag-line-other-bg); color: var(--tag-line-other-text); }
+
+:root {
+  --badge-neutral-bg: var(--color-gray-100);         --badge-neutral-text: var(--color-gray-600);
+  --badge-good-bg: var(--color-green-50);            --badge-good-text: var(--color-green-600);
+  --badge-good-strong-bg: var(--color-green-100);    --badge-good-strong-text: var(--color-green-700);
+  --badge-fair-bg: var(--color-yellow-50);           --badge-fair-text: var(--color-yellow-600);
+  --badge-moderate-bg: var(--color-orange-50);       --badge-moderate-text: var(--color-orange-600);
+  --badge-moderate-strong-bg: var(--color-orange-100); --badge-moderate-strong-text: var(--color-orange-700);
+  --badge-severe-bg: var(--color-red-100);           --badge-severe-text: var(--color-red-700);
+  --badge-caution-bg: var(--color-amber-50);         --badge-caution-text: var(--color-amber-600);
+  --badge-info-bg: var(--color-blue-50);             --badge-info-text: var(--color-blue-600);
+
+  --tag-news-local-bg: var(--color-gray-100);        --tag-news-local-text: var(--color-gray-700);
+  --tag-news-transit-bg: var(--color-blue-100);      --tag-news-transit-text: var(--color-blue-700);
+  --tag-news-politics-bg: var(--color-purple-100);   --tag-news-politics-text: var(--color-purple-700);
+  --tag-news-culture-bg: var(--color-amber-100);     --tag-news-culture-text: var(--color-amber-700);
+  --tag-news-crime-bg: var(--color-red-100);         --tag-news-crime-text: var(--color-red-700);
+  --tag-news-weather-bg: var(--color-cyan-100);      --tag-news-weather-text: var(--color-cyan-700);
+  --tag-news-economy-bg: var(--color-green-100);     --tag-news-economy-text: var(--color-green-700);
+  --tag-news-sports-bg: var(--color-orange-100);     --tag-news-sports-text: var(--color-orange-700);
+  --tag-event-free-bg: var(--color-green-100);       --tag-event-free-text: var(--color-green-700);
+  --tag-council-bvv-bg: var(--color-blue-50);        --tag-council-bvv-text: var(--color-blue-600);
+  --tag-council-parliament-bg: var(--color-purple-50); --tag-council-parliament-text: var(--color-purple-600);
+  --tag-line-u-bg: var(--color-blue-600);            --tag-line-u-text: var(--color-white);
+  --tag-line-s-bg: var(--color-green-700);           --tag-line-s-text: var(--color-white);
+  --tag-line-tram-bg: var(--color-red-600);          --tag-line-tram-text: var(--color-white);
+  --tag-line-other-bg: var(--color-yellow-600);      --tag-line-other-text: var(--color-gray-900);
+}
+/* Dark tints are the hue's 900 shade over the surface, written the way
+   Tailwind writes bg-<colour>-900/<alpha>. */
+.dark {
+  --badge-neutral-bg: var(--color-gray-800);         --badge-neutral-text: var(--color-gray-400);
+  --badge-good-bg: color-mix(in oklab, var(--color-green-900) 30%, transparent);
+  --badge-good-text: var(--color-green-400);
+  --badge-good-strong-bg: color-mix(in oklab, var(--color-green-900) 40%, transparent);
+  --badge-good-strong-text: var(--color-green-400);
+  --badge-fair-bg: color-mix(in oklab, var(--color-yellow-900) 30%, transparent);
+  --badge-fair-text: var(--color-yellow-400);
+  --badge-moderate-bg: color-mix(in oklab, var(--color-orange-900) 30%, transparent);
+  --badge-moderate-text: var(--color-orange-400);
+  --badge-moderate-strong-bg: color-mix(in oklab, var(--color-orange-900) 40%, transparent);
+  --badge-moderate-strong-text: var(--color-orange-400);
+  --badge-severe-bg: color-mix(in oklab, var(--color-red-900) 40%, transparent);
+  --badge-severe-text: var(--color-red-400);
+  --badge-caution-bg: color-mix(in oklab, var(--color-amber-900) 30%, transparent);
+  --badge-caution-text: var(--color-amber-400);
+  --badge-info-bg: color-mix(in oklab, var(--color-blue-900) 30%, transparent);
+  --badge-info-text: var(--color-blue-400);
+
+  --tag-news-local-bg: var(--color-gray-800);        --tag-news-local-text: var(--color-gray-300);
+  --tag-news-transit-bg: var(--color-blue-900);      --tag-news-transit-text: var(--color-blue-300);
+  --tag-news-politics-bg: var(--color-purple-900);   --tag-news-politics-text: var(--color-purple-300);
+  --tag-news-culture-bg: var(--color-amber-900);     --tag-news-culture-text: var(--color-amber-300);
+  --tag-news-crime-bg: var(--color-red-900);         --tag-news-crime-text: var(--color-red-300);
+  --tag-news-weather-bg: var(--color-cyan-900);      --tag-news-weather-text: var(--color-cyan-300);
+  --tag-news-economy-bg: var(--color-green-900);     --tag-news-economy-text: var(--color-green-300);
+  --tag-news-sports-bg: var(--color-orange-900);     --tag-news-sports-text: var(--color-orange-300);
+  --tag-event-free-bg: var(--color-green-900);       --tag-event-free-text: var(--color-green-300);
+  --tag-council-bvv-bg: color-mix(in oklab, var(--color-blue-900) 30%, transparent);
+  --tag-council-bvv-text: var(--color-blue-400);
+  --tag-council-parliament-bg: color-mix(in oklab, var(--color-purple-900) 30%, transparent);
+  --tag-council-parliament-text: var(--color-purple-400);
 }
 
 /* Skeleton shimmer — gradient sweep left-to-right */

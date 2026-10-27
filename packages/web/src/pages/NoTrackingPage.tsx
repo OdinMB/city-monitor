@@ -57,7 +57,7 @@ export function NoTrackingPage() {
               <tr className="bg-gray-100 dark:bg-gray-800/60 text-start">
                 <th className="px-4 py-3 font-semibold" />
                 <th className="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">City Monitor</th>
-                <th className="px-4 py-3 font-semibold text-gray-500 dark:text-gray-400">Typical dashboard</th>
+                <th className="px-4 py-3 font-semibold text-muted">Typical dashboard</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -69,7 +69,7 @@ export function NoTrackingPage() {
                       {CHECK} {r.ours}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                  <td className="px-4 py-3 text-muted">
                     <span className="inline-flex items-center gap-1.5">
                       {CROSS} {r.theirs}
                     </span>

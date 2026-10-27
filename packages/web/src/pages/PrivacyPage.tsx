@@ -132,9 +132,9 @@ export function PrivacyPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {STORED_VALUES.map((v) => (
               <div key={v.key} className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
-                <p className="text-xs font-mono text-gray-500 dark:text-gray-400 mb-1">{v.key}</p>
+                <p className="text-xs font-mono text-muted mb-1">{v.key}</p>
                 <p className="text-sm font-medium">{v.title}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{v.description}</p>
+                <p className="text-xs text-muted mt-0.5">{v.description}</p>
               </div>
             ))}
           </div>
@@ -168,7 +168,7 @@ export function PrivacyPage() {
                         </a>
                       ) : s.name}
                       {s.hosts.map((host) => (
-                        <span key={host} className="block mt-1 text-xs font-mono font-normal text-gray-500 dark:text-gray-400">
+                        <span key={host} className="block mt-1 text-xs font-mono font-normal text-muted">
                           {host}
                         </span>
                       ))}

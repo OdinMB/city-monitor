@@ -66,8 +66,8 @@ function RepRow({ rep }: { rep: Representative & { district: string } }) {
         style={{ backgroundColor: getPartyColor(rep.party) }}
       />
       <span dir="auto" className="text-gray-800 dark:text-gray-200 font-medium truncate">{rep.name}</span>
-      <span className="text-gray-500 dark:text-gray-400 shrink-0">{rep.party}</span>
-      <span className="text-gray-500 dark:text-gray-400 hidden @xs:inline ms-auto min-w-0">
+      <span className="text-muted shrink-0">{rep.party}</span>
+      <span className="text-muted hidden @xs:inline ms-auto min-w-0">
         <span dir="auto" className="block truncate">{rep.district}</span>
       </span>
       {/* min-w-6 min-h-6: a 24px target around the arrow (WCAG 2.5.8); -my-1
@@ -239,7 +239,7 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
 
       <div id="political-panel" role="tabpanel" aria-labelledby={`political-tab-${view}`}>
         {!data || data.length === 0 ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+          <div className="text-sm text-muted text-center py-2">
             {t('panel.political.empty')}
           </div>
         ) : view === 'state' ? (
@@ -251,7 +251,7 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
           /* Bezirke / Bundestag: summary + rep list */
           <>
             <div className="mb-1">
-              <span className="text-[11px] text-gray-500 dark:text-gray-400">
+              <span className="text-[11px] text-muted">
                 {view === 'bezirke'
                   ? t('panel.political.districtMayors', { count: totalReps })
                   : t('panel.political.representatives', { count: totalReps })}

@@ -9,10 +9,11 @@ import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { BathingSpot } from '../../lib/api.js';
 
-const QUALITY_COLORS: Record<string, string> = {
-  good: '#22c55e',
-  warning: '#f59e0b',
-  poor: '#ef4444',
+/** Each water quality's signal colour (globals.css): its count's text, and the dot and badge fill. */
+const QUALITY_COLORS: Record<string, { text: string; fill: string }> = {
+  good: { text: 'text-signal-good', fill: 'bg-signal-good' },
+  warning: { text: 'text-signal-caution', fill: 'bg-signal-caution' },
+  poor: { text: 'text-signal-bad', fill: 'bg-signal-bad' },
 };
 
 const SLOTS = 7;
@@ -23,7 +24,7 @@ const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: s
   return (
     <div className="flex items-center gap-2 min-w-0">
       {/* Quality dot */}
-      <div className="shrink-0 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+      <div className={`shrink-0 w-2.5 h-2.5 rounded-full ${color.fill}`} />
 
       {/* Name + water body. dir="auto": the German names run in their own
           direction in Arabic, so truncate cuts them at their end, and the
@@ -36,7 +37,7 @@ const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: s
             {spot.name}
           </span>
         </div>
-        <div className="flex text-[11px] text-gray-500 dark:text-gray-400">
+        <div className="flex text-[11px] text-muted">
           <span dir="auto" className="truncate">
             {spot.waterBody}
             {spot.waterTemp != null && <span className="ms-1.5">{spot.waterTemp}°C</span>}
@@ -45,10 +46,7 @@ const SpotRow = memo(function SpotRow({ spot, t }: { spot: BathingSpot; t: (k: s
       </div>
 
       {/* Quality badge */}
-      <div
-        className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium text-white leading-tight"
-        style={{ backgroundColor: color }}
-      >
+      <div className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium text-white leading-tight ${color.fill}`}>
         {t(`panel.bathing.quality.${spot.quality}`)}
       </div>
     </div>
@@ -98,7 +96,7 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
   if (isError) return <StripErrorFallback domain={t('panel.bathing.title')} onRetry={refetch} />;
 
   if (!data || data.length === 0) {
-    return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.bathing.empty')}</p>;
+    return <p className="text-sm text-muted py-2 text-center">{t('panel.bathing.empty')}</p>;
   }
 
   return (
@@ -112,15 +110,15 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
         <div className={offSeason ? 'opacity-40 grayscale space-y-3' : 'space-y-3'}>
           {/* Summary */}
           <div className="flex justify-center gap-3 text-xs font-medium">
-            <span style={{ color: QUALITY_COLORS.good }}>{goodCount} {t('panel.bathing.quality.good')}</span>
-            {warnCount > 0 && <span style={{ color: QUALITY_COLORS.warning }}>{warnCount} {t('panel.bathing.quality.warning')}</span>}
-            {poorCount > 0 && <span style={{ color: QUALITY_COLORS.poor }}>{poorCount} {t('panel.bathing.quality.poor')}</span>}
+            <span className={QUALITY_COLORS.good.text}>{goodCount} {t('panel.bathing.quality.good')}</span>
+            {warnCount > 0 && <span className={QUALITY_COLORS.warning.text}>{warnCount} {t('panel.bathing.quality.warning')}</span>}
+            {poorCount > 0 && <span className={QUALITY_COLORS.poor.text}>{poorCount} {t('panel.bathing.quality.poor')}</span>}
           </div>
 
           {/* Warnings */}
           {warnDisplay.length > 0 && (
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1.5">
                 {t('panel.bathing.warnings')}
               </div>
               <div className="space-y-2">
@@ -132,7 +130,7 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
           {/* Good spots — only when expanded */}
           {expanded && goodDisplay.length > 0 && (
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1.5">
                 {t('panel.bathing.best')}
               </div>
               <div className="space-y-2">

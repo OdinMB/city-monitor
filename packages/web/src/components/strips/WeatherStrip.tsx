@@ -98,17 +98,17 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
             <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
               {Math.round(current.temp)}°
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <div className="text-xs text-muted mt-1">
               {t('panel.weather.feelsLike')} {Math.round(current.feelsLike)}°
             </div>
           </div>
           <div className="flex flex-col items-center">
             <div className="text-3xl leading-tight">{weatherInfo.icon}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t(weatherInfo.labelKey)}</div>
+            <div className="text-xs text-muted mt-1">{t(weatherInfo.labelKey)}</div>
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mt-2">
+        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-muted mt-2">
           <span>{t('panel.weather.humidity')} {current.humidity}%</span>
           <span>{t('panel.weather.wind')} {Math.round(current.windSpeed)} km/h</span>
           {current.precipitation > 0 && <span>{current.precipitation} mm</span>}
@@ -127,7 +127,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
                   const info = getWeatherInfo(h.weatherCode);
                   return (
                     <div key={h.time} className="shrink-0 text-center text-xs">
-                      <div className="text-gray-500 dark:text-gray-400">{hour}</div>
+                      <div className="text-muted">{hour}</div>
                       <div className="text-xl my-0.5">{info.icon}</div>
                       <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(h.temp)}°</div>
                       {h.uvIndex != null && h.uvIndex > 0 && (
@@ -150,10 +150,10 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
                   const info = getWeatherInfo(d.weatherCode);
                   return (
                     <div key={d.date} className="shrink-0 text-center text-xs">
-                      <div className="text-gray-500 dark:text-gray-400 mb-0.5">{dayName}</div>
+                      <div className="text-muted mb-0.5">{dayName}</div>
                       <div className="text-2xl my-0.5">{info.icon}</div>
                       <div className="text-gray-900 dark:text-gray-100 font-medium">{Math.round(d.high)}°</div>
-                      <div className="text-gray-500 dark:text-gray-400">{Math.round(d.low)}°</div>
+                      <div className="text-muted">{Math.round(d.low)}°</div>
                       {d.precip > 0 && (
                         <div className="text-blue-500 mt-0.5">{d.precip}mm</div>
                       )}

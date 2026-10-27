@@ -50,7 +50,7 @@ function AqiScale({ aqi, t }: { aqi: number; t: (k: string) => string }) {
       {/* Labels */}
       <div className="flex">
         {SCALE_SEGMENTS.map((s) => (
-          <span key={s.key} className="flex-1 text-center text-[9px] text-gray-500 dark:text-gray-400">
+          <span key={s.key} className="flex-1 text-center text-[9px] text-muted">
             {t(`panel.airQuality.level.${s.key}`)}
           </span>
         ))}
@@ -73,13 +73,13 @@ const PollutantCard = memo(function PollutantCard({ label, value, max, color }: 
   return (
     <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-1 mb-0.5">
-        <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{label}</span>
+        <span className="text-[11px] text-muted font-medium">{label}</span>
         {/* <Ltr>: the number and its unit run left to right in Arabic too, and
             the unit's ms-0.5 has to follow that direction to land between them. */}
         <span className="text-[11px] tabular-nums text-gray-700 dark:text-gray-200 font-semibold">
           <Ltr>
             {value.toFixed(1)}
-            <span className="font-normal text-gray-500 dark:text-gray-400 ms-0.5">&#xb5;g/m&#xb3;</span>
+            <span className="font-normal text-muted ms-0.5">&#xb5;g/m&#xb3;</span>
           </Ltr>
         </span>
       </div>
@@ -171,7 +171,7 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
           {/* Station measurements (WAQI, US AQI) */}
           {stations.length > 0 && (
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-              <div className="mb-1.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+              <div className="mb-1.5 text-[10px] font-medium text-muted">
                 {AQI_SCALE_NAME.us}
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
@@ -183,7 +183,7 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
                   />
                 ))}
               </div>
-              <p className="mt-2 text-[10px] text-gray-500 dark:text-gray-400">
+              <p className="mt-2 text-[10px] text-muted">
                 {t('panel.airQuality.stationCredit')}
               </p>
             </div>

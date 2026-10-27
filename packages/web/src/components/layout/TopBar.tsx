@@ -81,7 +81,7 @@ export function TopBar() {
                   {aqi}
                 </span>
                 {' '}
-                <span className="text-gray-500 dark:text-gray-400">
+                <span className="text-muted">
                   {aqiName} · {aqiLevelText}
                 </span>
               </button>

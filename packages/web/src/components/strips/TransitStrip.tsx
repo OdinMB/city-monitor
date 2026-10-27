@@ -14,18 +14,18 @@ const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
 const COLLAPSED_MAX = 6;
 const EXPANDED_MAX = 12;
 
-/** Each pair reaches 4.5:1 for the badge's 12px bold text, in both themes. */
+/** The line's mode tag; each reaches 4.5:1 for the badge's 12px bold text (globals.css). */
 function getLineBadgeColor(line: string): string {
-  if (line.startsWith('U')) return 'bg-blue-600 text-white';
-  if (line.startsWith('S')) return 'bg-green-700 text-white';
-  if (line.startsWith('M') || line.toLowerCase().includes('tram')) return 'bg-red-600 text-white';
-  return 'bg-yellow-600 text-gray-900';
+  if (line.startsWith('U')) return 'tag-line-u';
+  if (line.startsWith('S')) return 'tag-line-s';
+  if (line.startsWith('M') || line.toLowerCase().includes('tram')) return 'tag-line-tram';
+  return 'tag-line-other';
 }
 
 function getSeverityDot(severity: TransitAlert['severity']): string {
-  if (severity === 'high') return 'bg-red-500';
-  if (severity === 'medium') return 'bg-amber-500';
-  return 'bg-gray-400';
+  if (severity === 'high') return 'bg-severity-high';
+  if (severity === 'medium') return 'bg-severity-medium';
+  return 'bg-severity-low';
 }
 
 /**
@@ -117,7 +117,7 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
   return (
     <>
       {sorted.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center flex-1">{t('panel.transit.empty')}</p>
+        <p className="text-sm text-muted py-2 text-center flex-1">{t('panel.transit.empty')}</p>
       ) : (
         <div>
           {visible.map((alert) => (
@@ -129,7 +129,7 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
             <button
               type="button"
               onClick={onExpand}
-              className="w-full text-xs text-gray-500 dark:text-gray-400 text-center pt-1.5 pb-0.5 -mb-0.5 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="w-full text-xs text-muted text-center pt-1.5 pb-0.5 -mb-0.5 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               +{hiddenCount} {t('panel.transit.more')}
             </button>

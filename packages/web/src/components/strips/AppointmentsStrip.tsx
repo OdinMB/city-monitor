@@ -11,11 +11,12 @@ import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { BuergeramtService } from '../../lib/api.js';
 
-const STATUS_COLORS: Record<BuergeramtService['status'], string> = {
-  available: '#22c55e',
-  scarce: '#f59e0b',
-  none: '#ef4444',
-  unknown: '#9ca3af',
+/** Each service status's signal colour (globals.css): the dot's fill and the days figure's text. */
+const STATUS_COLORS: Record<BuergeramtService['status'], { text: string; fill: string }> = {
+  available: { text: 'text-signal-good', fill: 'bg-signal-good' },
+  scarce: { text: 'text-signal-caution', fill: 'bg-signal-caution' },
+  none: { text: 'text-signal-bad', fill: 'bg-signal-bad' },
+  unknown: { text: 'text-signal-unknown', fill: 'bg-signal-unknown' },
 };
 
 function daysUntil(isoDate: string): number {
@@ -33,10 +34,7 @@ const ServiceRow = memo(function ServiceRow({ service, t }: { service: Buergeram
   return (
     <div className="flex items-center gap-2 min-w-0">
       {/* Status dot */}
-      <span
-        className="shrink-0 w-2 h-2 rounded-full"
-        style={{ backgroundColor: color }}
-      />
+      <span className={`shrink-0 w-2 h-2 rounded-full ${color.fill}`} />
 
       {/* Service name */}
       <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
@@ -44,7 +42,7 @@ const ServiceRow = memo(function ServiceRow({ service, t }: { service: Buergeram
       </span>
 
       {/* Days until / status */}
-      <span className="shrink-0 text-xs tabular-nums" style={{ color }}>
+      <span className={`shrink-0 text-xs tabular-nums ${color.text}`}>
         {statusKey === 'unknown'
           ? '—'
           : days != null
@@ -78,7 +76,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
   if (!data || data.services.length === 0) {
     return (
       <div className="text-center py-2">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t('panel.appointments.empty')}</p>
+        <p className="text-sm text-muted">{t('panel.appointments.empty')}</p>
         <a
           href="https://service.berlin.de/terminvereinbarung/"
           target="_blank"
@@ -105,12 +103,12 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
         : 'allAvailable';
 
   const summaryColor = allUnknown
-    ? 'text-gray-500 dark:text-gray-400'
+    ? 'text-muted'
     : hasNone
-      ? 'text-red-500 dark:text-red-400'
+      ? 'text-danger'
       : hasScarce
-        ? 'text-amber-600 dark:text-amber-400'
-        : 'text-green-600 dark:text-green-400';
+        ? 'text-caution'
+        : 'text-success';
 
   const sorted = [...data.services].sort(
     (a, b) => (STATUS_PRIORITY[a.status] ?? 9) - (STATUS_PRIORITY[b.status] ?? 9),
@@ -139,7 +137,7 @@ export function AppointmentsStrip({ expanded = false, onExpand }: { expanded?: b
           <button
             type="button"
             onClick={onExpand}
-            className="w-full text-xs text-gray-500 dark:text-gray-400 text-center pt-2 -mt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+            className="w-full text-xs text-muted text-center pt-2 -mt-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
           >
             +{hiddenCount} {t('panel.appointments.more')}
           </button>

@@ -136,7 +136,7 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
               <button
                 type="button"
                 onClick={onExpand}
-                className="w-full pt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                className="w-full pt-2 text-xs text-muted hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
               >
                 {t('panel.crisis.showMore', { count: SERVICES.length - COLLAPSED_COUNT })}
               </button>
@@ -144,12 +144,12 @@ export function CrisisStrip({ expanded, onExpand }: { expanded: boolean; onExpan
           </div>
         ) : (
           <div className="space-y-1.5">
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">
+            <p className="text-[11px] text-muted mb-2">
               {t('panel.crisis.localNote')}
             </p>
             {KRISENDIENST_REGIONS.map((r) => (
               <div key={r.region} className="flex items-start gap-2 py-1">
-                <span className="shrink-0 text-[11px] font-bold text-gray-500 dark:text-gray-400 w-4 text-right tabular-nums">
+                <span className="shrink-0 text-[11px] font-bold text-muted w-4 text-right tabular-nums">
                   {r.region}
                 </span>
                 <div className="flex-1 min-w-0">

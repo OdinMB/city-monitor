@@ -89,7 +89,7 @@ function PieChart({
 
   return (
     <div className="flex-1 min-w-0">
-      <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 text-center mb-1">
+      <div className="text-[11px] font-medium text-muted text-center mb-1">
         {label}
       </div>
       <svg role="img" aria-label={`${label}: ${formatCompactAmount(total, t)}`} viewBox="0 0 120 120" className="w-full max-w-[140px] mx-auto">
@@ -203,7 +203,7 @@ export function BudgetStrip() {
   if (isLoading) return <Skeleton lines={3} />;
   if (isError) return <StripErrorFallback domain={t('panel.budget.title')} onRetry={refetch} />;
   if (!data || data.areas.length === 0) {
-    return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.budget.empty')}</p>;
+    return <p className="text-sm text-muted py-2 text-center">{t('panel.budget.empty')}</p>;
   }
 
   const total = data.areas.find((a) => a.areaCode === -1);
@@ -273,7 +273,7 @@ function CityView({ area, t }: { area: BudgetAreaSummary; t: (k: string) => stri
       </div>
       <div className="flex justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
         <div className="text-[11px]">
-          <span className="text-gray-500 dark:text-gray-400">
+          <span className="text-muted">
             {isDeficit ? t('panel.budget.newDebt') : t('panel.budget.surplus')}:{' '}
           </span>
           <span className={`font-semibold ${isDeficit ? 'text-red-500' : 'text-green-500'}`}>
@@ -281,7 +281,7 @@ function CityView({ area, t }: { area: BudgetAreaSummary; t: (k: string) => stri
           </span>
         </div>
         <div className="text-[11px]">
-          <span className="text-gray-500 dark:text-gray-400">{t('panel.budget.totalBudget')}: </span>
+          <span className="text-muted">{t('panel.budget.totalBudget')}: </span>
           <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCompactAmount(area.totalExpense, t)}</span>
         </div>
       </div>

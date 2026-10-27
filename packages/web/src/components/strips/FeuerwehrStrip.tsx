@@ -24,10 +24,10 @@ function StatRow({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-2">
-      <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">{label}</span>
+      <span className="text-sm text-muted shrink-0">{label}</span>
       <div className="flex items-baseline gap-3">
         {partial && (
-          <span className="text-lg tabular-nums text-gray-500 dark:text-gray-400">{partial}</span>
+          <span className="text-lg tabular-nums text-muted">{partial}</span>
         )}
         <span className={`text-3xl font-extrabold tabular-nums leading-none ${accent}`}>
           {current}
@@ -53,7 +53,7 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
 
   if (isLoading) return <Skeleton lines={2} />;
   if (isError) return <StripErrorFallback domain={t('panel.feuerwehr.title')} onRetry={refetch} />;
-  if (!data) return <p className="text-sm text-gray-500 dark:text-gray-400 py-2 text-center">{t('panel.feuerwehr.empty')}</p>;
+  if (!data) return <p className="text-sm text-muted py-2 text-center">{t('panel.feuerwehr.empty')}</p>;
 
   const { current, partial, previous } = data;
 
@@ -100,7 +100,7 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
               delta={stat.delta}
             />
           ))}
-          <div className="text-center text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-center text-xs text-muted">
             {current.reportMonth}
           </div>
         </div>
@@ -115,15 +115,15 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
       <div className="flex flex-col gap-4 py-1">
         {/* Column headers */}
         <div className="flex">
-          <div className="flex-1 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
+          <div className="flex-1 text-center text-xs font-medium text-muted">
             {current.reportMonth}
           </div>
           {partial && (
             <>
               <div className="w-6" />
               <div className="flex-1 flex flex-col items-center">
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{partial.reportMonth}</span>
-                <span className="mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                <span className="text-xs font-medium text-muted">{partial.reportMonth}</span>
+                <span className="mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium badge-caution">
                   {t('panel.feuerwehr.partial')}
                 </span>
               </div>
@@ -138,7 +138,7 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
               <div className={`${stat.size} font-extrabold tabular-nums leading-none ${stat.accent}`}>
                 {stat.current}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
+              <div className="text-xs text-muted mt-1">{stat.label}</div>
               {stat.delta && (
                 <div className={`text-xs font-medium tabular-nums ${stat.delta.color}`}>{stat.delta.text}</div>
               )}
@@ -150,7 +150,7 @@ export function FeuerwehrStrip({ expanded }: { expanded: boolean }) {
                   <div className={`${stat.size} font-extrabold tabular-nums leading-none ${stat.accent}`}>
                     {stat.partial}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
+                  <div className="text-xs text-muted mt-1">{stat.label}</div>
                 </div>
               </>
             )}
