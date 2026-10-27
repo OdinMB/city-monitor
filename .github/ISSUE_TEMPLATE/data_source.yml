@@ -1,0 +1,76 @@
+name: Data source proposal
+description: Suggest a public data source for a dashboard tile or a map layer.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A source can be added only if its licence allows how City Monitor uses it, and the questions below cover what decides that. "Not stated" is a fine answer: say where you looked.
+
+        News feeds are a special case. Every news item goes through an AI classifier, so a feed whose licence or terms forbid AI input can't be added.
+
+        What adding a source involves: [new-data-sources.md](https://github.com/OdinMB/city-monitor/blob/main/.context/new-data-sources.md#new-data-source-checklist).
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Its name, and a link to the data or the API documentation.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What it would show
+      description: Which city or cities it covers, and whether it fits a dashboard tile, a map layer or both.
+    validations:
+      required: true
+  - type: input
+    id: licence
+    attributes:
+      label: Licence
+      description: Its name and a link, for example "Datenlizenz Deutschland – Namensnennung 2.0" or "CC BY 4.0", or the terms page.
+    validations:
+      required: true
+  - type: dropdown
+    id: ai-input
+    attributes:
+      label: Does it allow AI input?
+      description: Whether its content may be passed to an AI model. Check the terms, robots.txt and any RSL licence file. This decides it for news and other text.
+      options:
+        - "Yes"
+        - "No"
+        - Not stated
+    validations:
+      required: true
+  - type: dropdown
+    id: redistribution
+    attributes:
+      label: Does it allow redistribution?
+      description: Whether the data, or values derived from it, may be shown on a public website and served through its public API.
+      options:
+        - "Yes"
+        - "Yes, with attribution"
+        - "No"
+        - Not stated
+    validations:
+      required: true
+  - type: input
+    id: update-cycle
+    attributes:
+      label: Update cycle
+      description: How often the source publishes new data.
+      placeholder: every 5 minutes, daily, twice a year…
+    validations:
+      required: true
+  - type: textarea
+    id: key-cost
+    attributes:
+      label: API key and cost
+      description: Does it need a key or an account? Is it free, free up to a limit, or paid? Any rate limits?
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: The data format (JSON, CSV, XLSX, WMS…), a sample request, known quirks, or whether you would like to build it.

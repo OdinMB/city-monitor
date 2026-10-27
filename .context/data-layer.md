@@ -161,7 +161,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 ## Patterns
 
 - **Cache-first reads:** Route handlers check cache, then DB (with try/catch + logging), then return empty defaults.
-- **Dual writes:** Cron jobs write to cache immediately, then attempt DB write (errors caught, logged, non-fatal).
+- **Dual writes:** Cron jobs write to cache immediately, then attempt DB write (errors caught, logged, non-fatal). Intentional, see [CONTRIBUTING.md](../CONTRIBUTING.md#design-choices-that-look-like-bugs).
 - **Append-only writes:** DB writes INSERT new rows without deleting old ones. Historical data is cleaned by the nightly retention cron. Hash-keyed tables (news, events, safety) use UPSERT to avoid duplicates; NINA warnings are a JSONB snapshot like the other snapshot types.
 - **Optional DB:** Everything works without `DATABASE_URL` — cache-only mode with no persistence across restarts.
 - **City isolation:** All cache keys and DB queries are prefixed/filtered by `cityId`. No cross-city data leaks.
