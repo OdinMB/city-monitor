@@ -1,0 +1,89 @@
+name: Bug report
+description: Something on the dashboard looks wrong, is missing or doesn't work.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. These details let someone see what you saw.
+
+        Some behaviour is intentional, such as how data is cached and stored: see [Design choices that look like bugs](https://github.com/OdinMB/city-monitor/blob/main/CONTRIBUTING.md#design-choices-that-look-like-bugs).
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did you see it?
+      options:
+        - citymonitor.app
+        - A local copy on synthetic data
+        - A local copy on live data
+        - Another site running City Monitor
+    validations:
+      required: true
+  - type: dropdown
+    id: city
+    attributes:
+      label: City
+      options:
+        - Berlin
+        - Hamburg
+        - Another city
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page address
+      description: What your browser's address bar showed.
+      placeholder: https://citymonitor.app/berlin
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      description: The language picked in the top bar.
+      options:
+        - Deutsch (DE)
+        - English (EN)
+        - Türkçe (TR)
+        - العربية (AR)
+    validations:
+      required: true
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Theme
+      options:
+        - Light
+        - Dark
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device, browser and screen size
+      description: For example "iPhone 13, Safari" or "laptop, Firefox, window about 1440×900".
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and where on the page (which tile, map layer or popup).
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to see it again
+      placeholder: |
+        1. Open …
+        2. Click …
+        3. See …
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images in here. Crop out anything personal.
