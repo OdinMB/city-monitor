@@ -139,13 +139,17 @@ export function preCacheBezirke(cache: Cache): void {
   }
 }
 
+/** The cities ingestPolitical fetches: German ones with a parliament config. */
+export function hasParliamentConfig(city: CityConfig): boolean {
+  return city.country === 'DE' && PARLIAMENT_CONFIG[city.id] !== undefined;
+}
+
 export function createPoliticalIngestion(cache: Cache, db: Db | null) {
   return async function ingestPolitical(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
-      if (city.country !== 'DE') continue;
+      if (!hasParliamentConfig(city)) continue;
       const config = PARLIAMENT_CONFIG[city.id];
-      if (!config) continue;
 
       try {
         await ingestCityPolitical(city, config, cache, db);

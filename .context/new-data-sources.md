@@ -13,7 +13,7 @@ Follow every step when adding a new data source. Skip items marked with a surfac
 5. **DB reads** — add load function to `packages/server/src/db/reads.ts`
 6. **Cron job** — create `packages/server/src/cron/ingest-<name>.ts` with factory function. Loop over `getActiveCities()` and skip cities without the source's `dataSources` entry. A Berlin-only source with a hardcoded URL and no config entry instead returns first thing when `getCityConfig('berlin')` is undefined, and its job name goes into `BERLIN_ONLY_JOBS` in `app.ts`
 7. **REST endpoint** — create `packages/server/src/routes/<name>.ts` with 3-tier read (cache → DB → null)
-8. **App registration** — in `packages/server/src/app.ts`: import + instantiate cron, add `FRESHNESS_SPECS` entry, register cron job with schedule, mount route with `cacheFor()`
+8. **App registration** — in `packages/server/src/app.ts`: import + instantiate cron, add `FRESHNESS_SPECS` entry (its `serves` predicate repeats the job's city filter from step 6; `inBerlin` for a Berlin-only source), register cron job with schedule, mount route with `cacheFor()`
 9. **Cache warming** — add to `packages/server/src/db/warm-cache.ts` (in the Berlin-only block if Berlin-only)
 10. **Bootstrap** (if included) — add field to bootstrap response in `packages/server/src/routes/bootstrap.ts` (its key must be in `CK.bootstrapKeys`, step 2)
 

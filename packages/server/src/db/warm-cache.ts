@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
@@ -187,48 +187,69 @@ export interface FreshnessSpec {
   timestampColumn?: string;
   /** Optional column + value filter so the freshness check targets a specific row subset */
   filter?: { column: string; value: string };
+  /**
+   * Cities that must each have a fresh row: the job is stale when any of them
+   * has none. An empty list means the job serves no city, so it is never stale.
+   * Omitted, the check is table-wide: the newest row of any city decides.
+   */
+  cityIds?: string[];
 }
+
+type EpochRow = { city_id?: string; epoch?: string | number | null };
 
 /**
  * Check which jobs have stale or missing data in the DB.
- * Queries the latest `fetched_at` from each table — if missing or older
- * than `maxAgeSeconds`, the job is considered stale and needs a startup run.
+ * Queries the latest timestamp of each spec's rows (per city when the spec
+ * lists cities) — if missing or older than `maxAgeSeconds`, the job is
+ * considered stale and needs a startup run.
  */
 export async function findStaleJobs(db: Db, specs: FreshnessSpec[]): Promise<Set<string>> {
-  const stale = new Set<string>();
-  const now = Date.now();
+  const stale = new Map<string, string[]>(); // job name → cities without fresh rows
+  const nowSeconds = Date.now() / 1000;
+  const isFresh = (row: EpochRow | undefined, spec: FreshnessSpec) =>
+    row?.epoch != null && nowSeconds - Number(row.epoch) <= spec.maxAgeSeconds;
 
   await Promise.allSettled(specs.map(async (spec) => {
+    if (spec.cityIds?.length === 0) return;
     try {
-      const tsCol = spec.timestampColumn ?? 'fetched_at';
-      const query = spec.filter
-        ? sql`SELECT EXTRACT(EPOCH FROM ${sql.identifier(tsCol)}) AS epoch FROM ${sql.identifier(spec.tableName)} WHERE ${sql.identifier(spec.filter.column)} = ${spec.filter.value} ORDER BY ${sql.identifier(tsCol)} DESC LIMIT 1`
-        : sql`SELECT EXTRACT(EPOCH FROM ${sql.identifier(tsCol)}) AS epoch FROM ${sql.identifier(spec.tableName)} ORDER BY ${sql.identifier(tsCol)} DESC LIMIT 1`;
-      const result = await db.execute(query);
-      const rows = Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? [];
-      const row = rows[0] as { epoch?: string | number } | undefined;
-      if (!row || row.epoch == null) {
-        stale.add(spec.jobName);
+      const result = await db.execute(freshnessQuery(spec));
+      const rows = (Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? []) as EpochRow[];
+      if (!spec.cityIds) {
+        if (!isFresh(rows[0], spec)) stale.set(spec.jobName, []);
         return;
       }
-      const ageSeconds = (now / 1000) - Number(row.epoch);
-      if (ageSeconds > spec.maxAgeSeconds) {
-        stale.add(spec.jobName);
-      }
+      const freshCities = new Set(rows.filter((row) => isFresh(row, spec)).map((row) => row.city_id));
+      const lacking = spec.cityIds.filter((id) => !freshCities.has(id));
+      if (lacking.length > 0) stale.set(spec.jobName, lacking);
     } catch (err) {
       log.error(`${spec.jobName}: freshness check failed`, err);
-      stale.add(spec.jobName);
+      stale.set(spec.jobName, []);
     }
   }));
 
   const fresh = specs.length - stale.size;
   if (stale.size > 0) {
-    log.info(`${stale.size} stale, ${fresh} fresh — will refresh: ${[...stale].join(', ')}`);
+    const listed = [...stale].map(([job, cities]) => (cities.length > 0 ? `${job} (${cities.join(', ')})` : job));
+    log.info(`${stale.size} stale, ${fresh} fresh — will refresh: ${listed.join(', ')}`);
   } else {
     log.info(`all ${fresh} domains fresh — no startup ingestion needed`);
   }
 
-  return stale;
+  return new Set(stale.keys());
+}
+
+/** Newest timestamp per listed city, or the newest of the table when the spec lists none. */
+function freshnessQuery(spec: FreshnessSpec): SQL {
+  const ts = sql.identifier(spec.timestampColumn ?? 'fetched_at');
+  const table = sql.identifier(spec.tableName);
+  const conditions: SQL[] = [];
+  if (spec.filter) conditions.push(sql`${sql.identifier(spec.filter.column)} = ${spec.filter.value}`);
+  if (spec.cityIds) conditions.push(sql`${sql.identifier('city_id')} IN (${sql.join(spec.cityIds.map((id) => sql`${id}`), sql`, `)})`);
+  const where = conditions.length > 0 ? sql` WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
+
+  return spec.cityIds
+    ? sql`SELECT ${sql.identifier('city_id')}, EXTRACT(EPOCH FROM MAX(${ts})) AS epoch FROM ${table}${where} GROUP BY ${sql.identifier('city_id')}`
+    : sql`SELECT EXTRACT(EPOCH FROM ${ts}) AS epoch FROM ${table}${where} ORDER BY ${ts} DESC LIMIT 1`;
 }
 
 function buildDigestFromItems(items: import('./writes.js').PersistedNewsItem[]): NewsDigest {

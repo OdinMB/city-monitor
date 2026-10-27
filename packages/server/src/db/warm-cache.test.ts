@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { warmCache, findStaleJobs, type FreshnessSpec } from './warm-cache.js';
 import { createCache } from '../lib/cache.js';
 import type { Db } from './index.js';
@@ -193,5 +194,68 @@ describe('findStaleJobs', () => {
     ];
     const stale = await findStaleJobs(db, specs);
     expect(stale.has('test-job')).toBe(true);
+  });
+
+  describe('per city', () => {
+    const now = () => Date.now() / 1000;
+    const spec = (cityIds: string[]): FreshnessSpec => ({
+      jobName: 'ingest-weather', tableName: 'snapshots', maxAgeSeconds: 3600,
+      filter: { column: 'type', value: 'open-meteo' }, cityIds,
+    });
+
+    it('marks job stale when one city has a fresh row and another has none', async () => {
+      const db = mockDb([{ city_id: 'berlin', epoch: now() }]);
+      const stale = await findStaleJobs(db, [spec(['berlin', 'hamburg'])]);
+      expect(stale.has('ingest-weather')).toBe(true);
+    });
+
+    it('marks job stale when one city has only rows older than maxAge', async () => {
+      const db = mockDb([{ city_id: 'berlin', epoch: now() }, { city_id: 'hamburg', epoch: now() - 7200 }]);
+      const stale = await findStaleJobs(db, [spec(['berlin', 'hamburg'])]);
+      expect(stale.has('ingest-weather')).toBe(true);
+    });
+
+    it('marks job fresh when every city has a fresh row', async () => {
+      const db = mockDb([{ city_id: 'berlin', epoch: now() }, { city_id: 'hamburg', epoch: String(now()) }]);
+      const stale = await findStaleJobs(db, [spec(['berlin', 'hamburg'])]);
+      expect(stale.has('ingest-weather')).toBe(false);
+    });
+
+    it('reads the newest row of each listed city, under the spec filter, in one query', async () => {
+      const executeFn = vi.fn().mockResolvedValue([]);
+      const db = { execute: executeFn } as unknown as Db;
+      await findStaleJobs(db, [spec(['berlin', 'hamburg'])]);
+
+      expect(executeFn).toHaveBeenCalledTimes(1);
+      const { sql: text, params } = new PgDialect().sqlToQuery(executeFn.mock.calls[0][0]);
+      expect(text).toBe(
+        'SELECT "city_id", EXTRACT(EPOCH FROM MAX("fetched_at")) AS epoch FROM "snapshots"'
+        + ' WHERE "type" = $1 AND "city_id" IN ($2, $3) GROUP BY "city_id"',
+      );
+      expect(params).toEqual(['open-meteo', 'berlin', 'hamburg']);
+    });
+
+    it('never marks a job stale that serves no listed city, and sends no query', async () => {
+      const executeFn = vi.fn().mockResolvedValue([]);
+      const db = { execute: executeFn } as unknown as Db;
+      const stale = await findStaleJobs(db, [spec([])]);
+      expect(stale.has('ingest-weather')).toBe(false);
+      expect(executeFn).not.toHaveBeenCalled();
+    });
+
+    it('keeps the table-wide check without a city list: the newest row of any city decides', async () => {
+      const executeFn = vi.fn().mockResolvedValue([{ epoch: now() }]);
+      const db = { execute: executeFn } as unknown as Db;
+      const stale = await findStaleJobs(db, [
+        { jobName: 'ingest-appointments', tableName: 'snapshots', maxAgeSeconds: 43200, filter: { column: 'type', value: 'service-berlin' } },
+      ]);
+
+      expect(stale.has('ingest-appointments')).toBe(false);
+      const { sql: text, params } = new PgDialect().sqlToQuery(executeFn.mock.calls[0][0]);
+      expect(text).toBe(
+        'SELECT EXTRACT(EPOCH FROM "fetched_at") AS epoch FROM "snapshots" WHERE "type" = $1 ORDER BY "fetched_at" DESC LIMIT 1',
+      );
+      expect(params).toEqual(['service-berlin']);
+    });
   });
 });

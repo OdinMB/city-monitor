@@ -44,7 +44,7 @@ import { createNinaIngestion } from './cron/ingest-nina.js';
 import { createDataRetention } from './cron/data-retention.js';
 import { createPharmacyIngestion } from './cron/ingest-pharmacies.js';
 import { createTrafficIngestion } from './cron/ingest-traffic.js';
-import { createPoliticalIngestion, preCacheBezirke } from './cron/ingest-political.js';
+import { createPoliticalIngestion, hasParliamentConfig, preCacheBezirke } from './cron/ingest-political.js';
 import { createAirQualityGridIngestion } from './cron/ingest-air-quality-grid.js';
 import { createConstructionIngestion } from './cron/ingest-construction.js';
 import { createAedIngestion } from './cron/ingest-aeds.js';
@@ -62,7 +62,8 @@ import { createNoiseSensorIngestion } from './cron/ingest-noise-sensors.js';
 import { createCouncilMeetingIngestion } from './cron/ingest-council-meetings.js';
 import { initGeocodeDb } from './lib/geocode.js';
 import { validateCity } from './lib/validate-city.js';
-import { getCityConfig } from './config/index.js';
+import { getActiveCities, getCityConfig } from './config/index.js';
+import type { CityConfig } from '@city-monitor/shared';
 
 /**
  * Jobs whose source covers Berlin only (hardcoded URL, rows written under
@@ -76,6 +77,17 @@ const BERLIN_ONLY_JOBS = new Set([
   'ingest-population',
   'ingest-feuerwehr',
 ]);
+
+/**
+ * A job's freshness spec as declared here. `serves` mirrors the city filter in
+ * the job's handler: each active city it accepts must have a fresh row, so a
+ * newly activated city gets its data at startup. Keep the two in step.
+ */
+type JobFreshnessSpec = Omit<FreshnessSpec, 'cityIds'> & { serves?: (city: CityConfig) => boolean };
+
+const inBerlin = (city: CityConfig) => city.id === 'berlin';
+const inGermany = (city: CityConfig) => city.country === 'DE';
+const hasFeeds = (city: CityConfig) => city.feeds.length > 0;
 
 /**
  * Express `trust proxy` as a hop count: req.ip, which the rate limits count
@@ -141,39 +153,44 @@ export async function createApp(options?: {
 
   // Check which domains have stale/missing data and need a startup refresh.
   // Max age is roughly the cron interval — data older than that is overdue.
-  const FRESHNESS_SPECS: FreshnessSpec[] = [
+  const FRESHNESS_SPECS: JobFreshnessSpec[] = [
     // Non-snapshot tables
-    { jobName: 'ingest-feeds',        tableName: 'news_items',    maxAgeSeconds: 3600 },
-    { jobName: 'summarize-news',      tableName: 'ai_summaries',  maxAgeSeconds: 21600, timestampColumn: 'generated_at' },
-    { jobName: 'ingest-events',       tableName: 'events',        maxAgeSeconds: 21600 },
-    { jobName: 'ingest-safety',       tableName: 'safety_reports', maxAgeSeconds: 600 },
+    { jobName: 'ingest-feeds',        tableName: 'news_items',    maxAgeSeconds: 3600, serves: hasFeeds },
+    { jobName: 'summarize-news',      tableName: 'ai_summaries',  maxAgeSeconds: 21600, timestampColumn: 'generated_at', serves: hasFeeds },
+    { jobName: 'ingest-events',       tableName: 'events',        maxAgeSeconds: 21600, serves: (c) => !!c.dataSources.events?.length },
+    { jobName: 'ingest-safety',       tableName: 'safety_reports', maxAgeSeconds: 600, serves: (c) => !!c.dataSources.police },
 
     // Unified snapshots table (with type filter — values are concrete data source names)
-    { jobName: 'ingest-weather',      tableName: 'snapshots', maxAgeSeconds: 3600,    filter: { column: 'type', value: 'open-meteo' } },
-    { jobName: 'ingest-transit',      tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'vbb-disruptions' } },
-    { jobName: 'ingest-nina',         tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'bbk-nina' } },
-    { jobName: 'ingest-pharmacies',   tableName: 'snapshots', maxAgeSeconds: 21600,   filter: { column: 'type', value: 'aponet' } },
-    { jobName: 'ingest-traffic',      tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'tomtom-traffic' } },
-    { jobName: 'ingest-political',    tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'abgwatch-bundestag' } },
+    { jobName: 'ingest-weather',      tableName: 'snapshots', maxAgeSeconds: 3600,    filter: { column: 'type', value: 'open-meteo' }, serves: (c) => c.dataSources.weather.provider === 'brightsky' },
+    { jobName: 'ingest-transit',      tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'vbb-disruptions' }, serves: (c) => !!c.dataSources.transit?.stations?.length },
+    { jobName: 'ingest-nina',         tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'bbk-nina' }, serves: (c) => inGermany(c) && !!c.dataSources.nina },
+    { jobName: 'ingest-pharmacies',   tableName: 'snapshots', maxAgeSeconds: 21600,   filter: { column: 'type', value: 'aponet' }, serves: inGermany },
+    { jobName: 'ingest-traffic',      tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'tomtom-traffic' }, serves: () => true },
+    { jobName: 'ingest-political',    tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'abgwatch-bundestag' }, serves: hasParliamentConfig },
     // No spec for ingest-aq-grid: it runs on every start (see the job list)
-    { jobName: 'ingest-construction', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'viz-roadworks' } },
-    { jobName: 'ingest-aeds',         tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'osm-aeds' } },
-    { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' } },
-    { jobName: 'ingest-water-levels', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'pegelonline' } },
-    { jobName: 'ingest-budget',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'berlin-haushalt' } },
-    { jobName: 'ingest-appointments', tableName: 'snapshots', maxAgeSeconds: 43200,filter: { column: 'type', value: 'service-berlin' } },
-    { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' } },
-    { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' } },
-    { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' } },
-    { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' } },
-    { jobName: 'ingest-feuerwehr',    tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'bf-feuerwehr' } },
-    { jobName: 'ingest-pollen',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'dwd-pollen' } },
-    { jobName: 'ingest-noise-sensors', tableName: 'snapshots', maxAgeSeconds: 1800,   filter: { column: 'type', value: 'sc-dnms' } },
-    { jobName: 'ingest-council-meetings', tableName: 'snapshots', maxAgeSeconds: 21600, filter: { column: 'type', value: 'oparl-meetings' } },
+    { jobName: 'ingest-construction', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'viz-roadworks' }, serves: (c) => !!c.dataSources.roadworks },
+    { jobName: 'ingest-aeds',         tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'osm-aeds' }, serves: inGermany },
+    { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' }, serves: (c) => !!c.dataSources.socialAtlas },
+    { jobName: 'ingest-water-levels', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'pegelonline' }, serves: (c) => !!c.dataSources.waterLevels?.stations.length },
+    { jobName: 'ingest-budget',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'berlin-haushalt' }, serves: (c) => !!c.dataSources.budget },
+    // No `serves`: table-wide, so a fresh row of any city skips the startup run.
+    // Its Firecrawl calls are paid; a city added without rows must not add one.
+    { jobName: 'ingest-appointments', tableName: 'snapshots', maxAgeSeconds: 43200,   filter: { column: 'type', value: 'service-berlin' } },
+    { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' }, serves: inBerlin },
+    { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' }, serves: inBerlin },
+    { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' }, serves: inBerlin },
+    { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: inBerlin },
+    { jobName: 'ingest-feuerwehr',    tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'bf-feuerwehr' }, serves: inBerlin },
+    { jobName: 'ingest-pollen',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'dwd-pollen' }, serves: (c) => !!c.dataSources.pollen },
+    { jobName: 'ingest-noise-sensors', tableName: 'snapshots', maxAgeSeconds: 1800,   filter: { column: 'type', value: 'sc-dnms' }, serves: (c) => !!c.dataSources.noiseSensors },
+    { jobName: 'ingest-council-meetings', tableName: 'snapshots', maxAgeSeconds: 21600, filter: { column: 'type', value: 'oparl-meetings' }, serves: (c) => !!c.dataSources.councilMeetings },
   ];
 
+  const activeCities = getActiveCities();
   const berlinActive = getCityConfig('berlin') !== undefined;
-  const freshnessSpecs = FRESHNESS_SPECS.filter((spec) => berlinActive || !BERLIN_ONLY_JOBS.has(spec.jobName));
+  const freshnessSpecs: FreshnessSpec[] = FRESHNESS_SPECS
+    .filter((spec) => berlinActive || !BERLIN_ONLY_JOBS.has(spec.jobName))
+    .map(({ serves, ...spec }) => (serves ? { ...spec, cityIds: activeCities.filter(serves).map((c) => c.id) } : spec));
 
   const stale = synthetic
     ? new Set<string>() // synthetic mode never refreshes
