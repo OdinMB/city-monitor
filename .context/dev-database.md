@@ -80,6 +80,10 @@ After that those tiles go empty. Run `npm run db:seed` again and restart `dev:sy
 - **Browser-side layers:** the web app still loads the CARTO base map tiles and the gdi.berlin.de WMS overlays (noise, rent) from the internet.
 - **Hamburg:** only Berlin is seeded.
 
+## Guarded browser run
+
+`node harness/see.mjs --out <folder>` does all of the above in one command without docker or port 3001: its own Postgres in the output folder, this seed and synthetic mode on ports it picks on 127.0.0.1, a Vite build served with an `/api` proxy, and headless Chromium screenshots with every off-machine request blocked. It builds nothing in the checkout (`shared` loads from source). Parameters, guard and output: [harness/README.md](../harness/README.md). A change to `seed-synthetic.ts`, `dev-synthetic.ts` or `local-guard.ts` reaches it directly, so check it still runs.
+
 ## Adding a data source
 
 Add the new source to `generate.ts` and `seed.ts` (item 26 in [new-data-sources.md](new-data-sources.md)).

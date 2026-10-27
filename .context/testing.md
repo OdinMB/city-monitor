@@ -28,6 +28,8 @@ npx turbo run test --filter=@city-monitor/server -- src/lib/parse-history.test.t
 
 To run the app with data but without production access, use the synthetic dev database ([dev-database.md](dev-database.md)).
 
+The guarded browser run under `harness/` has its own `node:test` suite, outside the workspaces and outside `npm test`: `node --test harness/test/*.test.mjs` ([harness/README.md](../harness/README.md)).
+
 ## Web Package (`@city-monitor/web`)
 
 - **Environment:** jsdom

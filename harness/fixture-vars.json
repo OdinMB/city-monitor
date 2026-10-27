@@ -1,0 +1,7 @@
+{
+  "LANG": "C.UTF-8",
+  "TZ": "UTC",
+  "NO_PROXY": "127.0.0.1,localhost",
+  "no_proxy": "127.0.0.1,localhost",
+  "NODE_USE_ENV_PROXY": "1"
+}
