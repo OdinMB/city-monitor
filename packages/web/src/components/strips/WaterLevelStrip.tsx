@@ -6,6 +6,7 @@ import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { formatDecimal, withUnit } from '../../lib/format-value.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { WaterLevelStation } from '../../lib/api.js';
@@ -25,16 +26,25 @@ const StationRow = memo(function StationRow({ station, t }: { station: WaterLeve
 
   return (
     <div className="flex items-center gap-2 min-w-0">
-      {/* Left: river + station */}
+      {/* Left: river + station. The German names run in their own direction
+          in Arabic, so truncate cuts them at their end. Each line is only as
+          wide as its text, so it stays at the row's start; the tidal badge is
+          translated, so it follows the name in the page's direction. */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-          {station.waterBody}
+        <div className="flex">
+          <SourceText as="span" className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+            {station.waterBody}
+          </SourceText>
         </div>
-        <div className="text-[11px] text-muted truncate">
-          {station.name}
+        <div className="flex text-[11px] text-muted">
+          <SourceText as="span" className="truncate">
+            {station.name}
+          </SourceText>
           {station.tidal && (
-            <span className="ms-1.5 px-1 py-0.5 rounded text-[9px] font-medium badge-info">
-              {t('panel.waterLevels.tidal')}
+            <span className="shrink-0 ms-1.5">
+              <span className="px-1 py-0.5 rounded text-[9px] font-medium badge-info">
+                {t('panel.waterLevels.tidal')}
+              </span>
             </span>
           )}
         </div>

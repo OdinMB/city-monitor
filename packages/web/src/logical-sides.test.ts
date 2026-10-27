@@ -24,8 +24,15 @@ import ts from 'typescript';
  * German or a number with a Latin unit, which runs left to right, ms-1.5 then
  * lands on the outer side and the words run together ("Tegeler See15.5°C").
  * So such an element has to sit in an isolated run (an ancestor with `dir`,
- * a <bdi>, <Ltr>), or be listed below because the text around it is
- * translated and runs in the page's direction.
+ * a <bdi>, <Ltr>, <SourceText>), or be listed below because the text around
+ * it is translated and runs in the page's direction.
+ *
+ * German text from a feed or an official source, and numbers with a unit or
+ * a sign, each have one way in (i18n.md → Right-to-left): <SourceText> in JSX
+ * and sourceText() in popup HTML for the text, the lib/format-value.ts
+ * formatters for the values. The last rules here hold the code to them: no
+ * other dir="auto" or bare <bdi>, no feed field rendered outside an isolated
+ * run, and no unit typed after a value.
  */
 
 const SRC = dirname(fileURLToPath(import.meta.url));
@@ -80,11 +87,6 @@ const IN_PAGE_DIRECTION: { file: string; found: string; reason: string }[] = [
     reason: 'the count follows the day heading, which is written in the UI language',
   },
   {
-    file: 'components/strips/WaterLevelStrip.tsx',
-    found: 'ms-1.5',
-    reason: 'the tidal badge holds translated text, so it runs in the page direction beside the station name',
-  },
-  {
     file: 'components/map/layers/water.ts',
     found: 'margin-inline-start:4px',
     reason: 'the off-season badge is an inline-block with translated text, placed as one character in the page direction',
@@ -100,6 +102,44 @@ const IN_PAGE_DIRECTION: { file: string; found: string; reason: string }[] = [
     reason: 'the link holds only an inline-block icon, placed as one character in the page direction after the station name',
   },
 ];
+
+/**
+ * Files that mark text as running in its own direction some other way than
+ * <SourceText> or sourceText(), each with its reason.
+ */
+const OWN_DIRECTION_IDIOM: { file: string; reason: string }[] = [
+  { file: 'components/SourceText.tsx', reason: 'the source-text primitive itself' },
+  { file: 'components/map/popups.ts', reason: 'sourceText(), its counterpart for popup HTML' },
+  { file: 'components/alerts/NinaBanner.tsx', reason: 'not moved to SourceText yet; each German part already sits in its own <bdi>' },
+  { file: 'components/layout/NewsMarquee.tsx', reason: 'not moved to SourceText yet; each German part already sits in its own <bdi>' },
+];
+
+/** Properties that hold German text from a feed or an official source. */
+const SOURCE_FIELDS = new Set([
+  'committee', 'description', 'detail', 'district', 'headline', 'instruction', 'location',
+  'message', 'name', 'sourceName', 'station', 'title', 'venue', 'waterBody',
+]);
+
+/** Source fields a component renders outside an isolated run, each with its reason. */
+const SOURCE_FIELD_IN_PAGE_DIRECTION: { file: string; found: string; reason: string }[] = [
+  {
+    file: 'components/layout/Shell.tsx',
+    found: '{city.name}',
+    reason: 'the city name comes from the app config and is written the same in every language',
+  },
+];
+
+/** A unit typed straight after a value (`{temp}°C`, `{percent}%`) instead of coming from format-value. */
+const TYPED_UNIT = /^ ?(?:%|°C?|‰|µg\/m³|(?:mm|cm|km\/h|m³\/s|dB|gc\/L)\b)/;
+
+/** A number and its % or ° typed as JSX text ("(100%)"). */
+const TYPED_NUMBER_WITH_UNIT = /\d ?(?:%|°)/;
+
+/** Popup HTML that marks text as running in its own direction: dir="auto", or a <bdi> without dir. */
+const POPUP_OWN_DIRECTION = /dir="auto"|<bdi(?![^>]*\bdir=)[^>]*>/g;
+
+/** Elements that isolate the run they hold. */
+const ISOLATING_TAGS = ['bdi', 'Ltr', 'SourceText'];
 
 /** Elements that flow inline, so the bidi algorithm places them among the text. */
 const INLINE_TAGS = new Set(['a', 'abbr', 'b', 'bdi', 'button', 'code', 'em', 'i', 'img', 'kbd', 'label', 'mark', 'small', 'span', 'strong', 'sub', 'sup', 'svg', 'time', 'Ltr']);
@@ -133,25 +173,41 @@ interface Scan {
   strings: string[];
   /** Keys of object literals passed as a JSX `style`. */
   styleKeys: string[];
-  /** The class strings of elements with dir="auto". */
+  /** The class strings of elements with dir="auto", <SourceText> among them. */
   ownDirectionClasses: string[];
   /** Inline elements with a logical margin or padding that sit among other inline content, in JSX or popup HTML. */
   inRunningText: { element: string; isolated: boolean }[];
+  /** Elements and popup HTML that mark text as running in its own direction without <SourceText> or sourceText(). */
+  ownDirectionIdiom: string[];
+  /** Source fields rendered as JSX children outside an isolated run. */
+  unisolatedSourceFields: string[];
+  /** Units typed straight after a JSX value. */
+  typedUnits: string[];
 }
 
 type JsxTag = ts.JsxElement | ts.JsxSelfClosingElement;
 
 function scanSource(path: string, text: string): Scan {
   const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
-  const result: Scan = { strings: [], styleKeys: [], ownDirectionClasses: [], inRunningText: [] };
+  const result: Scan = {
+    strings: [], styleKeys: [], ownDirectionClasses: [], inRunningText: [],
+    ownDirectionIdiom: [], unisolatedSourceFields: [], typedUnits: [],
+  };
 
   const opening = (node: JsxTag) => (ts.isJsxElement(node) ? node.openingElement : node);
   const tagOf = (node: JsxTag) => opening(node).tagName.getText(source);
   const attrOf = (node: JsxTag, name: string) =>
     opening(node).attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(source) === name) as ts.JsxAttribute | undefined;
+  /** An attribute's value when it is a plain string. */
+  const stringAttrOf = (node: JsxTag, name: string) => {
+    const value = attrOf(node, name)?.initializer;
+    return value && ts.isStringLiteral(value) ? value.text : undefined;
+  };
+  /** The element the tag renders: <SourceText> renders its `as`, a <bdi> by default. */
+  const renderedTag = (node: JsxTag) => (tagOf(node) === 'SourceText' ? stringAttrOf(node, 'as') ?? 'bdi' : tagOf(node));
   const classesOf = (node: JsxTag) => attrOf(node, 'className')?.initializer?.getText(source) ?? '';
   const utilitiesOf = (node: JsxTag) => classesOf(node).split(/[\s"'`{}]+/).map(utility).filter(Boolean);
-  const isInline = (node: JsxTag) => INLINE_TAGS.has(tagOf(node)) && !utilitiesOf(node).some((u) => NOT_INLINE.test(u));
+  const isInline = (node: JsxTag) => INLINE_TAGS.has(renderedTag(node)) && !utilitiesOf(node).some((u) => NOT_INLINE.test(u));
 
   /** The element or fragment whose children hold this node, and the child that does. */
   const flowParent = (node: ts.Node): { parent: ts.JsxElement | ts.JsxFragment; child: ts.Node } | undefined => {
@@ -166,7 +222,7 @@ function scanSource(path: string, text: string): Scan {
   /** Whether an ancestor isolates the run this element sits in, so its direction is the run's. */
   const isolated = (node: ts.Node) => {
     for (let cur = node.parent; cur; cur = cur.parent) {
-      if (ts.isJsxElement(cur) && (['bdi', 'Ltr'].includes(tagOf(cur)) || attrOf(cur, 'dir'))) return true;
+      if (ts.isJsxElement(cur) && (ISOLATING_TAGS.includes(tagOf(cur)) || attrOf(cur, 'dir'))) return true;
     }
     return false;
   };
@@ -204,14 +260,28 @@ function scanSource(path: string, text: string): Scan {
         for (const prop of expr.properties) if (prop.name) result.styleKeys.push(prop.name.getText(source));
       }
     }
-    if (ts.isJsxAttributes(node)) {
-      const attr = (name: string) => node.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(source) === name) as ts.JsxAttribute | undefined;
-      const dir = attr('dir')?.initializer;
-      const className = attr('className')?.initializer;
-      if (dir && ts.isStringLiteral(dir) && dir.text === 'auto' && className) result.ownDirectionClasses.push(className.getText(source));
+    if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const tag = tagOf(node);
+      const dir = stringAttrOf(node, 'dir');
+      if ((dir === 'auto' || tag === 'SourceText') && attrOf(node, 'className')) result.ownDirectionClasses.push(classesOf(node));
+      if (dir === 'auto' || (tag === 'bdi' && !attrOf(node, 'dir'))) result.ownDirectionIdiom.push(`<${tag}${dir ? ` dir="${dir}"` : ''}>`);
+      if (inRunningText(node)) result.inRunningText.push({ element: `<${tag} className=${classesOf(node)}>`, isolated: isolated(node) });
     }
-    if ((ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) && inRunningText(node)) {
-      result.inRunningText.push({ element: `<${tagOf(node)} className=${classesOf(node)}>`, isolated: isolated(node) });
+    if (ts.isJsxElement(node) || ts.isJsxFragment(node)) {
+      node.children.forEach((child, i) => {
+        const next = node.children[i + 1];
+        const unit = next && ts.isJsxText(next) ? TYPED_UNIT.exec(next.text) : null;
+        if (ts.isJsxExpression(child) && child.expression && unit) {
+          result.typedUnits.push(`{${child.expression.getText(source)}}${unit[0]}`);
+        }
+        if (ts.isJsxText(child) && TYPED_NUMBER_WITH_UNIT.test(child.text)) result.typedUnits.push(child.text.trim());
+      });
+    }
+    if (ts.isJsxExpression(node) && node.expression && (ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent))) {
+      const expr = node.expression;
+      if (ts.isPropertyAccessExpression(expr) && SOURCE_FIELDS.has(expr.name.text) && !isolated(node)) {
+        result.unisolatedSourceFields.push(`{${expr.getText(source)}}`);
+      }
     }
     if (ts.isTemplateExpression(node) || ts.isStringLiteralLike(node)) {
       // The literal parts only: markup built inside a ${…} is its own node.
@@ -221,6 +291,7 @@ function scanSource(path: string, text: string): Scan {
       for (const match of html.matchAll(POPUP_INLINE_SIDE)) {
         result.inRunningText.push({ element: match[0], isolated: insideLtr(node) });
       }
+      for (const match of html.matchAll(POPUP_OWN_DIRECTION)) result.ownDirectionIdiom.push(match[0]);
     }
     ts.forEachChild(node, visit);
   };
@@ -289,6 +360,70 @@ describe('logical sides in the web source', () => {
     expect(isolatedIn('components/map/layers/air-quality.ts').map((e) => e.element)).toEqual([
       expect.stringContaining('margin-inline-end:4px'),
     ]);
+  });
+
+  it('marks text that runs in its own direction only with SourceText or sourceText()', () => {
+    const listed = (entry: string) => OWN_DIRECTION_IDIOM.some((a) => entry.startsWith(`${a.file}: `));
+    const found = FILES.flatMap(({ file, scan }) => scan.ownDirectionIdiom.map((e) => `${file}: ${e}`));
+    expect(found.filter((e) => !listed(e))).toEqual([]);
+    expect(OWN_DIRECTION_IDIOM.filter((a) => !found.some((e) => e.startsWith(`${a.file}: `)))).toEqual([]);
+  });
+
+  it('renders feed and official text in a component only inside an isolated run', () => {
+    const listed = (entry: string) => SOURCE_FIELD_IN_PAGE_DIRECTION.some((a) => entry === `${a.file}: ${a.found}`);
+    const found = FILES.filter(({ file }) => file.startsWith('components/'))
+      .flatMap(({ file, scan }) => scan.unisolatedSourceFields.map((e) => `${file}: ${e}`));
+    expect(found.filter((e) => !listed(e))).toEqual([]);
+    expect(SOURCE_FIELD_IN_PAGE_DIRECTION.filter((a) => !found.includes(`${a.file}: ${a.found}`))).toEqual([]);
+  });
+
+  it('takes a value with a unit from format-value instead of typing the unit after it', () => {
+    // A typed unit is left out of the value's run: in Arabic the % or ° of
+    // "{n}%" moves to the number's other side, and a minus with it.
+    expect(FILES.flatMap(({ file, scan }) => scan.typedUnits.map((e) => `${file}: ${e}`))).toEqual([]);
+  });
+
+  describe('tells the one source-text idiom and format-value from the alternatives', () => {
+    const scanOf = (jsx: string) => scanSource('snippet.tsx', `const x = (${jsx});`);
+
+    it('flags dir="auto" and a bare <bdi>, not SourceText or a <bdi> with its own dir', () => {
+      expect(scanOf('<p><span dir="auto">{a.title}</span><bdi>{a.station}</bdi></p>').ownDirectionIdiom).toEqual([
+        '<span dir="auto">', '<bdi>',
+      ]);
+      expect(scanOf('<p><SourceText>{a.title}</SourceText><Ltr>{a.phone}</Ltr><bdi dir="ltr">{n}</bdi></p>').ownDirectionIdiom).toEqual([]);
+      expect(scanSource('popup.ts', 'const h = `<bdi>${a}</bdi><b dir="auto">${b}</b><bdi dir="ltr">${c}</bdi>`;').ownDirectionIdiom).toEqual([
+        '<bdi>', 'dir="auto"',
+      ]);
+    });
+
+    it('flags a source field outside an isolated run, not inside one or in an attribute', () => {
+      expect(scanOf('<p>{alert.headline}</p>').unisolatedSourceFields).toEqual(['{alert.headline}']);
+      expect(scanOf('<p><SourceText as="span" className="truncate">{alert.headline}</SourceText></p>').unisolatedSourceFields).toEqual([]);
+      expect(scanOf('<p title={alert.headline}>{t(alert.labelKey)} {alert.count}</p>').unisolatedSourceFields).toEqual([]);
+    });
+
+    it('flags a unit typed after a value, not a formatted value or translated words', () => {
+      expect(scanOf('<span>{spot.waterTemp}°C</span>').typedUnits).toEqual(['{spot.waterTemp}°C']);
+      expect(scanOf('<span>{percent}%</span>').typedUnits).toEqual(['{percent}%']);
+      expect(scanOf('<span>{level} cm</span>').typedUnits).toEqual(['{level} cm']);
+      expect(scanOf('<title>{name}: {amount} (100%)</title>').typedUnits).toEqual(['(100%)']);
+      expect(scanOf('<span>{formatDegrees(temp)} {count} {t("more")}</span>').typedUnits).toEqual([]);
+    });
+
+    it('reads SourceText as the element it renders, and as isolating its run', () => {
+      // Inline as a <bdi> or <span>, so a logical margin on it sits among the text …
+      expect(scanOf('<p>{label}<SourceText className="ms-2">{a.name}</SourceText></p>').inRunningText).toEqual([
+        { element: '<SourceText className="ms-2">', isolated: false },
+      ]);
+      // … a block as a <div> or <p>, so it does not.
+      expect(scanOf('<p>{label}<SourceText as="div" className="ms-2">{a.name}</SourceText></p>').inRunningText).toEqual([]);
+      expect(scanOf('<SourceText as="span" className="truncate">{a.name}<span className="ms-1.5">x</span></SourceText>').inRunningText).toEqual([
+        { element: '<span className="ms-1.5">', isolated: true },
+      ]);
+      expect(scanOf('<SourceText as="span" className="ms-auto truncate">{a.name}</SourceText>').ownDirectionClasses).toEqual([
+        '"ms-auto truncate"',
+      ]);
+    });
   });
 
   describe('tells an isolated run from one that is not', () => {

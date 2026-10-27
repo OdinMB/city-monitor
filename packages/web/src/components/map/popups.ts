@@ -3,6 +3,7 @@
  */
 
 import * as maplibregl from 'maplibre-gl';
+import { escapeHtml } from '../../lib/escape-html.js';
 
 // --- Module-level popup state ------------------------------------------------
 
@@ -26,10 +27,23 @@ export type PopupContentFn = (e: MapLayerEvent) => { html: string; lngLat: [numb
 /**
  * Isolate already-escaped markup as left-to-right text. A number with a unit,
  * or a phone number, that follows a translated label would otherwise have its
- * parts reordered in an Arabic (right-to-left) popup ("21°C" as "C°21").
+ * parts reordered in an Arabic (right-to-left) popup ("21°C" as "C°21"). A
+ * value from `lib/format-value.ts` is isolated already and needs only
+ * `escapeHtml`. React counterpart: `<Ltr>`.
  */
 export function ltr(escapedHtml: string): string {
   return `<bdi dir="ltr">${escapedHtml}</bdi>`;
+}
+
+/**
+ * German text from a feed or an official source (a headline, a station, a
+ * street, a place name), escaped and isolated so that it runs in the
+ * direction of its first letter: in an Arabic (right-to-left) popup its
+ * brackets, full stop and words stay where they are. Data goes in raw; this
+ * escapes it (see `escapeHtml`). React counterpart: `<SourceText>`.
+ */
+export function sourceText(value: unknown): string {
+  return `<bdi dir="auto">${escapeHtml(value)}</bdi>`;
 }
 
 /** Schedule hover popup close after a 300 ms delay (cancels any pending timer). */

@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import i18n from 'i18next';
 import type { WeatherData } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
+import { isolate } from '../../lib/bidi.js';
 import { TopBar } from './TopBar.js';
 
 /** The header's weather and air-quality chips open their popovers by click, tap and keyboard. */
@@ -87,6 +88,8 @@ describe('TopBar chip popovers', () => {
 
     const aqiPopover = await screen.findByRole('dialog', { name: 'Air Quality' });
     expect(aqiPopover.textContent).toContain('PM2.5');
+    // Number and unit in one run, so the unit stays after the number in Arabic.
+    expect(aqiPopover.textContent).toContain(isolate('5.2 µg/m³'));
     expect(screen.queryByRole('dialog', { name: 'Weather' })).toBeNull();
     expect(aqiChip.getAttribute('aria-expanded')).toBe('true');
   });

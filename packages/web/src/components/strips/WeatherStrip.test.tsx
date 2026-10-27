@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } 
 import { cleanup, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { DailyForecast, DwdUvForecast, HourlyForecast, WeatherData } from '@city-monitor/shared';
+import { isolate } from '../../lib/bidi.js';
 import { WeatherStrip } from './WeatherStrip.js';
 
 // The browser's own zone must not matter: run in one that is neither UTC nor Berlin.
@@ -123,6 +124,63 @@ describe('WeatherStrip warnings', () => {
       ]);
       cleanup();
     }
+  });
+});
+
+/**
+ * In Arabic the page runs right to left, and the bidi algorithm moves a sign
+ * or a unit to the other end of its number ("3°-", "km/h 16"). Each value is
+ * one isolated run (U+2068 … U+2069), so it reads "-3°" and "16 km/h" there.
+ */
+describe('WeatherStrip values and warnings in Arabic', () => {
+  const FROSTY: WeatherData = {
+    current: { temp: -3.4, feelsLike: -7.2, humidity: 65, precipitation: 1.2, weatherCode: 71, windSpeed: 16.4, windDirection: 90 },
+    hourly: [{ time: '2026-01-10T15:00', temp: -4.6, precipProb: 20, weatherCode: 71 }],
+    daily: [{ date: '2026-01-11', high: -1, low: -8, weatherCode: 71, precip: 5.7, sunrise: '08:15', sunset: '16:10' }],
+    alerts: [
+      { headline: '[Synthetisch] Amtliche WARNUNG vor GLÄTTE (Stufe 2).', severity: 'moderate', description: '', validUntil: '' },
+    ],
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-10T12:00:00Z'));
+  });
+
+  afterEach(async () => {
+    cleanup();
+    vi.useRealTimers();
+    await i18n.changeLanguage('en');
+  });
+
+  it.each(['ar', 'en'])('keeps the minus in front of a temperature below zero (%s)', async (lang) => {
+    await i18n.changeLanguage(lang);
+    weather = FROSTY;
+    render(<WeatherStrip expanded />);
+    expect(screen.getByText(isolate('-3°'))).toBeTruthy();
+    expect(screen.getByText(`${i18n.t('panel.weather.feelsLike')} ${isolate('-7°')}`)).toBeTruthy();
+    expect(screen.getByText(isolate('-5°'))).toBeTruthy(); // hourly
+    expect(screen.getByText(isolate('-1°'))).toBeTruthy(); // daily high
+    expect(screen.getByText(isolate('-8°'))).toBeTruthy(); // daily low
+  });
+
+  it('keeps each unit after its number in one run', async () => {
+    await i18n.changeLanguage('ar');
+    weather = FROSTY;
+    render(<WeatherStrip expanded />);
+    expect(screen.getByText(`${i18n.t('panel.weather.humidity')} ${isolate('65%')}`)).toBeTruthy();
+    expect(screen.getByText(`${i18n.t('panel.weather.wind')} ${isolate('16 km/h')}`)).toBeTruthy();
+    expect(screen.getByText(isolate('1.2 mm'))).toBeTruthy();
+    expect(screen.getByText(isolate('5.7mm'))).toBeTruthy(); // daily, unit attached as before
+  });
+
+  it('runs a German warning headline in its own direction, brackets and full stop in place', async () => {
+    await i18n.changeLanguage('ar');
+    weather = FROSTY;
+    render(<WeatherStrip expanded />);
+    const headline = screen.getByText('[Synthetisch] Amtliche WARNUNG vor GLÄTTE (Stufe 2).');
+    expect(headline.tagName).toBe('BDI');
+    expect(headline.getAttribute('dir')).toBe('auto');
   });
 });
 

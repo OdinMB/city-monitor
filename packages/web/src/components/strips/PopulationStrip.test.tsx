@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { PopulationSummary } from '../../lib/api.js';
+import { isolate } from '../../lib/bidi.js';
 import { PopulationStrip } from './PopulationStrip.js';
 
 const SUMMARY: PopulationSummary = {
@@ -37,11 +38,13 @@ afterEach(async () => {
   await i18n.changeLanguage('en');
 });
 
+// Signed changes and values with a unit are each one isolated run, so in
+// Arabic the sign, the % and the unit stay on their sides ("-0.3%").
 describe('PopulationStrip numbers follow the UI language, not the browser', () => {
   it.each([
-    ['en', '3,850,809', '+12,345 (+0.3%)', '4,321 per km²'],
-    ['de', '3.850.809', '+12.345 (+0.3%)', '4.321 pro km²'],
-    ['tr', '3.850.809', '+12.345 (+0.3%)', '4.321 km² başına'],
+    ['en', '3,850,809', `${isolate('+12,345')} (${isolate('+0.3%')})`, isolate('4,321 per km²')],
+    ['de', '3.850.809', `${isolate('+12.345')} (${isolate('+0.3%')})`, isolate('4.321 pro km²')],
+    ['tr', '3.850.809', `${isolate('+12.345')} (${isolate('+0.3%')})`, isolate('4.321 km² başına')],
   ])('%s', async (lang, total, change, density) => {
     await i18n.changeLanguage(lang);
     const { container } = render(<PopulationStrip />);
@@ -71,30 +74,30 @@ describe('PopulationStrip rendered values', () => {
     render(<PopulationStrip />);
     const n = (v: number) => v.toLocaleString(lang);
     expect(screen.getByText(n(3_850_809))).toBeTruthy();
-    expect(screen.getByText(`+${n(12_345)} (+0.3%) ${i18n.t('panel.population.change')}`)).toBeTruthy();
-    expect(screen.getByText(`${n(4_321)} ${i18n.t('panel.population.density')}`)).toBeTruthy();
+    expect(screen.getByText(`${isolate(`+${n(12_345)}`)} (${isolate('+0.3%')}) ${i18n.t('panel.population.change')}`)).toBeTruthy();
+    expect(screen.getByText(isolate(`${n(4_321)} ${i18n.t('panel.population.density')}`))).toBeTruthy();
   });
 
   // Shares keep one decimal with a point in every language.
   it.each(['en', 'de', 'tr', 'ar'])('foreign share and age slices in %s', async (lang) => {
     await i18n.changeLanguage(lang);
     const { container } = render(<PopulationStrip />);
-    expect(screen.getByText('24.1%')).toBeTruthy();
+    expect(screen.getByText(isolate('24.1%'))).toBeTruthy();
     const slices = [...container.querySelectorAll('svg text')].map((el) => el.textContent);
-    expect(slices).toEqual(['16.8%', '63.9%', '19.3%']);
+    expect(slices).toEqual([isolate('16.8%'), isolate('63.9%'), isolate('19.3%')]);
     const titles = [...container.querySelectorAll('svg title')].map((el) => el.textContent);
     expect(titles).toEqual([
-      `${i18n.t('panel.population.youth')}: 16.8%`,
-      `${i18n.t('panel.population.workingAge')}: 63.9%`,
-      `${i18n.t('panel.population.elderly')}: 19.3%`,
+      `${i18n.t('panel.population.youth')}: ${isolate('16.8%')}`,
+      `${i18n.t('panel.population.workingAge')}: ${isolate('63.9%')}`,
+      `${i18n.t('panel.population.elderly')}: ${isolate('19.3%')}`,
     ]);
   });
 
   it.each([
-    ['en', '-12,345 (-0.3%)'],
-    ['de', '-12.345 (-0.3%)'],
-    ['tr', '-12.345 (-0.3%)'],
-    ['ar', `${ar(-12_345)} (-0.3%)`],
+    ['en', `${isolate('-12,345')} (${isolate('-0.3%')})`],
+    ['de', `${isolate('-12.345')} (${isolate('-0.3%')})`],
+    ['tr', `${isolate('-12.345')} (${isolate('-0.3%')})`],
+    ['ar', `${isolate(ar(-12_345))} (${isolate('-0.3%')})`],
   ])('a fall reads with a minus in %s', async (lang, change) => {
     summary = { ...SUMMARY, changeAbsolute: -12_345, changePct: -0.3 };
     await i18n.changeLanguage(lang);
@@ -105,7 +108,7 @@ describe('PopulationStrip rendered values', () => {
   it('marks a change that rounds to no percent with a plus', () => {
     summary = { ...SUMMARY, changeAbsolute: 120, changePct: 0 };
     const { container } = render(<PopulationStrip />);
-    expect(container.textContent).toContain('+120 (+0.0%) vs. previous half-year');
+    expect(container.textContent).toContain(`${isolate('+120')} (${isolate('+0.0%')}) vs. previous half-year`);
   });
 
   it('shows no change line when nothing changed', () => {

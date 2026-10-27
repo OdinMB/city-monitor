@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import i18n from 'i18next';
 import { CityProvider } from '../../hooks/CityProvider.js';
+import { isolate } from '../../lib/bidi.js';
 import { TopBar } from './TopBar.js';
 import type { WeatherAlert, WeatherData } from '@city-monitor/shared';
 
@@ -72,6 +73,13 @@ describe('TopBar', () => {
   it('renders weather next to city name when weather data is available', () => {
     render(<TopBar />, { wrapper: createWrapper({ weather: mockWeather }) });
     expect(screen.getByText(/13°/)).toBeTruthy();
+  });
+
+  it('keeps the minus in front of a temperature below zero, as one run', () => {
+    const frost = { ...mockWeather, current: { ...mockWeather.current, temp: -2.6 } };
+    render(<TopBar />, { wrapper: createWrapper({ weather: frost }) });
+    const chip = screen.getByRole('button', { name: 'Weather: -3°' });
+    expect(chip.textContent).toContain(isolate('-3°'));
   });
 
   it('gives the weather and AQI buttons accessible names that include their values', () => {

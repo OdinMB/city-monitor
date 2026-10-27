@@ -6,6 +6,7 @@ import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { useWarningsInForce } from '../../hooks/useWarningsInForce.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getAqiLevel } from '../../lib/aqi.js';
+import { formatDegrees } from '../../lib/format-value.js';
 import { highestWarningLevel } from '../../lib/weather-warnings.js';
 import { WarningLevelBadge } from '../WeatherWarnings.js';
 import { Popover } from './Popover.js';
@@ -63,7 +64,7 @@ export function TopBar() {
                 className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 aria-label={weatherName}
               >
-                {weatherInfo.icon} {temp}°
+                {weatherInfo.icon} {formatDegrees(temp!)}
                 {warning && (
                   <WarningLevelBadge level={warning} className="ms-1.5 px-1 py-px">
                     {t(`panel.weather.warning.short.${warning}`)}

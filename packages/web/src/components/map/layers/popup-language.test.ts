@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import i18n from 'i18next';
 import en from '../../../i18n/en.json';
 import type { PoliticalDistrict, SocialAtlasFeatureProps, PopulationFeatureProps } from '../../../lib/api.js';
+import { isolate } from '../../../lib/bidi.js';
 import { trafficPopupHtml, constructionPopupHtml } from './traffic';
 import { transitPopupHtml } from './transit';
 import { warningPopupHtml } from './warnings';
@@ -182,6 +183,64 @@ describe('numbers that stay left-to-right in Arabic (right-to-left)', () => {
     await i18n.changeLanguage('ar');
     const texts = ltrTexts(build());
     for (const v of values) expect(texts).toContain(v);
+  });
+});
+
+/**
+ * Feed text is German in an Arabic popup. Outside an isolate the bidi algorithm
+ * moves its brackets and full stop to the other end ("[Synthetisch] Text." as
+ * ".Text [Synthetisch]"), so every feed value goes through `sourceText()`: a
+ * `<bdi dir="auto">` that runs in the direction of its first letter.
+ */
+describe('feed text keeps its own direction in Arabic', () => {
+  /** Text of every source-text isolate in the popup. */
+  function sourceTexts(html: string): string[] {
+    return [...parse(html).querySelectorAll('bdi[dir="auto"]')].map((n) => n.textContent!);
+  }
+
+  it.each([
+    ['traffic', () => trafficPopupHtml(TRAFFIC), ['A100', 'Stockender Verkehr', 'Dreieck Funkturm → Kurfürstendamm']],
+    ['roadworks', () => constructionPopupHtml(CONSTRUCTION), ['Invalidenstraße', 'zwischen Chausseestraße und Hauptbahnhof', 'Vollsperrung', 'beidseitig']],
+    ['transit', () => transitPopupHtml(TRANSIT), ['S Ostkreuz', 'S3', 'Ersatzverkehr mit Bussen', 'M10', 'Unregelmäßige Abfahrten']],
+    ['warning', () => warningPopupHtml(WARNING), ['Unwetterwarnung']],
+    ['water level', () => waterLevelPopupHtml(GAUGE), ['Mühlendamm', 'Spree']],
+    ['bathing', () => bathingPopupHtml({ ...BATHING, algae: 'Blaualgen', advisory: 'Baden nicht empfohlen.' }), ['Strandbad Wannsee', 'Wannsee', 'Steglitz-Zehlendorf', 'Blaualgen', 'Baden nicht empfohlen.']],
+    ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Apotheke am Markt', 'Marktstraße 1']],
+    ['AED', () => aedPopupHtml(AED, COORDS), ['Im Foyer', 'Bezirksamt Mitte', 'Mo-Fr 08:00-18:00']],
+    ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Stülerstraße']],
+    ['population', () => populationPopupHtml(POPULATION), ['Stülerstraße']],
+    ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS), ['Mitte', 'A. Person', 'SPD', 'Bezirksbürgermeisterin']],
+    ['political, no data', () => buildPoliticalPopupHtml('Spandau', DISTRICTS), ['Spandau']],
+    ['news', () => newsPopupHtml({ ...NEWS, locationLabel: 'Frankfurter Allee' }), ['Tram M10 eingestellt', 'rbb24', 'Frankfurter Allee']],
+    ['police', () => safetyPopupHtml(SAFETY), ['Einbruch in Wohnung', 'Mitte']],
+    ['air quality station', () => aqPopupHtml(AQ_STATION), ['Berlin Mitte']],
+  ] as const)('%s popup isolates its feed text', async (_name, build, values) => {
+    await i18n.changeLanguage('ar');
+    expect(sourceTexts(build())).toEqual(values);
+  });
+
+  it.each([
+    ['warning headline', () => warningPopupHtml({ ...WARNING, headline: '[Synthetisch] Amtliche WARNUNG vor STURMBÖEN (Stufe 2).' })],
+    ['transit detail', () => transitPopupHtml({ ...TRANSIT, alertsJson: JSON.stringify([{ line: 'S3', type: 'delay', severity: 'low', message: '', detail: '[Synthetisch] Bauarbeiten (Gleis 2).' }]) })],
+    ['traffic description', () => trafficPopupHtml({ ...TRAFFIC, description: '[Synthetisch] Stau (2 km).' })],
+    ['roadworks description', () => constructionPopupHtml({ ...CONSTRUCTION, description: '[Synthetisch] Vollsperrung (nachts).' })],
+    ['AED description', () => aedPopupHtml({ ...AED, description: '[Synthetisch] Im Foyer (links).' }, COORDS)],
+  ] as const)('keeps a %s with brackets and a full stop in one isolate', async (_name, build) => {
+    await i18n.changeLanguage('ar');
+    const isolates = sourceTexts(build());
+    expect(isolates.some((text) => /^\[Synthetisch\] .+\)\.$/.test(text))).toBe(true);
+  });
+
+  it('marks every isolate with its direction, so none takes the popup\'s', () => {
+    for (const [name, build] of POPUPS) {
+      const bare = parse(build()).querySelectorAll('bdi:not([dir])');
+      expect(bare.length, name).toBe(0);
+    }
+  });
+
+  it('keeps the news importance score and its percent sign in one run', async () => {
+    await i18n.changeLanguage('ar');
+    expect(parse(newsPopupHtml(NEWS)).textContent).toContain(isolate('50%'));
   });
 });
 

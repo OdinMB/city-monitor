@@ -8,7 +8,7 @@ import type { TrafficIncident, ConstructionSite } from '../../../lib/api.js';
 import { CONSTRUCTION_SUBTYPE_COLORS } from '../../../lib/map-icons.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
 import { TRAFFIC_SEVERITY_COLORS } from '../constants.js';
-import { ltr, registerPopupHandlers } from '../popups.js';
+import { ltr, registerPopupHandlers, sourceText } from '../popups.js';
 
 function trafficToGeoJSON(incidents: TrafficIncident[]): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = [];
@@ -95,32 +95,35 @@ function roadEventLabel(type: unknown): string {
 
 /**
  * Popup markup for a traffic incident, from its feature properties. Road,
- * description and place names come from the traffic feed and the words from
- * the current UI language; all of it is escaped (see `escapeHtml`).
+ * description and place names come from the traffic feed, in German
+ * (`sourceText`), and the words from the current UI language; all of it is
+ * escaped (see `escapeHtml`). "From → to" is one run, so its arrow keeps
+ * pointing from the first place to the second in Arabic.
  */
 export function trafficPopupHtml(props: Record<string, unknown>): string {
   const delayMin = props.delay ? Math.round(Number(props.delay) / 60) : 0;
   return `<div style="font-size:13px;max-width:280px">
-      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(roadEventLabel(props.type))}${props.road ? ` — ${escapeHtml(props.road)}` : ''}</div>
-      ${props.description ? `<div style="font-size:12px">${escapeHtml(props.description)}</div>` : ''}
-      ${props.from && props.to ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${escapeHtml(props.from)} → ${escapeHtml(props.to)}</div>` : ''}
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(roadEventLabel(props.type))}${props.road ? ` — ${sourceText(props.road)}` : ''}</div>
+      ${props.description ? `<div style="font-size:12px">${sourceText(props.description)}</div>` : ''}
+      ${props.from && props.to ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${sourceText(`${String(props.from)} → ${String(props.to)}`)}</div>` : ''}
       ${delayMin > 0 ? `<div style="font-size:11px;margin-top:2px">${escapeHtml(i18n.t('mapPopup.delay', { count: delayMin }))}</div>` : ''}
     </div>`;
 }
 
 /**
- * Popup markup for a roadworks site, escaped like `trafficPopupHtml`. The
- * validity range is feed data in German format ("01.03.2026 06:00 –
- * 30.11.2026 17:00") with no translated words, so it stays one left-to-right
- * run; in an Arabic popup its dates and times would otherwise swap places.
+ * Popup markup for a roadworks site, escaped and isolated like
+ * `trafficPopupHtml`. The validity range is feed data in German format
+ * ("01.03.2026 06:00 – 30.11.2026 17:00") with no words, so it stays one
+ * left-to-right run; in an Arabic popup its dates and times would otherwise
+ * swap places.
  */
 export function constructionPopupHtml(p: Record<string, unknown>): string {
   return `<div style="font-size:13px;max-width:280px">
-    <div style="font-weight:600;margin-bottom:4px">${escapeHtml(roadEventLabel(p.subtype))}: ${escapeHtml(p.street)}</div>
-    ${p.section ? `<div style="font-size:12px;opacity:0.7">${escapeHtml(p.section)}</div>` : ''}
-    ${p.description ? `<div style="font-size:12px;margin-top:2px">${escapeHtml(p.description)}</div>` : ''}
+    <div style="font-weight:600;margin-bottom:4px">${escapeHtml(roadEventLabel(p.subtype))}: ${sourceText(p.street)}</div>
+    ${p.section ? `<div style="font-size:12px;opacity:0.7">${sourceText(p.section)}</div>` : ''}
+    ${p.description ? `<div style="font-size:12px;margin-top:2px">${sourceText(p.description)}</div>` : ''}
     ${p.validFrom ? `<div style="font-size:11px;opacity:0.6;margin-top:4px">${ltr(`${escapeHtml(p.validFrom)}${p.validUntil ? ` – ${escapeHtml(p.validUntil)}` : ''}`)}</div>` : ''}
-    ${p.direction ? `<div style="font-size:11px;opacity:0.6">${escapeHtml(p.direction)}</div>` : ''}
+    ${p.direction ? `<div style="font-size:11px;opacity:0.6">${sourceText(p.direction)}</div>` : ''}
   </div>`;
 }
 

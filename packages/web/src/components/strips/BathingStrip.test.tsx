@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { BathingSpot } from '../../lib/api.js';
+import { isolate } from '../../lib/bidi.js';
 import { BathingStrip } from './BathingStrip.js';
 
 function spot(id: string, measuredAt: string): BathingSpot {
@@ -64,11 +65,12 @@ describe('BathingStrip German names in Arabic', () => {
     // bidi laid out "Wannsee 21°C" left to right: "Wannsee21°C".
     await i18n.changeLanguage('ar');
     render(<BathingStrip />);
-    const temp = screen.getAllByText('21°C')[0];
+    // The temperature and its unit are one isolated run of their own as well.
+    const temp = screen.getAllByText(isolate('21°C'))[0];
     expect(temp.classList.contains('ms-1.5')).toBe(true);
     const run = temp.closest('[dir]')!;
     expect(run.getAttribute('dir')).toBe('auto');
-    expect(run.textContent).toBe('Wannsee21°C');
+    expect(run.textContent).toBe(`Wannsee${isolate('21°C')}`);
     expect(run.classList.contains('truncate')).toBe(true);
     // Only as wide as its text, so it stays at the row's start beside the quality dot.
     expect(run.parentElement!.classList.contains('flex')).toBe(true);

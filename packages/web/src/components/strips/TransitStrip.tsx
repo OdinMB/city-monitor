@@ -6,6 +6,7 @@ import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { formatClockTime } from '../../lib/format-time.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
+import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 import type { TransitAlert } from '../../lib/api.js';
@@ -58,13 +59,13 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
             </span>
           ))}
         </span>
-        {/* dir="auto": the operator's German text keeps its own direction in
-            Arabic, so the clamped line is cut at its end. The text is only as
-            wide as it needs and the chevron takes the free space (ms-auto), so
-            in Arabic it stays next to its line badges. */}
-        <span dir="auto" className={`min-w-0 text-sm text-gray-700 dark:text-gray-300 ${open ? 'wrap-anywhere' : 'line-clamp-1'}`}>
+        {/* The operator's German text keeps its own direction in Arabic, so
+            the clamped line is cut at its end. The text is only as wide as it
+            needs and the chevron takes the free space (ms-auto), so in Arabic
+            it stays next to its line badges. */}
+        <SourceText as="span" className={`min-w-0 text-sm text-gray-700 dark:text-gray-300 ${open ? 'wrap-anywhere' : 'line-clamp-1'}`}>
           {alert.message}
-        </span>
+        </SourceText>
         <svg
           width={14}
           height={14}
@@ -82,10 +83,10 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
       </button>
       {open && (
         <div id={detailId} className="ps-4 pb-2 space-y-1 text-xs text-gray-600 dark:text-gray-400 wrap-anywhere">
-          {showDetail && <p className="whitespace-pre-line"><bdi>{detail}</bdi></p>}
+          {showDetail && <p className="whitespace-pre-line"><SourceText>{detail}</SourceText></p>}
           {alert.station && (
             <p>
-              <span className="font-medium">{t('panel.transit.station')}:</span> <bdi>{alert.station}</bdi>
+              <span className="font-medium">{t('panel.transit.station')}:</span> <SourceText>{alert.station}</SourceText>
             </p>
           )}
         </div>

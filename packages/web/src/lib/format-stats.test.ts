@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { isolate } from './bidi.js';
 import { formatTime, formatDelta, formatYoy } from './format-stats.js';
 
 describe('formatTime', () => {
@@ -31,14 +32,14 @@ describe('formatDelta', () => {
   it('shows a rise in the negative role (worse) by default', () => {
     const result = formatDelta(110, 100);
     expect(result).not.toBeNull();
-    expect(result!.text).toBe('+10%');
+    expect(result!.text).toBe(isolate('+10%'));
     expect(result!.color).toBe('text-negative');
   });
 
   it('shows a fall in the positive role (better) by default', () => {
     const result = formatDelta(90, 100);
     expect(result).not.toBeNull();
-    expect(result!.text).toBe('-10%');
+    expect(result!.text).toBe(isolate('-10%'));
     expect(result!.color).toBe('text-positive');
   });
 
@@ -51,13 +52,13 @@ describe('formatDelta', () => {
   it('rounds large percentages', () => {
     const result = formatDelta(200, 100);
     expect(result).not.toBeNull();
-    expect(result!.text).toBe('+100%');
+    expect(result!.text).toBe(isolate('+100%'));
   });
 
   it('shows zero change in the muted role, at AA contrast in both themes', () => {
     const result = formatDelta(100, 100);
     expect(result).not.toBeNull();
-    expect(result!.text).toBe('0.0%');
+    expect(result!.text).toBe(isolate('0.0%'));
     // The muted role is gray-500 light / gray-400 dark, both 4.5:1 or more;
     // gray-400 on a white tile is 2.6:1.
     expect(result!.color).toBe('text-muted');
@@ -67,24 +68,24 @@ describe('formatDelta', () => {
 describe('formatYoy', () => {
   it('shows a rise in the negative role', () => {
     const result = formatYoy(5);
-    expect(result.text).toBe('+5%');
+    expect(result.text).toBe(isolate('+5%'));
     expect(result.color).toBe('text-negative');
   });
 
   it('shows a fall in the positive role', () => {
     const result = formatYoy(-3.2);
-    expect(result.text).toBe('-3.2%');
+    expect(result.text).toBe(isolate('-3.2%'));
     expect(result.color).toBe('text-positive');
   });
 
   it('shows zero in the muted role, at AA contrast in both themes', () => {
     const result = formatYoy(0);
-    expect(result.text).toBe('0%');
+    expect(result.text).toBe(isolate('0%'));
     expect(result.color).toBe('text-muted');
   });
 
   it('formats decimal values', () => {
     const result = formatYoy(1.5);
-    expect(result.text).toBe('+1.5%');
+    expect(result.text).toBe(isolate('+1.5%'));
   });
 });

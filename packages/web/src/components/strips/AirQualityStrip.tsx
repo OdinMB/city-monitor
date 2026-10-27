@@ -8,6 +8,7 @@ import { staleAfter } from '../../lib/freshness.js';
 import { AQI_SCALE_NAME, getAqiLevel, getUsAqiLevel, isWaqiStation } from '../../lib/aqi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Ltr } from '../Ltr.js';
+import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
@@ -101,7 +102,7 @@ const StationEntry = memo(function StationEntry({ name, aqi }: { name: string; a
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <div className="w-2 h-2 rounded-full shrink-0 ring-1 ring-black/20 dark:ring-white/20" style={{ backgroundColor: level.color }} />
-      <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate">{name}</span>
+      <SourceText as="span" className="text-[11px] text-gray-600 dark:text-gray-400 truncate">{name}</SourceText>
       <span className="text-[11px] tabular-nums font-semibold text-gray-700 dark:text-gray-200 ms-auto shrink-0">
         {aqi}
       </span>

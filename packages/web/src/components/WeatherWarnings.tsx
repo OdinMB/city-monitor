@@ -4,6 +4,7 @@ import type { WeatherAlert } from '@city-monitor/shared';
 import { useCityConfig } from '../hooks/useCityConfig.js';
 import { useWarningsInForce } from '../hooks/useWarningsInForce.js';
 import { formatWarningEnd, warningLevel, type WarningLevel } from '../lib/weather-warnings.js';
+import { SourceText } from './SourceText.js';
 
 const ORANGE = {
   badge: 'bg-orange-500 text-gray-950',
@@ -77,8 +78,8 @@ export function WeatherWarningList({ alerts, className = '' }: { alerts: Weather
                 {formatWarningEnd(alert.validUntil, now, timezone, i18n.language, t)}
               </span>
             </div>
-            {/* bdi: the German headline keeps its own word order in a right-to-left layout */}
-            <p className="mt-1 font-semibold text-gray-900 dark:text-gray-100"><bdi lang="de">{alert.headline}</bdi></p>
+            {/* The German headline keeps its own word order in a right-to-left layout */}
+            <p className="mt-1 font-semibold text-gray-900 dark:text-gray-100"><SourceText lang="de">{alert.headline}</SourceText></p>
             <p className="mt-0.5 text-gray-700 dark:text-gray-300">{t('panel.weather.warning.source')}</p>
           </li>
         );
