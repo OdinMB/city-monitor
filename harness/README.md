@@ -35,7 +35,7 @@ The server processes load the product's TypeScript through `tsx` and `shared/*.t
 | Parameter | Default | What it varies |
 |---|---|---|
 | `--out <folder>` | required | Where the run writes. Each run makes `<folder>/<run id>/`, so one folder can hold several runs. Refused when it is inside the checkout or holds it, and, from a linked worktree (such as one under `.claude/worktrees/`), when it is inside the main checkout (the folder with the common `.git`) or holds it. |
-| `--city <id>` | `berlin` | The city the run seeds, serves and shows: one that both `packages/server` and `packages/web` register, today `berlin` or `hamburg` (see "Cities"). Any other id exits 1 with the list. |
+| `--city <id>` | `berlin` | The city the run seeds, serves and shows: one that both `packages/server` and `packages/web` register, today `berlin`, `hamburg` or `koeln` (see "Cities"). Any other id exits 1 with the list. |
 | `--path <path>` | `/<city>` | A page on the run's own web server. Repeatable. Must start with one `/`. |
 | `--viewport <WxH>` | `1440x900` | Browser viewport. Repeatable or comma-separated, e.g. `390x844,1440x900`. Widths under 768 get touch and mobile emulation. |
 | `--lang <de\|en\|tr\|ar>` | `de` | The app's language (set in `localStorage` before load) and the browser locale. Repeatable or comma-separated. |
@@ -83,7 +83,7 @@ A JSON array; each step has an `action` and the fields it needs. Elements are fo
 
 A failing step is recorded in the report with a screenshot named `...__<NN>-error.png`; the remaining steps of that page are skipped and the next page runs.
 
-Playwright's own touch input only taps, so `swipe` ([`lib/swipe.mjs`](lib/swipe.mjs)) sends the drag the way Playwright sends a tap in Chromium: as trusted touch input through the DevTools protocol (`Input.dispatchTouchEvent`) on a CDP session of the page, a touch start, ten moves spaced over `ms`, and a touch end. Chromium takes several touch points at once, so two fingers work; a pinch (fingers moving apart) is not a step. A swipe cut short lifts its fingers. In the app as it is, one finger on the map pans it and two fingers move it, and one finger anywhere outside the map scrolls the page (by about 290 px in one checked run). The example pans the map with one finger, then with two, then scrolls the page below the map:
+Playwright's own touch input only taps, so `swipe` ([`lib/swipe.mjs`](lib/swipe.mjs)) sends the drag the way Playwright sends a tap in Chromium: as trusted touch input through the DevTools protocol (`Input.dispatchTouchEvent`) on a CDP session of the page, a touch start, ten moves spaced over `ms`, and a touch end. Chromium takes several touch points at once, so two fingers work; a pinch (fingers moving apart) is not a step. A swipe cut short lifts its fingers. In the app as it is, on a touch phone (narrower than 640 px, with a coarse main pointer) one finger over the map scrolls the page and shows MapLibre's hint to use two fingers, and two fingers move the map (`.context/frontend.md`, "Touch phones scroll the page with one finger"); a touch viewport 640 px or wider keeps one-finger panning. One finger anywhere outside the map scrolls the page (by about 290 px in one checked run). The example swipes over the map with one finger, which scrolls the page on a phone, then with two, which move the map, then scrolls the page below the map:
 
 ```json
 [
@@ -98,7 +98,7 @@ Playwright's own touch input only taps, so `swipe` ([`lib/swipe.mjs`](lib/swipe.
 
 ## Cities
 
-`--city <id>` names the city a run seeds, serves and shows. It has to be registered in `ALL_CITIES` in both `packages/server/src/config/index.ts` and `packages/web/src/config/index.ts`; the parent reads both files before anything starts ([`lib/cities.mjs`](lib/cities.mjs)). Today that is `berlin`, the default, and `hamburg`.
+`--city <id>` names the city a run seeds, serves and shows. It has to be registered in `ALL_CITIES` in both `packages/server/src/config/index.ts` and `packages/web/src/config/index.ts`; the parent reads both files before anything starts ([`lib/cities.mjs`](lib/cities.mjs)). Today that is `berlin`, the default, `hamburg` and `koeln`.
 
 The run's city is the only active one. The seed script and the API get `--city` and serve that city alone (`ACTIVE_CITIES`). The web build makes it the one entry of the web config's `ACTIVE_CITY_IDS`: a Vite plugin rewrites that one line in the build, the file in the checkout is not changed, and the build fails if it never saw the file. So `/` leads to the run's city, another city's path redirects there, and `--path` defaults to `/<city>`.
 
@@ -117,7 +117,7 @@ The seed holds one ordinary day: six transit disruptions (in a city with transit
 
 A scenario works on any city, for the snapshot types that city's seed holds. A change to a type the city has no data for at all is left out, so that tile stays as the real app shows it for the city: Hamburg has no transit source, so `quiet`, `outage` and `no-data` leave transit out there, and `storm`, `nina-warnings`, `frost` and `default` apply in full. The transit tile is still on Hamburg's dashboard in every scenario, as in the real app: `/api/hamburg/transit` answers `{ "data": [], "fetchedAt": null }`, and the tile shows its empty text, "Alles in Ordnung — keine Störungen" (`panel.transit.empty`), with no update time. The run says so on standard output and in the report (`scenarioLeftOut`). In Berlin nothing is left out.
 
-The API serves the newest snapshot row of a type, with its `fetched_at` as `fetchedAt`, and the app marks a tile outdated once that is older than the tile's limit in `packages/web/src/lib/freshness.ts` (transit about 37 minutes, weather about 110). Where an ingestion run finds nothing, it keeps the empty list in the cache and writes no row; synthetic mode has no ingestion and warms its cache from the database, so a scenario writes a row holding the empty list, and the API answers `{ "data": [], "fetchedAt": "<when the scenario ran>" }` as it would after such a run.
+The API serves the newest snapshot row of a type, with its `fetched_at` as `fetchedAt`, and the app marks a tile outdated once that is older than the tile's limit in `packages/web/src/lib/freshness.ts` (transit about 37 minutes, weather about 110). Where an ingestion run finds nothing, the civil-protection (NINA) ingestion stores the empty list as a row, while transit keeps it in the cache and writes no row; synthetic mode has no ingestion and warms its cache from the database, so a scenario writes a row holding the empty list for either, and the API answers `{ "data": [], "fetchedAt": "<when the scenario ran>" }` as it would after such a run.
 
 | Scenario | Data | What it lets you see |
 |---|---|---|
@@ -190,7 +190,15 @@ The report counts a failed answer under `servedLocally` as `basemaps.cartocdn.co
 ]
 ```
 
-Clicking a retry button in place of the reload needs the app to offer one where the map failed.
+The map's fallback also offers a Retry button ("Karte nicht verfügbar" and "Erneut versuchen" in German, "Map unavailable" and "Retry" in English), which loads the style again, so under `fail-once` a click on it in place of the reload shows the map loading in the same page:
+
+```json
+[
+  { "action": "click", "text": "Erneut versuchen" },
+  { "action": "wait", "ms": 1500 },
+  { "action": "screenshot", "name": "after-retry" }
+]
+```
 
 On that background the app's own map layers draw on the synthetic data: the district outlines and their name labels, the markers, polygons and choropleths of each data layer switched on in the layer rail, and their popups on hover or click. MapLibre draws label text itself from the browser's local fonts, as it does for any style without a glyphs URL, so labels show in the local sans-serif rather than the live site's map font.
 

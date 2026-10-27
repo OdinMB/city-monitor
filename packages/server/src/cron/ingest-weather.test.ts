@@ -215,9 +215,14 @@ describe('ingest-weather', () => {
     });
 
     it('keeps the DWD warnings for the Stadt Köln region only', async () => {
+      // warnings.json's shape (see dwdWarningsJsonp above), invented values
       const warnings = {
-        '105315000': [{ headline: 'Amtliche WARNUNG vor STURMBÖEN', description: 'Köln', severity: 2, end: Date.UTC(2026, 4, 1, 18), regionName: 'Stadt Köln' }],
-        '105316000': [{ headline: 'Amtliche WARNUNG vor ORKANBÖEN', description: 'Leverkusen', severity: 3, end: Date.UTC(2026, 4, 1, 18), regionName: 'Stadt Leverkusen' }],
+        time: Date.UTC(2026, 4, 1, 10),
+        warnings: {
+          '105315000': [{ headline: 'Amtliche WARNUNG vor STURMBÖEN', description: 'Köln', level: 3, end: Date.UTC(2026, 4, 1, 18), regionName: 'Stadt Köln' }],
+          '105316000': [{ headline: 'Amtliche WARNUNG vor ORKANBÖEN', description: 'Leverkusen', level: 4, end: Date.UTC(2026, 4, 1, 18), regionName: 'Stadt Leverkusen' }],
+        },
+        vorabInformation: {},
       };
       const brightSkyUrls: string[] = [];
       vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {

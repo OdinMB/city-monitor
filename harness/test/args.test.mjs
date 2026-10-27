@@ -72,7 +72,7 @@ describe('parseArgs', () => {
   it('refuses a city both packages do not register, with the list', () => {
     for (const bad of ['atlantis', 'Hamburg', 'berlin,hamburg', '__proto__', 'constructor', '../berlin', '']) {
       assert.throws(() => parseArgs(['--out', 'o', `--city=${bad}`]), (err) => err instanceof UsageError
-        && err.message.startsWith(`--city ${bad}: use one of berlin, hamburg (`), JSON.stringify(bad));
+        && err.message.startsWith(`--city ${bad}: use one of berlin, hamburg, koeln (`), JSON.stringify(bad));
     }
     assert.throws(() => parseArgs(['--out', 'o', '--city']), /needs a value/);
     assert.throws(() => parseArgs(['--out', 'o', '--city', 'berlin', '--city', 'hamburg']), /given twice/);

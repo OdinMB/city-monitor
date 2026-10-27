@@ -12,9 +12,10 @@
  *   with an empty validUntil;
  * - NINA warnings as the NINA ingestion writes them;
  * - an empty list, fetched now, where an ingestion run found nothing. The
- *   ingestion keeps that list in the cache rather than writing it; synthetic
- *   mode runs no ingestion and warms the cache from the database, so a row
- *   holding the empty list makes the API answer the same.
+ *   NINA ingestion stores that list as a row; the transit ingestion keeps it
+ *   in the cache rather than writing it. Synthetic mode runs no ingestion and
+ *   warms the cache from the database, so a row holding the empty list makes
+ *   the API answer the same.
  *
  * A scenario runs on one city's rows, given as its place: the city's centre
  * and the snapshot types its seed holds (scenarioPlace). A change to a type

@@ -14,7 +14,7 @@ Every place outside `packages/*/src/config/cities/` that is keyed by a city ID, 
 | `admin_level` | `packages/server/src/cron/ingest-aeds.ts` | city-states | The Overpass query looks for a state-level area with the city's name, so a city inside a state gets no AEDs. |
 | `BERLIN_ONLY_JOBS` | `packages/server/src/app.ts` | Berlin only | Bathing, wastewater, labour market, population and fire brigade: Berlin's own sources, stored under `berlin`. |
 | `cityId === 'berlin'` | `packages/server/src/db/warm-cache.ts` | Berlin only | Restores those jobs' data, noise sensors and council meetings for Berlin alone. |
-| `CITY = 'berlin'` | `packages/server/src/dev-synthetic.ts` | Berlin only | Synthetic mode, and the guarded browser run built on it, serve Berlin alone. |
+| `cityArg === -1 ? 'berlin'` | `packages/server/src/dev-synthetic.ts` | nothing | Synthetic mode, and the guarded browser run built on it, serve one configured city per run: Berlin by default, any other with `--city <id>` after `npm run db:seed -- --city <id>` (`.context/dev-database.md`). |
 | `ALL_CITIES` | `packages/web/src/config/index.ts` | every city | The web never loads the config. |
 | `ACTIVE_CITY_IDS` | `packages/web/src/config/index.ts` | when activating | `/<id>` redirects to Berlin. |
 | `WAQI_AGENCIES` | `packages/web/src/lib/aqi.ts` | every city | WAQI is credited without the state's monitoring agencies, which its terms require (`.context/weather.md`, "Credit"). |

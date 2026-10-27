@@ -181,8 +181,8 @@ To enable a configured city such as Hamburg (`hamburg`) or Köln (`koeln`) along
 
 1. Go to **API Web Service** → **Environment**
 2. Change `ACTIVE_CITIES` from `berlin` to e.g. `berlin,hamburg`
-3. Save — Render auto-redeploys. The city's data starts populating via cron jobs; a job whose stored data is still fresh for Berlin skips its startup run, so that city's tile fills at the job's next scheduled run
-4. In the code, add the city ID to `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` and push: the web build hardcodes its active cities, so without this the static site keeps redirecting the city's page to Berlin
+3. Save — Render auto-redeploys. The city's data starts populating on that start: a job runs at startup when any active city it serves has no fresh data, Berlin's fresh rows notwithstanding, so the city's tiles fill then rather than at each job's next scheduled run (`ingest-appointments` alone keeps the table-wide check; [server.md](server.md))
+4. In the code, add the city ID to `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` and push: the web build hardcodes its active cities, so without this the static site keeps redirecting the city's page to Berlin. Hamburg already has its routes, pre-rendering and share image; Köln does not yet, so its push also adds `/koeln` and `/koeln/sources` to `vite.config.ts` and `DASHBOARD_ROUTES` and an OG image (the `add-city` skill, "Activate")
 
 A city that is not configured yet needs its config files first: the `add-city` skill (`.claude/skills/add-city/SKILL.md`) or the README's "Adding a City".
 
