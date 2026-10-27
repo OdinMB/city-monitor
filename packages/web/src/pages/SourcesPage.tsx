@@ -10,6 +10,12 @@ interface Source {
   name: string;
   url: string;
   description: string;
+  /**
+   * A shared source credited only on these cities' pages: one whose job runs
+   * only where a city's server config enables it. SourcesPage.test.tsx checks
+   * the credits against the server configs.
+   */
+  cities?: readonly string[];
 }
 
 interface SourceGroup {
@@ -68,9 +74,9 @@ const SHARED_SOURCES: SourceGroup[] = [
         description: 'On-call emergency pharmacy locations and hours.',
       },
       {
-        name: 'OpenStreetMap (Overpass API)',
-        url: 'https://overpass-api.de/',
-        description: 'Automated external defibrillator (AED) locations from OpenStreetMap.',
+        name: 'OpenStreetMap',
+        url: 'https://www.openstreetmap.org/copyright',
+        description: 'Automated external defibrillator (AED) locations (via the Overpass API), and the place search (Nominatim) that puts news items and police reports on the map. © OpenStreetMap contributors, ODbL.',
       },
     ],
   },
@@ -81,6 +87,7 @@ const SHARED_SOURCES: SourceGroup[] = [
         name: 'Ticketmaster',
         url: 'https://www.ticketmaster.com/',
         description: 'Ticketed events — concerts, sports, theater.',
+        cities: ['berlin'],
       },
     ],
   },
@@ -168,7 +175,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'VBB transport.rest', url: 'https://v6.vbb.transport.rest/', description: 'Real-time public transit disruptions from 12 major Berlin stations.' },
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
-      { name: 'VIZ Berlin', url: 'https://viz.berlin.de/', description: 'Berlin traffic information center — construction sites and road closures.' },
+      { name: 'VIZ Berlin', url: 'https://viz.berlin.de/', description: 'Berlin traffic information center — construction sites and road closures. Source: Digitale Plattform Stadtverkehr Berlin, dl-de/by-2-0.' },
     ],
   },
   {
@@ -176,7 +183,8 @@ const BERLIN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time river water levels from Spree, Havel, and Dahme gauges.' },
       { name: 'LAGeSo Bathing Water', url: 'https://data.lageso.de/', description: 'Water quality measurements for Berlin bathing spots.' },
-      { name: 'LAGeSo Wastewater Monitoring', url: 'https://data.lageso.de/', description: 'Weekly viral load measurements (Influenza A/B, RSV) in Berlin wastewater.' },
+      { name: 'LAGeSo Wastewater Monitoring', url: 'https://data.lageso.de/', description: 'Weekly viral load measurements (Influenza A/B, RSV) in Berlin wastewater. Source: Lageso Berlin and Berliner Wasserbetriebe, dl-de/by-2-0. City Monitor averages the plants and derives the trend and level.' },
+      { name: 'RKI AMELAG Wastewater Surveillance', url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG', description: 'Weekly SARS-CoV-2 viral load at the Berlin treatment plants. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the plants and derives the trend and level.' },
     ],
   },
   {
@@ -190,8 +198,9 @@ const BERLIN_SOURCES: SourceGroup[] = [
     category: 'Social & Economic',
     sources: [
       { name: 'Bundesagentur für Arbeit', url: 'https://statistik.arbeitsagentur.de/', description: 'Monthly unemployment rates, SGB II recipients, and underemployment data.' },
+      { name: 'Amt für Statistik Berlin-Brandenburg', url: 'https://www.statistik-berlin-brandenburg.de/', description: 'Semi-annual population register statistics per planning area — population, age groups, foreign residents. Source: Amt für Statistik Berlin-Brandenburg, CC BY. City Monitor derives the shares and the population density.' },
       { name: 'MSS 2023 (Social Atlas)', url: 'https://www.berlin.de/sen/sbw/stadtdaten/stadtwissen/monitoring-soziale-stadtentwicklung/', description: 'Biennial social indicators per planning area — unemployment, poverty, welfare rates.' },
-      { name: 'Berlin Budget (Doppelhaushalt)', url: 'https://www.berlin.de/sen/finanzen/', description: 'City budget 2026 — revenues and expenses by district and function category.' },
+      { name: 'Berlin Budget (Doppelhaushalt)', url: 'https://www.berlin.de/sen/finanzen/', description: 'City budget 2026 — revenues and expenses by district and function category. Licensed CC BY.' },
     ],
   },
   {
@@ -203,15 +212,15 @@ const BERLIN_SOURCES: SourceGroup[] = [
   {
     category: 'Council Meetings',
     sources: [
-      { name: 'ALLRIS OParl (BVV)', url: 'https://oparl.org/', description: 'District assembly meetings from 11 Berlin Bezirke via OParl 1.0 JSON API.' },
+      { name: 'ALLRIS OParl (BVV)', url: 'https://oparl.org/', description: 'District assembly meetings from 11 Berlin Bezirke via OParl 1.0 JSON API. Licensed CC BY 3.0 DE.' },
       { name: 'PARDOK (Abgeordnetenhaus)', url: 'https://www.parlament-berlin.de/', description: 'Berlin state parliament committee and plenary schedules via XML feeds.' },
     ],
   },
   {
     category: 'Maps',
     sources: [
-      { name: 'Sensor.Community', url: 'https://sensor.community/', description: 'Citizen-run air quality sensors — PM2.5 and PM10 readings.' },
-      { name: 'Sensor.Community DNMS', url: 'https://sensor.community/en/sensors/dnms/', description: 'Citizen-run noise sensors — LAeq, LAmin, LAmax readings (Berlin only).' },
+      { name: 'Sensor.Community', url: 'https://sensor.community/', description: 'Citizen-run air quality sensors — PM2.5 and PM10 readings. © Sensor.Community contributors, ODbL.' },
+      { name: 'Sensor.Community DNMS', url: 'https://sensor.community/en/sensors/dnms/', description: 'Citizen-run noise sensors — LAeq, LAmin, LAmax readings (Berlin only). © Sensor.Community contributors, ODbL.' },
       { name: 'Berlin Open Data (Rent Map)', url: 'https://daten.berlin.de/', description: 'Residential rent zone map (Wohnlagenkarte 2024) as WMS overlay.' },
       { name: 'Berlin Noise Map (SenMVKU)', url: 'https://gdi.berlin.de/services/wms/ua_stratlaerm_2022', description: 'EU strategic noise map 2022 — total, road, rail, and air noise as WMS overlay.' },
     ],
@@ -222,7 +231,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
   {
     category: 'Maps',
     sources: [
-      { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay.' },
+      { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/by-2-0.' },
     ],
   },
   {
@@ -280,11 +289,21 @@ function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] 
   }));
 }
 
+/** The groups with only the sources credited for `cityId`, leaving out a group that has none. */
+function forCity(groups: SourceGroup[], cityId: string): SourceGroup[] {
+  return groups
+    .map((group) => ({ ...group, sources: group.sources.filter((s) => !s.cities || s.cities.includes(cityId)) }))
+    .filter((group) => group.sources.length > 0);
+}
+
 export function SourcesPage() {
   const city = useCityConfig();
   const { t } = useTranslation();
   const citySources = CITY_SOURCES[city.id] ?? [];
-  const groups = mergeGroups([...SHARED_SOURCES, aiProcessingGroup(t)], [waqiGroup(city.id), ...citySources]);
+  const groups = forCity(
+    mergeGroups([...SHARED_SOURCES, aiProcessingGroup(t)], [waqiGroup(city.id), ...citySources]),
+    city.id,
+  );
 
   const sourceCount = groups.reduce((n, g) => n + g.sources.length, 0);
 
