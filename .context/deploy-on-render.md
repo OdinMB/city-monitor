@@ -177,14 +177,14 @@ To serve the API on its own subdomain (e.g. `api.citymonitor.app`, as citymonito
 
 ## Adding a City (Multi-City)
 
-To enable a configured city such as Hamburg (`hamburg`) or Köln (`koeln`) alongside Berlin:
+To enable a configured city such as Hamburg (`hamburg`) or Köln (`koeln`) alongside Berlin, switch the API on first, so the city's page never opens on an API that refuses it:
 
-1. In the code, add the city ID to `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` and push: the web build hardcodes its active cities, so without this the static site keeps redirecting the city's page to Berlin
-2. Go to **API Web Service** → **Environment**
-3. Change `ACTIVE_CITIES` from `berlin` to e.g. `berlin,hamburg`
-4. Save — Render auto-redeploys. The city's data starts populating via cron jobs; a job whose stored data is still fresh for Berlin skips its startup run, so that city's tile fills at the job's next scheduled run
+1. Go to **API Web Service** → **Environment**
+2. Change `ACTIVE_CITIES` from `berlin` to e.g. `berlin,hamburg`
+3. Save — Render auto-redeploys. The city's data starts populating via cron jobs; a job whose stored data is still fresh for Berlin skips its startup run, so that city's tile fills at the job's next scheduled run
+4. In the code, add the city ID to `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` and push: the web build hardcodes its active cities, so without this the static site keeps redirecting the city's page to Berlin
 
-A city that is not configured yet needs its config files first (README, "Adding a City").
+A city that is not configured yet needs its config files first: the `add-city` skill (`.claude/skills/add-city/SKILL.md`) or the README's "Adding a City".
 
 ## Troubleshooting
 

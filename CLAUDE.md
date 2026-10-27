@@ -31,7 +31,7 @@ scripts/        — Build helpers (ensure-dev-deps.mjs, see .context/deployment.
 
 The server runs cron jobs that fetch external data, classify/process it, write to PostgreSQL (source of truth), and update the in-memory cache. The React SPA reads pre-built JSON via REST endpoints. API reads hit the memory cache first; on miss, query Postgres. A bootstrap endpoint (`GET /api/:city/bootstrap`) returns all city data in one response for fast initial load. On server start, the cache warms from Postgres.
 
-Adding a city = adding a config file (server + web) + registering in `ALL_CITIES` + setting `ACTIVE_CITIES` env var.
+**Adding or activating a city:** use the `add-city` skill (`.claude/skills/add-city/SKILL.md`). It takes a config in each package, entries in code keyed by city ID, and two switches (`ACTIVE_CITY_IDS` in the web code, `ACTIVE_CITIES` on the server).
 
 ## Context Files
 
