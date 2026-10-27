@@ -188,6 +188,7 @@ API responses include `fetchedAt` (ISO string) indicating when data was last ing
 - **`TileFooter`** — unified footnote component (`text-[11px]`, centered; `gray-500` light / `gray-400` dark, at least 4.5:1 on the tile surface in both themes). Used for staleness badges and domain-specific notes (measurement dates, generation times).
 - Each strip's `FRESH_MAX_AGE` comes from `staleAfter(feed)` in `lib/freshness.ts`: the feeding cron job's interval plus half an interval of grace (at least 15 min), plus the hook's refetch interval and the route's HTTP max-age, so data counts as stale only after a scheduled run was missed. Update its table when a cron schedule, `cacheFor()` value or hook refetch interval changes. When stale, a `TileFooter` with "Updated X ago" (translated) appears at the bottom. `TileFooter stale` turns the text amber (`amber-700` light, AA on white) and appends the translated word `stale.outdated`, so staleness isn't shown by colour alone.
 - Strips with domain-specific footnotes (BriefingStrip, WastewaterStrip, BathingStrip, LaborMarketStrip, PopulationStrip) use `TileFooter` for those notes as well, ensuring consistent styling.
+- **An empty list is a claim only while it is fresh.** The transit tile says "All clear" only when `fetchedAt` is within `FRESH_MAX_AGE`, and then names the time of the check; with `fetchedAt: null` (nothing ingested, or no source for the city) it says there is no data, and on stale data it shows a "may be outdated" note instead (transit.md → Frontend).
 
 ## Reusable Components
 
@@ -203,7 +204,7 @@ There is no shared chart component: `TrendChart` was removed, and the wastewater
 
 | File | Purpose |
 |---|---|
-| `lib/format-time.ts` | `formatRelativeTimeI18n(iso, t)` — relative time in the UI language from the `time.*` keys ("5 min ago", "vor 5 Min.", "5 dk önce"). The result already holds the "ago" word, so a string that embeds it (`panel.news.generatedAgo`, `stale.updated`) must not add one. |
+| `lib/format-time.ts` | `formatRelativeTimeI18n(iso, t)` — relative time in the UI language from the `time.*` keys ("5 min ago", "vor 5 Min.", "5 dk önce"). The result already holds the "ago" word, so a string that embeds it (`panel.news.generatedAgo`, `stale.updated`) must not add one. `formatClockTime(iso, lang, timeZone)` — the time of day on the city's clock (the city config's `timezone`, not the browser's), 24-hour ("07:12"), with the date added when it is not from today ("25. Okt., 05:12"); the transit tile's "Checked …" uses it. |
 | `lib/format-value.ts` | How a value is shown: `formatCount(n, lang)` (grouped in the UI language), `formatDecimal` and `formatPercent` (Latin digits and a point in every language), `formatSignedCount`/`formatSignedPercent`, the shortened `formatCompactAmount(n, t)` ("38.5 bn", "38.5 Mrd.": the scale word from `number.scale.*`) and `formatCompactReading` ("1.2k") and `withUnit` ("412 cm"). The water level, labour market, population, budget, wastewater and fire brigade tiles and `lib/format-stats.ts` format through it |
 | `lib/bidi.ts` | `forwardArrow(lng)` — "→", or "←" in a right-to-left language, for "more / until" marks (see i18n.md → Right-to-left) |
 | `components/Ltr.tsx` | `<Ltr>` — isolates a phone number or numeric range left-to-right in an Arabic layout; React counterpart of the popups' `ltr()` |

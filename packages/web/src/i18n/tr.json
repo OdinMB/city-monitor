@@ -109,7 +109,10 @@
     },
     "transit": {
       "title": "Toplu Taşıma",
-      "empty": "Her şey yolunda — aksama yok",
+      "allClear": "Her şey yolunda — aksama yok",
+      "checkedAt": "Son kontrol: {{time}}",
+      "noData": "Toplu taşıma verisi mevcut değil",
+      "mayBeOutdated": "Veriler güncel olmayabilir (son kontrol: {{time}})",
       "affectedStops": "Etkilenen duraklar",
       "more": "daha fazla",
       "station": "Bildirildiği durak"
