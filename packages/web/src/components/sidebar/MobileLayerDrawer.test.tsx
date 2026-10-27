@@ -82,3 +82,77 @@ describe('MobileLayerDrawer', () => {
     expect(slider.style.transform).toBe('translateX(200px)');
   });
 });
+
+describe('MobileLayerDrawer while closed and on closing', () => {
+  // The closed panel is pushed off screen; inert takes it out of the Tab order
+  // and the accessibility tree too. jsdom does not apply inert, so these check
+  // the attribute and where focus is sent.
+  const panelOf = (handle: HTMLElement) => document.getElementById(handle.getAttribute('aria-controls')!)!;
+
+  it('keeps the closed panel out of the Tab order and the accessibility tree', async () => {
+    const { handle } = await renderDrawer('en');
+    const panel = panelOf(handle);
+    expect(panel.getAttribute('role')).toBe('dialog');
+    expect(panel.hasAttribute('inert')).toBe(true);
+    expect(handle.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(handle);
+    expect(panel.hasAttribute('inert')).toBe(false);
+    expect(handle.getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.click(handle);
+    expect(panel.hasAttribute('inert')).toBe(true);
+    expect(handle.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('moves focus into the panel when it opens', async () => {
+    const { handle } = await renderDrawer('en');
+    handle.focus();
+    fireEvent.click(handle);
+    expect(panelOf(handle).contains(document.activeElement)).toBe(true);
+  });
+
+  it('returns focus to the layers button when Escape closes it', async () => {
+    const { handle } = await renderDrawer('en');
+    fireEvent.click(handle);
+    const inside = document.activeElement as HTMLElement;
+    expect(panelOf(handle).contains(inside)).toBe(true);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(panelOf(handle).hasAttribute('inert')).toBe(true);
+    expect(document.activeElement).toBe(handle);
+  });
+
+  it('stays open when Escape belongs to a modal dialog on top of it', async () => {
+    const { handle } = await renderDrawer('en');
+    fireEvent.click(handle);
+    const modal = document.createElement('div');
+    modal.setAttribute('aria-modal', 'true');
+    const inModal = document.createElement('button');
+    modal.appendChild(inModal);
+    document.body.appendChild(modal);
+    inModal.focus();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(panelOf(handle).hasAttribute('inert')).toBe(false);
+    modal.remove();
+  });
+
+  it('returns focus to the layers button when the backdrop closes it with focus inside', async () => {
+    const { handle } = await renderDrawer('ar');
+    fireEvent.click(handle);
+    const backdrop = handle.closest('.absolute.inset-0')!.firstElementChild as HTMLElement;
+    fireEvent.click(backdrop);
+    expect(panelOf(handle).hasAttribute('inert')).toBe(true);
+    expect(document.activeElement).toBe(handle);
+  });
+
+  it('returns focus to the layers button when a swipe closes it with focus inside', async () => {
+    const { handle, slider } = await renderDrawer('en');
+    fireEvent.click(handle);
+    expect(panelOf(handle).contains(document.activeElement)).toBe(true);
+    drag(slider, 170, 20);
+    expect(slider.style.transform).toBe('translateX(-200px)');
+    expect(document.activeElement).toBe(handle);
+  });
+});

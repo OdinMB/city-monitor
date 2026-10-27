@@ -47,7 +47,9 @@
       "headlines_count": "{{count}} Schlagzeilen",
       "all": "Alle",
       "retry": "Erneut versuchen",
-      "showMore": "{{count}} weitere"
+      "showMore": "{{count}} weitere",
+      "pauseTicker": "Nachrichtenticker anhalten",
+      "resumeTicker": "Nachrichtenticker fortsetzen"
     },
     "weather": {
       "title": "Wetter",
@@ -384,7 +386,8 @@
   },
   "tile": {
     "expand": "aufklappen",
-    "collapse": "zuklappen"
+    "collapse": "zuklappen",
+    "loading": "Wird geladen…"
   },
   "stale": {
     "updated": "Aktualisiert {{time}}",
@@ -562,6 +565,10 @@
     "toggleLayer": "Datenebene 1–9 umschalten",
     "clearLayers": "Alle Ebenen deaktivieren",
     "close": "Schließen",
-    "toastHint": "Tastenkürzel"
+    "toastHint": "Tastenkürzel",
+    "singleKey": "Kürzel mit einer Taste",
+    "singleKeyHint": "Schalten Sie sie aus, wenn einzelne Tasten stören, zum Beispiel bei Spracheingabe.",
+    "on": "An",
+    "off": "Aus"
   }
 }

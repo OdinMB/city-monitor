@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts.js';
+import { useShortcutSettings } from './useShortcutSettings.js';
+
+const initialShortcuts = useShortcutSettings.getState();
 
 // --- Mocks ---
 
@@ -31,6 +34,10 @@ function fireKey(key: string, opts: Partial<KeyboardEventInit> = {}) {
 describe('useKeyboardShortcuts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // The dialog's state and the on/off setting live in a store shared by the
+    // whole app, so each test starts from its defaults.
+    useShortcutSettings.setState(initialShortcuts, true);
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -213,6 +220,40 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts());
     act(() => fireKey('d', { altKey: true }));
     expect(mockToggleTheme).not.toHaveBeenCalled();
+  });
+
+  // --- Switched off (WCAG 2.1.4) ---
+
+  it('does nothing on a single character key once the shortcuts are switched off', () => {
+    useShortcutSettings.getState().setEnabled(false);
+    const { result } = renderHook(() => useKeyboardShortcuts());
+    for (const key of ['d', 'D', '0', '1', '5', '9', '?']) act(() => fireKey(key));
+    expect(mockToggleTheme).not.toHaveBeenCalled();
+    expect(mockToggleLayer).not.toHaveBeenCalled();
+    expect(mockSetActiveLayers).not.toHaveBeenCalled();
+    expect(result.current.hintsOpen).toBe(false);
+  });
+
+  it('acts again once they are switched back on', () => {
+    useShortcutSettings.getState().setEnabled(false);
+    renderHook(() => useKeyboardShortcuts());
+    act(() => useShortcutSettings.getState().setEnabled(true));
+    act(() => fireKey('2'));
+    expect(mockToggleLayer).toHaveBeenCalledWith('news');
+  });
+
+  it('still closes the dialog on Escape while they are off', () => {
+    const { result } = renderHook(() => useKeyboardShortcuts());
+    act(() => result.current.openHints());
+    act(() => useShortcutSettings.getState().setEnabled(false));
+    act(() => fireKey('Escape'));
+    expect(result.current.hintsOpen).toBe(false);
+  });
+
+  it('shares the dialog state with other components, such as the opener in the layer list', () => {
+    const { result } = renderHook(() => useKeyboardShortcuts());
+    act(() => useShortcutSettings.getState().setHintsOpen(true));
+    expect(result.current.hintsOpen).toBe(true);
   });
 
   // --- Cleanup ---

@@ -469,28 +469,58 @@ select:focus-visible,
   transform-origin: right center;
 }
 
-/* News marquee — continuous horizontal scroll towards the inline end. The
-   track holds two copies of the headlines, so moving it by half its width
-   brings the second copy to where the first started. A right-to-left track
-   starts at the right edge and overflows to the left, so it moves right. */
+/* News marquee (NewsMarquee) — continuous horizontal scroll. The track holds
+   two copies of the headlines, so moving it by half its width brings the
+   second copy to where the first started. The headlines are German feed text
+   and the scrolling area is dir="ltr" in every language, so the track always
+   starts at the left edge and moves left: each headline comes in start first. */
 @keyframes marquee {
   from { transform: translateX(0); }
-  to { transform: translateX(var(--marquee-shift, -50%)); }
+  to { transform: translateX(-50%); }
 }
 .marquee-track {
   animation: marquee var(--marquee-speed, 90s) linear infinite;
 }
-[dir='rtl'] .marquee-track {
-  --marquee-shift: 50%;
-}
-.marquee-container:hover .marquee-track {
+/* Paused while the pointer is over the headlines and after the pause button
+   (WCAG 2.2.2). The button sits outside the scrolling area, so hovering or
+   focusing it doesn't hold the ticker against its own Resume. */
+.marquee-viewport:hover .marquee-track,
+.marquee-paused .marquee-track {
   animation-play-state: paused;
 }
 
-/* Respect reduced-motion for marquee */
+/* Also paused while a headline has keyboard focus (:focus-visible, so a tap or
+   click leaves it running). A rule of its own: a browser without :has() drops
+   every selector in a list that contains one, which would take hover and the
+   pause button down with it. */
+.marquee-viewport:has(:focus-visible) .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Reduced motion: no movement, so every headline stays reachable in a strip
+   that scrolls by hand (swipe, trackpad, Shift+wheel, or Tab). The bar grows
+   by the height of a scrollbar where the system draws one; the padding keeps
+   the focus outline inside the scrolling area. The loop copy and the pause
+   button have nothing to do. */
 @media (prefers-reduced-motion: reduce) {
   .marquee-track {
     animation: none;
+  }
+  .marquee-container {
+    height: auto;
+    min-height: 2.25rem;
+  }
+  .marquee-viewport {
+    height: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    padding: 6px 4px;
+    scroll-padding-inline: 4px;
+  }
+  .marquee-content[aria-hidden='true'],
+  .marquee-toggle {
+    display: none;
   }
 }
 
