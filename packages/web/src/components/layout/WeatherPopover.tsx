@@ -7,6 +7,7 @@ import { formatDayName } from '../../lib/format-day-name.js';
 import { forecastInstant, formatCityClock, upcomingHourly } from '../../lib/city-time.js';
 import { Skeleton } from './Skeleton.js';
 import { UvIndexToday } from '../UvIndexToday.js';
+import { WeatherWarningList } from '../WeatherWarnings.js';
 
 export function WeatherPopover() {
   const { id: cityId, timezone } = useCityConfig();
@@ -33,18 +34,7 @@ export function WeatherPopover() {
 
   return (
     <div className="p-4 w-[min(calc(100vw-2rem),36rem)]">
-      {alerts.length > 0 && (
-        <div className="mb-3 space-y-2">
-          {alerts.map((alert, i) => (
-            <div
-              key={i}
-              className="p-2 rounded text-sm bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200"
-            >
-              <span className="font-semibold">{alert.headline}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <WeatherWarningList alerts={alerts} className="mb-3 text-sm" />
 
       {/* Current conditions */}
       <div className="flex items-start gap-4 mb-4">

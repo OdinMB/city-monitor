@@ -92,6 +92,40 @@ describe('WeatherStrip UV index', () => {
   });
 });
 
+describe('WeatherStrip warnings', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-15T09:30:00Z'));
+  });
+
+  afterEach(async () => {
+    cleanup();
+    vi.useRealTimers();
+    await i18n.changeLanguage('en');
+  });
+
+  it("shows each warning with its level, its end on Berlin's clock and its source, collapsed or not", async () => {
+    await i18n.changeLanguage('de');
+    weather = {
+      ...weatherWith(),
+      alerts: [
+        // 16:00 UTC is 18:00 in Berlin (CEST)
+        { headline: 'Amtliche UNWETTERWARNUNG vor ORKANBÖEN', severity: 'severe', description: '', validUntil: '2026-07-15T16:00:00.000Z' },
+        { headline: 'Amtliche WARNUNG vor HITZE', severity: 'moderate', description: '', validUntil: '' },
+      ],
+    };
+    for (const expanded of [false, true]) {
+      render(<WeatherStrip expanded={expanded} />);
+      const rows = screen.getAllByRole('listitem');
+      expect(rows.map((row) => row.textContent)).toEqual([
+        'UnwetterwarnungBis 18:00 UhrAmtliche UNWETTERWARNUNG vor ORKANBÖENQuelle: Deutscher Wetterdienst (DWD)',
+        'Markante WetterwarnungBis auf WeiteresAmtliche WARNUNG vor HITZEQuelle: Deutscher Wetterdienst (DWD)',
+      ]);
+      cleanup();
+    }
+  });
+});
+
 describe('WeatherStrip condition', () => {
   afterEach(async () => {
     cleanup();

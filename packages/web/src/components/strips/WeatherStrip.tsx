@@ -10,6 +10,7 @@ import { formatDayName } from '../../lib/format-day-name.js';
 import { cityDate, cityHour, forecastInstant, formatCityClock, upcomingHourly } from '../../lib/city-time.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { UvIndexToday } from '../UvIndexToday.js';
+import { WeatherWarningList } from '../WeatherWarnings.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
@@ -71,19 +72,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
   return (
     <>
       <div className={expanded ? '' : 'flex-1 flex flex-col justify-center'}>
-        {/* Alerts */}
-        {alerts.length > 0 && (
-          <div className="mb-3 space-y-1">
-            {alerts.map((alert, i) => (
-              <div
-                key={i}
-                className="p-2 rounded text-xs bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200"
-              >
-                <span className="font-semibold">{alert.headline}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <WeatherWarningList alerts={alerts} className="mb-3 text-xs" />
 
         {/* Current conditions — 2×2 aligned grid */}
         <div className="flex items-center justify-center gap-4">

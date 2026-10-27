@@ -59,7 +59,25 @@
       "high": "أعلى",
       "low": "أدنى",
       "alerts": "تنبيهات",
-      "validUntil": "صالح حتى {{time}}",
+      "warning": {
+        "level": {
+          "moderate": "تحذير جوي هام",
+          "severe": "تحذير من طقس شديد",
+          "extreme": "تحذير من طقس متطرف",
+          "unknown": "تحذير جوي"
+        },
+        "short": {
+          "moderate": "تحذير",
+          "severe": "شديد",
+          "extreme": "متطرف",
+          "unknown": "تحذير"
+        },
+        "untilTime": "حتى الساعة {{time}}",
+        "untilTomorrow": "حتى الساعة {{time}} غداً",
+        "untilDay": "حتى {{day}} الساعة {{time}}",
+        "noEnd": "حتى إشعار آخر",
+        "source": "المصدر: هيئة الأرصاد الجوية الألمانية (DWD)"
+      },
       "uvMax": "أقصى UV",
       "uvTodayHint": "أعلى مؤشر للأشعة فوق البنفسجية اليوم (توقعات DWD)",
       "uvClearSky": "UV في الشمس",

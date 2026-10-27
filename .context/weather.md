@@ -8,7 +8,7 @@
 
 2. **API** (`packages/server/src/routes/weather.ts`) — `GET /api/:city/weather` returns cached data, falls back to Postgres, then to an empty structure.
 
-3. **Frontend** — the dashboard tile `packages/web/src/components/strips/WeatherStrip.tsx` and the top-bar popover `packages/web/src/components/layout/WeatherPopover.tsx`. Both use `useWeather()` (refetch 15 min) and render current conditions via WMO weather code → emoji and translated name (`packages/web/src/lib/weather-codes.ts`, names under `panel.weather.code.*`). Both show today's DWD UV index in the conditions row through `components/UvIndexToday.tsx` (see "DWD UV index" below).
+3. **Frontend** — the dashboard tile `packages/web/src/components/strips/WeatherStrip.tsx` and the top-bar popover `packages/web/src/components/layout/WeatherPopover.tsx`. Both use `useWeather()` (refetch 15 min) and render current conditions via WMO weather code → emoji and translated name (`packages/web/src/lib/weather-codes.ts`, names under `panel.weather.code.*`). Both show today's DWD UV index in the conditions row through `components/UvIndexToday.tsx` (see "DWD UV index" below), and list the city's DWD warnings above the current conditions through `components/WeatherWarnings.tsx`; the top bar's weather chip shows the most serious level in force (see "DWD warnings on screen" below).
 
 ## Data Sources
 
@@ -36,6 +36,15 @@
 - **Storage**: `data.dwdUv` in the cache and in the weather snapshot (`saveWeather`). `WeatherDataSchema` keeps it on DB reads; a malformed `dwdUv` is dropped without failing the weather read. Snapshots written before 2026-10 have no `dwdUv`.
 - **Display**: `uvIndexForToday()` (`packages/web/src/lib/uv-levels.ts`) picks today's value in the city's time zone: `today` on `forecastDay`, `tomorrow` the day after (before DWD's next morning update), `dayAfter` the day after that, and nothing later. `UvIndexToday` renders it as "UV max 4 ● Moderate": the label `panel.weather.uvMax` (it says "max" because the row's humidity and wind are current readings), value, WHO colour dot (`getUvLevel`) and the translated level (`panel.weather.uvLevel.*`), with `panel.weather.uvTodayHint` as tooltip. Hidden for cities without DWD data.
 - Per-hour and per-day UV from the old Open-Meteo path are no longer populated post-migration.
+
+### DWD warnings on screen
+
+- **Rows** (`WeatherWarningList` in `packages/web/src/components/WeatherWarnings.tsx`, in the tile and the popover): each warning's level as a coloured badge with its name (`panel.weather.warning.level.*`; in German DWD's terms Markante Wetterwarnung, Unwetterwarnung, Extremes Unwetter), when it ends, DWD's `headline` as issued (German, in a `<bdi lang="de">` so it keeps its word order in Arabic) and the source line `panel.weather.warning.source` (Deutscher Wetterdienst). `description` is not rendered, and `WeatherAlert` has no start time to show.
+- **Levels** come from `severity` (`lib/weather-warnings.ts`): `moderate` orange, `severe` red, `extreme` violet, after DWD's colours. Any other value shows as a plain "Wetterwarnung" in orange. Badge text is at least 4.5:1 and the row text on the level's tint at least 9:1, in both themes.
+- **End** (`formatWarningEnd`): on the city's clock whatever the browser's zone, "Bis 18:00 Uhr" on the city's day, "Bis morgen, 06:00 Uhr" on the next, the weekday and date beyond that (Latin digits in every language), "Bis auf Weiteres" when `validUntil` is empty or unreadable.
+- **In force** (`warningsInForce`, `hooks/useWarningsInForce.ts`): the hourly ingestion keeps a warning in the data for up to an hour past its end, so the rows and the top-bar badge leave out a warning 5 minutes after its end (`WARNING_END_GRACE_MS`, room for a device clock that runs a little fast) and check again when the next one runs out, while the page stays open. A warning without a readable end counts as in force.
+- **Top bar**: the weather chip adds a badge for the most serious level among the warnings in force (`highestWarningLevel`) with a short word (`panel.weather.warning.short.*`: Warnung, Unwetter, Extrem), and its accessible name ends with the level's full name, e.g. "Wetter: 13°, Unwetterwarnung".
+- The source line names DWD for every warning because `alerts` is filled from DWD only; a provider that adds warnings from elsewhere has to carry its source.
 
 ### Air quality (all cities)
 

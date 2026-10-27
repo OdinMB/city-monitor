@@ -59,7 +59,25 @@
       "high": "Y",
       "low": "D",
       "alerts": "Uyarılar",
-      "validUntil": "{{time}} tarihine kadar geçerli",
+      "warning": {
+        "level": {
+          "moderate": "Önemli hava uyarısı",
+          "severe": "Şiddetli hava uyarısı",
+          "extreme": "Aşırı şiddetli hava uyarısı",
+          "unknown": "Hava uyarısı"
+        },
+        "short": {
+          "moderate": "Uyarı",
+          "severe": "Şiddetli",
+          "extreme": "Aşırı",
+          "unknown": "Uyarı"
+        },
+        "untilTime": "Bitiş: {{time}}",
+        "untilTomorrow": "Bitiş: yarın {{time}}",
+        "untilDay": "Bitiş: {{day}} {{time}}",
+        "noEnd": "İkinci bir duyuruya kadar",
+        "source": "Kaynak: Deutscher Wetterdienst (DWD)"
+      },
       "uvMax": "Maks. UV",
       "uvTodayHint": "Bugünün en yüksek UV indeksi (DWD tahmini)",
       "uvClearSky": "Güneşliyse UV",

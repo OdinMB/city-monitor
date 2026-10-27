@@ -64,6 +64,33 @@ describe('WeatherPopover follows the UI language', () => {
   });
 });
 
+describe('WeatherPopover warnings', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 21:30 UTC is 23:30 in Berlin (CEST)
+    vi.setSystemTime(new Date('2026-07-15T21:30:00Z'));
+  });
+
+  afterEach(() => {
+    cleanup();
+    weather = undefined;
+    vi.useRealTimers();
+  });
+
+  it("shows each warning with its level, its end on Berlin's clock and its source", () => {
+    weather = {
+      ...RAINY,
+      // 04:00 UTC on the 16th is 06:00 the next morning in Berlin
+      alerts: [{ headline: 'Amtliche WARNUNG vor STURMBÖEN', severity: 'extreme', description: '', validUntil: '2026-07-16T04:00:00.000Z' }],
+    };
+    render(<WeatherPopover />);
+    const row = screen.getByRole('listitem');
+    expect(row.textContent).toBe(
+      'Extreme weather warningUntil tomorrow, 06:00Amtliche WARNUNG vor STURMBÖENSource: Deutscher Wetterdienst (DWD)',
+    );
+  });
+});
+
 /** Hourly entries as the server sends them: UTC "YYYY-MM-DDTHH:MM", no offset. */
 function hourlyFrom(startUtc: string, hours: number): HourlyForecast[] {
   const start = Date.parse(`${startUtc}Z`);
