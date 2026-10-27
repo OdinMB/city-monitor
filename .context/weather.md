@@ -2,7 +2,7 @@
 
 ## Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-weather.ts`) — Runs hourly. Routes per `city.dataSources.weather.provider`. For `'brightsky'` cities (today: Berlin, Hamburg), calls the adapter at `packages/server/src/lib/brightsky.ts`, which assembles `WeatherData` from BrightSky's `/current_weather` + `/weather` (7-day range) endpoints. For German cities, additionally fetches DWD severe-weather alerts and DWD UV index directly. Air quality is fetched alongside from Open-Meteo's separate `air-quality-api.open-meteo.com` host (not affected by the per-IP forecast quota). Writes to cache key `{cityId}:weather` (TTL 3600s) and persists to Postgres if DB connected.
+1. **Ingestion** (`packages/server/src/cron/ingest-weather.ts`) — Runs hourly. Routes per `city.dataSources.weather.provider`. For `'brightsky'` cities (today: Berlin, Hamburg, Köln), calls the adapter at `packages/server/src/lib/brightsky.ts`, which assembles `WeatherData` from BrightSky's `/current_weather` + `/weather` (7-day range) endpoints. For German cities, additionally fetches DWD severe-weather alerts and DWD UV index directly. Air quality is fetched alongside from Open-Meteo's separate `air-quality-api.open-meteo.com` host (not affected by the per-IP forecast quota). Writes to cache key `{cityId}:weather` (TTL 3600s) and persists to Postgres if DB connected.
 
    If a city's `provider` has no adapter, the cron logs a warning and skips that city — DE cities continue to update normally. See "Adding a non-German city" below.
 
@@ -26,7 +26,7 @@
 ### DWD severe weather alerts (German cities)
 
 - **Endpoint**: `https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json` (JSONP-wrapped)
-- Direct call inside `ingest-weather.ts:fetchDwdAlerts`. Filters by `regionName.includes(city.name)`; severity ≥ 2 only. Could be replaced with BrightSky's cleaner JSON `/alerts` endpoint as a follow-up.
+- Direct call inside `ingest-weather.ts:fetchDwdAlerts`. Filters by `regionName.includes(city.name)`; severity ≥ 2 only. So `city.name` must be the German spelling DWD uses (`Köln` matches the warn region "Stadt Köln"; `Cologne` would match nothing), and the UV lookup below depends on it too. Could be replaced with BrightSky's cleaner JSON `/alerts` endpoint as a follow-up.
 
 ### DWD UV index (German cities)
 
@@ -62,7 +62,7 @@ WAQI's API terms (https://aqicn.org/api/tos) say its data may not be redistribut
 - **No archive.** `ingest-air-quality-grid.ts` puts the merged grid (WAQI + Sensor.Community) in the in-memory cache only. The `aqi-grid` snapshot stores the Sensor.Community points alone, and nothing when there are none. The retention job deletes `aqi-grid` rows older than 6 hours (`AQ_GRID_MAX_AGE_MS` in `db/reads.ts`, the age limit of `loadAirQualityGrid`), the newest one included (it must never be marked `keepLatest`), so stored rows serve only the route's DB fallback and cache warming. There is no AQI history endpoint; do not build one, or any other archive, from WAQI values.
 - **Restarts.** `ingest-aq-grid` has no freshness spec and runs on every start (`runOnStart: true` in `app.ts`; one WAQI call per active city plus the Sensor.Community calls), because a fresh stored row lacks the WAQI stations. Until that run finishes, the grid warmed from Postgres has Sensor.Community points only. Synthetic mode creates no scheduler, so it makes no such run.
 - **Cache miss while running.** The grid is cached for 36 minutes (`AQ_GRID_TTL_SECONDS`, the 30-minute interval + 20%, shared with the route's DB fallback and cache warming), so a slow run does not let the entry expire. If runs fail until it does, the route's DB fallback serves Sensor.Community points only until a run succeeds.
-- **Credit.** While the map's air-quality layer shows WAQI stations, its source carries an attribution such as "© World Air Quality Index Project, Umweltbundesamt, BLUME" (`waqiMapAttribution` in `packages/web/src/lib/aqi.ts`), which the map's attribution control lists. The tile credits WAQI and the originating agencies under its station list, and the Sources page entry names the agencies per city. The agencies per city are in `WAQI_AGENCIES` (same file): the Umweltbundesamt plus BLUME (Berlin) or HaLm (Hamburg). They have not been checked against WAQI's station pages; the bounding boxes also reach into neighbouring states, so a station there may come from another state network. Check the stations' aqicn.org pages when adding a city or changing a bounding box.
+- **Credit.** While the map's air-quality layer shows WAQI stations, its source carries an attribution such as "© World Air Quality Index Project, Umweltbundesamt, BLUME" (`waqiMapAttribution` in `packages/web/src/lib/aqi.ts`), which the map's attribution control lists. The tile credits WAQI and the originating agencies under its station list, and the Sources page entry names the agencies per city. The agencies per city are in `WAQI_AGENCIES` (same file): the Umweltbundesamt plus BLUME (Berlin), HaLm (Hamburg) or LUQS of LANUK NRW (Köln). A city without an entry gets a generic credit, so a new city needs one. They have not been checked against WAQI's station pages; the bounding boxes also reach into neighbouring states, so a station there may come from another state network. Check the stations' aqicn.org pages when adding a city or changing a bounding box.
 
 ## Key Types
 
@@ -86,7 +86,7 @@ Snapshot type `'open-meteo'` in `snapshots.type` is a **historical opaque key** 
 
 ## Diagnostics
 
-When weather appears stale in production, run `npm run check:weather` (from `packages/server/`) to probe all upstreams (BrightSky × 3, Open-Meteo air-quality, DWD warnings, DWD UV) end-to-end. Exits 0 if all return 200 + the expected shape, 1 if any fail. Add `-- --city hamburg` for Hamburg.
+When weather appears stale in production, run `npm run check:weather` (from `packages/server/`) to probe all upstreams (BrightSky × 3, Open-Meteo air-quality, DWD warnings, DWD UV) end-to-end. Exits 0 if all return 200 + the expected shape, 1 if any fail. Add `-- --city hamburg` (or `koeln`) for another configured city.
 
 ## Adding a non-German city
 

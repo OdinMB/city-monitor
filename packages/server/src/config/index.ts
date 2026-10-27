@@ -1,10 +1,13 @@
 import type { CityConfig } from '@city-monitor/shared';
 import { berlin } from './cities/berlin.js';
 import { hamburg } from './cities/hamburg.js';
+import { koeln } from './cities/koeln.js';
 
+/** Every configured city. Only the ones named in ACTIVE_CITIES are ingested and served. */
 const ALL_CITIES: Record<string, CityConfig> = {
   berlin,
   hamburg,
+  koeln,
 };
 
 function activeIds(): Set<string> {

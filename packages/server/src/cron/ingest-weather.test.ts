@@ -149,6 +149,49 @@ describe('ingest-weather', () => {
     });
   });
 
+  describe('Köln', () => {
+    beforeEach(() => {
+      vi.stubEnv('ACTIVE_CITIES', 'koeln');
+    });
+
+    it('keeps the DWD warnings for the Stadt Köln region only', async () => {
+      const warnings = {
+        '105315000': [{ headline: 'Amtliche WARNUNG vor STURMBÖEN', description: 'Köln', severity: 2, end: Date.UTC(2026, 4, 1, 18), regionName: 'Stadt Köln' }],
+        '105316000': [{ headline: 'Amtliche WARNUNG vor ORKANBÖEN', description: 'Leverkusen', severity: 3, end: Date.UTC(2026, 4, 1, 18), regionName: 'Stadt Leverkusen' }],
+      };
+      const brightSkyUrls: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+        const url = typeof input === 'string' ? input : input.toString();
+        if (url.includes('api.brightsky.dev')) brightSkyUrls.push(url);
+        if (url.includes('warnings.json')) {
+          return new Response(`warnWetter.loadWarnings(${JSON.stringify(warnings)});`, { status: 200 });
+        }
+        return brightSkyMock(input);
+      });
+
+      const cache = createCache();
+      await createWeatherIngestion(cache)();
+
+      const data = cache.get<WeatherData>('koeln:weather');
+      expect(data!.alerts.map((a) => a.headline)).toEqual(['Amtliche WARNUNG vor STURMBÖEN']);
+      expect(brightSkyUrls.length).toBeGreaterThan(0);
+      expect(brightSkyUrls.every((u) => u.includes('lat=50.9375') && u.includes('lon=6.9603'))).toBe(true);
+    });
+
+    it('writes the weather without a UV row when the DWD UV file has no Köln entry', async () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => brightSkyMock(input));
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const cache = createCache();
+      await createWeatherIngestion(cache)();
+
+      const data = cache.get<WeatherData>('koeln:weather');
+      expect(data!.current.temp).toBe(18.5);
+      expect(data!.dwdUv).toBeUndefined();
+      expect(cache.get<WeatherData>('berlin:weather')).toBeNull();
+    });
+  });
+
   describe('skip-on-unsupported-provider', () => {
     it('logs a warning and continues when a city has no adapter for its provider', async () => {
       const fakeNonDe: CityConfig = {

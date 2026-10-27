@@ -18,6 +18,7 @@ const APONET_BASE_URL = 'https://www.aponet.de';
 const CITY_PLZ: Record<string, string> = {
   berlin: '10115',
   hamburg: '20095',
+  koeln: '50667',
 };
 
 // ---------------------------------------------------------------------------

@@ -141,7 +141,7 @@ Zustand store in `useTheme.ts`:
 
 Tailwind v4 dark mode requires `@custom-variant dark (&:where(.dark, .dark *));` in `globals.css` for class-based toggling (v4 defaults to `prefers-color-scheme` media query). Smooth 150ms transitions on `background-color`, `color`, and `border-color`.
 
-City accent colors are set via CSS custom property `--accent` with `[data-city='berlin']` / `[data-city='hamburg']` selectors.
+City accent colors are set via CSS custom property `--accent` with `[data-city='berlin']` / `[data-city='hamburg']` / `[data-city='koeln']` selectors in `globals.css`; the web never reads `theme.accent` from the city config.
 
 **Colour roles.** `globals.css` registers what a colour means as Tailwind theme tokens, each with its light value on `:root` and its dark value on `.dark`: `link` (blue-600 / blue-400), `positive` (green-500 / green-400, a change for the better), `negative` (red-500 / red-400, a change for the worse), `warning` (amber-700 / amber-400) and `muted` (gray-500 / gray-400). Code writes `text-link`, `text-positive` and so on, with no `dark:` partner, so a contrast fix is one value in `globals.css`. Each value is a Tailwind palette variable (`var(--color-blue-600)`), so a role paints exactly what the palette class it replaced painted. Every link and link-styled button uses `text-link`, and `formatDelta`/`formatYoy` (`lib/format-stats.ts`) return `text-positive`, `text-negative` or `text-muted`. Badges, status colours, most muted text and the population tile's change line still name palette colours; use a role in new code wherever one fits. `colour-roles.test.ts` compiles the stylesheet and pins each role's two colours, and fails when a class list with `hover:underline` names a palette text colour.
 

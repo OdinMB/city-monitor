@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { parseDateTimeDE, formatDateDE, parsePharmaciesFromHtml, extractFormTokens } from './ingest-pharmacies.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { parseDateTimeDE, formatDateDE, parsePharmaciesFromHtml, extractFormTokens, createPharmacyIngestion } from './ingest-pharmacies.js';
+import { createCache } from '../lib/cache.js';
+import { CK } from '../lib/cache-keys.js';
 
 describe('parseDateTimeDE', () => {
   it('parses date and time into ISO string', () => {
@@ -298,5 +300,49 @@ describe('extractFormTokens', () => {
     const tokens = extractFormTokens('<html><body>No form here</body></html>');
 
     expect(tokens).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createPharmacyIngestion
+// ---------------------------------------------------------------------------
+
+describe('createPharmacyIngestion', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  /** Answers the search page with FORM_HTML and each search with one pharmacy; returns the postcodes searched. */
+  function mockAponet(): string[] {
+    const searched: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
+      if (init?.method !== 'POST') return new Response(FORM_HTML, { status: 200 });
+      searched.push(new URLSearchParams(String(init.body)).get('tx_aponetpharmacy_search[search][plzort]') ?? '');
+      return new Response(SINGLE_PHARMACY_HTML, { status: 200 });
+    });
+    return searched;
+  }
+
+  it('searches around central Berlin when only Berlin is active', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+    const searched = mockAponet();
+    const cache = createCache();
+
+    await createPharmacyIngestion(cache)();
+
+    expect(searched).toEqual(['10115']);
+    expect(cache.get(CK.pharmacies('berlin'))).toHaveLength(1);
+  });
+
+  it('searches around central Köln when Köln is active', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,koeln');
+    const searched = mockAponet();
+    const cache = createCache();
+
+    await createPharmacyIngestion(cache)();
+
+    expect(searched).toEqual(['10115', '50667']);
+    expect(cache.get(CK.pharmacies('koeln'))).toHaveLength(1);
   });
 });
