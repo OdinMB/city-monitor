@@ -366,22 +366,29 @@
         "local": "محلي"
       },
       "hours24_7": "24/7",
-      "hoursDaily": "يومياً 16–0",
       "hoursMoSa": "إثنين–سبت 14–20",
+      "hoursDaily17_19": "يومياً 17–19",
+      "hoursMoFr9_19": "إثنين–جمعة 9–19",
       "showMore": "{{count}} أخرى",
-      "localNote": "Berliner Krisendienst — 9 مكاتب إقليمية للدعم النفسي الفوري في الأزمات. يومياً 16–0 · غرف الطوارئ النفسية خارج هذه الأوقات.",
+      "emergency": "أرقام الطوارئ",
+      "website": "الموقع الرسمي: {{name}}",
+      "regionalSites": "المراكز الإقليمية",
+      "localNote": "Berliner Krisendienst — مساعدة فورية في الأزمات النفسية: اتصل برقم منطقتك أدناه. ليلاً (0–8) وفي عطلات نهاية الأسبوع والأعياد (8–16) تجيب خدمة المناوبة على <ltr>{{onCall}}</ltr> أو على رقم منطقتك. إثنين–جمعة 8–16: معلومات وإحالة على الأرقام نفسها.",
+      "checked": "آخر تحقق من الأرقام: {{date}}",
       "service": {
+        "fireAmbulance": "الإطفاء والإسعاف",
+        "police": "الشرطة",
         "telefonSeelsorge": "خط الأزمات",
         "krisendienst": "خدمة أزمات برلين",
         "bigHotline": "خط العنف الأسري",
+        "hilfetelefon": "خط مساعدة لمكافحة العنف ضد المرأة",
         "kindernotdienst": "خدمة طوارئ الأطفال",
         "jugendnotdienst": "خدمة طوارئ الشباب",
         "kinderJugendtelefon": "خط مساعدة الأطفال/الشباب",
         "drogennotdienst": "خدمة طوارئ المخدرات",
         "maneo": "مكافحة العنف (مجتمع الميم)",
         "schwulenberatung": "استشارات مجتمع الميم"
-      },
-      "source": "berlin.de"
+      }
     },
     "bathing": {
       "title": "مياه السباحة",

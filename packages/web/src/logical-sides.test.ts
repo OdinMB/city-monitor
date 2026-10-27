@@ -63,11 +63,6 @@ const DELIBERATELY_PHYSICAL: { file: string; found: string; reason: string }[] =
     found: 'mr-[45%]',
     reason: 'keeps its place over the skyline picture, which is the same picture in every language',
   },
-  {
-    file: 'components/strips/CrisisStrip.tsx',
-    found: 'text-right',
-    reason: 'region numbers in a fixed-width column line up on their last digit in either direction',
-  },
 ];
 
 /**
