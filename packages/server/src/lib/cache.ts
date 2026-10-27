@@ -53,7 +53,11 @@ export function createCache() {
 
     const task = fetcher()
       .then((result) => {
-        set(key, result, result !== null ? ttlSeconds : negativeTtlSeconds);
+        // A fetcher may return the entry it (or another writer) stored meanwhile:
+        // keep that entry, since re-setting it would make its data look fresher
+        const current = entries.get(key);
+        const alreadyStored = result !== null && isValid(current) && current.value === result;
+        if (!alreadyStored) set(key, result, result !== null ? ttlSeconds : negativeTtlSeconds);
         return result;
       })
       .finally(() => {
@@ -70,6 +74,8 @@ export function createCache() {
       if (e) entries.delete(key);
       return null;
     }
+    // A negative-cache entry (see fetch) is a miss for readers, as in get
+    if (e.value === null) return null;
     return { data: e.value as T, fetchedAt: new Date(e.updatedAt).toISOString() };
   }
 

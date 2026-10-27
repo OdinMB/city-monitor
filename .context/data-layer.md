@@ -15,8 +15,8 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `get<T>(key)` | Synchronous. Returns null if expired or missing. |
 | `set(key, data, ttlSeconds, fetchedAt?)` | Stores with absolute expiry timestamp. `fetchedAt` (default now) is the data's real fetch time, which `getWithMeta` reports; DB fallbacks and cache warming pass the row's `fetchedAt`. |
 | `delete(key)` | Removes entry. |
-| `fetch<T>(key, ttl, fetcher, negTtl?)` | Async lazy-load with in-flight coalescing. Concurrent calls for the same key share a single promise. A fetcher result of `null` is negative-cached for `negTtl` seconds (default 120s) to avoid thundering herd. |
-| `getWithMeta<T>(key)` | `{ data, fetchedAt }` (ISO string) or null. Used by the route handlers, whose responses carry `fetchedAt`. |
+| `fetch<T>(key, ttl, fetcher, negTtl?)` | Async lazy-load with in-flight coalescing. Concurrent calls for the same key share a single promise. A fetcher result of `null` is negative-cached for `negTtl` seconds (default 120s) to avoid thundering herd; a fetcher that throws is not cached. A result that is the very value already stored under the key (the fetcher wrote it, or another writer did meanwhile) keeps that entry as is, with its own `fetchedAt` and expiry, so a refill never makes older data look fresher. Used by the feed fetches and by the air-quality routes' refill on a miss (see Patterns). |
+| `getWithMeta<T>(key)` | `{ data, fetchedAt }` (ISO string) or null. Used by the route handlers, whose responses carry `fetchedAt`. A negative-cache entry reads as null here, as in `get`, `getBatch` and `getBatchWithMeta`, so a route or the bootstrap slot shows it as empty; only `fetch` treats it as a hit. |
 | `getBatch(keys)` | Returns `Record<key, value>` for all non-null entries. |
 | `getBatchWithMeta(keys)` | `getWithMeta` for several keys. Used by the bootstrap endpoint. |
 | `size()` | Entry count (for health endpoint). |
@@ -161,6 +161,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 ## Patterns
 
 - **Cache-first reads:** Route handlers check cache, then DB (with try/catch + logging), then return empty defaults.
+- **Upstream on a miss, air quality only:** `/:city/air-quality` (Open-Meteo) and `/:city/air-quality/grid` (WAQI + Sensor.Community, after the DB fallback) run their ingestion from the request when the cache is empty. They go through `cache.fetch` on the data key (`refillFromUpstream` in `routes/air-quality.ts`): concurrent misses share one run, and a run that leaves the key empty is negative-cached for 30s (`REFILL_NEGATIVE_TTL_SECONDS`, shorter than the default because a visitor keeps an empty answer until the tile's next 30-minute poll), so while a provider is down visitors get the empty body at once instead of each calling it and waiting for its timeouts (15s for Open-Meteo and WAQI, 10s per Sensor.Community candidate). The fetcher reads the key back rather than caching null on an error, so data the cron job or a concurrent DB fallback stored meanwhile is kept, with its own `fetchedAt`. Every other data route stops at the DB; the weather-tiles route forwards each tile request to RainViewer without a server-side cache.
 - **Dual writes:** Cron jobs write to cache immediately, then attempt DB write (errors caught, logged, non-fatal).
 - **Append-only writes:** DB writes INSERT new rows without deleting old ones. Historical data is cleaned by the nightly retention cron. Hash-keyed tables (news, events, safety) use UPSERT to avoid duplicates; NINA warnings are a JSONB snapshot like the other snapshot types.
 - **Optional DB:** Everything works without `DATABASE_URL` — cache-only mode with no persistence across restarts.

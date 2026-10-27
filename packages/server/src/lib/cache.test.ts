@@ -74,6 +74,36 @@ describe('Cache', () => {
     expect(fetcher).toHaveBeenCalledOnce();
   });
 
+  it('a negative-cache entry is a miss for every reader, and fetch still honours it', async () => {
+    const fetcher = vi.fn().mockResolvedValue(null);
+    await cache.fetch('key', 60, fetcher, 10);
+
+    expect(cache.get('key')).toBeNull();
+    expect(cache.getWithMeta('key')).toBeNull();
+    expect(cache.getBatch(['key'])).toEqual({});
+    expect(cache.getBatchWithMeta(['key'])).toEqual({});
+
+    expect(await cache.fetch('key', 60, fetcher, 10)).toBeNull();
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+
+  it('fetch keeps an entry the fetcher stored meanwhile, with its own fetchedAt and expiry', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-27T10:00:00Z'));
+    const stored = { value: 'saved earlier' };
+
+    const result = await cache.fetch('key', 3600, async () => {
+      cache.set('key', stored, 60, new Date('2026-10-27T04:00:00Z'));
+      return cache.get('key');
+    });
+
+    expect(result).toBe(stored);
+    expect(cache.getWithMeta('key')).toEqual({ data: stored, fetchedAt: '2026-10-27T04:00:00.000Z' });
+    vi.setSystemTime(new Date('2026-10-27T10:01:01Z'));
+    expect(cache.get('key')).toBeNull();
+    vi.useRealTimers();
+  });
+
   it('getBatch returns multiple values', () => {
     cache.set('a', 1, 60);
     cache.set('b', 2, 60);
