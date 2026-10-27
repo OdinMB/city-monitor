@@ -4,11 +4,12 @@ import { useWeather } from '../../hooks/useWeather.js';
 import { getWeatherInfo } from '../../lib/weather-codes.js';
 import { getUvLevel } from '../../lib/uv-levels.js';
 import { formatDayName } from '../../lib/format-day-name.js';
+import { forecastInstant, formatCityClock, upcomingHourly } from '../../lib/city-time.js';
 import { Skeleton } from './Skeleton.js';
 import { UvIndexToday } from '../UvIndexToday.js';
 
 export function WeatherPopover() {
-  const { id: cityId } = useCityConfig();
+  const { id: cityId, timezone } = useCityConfig();
   const { data, isLoading } = useWeather(cityId);
   const { t, i18n } = useTranslation();
 
@@ -28,9 +29,7 @@ export function WeatherPopover() {
   const weatherInfo = getWeatherInfo(current.weatherCode);
   const locale = i18n.language;
 
-  const futureHourly = hourly
-    .filter((h) => h.time >= new Date().toISOString().slice(0, 16))
-    .slice(0, 12);
+  const futureHourly = upcomingHourly(hourly, new Date()).slice(0, 12);
 
   return (
     <div className="p-4 w-[min(calc(100vw-2rem),36rem)]">
@@ -78,7 +77,7 @@ export function WeatherPopover() {
           </h3>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {futureHourly.map((h) => {
-              const hour = h.time.split('T')[1]?.slice(0, 5) ?? h.time;
+              const hour = formatCityClock(forecastInstant(h.time), timezone);
               const info = getWeatherInfo(h.weatherCode);
               return (
                 <div key={h.time} className="shrink-0 text-center text-xs">
@@ -107,7 +106,7 @@ export function WeatherPopover() {
           {/* Desktop: horizontal columns */}
           <div className="hidden sm:flex gap-3 overflow-x-auto pb-1">
             {daily.map((d) => {
-              const dayName = formatDayName(d.date, locale, t('panel.weather.today'), t('panel.weather.tomorrow'));
+              const dayName = formatDayName(d.date, locale, t('panel.weather.today'), t('panel.weather.tomorrow'), timezone);
               const info = getWeatherInfo(d.weatherCode);
               return (
                 <div key={d.date} className="shrink-0 text-center text-xs min-w-[3rem]">
@@ -126,7 +125,7 @@ export function WeatherPopover() {
           {/* Mobile: vertical list */}
           <div className="sm:hidden space-y-1.5">
             {daily.map((d) => {
-              const dayName = formatDayName(d.date, locale, t('panel.weather.today'), t('panel.weather.tomorrow'));
+              const dayName = formatDayName(d.date, locale, t('panel.weather.today'), t('panel.weather.tomorrow'), timezone);
               const info = getWeatherInfo(d.weatherCode);
               return (
                 <div key={d.date} className="flex items-center gap-2 text-sm">

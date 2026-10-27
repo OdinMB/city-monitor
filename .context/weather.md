@@ -71,12 +71,14 @@ WAQI's API terms (https://aqicn.org/api/tos) say its data may not be redistribut
 ```typescript
 interface WeatherData {
   current: CurrentWeather;   // temp, feelsLike (Steadman), humidity, precipitation, weatherCode, windSpeed, windDirection
-  hourly: HourlyForecast[];  // time, temp, precipProb (null→0), weatherCode
+  hourly: HourlyForecast[];  // time (UTC "YYYY-MM-DDTHH:MM", no offset), temp, precipProb (null→0), weatherCode
   daily: DailyForecast[];    // date (local), high, low, weatherCode, precip, sunrise, sunset (UTC ISO)
   alerts: WeatherAlert[];    // populated by DWD direct call for German cities
   dwdUv?: DwdUvForecast;     // today, tomorrow, dayAfter, forecastDay? (German cities only)
 }
 ```
+
+`hourly[].time` has been UTC since the BrightSky switch (Open-Meteo sent local time); the synthetic data writes it the same way. The tile and the popover read it with `forecastInstant()` and show hours, "now", the hourly sampling and "today" on the city's clock (`city.timezone`) through `packages/web/src/lib/city-time.ts`, whatever the browser's zone. A time ending in `Z` or an offset is read as written. Keep the offset-less shape: stored snapshots and other deployments rely on it.
 
 Optional fields `current.uvIndex`, `current.uvIndexClearSky`, `hourly[].uvIndex`, `daily[].uvIndexMax`, `daily[].uvIndexClearSkyMax` are no longer populated post-migration (BrightSky doesn't expose UV). The conditions row reads `dwdUv` instead; the hourly and daily UV cells in the tile and popover still read the old fields and stay empty.
 
