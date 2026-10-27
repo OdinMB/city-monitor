@@ -535,7 +535,12 @@
       "moderate": "Moderate",
       "minor": "Minor"
     },
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss: {{headline}}",
+    "showInstruction": "Show what to do: {{headline}}",
+    "hideInstruction": "Hide what to do: {{headline}}",
+    "showDetails": "Show details: {{headline}}",
+    "hideDetails": "Hide details: {{headline}}",
+    "officialGerman": "Official text in German"
   },
   "support": {
     "title": "Support Us",

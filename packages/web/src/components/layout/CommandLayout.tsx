@@ -36,7 +36,6 @@ import { SkylineSeparator } from './SkylineSeparator.js';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MapErrorFallback } from '../ErrorFallback.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
-import { useNina } from '../../hooks/useNina.js';
 
 const CityMap = lazy(() =>
   import('../map/CityMap.js').then((m) => ({ default: m.CityMap })),
@@ -64,13 +63,10 @@ export function CommandLayout() {
   const isDesktop = useIsDesktop();
   const isPhone = !isDesktop;
 
-  // NINA warnings are fetched for the topbar badge; the default active layers
-  // (traffic + weather + warnings) are set in useCommandCenter defaults.
-  useNina(cityId);
-
   const dashboardRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<HTMLDivElement>(null);
-  useScrollParallax(mapRef, 0.3);
+  // The map column, with the warnings above the map, so the two move together.
+  const mapColumnRef = useRef<HTMLDivElement>(null);
+  useScrollParallax(mapColumnRef, 0.3);
 
   return (
     <>
@@ -78,7 +74,7 @@ export function CommandLayout() {
           above the map, so they are on the first screen. */}
       {isPhone && (
         <>
-          <div className="px-4 pt-4 empty:hidden">
+          <div className="p-4 empty:hidden">
             <NinaBanner />
           </div>
           <NewsMarquee reserveSpace />
@@ -91,13 +87,27 @@ export function CommandLayout() {
           300px floor matches CityMap's min-height, which the hero would clip. */}
       <div className="relative flex h-hero max-sm:h-[max(40vh,300px)] overflow-hidden">
         <Sidebar />
-        <div ref={mapRef} className="flex-1 min-w-0 relative">
-          <ErrorBoundary FallbackComponent={MapErrorFallback}>
-            <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
-              <CityMap />
-            </Suspense>
-          </ErrorBoundary>
-          <MobileLayerDrawer />
+        <div ref={mapColumnRef} className="flex-1 min-w-0 flex flex-col">
+          {/* From tablet width up, warnings open the map column, under the
+              fixed news ticker (mt-12 clears its 2.25rem, outside the scrolling
+              area), so they are on the first screen; the map takes the rest of
+              the hero. They take at most 55% of the hero with that clearance
+              and scroll beyond it, so several or long ones stay readable and
+              the map keeps the rest, clear of the skyline and scroll indicator
+              at its foot. */}
+          {!isPhone && (
+            <div className="hero-warnings mt-12 mb-3 px-4 max-h-[calc(55%_-_3rem)] overflow-y-auto shrink-0 empty:hidden">
+              <NinaBanner />
+            </div>
+          )}
+          <div className="flex-1 min-h-0 relative">
+            <ErrorBoundary FallbackComponent={MapErrorFallback}>
+              <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
+                <CityMap />
+              </Suspense>
+            </ErrorBoundary>
+            <MobileLayerDrawer />
+          </div>
         </div>
         {/* Skyline + scroll indicator overlaid at bottom of hero. Phones see the
             tiles below the shorter map already, so they get no indicator. */}
@@ -107,13 +117,8 @@ export function CommandLayout() {
         </div>
       </div>
 
-      {/* Lower zone: dashboard tiles */}
-      <div ref={dashboardRef} className="bg-surface-0">
-        {!isPhone && (
-          <div className="px-4 pt-4">
-            <NinaBanner />
-          </div>
-        )}
+      {/* Lower zone: dashboard tiles, from tablet width up with 1rem above them. */}
+      <div ref={dashboardRef} className={`bg-surface-0 ${isPhone ? '' : 'pt-4'}`}>
         <DashboardGrid>
           {/* Row 1-2: Hero briefing + Weather + AQI + Transit */}
           <Tile title={t('panel.news.briefing')} titleBadge={<AiLabel />} span={2} rowSpan={2}>

@@ -97,7 +97,7 @@ export function MobileLayerDrawer() {
         <div
           role="dialog"
           aria-label={t('sidebar.layers.label')}
-          className="h-full shrink-0 bg-surface-1 border-e border-border p-3 pt-12 max-sm:pt-3 overflow-y-auto space-y-4"
+          className="layer-drawer-panel h-full shrink-0 bg-surface-1 border-e border-border p-3 pt-12 max-sm:pt-3 overflow-y-auto space-y-4"
           style={{ width: PANEL_W }}
         >
           <DataLayerToggles />

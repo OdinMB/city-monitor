@@ -576,7 +576,12 @@
       "moderate": "متوسط",
       "minor": "طفيف"
     },
-    "dismiss": "إخفاء"
+    "dismiss": "إخفاء: {{headline}}",
+    "showInstruction": "عرض ما يجب فعله: {{headline}}",
+    "hideInstruction": "إخفاء ما يجب فعله: {{headline}}",
+    "showDetails": "عرض التفاصيل: {{headline}}",
+    "hideDetails": "إخفاء التفاصيل: {{headline}}",
+    "officialGerman": "النص الرسمي بالألمانية"
   },
   "support": {
     "title": "ادعمنا",

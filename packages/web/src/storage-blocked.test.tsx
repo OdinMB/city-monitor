@@ -175,7 +175,7 @@ describe.each(['property', 'methods'] as const)('with browser storage blocked (%
   it('shows and dismisses NINA warnings', () => {
     render(<NinaBanner />, { wrapper: cityWrapper() });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    fireEvent.click(screen.getByRole('button', { name: `Dismiss: ${warning.headline}` }));
 
     expect(screen.queryByText(warning.headline)).toBeNull();
   });

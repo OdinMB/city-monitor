@@ -61,7 +61,7 @@ const STORED_VALUES = [
   {
     key: 'nina-dismissed',
     title: 'Dismissed warnings',
-    description: 'The IDs of official warnings you closed, so they stay hidden.',
+    description: 'The IDs and versions of official warnings you closed, so they stay hidden until they are updated. Each is removed the next time the page loads the warnings after its warning has ended or been updated.',
   },
   {
     key: 'cm-drawer-seen',
