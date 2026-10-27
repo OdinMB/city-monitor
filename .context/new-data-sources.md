@@ -34,7 +34,7 @@ Follow every step when adding a new data source. Skip items marked with a surfac
 
 ### Documentation & Attribution
 
-20. **Sources page** — add entry to `SHARED_SOURCES`, `BERLIN_SOURCES`, or `HAMBURG_SOURCES` in `packages/web/src/pages/SourcesPage.tsx`. If the browser loads anything from the source's own host (a WMS layer, map tiles), also allow that host in the CSP in `render.yaml` and name it in `SERVICES` in `packages/web/src/pages/PrivacyPage.tsx`; `PrivacyPage.test.tsx` checks that the two agree.
+20. **Sources page** — add entry to `SHARED_SOURCES` or to the city's array in `CITY_SOURCES` (`BERLIN_SOURCES`, `HAMBURG_SOURCES`, `KOELN_SOURCES`) in `packages/web/src/pages/SourcesPage.tsx`. If the browser loads anything from the source's own host (a WMS layer, map tiles), also allow that host in the CSP in `render.yaml` and name it in `SERVICES` in `packages/web/src/pages/PrivacyPage.tsx`; `PrivacyPage.test.tsx` checks that the two agree.
 21. **Context file** — create `.context/<name>.md` documenting the data source, ingestion pipeline, cache keys, endpoint shapes
 22. **CLAUDE.md** — add a one-line reference to the new context file in the "Context Files" section
 23. **Data freshness note** — if the source uses a hardcoded URL that changes periodically (XLSX files, biennial WFS layer names, budget CSVs), add an entry to the Data Freshness Inventory below with the check schedule

@@ -83,15 +83,17 @@ There are three ways to use this:
 
 ### Steps
 
+The [`add-city` skill](.claude/skills/add-city/SKILL.md) holds the same work in order for Claude Code, and reads as plain Markdown too. It adds how to look up each Germany-wide source for a city, a list of the code keyed by city ID, and the licence check for city-specific sources.
+
 1. **Define the shared type** — the `CityConfig` interface lives in `shared/types.ts`. You shouldn't need to change it unless your city needs a new data source type.
 
-2. **Create a server config** — add `packages/server/src/config/cities/<city>.ts` exporting a `CityConfig`. Use `berlin.ts` or `hamburg.ts` as a template. This is where you declare RSS feeds, transit stations, weather coordinates, police feeds, water level gauges, and every other data source the cron jobs will ingest.
+2. **Create a server config** — add `packages/server/src/config/cities/<city>.ts` exporting a `CityConfig`. Use `koeln.ts` as a template for a city with the Germany-wide sources only (weather, DWD warnings, UV and pollen, NINA, river gauges), or `berlin.ts` for one with its own feeds and sources. This is where you declare RSS feeds, transit stations, weather coordinates, police feeds, water level gauges, and every other data source the cron jobs will ingest.
 
 3. **Register the server config** — import your city in `packages/server/src/config/index.ts` and add it to the `ALL_CITIES` map.
 
 4. **Create a web config** — add `packages/web/src/config/cities/<city>.ts`. The frontend config is minimal (coordinates, map bounds) since the SPA reads pre-built data from the API; its name, place, time zone and languages must match the server config (`packages/web/src/config/index.test.ts` checks). The map opens on `map.bounds` and cannot pan past them.
 
-5. **Register the web config** — import your city in `packages/web/src/config/index.ts`, add it to `ALL_CITIES`, and add the city ID to the `ACTIVE_CITY_IDS` set.
+5. **Register the web config** — import your city in `packages/web/src/config/index.ts`, add it to `ALL_CITIES`, and add the city ID to the `ACTIVE_CITY_IDS` set when it should go live. Until then `/<city>` redirects to Berlin; on a running deployment, set `ACTIVE_CITIES` (step 6) first.
 
 6. **Activate on the server** — set the `ACTIVE_CITIES` environment variable to include your city (comma-separated, e.g. `berlin,hamburg,munich`). This controls which cities the cron jobs ingest data for and which city IDs the API accepts.
 
