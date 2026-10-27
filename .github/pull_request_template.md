@@ -10,6 +10,7 @@
 
 <!-- Tick what you did, and delete the lines that don't apply to this change. -->
 
+- [ ] I agree to the [contribution terms in CONTRIBUTING.md](https://github.com/OdinMB/city-monitor/blob/main/CONTRIBUTING.md#contributor-license-agreement), and every commit in this pull request is signed off (`git commit -s`).
 - [ ] `npm run typecheck`, `npm run lint` and `npm test` pass on my machine ([how to run them](https://github.com/OdinMB/city-monitor/blob/main/CONTRIBUTING.md#run-the-checks)).
 - [ ] **New data source:** I checked its licence, including whether it allows AI input and redistribution, and followed the [new data source checklist](https://github.com/OdinMB/city-monitor/blob/main/.context/new-data-sources.md#new-data-source-checklist), including its Sources page entry.
 - [ ] **New snapshot type:** the synthetic data generator writes it (`packages/server/src/synthetic/generate.ts` and `seed.ts`; [dev-database.md](https://github.com/OdinMB/city-monitor/blob/main/.context/dev-database.md#adding-a-data-source)).
