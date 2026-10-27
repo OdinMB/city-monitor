@@ -8,8 +8,8 @@ import { EventsStrip } from './EventsStrip.js';
 import { PoliticalStrip } from './PoliticalStrip.js';
 
 /**
- * Target size (WCAG 2.5.8), visible focus (2.4.7) and muted-text contrast
- * (1.4.3) in tile content. jsdom does no layout and applies no stylesheet, so
+ * Target size (WCAG 2.5.8), visible focus (2.4.7) and muted-text and link
+ * contrast (1.4.3) in tile content. jsdom does no layout and applies no stylesheet, so
  * these check the classes each fix relies on: a 24px minimum, reached with
  * min-h-6/min-w-6 or padding, plus a negative margin of the same size so the
  * tile's layout does not move.
@@ -147,5 +147,30 @@ describe('muted tile text meets 4.5:1 (WCAG 1.4.3)', () => {
     render(<AppointmentsStrip />);
     const summary = screen.getByText('Checking availability…');
     expectClasses(summary, ['text-gray-500', 'dark:text-gray-400']);
+  });
+});
+
+describe('link text meets 4.5:1 (WCAG 1.4.3)', () => {
+  // One pair for every link: blue-600 is 5.3:1 on a light tile (white), 5.0:1
+  // on the light page background; blue-400 is 6.7:1 on a dark tile, 6.9:1 in
+  // Berlin's and Hamburg's dark tiles. blue-500 on white was 3.8:1.
+  const LINK = ['text-blue-600', 'dark:text-blue-400'];
+  function expectLinkColour(el: Element) {
+    expectClasses(el, LINK);
+    expect(el.classList.contains('text-blue-500'), el.className).toBe(false);
+    expect(el.classList.contains('hover:text-blue-400'), el.className).toBe(false);
+  }
+
+  it('Political: each representative\'s arrow link and the "more" button', () => {
+    render(<PoliticalStrip expanded={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Districts' }));
+    for (const link of screen.getAllByRole('link', { name: /^Profile of Person \d$/ })) expectLinkColour(link);
+    expectLinkColour(screen.getByRole('button', { name: '+2 more…' }));
+  });
+
+  it('Events: the "More info" link', () => {
+    render(<EventsStrip />);
+    fireEvent.click(screen.getByText('Konzert'));
+    expectLinkColour(screen.getByRole('link', { name: /More info/ }));
   });
 });

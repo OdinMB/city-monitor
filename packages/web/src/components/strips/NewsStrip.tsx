@@ -174,7 +174,7 @@ const CompactNewsItem = memo(function CompactNewsItem({ item }: { item: NewsItem
         )}
         {item.location && (
           <span
-            className="text-blue-500 dark:text-blue-400"
+            className="text-blue-600 dark:text-blue-400"
             role="img"
             aria-label={t('aiNotice.locationEstimated')}
             title={t('aiNotice.locationEstimated')}

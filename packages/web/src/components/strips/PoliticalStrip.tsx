@@ -72,7 +72,7 @@ function RepRow({ rep }: { rep: Representative & { district: string } }) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t('panel.political.profileLink', { name: rep.name })}
-          className="inline-flex items-center justify-center min-w-6 min-h-6 -my-1 text-blue-500 hover:text-blue-400 ml-auto shrink-0 @xs:ml-1"
+          className="inline-flex items-center justify-center min-w-6 min-h-6 -my-1 text-blue-600 dark:text-blue-400 hover:underline ml-auto shrink-0 @xs:ml-1"
         >
           {forwardArrow(i18n.language)}
         </a>
@@ -95,7 +95,7 @@ function RepList({ districts, limit, onExpand }: { districts: PoliticalDistrict[
         <button
           type="button"
           onClick={onExpand}
-          className="w-full py-1.5 px-2 text-xs text-blue-500 hover:text-blue-400 text-left cursor-pointer"
+          className="w-full py-1.5 px-2 text-xs text-blue-600 dark:text-blue-400 hover:underline text-left cursor-pointer"
         >
           {t('panel.political.showMore', { count: remaining })}
         </button>

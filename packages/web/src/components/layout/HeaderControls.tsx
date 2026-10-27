@@ -73,6 +73,7 @@ export function HeaderControls() {
             : 'hover:bg-gray-100 dark:hover:bg-gray-800'
         }`}
         aria-label={`${t('topbar.language')}: ${lang.label}`}
+        aria-pressed={i18n.language === lang.code}
       >
         {lang.label}
       </button>
@@ -109,8 +110,10 @@ export function HeaderControls() {
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
+        {/* inset-e-0 (inline end), not right-0: in Arabic the button sits at
+            the left edge, and the panel must open rightwards to stay on screen. */}
         {menuOpen && (
-          <div role="menu" className="absolute right-0 top-full mt-1 bg-surface-1 border border-border rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
+          <div className="absolute inset-e-0 top-full mt-1 bg-surface-1 border border-border rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
             <div className="flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden mb-2">
               {languageButtons('flex-1 px-2 py-1.5 text-xs', () => setMenuOpen(false))}
             </div>
@@ -119,7 +122,7 @@ export function HeaderControls() {
                 toggle(e);
                 setMenuOpen(false);
               }}
-              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left cursor-pointer"
+              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-start cursor-pointer"
             >
               {themeIcon}
               {theme === 'light' ? t('topbar.theme.dark') : t('topbar.theme.light')}

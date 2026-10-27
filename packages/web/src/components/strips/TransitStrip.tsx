@@ -14,11 +14,12 @@ const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
 const COLLAPSED_MAX = 6;
 const EXPANDED_MAX = 12;
 
+/** Each pair reaches 4.5:1 for the badge's 12px bold text, in both themes. */
 function getLineBadgeColor(line: string): string {
   if (line.startsWith('U')) return 'bg-blue-600 text-white';
-  if (line.startsWith('S')) return 'bg-green-600 text-white';
+  if (line.startsWith('S')) return 'bg-green-700 text-white';
   if (line.startsWith('M') || line.toLowerCase().includes('tram')) return 'bg-red-600 text-white';
-  return 'bg-yellow-600 text-white';
+  return 'bg-yellow-600 text-gray-900';
 }
 
 function getSeverityDot(severity: TransitAlert['severity']): string {

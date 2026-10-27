@@ -68,3 +68,23 @@ describe('AppointmentsStrip in Arabic', () => {
     expect(screen.getByText('in 3d')).toBeTruthy();
   });
 });
+
+describe('AppointmentsStrip booking link', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}));
+  });
+
+  // blue-600 light / blue-400 dark reach 4.5:1 on the tile (WCAG 1.4.3);
+  // blue-500 on white was 3.8:1.
+  it.each([
+    ['with services listed', [service('120686', 3)]],
+    ['with no services', []],
+  ])('uses the accessible link colour %s', (_label, services) => {
+    render(<AppointmentsStrip />, { wrapper: createWrapper(services) });
+    const link = screen.getByRole('link', { name: /Book appointment/ });
+    expect(link.classList.contains('text-blue-600')).toBe(true);
+    expect(link.classList.contains('dark:text-blue-400')).toBe(true);
+    expect(link.classList.contains('text-blue-500')).toBe(false);
+  });
+});
