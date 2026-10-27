@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useTheme } from './useTheme.js';
 import { useCommandCenter, type DataLayer } from './useCommandCenter.js';
+import { useShortcutSettings } from './useShortcutSettings.js';
 
 /** Ordered list of data layers for number-key shortcuts (1-9). */
 const LAYER_ORDER: DataLayer[] = [
@@ -17,14 +18,22 @@ function isInputFocused(): boolean {
   return false;
 }
 
+/**
+ * The page-wide single-key shortcuts: ? for the shortcuts dialog, D for dark
+ * mode, 1-9 for a data layer and 0 to clear them. They work anywhere on the
+ * page, as they always have, until someone switches them off in that dialog
+ * (WCAG 2.1.4); Escape still closes the dialog then.
+ */
 export function useKeyboardShortcuts() {
   const { toggle: toggleTheme } = useTheme();
   const toggleLayer = useCommandCenter((s) => s.toggleLayer);
   const setActiveLayers = useCommandCenter((s) => s.setActiveLayers);
-  const [hintsOpen, setHintsOpen] = useState(false);
+  const enabled = useShortcutSettings((s) => s.enabled);
+  const hintsOpen = useShortcutSettings((s) => s.hintsOpen);
+  const setHintsOpen = useShortcutSettings((s) => s.setHintsOpen);
 
-  const openHints = useCallback(() => setHintsOpen(true), []);
-  const closeHints = useCallback(() => setHintsOpen(false), []);
+  const openHints = useCallback(() => setHintsOpen(true), [setHintsOpen]);
+  const closeHints = useCallback(() => setHintsOpen(false), [setHintsOpen]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -35,15 +44,18 @@ export function useKeyboardShortcuts() {
 
       const key = e.key;
 
-      if (key === '?') {
-        e.preventDefault();
-        setHintsOpen((v) => !v);
-        return;
-      }
-
       if (key === 'Escape' && hintsOpen) {
         e.preventDefault();
         setHintsOpen(false);
+        return;
+      }
+
+      // Every shortcut below is a single character key.
+      if (!enabled) return;
+
+      if (key === '?') {
+        e.preventDefault();
+        setHintsOpen(!hintsOpen);
         return;
       }
 
@@ -68,7 +80,7 @@ export function useKeyboardShortcuts() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [hintsOpen, toggleTheme, toggleLayer, setActiveLayers]);
+  }, [enabled, hintsOpen, setHintsOpen, toggleTheme, toggleLayer, setActiveLayers]);
 
   return { hintsOpen, openHints, closeHints };
 }

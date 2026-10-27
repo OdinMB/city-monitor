@@ -201,6 +201,15 @@ describe.each(['property', 'methods'] as const)('with browser storage blocked (%
     expect(screen.queryByRole('button')).toBeNull();
   });
 
+  it('starts with single-key shortcuts on and switches them off for the current page view', async () => {
+    vi.resetModules();
+    const { useShortcutSettings } = await import('./hooks/useShortcutSettings.js');
+
+    expect(useShortcutSettings.getState().enabled).toBe(true);
+    useShortcutSettings.getState().setEnabled(false);
+    expect(useShortcutSettings.getState().enabled).toBe(false);
+  });
+
   it('hides the keyboard shortcut hint on its own timer', () => {
     vi.useFakeTimers();
     render(<ShortcutToast />);
@@ -238,6 +247,16 @@ describe('with browser storage available', () => {
   it('preloads the map style for the stored theme from the HTML shell', () => {
     localStorage.setItem('theme', 'dark');
     expect(runThemePreloadScript()).toContain('dark-matter');
+  });
+
+  it('restores and saves the single-key shortcut setting', async () => {
+    localStorage.setItem('keyboard-shortcuts', 'off');
+    vi.resetModules();
+    const { useShortcutSettings } = await import('./hooks/useShortcutSettings.js');
+
+    expect(useShortcutSettings.getState().enabled).toBe(false);
+    useShortcutSettings.getState().setEnabled(true);
+    expect(localStorage.getItem('keyboard-shortcuts')).toBe('on');
   });
 
   it('remembers that the keyboard shortcut hint was seen', () => {

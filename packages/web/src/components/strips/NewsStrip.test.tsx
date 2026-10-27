@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import i18n from 'i18next';
@@ -110,6 +110,33 @@ describe('NewsStrip item timestamps', () => {
     const publishedAt = new Date(Date.now() - hours * 3_600_000).toISOString();
     render(<NewsStrip />, { wrapper: createWrapper([{ ...ITEM, publishedAt }]) });
     expect(screen.getByText(expected)).toBeTruthy();
+  });
+});
+
+describe('NewsStrip category tabs', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}));
+  });
+
+  afterEach(async () => {
+    // Unmount first, so the language switch re-renders nothing outside act().
+    cleanup();
+    await i18n.changeLanguage('en');
+  });
+
+  it.each(['en', 'de', 'tr', 'ar'])('names each emoji tab by its category, not its emoji (%s)', async (lang) => {
+    await i18n.changeLanguage(lang);
+    render(<NewsStrip />, { wrapper: createWrapper([ITEM, { ...ITEM, id: 'n2', category: 'politics' }]) });
+    // Tabs keep their fixed order: all, politics, …, transit.
+    const names = screen.getAllByRole('tab').map((tab) => tab.getAttribute('aria-label'));
+    expect(names).toEqual([i18n.t('panel.news.all'), i18n.t('category.politics'), i18n.t('category.transit')]);
+    for (const tab of screen.getAllByRole('tab')) {
+      // The emoji is decoration once the tab has a name.
+      expect(tab.querySelector('[aria-hidden="true"]')?.textContent).toMatch(/\S/);
+      expect(tab.getAttribute('title')).toBe(tab.getAttribute('aria-label'));
+    }
+    expect(screen.getByRole('tab', { name: i18n.t('category.transit') })).toBeTruthy();
   });
 });
 

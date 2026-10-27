@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataLayerToggles } from './DataLayerToggles.js';
 
@@ -13,6 +13,9 @@ const MID = (CLOSED_X + OPEN_X) / 2;
 /**
  * Mobile-only drawer for data layer controls. It slides in from the inline
  * start: the left edge, or the right edge in a right-to-left language.
+ * Closed, the panel is off screen and inert, so it is out of the Tab order
+ * and the accessibility tree. Opening moves focus into it; closing it with
+ * focus inside hands focus back to the layers button.
  */
 export function MobileLayerDrawer() {
   const { t, i18n } = useTranslation();
@@ -23,6 +26,9 @@ export function MobileLayerDrawer() {
   });
   const [dragX, setDragX] = useState<number | null>(null);
   const touchRef = useRef({ startX: 0, startY: 0, baseX: CLOSED_X, locked: '' as '' | 'x' | 'y' });
+  const panelRef = useRef<HTMLDivElement>(null);
+  const handleRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
 
   const baseX = open ? OPEN_X : CLOSED_X;
   const x = dragX ?? baseX;
@@ -53,19 +59,43 @@ export function MobileLayerDrawer() {
     setDragX(Math.max(CLOSED_X, Math.min(OPEN_X, ref.baseX + dx * dir)));
   }, [dir]);
 
+  // The closed panel is inert, and an inert panel drops the focus it holds.
+  // Hand that focus to the layers button before it goes.
+  const close = useCallback(() => {
+    if (panelRef.current?.contains(document.activeElement)) handleRef.current?.focus();
+    setOpen(false);
+  }, []);
+
   const handleTouchEnd = useCallback(() => {
     if (dragX === null) return;
-    setOpen(dragX > MID);
+    if (dragX > MID) setOpen(true);
+    else close();
     setDragX(null);
-  }, [dragX]);
+  }, [dragX, close]);
 
-  const close = useCallback(() => setOpen(false), []);
+  // On opening, focus moves to the first control in the panel: it comes
+  // before the layers button in the page, so Tab from the button would skip
+  // it. Some controls are hidden on phones, where focus() does nothing, so
+  // try each in turn.
+  const wasOpen = useRef(open);
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      for (const control of panelRef.current?.querySelectorAll<HTMLElement>('button') ?? []) {
+        control.focus();
+        if (document.activeElement === control) break;
+      }
+    }
+    wasOpen.current = open;
+  }, [open]);
 
-  // Close on Escape key
+  // Close on Escape key, unless a modal dialog on top (the shortcuts dialog,
+  // opened from the panel) has focus: that Escape is the dialog's.
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') close();
+      if (e.key !== 'Escape') return;
+      if (document.activeElement?.closest('[aria-modal="true"]')) return;
+      close();
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
@@ -93,10 +123,13 @@ export function MobileLayerDrawer() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Panel content */}
+        {/* Panel content. Inert while closed: off screen, so not focusable or announced. */}
         <div
+          ref={panelRef}
+          id={panelId}
           role="dialog"
           aria-label={t('sidebar.layers.label')}
+          inert={!open}
           className="h-full shrink-0 bg-surface-1 border-e border-border p-3 pt-12 max-sm:pt-3 overflow-y-auto space-y-4"
           style={{ width: PANEL_W }}
         >
@@ -105,6 +138,8 @@ export function MobileLayerDrawer() {
 
         {/* Tab handle */}
         <button
+          ref={handleRef}
+          type="button"
           className={`self-center shrink-0 flex items-center justify-center w-9 h-20 bg-surface-1/90 backdrop-blur-sm border border-s-0 border-border rounded-e-xl shadow-lg cursor-pointer ${!hasBeenOpened ? 'animate-drawer-breathe' : ''}`}
           onClick={() => {
             setOpen((v) => !v);
@@ -114,6 +149,8 @@ export function MobileLayerDrawer() {
             }
           }}
           aria-label={t('sidebar.toggleLayers')}
+          aria-expanded={open}
+          aria-controls={panelId}
         >
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-300">
             <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />

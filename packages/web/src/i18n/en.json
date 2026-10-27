@@ -47,7 +47,9 @@
       "headlines_count": "{{count}} headlines",
       "all": "All",
       "retry": "Retry",
-      "showMore": "{{count}} more"
+      "showMore": "{{count}} more",
+      "pauseTicker": "Pause news ticker",
+      "resumeTicker": "Resume news ticker"
     },
     "weather": {
       "title": "Weather",
@@ -386,7 +388,8 @@
   },
   "tile": {
     "expand": "expand",
-    "collapse": "collapse"
+    "collapse": "collapse",
+    "loading": "Loading…"
   },
   "stale": {
     "updated": "Updated {{time}}",
@@ -564,6 +567,10 @@
     "toggleLayer": "Toggle data layer 1–9",
     "clearLayers": "Clear all layers",
     "close": "Close",
-    "toastHint": "Keyboard shortcuts"
+    "toastHint": "Keyboard shortcuts",
+    "singleKey": "Single-key shortcuts",
+    "singleKeyHint": "Switch them off if single keys get in the way, for example with speech input.",
+    "on": "On",
+    "off": "Off"
   }
 }
