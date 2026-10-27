@@ -6,13 +6,17 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
-  applyScenario, DEFAULT_SCENARIO, newestFirst, planScenario, SCENARIO_NAMES, SCENARIOS, scenarioTypes, SNAPSHOT,
-  stormAlerts, stormNina,
+  applyScenario, DEFAULT_SCENARIO, leftOutTypes, newestFirst, planScenario, SCENARIO_NAMES, SCENARIOS, scenarioPlace,
+  scenarioTypes, SNAPSHOT, stormAlerts, stormArea, stormNina,
 } from '../lib/scenarios.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const HOUR = 3_600_000;
 const NOW = Date.parse('2026-10-27T07:30:00.000Z');
+/** A city holding every type the scenarios change, centred where Berlin's config puts Berlin. */
+const PLACE = scenarioPlace({ coordinates: { lat: 52.52, lon: 13.405 } }, ['weather', 'transit', 'nina', 'waterLevels', 'news']);
+/** A city with no transit source, centred where Hamburg's config puts Hamburg. */
+const NO_TRANSIT = scenarioPlace({ coordinates: { lat: 53.5511, lon: 9.9937 } }, ['weather', 'nina', 'waterLevels']);
 
 /** Rows of every type the scenarios change, shaped like the seed's: a current row fetched now and older history. */
 function seedLikeRows() {
@@ -77,7 +81,8 @@ describe('scenario names', () => {
   it('an unknown name is refused with the list', () => {
     for (const bad of ['nope', '__proto__', 'constructor', '']) {
       assert.throws(() => scenarioTypes(bad), (err) => SCENARIO_NAMES.every((n) => err.message.includes(n)), bad);
-      assert.throws(() => planScenario(bad, {}, NOW), /unknown scenario/, bad);
+      assert.throws(() => planScenario(bad, {}, NOW, PLACE), /unknown scenario/, bad);
+      assert.throws(() => planScenario(bad, {}, NOW), /unknown scenario/, `${bad}, before the place is checked`);
     }
   });
 });
@@ -85,7 +90,7 @@ describe('scenario names', () => {
 describe('planScenario', () => {
   it('backdate moves the newest row back and drops every row fetched since then', () => {
     const rows = seedLikeRows();
-    const { rows: after, changes } = planScenario('outage', rows, NOW);
+    const { rows: after, changes } = planScenario('outage', rows, NOW, PLACE);
     const weather = after[SNAPSHOT.weather];
     assert.equal(weather[0].fetchedAt, NOW - 6 * HOUR);
     assert.deepEqual(weather[0].data, rows[SNAPSHOT.weather].at(-1).data, 'the newest row is still the seeded forecast');
@@ -101,7 +106,7 @@ describe('planScenario', () => {
 
   it('backdate leaves a row that is already older alone', () => {
     const rows = { [SNAPSHOT.transit]: [{ id: 1, fetchedAt: NOW - 9 * HOUR, data: [] }], [SNAPSHOT.weather]: [{ id: 2, fetchedAt: NOW - 9 * HOUR, data: {} }] };
-    const { rows: after, changes } = planScenario('outage', rows, NOW);
+    const { rows: after, changes } = planScenario('outage', rows, NOW, PLACE);
     assert.equal(after[SNAPSHOT.transit][0].fetchedAt, NOW - 9 * HOUR);
     assert.deepEqual(changes.updates, []);
   });
@@ -109,7 +114,7 @@ describe('planScenario', () => {
   it('put replaces every row with one fetched now; patch-latest changes only the newest row\'s data', () => {
     const rows = seedLikeRows();
     const before = structuredClone(rows);
-    const { rows: after, changes } = planScenario('quiet', rows, NOW);
+    const { rows: after, changes } = planScenario('quiet', rows, NOW, PLACE);
     assert.deepEqual(after[SNAPSHOT.transit], [{ id: null, fetchedAt: NOW, data: [] }]);
     assert.deepEqual(after[SNAPSHOT.nina], [{ id: null, fetchedAt: NOW, data: [] }]);
     assert.deepEqual(changes.inserts.map((i) => i.type).sort(), [SNAPSHOT.nina, SNAPSHOT.transit]);
@@ -122,7 +127,7 @@ describe('planScenario', () => {
   });
 
   it('remove drops every row of a type', () => {
-    const { rows: after, changes } = planScenario('no-data', seedLikeRows(), NOW);
+    const { rows: after, changes } = planScenario('no-data', seedLikeRows(), NOW, PLACE);
     for (const type of [SNAPSHOT.transit, SNAPSHOT.weather, SNAPSHOT.nina]) assert.deepEqual(after[type], [], type);
     assert.equal(changes.deletes.length, 11 + 1 + 1);
     assert.deepEqual(changes.updates, []);
@@ -130,13 +135,20 @@ describe('planScenario', () => {
   });
 
   it('refuses when the seed wrote no row to change, rather than showing the seed', () => {
-    assert.throws(() => planScenario('outage', { [SNAPSHOT.weather]: seedLikeRows()[SNAPSHOT.weather] }, NOW), /no vbb-disruptions row/);
-    assert.throws(() => planScenario('storm', {}, NOW), /no open-meteo row/);
+    assert.throws(() => planScenario('outage', { [SNAPSHOT.weather]: seedLikeRows()[SNAPSHOT.weather] }, NOW, PLACE), /no vbb-disruptions row/);
+    assert.throws(() => planScenario('storm', {}, NOW, PLACE), /no open-meteo row/);
   });
 
-  it('the storm warnings depend on the time alone', () => {
+  it('refuses without a place to run on', () => {
+    for (const place of [undefined, null, {}, { center: PLACE.center }, { types: PLACE.types }]) {
+      assert.throws(() => planScenario('storm', seedLikeRows(), NOW, place), /no place to run it on/);
+    }
+  });
+
+  it('the storm warnings depend on the time and the place alone', () => {
     assert.deepEqual(stormAlerts(NOW), stormAlerts(NOW));
-    assert.deepEqual(stormNina(NOW), stormNina(NOW));
+    assert.deepEqual(stormNina(NOW, PLACE.center), stormNina(NOW, PLACE.center));
+    assert.notDeepEqual(stormNina(NOW, PLACE.center), stormNina(NOW, NO_TRANSIT.center));
     assert.notDeepEqual(stormAlerts(NOW), stormAlerts(NOW + HOUR));
     const rank = { moderate: 1, severe: 2, extreme: 3 };
     const ranks = stormAlerts(NOW).map((a) => rank[a.severity]);
@@ -150,15 +162,81 @@ describe('applyScenario', () => {
     for (const name of SCENARIO_NAMES) {
       const rows = seedLikeRows();
       const store = memoryStore(rows);
-      const changes = await applyScenario(store, name, new Date(NOW));
+      const changes = await applyScenario(store, name, new Date(NOW), PLACE);
       assert.deepEqual(store.reads, scenarioTypes(name), name);
       assert.equal(store.writes.length, 1, name);
-      const planned = planScenario(name, rows, NOW);
+      const planned = planScenario(name, rows, NOW, PLACE);
       assert.deepEqual(changes, planned.changes, name);
       for (const [type, list] of Object.entries(planned.rows)) {
         const written = [...store.state[type]].sort(newestFirst).map((row) => ({ ...row, id: row.id >= 1000 ? null : row.id }));
         assert.deepEqual(written, list, `${name} ${type}`);
       }
+    }
+  });
+});
+
+describe('a scenario on one city', () => {
+  const touchedTypes = ({ deletes, updates, inserts }) => [...deletes, ...updates, ...inserts].map((change) => change.type);
+  const withoutTransit = () => {
+    const rows = seedLikeRows();
+    delete rows[SNAPSHOT.transit];
+    return rows;
+  };
+
+  it('its place holds the city centre and the snapshot types of the data sets the city is seeded with', () => {
+    assert.deepEqual(PLACE.center, { lat: 52.52, lon: 13.405 });
+    assert.deepEqual(PLACE.types, Object.values(SNAPSHOT));
+    assert.deepEqual(NO_TRANSIT.types, [SNAPSHOT.weather, SNAPSHOT.nina, SNAPSHOT.waterLevels]);
+    assert.deepEqual(scenarioPlace({ coordinates: { lat: 1, lon: 2 } }, []).types, []);
+    assert.ok(Object.isFrozen(PLACE) && Object.isFrozen(PLACE.center) && Object.isFrozen(PLACE.types));
+  });
+
+  it('the storm area over Berlin is the rectangle over central Berlin it always was', () => {
+    assert.deepEqual(stormArea(PLACE.center), [[13.33, 52.48], [13.48, 52.48], [13.48, 52.56], [13.33, 52.56], [13.33, 52.48]]);
+  });
+
+  it('the storm area over another city is a closed ring around its centre', () => {
+    const ring = stormArea(NO_TRANSIT.center);
+    assert.equal(ring.length, 5);
+    assert.deepEqual(ring[0], ring[4]);
+    const lons = ring.map(([lon]) => lon);
+    const lats = ring.map(([, lat]) => lat);
+    assert.ok(Math.abs((Math.min(...lons) + Math.max(...lons)) / 2 - NO_TRANSIT.center.lon) < 1e-4);
+    assert.ok(Math.abs((Math.min(...lats) + Math.max(...lats)) / 2 - NO_TRANSIT.center.lat) < 1e-4);
+    assert.ok(Math.max(...lons) - Math.min(...lons) < 0.2 && Math.max(...lats) - Math.min(...lats) < 0.1);
+    assert.deepEqual(stormNina(NOW, NO_TRANSIT.center)[0].area.geometry.coordinates, [ring]);
+  });
+
+  it('what a scenario changes splits into what the city holds and what it leaves out', () => {
+    for (const name of SCENARIO_NAMES) {
+      assert.deepEqual(scenarioTypes(name, PLACE), scenarioTypes(name), name);
+      assert.deepEqual(leftOutTypes(name, PLACE), [], name);
+      assert.deepEqual(scenarioTypes(name, NO_TRANSIT), scenarioTypes(name).filter((type) => type !== SNAPSHOT.transit), name);
+    }
+    for (const name of ['quiet', 'outage', 'no-data']) assert.deepEqual(leftOutTypes(name, NO_TRANSIT), [SNAPSHOT.transit], name);
+    for (const name of ['default', 'storm']) assert.deepEqual(leftOutTypes(name, NO_TRANSIT), [], name);
+  });
+
+  it('a type the city holds no data of is left out rather than refused, and nothing is planned for it', () => {
+    for (const name of SCENARIO_NAMES) {
+      const plan = planScenario(name, withoutTransit(), NOW, NO_TRANSIT);
+      assert.deepEqual(plan.leftOut, leftOutTypes(name, NO_TRANSIT), name);
+      assert.ok(!touchedTypes(plan.changes).includes(SNAPSHOT.transit), name);
+      assert.equal(plan.rows[SNAPSHOT.transit], undefined, name);
+    }
+    const outage = planScenario('outage', withoutTransit(), NOW, NO_TRANSIT);
+    assert.equal(outage.rows[SNAPSHOT.weather][0].fetchedAt, NOW - 6 * HOUR, 'the rest of the scenario still applies');
+    assert.deepEqual(outage.rows[SNAPSHOT.waterLevels], []);
+    assert.throws(() => planScenario('outage', withoutTransit(), NOW, PLACE), /no vbb-disruptions row/, 'a city that holds transit still needs its row');
+  });
+
+  it('applying it reads and writes none of the left-out types', async () => {
+    for (const name of SCENARIO_NAMES) {
+      const store = memoryStore(withoutTransit());
+      const changes = await applyScenario(store, name, NOW, NO_TRANSIT);
+      assert.deepEqual(store.reads, scenarioTypes(name, NO_TRANSIT), name);
+      assert.ok(!touchedTypes(changes).includes(SNAPSHOT.transit), name);
+      assert.equal(store.state[SNAPSHOT.transit], undefined, name);
     }
   });
 });

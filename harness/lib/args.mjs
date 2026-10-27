@@ -3,6 +3,7 @@
  * every bad input is refused before anything starts.
  */
 
+import { configuredCities, DEFAULT_CITY } from './cities.mjs';
 import { GUARD_TESTS } from './guard.mjs';
 import { DEFAULT_SCENARIO, SCENARIO_NAMES } from './scenarios.mjs';
 
@@ -10,7 +11,7 @@ export const LANGS = Object.freeze(['de', 'en', 'tr', 'ar']);
 export const THEMES = Object.freeze(['light', 'dark']);
 
 const VALUE_OPTIONS = new Set([
-  'out', 'path', 'viewport', 'lang', 'theme', 'seed', 'scenario', 'timeout', 'steps', 'settle', 'timezone',
+  'out', 'city', 'path', 'viewport', 'lang', 'theme', 'seed', 'scenario', 'timeout', 'steps', 'settle', 'timezone',
   'pg-bin', 'pg-user', 'playwright', 'guard-test',
 ]);
 const FLAG_OPTIONS = new Set(['scroll', 'full-page', 'help']);
@@ -18,7 +19,9 @@ const REPEATABLE = new Set(['path', 'viewport', 'lang', 'theme']);
 const COMMA_LISTS = new Set(['viewport', 'lang', 'theme']);
 
 export const DEFAULTS = Object.freeze({
-  paths: ['/berlin'],
+  city: DEFAULT_CITY,
+  /** Without --path: the city's dashboard. */
+  paths: [`/${DEFAULT_CITY}`],
   viewports: ['1440x900'],
   langs: ['de'],
   themes: ['light'],
@@ -66,8 +69,12 @@ function positiveInteger(name, value, { min = 1, max = Number.MAX_SAFE_INTEGER }
   return n;
 }
 
-/** Parses argv (without node and the script) into the run's parameters. */
-export function parseArgs(argv) {
+/**
+ * Parses argv (without node and the script) into the run's parameters.
+ * `cities` are the ones --city may name; by default those both packages
+ * register (lib/cities.mjs).
+ */
+export function parseArgs(argv, { cities } = {}) {
   const raw = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -101,7 +108,12 @@ export function parseArgs(argv) {
   if (raw.help) return { help: true };
   if (!raw.out) throw new UsageError('--out <folder> is required: the run writes only under it');
 
-  const paths = raw.path ?? DEFAULTS.paths;
+  const city = raw.city ?? DEFAULTS.city;
+  const known = cities ?? configuredCities();
+  if (!known.includes(city)) {
+    throw new UsageError(`--city ${city}: use one of ${known.join(', ')} (the cities packages/server and packages/web both register in ALL_CITIES)`);
+  }
+  const paths = raw.path ?? [`/${city}`];
   for (const p of paths) {
     const problem = checkPagePath(p);
     if (problem) throw new UsageError(`--path ${problem}`);
@@ -132,6 +144,7 @@ export function parseArgs(argv) {
   return {
     help: false,
     out: raw.out,
+    city,
     paths,
     viewports,
     langs,
@@ -209,7 +222,8 @@ the web app on 127.0.0.1 and screenshots pages in headless Chromium. Every
 request off this machine is blocked. See harness/README.md.
 
   --out <folder>          required; each run writes only under <folder>/<run id>
-  --path <path>           page to open, repeatable (default /berlin)
+  --city <id>             the city seeded, served and built for (default berlin)
+  --path <path>           page to open, repeatable (default /<city>)
   --viewport <WxH>        repeatable or comma-separated (default 1440x900)
   --lang <de|en|tr|ar>    repeatable or comma-separated (default de)
   --theme <light|dark>    repeatable or comma-separated (default light)

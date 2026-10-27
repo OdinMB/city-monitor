@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getTableName, type SQL, type Table } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import postgres from 'postgres';
+import { hamburg } from '../config/cities/hamburg.js';
 import { SNAPSHOT_TYPES } from '../db/schema.js';
-import { generateSyntheticData, syntheticModel } from './generate.js';
+import { generateSyntheticCityData, generateSyntheticData, syntheticModel } from './generate.js';
 import { LOCAL_DATABASE_URL } from './local-guard.js';
 import { APP_TABLES, openLocalDatabase, seedDatabase, wipeDatabase, type LocalDatabase } from './seed.js';
 
@@ -126,5 +127,26 @@ describe('seedDatabase', () => {
 
     const all = Object.values(rows).flat();
     expect(all.every((r) => r.cityId === 'berlin')).toBe(true);
+  });
+
+  it('writes another city only the data sets it holds, under its own id', async () => {
+    const { local, rows } = fakeDb();
+    const data = generateSyntheticCityData({ now: new Date(), city: hamburg });
+    await seedDatabase(local, data);
+
+    const snapshots = rows.snapshots ?? [];
+    const current = snapshots.filter((r) => !('fetchedAt' in r));
+    // One row per snapshot type it holds; none for transit, events, budget or the Berlin-only sources
+    expect(new Set(current.map((r) => r.type))).toEqual(new Set([
+      'open-meteo', 'aqi-grid', 'bbk-nina', 'pegelonline', 'tomtom-traffic', 'aponet', 'osm-aeds', 'dwd-pollen',
+      'abgwatch-bundestag', 'abgwatch-state',
+    ]));
+    expect(current).toHaveLength(10);
+    expect(snapshots.length - current.length).toBe(data.history.length);
+    expect(rows.events).toBeUndefined();
+    expect(rows.news_items).toHaveLength(data.news!.length);
+    expect(rows.safety_reports).toHaveLength(data.safety!.length);
+    expect((rows.ai_summaries ?? []).map((r) => r.lang).sort()).toEqual(['de', 'en']);
+    expect(Object.values(rows).flat().every((r) => r.cityId === 'hamburg')).toBe(true);
   });
 });

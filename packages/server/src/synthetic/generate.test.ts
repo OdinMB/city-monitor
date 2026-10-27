@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
@@ -7,10 +8,12 @@ import {
   PopulationSummarySchema, TrafficIncidentSchema, TransitAlertSchema, WastewaterSummarySchema,
   WaterLevelDataSchema, WeatherDataSchema,
 } from '@city-monitor/shared/schemas.js';
-import type { AirQuality } from '@city-monitor/shared';
+import type { AirQuality, CityConfig } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
+import { hamburg } from '../config/cities/hamburg.js';
 import {
-  generateSyntheticAirQuality, generateSyntheticData, seedFromModel, syntheticModel, type SyntheticData,
+  generateSyntheticAirQuality, generateSyntheticCityData, generateSyntheticData, seedFromModel, syntheticCoverage,
+  syntheticDistricts, syntheticModel, type CitySyntheticData,
 } from './generate.js';
 
 const NOW = new Date('2026-10-26T10:30:00Z');
@@ -22,7 +25,7 @@ function berlinIso(at: Date): string {
   return at.toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' }).replace(' ', 'T');
 }
 
-function points(d: SyntheticData): Array<{ what: string; lat: number; lon: number }> {
+function points(d: CitySyntheticData): Array<{ what: string; lat: number; lon: number }> {
   const out: Array<{ what: string; lat: number; lon: number }> = [];
   const add = (what: string, p: { lat: number; lon: number } | null | undefined) => {
     if (p) out.push({ what, lat: p.lat, lon: p.lon });
@@ -33,21 +36,76 @@ function points(d: SyntheticData): Array<{ what: string; lat: number; lon: numbe
     if (typeof coords[0] === 'number') add(what, { lon: coords[0], lat: coords[1] as number });
     else coords.forEach((c) => addCoords(what, c));
   };
-  d.news.forEach((n) => add('news', n.location));
-  d.safety.forEach((s) => add('safety', s.location));
-  d.transit.forEach((t) => add('transit', t.location));
-  d.airQualityGrid.forEach((p) => add('aq grid', p));
-  d.waterLevels.stations.forEach((s) => add('water level', s));
-  d.construction.forEach((c) => addCoords('construction', c.geometry.coordinates));
-  d.traffic.forEach((t) => addCoords('traffic', t.geometry.coordinates));
-  d.pharmacies.forEach((p) => add('pharmacy', p.location));
-  d.aeds.forEach((a) => add('aed', a));
-  d.socialAtlas.features.forEach((f) => addCoords('social atlas', f.geometry.coordinates));
-  d.population.geojson.features.forEach((f) => addCoords('population', f.geometry.coordinates));
-  d.bathing.forEach((b) => add('bathing', b));
-  d.noiseSensors.forEach((s) => add('noise', s));
-  d.nina.forEach((w) => addCoords('nina', (w.area?.geometry as { coordinates?: unknown } | undefined)?.coordinates));
+  d.news?.forEach((n) => add('news', n.location));
+  d.safety?.forEach((s) => add('safety', s.location));
+  d.transit?.forEach((t) => add('transit', t.location));
+  d.airQualityGrid?.forEach((p) => add('aq grid', p));
+  d.waterLevels?.stations.forEach((s) => add('water level', s));
+  d.construction?.forEach((c) => addCoords('construction', c.geometry.coordinates));
+  d.traffic?.forEach((t) => addCoords('traffic', t.geometry.coordinates));
+  d.pharmacies?.forEach((p) => add('pharmacy', p.location));
+  d.aeds?.forEach((a) => add('aed', a));
+  d.socialAtlas?.features.forEach((f) => addCoords('social atlas', f.geometry.coordinates));
+  d.population?.geojson.features.forEach((f) => addCoords('population', f.geometry.coordinates));
+  d.bathing?.forEach((b) => add('bathing', b));
+  d.noiseSensors?.forEach((s) => add('noise', s));
+  d.nina?.forEach((w) => addCoords('nina', (w.area?.geometry as { coordinates?: unknown } | undefined)?.coordinates));
   return out;
+}
+
+function expectInside(d: CitySyntheticData, city: CityConfig, atLeast: number): void {
+  const { north, south, east, west } = city.boundingBox;
+  const all = points(d);
+  expect(all.length).toBeGreaterThan(atLeast);
+  for (const p of all) {
+    expect(p.lat, p.what).toBeGreaterThanOrEqual(south);
+    expect(p.lat, p.what).toBeLessThanOrEqual(north);
+    expect(p.lon, p.what).toBeGreaterThanOrEqual(west);
+    expect(p.lon, p.what).toBeLessThanOrEqual(east);
+  }
+}
+
+/** Every data set `d` holds, with the Zod schema the database reads validate it with. */
+function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]> {
+  const checks: Array<[string, z.ZodType, unknown]> = [
+    ['weather', WeatherDataSchema, d.weather],
+    ['transit', z.array(TransitAlertSchema), d.transit],
+    ['nina', z.array(NinaWarningSchema), d.nina],
+    ['aq grid', AirQualityGridSchema, d.airQualityGrid],
+    ['water levels', WaterLevelDataSchema, d.waterLevels],
+    ['appointments', BuergeramtDataSchema, d.appointments],
+    ['budget', BudgetSummarySchema, d.budget],
+    ['construction', z.array(ConstructionSiteSchema), d.construction],
+    ['traffic', z.array(TrafficIncidentSchema), d.traffic],
+    ['pharmacies', z.array(EmergencyPharmacySchema), d.pharmacies],
+    ['aeds', z.array(AedLocationSchema), d.aeds],
+    ['wastewater', WastewaterSummarySchema, d.wastewater],
+    ['bathing', z.array(BathingSpotSchema), d.bathing],
+    ['labor market', LaborMarketSummarySchema, d.laborMarket],
+    ['population', PopulationSummarySchema, d.population?.summary],
+    ['feuerwehr', FeuerwehrSummarySchema, d.feuerwehr],
+    ['pollen', PollenForecastSchema, d.pollen],
+    ['noise', z.array(NoiseSensorSchema), d.noiseSensors],
+    ['council', z.array(CouncilMeetingSchema), d.councilMeetings],
+    ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
+      [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
+  ];
+  return checks.filter(([, , value]) => value !== undefined);
+}
+
+/** Whether [lon, lat] lies in a GeoJSON Polygon or MultiPolygon (inside an outer ring, outside its holes). */
+function inGeometry(lon: number, lat: number, geometry: { type: string; coordinates: unknown }): boolean {
+  const inRing = (ring: number[][]) => {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i]!;
+      const [xj, yj] = ring[j]!;
+      if ((yi! > lat) !== (yj! > lat) && lon < ((xj! - xi!) * (lat - yi!)) / (yj! - yi!) + xi!) inside = !inside;
+    }
+    return inside;
+  };
+  const polygons = (geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates]) as number[][][][];
+  return polygons.some(([outer, ...holes]) => inRing(outer!) && !holes.some(inRing));
 }
 
 describe('generateSyntheticData', () => {
@@ -115,29 +173,8 @@ describe('generateSyntheticData', () => {
   });
 
   it('passes the Zod schemas the database reads validate with', () => {
-    const checks: Array<[string, z.ZodType, unknown]> = [
-      ['weather', WeatherDataSchema, data.weather],
-      ['transit', z.array(TransitAlertSchema), data.transit],
-      ['nina', z.array(NinaWarningSchema), data.nina],
-      ['aq grid', AirQualityGridSchema, data.airQualityGrid],
-      ['water levels', WaterLevelDataSchema, data.waterLevels],
-      ['appointments', BuergeramtDataSchema, data.appointments],
-      ['budget', BudgetSummarySchema, data.budget],
-      ['construction', z.array(ConstructionSiteSchema), data.construction],
-      ['traffic', z.array(TrafficIncidentSchema), data.traffic],
-      ['pharmacies', z.array(EmergencyPharmacySchema), data.pharmacies],
-      ['aeds', z.array(AedLocationSchema), data.aeds],
-      ['wastewater', WastewaterSummarySchema, data.wastewater],
-      ['bathing', z.array(BathingSpotSchema), data.bathing],
-      ['labor market', LaborMarketSummarySchema, data.laborMarket],
-      ['population', PopulationSummarySchema, data.population.summary],
-      ['feuerwehr', FeuerwehrSummarySchema, data.feuerwehr],
-      ['pollen', PollenForecastSchema, data.pollen],
-      ['noise', z.array(NoiseSensorSchema), data.noiseSensors],
-      ['council', z.array(CouncilMeetingSchema), data.councilMeetings],
-      ...Object.entries(data.political).map(([level, districts]): [string, z.ZodType, unknown] =>
-        [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
-    ];
+    const checks = schemaChecks(data);
+    expect(checks).toHaveLength(19 + 4);
     for (const [name, schema, value] of checks) {
       expect(schema.safeParse(value).error, name).toBeUndefined();
     }
@@ -147,15 +184,7 @@ describe('generateSyntheticData', () => {
   });
 
   it('places everything inside Berlin', () => {
-    const { north, south, east, west } = berlin.boundingBox;
-    const all = points(data);
-    expect(all.length).toBeGreaterThan(500);
-    for (const p of all) {
-      expect(p.lat, p.what).toBeGreaterThanOrEqual(south);
-      expect(p.lat, p.what).toBeLessThanOrEqual(north);
-      expect(p.lon, p.what).toBeGreaterThanOrEqual(west);
-      expect(p.lon, p.what).toBeLessThanOrEqual(east);
-    }
+    expectInside(data, berlin, 500);
   });
 
   it('is clearly made up', () => {
@@ -247,5 +276,160 @@ describe('generateSyntheticData', () => {
     }
     const months = d.history.filter((h) => h.type === 'ba-labor-market').map((h) => (h.data as { reportMonth: string }).reportMonth);
     expect(new Set([...months, d.laborMarket.reportMonth]).size).toBe(months.length + 1);
+  });
+});
+
+describe('generateSyntheticCityData', () => {
+  it('gives Berlin exactly what generateSyntheticData gives', () => {
+    for (const seed of [1, 4]) {
+      expect(JSON.stringify(generateSyntheticCityData({ now: NOW, seed, city: berlin })))
+        .toBe(JSON.stringify(generateSyntheticData({ now: NOW, seed })));
+    }
+    expect(syntheticCoverage(berlin)).toHaveLength(Object.keys(generateSyntheticData({ now: NOW })).length - 2);
+  });
+
+  describe('for Hamburg', () => {
+    const data = generateSyntheticCityData({ now: NOW, city: hamburg });
+    const bezirke = syntheticDistricts('hamburg').map((d) => d.name);
+
+    it('holds what production holds for Hamburg and nothing that only Berlin has', () => {
+      expect(data.cityId).toBe('hamburg');
+      const held = Object.keys(data).filter((key) => key !== 'cityId' && key !== 'history');
+      expect(held).toEqual(syntheticCoverage(hamburg));
+      // No transit (its HVV source is offline), events, roadworks, budget, appointments,
+      // social atlas, noise or council config; population, wastewater, bathing, labour
+      // market and fire brigade are Berlin-only sources
+      expect([...held].sort()).toEqual([
+        'aeds', 'airQuality', 'airQualityGrid', 'news', 'nina', 'pharmacies', 'political', 'pollen', 'safety',
+        'summary', 'traffic', 'waterLevels', 'weather',
+      ]);
+      // No Bezirk mayors or state members by Bezirk outside Berlin
+      expect(Object.keys(data.political!).sort()).toEqual(['bundestag', 'state']);
+      expect(new Set(data.history.map((h) => h.type))).toEqual(new Set(['open-meteo', 'pegelonline']));
+      expect(Object.keys(data.summary!.briefings).sort()).toEqual([...hamburg.languages].sort());
+    });
+
+    it('is the same for the same seed and different for another', () => {
+      const again = JSON.stringify(generateSyntheticCityData({ now: NOW, city: hamburg }));
+      expect(again).toBe(JSON.stringify(data));
+      expect(JSON.stringify(generateSyntheticCityData({ now: NOW, seed: 2, city: hamburg }))).not.toBe(again);
+    });
+
+    it('passes the Zod schemas the database reads validate with', () => {
+      const checks = schemaChecks(data);
+      expect(checks.map(([name]) => name).sort()).toEqual([
+        'aeds', 'aq grid', 'nina', 'pharmacies', 'political bundestag', 'political state', 'pollen', 'traffic',
+        'water levels', 'weather',
+      ]);
+      for (const [name, schema, value] of checks) {
+        expect(schema.safeParse(value).error, name).toBeUndefined();
+      }
+    });
+
+    it('places everything inside Hamburg', () => {
+      expectInside(data, hamburg, 150);
+    });
+
+    it('names only Hamburg places: its Bezirke, its police districts and its gauges', () => {
+      expect(JSON.stringify(data)).not.toMatch(/Berlin/);
+      for (const s of data.safety!) {
+        expect(hamburg.dataSources.police!.districts).toContain(s.district);
+        expect(bezirke).toContain(s.district);
+      }
+      for (const p of data.pharmacies!) expect(bezirke).toContain(p.district);
+      for (const d of data.political!.bundestag!) expect(d.name).toMatch(/^Hamburg-/);
+      expect(data.political!.state!.flatMap((d) => d.representatives.map((r) => r.role))).toContain('MdHB');
+      expect(data.waterLevels!.stations.map((s) => s.name)).toEqual(hamburg.dataSources.waterLevels!.stations.map((s) => s.name));
+      expect(data.pollen!.region).toMatch(/Hamburg/);
+    });
+
+    it('is clearly made up', () => {
+      const urls = JSON.stringify(data).match(/https?:\/\/[^"\\]+/g) ?? [];
+      for (const url of urls) expect(url).toMatch(/^https:\/\/example\.com\/synthetic\//);
+      for (const person of Object.values(data.political!).flat().flatMap((d) => d.representatives)) {
+        expect(person.name).toMatch(/^Testperson \d{3}$/);
+      }
+      const marked = [
+        ...data.news!.map((n) => n.title), ...data.safety!.map((s) => s.title), ...data.nina!.map((w) => w.headline),
+        ...data.weather!.alerts.map((a) => a.headline), ...data.traffic!.map((t) => t.description),
+      ];
+      for (const text of marked) expect(text).toMatch(/^\[Synthetisch\] /);
+    });
+  });
+
+  it('gives a city without Bezirk boundaries places named after the city, inside its box', () => {
+    const city: CityConfig = {
+      ...hamburg,
+      id: 'teststadt',
+      name: 'Teststadt',
+      coordinates: { lat: 50.94, lon: 6.96 },
+      boundingBox: { north: 51.08, south: 50.83, east: 7.16, west: 6.77 },
+      dataSources: {
+        weather: { provider: 'brightsky', lat: 50.94, lon: 6.96 },
+        police: { provider: 'rss', url: 'https://example.com/police.xml', districts: ['Altstadt'] },
+        waterLevels: { provider: 'pegelonline', stations: [{ uuid: 'test-1', name: 'Testpegel', waterBody: 'Testfluss' }] },
+      },
+    };
+    const d = generateSyntheticCityData({ now: NOW, city });
+    expect(syntheticDistricts('teststadt')).toEqual([]);
+    expect(Object.keys(d).filter((key) => key !== 'cityId' && key !== 'history').sort()).toEqual([
+      'aeds', 'airQuality', 'airQualityGrid', 'news', 'pharmacies', 'safety', 'summary', 'traffic', 'waterLevels', 'weather',
+    ]);
+    expectInside(d, city, 150);
+    for (const s of d.safety!) {
+      expect(s.district).toBeUndefined();
+      expect(s.title).toMatch(/ in Teststadt$/);
+    }
+    for (const p of d.pharmacies!) expect(p.district).toBeUndefined();
+    for (const n of d.news!) if (n.location) expect(n.location.label).toBe('Teststadt');
+    for (const [name, schema, value] of schemaChecks(d)) expect(schema.safeParse(value).error, name).toBeUndefined();
+    expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);
+  });
+
+  it('holds weather and transit only where their ingestion would fetch them', () => {
+    // ingest-weather has an adapter for brightsky only; ingest-transit skips a city with no stations
+    const city: CityConfig = {
+      ...hamburg,
+      dataSources: {
+        ...hamburg.dataSources,
+        weather: { provider: 'open-meteo', lat: hamburg.coordinates.lat, lon: hamburg.coordinates.lon },
+        transit: { provider: 'hafas', operatorId: 'test', stations: [] },
+      },
+    };
+    expect(syntheticCoverage(city)).not.toContain('weather');
+    expect(syntheticCoverage(city)).not.toContain('transit');
+    const d = generateSyntheticCityData({ now: NOW, city });
+    expect(d.weather).toBeUndefined();
+    expect(d.transit).toBeUndefined();
+    expect(d.history.some((h) => h.type === 'open-meteo')).toBe(false);
+    expect(d.waterLevels).toBeDefined();
+
+    const withStations: CityConfig = {
+      ...hamburg,
+      dataSources: { ...hamburg.dataSources, transit: { provider: 'hafas', operatorId: 'test', stations: [{ id: '1', name: 'Teststation' }] } },
+    };
+    expect(syntheticCoverage(withStations)).toContain('transit');
+    expect(syntheticCoverage(withStations)).toContain('weather');
+  });
+
+  it('places Bezirke where the web app ships their boundaries, each centre inside its own', () => {
+    const folder = new URL('../../../web/src/data/districts/', import.meta.url);
+    const files = fs.readdirSync(folder).filter((f) => f.endsWith('-bezirke.geojson'));
+    expect(files.length).toBeGreaterThanOrEqual(2);
+    for (const file of files) {
+      const cityId = file.replace(/-bezirke\.geojson$/, '');
+      const geo = JSON.parse(fs.readFileSync(new URL(file, folder), 'utf8')) as {
+        features: Array<{ properties: Record<string, string>; geometry: { type: string; coordinates: unknown } }>;
+      };
+      // The name field DISTRICT_URLS in packages/web/src/components/map/constants.ts names
+      const nameOf = (p: Record<string, string>) => p.bezirk_name ?? p.name;
+      const districts = syntheticDistricts(cityId);
+      expect(districts.map((d) => d.name).sort(), cityId).toEqual(geo.features.map((f) => nameOf(f.properties)).sort());
+      for (const d of districts) {
+        for (const f of geo.features) {
+          expect(inGeometry(d.lon, d.lat, f.geometry), `${cityId} ${d.name} in ${nameOf(f.properties)}`).toBe(nameOf(f.properties) === d.name);
+        }
+      }
+    }
   });
 });

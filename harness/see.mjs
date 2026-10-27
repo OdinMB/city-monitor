@@ -3,13 +3,13 @@
  * A guarded local run of the web app on synthetic data, screenshotted in
  * headless Chromium. One foreground command:
  *
- *   node harness/see.mjs --out <folder> [--path /berlin] [--viewport 390x844] ...
+ *   node harness/see.mjs --out <folder> [--city hamburg] [--path /berlin] [--viewport 390x844] ...
  *
- * It starts its own Postgres, seeds it (reshaped by --scenario), starts the
- * API in synthetic mode, builds and serves the web app, all on 127.0.0.1 on
- * ports it picks, and stops everything on exit, timeout, error, SIGINT or
- * SIGTERM. Each run
- * writes only under <out>/<run id>. See harness/README.md.
+ * It starts its own Postgres, seeds it for --city (reshaped by --scenario),
+ * starts the API in synthetic mode, builds and serves the web app with that
+ * city active, all on 127.0.0.1 on ports it picks, and stops everything on
+ * exit, timeout, error, SIGINT or SIGTERM. Each run writes only under
+ * <out>/<run id>. See harness/README.md.
  */
 
 import fs from 'node:fs';
@@ -157,6 +157,7 @@ async function main() {
   // Playwright's own temporary profile and artifacts go under the run too.
   process.env.TMPDIR = layout.tmp;
   console.log(`run folder: ${layout.run}`);
+  console.log(`city: ${args.city}`);
 
   if (args.guardTest === 'network') {
     const probeBrowser = await launchBrowser({ playwright, env: envs.browser, proxyPort });
@@ -174,7 +175,7 @@ async function main() {
   }
 
   // The web build runs while Postgres starts and the seed runs.
-  const webSpec = writeGuardFile(layout.guard, 'web', { expected: expected.web, webOutDir: layout.web, viteCacheDir: layout.viteCache });
+  const webSpec = writeGuardFile(layout.guard, 'web', { expected: expected.web, webOutDir: layout.web, viteCacheDir: layout.viteCache, cities: [args.city] });
   const webBuild = startChild({ name: 'web-build', script: WEB_BUILD, args: [webSpec], env: envs.web, cwd: REPO.web, logsDir: layout.logs });
   webBuild.child.once('exit', (code) => {
     if (code !== 0) finish(code === 2 ? EXIT.guard : EXIT.error, `the web build failed (exit ${code}); see ${webBuild.logPath}`);
@@ -189,7 +190,7 @@ async function main() {
   const pgLog = fs.createWriteStream(path.join(layout.logs, 'postgres.log'), { flags: 'a' });
   await startPostgres({ bin: pgBin, layout, port: pgPort, password, env: envs.postgres, asRoot, user: pgUser, logStream: pgLog, track });
 
-  const seedSpec = writeGuardFile(layout.guard, 'seed', { expected: expected.seed, databasePort: pgPort, seed: args.seed, scenario: args.scenario });
+  const seedSpec = writeGuardFile(layout.guard, 'seed', { expected: expected.seed, databasePort: pgPort, seed: args.seed, scenario: args.scenario, city: args.city });
   const seed = startChild({ name: 'seed', script: PRODUCT_CHILD, args: ['seed', seedSpec], env: envs.seed, cwd: REPO.server, logsDir: layout.logs });
   await seed.waitFor(`${MARKERS.guardOk} seed`, 120_000, 'seed guard');
   const seedCode = await waitForExit(seed.child, 240_000);
@@ -197,9 +198,11 @@ async function main() {
   // Its last stdout lines can arrive just after the exit
   const applied = await seed.waitFor(`${MARKERS.scenarioApplied} ${args.scenario}`, 10_000, 'scenario').then(() => true, () => false);
   if (!applied) return finish(EXIT.error, `the scenario ${args.scenario} was not applied; see ${seed.logPath}`);
-  console.log(`scenario: ${args.scenario} (${SCENARIOS[args.scenario].summary})`);
+  const leftOutLine = seed.lines.find((line) => line.startsWith(`${MARKERS.scenarioLeftOut} `));
+  const leftOut = leftOutLine ? leftOutLine.slice(MARKERS.scenarioLeftOut.length + 1).split(',') : [];
+  console.log(`scenario: ${args.scenario} (${SCENARIOS[args.scenario].summary})${leftOut.length ? `; left out, as ${args.city} has no such data: ${leftOut.join(', ')}` : ''}`);
 
-  const apiSpec = writeGuardFile(layout.guard, 'api', { expected: expected.api, databasePort: pgPort, apiPort });
+  const apiSpec = writeGuardFile(layout.guard, 'api', { expected: expected.api, databasePort: pgPort, apiPort, city: args.city });
   const api = startChild({ name: 'api', script: PRODUCT_CHILD, args: ['api', apiSpec], env: envs.api, cwd: REPO.server, logsDir: layout.logs });
   await api.waitFor(`${MARKERS.guardOk} api`, 120_000, 'API guard');
   await api.waitFor(`${MARKERS.apiListening} ${apiPort}`, 120_000, 'API start');
@@ -237,8 +240,10 @@ async function main() {
     harness: 'see',
     startedAt: startedAt.toISOString(),
     finishedAt: new Date().toISOString(),
+    city: args.city,
     seed: args.seed,
     scenario: args.scenario,
+    scenarioLeftOut: leftOut,
     ports: { web: webPort, api: apiPort, postgres: pgPort },
     portsFreeAfterStop,
     params: {

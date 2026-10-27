@@ -16,8 +16,13 @@
  *   mode runs no ingestion and warms the cache from the database, so a row
  *   holding the empty list makes the API answer the same.
  *
- * planScenario is pure: the same rows and `now` give the same result, and
- * nothing is random.
+ * A scenario runs on one city's rows, given as its place: the city's centre
+ * and the snapshot types its seed holds (scenarioPlace). A change to a type
+ * the city has no data for at all (Hamburg has no transit source) is left
+ * out, so its tile stays as production shows it for that city.
+ *
+ * planScenario is pure: the same rows, place and `now` give the same result,
+ * and nothing is random.
  */
 
 const MINUTE = 60_000;
@@ -63,11 +68,19 @@ export function stormAlerts(now) {
   ];
 }
 
-/** A rectangle over central Berlin, as a closed GeoJSON ring of [lon, lat]. */
-const STORM_AREA = Object.freeze([[13.33, 52.48], [13.48, 52.48], [13.48, 52.56], [13.33, 52.56], [13.33, 52.48]]);
+const round5 = (n) => Math.round(n * 1e5) / 1e5;
 
-/** One severe civil-protection (MoWaS) warning, issued half an hour before `now`. */
-export function stormNina(now) {
+/**
+ * A rectangle over the city centre, 0.15° wide and 0.08° high (about 10 by
+ * 9 km), as a closed GeoJSON ring of [lon, lat].
+ */
+export function stormArea({ lat, lon }) {
+  const [w, e, s, n] = [lon - 0.075, lon + 0.075, lat - 0.04, lat + 0.04].map(round5);
+  return [[w, s], [e, s], [e, n], [w, n], [w, s]];
+}
+
+/** One severe civil-protection (MoWaS) warning over the centre, issued half an hour before `now`. */
+export function stormNina(now, center) {
   return [{
     id: 'mow.synthetic-storm-1',
     version: 1,
@@ -80,11 +93,24 @@ export function stormNina(now) {
     headline: `${MARK} Probewarnung Sturm: Aufenthalt im Freien meiden`,
     description: 'Synthetische Warnung für die lokale Entwicklung. Es besteht keine Gefahr.',
     instruction: 'Es ist nichts zu tun.',
-    area: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [STORM_AREA.map((p) => [...p])] }, properties: {} },
+    area: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [stormArea(center)] }, properties: {} },
   }];
 }
 
-/** Every scenario: what it shows, and its changes at `now` (ms). At most one change per snapshot type. */
+/**
+ * Where a scenario runs: the city's centre (its config's coordinates) and
+ * the snapshot types its seed writes, from the data sets the product's
+ * syntheticCoverage names (packages/server/src/synthetic/generate.ts).
+ */
+export function scenarioPlace({ coordinates }, dataSets) {
+  const held = new Set(dataSets);
+  return Object.freeze({
+    center: Object.freeze({ lat: coordinates.lat, lon: coordinates.lon }),
+    types: Object.freeze(Object.entries(SNAPSHOT).filter(([set]) => held.has(set)).map(([, type]) => type)),
+  });
+}
+
+/** Every scenario: what it shows, and its changes at `now` (ms) over the city centre. At most one change per snapshot type. */
 export const SCENARIOS = Object.freeze({
   default: {
     summary: 'the synthetic seed as generated',
@@ -108,9 +134,9 @@ export const SCENARIOS = Object.freeze({
   },
   storm: {
     summary: 'five DWD weather warnings (moderate, severe, extreme, one with no end, one ended an hour ago) and a severe civil-protection warning',
-    changes: (now) => [
+    changes: (now, center) => [
       patchLatest(SNAPSHOT.weather, (data) => ({ ...data, alerts: stormAlerts(now) })),
-      put(SNAPSHOT.nina, stormNina(now)),
+      put(SNAPSHOT.nina, stormNina(now, center)),
     ],
   },
   'no-data': {
@@ -131,9 +157,17 @@ function scenarioOf(name) {
   return SCENARIOS[name];
 }
 
-/** The snapshot types `name` changes, so only their rows need reading. */
-export function scenarioTypes(name) {
-  return scenarioOf(name).changes(0).map((change) => change.type);
+const NO_CENTER = Object.freeze({ lat: 0, lon: 0 });
+
+/** The snapshot types `name` changes, so only their rows need reading; with a place, only those the place's city holds. */
+export function scenarioTypes(name, place) {
+  const types = scenarioOf(name).changes(0, NO_CENTER).map((change) => change.type);
+  return place ? types.filter((type) => place.types.includes(type)) : types;
+}
+
+/** The snapshot types `name` changes that the place's city has no data for, so the scenario leaves them out. */
+export function leftOutTypes(name, place) {
+  return scenarioTypes(name).filter((type) => !place.types.includes(type));
 }
 
 /** Newest first, as the API picks: by fetched_at, then by id (a row not written yet, id null, counts as newest). */
@@ -143,23 +177,32 @@ export function newestFirst(a, b) {
 
 /**
  * Applies scenario `name` at `now` (a Date or ms) to `rows`, an object of
- * snapshot type to [{ id, fetchedAt (ms), data }]. Returns the rows of each
- * type afterwards, newest first, and the changes that get there:
- * { deletes: [{ type, id }], updates: [{ type, id, data?, fetchedAt? }], inserts: [{ type, data, fetchedAt }] }.
- * Throws when a change needs a row the seed did not write, so a run never
- * shows the seed in place of the scenario it was asked for.
+ * snapshot type to [{ id, fetchedAt (ms), data }], of the city `place`
+ * describes (scenarioPlace). Returns the rows of each type afterwards, newest
+ * first, the changes that get there:
+ * { deletes: [{ type, id }], updates: [{ type, id, data?, fetchedAt? }], inserts: [{ type, data, fetchedAt }] },
+ * and the types it left out because the city holds none (`leftOut`).
+ * Throws when a change needs a row the seed did not write for a type the city
+ * holds, so a run never shows the seed in place of the scenario it was asked for.
  */
-export function planScenario(name, rows, now) {
+export function planScenario(name, rows, now, place) {
+  const scenario = scenarioOf(name);
+  if (!place || !place.center || !Array.isArray(place.types)) throw new Error(`scenario ${name}: no place to run it on`);
   const nowMs = now instanceof Date ? now.getTime() : now;
   const result = {};
   for (const [type, list] of Object.entries(rows)) result[type] = [...list].sort(newestFirst);
   const changes = { deletes: [], updates: [], inserts: [] };
   const seen = new Set();
+  const leftOut = [];
 
-  for (const change of scenarioOf(name).changes(nowMs)) {
+  for (const change of scenario.changes(nowMs, place.center)) {
     const { type } = change;
     if (seen.has(type)) throw new Error(`scenario ${name} changes ${type} twice`);
     seen.add(type);
+    if (!place.types.includes(type)) {
+      leftOut.push(type);
+      continue;
+    }
     const list = result[type] ?? [];
     const [newest, ...older] = list;
     const dropAll = () => changes.deletes.push(...list.map((row) => ({ type, id: row.id })));
@@ -195,18 +238,18 @@ export function planScenario(name, rows, now) {
         throw new Error(`scenario ${name}: unknown change ${change.kind}`);
     }
   }
-  return { rows: result, changes };
+  return { rows: result, changes, leftOut };
 }
 
 /**
- * Reads the rows `name` changes from `store` ({ rows(type), write(changes) },
- * lib/snapshot-store.mjs in a run), plans the scenario at `now` and writes
- * its changes. Returns the changes.
+ * Reads the rows `name` changes for the place's city from `store`
+ * ({ rows(type), write(changes) }, lib/snapshot-store.mjs in a run), plans
+ * the scenario at `now` and writes its changes. Returns the changes.
  */
-export async function applyScenario(store, name, now) {
+export async function applyScenario(store, name, now, place) {
   const rows = {};
-  for (const type of scenarioTypes(name)) rows[type] = await store.rows(type);
-  const { changes } = planScenario(name, rows, now);
+  for (const type of scenarioTypes(name, place)) rows[type] = await store.rows(type);
+  const { changes } = planScenario(name, rows, now, place);
   await store.write(changes);
   return changes;
 }

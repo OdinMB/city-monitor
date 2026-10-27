@@ -18,7 +18,7 @@ import {
   saveSocialAtlas, saveSummary, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
   saveWeather,
 } from '../db/writes.js';
-import type { SyntheticData } from './generate.js';
+import type { CitySyntheticData } from './generate.js';
 import { assertLocalDatabaseUrl } from './local-guard.js';
 
 /** Every table in the Drizzle schema. Drizzle's own migrations journal is not one of them. */
@@ -64,7 +64,11 @@ export async function wipeDatabase(local: LocalDatabase): Promise<void> {
   await local.db.execute(sql`TRUNCATE TABLE ${sql.join(APP_TABLES, sql`, `)} RESTART IDENTITY`);
 }
 
-export async function seedDatabase(local: LocalDatabase, data: SyntheticData): Promise<void> {
+/**
+ * Writes one city's data set. A data set it lacks (one production holds for
+ * another city only) gets no row, as for a city whose job never wrote one.
+ */
+export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData): Promise<void> {
   assertChecked(local);
   const { db } = local;
   const { cityId } = data;
@@ -76,39 +80,41 @@ export async function seedDatabase(local: LocalDatabase, data: SyntheticData): P
     );
   }
 
-  await saveNewsItems(db, cityId, data.news);
+  if (data.news) await saveNewsItems(db, cityId, data.news);
   const { summary } = data;
-  for (const [lang, briefing] of Object.entries(summary.briefings)) {
-    await saveSummary(
-      db, cityId, lang,
-      { briefing, headlineCount: summary.headlineCount, headlineHash: summary.headlineHash },
-      summary.model, { input: 0, output: 0 }, summary.generatedAt,
-    );
+  if (summary) {
+    for (const [lang, briefing] of Object.entries(summary.briefings)) {
+      await saveSummary(
+        db, cityId, lang,
+        { briefing, headlineCount: summary.headlineCount, headlineHash: summary.headlineHash },
+        summary.model, { input: 0, output: 0 }, summary.generatedAt,
+      );
+    }
   }
-  await saveEvents(db, cityId, 'synthetic', data.events);
-  await saveSafetyReports(db, cityId, data.safety);
+  if (data.events) await saveEvents(db, cityId, 'synthetic', data.events);
+  if (data.safety) await saveSafetyReports(db, cityId, data.safety);
 
-  await saveWeather(db, cityId, data.weather);
-  await saveAirQualityGrid(db, cityId, data.airQualityGrid);
-  await saveTransitAlerts(db, cityId, data.transit);
-  await saveNinaWarnings(db, cityId, data.nina);
-  await saveWaterLevels(db, cityId, data.waterLevels);
-  await saveAppointments(db, cityId, data.appointments);
-  await saveBudget(db, cityId, data.budget);
-  await saveConstructionSites(db, cityId, data.construction);
-  await saveTrafficIncidents(db, cityId, data.traffic);
-  await savePharmacies(db, cityId, data.pharmacies);
-  await saveAeds(db, cityId, data.aeds);
-  await saveSocialAtlas(db, cityId, data.socialAtlas);
-  await savePopulation(db, cityId, data.population.geojson, data.population.summary);
-  await saveWastewater(db, cityId, data.wastewater);
-  await saveBathingSpots(db, cityId, data.bathing);
-  await saveLaborMarket(db, cityId, data.laborMarket);
-  await saveFeuerwehr(db, cityId, data.feuerwehr);
-  await savePollen(db, cityId, data.pollen);
-  await saveNoiseSensors(db, cityId, data.noiseSensors);
-  await saveCouncilMeetings(db, cityId, data.councilMeetings);
-  for (const [level, districts] of Object.entries(data.political)) {
+  if (data.weather) await saveWeather(db, cityId, data.weather);
+  if (data.airQualityGrid) await saveAirQualityGrid(db, cityId, data.airQualityGrid);
+  if (data.transit) await saveTransitAlerts(db, cityId, data.transit);
+  if (data.nina) await saveNinaWarnings(db, cityId, data.nina);
+  if (data.waterLevels) await saveWaterLevels(db, cityId, data.waterLevels);
+  if (data.appointments) await saveAppointments(db, cityId, data.appointments);
+  if (data.budget) await saveBudget(db, cityId, data.budget);
+  if (data.construction) await saveConstructionSites(db, cityId, data.construction);
+  if (data.traffic) await saveTrafficIncidents(db, cityId, data.traffic);
+  if (data.pharmacies) await savePharmacies(db, cityId, data.pharmacies);
+  if (data.aeds) await saveAeds(db, cityId, data.aeds);
+  if (data.socialAtlas) await saveSocialAtlas(db, cityId, data.socialAtlas);
+  if (data.population) await savePopulation(db, cityId, data.population.geojson, data.population.summary);
+  if (data.wastewater) await saveWastewater(db, cityId, data.wastewater);
+  if (data.bathing) await saveBathingSpots(db, cityId, data.bathing);
+  if (data.laborMarket) await saveLaborMarket(db, cityId, data.laborMarket);
+  if (data.feuerwehr) await saveFeuerwehr(db, cityId, data.feuerwehr);
+  if (data.pollen) await savePollen(db, cityId, data.pollen);
+  if (data.noiseSensors) await saveNoiseSensors(db, cityId, data.noiseSensors);
+  if (data.councilMeetings) await saveCouncilMeetings(db, cityId, data.councilMeetings);
+  for (const [level, districts] of Object.entries(data.political ?? {})) {
     await savePoliticalDistricts(db, cityId, level, districts);
   }
 }

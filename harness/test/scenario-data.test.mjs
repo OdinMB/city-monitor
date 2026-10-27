@@ -10,29 +10,42 @@ import { OUTAGE_AGE, SCENARIO_NAMES, SNAPSHOT } from '../lib/scenarios.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const HOUR = 3_600_000;
 
-// What the API would serve after each scenario, on the real synthetic seed
-// (see helpers/scenario-data.mjs, which loads the product's TypeScript through tsx).
-let out;
-before(() => {
+// What the API would serve after each scenario, on the real synthetic seed of
+// one city (see helpers/scenario-data.mjs, which loads the product's TypeScript
+// through tsx): Berlin with no city given, as a run without --city.
+function scenarioData(...args) {
   // tsx keeps its cache in the temporary folder; give it its own and remove it
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'harness-test-'));
   try {
-    const stdout = execFileSync(process.execPath, [path.join(here, 'helpers', 'scenario-data.mjs')], {
+    const stdout = execFileSync(process.execPath, [path.join(here, 'helpers', 'scenario-data.mjs'), ...args], {
       env: { PATH: process.env.PATH ?? '', HOME: tmp, TMPDIR: tmp },
       encoding: 'utf8',
       timeout: 90_000,
       maxBuffer: 64 * 1024 * 1024,
     });
-    out = JSON.parse(stdout.trim().split('\n').pop());
+    return JSON.parse(stdout.trim().split('\n').pop());
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
+}
+
+let out;
+let hamburg;
+before(() => {
+  out = scenarioData();
+  hamburg = scenarioData('hamburg');
 });
 
 const servedOf = (name, type) => out.scenarios[name].served[type].served;
 const seedOf = (type) => out.seed[type].served;
 
 describe('the scenarios on the synthetic seed', () => {
+  it('run on Berlin when no city is given, leaving nothing out', () => {
+    assert.equal(out.city, 'berlin');
+    assert.deepEqual(out.place.types, Object.values(SNAPSHOT));
+    for (const name of SCENARIO_NAMES) assert.deepEqual(out.scenarios[name].leftOut, [], name);
+  });
+
   it('the seed itself holds every type, fresh and valid', () => {
     for (const type of Object.values(SNAPSHOT)) {
       const s = seedOf(type);
@@ -156,6 +169,84 @@ describe('the statements a run sends for each scenario', () => {
     for (const name of SCENARIO_NAMES.filter((n) => n !== 'default')) {
       const writes = out.scenarios[name].sql.filter(({ sql }) => !sql.startsWith('select'));
       assert.ok(writes.length > 0, name);
+    }
+  });
+});
+
+describe('the scenarios on a city with no transit source (Hamburg)', () => {
+  const served = (name, type) => hamburg.scenarios[name].served[type].served;
+  const held = [SNAPSHOT.weather, SNAPSHOT.nina, SNAPSHOT.waterLevels];
+  const inBox = ([lon, lat]) => {
+    const { north, south, east, west } = hamburg.boundingBox;
+    return lat > south && lat < north && lon > west && lon < east;
+  };
+
+  it('the seed holds weather, civil-protection and water-level data, fresh and valid, and no transit at all', () => {
+    assert.equal(hamburg.city, 'hamburg');
+    assert.deepEqual(hamburg.place.types, held);
+    for (const type of held) {
+      assert.equal(hamburg.seed[type].served?.ageMs, 0, type);
+      assert.equal(hamburg.seed[type].served.valid, true, type);
+    }
+    assert.deepEqual(hamburg.seed[SNAPSHOT.transit], { rowCount: 0, served: null });
+    assert.ok(hamburg.seed[SNAPSHOT.weather].served.data.alerts.length > 0, 'the seed has a weather warning');
+    assert.ok(hamburg.seed[SNAPSHOT.nina].served.data.length > 0, 'the seed has a civil-protection warning');
+  });
+
+  it('every scenario leaves transit out, serves none, and plans the same twice', () => {
+    for (const name of SCENARIO_NAMES) {
+      const scenario = hamburg.scenarios[name];
+      assert.equal(scenario.deterministic, true, name);
+      assert.ok(!scenario.types.includes(SNAPSHOT.transit), name);
+      assert.deepEqual(scenario.served[SNAPSHOT.transit], { rowCount: 0, served: null }, name);
+      for (const type of held) {
+        const s = scenario.served[type].served;
+        if (s) assert.equal(s.valid, true, `${name} ${type}`);
+      }
+    }
+    for (const name of ['quiet', 'outage', 'no-data']) assert.deepEqual(hamburg.scenarios[name].leftOut, [SNAPSHOT.transit], name);
+    for (const name of ['default', 'storm']) assert.deepEqual(hamburg.scenarios[name].leftOut, [], name);
+  });
+
+  it('the rest of each scenario applies as in Berlin', () => {
+    assert.deepEqual(hamburg.scenarios.default.served, hamburg.seed);
+    assert.deepEqual(served('quiet', SNAPSHOT.weather).data.alerts, []);
+    assert.deepEqual(served('quiet', SNAPSHOT.nina).data, []);
+    assert.equal(served('outage', SNAPSHOT.weather).ageMs, OUTAGE_AGE.weather);
+    assert.ok(served('outage', SNAPSHOT.weather).ageMs > hamburg.staleAfter.weather + HOUR, 'weather reads as stale');
+    assert.equal(served('outage', SNAPSHOT.waterLevels), null);
+    assert.equal(served('storm', SNAPSHOT.weather).data.alerts.length, 5);
+    for (const type of [SNAPSHOT.weather, SNAPSHOT.nina]) {
+      assert.equal(hamburg.scenarios['no-data'].served[type].rowCount, 0, type);
+    }
+    for (const name of SCENARIO_NAMES) {
+      for (const type of held) {
+        if (hamburg.scenarios[name].types.includes(type)) continue;
+        assert.deepEqual(hamburg.scenarios[name].served[type], hamburg.seed[type], `${name} ${type}`);
+      }
+    }
+  });
+
+  it('storm: the civil-protection warning covers central Hamburg, inside the city\'s bounding box', () => {
+    const [warning] = served('storm', SNAPSHOT.nina).data;
+    const [ring] = warning.area.geometry.coordinates;
+    assert.ok(ring.every(inBox), JSON.stringify(ring));
+    const lons = ring.map(([lon]) => lon);
+    const lats = ring.map(([, lat]) => lat);
+    const { lat, lon } = hamburg.place.center;
+    assert.ok(Math.min(...lons) < lon && Math.max(...lons) > lon && Math.min(...lats) < lat && Math.max(...lats) > lat);
+    const [berlinRing] = servedOf('storm', SNAPSHOT.nina).data[0].area.geometry.coordinates;
+    assert.notDeepEqual(ring, berlinRing);
+  });
+
+  it('every statement names Hamburg and a type it holds; none names transit', () => {
+    for (const name of SCENARIO_NAMES) {
+      for (const { sql: text, params } of hamburg.scenarios[name].sql) {
+        assert.ok(params.includes('hamburg'), `${name}: ${text}`);
+        assert.ok(!params.includes('berlin'), `${name}: ${text}`);
+        assert.ok(!params.includes(SNAPSHOT.transit), `${name}: ${text}`);
+        assert.ok(params.some((p) => held.includes(p)), `${name}: ${text}`);
+      }
     }
   });
 });

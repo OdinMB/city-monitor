@@ -5,11 +5,14 @@
  * packages/web/vite.config.ts, which loads .env files from the working folder,
  * proxies /api to localhost:3001 and writes per-route pages into dist/. Here:
  * no .env file is read (envDir: false), the output and Vite's cache go under
- * the run, and `shared` resolves to its sources. VITE_API_BASE
- * stays unset, so the app calls /api on its own origin: the harness's server.
+ * the run, `shared` resolves to its sources, and the run's city is the one
+ * active city (lib/cities.mjs; the config file itself is not changed).
+ * VITE_API_BASE stays unset, so the app calls /api on its own origin: the
+ * harness's server.
  */
 
 import fs from 'node:fs';
+import { activeCitiesPlugin } from './cities.mjs';
 import { assertGuard, GuardError } from './guard.mjs';
 import { MARKERS } from './processes.mjs';
 import { REPO } from './paths.mjs';
@@ -27,6 +30,12 @@ try {
 } catch (err) {
   refuse(err);
 }
+let activeCities;
+try {
+  activeCities = activeCitiesPlugin(spec.cities);
+} catch (err) {
+  refuse(err.message);
+}
 console.log(`${MARKERS.guardOk} web-build`);
 
 const { build } = await import('vite');
@@ -42,7 +51,7 @@ await build({
   mode: 'production',
   logLevel: 'warn',
   clearScreen: false,
-  plugins: [react(), tailwindcss()],
+  plugins: [activeCities, react(), tailwindcss()],
   resolve: {
     alias: [
       { find: /^@city-monitor\/shared\/schemas\.js$/, replacement: `${REPO.shared}/schemas.ts` },

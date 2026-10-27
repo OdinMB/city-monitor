@@ -5,6 +5,7 @@
  * from index.ts and never loads this file.
  *
  * Usage (from the repo root): npm run dev:synthetic
+ *   npm run dev:synthetic -- --city hamburg   # the city `db:seed -- --city hamburg` seeded
  */
 
 import { CK } from './lib/cache-keys.js';
@@ -12,7 +13,8 @@ import { createLogger } from './lib/logger.js';
 import { assertLocalDatabaseUrl, blockExternalFetch, syntheticDatabaseUrl } from './synthetic/local-guard.js';
 
 const log = createLogger('synthetic');
-const CITY = 'berlin';
+const cityArg = process.argv.indexOf('--city');
+const CITY = cityArg === -1 ? 'berlin' : String(process.argv[cityArg + 1]);
 
 process.on('unhandledRejection', (reason) => {
   log.error('unhandled rejection — exiting', reason);
@@ -28,6 +30,8 @@ try {
   blockExternalFetch();
 
   // Imported only now, so no module of the app sees the environment or fetch from before
+  const { getCityConfig } = await import('./config/index.js');
+  if (getCityConfig(CITY)?.id !== CITY) throw new Error(`--city ${CITY}: not a city in config/index.ts`);
   const { createApp } = await import('./app.js');
   const { generateSyntheticAirQuality, seedFromModel } = await import('./synthetic/generate.js');
   const { app, cache } = await createApp({ synthetic: true });
@@ -40,7 +44,7 @@ try {
   const port = Number(process.env.PORT) || 3001;
   app.listen(port, () => {
     const { host, pathname } = new URL(url);
-    log.info(`synthetic mode on port ${port}: database ${host}${pathname} (seed ${seed}), no ingestion, outbound requests blocked`);
+    log.info(`synthetic mode on port ${port}: ${CITY}, database ${host}${pathname} (seed ${seed}), no ingestion, outbound requests blocked`);
   });
 } catch (err) {
   log.error('startup failed', err);

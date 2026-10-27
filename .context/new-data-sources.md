@@ -43,7 +43,7 @@ Follow every step when adding a new data source. Skip items marked with a surfac
 
 24. **Unit tests** — test CSV/XLSX/JSON parsing logic with mock data, test summary aggregation, test edge cases (empty data, malformed rows)
 25. **Integration test** — test REST endpoint with mock cache/DB
-26. **Synthetic data** — add plausible, clearly fake data to `packages/server/src/synthetic/generate.ts` and write it in `seed.ts` ([dev-database.md](dev-database.md)). `seed.test.ts` fails until every `SNAPSHOT_TYPES` entry is seeded.
+26. **Synthetic data** — add plausible, clearly fake data to `packages/server/src/synthetic/generate.ts`, with the cities it covers in `COVERED` there, and write it in `seed.ts` ([dev-database.md](dev-database.md)). `seed.test.ts` fails until every `SNAPSHOT_TYPES` entry is seeded.
 
 ### DB Migration (production)
 

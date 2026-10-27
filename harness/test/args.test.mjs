@@ -8,6 +8,7 @@ describe('parseArgs', () => {
 
   it('fills the defaults', () => {
     const args = parseArgs(['--out', '/tmp/o']);
+    assert.equal(args.city, 'berlin');
     assert.deepEqual(args.paths, ['/berlin']);
     assert.deepEqual(args.viewports, [{ width: 1440, height: 900 }]);
     assert.deepEqual(args.langs, ['de']);
@@ -54,6 +55,35 @@ describe('parseArgs', () => {
     assert.throws(() => parseArgs(['--out', 'o', '--scenario', 'quiet', '--scenario', 'storm']), /given twice/);
     assert.throws(() => parseArgs(['--out', 'o', '--scenario']), /needs a value/);
     assert.match(USAGE, new RegExp(`--scenario <name> .*${SCENARIO_NAMES.join(' \\| ')}`));
+  });
+
+  it('takes a configured city, whose dashboard is then the default page', () => {
+    for (const argv of [['--city', 'hamburg'], ['--city=hamburg']]) {
+      const args = parseArgs(['--out', 'o', ...argv]);
+      assert.equal(args.city, 'hamburg');
+      assert.deepEqual(args.paths, ['/hamburg']);
+    }
+    assert.deepEqual(parseArgs(['--out', 'o', '--city', 'berlin']).paths, ['/berlin']);
+    const explicit = parseArgs(['--out', 'o', '--city', 'hamburg', '--path', '/hamburg/sources', '--path', '/berlin']);
+    assert.deepEqual(explicit.paths, ['/hamburg/sources', '/berlin'], 'given paths are kept as given');
+  });
+
+  it('refuses a city both packages do not register, with the list', () => {
+    for (const bad of ['atlantis', 'Hamburg', 'berlin,hamburg', '__proto__', 'constructor', '../berlin', '']) {
+      assert.throws(() => parseArgs(['--out', 'o', `--city=${bad}`]), (err) => err instanceof UsageError
+        && err.message.startsWith(`--city ${bad}: use one of berlin, hamburg (`), JSON.stringify(bad));
+    }
+    assert.throws(() => parseArgs(['--out', 'o', '--city']), /needs a value/);
+    assert.throws(() => parseArgs(['--out', 'o', '--city', 'berlin', '--city', 'hamburg']), /given twice/);
+    assert.throws(() => parseArgs(['--out', 'o', '--city', '--path', '/x']), /needs a value/);
+  });
+
+  it('checks the city against the list it is given', () => {
+    assert.equal(parseArgs(['--out', 'o', '--city', 'teststadt'], { cities: ['teststadt'] }).city, 'teststadt');
+    assert.throws(() => parseArgs(['--out', 'o'], { cities: ['hamburg'] }), /--city berlin: use one of hamburg /, 'the default too');
+    assert.throws(() => parseArgs(['--out', 'o', '--city', 'hamburg'], { cities: [] }), UsageError);
+    assert.match(USAGE, /--city <id> .*default berlin/);
+    assert.match(USAGE, /--path <path> .*default \/<city>/);
   });
 
   it('accepts each guard test case and refuses others', () => {

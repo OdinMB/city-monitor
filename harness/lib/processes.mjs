@@ -116,4 +116,5 @@ export const MARKERS = Object.freeze({
   apiListening: 'harness-api-listening',
   networkProbe: 'harness-network-probe:',
   scenarioApplied: 'harness-scenario: applied',
+  scenarioLeftOut: 'harness-scenario: left out',
 });

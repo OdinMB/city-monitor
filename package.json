@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "turbo dev",
-    "dev:synthetic": "npm run build --workspace=shared && npm run dev:synthetic --workspace=packages/server",
+    "dev:synthetic": "npm run build --workspace=shared && npm run dev:synthetic --workspace=packages/server --",
     "db:seed": "npm run build --workspace=shared && npm run db:seed --workspace=packages/server --",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
