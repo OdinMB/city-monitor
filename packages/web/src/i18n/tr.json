@@ -318,22 +318,28 @@
         "local": "Yerel"
       },
       "hours24_7": "7/24",
-      "hoursDaily": "günlük 16–0",
       "hoursMoSa": "Pzt–Cmt 14–20",
+      "hoursDaily17_19": "günlük 17–19",
       "showMore": "{{count}} daha",
-      "localNote": "Berliner Krisendienst — acil psikiyatrik destek için 9 bölgesel ofis. Günlük 16–0 · Bu saatler dışında psikiyatri acil servisleri.",
+      "emergency": "Acil durum numaraları",
+      "website": "Resmî web sitesi: {{name}}",
+      "regionalSites": "Bölge merkezleri",
+      "localNote": "Berliner Krisendienst — ruhsal krizlerde ilçeye göre acil yardım. Bölge merkezleri: her gün 16–24. Geceleri ve hafta sonları ile tatil günlerinde gündüz: nöbetçi servis, aşağıdaki resmî web sitesine bakın.",
+      "checked": "Numaralar en son kontrol edildi: {{date}}",
       "service": {
+        "fireAmbulance": "İtfaiye ve ambulans",
+        "police": "Polis",
         "telefonSeelsorge": "Kriz Hattı",
         "krisendienst": "Berlin Kriz Servisi",
         "bigHotline": "Aile İçi Şiddet Hattı",
+        "hilfetelefon": "Kadına Yönelik Şiddet Yardım Hattı",
         "kindernotdienst": "Çocuk Acil Hizmeti",
         "jugendnotdienst": "Gençlik Acil Hizmeti",
         "kinderJugendtelefon": "Çocuk/Gençlik Hattı",
         "drogennotdienst": "Uyuşturucu Acil Hizmeti",
         "maneo": "Şiddete Karşı (LGBTİ+)",
         "schwulenberatung": "LGBTİ+ Danışmanlık"
-      },
-      "source": "berlin.de"
+      }
     },
     "bathing": {
       "title": "Yüzme Suyu",

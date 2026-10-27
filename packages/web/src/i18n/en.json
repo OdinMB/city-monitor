@@ -321,22 +321,28 @@
         "local": "Local"
       },
       "hours24_7": "24/7",
-      "hoursDaily": "daily 4pm–12am",
       "hoursMoSa": "Mon–Sat 2–8pm",
+      "hoursDaily17_19": "daily 5–7pm",
       "showMore": "{{count}} more",
-      "localNote": "Berliner Krisendienst — 9 regional offices for immediate psychiatric crisis support. Daily 4pm–12am · Psychiatric emergency rooms outside these hours.",
+      "emergency": "Emergency numbers",
+      "website": "Official website: {{name}}",
+      "regionalSites": "Regional sites",
+      "localNote": "Berliner Krisendienst — immediate help in a mental-health crisis, by district. Regional sites: daily 4pm–midnight. Nights, and daytime on weekends and holidays: the on-call service, see the official website below.",
+      "checked": "Numbers last checked: {{date}}",
       "service": {
+        "fireAmbulance": "Fire & ambulance",
+        "police": "Police",
         "telefonSeelsorge": "Crisis Helpline",
         "krisendienst": "Berlin Crisis Service",
         "bigHotline": "Domestic Violence Hotline",
+        "hilfetelefon": "Violence Against Women Helpline",
         "kindernotdienst": "Child Emergency Service",
         "jugendnotdienst": "Youth Emergency Service",
         "kinderJugendtelefon": "Children/Youth Helpline",
         "drogennotdienst": "Drug Emergency Service",
         "maneo": "Anti-Violence (LGBTQ+)",
         "schwulenberatung": "LGBTQ+ Counseling"
-      },
-      "source": "berlin.de"
+      }
     },
     "bathing": {
       "title": "Bathing Water",
