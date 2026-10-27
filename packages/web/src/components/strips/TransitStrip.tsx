@@ -4,6 +4,7 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTransit } from '../../hooks/useTransit.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
+import { formatClockTime } from '../../lib/format-time.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
@@ -93,12 +94,31 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
   );
 });
 
+/**
+ * What the tile says when there are no alerts. "All clear" only for fresh
+ * data, with the time of the check; with no data at all (nothing ingested
+ * yet, or no transit source for the city: the API sends `fetchedAt: null`)
+ * it says so; on stale data only the "may be outdated" note.
+ */
+function EmptyState({ hasData, outdatedNote, checkedTime }: { hasData: boolean; outdatedNote: string | null; checkedTime: string }) {
+  const { t } = useTranslation();
+  if (!hasData) return <p className="text-sm text-muted py-2 text-center flex-1">{t('panel.transit.noData')}</p>;
+  if (outdatedNote) return <p className="text-sm text-warning py-2 text-center flex-1">{outdatedNote}</p>;
+  return (
+    <div className="py-2 text-center flex-1">
+      <p className="text-sm text-muted">{t('panel.transit.allClear')}</p>
+      <p className="text-xs text-muted mt-0.5">{t('panel.transit.checkedAt', { time: checkedTime })}</p>
+    </div>
+  );
+}
+
+// Past this age the footer says "outdated" and the tile no longer says "all clear".
 const FRESH_MAX_AGE = staleAfter('transit');
 
 export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
-  const { id: cityId } = useCityConfig();
+  const { id: cityId, timezone } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useTransit(cityId);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   const alerts = data ?? [];
@@ -114,12 +134,16 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
 
   if (isLoading) return <Skeleton lines={4} />;
 
+  const checkedTime = fetchedAt ? formatClockTime(fetchedAt, i18n.language, timezone) : '';
+  const outdatedNote = isStale ? t('panel.transit.mayBeOutdated', { time: checkedTime }) : null;
+
   return (
     <>
       {sorted.length === 0 ? (
-        <p className="text-sm text-muted py-2 text-center flex-1">{t('panel.transit.empty')}</p>
+        <EmptyState hasData={!!fetchedAt} outdatedNote={outdatedNote} checkedTime={checkedTime} />
       ) : (
         <div>
+          {outdatedNote && <p className="text-xs text-warning pb-1.5">{outdatedNote}</p>}
           {visible.map((alert) => (
             <AlertRow key={alert.id} alert={alert} />
           ))}

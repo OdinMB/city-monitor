@@ -4,8 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import i18n from 'i18next';
 import type { ReactNode } from 'react';
-import type { ApiResponse, TransitAlert } from '@city-monitor/shared';
+import type { ApiResponse, CityConfig, TransitAlert } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
+import { CityContext } from '../../hooks/CityContext.js';
+import { hamburg } from '../../config/cities/hamburg.js';
+import { staleAfter } from '../../lib/freshness.js';
 import { TransitStrip } from './TransitStrip.js';
 
 const ALERT: TransitAlert = {
@@ -21,15 +24,25 @@ const ALERT: TransitAlert = {
   affectedStops: [],
 };
 
-function createWrapper(alerts: TransitAlert[]) {
+/**
+ * Berlin by default. `fetchedAt` defaults to now; null is what the API sends
+ * when it has no transit data. `city` sets the config directly, for a city
+ * that is not active yet.
+ */
+function createWrapper(
+  alerts: TransitAlert[],
+  { fetchedAt = new Date().toISOString(), city }: { fetchedAt?: string | null; city?: CityConfig } = {},
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const response: ApiResponse<TransitAlert[]> = { data: alerts, fetchedAt: new Date().toISOString() };
-  queryClient.setQueryData(['transit', 'berlin'], response);
+  const response: ApiResponse<TransitAlert[]> = { data: alerts, fetchedAt };
+  queryClient.setQueryData(['transit', city?.id ?? 'berlin'], response);
 
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <CityProvider cityId="berlin">{children}</CityProvider>
+        {city
+          ? <CityContext.Provider value={city}>{children}</CityContext.Provider>
+          : <CityProvider cityId="berlin">{children}</CityProvider>}
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -157,5 +170,124 @@ describe('TransitStrip disruption rows', () => {
 
     fireEvent.click(rowToggle(ALERT.message));
     expect(screen.getByText(ALERT.detail).tagName).toBe('BDI');
+  });
+});
+
+describe('TransitStrip all-clear and freshness', () => {
+  const MIN = 60_000;
+  const NOW = new Date('2026-10-27T06:20:00Z'); // 07:20 in Berlin (CET)
+  const FRESH = '2026-10-27T06:12:00Z'; // 07:12 in Berlin, 8 min ago
+  const STALE = '2026-10-27T04:12:00Z'; // 05:12 in Berlin, 2 h ago
+  const minutesAgo = (m: number) => new Date(NOW.getTime() - m * MIN).toISOString();
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}));
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(async () => {
+    cleanup();
+    vi.useRealTimers();
+    await i18n.changeLanguage('en');
+  });
+
+  it('says all clear, with the time of the check on the city clock, when fresh data has no disruptions', () => {
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: FRESH }) });
+
+    expect(screen.getByText('All clear — no disruptions')).toBeTruthy();
+    expect(screen.getByText('Checked 07:12')).toBeTruthy();
+    expect(screen.queryByText(/may be outdated/)).toBeNull();
+  });
+
+  it('says there is no transit data, not all clear, before any data has arrived', () => {
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: null }) });
+
+    expect(screen.getByText('No transit data available')).toBeTruthy();
+    expect(screen.queryByText(/All clear/)).toBeNull();
+    expect(screen.queryByText(/Checked/)).toBeNull();
+  });
+
+  it('says there is no transit data for a city without a transit source', () => {
+    // Hamburg has no transit source; the API answers { data: [], fetchedAt: null } for it.
+    expect(hamburg.dataSources.transit).toBeUndefined();
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: null, city: hamburg }) });
+
+    expect(screen.getByText('No transit data available')).toBeTruthy();
+    expect(screen.queryByText(/All clear/)).toBeNull();
+  });
+
+  it('never says all clear on stale data: an empty list shows the outdated note instead', () => {
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: STALE }) });
+
+    expect(screen.getByText('Data may be outdated (last checked 05:12)')).toBeTruthy();
+    expect(screen.queryByText(/All clear/)).toBeNull();
+    expect(screen.queryByText('No transit data available')).toBeNull();
+  });
+
+  it('shows stale disruptions with the outdated note above them', () => {
+    render(<TransitStrip />, { wrapper: createWrapper([ALERT], { fetchedAt: STALE }) });
+
+    const note = screen.getByText('Data may be outdated (last checked 05:12)');
+    const row = rowToggle(ALERT.message);
+    expect(note.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByText(/All clear/)).toBeNull();
+  });
+
+  it('shows fresh disruptions without a note', () => {
+    render(<TransitStrip />, { wrapper: createWrapper([ALERT], { fetchedAt: FRESH }) });
+
+    expect(rowToggle(ALERT.message)).toBeTruthy();
+    expect(screen.queryByText(/may be outdated/)).toBeNull();
+    expect(screen.queryByText(/All clear/)).toBeNull();
+  });
+
+  it('turns all clear into the outdated note once the data is older than the transit threshold', () => {
+    const limit = staleAfter('transit') / MIN;
+
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: minutesAgo(limit) }) });
+    expect(screen.getByText('All clear — no disruptions')).toBeTruthy();
+    cleanup();
+
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: minutesAgo(limit + 1) }) });
+    expect(screen.queryByText(/All clear/)).toBeNull();
+    expect(screen.getByText(/^Data may be outdated \(last checked \d\d:\d\d\)$/)).toBeTruthy();
+  });
+
+  it('dates the last check when it was not today', () => {
+    const twoDaysAgo = '2026-10-25T04:12:00Z';
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: twoDaysAgo }) });
+
+    const when = new Date(twoDaysAgo).toLocaleString('en', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Berlin',
+    });
+    expect(screen.getByText(`Data may be outdated (last checked ${when})`)).toBeTruthy();
+  });
+
+  it.each(['de', 'en', 'tr', 'ar'])('has each state translated (%s)', async (lang) => {
+    for (const key of ['allClear', 'checkedAt', 'noData', 'mayBeOutdated']) {
+      const value = i18n.getResource(lang, 'translation', `panel.transit.${key}`);
+      expect(typeof value, `${lang}: panel.transit.${key}`).toBe('string');
+      expect((value as string).length).toBeGreaterThan(0);
+      if (key === 'checkedAt' || key === 'mayBeOutdated') expect(value).toContain('{{time}}');
+    }
+
+    await i18n.changeLanguage(lang);
+    const time = new Date(FRESH).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Berlin' });
+    const staleTime = new Date(STALE).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Berlin' });
+
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: FRESH }) });
+    expect(screen.getByText(i18n.t('panel.transit.allClear'))).toBeTruthy();
+    expect(screen.getByText(i18n.t('panel.transit.checkedAt', { time }))).toBeTruthy();
+    cleanup();
+
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: null }) });
+    expect(screen.getByText(i18n.t('panel.transit.noData'))).toBeTruthy();
+    cleanup();
+
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: STALE }) });
+    expect(screen.getByText(i18n.t('panel.transit.mayBeOutdated', { time: staleTime }))).toBeTruthy();
+    expect(document.body.textContent).not.toContain('panel.transit');
   });
 });

@@ -127,7 +127,10 @@
     },
     "transit": {
       "title": "Public Transport",
-      "empty": "All clear — no disruptions",
+      "allClear": "All clear — no disruptions",
+      "checkedAt": "Checked {{time}}",
+      "noData": "No transit data available",
+      "mayBeOutdated": "Data may be outdated (last checked {{time}})",
       "affectedStops": "Affected stops",
       "more": "more",
       "station": "Reported at"

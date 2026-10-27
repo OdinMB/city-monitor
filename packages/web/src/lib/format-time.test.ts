@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import i18n from 'i18next';
-import { formatRelativeTimeI18n } from './format-time.js';
+import { formatClockTime, formatRelativeTimeI18n } from './format-time.js';
 
 function ago(ms: number): string {
   return new Date(Date.now() - ms).toISOString();
@@ -55,5 +55,51 @@ describe('formatRelativeTimeI18n in Arabic', () => {
     [11 * DAY, 'منذ 11 يومًا'],
   ])('%i ms ago uses the matching plural form', (ms, expected) => {
     expect(formatRelativeTimeI18n(ago(ms), t)).toBe(expected);
+  });
+});
+
+describe('formatClockTime', () => {
+  const BERLIN = 'Europe/Berlin';
+  const now = Date.parse('2026-10-27T06:20:00Z'); // 07:20 in Berlin (CET)
+
+  it('gives the time on the city clock, not the browser clock', () => {
+    expect(formatClockTime('2026-10-27T06:12:00Z', 'en', BERLIN, now)).toBe('07:12');
+    expect(formatClockTime('2026-10-27T06:12:00Z', 'en', 'Asia/Tokyo', now)).toBe('15:12');
+  });
+
+  it('follows summer time', () => {
+    expect(formatClockTime('2026-07-01T05:12:00Z', 'de', BERLIN, Date.parse('2026-07-01T05:20:00Z'))).toBe('07:12');
+  });
+
+  it('uses a 24-hour clock in every language', () => {
+    const afternoon = '2026-10-27T14:05:00Z';
+    const later = Date.parse('2026-10-27T14:10:00Z');
+    expect(formatClockTime(afternoon, 'en', BERLIN, later)).toBe('15:05');
+    expect(formatClockTime(afternoon, 'de', BERLIN, later)).toBe('15:05');
+    expect(formatClockTime(afternoon, 'tr', BERLIN, later)).toBe('15:05');
+    expect(formatClockTime(afternoon, 'ar', BERLIN, later)).toBe(
+      new Date(afternoon).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: BERLIN }),
+    );
+  });
+
+  it('decides "today" on the city clock', () => {
+    // 00:30 and 01:00 in Berlin are the same day, though in UTC 23:30 is the day before.
+    expect(formatClockTime('2026-10-26T23:30:00Z', 'en', BERLIN, Date.parse('2026-10-27T00:00:00Z'))).toBe('00:30');
+  });
+
+  it('adds the date when the time is not from today', () => {
+    const twoDaysAgo = '2026-10-25T04:12:00Z'; // 05:12 in Berlin, the day summer time ended
+    const text = formatClockTime(twoDaysAgo, 'de', BERLIN, now);
+    expect(text).toBe(
+      new Date(twoDaysAgo).toLocaleString('de', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: BERLIN }),
+    );
+    expect(text).toContain('05:12');
+    expect(text).toContain('25');
+    expect(text).not.toBe('05:12');
+  });
+
+  it('handles invalid dates gracefully', () => {
+    expect(formatClockTime('', 'en', BERLIN, now)).toBe('');
+    expect(formatClockTime('not-a-date', 'en', BERLIN, now)).toBe('');
   });
 });

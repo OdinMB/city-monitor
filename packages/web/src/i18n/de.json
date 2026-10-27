@@ -127,7 +127,10 @@
     },
     "transit": {
       "title": "Nahverkehr",
-      "empty": "Alles in Ordnung — keine Störungen",
+      "allClear": "Alles in Ordnung — keine Störungen",
+      "checkedAt": "Zuletzt geprüft: {{time}}",
+      "noData": "Keine Nahverkehrsdaten verfügbar",
+      "mayBeOutdated": "Daten möglicherweise veraltet (zuletzt geprüft: {{time}})",
       "affectedStops": "Betroffene Haltestellen",
       "more": "weitere",
       "station": "Gemeldet an der Haltestelle"
