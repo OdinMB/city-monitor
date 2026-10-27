@@ -50,6 +50,7 @@ export function TopBar() {
             open={weatherOpen}
             onOpenChange={setWeatherOpen}
             hover
+            label={t('panel.weather.title')}
             renderTrigger={(ref, props) => (
               <button
                 ref={ref as React.Ref<HTMLButtonElement>}
@@ -70,6 +71,7 @@ export function TopBar() {
             open={aqiOpen}
             onOpenChange={setAqiOpen}
             hover
+            label={t('panel.airQuality.title')}
             renderTrigger={(ref, props) => (
               <button
                 ref={ref as React.Ref<HTMLButtonElement>}

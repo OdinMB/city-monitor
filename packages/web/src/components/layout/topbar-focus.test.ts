@@ -24,4 +24,15 @@ describe('top bar keyboard focus', () => {
     // :focus-within would also pin the bar after a mouse click.
     expect(css).not.toMatch(/\.topbar-slide[^{]*:focus-within/);
   });
+
+  it('keeps the bar on screen while a chip in it has a popover open from a press or key', () => {
+    // Focus moves into the popover, which is rendered outside the bar, so the
+    // focus rule alone would slide the bar (and the popover's chip) away.
+    // Popover sets data-popover-pinned only then, not for a hover preview.
+    const css = read('../../globals.css');
+    const rule = css.match(/\.topbar-slide:has\(\.topbar-slide-bar \[data-popover-pinned\]\) \{[^}]*\}/)?.[0] ?? '';
+    expect(rule).toContain('transform: none !important;');
+    // aria-expanded is also true during a hover preview.
+    expect(css).not.toMatch(/\.topbar-slide[^{]*aria-expanded/);
+  });
 });

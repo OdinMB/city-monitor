@@ -377,6 +377,14 @@ select:focus-visible,
   transform: none !important;
 }
 
+/* A chip's popover (Popover) opened by a press or key takes focus into itself,
+   outside the bar, so also show the bar while one is open: the popover hangs
+   from its chip. Not for a hover preview, which would snap a half-slid bar into
+   view under a resting cursor. */
+.topbar-slide:has(.topbar-slide-bar [data-popover-pinned]) {
+  transform: none !important;
+}
+
 /* Custom thin scrollbar for tile content areas */
 .scrollbar-thin {
   scrollbar-width: thin;
