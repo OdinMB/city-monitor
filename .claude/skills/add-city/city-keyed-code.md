@@ -27,9 +27,8 @@ Every place outside `packages/*/src/config/cities/` that is keyed by a city ID, 
 | `SERVICES` | `packages/web/src/pages/PrivacyPage.tsx` | per browser host | A host the browser loads from (WMS layers, tiles) must be named here and in the CSP; `PrivacyPage.test.tsx` checks the two agree. |
 | `connect-src` | `render.yaml` | per browser host | The browser refuses a host the CSP's `connect-src` and `img-src` don't name. Deploy configuration. |
 | `ACTIVE_CITIES` | `render.yaml` | when activating | The blueprint's default, `berlin,hamburg`. The deployment's owner sets the live value. |
-| `DASHBOARD_ROUTES` | `packages/web/vite-plugin-seo.ts` | when activating | `/<id>` is not pre-rendered or in the sitemap. |
-| `ogImage` | `packages/web/vite.config.ts` | when activating | `/<id>` and `/<id>/sources` get no title, description or share image. |
-| `IMAGES` | `packages/web/scripts/generate-og-images.ts` | when activating | No `packages/web/public/og-<id>.png` to share. |
+| `CITY_META` | `packages/web/src/lib/seo-pages.ts` | when activating | The web build fails once the city is active: `/<id>` and `/<id>/sources` are pre-rendered and in the sitemap, with their title, description and share image, from this entry. Köln and München have theirs. |
+| `IMAGES` | `packages/web/scripts/generate-og-images.ts` | when activating | No `packages/web/public/og-<id>.png` to share, and the web build fails once the city is active. Köln and München have entries, not yet their images: `npm run generate:og` in `packages/web` makes them (it fetches its font, so it needs the network). |
 | `FAVICON_SLUGS` | `packages/web/src/lib/news-favicons.ts` | per feed | `news-favicons.test.ts` fails (`.context/news.md`, "Favicons"). |
 | `FAVICON_SOURCES` | `packages/web/scripts/fetch-favicons.ts` | per feed | No icon to download for the feed. |
 
