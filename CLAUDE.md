@@ -1,6 +1,6 @@
 # City Monitor
 
-Real-time multi-city dashboard (Berlin, Hamburg). Inspired by [World Monitor](https://worldmonitor.io).
+Real-time multi-city dashboard (Berlin, Hamburg, Köln, München; only Berlin has every source). Inspired by [World Monitor](https://worldmonitor.io).
 
 > **Dev servers are already running.** The web app (port 5173) and API server (port 3001) are up. Do **not** start additional instances via `npm run dev` or similar.
 
@@ -42,7 +42,7 @@ The server runs cron jobs that fetch external data, classify/process it, write t
 - [`.context/news.md`](.context/news.md) — RSS feed ingestion (7 Berlin + 4 Hamburg feeds), the LLM classifier, the daily briefing and its importance cut-off, and cost tracking. Check its feed-status notes before adding or changing a feed: BZ Berlin was removed because its licence forbids AI input.
 - [`.context/transit.md`](.context/transit.md) — VBB transport.rest integration, summary+station deduplication (one alert lists every affected line), German keyword classification of disruption type/severity.
 - [`.context/events-safety.md`](.context/events-safety.md) — kulturdaten.berlin events API, police RSS (Berlin + Hamburg) with district extraction, category classification.
-- [`.context/frontend.md`](.context/frontend.md) — react-router routing (`/` redirects to the default city + /:cityId), React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
+- [`.context/frontend.md`](.context/frontend.md) — react-router routing (`/` is a city picker with 2+ active cities, else redirects to the one city; /:cityId), React Query bootstrap pattern, per-domain polling hooks, Zustand theme, responsive panel grid, MapLibre GL with CARTO tiles.
 - [`.context/i18n.md`](.context/i18n.md) — react-i18next setup, 4 languages (DE/EN/TR/AR), translation key structure, language detection, testing setup.
 - [`.context/deployment.md`](.context/deployment.md) — Render.com blueprint (render.yaml), GitHub Actions CI, the one full list of environment variables and what each gates, domain setup, monitoring, and why the builds install devDependencies and call the pinned compiler (read before touching build scripts or Render build commands).
 - [`.context/geocoding.md`](.context/geocoding.md) — Nominatim-first geocoding with LocationIQ fallback, rate limiting strategy, API usage, callers.

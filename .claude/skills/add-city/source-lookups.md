@@ -22,12 +22,12 @@ How to find the identifiers the Germany-wide sources need for a German city, how
 - **Confirm:** the pair appears in that file. `ingest-pollen.ts` matches both IDs and logs "No pollen data for <id>" when none matches.
 - **Licence:** CC BY 4.0 (`.context/pollen.md`). Add the city to that file's "Region Mapping".
 
-### DWD warnings: matched by `name`
+### DWD warnings: `dataSources.weather.dwdWarnRegion`, else `name`
 
-- **How it matches:** `fetchDwdAlerts` in `ingest-weather.ts` keeps a warning when its `regionName` contains the city's `name` (case-insensitive). Regions are DWD warn cells at district level, such as "Stadt Köln".
-- **Find:** DWD's list of warn cells (`cap_warncellids_csv.csv`, linked from DWD's open-data help pages on warnings) names every cell. Find the city's row (Köln: `105315000`, "Stadt Köln") and check that `name` is contained in it.
-- **Watch for:** a surrounding district named after the city (a "Landkreis <name>") contains the name too, so the city also shows that district's warnings.
-- **Confirm:** `warnings.json` lists only regions with a warning in force, so neither it nor `check:weather` can confirm the name. The warn-cell list can.
+- **How it matches:** `fetchDwdAlerts` in `ingest-weather.ts` keeps a warning from the city's warn regions (`cityWarnRegions` in `lib/dwd-warnings.ts`). With `dwdWarnRegion`, that is the one region whose `regionName` equals it (case-insensitive); without, every region whose `regionName` contains the city's `name`. Regions are DWD warn cells at district level, such as "Stadt Köln".
+- **Find:** DWD's list of warn cells (`cap_warncellids_csv.csv`, linked from DWD's open-data help pages on warnings) names every cell. Find the city's row (Köln: `105315000`, "Stadt Köln"; München: `109162000`, "Stadt München").
+- **Fill:** a kreisfreie Stadt shares its name with the Landkreis around it ("Kreis München"), whose warnings a name match would take in, so set `dwdWarnRegion` to the city's own cell name, as Köln and München do. A city-state (Berlin, Hamburg) leaves it out and matches by `name`, which also takes in the cells it is split into.
+- **Confirm:** `warnings.json` lists only regions with a warning in force, so neither it nor `check:weather` can confirm the name. The warn-cell list can; so can a day with a warning in force there, when `check:weather` counts it under the region.
 
 ### DWD UV index: matched by `name`
 
@@ -40,7 +40,7 @@ How to find the identifiers the Germany-wide sources need for a German city, how
 - **BrightSky weather and Open-Meteo air quality** use `dataSources.weather` lat/lon. `check:weather` confirms both.
 - **WAQI stations** come from the bounding box (`ingest-air-quality-grid.ts`, needs `WAQI_API_TOKEN`). Add the city's agencies to `WAQI_AGENCIES`: the Umweltbundesamt and the state's monitoring network, checked against the stations' aqicn.org pages (`.context/weather.md`, "Credit"). Sensor.Community stations (`airQuality.sensorCommunityStations`) are optional.
 - **TomTom traffic** queries the bounding box (`ingest-traffic.ts`, needs `TOMTOM_API_KEY`).
-- **AEDs** query Overpass by `name`, at state level only (SKILL.md, "City-state assumptions").
+- **AEDs** query Overpass for the boundary whose `name` is the city's and whose `admin_level` is `dataSources.aeds.adminLevel`, 4 (a state) without it (SKILL.md, "City-state assumptions"). In German OpenStreetMap a kreisfreie Stadt is 6. Confirm that the area exists and holds defibrillators: `curl -s https://overpass-api.de/api/interpreter --data-urlencode 'data=[out:json][timeout:25];area["name"="Köln"]["admin_level"="6"]["boundary"="administrative"]->.s;node["emergency"="defibrillator"](area.s);out count;'` answers with a count above 0 (the query `ingest-aeds.ts` sends, counting instead of listing). A Landkreis named after the city has a longer name ("Landkreis München"), so the exact name keeps it out.
 - **Emergency pharmacies** search aponet.de by one central postcode: `CITY_PLZ` (`city-keyed-code.md`).
 - **Bundestag members** come from abgeordnetenwatch.de, filtered by a constituency or list label that contains `name`, and only for a city in `PARLIAMENT_CONFIG`.
 

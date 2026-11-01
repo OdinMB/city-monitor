@@ -4,6 +4,13 @@
     "noscript": "Bu site JavaScript gerektirir.",
     "scrollToDashboard": "Gösterge paneline kaydır"
   },
+  "cityPicker": {
+    "title": "City Monitor — şehrinizi seçin",
+    "intro": "Açık verilerden gerçek zamanlı gösterge panelleri: haberler, hava durumu, uyarılar ve daha fazlası. Şu anda orada neler olduğunu görmek için bir şehir seçin.",
+    "topics_one": "{{count}} konu",
+    "topics_other": "{{count}} konu",
+    "summary": "{{topics}}, örneğin {{highlights}}"
+  },
   "aiLabel": {
     "generated": "Yapay zekâ ile oluşturuldu",
     "tooltip": "Bir editör tarafından kontrol edilmedi, hatalar içerebilir."
@@ -30,6 +37,10 @@
   "topbar": {
     "language": "Dil",
     "menu": "Menü",
+    "city": {
+      "switch": "{{city}}, şehir değiştir",
+      "list": "Şehirler"
+    },
     "theme": {
       "light": "Açık",
       "dark": "Koyu",
@@ -44,6 +55,7 @@
       "headlines": "Başlıklar",
       "empty": "Makale bulunamadı",
       "generatedAgo": "{{time}} oluşturuldu",
+      "briefingOnlyIn": "Bu özet yalnızca {{language}} olarak mevcut.",
       "headlines_count": "{{count}} başlık",
       "all": "Tümü",
       "retry": "Tekrar dene",

@@ -51,9 +51,22 @@ const IMAGES: OgImageConfig[] = [
   },
   {
     filename: 'og-hamburg.png',
-    claim: 'Elbe tidal levels to HVV disruptions. Real-time city intelligence for Hamburg.',
+    claim: 'Elbe tidal levels to police reports. Real-time city intelligence for Hamburg.',
     tagline: 'City Monitor — Hamburg',
     accent: '#0284c7',
+  },
+  // Köln and München are not active yet; src/lib/seo-pages.ts asks for these once they are.
+  {
+    filename: 'og-koeln.png',
+    claim: 'Rhine water levels to civil-protection alerts. Real-time city intelligence for Köln.',
+    tagline: 'City Monitor — Köln',
+    accent: '#c8102e',
+  },
+  {
+    filename: 'og-muenchen.png',
+    claim: 'Pollen counts to civil-protection alerts. Real-time city intelligence for München.',
+    tagline: 'City Monitor — München',
+    accent: '#a16207',
   },
 ];
 

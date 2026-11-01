@@ -5,6 +5,7 @@ import de from './de.json';
 import en from './en.json';
 import tr from './tr.json';
 import ar from './ar.json';
+import { UI_LANGUAGES } from './languages.js';
 
 i18n
   .use(LanguageDetector)
@@ -17,7 +18,7 @@ i18n
       ar: { translation: ar },
     },
     fallbackLng: 'en',
-    supportedLngs: ['de', 'en', 'tr', 'ar'],
+    supportedLngs: [...UI_LANGUAGES],
     detection: {
       order: ['localStorage', 'navigator'],
       lookupLocalStorage: 'language',

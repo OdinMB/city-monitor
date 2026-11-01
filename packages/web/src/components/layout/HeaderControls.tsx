@@ -1,7 +1,10 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme.js';
-import { useOptionalCityConfig } from '../../hooks/useCityConfig.js';
+import { UI_LANGUAGES } from '../../i18n/languages.js';
+
+/** Every interface language, on every page and in every city. */
+const LANGUAGES = UI_LANGUAGES.map((code) => ({ code, label: code.toUpperCase() }));
 
 /**
  * Language switcher + theme toggle for the header.
@@ -10,11 +13,6 @@ import { useOptionalCityConfig } from '../../hooks/useCityConfig.js';
 export function HeaderControls() {
   const { theme, toggle } = useTheme();
   const { t, i18n } = useTranslation();
-  const cityConfig = useOptionalCityConfig();
-  const languages = useMemo(
-    () => (cityConfig?.languages ?? ['de', 'en']).map((code) => ({ code, label: code.toUpperCase() })),
-    [cityConfig?.languages],
-  );
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -60,7 +58,7 @@ export function HeaderControls() {
   const themeIcon = theme === 'light' ? moonIcon : sunIcon;
 
   const languageButtons = (className: string, onSelect?: () => void) =>
-    languages.map((lang) => (
+    LANGUAGES.map((lang) => (
       <button
         key={lang.code}
         onClick={() => {

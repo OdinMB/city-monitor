@@ -23,7 +23,7 @@ Both root scripts build `shared` first, because the server imports its compiled 
 
 - `synthetic/generate.ts` — `generateSyntheticCityData({ now, seed, city })`, and `generateSyntheticData({ now, seed })` for Berlin with every data set present.
   - The same seed and `now` give the same data (mulberry32), and every timestamp is relative to `now`. Berlin's data does not depend on how other cities are generated.
-  - A city gets the data sets its ingestion would write, and no others: `COVERED` holds the condition for each, mirroring the cron jobs (a `dataSources` entry, transit stations to ask, a weather provider ingest-weather has an adapter for, the country, or Berlin only), and `syntheticCoverage(city)` lists them. Hamburg has no events, transit, appointments, budget, construction, social atlas, population, wastewater, bathing, labour market, fire brigade, noise sensors, council meetings or district politics.
+  - A city gets the data sets its ingestion would write, and no others: `COVERED` holds the condition for each, mirroring the cron jobs (a `dataSources` entry, transit stations to ask, a weather provider ingest-weather has an adapter for, the country, a pharmacy postcode, or Berlin only), and `syntheticCoverage(city)` lists them. Hamburg has no events, transit, appointments, budget, construction, social atlas, population, wastewater, bathing, labour market, fire brigade, noise sensors, council meetings or district politics.
   - Places come from rough Bezirk centres inside the city's bounding box, for a city whose Bezirk outlines the web app has (Berlin, Hamburg; `generate.test.ts` checks each centre lies in its own outline). Any other city gets places spread around its centre, named after the city, and no district fields.
   - Text is German and marked `[Synthetisch]`, people are `Testperson NNN` and links go to example.com. There is no real news or police text.
   - Shapes come from `shared/types.ts`. Budget, appointments, wastewater and council meetings reuse the ingestion helpers.
@@ -83,7 +83,7 @@ After that those tiles go empty. Run `npm run db:seed` again and restart `dev:sy
 - **Rain radar:** the RainViewer router is not mounted, so the map's rain layer gets 404 for each tile it asks `/api/weather-tiles/…` for.
 - **Browser-side layers:** the web app still loads the CARTO base map tiles and the gdi.berlin.de WMS overlays (noise, rent) from the internet.
 - **Another city in the web dev server:** `npm run dev --workspace=packages/web` shows only the cities `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` lists (Berlin). The guarded browser run below makes its seeded city the active one in its own build.
-- **Local times:** the generator works out local dates and hours (today's date, the weather's daily rhythm, event and meeting times) in Europe/Berlin, whatever the city's time zone. Both configured cities use that zone.
+- **Local times:** the generator works out local dates and hours (today's date, the weather's daily rhythm, event and meeting times) in Europe/Berlin, whatever the city's time zone. Every configured city uses that zone.
 
 ## Guarded browser run
 
@@ -94,4 +94,4 @@ After that those tiles go empty. Run `npm run db:seed` again and restart `dev:sy
 Add the new source to `generate.ts` and `seed.ts` (item 26 in [new-data-sources.md](new-data-sources.md)), with its condition in `COVERED`: which cities its ingestion runs for. TypeScript refuses a data set without one.
 
 - `seed.test.ts` fails until every `SNAPSHOT_TYPES` entry is seeded, and checks which ones Hamburg gets.
-- `generate.test.ts` validates the data against the shared Zod schemas and checks the bounds and freshness, for Berlin, Hamburg and a city with no Bezirke.
+- `generate.test.ts` validates the data against the shared Zod schemas and checks the bounds and freshness, for Berlin, Hamburg and a city with no Bezirke, and checks Köln and München hold what production would hold for them.

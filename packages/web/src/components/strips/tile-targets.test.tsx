@@ -67,9 +67,10 @@ const fixtures = vi.hoisted(() => {
   return { appointments, transit, meetings, events, political, loaded };
 });
 
-vi.mock('../../hooks/useCityConfig.js', () => ({
-  useCityConfig: () => ({ id: 'berlin', name: 'Berlin' }),
-}));
+vi.mock('../../hooks/useCityConfig.js', async () => {
+  const { berlin } = await import('../../config/cities/berlin.js');
+  return { useCityConfig: () => berlin };
+});
 vi.mock('../../hooks/useAppointments.js', () => ({ useAppointments: () => fixtures.loaded(fixtures.appointments) }));
 vi.mock('../../hooks/useTransit.js', () => ({ useTransit: () => fixtures.loaded(fixtures.transit) }));
 vi.mock('../../hooks/useCouncilMeetings.js', () => ({ useCouncilMeetings: () => fixtures.loaded(fixtures.meetings) }));

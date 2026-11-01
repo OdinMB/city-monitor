@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
 import { useCityConfig } from '../hooks/useCityConfig.js';
 import { PageShell } from '../components/layout/PageShell.js';
+import { CitySwitcher } from '../components/layout/CitySwitcher.js';
+import { getAllCities } from '../config/index.js';
 import { safeUrl } from '../lib/safe-url.js';
 import { waqiAgencies } from '../lib/aqi.js';
 
@@ -16,6 +19,8 @@ interface Source {
    * the credits against the server configs.
    */
   cities?: readonly string[];
+  /** A shared source credited only where the city has this feature. */
+  requires?: CityFeature;
 }
 
 interface SourceGroup {
@@ -67,11 +72,13 @@ const SHARED_SOURCES: SourceGroup[] = [
         name: 'NINA (BBK)',
         url: 'https://warnung.bund.de/',
         description: 'Official civil protection warnings (MOWAS, BIWAPP, KATWARN) from the Federal Office of Civil Protection.',
+        requires: 'nina',
       },
       {
         name: 'aponet.de',
         url: 'https://www.aponet.de/',
         description: 'On-call emergency pharmacy locations and hours.',
+        requires: 'pharmacies',
       },
       {
         name: 'OpenStreetMap',
@@ -98,6 +105,7 @@ const SHARED_SOURCES: SourceGroup[] = [
         name: 'abgeordnetenwatch.de',
         url: 'https://www.abgeordnetenwatch.de/',
         description: 'Parliamentary representatives for Bundestag and state parliaments, mapped to city constituencies.',
+        requires: 'political',
       },
     ],
   },
@@ -278,10 +286,21 @@ const KOELN_SOURCES: SourceGroup[] = [
   },
 ];
 
+// No river gauge: the Isar through München is not a federal waterway.
+const MUENCHEN_SOURCES: SourceGroup[] = [
+  {
+    category: 'Transit & Traffic',
+    sources: [
+      { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
+    ],
+  },
+];
+
 const CITY_SOURCES: Record<string, SourceGroup[]> = {
   berlin: BERLIN_SOURCES,
   hamburg: HAMBURG_SOURCES,
   koeln: KOELN_SOURCES,
+  muenchen: MUENCHEN_SOURCES,
 };
 
 function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] {
@@ -305,10 +324,12 @@ function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] 
   }));
 }
 
-/** The groups with only the sources credited for `cityId`, leaving out a group that has none. */
-function forCity(groups: SourceGroup[], cityId: string): SourceGroup[] {
+/** The groups with only the sources credited for `city`, leaving out a group that has none. */
+function forCity(groups: SourceGroup[], city: WebCityConfig): SourceGroup[] {
+  const credited = (s: Source) =>
+    (!s.cities || s.cities.includes(city.id)) && (!s.requires || city.features.includes(s.requires));
   return groups
-    .map((group) => ({ ...group, sources: group.sources.filter((s) => !s.cities || s.cities.includes(cityId)) }))
+    .map((group) => ({ ...group, sources: group.sources.filter(credited) }))
     .filter((group) => group.sources.length > 0);
 }
 
@@ -318,7 +339,7 @@ export function SourcesPage() {
   const citySources = CITY_SOURCES[city.id] ?? [];
   const groups = forCity(
     mergeGroups([...SHARED_SOURCES, aiProcessingGroup(t)], [waqiGroup(city.id), ...citySources]),
-    city.id,
+    city,
   );
 
   const sourceCount = groups.reduce((n, g) => n + g.sources.length, 0);
@@ -334,7 +355,9 @@ export function SourcesPage() {
   }, [city.name, sourceCount]);
 
   return (
-    <PageShell>
+    <PageShell
+      besideTitle={<CitySwitcher cities={getAllCities()} placement="page-header" hideWhenAlone className="relative" />}
+    >
       <article className="space-y-10">
         <header>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">

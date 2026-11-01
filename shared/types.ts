@@ -34,6 +34,61 @@ export interface CityConfig {
   dataSources: CityDataSources;
 }
 
+/**
+ * What a city has data for, beyond what every city gets (weather, air quality,
+ * rain radar and traffic incidents). The web app
+ * shows a tile, a map layer or a sub-layer only for the features its city
+ * config lists (packages/web/src/lib/city-features.ts).
+ *
+ * Most come from the server's ingestion: `cityFeatures` in
+ * packages/server/src/lib/city-features.ts derives them from a server config,
+ * and packages/web/src/config/index.test.ts checks that each web config lists
+ * exactly those. The rest are the web app's own (WEB_ONLY_FEATURES there): a
+ * map service or a directory the browser shows for the city.
+ */
+export type CityFeature =
+  // From the server config's feeds and dataSources
+  | 'news'            // feeds: briefing, news tiles, news map layer
+  | 'police'          // dataSources.police: police reports on the map
+  | 'nina'            // dataSources.nina: civil-protection warnings
+  | 'pollen'
+  | 'waterLevels'
+  | 'transit'
+  | 'events'
+  | 'appointments'
+  | 'budget'
+  | 'roadworks'
+  | 'socialAtlas'
+  | 'noiseSensors'
+  | 'councilMeetings'
+  // The emergencies map layer's sub-layers, which German cities have
+  | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
+  | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
+  // From the political ingestion's own tables
+  | 'political'       // PARLIAMENT_CONFIG: Bundestag and state parliament members
+  | 'districtMayors'  // BEZIRKSBUERGERMEISTER
+  | 'stateByDistrict' // state members grouped by Bezirk
+  // Berlin's own sources, ingested for Berlin alone
+  | 'bathing'
+  | 'wastewater'
+  | 'laborMarket'
+  | 'population'
+  | 'feuerwehr'
+  // The web app's own
+  | 'crisis'          // the crisis-service directory
+  | 'rentMap'         // the rent map WMS
+  | 'noiseMap'        // a strategic noise map WMS (road, rail, air)
+  | 'noiseTotal';     // its all-sources layer
+
+/**
+ * A city as the web app holds it: the shared identity and map, without the
+ * server's ingestion settings (feeds, dataSources), and with the features the
+ * city has.
+ */
+export type WebCityConfig = Omit<CityConfig, 'feeds' | 'dataSources'> & {
+  features: readonly CityFeature[];
+};
+
 export interface FeedConfig {
   name: string;
   url: string;
@@ -63,7 +118,17 @@ export interface EventSourceConfig {
 }
 
 export interface CityDataSources {
-  weather: { provider: 'open-meteo' | 'brightsky'; lat: number; lon: number };
+  weather: {
+    provider: 'open-meteo' | 'brightsky';
+    lat: number;
+    lon: number;
+    /**
+     * The DWD warn region whose warnings are the city's, by its exact name in warnings.json
+     * ("Stadt München"). Without it, every region whose name contains the city's `name` counts,
+     * which suits a city-state but also takes in a Landkreis named after the city.
+     */
+    dwdWarnRegion?: string;
+  };
   airQuality?: {
     sensorCommunityStations?: Array<{ sensorId: number; name: string; fallbackIds?: number[] }>;
   };
@@ -76,6 +141,12 @@ export interface CityDataSources {
   events?: EventSourceConfig[];
   police?: { provider: 'rss'; url: string; districts?: string[] };
   nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings
+  /**
+   * Defibrillators from OpenStreetMap: the Overpass query takes the nodes inside the boundary
+   * whose `name` is the city's and whose `admin_level` is this one. Without it, 4: a state,
+   * which fits a city-state. A kreisfreie Stadt inside a state is 6 in German OSM.
+   */
+  aeds?: { adminLevel: number };
   roadworks?: { url: string };
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {

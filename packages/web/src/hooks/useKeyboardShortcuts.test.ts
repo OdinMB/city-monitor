@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts.js';
+import type { DataLayer } from './useCommandCenter.js';
 import { useShortcutSettings } from './useShortcutSettings.js';
 
 const initialShortcuts = useShortcutSettings.getState();
@@ -24,6 +25,10 @@ vi.mock('./useCommandCenter.js', () => ({
 
 // --- Helpers ---
 
+const ALL_LAYERS: ReadonlySet<DataLayer> = new Set<DataLayer>([
+  'warnings', 'news', 'traffic', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political',
+]);
+
 function fireKey(key: string, opts: Partial<KeyboardEventInit> = {}) {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, ...opts });
   document.dispatchEvent(event);
@@ -46,12 +51,12 @@ describe('useKeyboardShortcuts', () => {
   });
 
   it('returns hintsOpen as false initially', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     expect(result.current.hintsOpen).toBe(false);
   });
 
   it('returns openHints and closeHints callbacks', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     expect(typeof result.current.openHints).toBe('function');
     expect(typeof result.current.closeHints).toBe('function');
   });
@@ -59,13 +64,13 @@ describe('useKeyboardShortcuts', () => {
   // --- D key: toggle dark mode ---
 
   it('toggles dark mode when D is pressed', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => fireKey('d'));
     expect(mockToggleTheme).toHaveBeenCalledOnce();
   });
 
   it('toggles dark mode when uppercase D is pressed', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => fireKey('D'));
     expect(mockToggleTheme).toHaveBeenCalledOnce();
   });
@@ -77,7 +82,7 @@ describe('useKeyboardShortcuts', () => {
       'warnings', 'news', 'traffic', 'weather', 'air-quality',
       'noise', 'water', 'emergencies', 'social',
     ];
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
 
     for (let i = 1; i <= 9; i++) {
       act(() => fireKey(String(i)));
@@ -86,10 +91,20 @@ describe('useKeyboardShortcuts', () => {
     expect(mockToggleLayer).toHaveBeenCalledTimes(9);
   });
 
+  it('leaves a layer the city does not have alone, keeping the other numbers', () => {
+    const withoutSocial = new Set([...ALL_LAYERS].filter((layer) => layer !== 'social'));
+    renderHook(() => useKeyboardShortcuts(withoutSocial));
+
+    act(() => fireKey('9'));
+    expect(mockToggleLayer).not.toHaveBeenCalled();
+    act(() => fireKey('7'));
+    expect(mockToggleLayer).toHaveBeenCalledWith('water');
+  });
+
   // --- 0 key: clear all layers ---
 
   it('clears all layers when 0 is pressed', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => fireKey('0'));
     expect(mockSetActiveLayers).toHaveBeenCalledOnce();
     const arg = mockSetActiveLayers.mock.calls[0][0];
@@ -100,14 +115,14 @@ describe('useKeyboardShortcuts', () => {
   // --- ? key: toggle hints ---
 
   it('opens hints when ? is pressed', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     expect(result.current.hintsOpen).toBe(false);
     act(() => fireKey('?'));
     expect(result.current.hintsOpen).toBe(true);
   });
 
   it('closes hints when ? is pressed again', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => fireKey('?'));
     expect(result.current.hintsOpen).toBe(true);
     act(() => fireKey('?'));
@@ -117,7 +132,7 @@ describe('useKeyboardShortcuts', () => {
   // --- Escape key ---
 
   it('closes hints when Escape is pressed and hints are open', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => fireKey('?')); // open hints
     expect(result.current.hintsOpen).toBe(true);
     act(() => fireKey('Escape'));
@@ -125,7 +140,7 @@ describe('useKeyboardShortcuts', () => {
   });
 
   it('does nothing when Escape is pressed and hints are closed', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => fireKey('Escape'));
     expect(result.current.hintsOpen).toBe(false);
     // No errors, no side effects
@@ -136,13 +151,13 @@ describe('useKeyboardShortcuts', () => {
   // --- openHints / closeHints callbacks ---
 
   it('openHints sets hintsOpen to true', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => result.current.openHints());
     expect(result.current.hintsOpen).toBe(true);
   });
 
   it('closeHints sets hintsOpen to false', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => result.current.openHints());
     act(() => result.current.closeHints());
     expect(result.current.hintsOpen).toBe(false);
@@ -151,7 +166,7 @@ describe('useKeyboardShortcuts', () => {
   // --- Ignores input-focused events ---
 
   it('ignores key events when an input element is focused', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     const input = document.createElement('input');
     document.body.appendChild(input);
     input.focus();
@@ -163,7 +178,7 @@ describe('useKeyboardShortcuts', () => {
   });
 
   it('ignores key events when a textarea is focused', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     const textarea = document.createElement('textarea');
     document.body.appendChild(textarea);
     textarea.focus();
@@ -175,7 +190,7 @@ describe('useKeyboardShortcuts', () => {
   });
 
   it('ignores key events when a select element is focused', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     const select = document.createElement('select');
     document.body.appendChild(select);
     select.focus();
@@ -187,7 +202,7 @@ describe('useKeyboardShortcuts', () => {
   });
 
   it('ignores key events when a contenteditable element is focused', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     const div = document.createElement('div');
     div.contentEditable = 'true';
     div.tabIndex = 0;
@@ -205,19 +220,19 @@ describe('useKeyboardShortcuts', () => {
   // --- Ignores modifier keys ---
 
   it('ignores key events with ctrlKey', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => fireKey('d', { ctrlKey: true }));
     expect(mockToggleTheme).not.toHaveBeenCalled();
   });
 
   it('ignores key events with metaKey', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => fireKey('d', { metaKey: true }));
     expect(mockToggleTheme).not.toHaveBeenCalled();
   });
 
   it('ignores key events with altKey', () => {
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => fireKey('d', { altKey: true }));
     expect(mockToggleTheme).not.toHaveBeenCalled();
   });
@@ -226,7 +241,7 @@ describe('useKeyboardShortcuts', () => {
 
   it('does nothing on a single character key once the shortcuts are switched off', () => {
     useShortcutSettings.getState().setEnabled(false);
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     for (const key of ['d', 'D', '0', '1', '5', '9', '?']) act(() => fireKey(key));
     expect(mockToggleTheme).not.toHaveBeenCalled();
     expect(mockToggleLayer).not.toHaveBeenCalled();
@@ -236,14 +251,14 @@ describe('useKeyboardShortcuts', () => {
 
   it('acts again once they are switched back on', () => {
     useShortcutSettings.getState().setEnabled(false);
-    renderHook(() => useKeyboardShortcuts());
+    renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => useShortcutSettings.getState().setEnabled(true));
     act(() => fireKey('2'));
     expect(mockToggleLayer).toHaveBeenCalledWith('news');
   });
 
   it('still closes the dialog on Escape while they are off', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => result.current.openHints());
     act(() => useShortcutSettings.getState().setEnabled(false));
     act(() => fireKey('Escape'));
@@ -251,7 +266,7 @@ describe('useKeyboardShortcuts', () => {
   });
 
   it('shares the dialog state with other components, such as the opener in the layer list', () => {
-    const { result } = renderHook(() => useKeyboardShortcuts());
+    const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => useShortcutSettings.getState().setHintsOpen(true));
     expect(result.current.hintsOpen).toBe(true);
   });
@@ -260,7 +275,7 @@ describe('useKeyboardShortcuts', () => {
 
   it('removes event listener on unmount', () => {
     const spy = vi.spyOn(document, 'removeEventListener');
-    const { unmount } = renderHook(() => useKeyboardShortcuts());
+    const { unmount } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     unmount();
     expect(spy).toHaveBeenCalledWith('keydown', expect.any(Function));
     spy.mockRestore();

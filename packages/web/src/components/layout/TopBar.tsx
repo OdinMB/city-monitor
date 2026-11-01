@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
+import { getAllCities } from '../../config/index.js';
 import { useWeather } from '../../hooks/useWeather.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { useWarningsInForce } from '../../hooks/useWarningsInForce.js';
@@ -13,6 +14,7 @@ import { Popover } from './Popover.js';
 import { WeatherPopover } from './WeatherPopover.js';
 import { AqiTooltip } from './AqiTooltip.js';
 import { HeaderControls } from './HeaderControls.js';
+import { CitySwitcher } from './CitySwitcher.js';
 
 export function TopBar() {
   const city = useCityConfig();
@@ -36,21 +38,14 @@ export function TopBar() {
 
   return (
     <header className="relative flex items-center justify-between px-4 py-1.5 border-b border-border bg-surface-1">
-      {/* Centered city name — desktop only */}
-      <span
-        className="hidden md:block absolute left-1/2 -translate-x-1/2 text-lg font-bold pointer-events-none"
-        style={{ color: 'var(--accent)' }}
-      >
-        {city.name.toUpperCase()}
-      </span>
-
       <div className="flex items-center gap-2 min-w-0">
-        <span
-          className="md:hidden text-lg font-bold me-1 shrink-0"
-          style={{ color: 'var(--accent)' }}
-        >
-          {city.name.toUpperCase()}
-        </span>
+        {/* First in the bar on phones; centred over the bar from md up. Either
+            way it comes first in reading and Tab order, as the name did. */}
+        <CitySwitcher
+          cities={getAllCities()}
+          placement="topbar"
+          className="relative shrink-0 me-1 md:me-0 md:absolute md:left-1/2 md:-translate-x-1/2"
+        />
         {current && weatherInfo && (
           <Popover
             open={weatherOpen}

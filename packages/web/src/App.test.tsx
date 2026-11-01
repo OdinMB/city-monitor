@@ -1,19 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { App } from './App.js';
 import { APPROVED_AI_COPY } from './test-fixtures/approved-ai-copy.js';
 
+function LocationProbe() {
+  return <output data-testid="pathname">{useLocation().pathname}</output>;
+}
+
 describe('App', () => {
-  it('redirects / to /berlin', async () => {
+  it('shows the city picker at /, with a link to every active city', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
+        <LocationProbe />
       </MemoryRouter>,
     );
-    await waitFor(() => {
-      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
-    });
+    const links = await screen.findAllByRole('link', { name: /^(Berlin|Hamburg|Köln|München)/ });
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/berlin', '/hamburg', '/koeln', '/muenchen']);
+    expect(screen.getByTestId('pathname').textContent).toBe('/');
   });
 
   it('renders Berlin dashboard at /berlin', async () => {
@@ -45,40 +50,45 @@ describe('App', () => {
     expect(within(heading).queryByText('AI')).toBeNull();
   });
 
-  it('redirects /hamburg to /berlin (Hamburg disabled)', async () => {
+  it('renders the Hamburg dashboard at /hamburg', async () => {
     render(
       <MemoryRouter initialEntries={['/hamburg']}>
         <App />
       </MemoryRouter>,
     );
-    // Hamburg is not active, so it redirects to / → /berlin
     await waitFor(() => {
-      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('HAMBURG').length).toBeGreaterThanOrEqual(1);
     });
+    expect(screen.getByText('Briefing')).toBeDefined();
+    expect(screen.queryByText('BERLIN')).toBeNull();
   });
 
-  it('redirects /koeln to /berlin (Köln not active)', async () => {
+  it.each([
+    ['/koeln', 'KÖLN'],
+    ['/muenchen', 'MÜNCHEN'],
+  ])('renders the dashboard at %s without news tiles', async (path, upperName) => {
     render(
-      <MemoryRouter initialEntries={['/koeln']}>
+      <MemoryRouter initialEntries={[path]}>
         <App />
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(upperName).length).toBeGreaterThanOrEqual(1);
     });
-    expect(screen.queryByText('KÖLN')).toBeNull();
+    // No news feeds configured: no Briefing tile, and nothing Berlin-named.
+    expect(screen.queryByText('Briefing')).toBeNull();
+    expect(screen.queryByText('BERLIN')).toBeNull();
   });
 
-  it('redirects unknown city to /berlin', async () => {
+  it('sends an unknown city to the city picker', async () => {
     render(
       <MemoryRouter initialEntries={['/unknown-city']}>
         <App />
+        <LocationProbe />
       </MemoryRouter>,
     );
-    // Should redirect unknown city → / → /berlin
-    await waitFor(() => {
-      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
-    });
+    await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/'));
+    expect(screen.getByRole('link', { name: /^Hamburg/ }).getAttribute('href')).toBe('/hamburg');
   });
 
   it('renders theme toggle on dashboard', async () => {

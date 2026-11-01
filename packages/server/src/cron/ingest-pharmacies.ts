@@ -19,7 +19,13 @@ const CITY_PLZ: Record<string, string> = {
   berlin: '10115',
   hamburg: '20095',
   koeln: '50667',
+  muenchen: '80331',
 };
+
+/** Whether the job searches emergency pharmacies for the city: a German city with a postcode above. */
+export function hasPharmacySearch(city: CityConfig): boolean {
+  return city.country === 'DE' && Object.hasOwn(CITY_PLZ, city.id);
+}
 
 // ---------------------------------------------------------------------------
 // Form token extraction

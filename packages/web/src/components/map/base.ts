@@ -17,6 +17,7 @@ import {
   NOISE_SOURCE,
   NOISE_LAYER,
   getNoiseWmsUrl,
+  getNoiseWmsAttribution,
 } from './constants.js';
 import { API_BASE } from '../../lib/api.js';
 
@@ -181,7 +182,7 @@ export function setNoiseOverlay(map: maplibregl.Map, visible: boolean, cityId: s
       type: 'raster',
       tiles: [url],
       tileSize: 256,
-      attribution: '&copy; <a href="https://daten.berlin.de" target="_blank">Open Data</a>',
+      attribution: getNoiseWmsAttribution(cityId),
     });
     // Insert below noise sensor markers so live data stays in foreground
     const beforeId = map.getLayer('noise-sensor-icon') ? 'noise-sensor-icon' : undefined;

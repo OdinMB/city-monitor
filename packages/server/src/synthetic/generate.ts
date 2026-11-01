@@ -27,6 +27,7 @@ import type { PersistedNewsItem } from '../db/writes.js';
 import { aggregateBudgetData, type ParsedBudgetRow } from '../cron/ingest-budget.js';
 import { deriveStatus } from '../cron/ingest-appointments.js';
 import { berlinUtcOffset } from '../cron/ingest-council-meetings.js';
+import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
 import { computeLevel, computeTrend } from '../cron/ingest-wastewater.js';
 import { hashString } from '../lib/hash.js';
 
@@ -113,7 +114,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   budget: (c) => c.dataSources.budget !== undefined,
   construction: (c) => c.dataSources.roadworks !== undefined,
   traffic: () => true,
-  pharmacies: (c) => c.country === 'DE',
+  pharmacies: hasPharmacySearch,
   aeds: (c) => c.country === 'DE',
   socialAtlas: (c) => c.dataSources.socialAtlas !== undefined,
   population: berlinOnly,
@@ -1454,6 +1455,22 @@ const CITY_DETAILS: Readonly<Record<string, CityDetails>> = {
     roads: ['A1', 'A7', 'A24', 'A255', 'B4', 'B5', 'B75'],
     pollenRegion: 'Geest, Schleswig-Holstein und Hamburg',
     gauges: HAMBURG_GAUGE_SITES,
+    deprivationCentres: [],
+  },
+  koeln: {
+    districts: [],
+    phonePrefix: '0221',
+    roads: ['A1', 'A3', 'A4', 'A57', 'A59', 'B9', 'B55'],
+    pollenRegion: 'Rhein.-Westfäl. Tiefland',
+    gauges: { 'Köln': { lat: 50.9369, lon: 6.9628, mw: 300 } },
+    deprivationCentres: [],
+  },
+  muenchen: {
+    districts: [],
+    phonePrefix: '089',
+    roads: ['A8', 'A9', 'A94', 'A95', 'A96', 'A99', 'B2R'],
+    pollenRegion: 'Allgäu/Oberbayern/Bay. Wald',
+    gauges: {},
     deprivationCentres: [],
   },
 };

@@ -8,7 +8,7 @@
  * `vorabInformation` holds pre-announcements in the same shape; they are not warnings yet and are not read.
  */
 
-import type { WeatherAlert } from '@city-monitor/shared';
+import type { CityConfig, WeatherAlert } from '@city-monitor/shared';
 
 export const DWD_WARNINGS_URL = 'https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json';
 
@@ -62,17 +62,39 @@ export function parseDwdWarningsJsonp(text: string): unknown {
   return JSON.parse(text.replace(/^warnWetter\.loadWarnings\(/, '').replace(/\);?\s*$/, ''));
 }
 
+/** Whether a warn region, by its `regionName`, is one of the city's. */
+export type WarnRegionMatch = (regionName: string) => boolean;
+
 /**
- * The warnings of one city: entries whose `regionName` contains the city name (case-insensitive),
+ * The city's warn regions: with `exactRegion`, the region of that name alone; without, every
+ * region whose name contains the city name. Both ignore case. The name alone suits a city-state
+ * ("Berlin", "Hamburg"), but a city inside a state shares its name with the Landkreis around it
+ * ("Stadt München", "Kreis München"), so such a city names its own region exactly.
+ */
+export function warnRegionMatcher(cityName: string, exactRegion?: string): WarnRegionMatch {
+  if (exactRegion !== undefined) {
+    const wanted = exactRegion.trim().toLowerCase();
+    return (regionName) => regionName.trim().toLowerCase() === wanted;
+  }
+  const name = cityName.toLowerCase();
+  return (regionName) => regionName.toLowerCase().includes(name);
+}
+
+/** The warn regions of a configured city: its `dataSources.weather.dwdWarnRegion`, else its name. */
+export function cityWarnRegions(city: Pick<CityConfig, 'name' | 'dataSources'>): WarnRegionMatch {
+  return warnRegionMatcher(city.name, city.dataSources.weather.dwdWarnRegion);
+}
+
+/**
+ * The warnings of one city: entries whose `regionName` is one of the city's (`isCityRegion`),
  * at a shown level, each warning once even when it covers several of the city's warncells.
  * Entries without a numeric level or a string headline and region name are skipped.
  * Returns null when the payload has no `warnings` object.
  */
-export function parseDwdWarnings(json: unknown, cityName: string): WeatherAlert[] | null {
+export function parseDwdWarnings(json: unknown, isCityRegion: WarnRegionMatch): WeatherAlert[] | null {
   const warnings = warningsOf(json);
   if (!warnings) return null;
 
-  const name = cityName.toLowerCase();
   const seen = new Set<string>();
   const alerts: WeatherAlert[] = [];
 
@@ -81,7 +103,7 @@ export function parseDwdWarnings(json: unknown, cityName: string): WeatherAlert[
     for (const w of entries) {
       if (!isEntry(w)) continue;
       const severity = SEVERITY_BY_LEVEL.get(w.level);
-      if (!severity || !w.regionName.toLowerCase().includes(name)) continue;
+      if (!severity || !isCityRegion(w.regionName)) continue;
 
       const key = JSON.stringify([w.level, w.headline, w.start, w.end]);
       if (seen.has(key)) continue;

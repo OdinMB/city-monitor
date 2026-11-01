@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import i18n from 'i18next';
-import type { CityConfig } from '@city-monitor/shared';
+import type { CityConfig, CityFeature, WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../hooks/CityProvider.js';
 import { CityContext } from '../hooks/CityContext.js';
 import { getNoiseWmsUrl } from '../components/map/constants.js';
@@ -20,7 +20,7 @@ function renderPage() {
 }
 
 /** The city configs one `config/cities/` folder exports. */
-function citiesIn(modules: Record<string, Record<string, CityConfig>>): CityConfig[] {
+function citiesIn<T>(modules: Record<string, Record<string, T>>): T[] {
   return Object.values(modules).flatMap((module) => Object.values(module));
 }
 
@@ -30,7 +30,7 @@ function citiesIn(modules: Record<string, Record<string, CityConfig>>): CityConf
  * config of the same id, active or not.
  */
 const SERVER_CITIES = citiesIn(import.meta.glob<Record<string, CityConfig>>('../../../server/src/config/cities/*.ts', { eager: true }));
-const WEB_CITIES = new Map(citiesIn(import.meta.glob<Record<string, CityConfig>>('../config/cities/*.ts', { eager: true })).map((c) => [c.id, c]));
+const WEB_CITIES = new Map(citiesIn(import.meta.glob<Record<string, WebCityConfig>>('../config/cities/*.ts', { eager: true })).map((c) => [c.id, c]));
 const CITIES = SERVER_CITIES.filter((c) => WEB_CITIES.has(c.id));
 
 function renderCity(cityId: string) {
@@ -59,9 +59,8 @@ const berlinOnly = (c: CityConfig) => c.id === 'berlin';
 /**
  * Credits whose use the city decides, each with the condition its ingestion
  * job checks (packages/server/src/cron/ingest-*.ts). Berlin-only jobs
- * (BERLIN_ONLY_JOBS in app.ts) fetch for Berlin alone. The political job keeps
- * its parliaments in its own module, not the config, so abgeordnetenwatch.de
- * is not checked here.
+ * (BERLIN_ONLY_JOBS in app.ts) fetch for Berlin alone. The political and the
+ * pharmacy jobs keep their cities in their own modules (FEATURE_BOUND below).
  */
 const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => boolean]> = [
   // ingest-weather: forecast and air quality from its one provider, warnings and UV for German cities
@@ -74,7 +73,6 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Sensor.Community', (c) => (c.dataSources.airQuality?.sensorCommunityStations?.length ?? 0) > 0],
   ['Sensor.Community DNMS', (c) => c.dataSources.noiseSensors !== undefined],
   ['NINA (BBK)', (c) => c.country === 'DE' && c.dataSources.nina !== undefined],
-  ['aponet.de', (c) => c.country === 'DE'],
   ['OpenStreetMap', (c) => c.country === 'DE'],
   ['TomTom Traffic', () => true],
   ['VBB transport.rest', (c) => (c.dataSources.transit?.stations?.length ?? 0) > 0],
@@ -109,6 +107,25 @@ describe('SourcesPage credits per city', () => {
     const actual = CONFIG_DRIVEN.filter(([credit]) => credited.has(credit)).map(([credit]) => credit);
     expect(actual).toEqual(expected);
   });
+
+  /**
+   * Credits whose job keeps its cities in its own module, not the config:
+   * checked against the web config's feature, which config/index.test.ts ties
+   * to that module.
+   */
+  const FEATURE_BOUND: ReadonlyArray<[credit: string, feature: CityFeature]> = [
+    ['abgeordnetenwatch.de', 'political'],
+    ['aponet.de', 'pharmacies'],
+  ];
+
+  it.each(CITIES.flatMap((c) => FEATURE_BOUND.map(([credit, feature]) => [credit, c.id, feature] as const)))(
+    'credits %s on %s exactly when it has the feature %s',
+    (credit, id, feature) => {
+      renderCity(id);
+      const credited = screen.queryByRole('link', { name: credit }) !== null;
+      expect(credited).toBe(WEB_CITIES.get(id)!.features.includes(feature));
+    },
+  );
 
   it.each(CITIES.map((c) => [c.id, c] as const))('credits each news and police feed of %s, and no other news source', (id, city) => {
     renderCity(id);

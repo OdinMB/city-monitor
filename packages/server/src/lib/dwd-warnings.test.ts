@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { assertDwdWarningsShape, parseDwdWarnings, parseDwdWarningsJsonp } from './dwd-warnings.js';
+import { assertDwdWarningsShape, cityWarnRegions, parseDwdWarnings, parseDwdWarningsJsonp, warnRegionMatcher } from './dwd-warnings.js';
 
 const HOUR = 3_600_000;
 const T0 = Date.UTC(2026, 4, 1, 10); // 2026-05-01T10:00Z
+
+/** Berlin's regions as the city config picks them: every region whose name contains "Berlin". */
+const BERLIN = warnRegionMatcher('Berlin');
 
 function berlinCell(regionName: string) {
   return { state: 'Berlin', stateShort: 'BE', regionName };
@@ -101,7 +104,7 @@ describe('parseDwdWarningsJsonp', () => {
 
 describe('parseDwdWarnings', () => {
   it("returns the city's warnings once each, dropping lower-level ones, other regions and pre-announcements", () => {
-    expect(parseDwdWarnings(fixture, 'Berlin')).toEqual([
+    expect(parseDwdWarnings(fixture, BERLIN)).toEqual([
       {
         headline: 'Amtliche WARNUNG vor STURMBÖEN',
         severity: 'moderate',
@@ -118,7 +121,7 @@ describe('parseDwdWarnings', () => {
   });
 
   it('matches the region name case-insensitively', () => {
-    expect(parseDwdWarnings(fixture, 'hamburg')).toEqual([{
+    expect(parseDwdWarnings(fixture, warnRegionMatcher('hamburg'))).toEqual([{
       headline: 'Amtliche UNWETTERWARNUNG vor ORKANARTIGEN BÖEN',
       severity: 'severe',
       description: 'Es treten orkanartige Böen mit Geschwindigkeiten um 110 km/h auf.',
@@ -137,12 +140,12 @@ describe('parseDwdWarnings', () => {
     [0, undefined],
     [6, undefined],
   ])('maps level %i to severity %s', (level, severity) => {
-    expect(parseDwdWarnings(payload(warning(level)), 'Berlin')?.[0]?.severity).toBe(severity);
+    expect(parseDwdWarnings(payload(warning(level)), BERLIN)?.[0]?.severity).toBe(severity);
   });
 
   it('keeps warnings with the same headline at different times', () => {
     const later = warning(3, { start: T0 + 10 * HOUR, end: T0 + 14 * HOUR });
-    expect(parseDwdWarnings(payload(warning(3), later), 'Berlin')?.map((a) => a.validUntil)).toEqual([
+    expect(parseDwdWarnings(payload(warning(3), later), BERLIN)?.map((a) => a.validUntil)).toEqual([
       '2026-05-01T11:00:00.000Z',
       '2026-05-02T00:00:00.000Z',
     ]);
@@ -157,13 +160,13 @@ describe('parseDwdWarnings', () => {
       warning(3, { regionName: undefined }),
       warning(4, { description: undefined, end: undefined }),
     );
-    expect(parseDwdWarnings(json, 'Berlin')).toEqual([
+    expect(parseDwdWarnings(json, BERLIN)).toEqual([
       { headline: 'Warnung der Stufe 4', severity: 'severe', description: '', validUntil: '' },
     ]);
   });
 
   it('returns an empty list when nothing is warned', () => {
-    expect(parseDwdWarnings({ time: T0, warnings: {}, vorabInformation: {}, copyright: '' }, 'Berlin')).toEqual([]);
+    expect(parseDwdWarnings({ time: T0, warnings: {}, vorabInformation: {}, copyright: '' }, BERLIN)).toEqual([]);
   });
 
   it('returns null when the payload has no warnings object', () => {
@@ -176,8 +179,42 @@ describe('parseDwdWarnings', () => {
       // warncells at the top level, without the warnings object
       { '111000000': [warning(3)] },
     ]) {
-      expect(parseDwdWarnings(json, 'Berlin'), JSON.stringify(json)).toBeNull();
+      expect(parseDwdWarnings(json, BERLIN), JSON.stringify(json)).toBeNull();
     }
+  });
+});
+
+describe('warnRegionMatcher', () => {
+  // A kreisfreie Stadt and the Landkreis around it, both named after the city, as DWD's warn cells do.
+  const regions = ['Stadt München', 'Kreis München', 'Kreis Fürstenfeldbruck', 'Stadt Köln'];
+
+  it('without an exact region, takes every region whose name contains the city name, case-insensitively', () => {
+    expect(regions.filter(warnRegionMatcher('münchen'))).toEqual(['Stadt München', 'Kreis München']);
+  });
+
+  it('with an exact region, takes that region alone, ignoring case and surrounding spaces', () => {
+    expect(regions.filter(warnRegionMatcher('München', 'Stadt München'))).toEqual(['Stadt München']);
+    expect(regions.filter(warnRegionMatcher('München', ' stadt münchen '))).toEqual(['Stadt München']);
+  });
+
+  it('reads the exact region from a city config, and falls back to the name without one', () => {
+    const city = (dwdWarnRegion?: string) => ({
+      name: 'München',
+      dataSources: { weather: { provider: 'brightsky' as const, lat: 48.1, lon: 11.6, dwdWarnRegion } },
+    });
+    expect(regions.filter(cityWarnRegions(city('Stadt München')))).toEqual(['Stadt München']);
+    expect(regions.filter(cityWarnRegions(city()))).toEqual(['Stadt München', 'Kreis München']);
+  });
+
+  it('keeps out the warnings of a Landkreis named after the city', () => {
+    const json = {
+      time: T0,
+      warnings: {
+        '109162000': [{ ...warning(3), regionName: 'Stadt München', headline: 'Stadt' }],
+        '109184000': [{ ...warning(4), regionName: 'Kreis München', headline: 'Landkreis' }],
+      },
+    };
+    expect(parseDwdWarnings(json, warnRegionMatcher('München', 'Stadt München'))?.map((a) => a.headline)).toEqual(['Stadt']);
   });
 });
 

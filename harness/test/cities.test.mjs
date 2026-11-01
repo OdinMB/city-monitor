@@ -23,10 +23,10 @@ function withTmp(fn) {
 }
 
 describe('registeredCities', () => {
-  it('reads both packages\' registries: Berlin, Hamburg and Köln, Berlin the default', () => {
-    assert.deepEqual(registeredCities(read(CITY_CONFIG_FILES.server)), ['berlin', 'hamburg', 'koeln']);
-    assert.deepEqual(registeredCities(read(CITY_CONFIG_FILES.web)), ['berlin', 'hamburg', 'koeln']);
-    assert.deepEqual(configuredCities(), ['berlin', 'hamburg', 'koeln']);
+  it('reads both packages\' registries: Berlin, Hamburg, Köln and München, Berlin the default', () => {
+    assert.deepEqual(registeredCities(read(CITY_CONFIG_FILES.server)), ['berlin', 'hamburg', 'koeln', 'muenchen']);
+    assert.deepEqual(registeredCities(read(CITY_CONFIG_FILES.web)), ['berlin', 'hamburg', 'koeln', 'muenchen']);
+    assert.deepEqual(configuredCities(), ['berlin', 'hamburg', 'koeln', 'muenchen']);
     assert.equal(DEFAULT_CITY, 'berlin');
   });
 

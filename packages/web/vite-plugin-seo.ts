@@ -7,15 +7,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 import type { Plugin } from 'vite';
-
-interface PageMeta {
-  /** Route path, e.g. '/imprint' */
-  path: string;
-  title: string;
-  description: string;
-  /** OG image filename relative to public/, e.g. 'og-berlin.png'. Overrides the default. */
-  ogImage?: string;
-}
+import type { PageMeta } from './src/lib/seo-pages.js';
 
 export function seoPlugin(pages: PageMeta[], baseUrl?: string): Plugin {
   return {
@@ -82,12 +74,9 @@ export function seoPlugin(pages: PageMeta[], baseUrl?: string): Plugin {
       // Generate sitemap.xml if baseUrl is provided
       if (baseUrl) {
         const today = new Date().toISOString().split('T')[0];
-        const DASHBOARD_ROUTES = ['/', '/berlin', '/hamburg'];
         const allRoutes = [
-          ...DASHBOARD_ROUTES.map((path) => ({ path, changefreq: 'always' as const, priority: '1.0' })),
-          ...pages
-            .filter((p) => !DASHBOARD_ROUTES.includes(p.path))
-            .map((p) => ({ path: p.path, changefreq: 'monthly' as const, priority: '0.5' })),
+          ...pages.filter((p) => p.dashboard).map((p) => ({ path: p.path, changefreq: 'always' as const, priority: '1.0' })),
+          ...pages.filter((p) => !p.dashboard).map((p) => ({ path: p.path, changefreq: 'monthly' as const, priority: '0.5' })),
         ];
 
         const sitemap = [

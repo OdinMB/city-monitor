@@ -4,6 +4,13 @@
     "noscript": "Diese Seite benötigt JavaScript.",
     "scrollToDashboard": "Zum Dashboard scrollen"
   },
+  "cityPicker": {
+    "title": "City Monitor — Wählen Sie Ihre Stadt",
+    "intro": "Echtzeit-Dashboards aus offenen Daten: Nachrichten, Wetter, Warnungen und mehr. Wählen Sie eine Stadt, um zu sehen, was dort gerade passiert.",
+    "topics_one": "{{count}} Thema",
+    "topics_other": "{{count}} Themen",
+    "summary": "{{topics}}, darunter {{highlights}}"
+  },
   "aiLabel": {
     "generated": "KI-generiert",
     "tooltip": "Nicht redaktionell geprüft, kann Fehler enthalten."
@@ -30,6 +37,10 @@
   "topbar": {
     "language": "Sprache",
     "menu": "Menü",
+    "city": {
+      "switch": "{{city}}, Stadt wechseln",
+      "list": "Städte"
+    },
     "theme": {
       "light": "Hell",
       "dark": "Dunkel",
@@ -44,6 +55,7 @@
       "headlines": "Schlagzeilen",
       "empty": "Keine Artikel verfügbar",
       "generatedAgo": "Erstellt {{time}}",
+      "briefingOnlyIn": "Dieses Briefing gibt es nur auf {{language}}.",
       "headlines_count": "{{count}} Schlagzeilen",
       "all": "Alle",
       "retry": "Erneut versuchen",
@@ -499,7 +511,9 @@
     "political": {
       "bezirke": "Bezirke",
       "bundestag": "Bundestag",
-      "landesparlament": "Abgeordnetenhaus"
+      "landesparlament": "Landesparlament",
+      "landesparlament_berlin": "Abgeordnetenhaus",
+      "landesparlament_hamburg": "Bürgerschaft"
     }
   },
   "mapPopup": {

@@ -33,9 +33,17 @@ function renderAt(path: string) {
   );
 }
 
-describe('App home redirect', () => {
-  it('sends / to /berlin while Berlin is active', async () => {
+describe('App home page', () => {
+  it('lets the visitor choose a city at / when several are active', async () => {
     active.ids = ['hamburg', 'berlin'];
+    renderAt('/');
+    const links = await screen.findAllByRole('link', { name: /^(Berlin|Hamburg)/ });
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/berlin', '/hamburg']);
+    expect(screen.getByTestId('pathname').textContent).toBe('/');
+  });
+
+  it('sends / to the only active city: a fork with one city sees no picker', async () => {
+    active.ids = ['berlin'];
     renderAt('/');
     await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/berlin'));
   });
@@ -44,6 +52,13 @@ describe('App home redirect', () => {
     active.ids = ['hamburg'];
     renderAt('/');
     await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/hamburg'));
+  });
+
+  it('sends an inactive city to the picker when several are active', async () => {
+    active.ids = ['hamburg', 'berlin'];
+    renderAt('/koeln');
+    await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/'));
+    expect(await screen.findByRole('link', { name: /^Hamburg/ })).toBeTruthy();
   });
 
   it('sends an inactive /berlin on to the first active city instead of looping', async () => {

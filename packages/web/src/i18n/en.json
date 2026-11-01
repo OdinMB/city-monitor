@@ -4,6 +4,13 @@
     "noscript": "This site requires JavaScript.",
     "scrollToDashboard": "Scroll to dashboard"
   },
+  "cityPicker": {
+    "title": "City Monitor — choose your city",
+    "intro": "Real-time dashboards from open data: news, weather, warnings and more. Choose a city to see what is happening there now.",
+    "topics_one": "{{count}} topic",
+    "topics_other": "{{count}} topics",
+    "summary": "{{topics}}, including {{highlights}}"
+  },
   "aiLabel": {
     "generated": "AI-generated",
     "tooltip": "Not reviewed by an editor, may contain errors."
@@ -30,6 +37,10 @@
   "topbar": {
     "language": "Language",
     "menu": "Menu",
+    "city": {
+      "switch": "{{city}}, change city",
+      "list": "Cities"
+    },
     "theme": {
       "light": "Light",
       "dark": "Dark",
@@ -44,6 +55,7 @@
       "headlines": "Headlines",
       "empty": "No articles available",
       "generatedAgo": "Generated {{time}}",
+      "briefingOnlyIn": "This briefing is only available in {{language}}.",
       "headlines_count": "{{count}} headlines",
       "all": "All",
       "retry": "Retry",

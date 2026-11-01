@@ -49,21 +49,38 @@ const BEZIRKSBUERGERMEISTER: Record<string, PoliticalDistrict[]> = {
   ],
 };
 
-/** Berlin Bezirk names for constituency-to-bezirk mapping */
-const BERLIN_BEZIRKE = [
-  'Mitte',
-  'Friedrichshain-Kreuzberg',
-  'Pankow',
-  'Charlottenburg-Wilmersdorf',
-  'Spandau',
-  'Steglitz-Zehlendorf',
-  'Tempelhof-Schöneberg',
-  'Neukölln',
-  'Treptow-Köpenick',
-  'Marzahn-Hellersdorf',
-  'Lichtenberg',
-  'Reinickendorf',
-];
+/**
+ * Bezirk names per city for the constituency-to-Bezirk mapping, which groups
+ * the state parliament's members by Bezirk. Berlin's state constituencies are
+ * named after their Bezirk ("Pankow 3"); Hamburg's Bürgerschaft constituencies
+ * are not, so Hamburg has no entry.
+ */
+const STATE_CONSTITUENCY_BEZIRKE: Record<string, string[]> = {
+  berlin: [
+    'Mitte',
+    'Friedrichshain-Kreuzberg',
+    'Pankow',
+    'Charlottenburg-Wilmersdorf',
+    'Spandau',
+    'Steglitz-Zehlendorf',
+    'Tempelhof-Schöneberg',
+    'Neukölln',
+    'Treptow-Köpenick',
+    'Marzahn-Hellersdorf',
+    'Lichtenberg',
+    'Reinickendorf',
+  ],
+};
+
+/** Whether the city has hand-maintained district mayors (BEZIRKSBUERGERMEISTER). */
+export function hasDistrictMayors(city: CityConfig): boolean {
+  return Object.hasOwn(BEZIRKSBUERGERMEISTER, city.id);
+}
+
+/** Whether the political job groups the city's state members by Bezirk (the `state-bezirke` level). */
+export function groupsStateMembersByBezirk(city: CityConfig): boolean {
+  return Object.hasOwn(STATE_CONSTITUENCY_BEZIRKE, city.id);
+}
 
 /**
  * Parliament IDs on abgeordnetenwatch.de.
@@ -403,7 +420,7 @@ async function ingestCityPolitical(
     log.info(`${city.id}: ${stateDistricts.length} state constituencies, ${stateReps.length} ${config.state.role}s`);
 
     // Aggregate state MdAs by Bezirk for the "landesparlament on bezirke" view
-    const bezirke = city.id === 'berlin' ? BERLIN_BEZIRKE : [];
+    const bezirke = STATE_CONSTITUENCY_BEZIRKE[city.id] ?? [];
     if (bezirke.length > 0) {
       const byBezirk = new Map<string, Representative[]>();
       for (const rep of stateReps) {

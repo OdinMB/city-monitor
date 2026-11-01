@@ -6,6 +6,7 @@ import { render, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { PrivacyPage } from './PrivacyPage.js';
+import { getAllCities } from '../config/index.js';
 
 /**
  * The privacy page lists the third-party hosts a visitor's browser contacts
@@ -114,5 +115,12 @@ describe('PrivacyPage stored values', () => {
       .map((el) => el.textContent)
       .filter((text) => text !== 'localStorage');
     expect([...listed].sort()).toEqual([...keys].sort());
+  });
+});
+
+describe('PrivacyPage data sources link', () => {
+  it('links the data sources page of every active city, not one city alone', () => {
+    const hrefs = [...renderPage().querySelectorAll('a')].map((a) => a.getAttribute('href'));
+    for (const city of getAllCities()) expect(hrefs).toContain(`/${city.id}/sources`);
   });
 });

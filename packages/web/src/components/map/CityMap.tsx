@@ -32,13 +32,14 @@ import { usePopulation } from '../../hooks/usePopulation.js';
 import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
+import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
 import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
 import { gestureHintLocale, setCooperativeGestures } from './gestures.js';
-import { addDistrictLayer, addDistrictSource, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
+import { addDistrictLayer, addDistrictSource, removeDistrictLayers, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
 import { filterNewsForMap, updateNewsMarkers, updateSafetyMarkers } from './layers/news-safety.js';
 import { updateTransitMarkers } from './layers/transit.js';
 import { updateWarningPolygons } from './layers/warnings.js';
@@ -140,58 +141,68 @@ export function CityMap() {
   // boundary sees; it is kept here and thrown during render (see the end).
   const [styleError, setStyleError] = useState<Error | null>(null);
   const catLabel = useCallback((cat: string) => t(`category.${cat}`, cat), [t]);
-  const { data: transitAlerts } = useTransit(city.id);
+  // The layer state is shared and outlives a switch to another city, so the
+  // map draws only what this city has, and asks the API for nothing else.
+  const available = useMemo(() => cityLayers(city), [city]);
+  const { data: transitAlerts } = useTransit(city.id, available.traffic.includes('public-transport'));
   const { data: newsDigest } = useNewsDigest(city.id);
   const { data: safetyReports } = useSafety(city.id);
   const { data: ninaWarnings } = useNina(city.id);
-  const { data: pharmacyList } = usePharmacies(city.id);
-  const { data: aedList } = useAeds(city.id);
+  const { data: pharmacyList } = usePharmacies(city.id, available.emergencies.includes('pharmacies'));
+  const { data: aedList } = useAeds(city.id, available.emergencies.includes('aeds'));
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
-  const { data: constructionSites } = useConstruction(city.id);
+  const { data: constructionSites } = useConstruction(city.id, available.traffic.includes('roadworks'));
   const { data: aqGrid } = useAirQualityGrid(city.id);
-  const { data: noiseSensorData } = useNoiseSensors(city.id);
+  const { data: noiseSensorData } = useNoiseSensors(city.id, available.noiseLive);
   const { data: waterLevelData } = useWaterLevels(city.id);
-  const { data: bathingData } = useBathing(city.id);
-  const politicalLayer = useCommandCenter((s) => s.politicalLayer);
-  const activeLayers = useCommandCenter((s) => s.activeLayers);
-  const newsSubLayers = useCommandCenter((s) => s.newsSubLayers);
-  const emergencySubLayers = useCommandCenter((s) => s.emergencySubLayers);
+  const { data: bathingData } = useBathing(city.id, available.water.includes('bathing'));
+  const selectedLayers = useCommandCenter((s) => s.activeLayers);
+  const activeLayers = useMemo(
+    () => new Set([...selectedLayers].filter((layer) => available.layers.has(layer))),
+    [selectedLayers, available],
+  );
+  const selectedNews = useCommandCenter((s) => s.newsSubLayers);
+  const newsSubLayers = useMemo(() => effectiveSubLayers(selectedNews, available.news), [selectedNews, available]);
+  const selectedEmergencies = useCommandCenter((s) => s.emergencySubLayers);
+  const emergencySubLayers = useMemo(() => effectiveSubLayers(selectedEmergencies, available.emergencies), [selectedEmergencies, available]);
   const politicalActive = activeLayers.has('political');
-  const trafficSubLayers = useCommandCenter((s) => s.trafficSubLayers);
+  // Falls back to 'bundestag' for a layer only political cities have; unused while the layer is off.
+  const politicalLayer = effectiveChoice(useCommandCenter((s) => s.politicalLayer), available.political) ?? 'bundestag';
+  const selectedTraffic = useCommandCenter((s) => s.trafficSubLayers);
+  const trafficSubLayers = useMemo(() => effectiveSubLayers(selectedTraffic, available.traffic), [selectedTraffic, available]);
   const trafficActive = activeLayers.has('traffic') && trafficSubLayers.has('incidents');
   const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
   const roadsActive = trafficActive || constructionActive;
   const weatherActive = activeLayers.has('weather');
-  const noiseLayerSel = useCommandCenter((s) => s.noiseLayer);
-  const noiseLiveData = useCommandCenter((s) => s.noiseLiveData);
+  const noiseLayerSel = effectiveNoiseLayer(useCommandCenter((s) => s.noiseLayer), available);
+  const noiseLiveData = useCommandCenter((s) => s.noiseLiveData) && available.noiseLive;
   const noiseActive = activeLayers.has('noise');
   const noiseWmsActive = noiseActive && noiseLayerSel !== null;
-  // Hamburg has no 'total' layer — fall back to 'road'; default to 'total' when null (unused but satisfies types)
-  const effectiveNoiseLayer = noiseLayerSel === null ? 'total'
-    : (noiseLayerSel === 'total' && city.id !== 'berlin') ? 'road'
-    : noiseLayerSel;
-  const socialLayer = useCommandCenter((s) => s.socialLayer);
-  const socialActive = activeLayers.has('social') && city.id === 'berlin';
+  // The WMS layer to request; unused while no noise map is shown.
+  const noiseWmsLayer = noiseLayerSel ?? 'road';
+  const socialLayer = effectiveChoice(useCommandCenter((s) => s.socialLayer), available.social);
+  const socialActive = activeLayers.has('social');
   const rentMapActive = socialActive && socialLayer === 'rent';
-  const socialAtlasActive = socialActive && socialLayer !== 'rent';
+  const socialAtlasActive = socialActive && socialLayer !== undefined && socialLayer !== 'rent';
   const socialAtlasMetric: SocialAtlasMetric =
     socialLayer === 'single-parent' ? 'singleParent'
     : socialLayer === 'welfare' ? 'welfare'
     : socialLayer === 'child-poverty' ? 'childPoverty'
     : 'unemployment';
   const populationLayerSel = useCommandCenter((s) => s.populationLayer);
-  const populationActive = activeLayers.has('population') && city.id === 'berlin';
+  const populationActive = activeLayers.has('population');
   const populationMetric: PopulationMetric =
     populationLayerSel === 'pop-elderly' ? 'elderlyPct'
     : populationLayerSel === 'pop-foreign' ? 'foreignPct'
     : 'density';
   const waterActive = activeLayers.has('water');
-  const waterSubLayers = useCommandCenter((s) => s.waterSubLayers);
+  const selectedWater = useCommandCenter((s) => s.waterSubLayers);
+  const waterSubLayers = useMemo(() => effectiveSubLayers(selectedWater, available.water), [selectedWater, available]);
   const { data: socialAtlasData } = useSocialAtlas(city.id, socialAtlasActive);
   const { data: populationData } = usePopulation(city.id, populationActive);
-  const { data: bezirkeData } = usePolitical(city.id, 'bezirke');
-  const { data: bundestagData } = usePolitical(city.id, 'bundestag');
-  const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke');
+  const { data: bezirkeData } = usePolitical(city.id, 'bezirke', available.political.includes('bezirke'));
+  const { data: bundestagData } = usePolitical(city.id, 'bundestag', available.political.includes('bundestag'));
+  const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke', available.political.includes('landesparlament'));
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const isDark = theme === 'dark';
@@ -297,8 +308,8 @@ export function CityMap() {
   weatherActiveRef.current = weatherActive;
   const noiseWmsActiveRef = useRef(noiseWmsActive);
   noiseWmsActiveRef.current = noiseWmsActive;
-  const effectiveNoiseLayerRef = useRef(effectiveNoiseLayer);
-  effectiveNoiseLayerRef.current = effectiveNoiseLayer;
+  const effectiveNoiseLayerRef = useRef(noiseWmsLayer);
+  effectiveNoiseLayerRef.current = noiseWmsLayer;
   const rentMapActiveRef = useRef(rentMapActive);
   rentMapActiveRef.current = rentMapActive;
   const waterActiveRef = useRef(waterActive);
@@ -497,14 +508,14 @@ export function CityMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => setNoiseOverlay(map, noiseWmsActive, city.id, effectiveNoiseLayer);
+    const apply = () => setNoiseOverlay(map, noiseWmsActive, city.id, noiseWmsLayer);
     if (map.isStyleLoaded()) {
       apply();
       return;
     }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [noiseWmsActive, effectiveNoiseLayer, city.id]);
+  }, [noiseWmsActive, noiseWmsLayer, city.id]);
 
   // Keep district labels below marker layers whenever marker data changes
   useEffect(() => {
@@ -734,10 +745,7 @@ export function CityMap() {
 
         // Remove existing layers/source (including markers)
         removePoliticalMarkers(map);
-        for (const id of ['district-label', 'district-line', 'district-fill']) {
-          if (map.getLayer(id)) map.removeLayer(id);
-        }
-        if (map.getSource('districts')) map.removeSource('districts');
+        removeDistrictLayers(map);
 
         addDistrictSource(map, geojson, resolved.nameField, isDarkRef.current);
 

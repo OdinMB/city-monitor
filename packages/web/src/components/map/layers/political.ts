@@ -13,6 +13,7 @@ import { forwardArrow } from '../../../lib/bidi.js';
 import { registerPoliticalIcons, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { DISTRICT_URLS, POLITICAL_MARKER_LAYER, POLITICAL_MARKER_SOURCE } from '../constants.js';
 import { sourceText } from '../popups.js';
+import { districtLabelPoints } from './district-labels.js';
 
 /** A spaced dash joins the areas a constituency covers
  *  ("Hamburg-Bergedorf – Harburg"); hyphens inside a name have no spaces. */
@@ -104,11 +105,10 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
   } catch {
     return;
   }
+  // Not an outline file: keep whatever outlines the map has.
+  if (!Array.isArray(geojson?.features)) return;
 
-  for (const id of ['district-label', 'district-line', 'district-fill']) {
-    if (map.getLayer(id)) map.removeLayer(id);
-  }
-  if (map.getSource('districts')) map.removeSource('districts');
+  removeDistrictLayers(map);
 
   map.addSource('districts', {
     type: 'geojson',
@@ -150,12 +150,37 @@ export async function addDistrictLayer(map: maplibregl.Map, cityId: string, isDa
     if (map.getLayer(id)) { beforeId = id; break; }
   }
 
+  addDistrictLabelLayer(map, geojson, config.nameField, isDark, beforeId);
+}
+
+/** Remove the district layers and their sources, so they can be added again. */
+export function removeDistrictLayers(map: maplibregl.Map): void {
+  for (const id of ['district-label', 'district-line', 'district-fill']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('districts')) map.removeSource('districts');
+  if (map.getSource(DISTRICT_LABEL_SOURCE)) map.removeSource(DISTRICT_LABEL_SOURCE);
+}
+
+const DISTRICT_LABEL_SOURCE = 'district-labels';
+
+/** Each district's name, once, at a point inside it (district-labels.ts). */
+function addDistrictLabelLayer(
+  map: maplibregl.Map,
+  geojson: GeoJSON.FeatureCollection,
+  nameField: string,
+  isDark: boolean,
+  beforeId?: string,
+): void {
+  const dp = districtPaint(isDark);
+  if (map.getSource(DISTRICT_LABEL_SOURCE)) map.removeSource(DISTRICT_LABEL_SOURCE);
+  map.addSource(DISTRICT_LABEL_SOURCE, { type: 'geojson', data: districtLabelPoints(geojson, nameField) });
   map.addLayer({
     id: 'district-label',
     type: 'symbol',
-    source: 'districts',
+    source: DISTRICT_LABEL_SOURCE,
     layout: {
-      'text-field': ['get', config.nameField],
+      'text-field': ['get', nameField],
       'text-size': 14,
       'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
       'text-anchor': 'center',
@@ -202,23 +227,7 @@ export function addDistrictSource(
       'line-dasharray': dp.lineDash,
     },
   });
-  map.addLayer({
-    id: 'district-label',
-    type: 'symbol',
-    source: 'districts',
-    layout: {
-      'text-field': ['get', nameField],
-      'text-size': 14,
-      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-      'text-anchor': 'center',
-      'text-allow-overlap': false,
-    },
-    paint: {
-      'text-color': dp.textColor,
-      'text-halo-color': dp.textHaloColor,
-      'text-halo-width': dp.textHaloWidth,
-    },
-  });
+  addDistrictLabelLayer(map, geojson, nameField, isDark);
   ensureDistrictLabelsBelow(map);
 }
 

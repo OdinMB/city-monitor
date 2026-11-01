@@ -92,7 +92,7 @@ After the blueprint deploys, skip to [Post-Deploy Verification](#post-deploy-ver
 |-----|-------|-------|
 | `NODE_ENV` | `production` | Required |
 | `PORT` | `3001` | Required |
-| `ACTIVE_CITIES` | `berlin` | Required. Use `berlin,hamburg` for multi-city |
+| `ACTIVE_CITIES` | `berlin,hamburg,koeln,muenchen` | Required. Must name every city the web build activates |
 | `DATABASE_URL` | *(paste the Internal Database URL from Step 1)* | Required. Or use "Connect a Database" button to auto-inject |
 | `ALLOWED_ORIGINS` | `https://city-monitor-web.onrender.com` | Required unless you serve the site on citymonitor.app. Every origin your static site is served on, comma-separated (add your custom domain later). The browser calls the API cross-origin, and CORS refuses any other origin |
 | `OPENAI_API_KEY` | *(your key)* | Optional, but news needs it — without it the news tile stays empty and there is no briefing |
@@ -177,12 +177,12 @@ To serve the API on its own subdomain (e.g. `api.citymonitor.app`, as citymonito
 
 ## Adding a City (Multi-City)
 
-To enable a configured city such as Hamburg (`hamburg`) or Köln (`koeln`) alongside Berlin, switch the API on first, so the city's page never opens on an API that refuses it:
+To enable a configured city such as Hamburg (`hamburg`), Köln (`koeln`) or München (`muenchen`) alongside Berlin, switch the API on first, so the city's page never opens on an API that refuses it:
 
 1. Go to **API Web Service** → **Environment**
 2. Change `ACTIVE_CITIES` from `berlin` to e.g. `berlin,hamburg`
 3. Save — Render auto-redeploys. The city's data starts populating on that start: a job runs at startup when any active city it serves has no fresh data, Berlin's fresh rows notwithstanding, so the city's tiles fill then rather than at each job's next scheduled run (`ingest-appointments` alone keeps the table-wide check; [server.md](server.md))
-4. In the code, add the city ID to `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` and push: the web build hardcodes its active cities, so without this the static site keeps redirecting the city's page to Berlin. Hamburg already has its routes, pre-rendering and share image; Köln does not yet, so its push also adds `/koeln` and `/koeln/sources` to `vite.config.ts` and `DASHBOARD_ROUTES` and an OG image (the `add-city` skill, "Activate")
+4. In the code, add the city ID to `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` and push: the web build hardcodes its active cities, so without this the static site keeps redirecting the city's page to Berlin. The build pre-renders the active cities' pages and sitemap entries from `CITY_META` in `packages/web/src/lib/seo-pages.ts`, which already holds Köln's and München's, and fails while an active city's share image is missing: Köln and München do not have theirs yet, so the push also adds `public/og-<id>.png`, made by `npm run generate:og` in `packages/web` (the `add-city` skill, "Activate")
 
 A city that is not configured yet needs its config files first: the `add-city` skill (`.claude/skills/add-city/SKILL.md`) or the README's "Adding a City".
 

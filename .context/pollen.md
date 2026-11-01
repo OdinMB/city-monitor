@@ -15,7 +15,8 @@ DWD Pollenflug-Gefahrenindex data showing 3-day pollen forecasts for 8 types. Bo
 
 - **Berlin:** `region_id: 50, partregion_id: -1` (Brandenburg und Berlin — no sub-regions)
 - **Hamburg:** `region_id: 10, partregion_id: 12` (Geest, Schleswig-Holstein und Hamburg)
-- **Köln** (configured, not active): `region_id: 40, partregion_id: 41` (Rhein.-Westfäl. Tiefland, Nordrhein-Westfalen)
+- **Köln**: `region_id: 40, partregion_id: 41` (Rhein.-Westfäl. Tiefland, Nordrhein-Westfalen)
+- **München**: `region_id: 120, partregion_id: 121` (Allgäu/Oberbayern/Bay. Wald, Bayern); not yet checked against a live `s31fg.json`
 
 City config: `dataSources.pollen: { provider: 'dwd', regionId, partregionId }`
 

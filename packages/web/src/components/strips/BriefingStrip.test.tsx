@@ -5,6 +5,8 @@ import { MemoryRouter } from 'react-router-dom';
 import i18n from 'i18next';
 import type { ReactNode } from 'react';
 import { CityProvider } from '../../hooks/CityProvider.js';
+import { CityContext } from '../../hooks/CityContext.js';
+import { hamburg } from '../../config/cities/hamburg.js';
 import { BriefingStrip } from './BriefingStrip.js';
 import { AI_COPY_LANGS, APPROVED_AI_COPY } from '../../test-fixtures/approved-ai-copy.js';
 import type { NewsSummaryData, ApiResponse } from '@city-monitor/shared';
@@ -174,5 +176,62 @@ describe('BriefingStrip', () => {
     // Wait for the error state to appear (longer timeout — useNewsSummary has retry: 1)
     const errorText = await screen.findByText(/Failed to load Briefing/, {}, { timeout: 5000 });
     expect(errorText).toBeTruthy();
+  });
+});
+
+describe('BriefingStrip in a language the city does not write its briefing in', () => {
+  const summary: ApiResponse<NewsSummaryData> = {
+    data: {
+      briefing: 'Deutscher Absatz über das Wetter.',
+      generatedAt: '2026-03-17T10:00:00Z',
+      headlineCount: 12,
+      cached: false,
+      aiGenerated: true,
+      generator: 'gpt-6-luna',
+    },
+    fetchedAt: '2026-03-17T10:05:00Z',
+  };
+
+  function renderHamburg() {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // Hamburg writes German and English: Turkish and Arabic pages get the German briefing.
+    queryClient.setQueryData(['news', 'summary', 'hamburg', 'de'], summary);
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <CityContext.Provider value={hamburg}>
+          <BriefingStrip />
+        </CityContext.Provider>
+      </QueryClientProvider>,
+    );
+  }
+
+  beforeEach(() => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}));
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await i18n.changeLanguage('en');
+  });
+
+  it.each(['tr', 'ar'])('shows the city\'s first language, marked as such, on a %s page', async (lang) => {
+    await i18n.changeLanguage(lang);
+    const { container } = renderHamburg();
+
+    const text = container.querySelector('[data-ai-generated]')!;
+    expect(text.textContent).toContain('Deutscher Absatz');
+    expect(text.getAttribute('lang')).toBe('de');
+    expect(text.getAttribute('dir')).toBe('ltr');
+    expect(screen.getByText(i18n.t('panel.news.briefingOnlyIn', {
+      language: new Intl.DisplayNames([lang], { type: 'language' }).of('de'),
+    }))).toBeTruthy();
+  });
+
+  it('marks nothing when the briefing is in the page\'s language', async () => {
+    await i18n.changeLanguage('de');
+    const { container } = renderHamburg();
+
+    expect(container.querySelector('[data-ai-generated]')!.hasAttribute('lang')).toBe(false);
+    expect(container.querySelector('p.text-xs')).toBeNull();
   });
 });

@@ -58,11 +58,15 @@
   transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 
+/* A city's colours: on <html> on its dashboard (App.tsx), and on each tile of
+   the city picker (pages/CityPickerPage.tsx), inside a page that has none.
+   Hence the dark rules also match a descendant of .dark. */
 [data-city='berlin'] {
   --accent: #e2001a;
   --accent-rgb: 226, 0, 26;
 }
-.dark[data-city='berlin'] {
+.dark[data-city='berlin'],
+.dark [data-city='berlin'] {
   --accent: #ff4d5e;
   --accent-rgb: 255, 77, 94;
   --surface-0: #0e0c0f;      /* warm-tinted deep black */
@@ -76,7 +80,8 @@
   --accent: #004b93;
   --accent-rgb: 0, 75, 147;
 }
-.dark[data-city='hamburg'] {
+.dark[data-city='hamburg'],
+.dark [data-city='hamburg'] {
   --accent: #5b9bd5;
   --accent-rgb: 91, 155, 213;
   --surface-0: #0a0d14;      /* cool-tinted deep black */
@@ -90,9 +95,22 @@
   --accent: #c8102e;
   --accent-rgb: 200, 16, 46;
 }
-.dark[data-city='koeln'] {
+.dark[data-city='koeln'],
+.dark [data-city='koeln'] {
   --accent: #ff5a6a;
   --accent-rgb: 255, 90, 106;
+}
+
+/* München's gold, from its black-and-gold city colours: 4.7:1 on the light
+   page background, 11:1 on the dark card. */
+[data-city='muenchen'] {
+  --accent: #a16207;
+  --accent-rgb: 161, 98, 7;
+}
+.dark[data-city='muenchen'],
+.dark [data-city='muenchen'] {
+  --accent: #facc15;
+  --accent-rgb: 250, 204, 21;
 }
 
 /* Colour roles: what a colour means, set once for light and dark. A component
@@ -584,14 +602,17 @@ select:focus-visible,
   }
 }
 /* From sm up, warnings at the top of the map column (CommandLayout) push the
-   map below the ticker, so its controls and the layer drawer's panel
-   (MobileLayerDrawer, pt-12) need no offset either. Unlayered, this rule
-   outranks the panel's utility classes. */
+   map below the ticker, so its controls, the layer drawer's panel
+   (MobileLayerDrawer, pt-12) and the map's city switcher (top-12) need no
+   offset either. Unlayered, these rules outrank the utility classes. */
 .hero-warnings:not(:empty) + * .maplibregl-ctrl-top-right {
   top: 0 !important;
 }
 .hero-warnings:not(:empty) + * .layer-drawer-panel {
   padding-top: 0.75rem;
+}
+.hero-warnings:not(:empty) + * .hero-city-switcher {
+  top: 0.75rem;
 }
 
 /* Hide map zoom controls on mobile — finger gestures handle zoom */
