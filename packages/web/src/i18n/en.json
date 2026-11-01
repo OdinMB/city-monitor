@@ -364,6 +364,12 @@
       "hoursMoSa": "Mon–Sat 2–8pm",
       "hoursDaily17_19": "daily 5–7pm",
       "hoursMoFr9_19": "Mon–Fri 9am–7pm",
+      "hoursEveningsWeekends": "evenings & weekends",
+      "hoursOffice": "office hours",
+      "note": {
+        "hamburg": "Hamburg Crisis Line hours: Mon–Thu 5pm–11:30pm; Fri 5pm to Sat 7:30am; Sat 10am to Sun 7:30am; Sundays and holidays 10am–11:30pm. Outside these hours: the Crisis Helpline (24/7) or, in an emergency, 112.",
+        "koeln": "Social Psychiatric Service (Cologne Health Department): Mon–Thu 9am–3pm, Fri 9am–1pm. Outside these hours: the Crisis Helpline (24/7) or, in an emergency, 112."
+      },
       "showMore": "{{count}} more",
       "emergency": "Emergency numbers",
       "website": "Official website: {{name}}",
@@ -382,7 +388,11 @@
         "kinderJugendtelefon": "Children/Youth Helpline",
         "drogennotdienst": "Drug Emergency Service",
         "maneo": "Anti-Violence (LGBTQ+)",
-        "schwulenberatung": "LGBTQ+ Counseling"
+        "schwulenberatung": "LGBTQ+ Counseling",
+        "krisentelefonHamburg": "Hamburg Crisis Line",
+        "kinderschutzHamburg": "Child Protection Hotline",
+        "krisendienstOberbayern": "Upper Bavaria Psychiatric Crisis Service",
+        "spdKoeln": "Social Psychiatric Service"
       }
     },
     "bathing": {

@@ -238,7 +238,7 @@ export function CommandLayout() {
           )}
           {has('crisis') && (
             <Tile title={t('panel.crisis.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {(expanded, setExpanded) => <CrisisStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+              {(expanded, setExpanded) => <CrisisStrip cityId={cityId} expanded={expanded} onExpand={() => setExpanded(true)} />}
             </Tile>
           )}
 

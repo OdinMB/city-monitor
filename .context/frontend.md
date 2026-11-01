@@ -56,7 +56,7 @@ App (HelmetProvider)
                     Tile(expandable) → AppointmentsStrip
                     Tile(expandable) → LaborMarketStrip †
                     Tile → PopulationStrip †
-                    Tile(expandable) → CrisisStrip †
+                    Tile(expandable) → CrisisStrip (per-city directory; Local tab Berlin only)
                     Tile(span=2) → BudgetStrip
                     Tile(span=2) → CouncilMeetingsStrip †
                     Tile(expandable) → PoliticalStrip
@@ -175,7 +175,9 @@ The privacy page lists every `localStorage` key the app uses (`STORED_VALUES` in
 
 `CityProvider` wraps each city dashboard, provides `useCityConfig()` hook that returns the active `CityConfig` object. City ID comes from the URL `:cityId` param. Config loaded from `packages/web/src/config/` (mirrors server config structure).
 
-**Per-city features.** Each web city config lists its `features` (`CityFeature` in `shared/types.ts`). Tiles in `CommandLayout`, map layers and sub-layers (`packages/web/src/lib/map-layers.ts`), the number-key shortcuts, each polling hook's `enabled` flag and the Sources page credits all follow that list, so a city sees only what it has data for: a missing source hides its tile or toggle rather than showing an empty or "all clear" state. The server derives its own list from its config (`packages/server/src/lib/city-features.ts`); `packages/web/src/config/index.test.ts` fails when the two disagree. Web-only features (`crisis`, `rentMap`, `noiseMap`, `noiseTotal`) are listed by hand. The dashboard grid uses `grid-flow-row-dense`, so tiles that drop out leave no holes.
+**Per-city features.** Each web city config lists its `features` (`CityFeature` in `shared/types.ts`). Tiles in `CommandLayout`, map layers and sub-layers (`packages/web/src/lib/map-layers.ts`), the number-key shortcuts, each polling hook's `enabled` flag and the Sources page credits all follow that list, so a city sees only what it has data for: a missing source hides its tile or toggle rather than showing an empty or "all clear" state. The server derives its own list from its config (`packages/server/src/lib/city-features.ts`); `packages/web/src/config/index.test.ts` fails when the two disagree. Web-only features (`crisis`, `rentMap`, `noiseMap`, `noiseTotal`) are listed by hand.
+
+**Crisis Services tile.** `CrisisStrip` takes the city ID and reads its directory from `components/strips/crisis-services.ts`, keyed by city ID: emergency numbers (112/110 with the city's own fire and police pages), the city-wide services (nationwide TelefonSeelsorge, Hilfetelefon and Nummer gegen Kummer plus the city's own crisis line), an optional note for hours too long for a badge (Hamburg's Krisentelefon answers evenings, nights and weekends only; Köln's Sozialpsychiatrischer Dienst office hours only), an optional regional service with one number per district on a second tab (Berlin's Krisendienst; no tabs without one), and `checkedOn`, shown in the footer. Each entry's `url` is the official page its number was checked on. A city gets the tile exactly when it has a directory and lists `crisis` (`config/index.test.ts`); the strip renders nothing for a city without one. Numbers are `tel:` links in `<Ltr>`. Re-check them yearly (`new-data-sources.md`, freshness inventory). The dashboard grid uses `grid-flow-row-dense`, so tiles that drop out leave no holes.
 
 `getAllCities()` returns the active city configs. `getDefaultCityId()` returns `'berlin'` while Berlin is active, otherwise the first active city, so the home redirect (one active city) never targets an inactive city (which would redirect back to `/` in a loop).
 

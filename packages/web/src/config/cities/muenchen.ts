@@ -19,6 +19,7 @@ export const muenchen: WebCityConfig = {
     ],
   },
   theme: { accent: '#A16207' },
-  // The Germany-wide sources only, without a river gauge.
-  features: ['nina', 'pollen', 'pharmacies', 'aeds'],
+  // The Germany-wide sources only, without a river gauge, and the
+  // crisis-services directory.
+  features: ['nina', 'pollen', 'pharmacies', 'aeds', 'crisis'],
 };

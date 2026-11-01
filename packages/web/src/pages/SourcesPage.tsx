@@ -255,6 +255,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Safety',
     sources: [
       { name: 'Hamburg Police (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/6337', description: 'Hamburg police press releases.' },
+      { name: 'Hamburgisches Krisentelefon', url: 'https://www.hamburg.de/politik-und-verwaltung/bezirke/altona/themen/gesundheit/krisentelefon-61202', description: 'Crisis line for acute psychological crises (evenings, nights, weekends) and nationwide hotlines in the Crisis Services tile.' },
     ],
   },
   {
@@ -284,10 +285,22 @@ const KOELN_SOURCES: SourceGroup[] = [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time Rhine water level from the Köln gauge.' },
     ],
   },
+  {
+    category: 'Safety',
+    sources: [
+      { name: 'Sozialpsychiatrischer Dienst Köln', url: 'https://www.stadt-koeln.de/service/adressen/sozialpsychiatrischer-dienst', description: 'The health department\'s social psychiatric service (office hours) and nationwide hotlines in the Crisis Services tile.' },
+    ],
+  },
 ];
 
 // No river gauge: the Isar through München is not a federal waterway.
 const MUENCHEN_SOURCES: SourceGroup[] = [
+  {
+    category: 'Safety',
+    sources: [
+      { name: 'Krisendienst Psychiatrie Oberbayern', url: 'https://www.bezirk-oberbayern.de/Soziales/Psychiatrie/Krisendienst-Psychiatrie', description: '24/7 psychiatric crisis line and nationwide hotlines in the Crisis Services tile.' },
+    ],
+  },
   {
     category: 'Transit & Traffic',
     sources: [

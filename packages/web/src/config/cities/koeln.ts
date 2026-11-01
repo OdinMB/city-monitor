@@ -19,6 +19,6 @@ export const koeln: WebCityConfig = {
     ],
   },
   theme: { accent: '#C8102E' },
-  // The Germany-wide sources only.
-  features: ['nina', 'pollen', 'waterLevels', 'pharmacies', 'aeds'],
+  // The Germany-wide sources only, and the crisis-services directory.
+  features: ['nina', 'pollen', 'waterLevels', 'pharmacies', 'aeds', 'crisis'],
 };
