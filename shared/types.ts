@@ -67,6 +67,7 @@ export type CityFeature =
   // From the political ingestion's own tables
   | 'political'       // PARLIAMENT_CONFIG: Bundestag and state parliament members
   | 'districtMayors'  // BEZIRKSBUERGERMEISTER
+  | 'mayor'           // OBERBUERGERMEISTER: a city inside a state's Oberbürgermeister
   | 'stateByDistrict' // state members grouped by Bezirk
   // Berlin's own sources, ingested for Berlin alone
   | 'bathing'
@@ -78,7 +79,8 @@ export type CityFeature =
   | 'crisis'          // the crisis-service directory
   | 'rentMap'         // the rent map WMS
   | 'noiseMap'        // a strategic noise map WMS (road, rail, air)
-  | 'noiseTotal';     // its all-sources layer
+  | 'noiseTotal'      // its all-sources layer
+  | 'politicalMap';   // district outlines for the political map layer (DISTRICT_URLS)
 
 /**
  * A city as the web app holds it: the shared identity and map, without the
@@ -299,7 +301,7 @@ export interface Representative {
 export interface PoliticalDistrict {
   id: string;
   name: string;
-  level: 'bezirk' | 'bundestag' | 'landesparlament';
+  level: 'stadt' | 'bezirk' | 'bundestag' | 'landesparlament';
   representatives: Representative[];
 }
 

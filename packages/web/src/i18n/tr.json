@@ -521,6 +521,7 @@
     },
     "political": {
       "bezirke": "Bezirke",
+      "mayor": "Belediye",
       "bundestag": "Bundestag",
       "landesparlament": "Eyalet Parlamentosu"
     }

@@ -36,7 +36,9 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   noiseTotal: null,
   rentMap: null,
   districtMayors: null,
+  mayor: null,
   stateByDistrict: null,
+  politicalMap: null,
 };
 
 /** Topics every city's dashboard has, whatever its features. */

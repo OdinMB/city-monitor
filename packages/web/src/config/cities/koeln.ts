@@ -20,6 +20,9 @@ export const koeln: WebCityConfig = {
   },
   theme: { accent: '#C8102E' },
   // The Germany-wide sources, news feeds, Polizei Köln, the city's roadworks,
-  // events and council meetings, and the crisis-services directory.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'events', 'roadworks', 'councilMeetings', 'pharmacies', 'aeds', 'crisis'],
+  // events and council meetings, the members of the Bundestag and Landtag for
+  // its constituencies, its Oberbürgermeister and Bezirksbürgermeister, and the
+  // crisis-services directory. No political map layer: its Stadtbezirke are
+  // not its constituencies, and no district outlines ship for it.
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'events', 'roadworks', 'councilMeetings', 'pharmacies', 'aeds', 'political', 'districtMayors', 'mayor', 'crisis'],
 };

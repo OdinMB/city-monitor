@@ -90,7 +90,7 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       if (r) cache.set(CK.appointments(cityId), r.data, 51840, r.fetchedAt);  // 12h cron + 20%
     })().catch((err) => log.error(`${cityId} appointments failed`, err)),
 
-    ...(['bezirke', 'bundestag', 'state', 'state-bezirke'] as const).map((level) =>
+    ...(['bezirke', 'mayor', 'bundestag', 'state', 'state-bezirke'] as const).map((level) =>
       (async () => {
         const r = await loadPoliticalDistricts(db, cityId, level);
         if (r) cache.set(CK.political(cityId, level), r.data, 604800, r.fetchedAt);

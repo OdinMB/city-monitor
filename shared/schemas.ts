@@ -272,7 +272,7 @@ export const RepresentativeSchema = z.object({
 export const PoliticalDistrictSchema = z.object({
   id: z.string(),
   name: z.string(),
-  level: z.enum(['bezirk', 'bundestag', 'landesparlament']),
+  level: z.enum(['stadt', 'bezirk', 'bundestag', 'landesparlament']),
   representatives: z.array(RepresentativeSchema),
 });
 

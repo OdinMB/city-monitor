@@ -1,8 +1,8 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { api, type PoliticalDistrict, type ApiResponse } from '../lib/api.js';
+import { api, type PoliticalDistrict, type PoliticalLevel, type ApiResponse } from '../lib/api.js';
 
 /** `enabled` false for a level the city has no data for: it would poll an empty answer every 30 s. */
-export function usePolitical(cityId: string, level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke', enabled = true) {
+export function usePolitical(cityId: string, level: PoliticalLevel, enabled = true) {
   const query = useQuery<ApiResponse<PoliticalDistrict[]>>({
     queryKey: ['political', cityId, level],
     queryFn: () => api.getPolitical(cityId, level),

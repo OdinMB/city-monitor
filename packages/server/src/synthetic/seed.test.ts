@@ -3,6 +3,7 @@ import { getTableName, type SQL, type Table } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import postgres from 'postgres';
 import { hamburg } from '../config/cities/hamburg.js';
+import { koeln } from '../config/cities/koeln.js';
 import { SNAPSHOT_TYPES } from '../db/schema.js';
 import { generateSyntheticCityData, generateSyntheticData, syntheticModel } from './generate.js';
 import { LOCAL_DATABASE_URL } from './local-guard.js';
@@ -108,12 +109,14 @@ describe('seedDatabase', () => {
 
     const snapshots = rows.snapshots ?? [];
     const types = new Set(snapshots.map((r) => r.type));
-    // A new data source fails here until generate.ts and seed.ts cover it
-    expect(SNAPSHOT_TYPES.filter((t) => !types.has(t))).toEqual([]);
+    // A new data source fails here until generate.ts and seed.ts cover it. Berlin
+    // has every source but the Oberbürgermeister, which only a city inside a
+    // state has (the Köln test below covers it).
+    expect(SNAPSHOT_TYPES.filter((t) => !types.has(t))).toEqual(['abgwatch-mayor']);
 
     // One current row per type, stamped by the database; history rows carry their own time
     const current = snapshots.filter((r) => !('fetchedAt' in r));
-    expect(current).toHaveLength(SNAPSHOT_TYPES.length);
+    expect(current).toHaveLength(SNAPSHOT_TYPES.length - 1);
     expect(snapshots.length - current.length).toBe(data.history.length);
 
     expect(rows.news_items).toHaveLength(data.news.length);
@@ -148,5 +151,16 @@ describe('seedDatabase', () => {
     expect(rows.safety_reports).toHaveLength(data.safety!.length);
     expect((rows.ai_summaries ?? []).map((r) => r.lang).sort()).toEqual(['de', 'en']);
     expect(Object.values(rows).flat().every((r) => r.cityId === 'hamburg')).toBe(true);
+  });
+
+  it('writes a city inside a state its Oberbürgermeister and Bezirksbürgermeister', async () => {
+    const { local, rows } = fakeDb();
+    await seedDatabase(local, generateSyntheticCityData({ now: new Date(), city: koeln }));
+
+    const types = new Set((rows.snapshots ?? []).map((r) => r.type));
+    for (const type of ['abgwatch-mayor', 'abgwatch-bezirke', 'abgwatch-bundestag', 'abgwatch-state']) {
+      expect(types, type).toContain(type);
+    }
+    expect(types).not.toContain('abgwatch-state-bezirke');
   });
 });

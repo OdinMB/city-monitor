@@ -38,6 +38,9 @@ import type {
   NewsSummaryData,
 } from '@city-monitor/shared';
 
+/** The levels `GET /api/:city/political/:level` serves (packages/server/src/routes/political.ts). */
+export type PoliticalLevel = 'bundestag' | 'state' | 'bezirke' | 'mayor' | 'state-bezirke';
+
 export const api = {
   getBootstrap: (city: string) => fetchJson<BootstrapData>(`${API_BASE}/${city}/bootstrap`),
   getNewsDigest: (city: string) => fetchJson<ApiResponse<NewsDigest>>(`${API_BASE}/${city}/news/digest`),
@@ -55,7 +58,7 @@ export const api = {
   getAeds: (city: string) => fetchJson<ApiResponse<AedLocation[]>>(`${API_BASE}/${city}/aeds`),
   getBathing: (city: string) => fetchJson<ApiResponse<BathingSpot[]>>(`${API_BASE}/${city}/bathing`),
   getWaterLevels: (city: string) => fetchJson<ApiResponse<WaterLevelData>>(`${API_BASE}/${city}/water-levels`),
-  getPolitical: (city: string, level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke') => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
+  getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),
   getSocialAtlas: (city: string) => fetchJson<ApiResponse<GeoJSON.FeatureCollection | null>>(`${API_BASE}/${city}/social-atlas`),

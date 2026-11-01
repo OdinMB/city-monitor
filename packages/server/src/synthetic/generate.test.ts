@@ -401,6 +401,20 @@ describe('generateSyntheticCityData', () => {
     },
   );
 
+  it('names Köln\'s and München\'s political data by their constituencies, with their Oberbürgermeister', () => {
+    const k = generateSyntheticCityData({ now: NOW, city: koeln }).political!;
+    expect(Object.keys(k).sort()).toEqual(['bezirke', 'bundestag', 'mayor', 'state']);
+    expect(k.bundestag!.map((d) => d.name)).toEqual(['Köln I', 'Köln II', 'Köln III', 'Leverkusen – Köln IV']);
+    expect(k.state!.map((d) => d.name)).toEqual(['Köln I', 'Köln II', 'Köln III', 'Köln IV', 'Köln V', 'Köln VI', 'Köln VII']);
+    expect(k.bezirke).toHaveLength(9);
+    expect(k.mayor!.map((d) => d.name)).toEqual(['Köln']);
+
+    const m = generateSyntheticCityData({ now: NOW, city: muenchen }).political!;
+    expect(Object.keys(m).sort()).toEqual(['bundestag', 'mayor', 'state']);
+    expect(m.state).toHaveLength(9);
+    for (const d of [...m.bundestag!, ...m.state!]) expect(d.name).toMatch(/^München-/);
+  });
+
   it('holds weather and transit only where their ingestion would fetch them', () => {
     // ingest-weather has an adapter for brightsky only; ingest-transit skips a city with no stations
     const city: CityConfig = {
