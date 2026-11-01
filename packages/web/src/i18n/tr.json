@@ -159,7 +159,8 @@
       "source": {
         "community": "Topluluk",
         "tickets": "Biletler",
-        "museums": "Müzeler"
+        "museums": "Müzeler",
+        "city": "Belediye"
       },
       "moreInfo": "Daha fazla",
       "showMore": "{{count}} daha"
@@ -402,6 +403,8 @@
       "filterLabel": "Organa göre filtrele",
       "bvv": "İlçe Meclisi",
       "parliament": "Eyalet Parlamentosu",
+      "parliament_koeln": "Belediye Meclisi",
+      "parliament_muenchen": "Belediye Meclisi",
       "agendaItems": "{{count}} gündem maddesi",
       "openDetails": "Toplantı ayrıntılarını aç",
       "today": "Bugün",

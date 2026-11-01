@@ -228,7 +228,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('feuerwehr')) sets.feuerwehr = generateFeuerwehr(rng, now);
   if (has.has('pollen')) sets.pollen = generatePollen(rng, now, place);
   if (has.has('noiseSensors')) sets.noiseSensors = generateNoiseSensors(rng, place);
-  if (has.has('councilMeetings')) sets.councilMeetings = generateCouncilMeetings(rng, now, city);
+  if (has.has('councilMeetings')) sets.councilMeetings = generateCouncilMeetings(rng, now, place);
   if (has.has('political')) sets.political = generatePolitical(rng, place);
   return { cityId: city.id, ...sets, history };
 }
@@ -538,8 +538,13 @@ const VENUES = ['Testhalle', 'Beispielbühne', 'Demo-Saal', 'Platzhalter-Galerie
 
 function generateEvents(rng: Rng, now: Date, place: Place): CityEvent[] {
   const { date: today, hour: nowHour } = local(now);
+  // Only the sources the city has: a kind from another one comes from its first
+  const configured = (place.city.dataSources.events ?? []).map((e) => e.source);
   const events = Array.from({ length: 30 }, (_, i): CityEvent => {
-    const kind = EVENT_KINDS[i % EVENT_KINDS.length]!;
+    const template = EVENT_KINDS[i % EVENT_KINDS.length]!;
+    const kind = configured.includes(template.source) || configured.length === 0
+      ? template
+      : { ...template, source: configured[0]! };
     const hour = rng.int(10, 21);
     // Over the next two weeks, always ahead of now
     const day = rng.int(0, 13) || (hour > nowHour ? 0 : 1);
@@ -1337,7 +1342,8 @@ const COMMITTEES = [
   'Haushaltsausschuss', 'Ausschuss für Umwelt und Natur',
 ];
 
-function generateCouncilMeetings(rng: Rng, now: Date, city: CityConfig): CouncilMeeting[] {
+function generateCouncilMeetings(rng: Rng, now: Date, place: Place): CouncilMeeting[] {
+  const { city } = place;
   const today = local(now).date;
   const agenda = [
     { number: 'Ö 1', name: `${MARK} Eröffnung und Tagesordnung`, public: true },
@@ -1346,13 +1352,19 @@ function generateCouncilMeetings(rng: Rng, now: Date, city: CityConfig): Council
   ];
   // OParl/PARDOK give local times with their UTC offset
   const at = (date: string, hour: number) => `${date}T${pad(hour)}:00:00${berlinUtcOffset(`${date}T${pad(hour)}:00:00`)}`;
-  const bvv = (city.dataSources.councilMeetings?.bvv ?? []).map((b, i): CouncilMeeting => {
+  // Berlin names one OParl server per district; Köln and München file a meeting
+  // under a district by its name, so the anchors stand in for theirs
+  const cfg = city.dataSources.councilMeetings;
+  const districtNames = cfg?.bvv
+    ? cfg.bvv.map((b) => b.district)
+    : place.anchors.slice(0, 4).map((a) => a.name);
+  const bvv = districtNames.map((district, i): CouncilMeeting => {
     const date = shiftDate(today, 1 + ((i * 3) % 13));
     const hour = rng.int(16, 18);
     return {
       id: `synthetic-bvv-${i + 1}`,
       source: 'bvv',
-      district: b.district,
+      district,
       committee: rng.pick(COMMITTEES),
       start: at(date, hour),
       end: at(date, hour + 3),

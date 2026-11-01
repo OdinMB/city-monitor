@@ -127,11 +127,25 @@ describe('Köln config', () => {
     });
   });
 
-  it('has no city-specific source yet, so those jobs fetch nothing for Köln', () => {
+  it('takes events from the city’s open data and council meetings from its OParl 1.1 body', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'koeln');
+    const { dataSources } = getCityConfig('koeln')!;
+    expect(dataSources.events).toEqual([
+      { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },
+    ]);
+    expect(dataSources.councilMeetings?.oparlBody?.meetingsUrl)
+      .toBe('https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings');
+    expect(dataSources.councilMeetings?.oparlBody?.districtBody).toBe('Bezirksvertretung');
+  });
+
+  it('has no other city-specific source yet, so those jobs fetch nothing for Köln', () => {
     vi.stubEnv('ACTIVE_CITIES', 'koeln');
     const config = getCityConfig('koeln')!;
     expect(config.feeds).toEqual([]);
-    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water, ...rest } = config.dataSources;
+    const {
+      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
+      events: _events, councilMeetings: _council, ...rest
+    } = config.dataSources;
     expect(rest).toEqual({});
   });
 });
@@ -181,10 +195,20 @@ describe('München config', () => {
     expect(dataSources.pollen).toEqual({ provider: 'dwd', regionId: 120, partregionId: 121 });
   });
 
-  it('has no river gauge and no city-specific source yet, so those jobs fetch nothing for München', () => {
+  it('takes council meetings from the RIS RSS feeds, as the RIS has no OParl', () => {
+    const { dataSources } = getCityConfig('muenchen')!;
+    expect(dataSources.councilMeetings).toEqual({
+      muenchenRis: {
+        councilFeedUrl: 'https://risi.muenchen.de/risi/rss?feed=StR-Sitzungen',
+        districtFeedUrl: 'https://risi.muenchen.de/risi/rss?feed=BA-Sitzungen',
+      },
+    });
+  });
+
+  it('has no river gauge and no other city-specific source yet, so those jobs fetch nothing for München', () => {
     const config = getCityConfig('muenchen')!;
     expect(config.feeds).toEqual([]);
-    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, ...rest } = config.dataSources;
+    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, councilMeetings: _council, ...rest } = config.dataSources;
     expect(rest).toEqual({});
   });
 });

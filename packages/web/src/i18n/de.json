@@ -159,7 +159,8 @@
       "source": {
         "community": "Community",
         "tickets": "Tickets",
-        "museums": "Museen"
+        "museums": "Museen",
+        "city": "Stadt"
       },
       "moreInfo": "Mehr Infos",
       "showMore": "{{count}} weitere"
@@ -399,10 +400,16 @@
     },
     "councilMeetings": {
       "title": "BVV-Sitzungen",
+      "title_koeln": "Ratssitzungen",
+      "title_muenchen": "Ratssitzungen",
       "empty": "Keine anstehenden Sitzungen",
       "filterLabel": "Nach Gremium filtern",
       "bvv": "Bezirksverordnetenversammlung",
+      "bvv_koeln": "Bezirksvertretung",
+      "bvv_muenchen": "Bezirksausschuss",
       "parliament": "Abgeordnetenhaus",
+      "parliament_koeln": "Rat der Stadt",
+      "parliament_muenchen": "Stadtrat",
       "agendaItems_one": "{{count}} Tagesordnungspunkt",
       "agendaItems_other": "{{count}} Tagesordnungspunkte",
       "openDetails": "Sitzungsdetails öffnen",

@@ -159,7 +159,8 @@
       "source": {
         "community": "Community",
         "tickets": "Tickets",
-        "museums": "Museums"
+        "museums": "Museums",
+        "city": "City"
       },
       "moreInfo": "More info",
       "showMore": "{{count}} more"
@@ -405,6 +406,8 @@
       "filterLabel": "Filter by body",
       "bvv": "District Assembly",
       "parliament": "State Parliament",
+      "parliament_koeln": "City Council",
+      "parliament_muenchen": "City Council",
       "agendaItems_one": "{{count}} agenda item",
       "agendaItems_other": "{{count}} agenda items",
       "openDetails": "Open meeting details",

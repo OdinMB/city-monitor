@@ -112,7 +112,7 @@ export interface CityMapLayer {
 }
 
 export interface EventSourceConfig {
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
+  source: CityEvent['source'];
   url: string;
   lookaheadDays?: number; // Default: 14
 }
@@ -176,11 +176,36 @@ export interface CityDataSources {
     lon: number;
     radius: number; // km
   };
+  /**
+   * Upcoming council meetings, from whichever of these adapters the city has
+   * (packages/server/src/cron/ingest-council-meetings.ts). A meeting of the
+   * city-wide body or one of its committees is `source: 'parliament'`; one of a
+   * district body is `source: 'bvv'` with its `district`.
+   */
   councilMeetings?: {
-    bvv: Array<{ district: string; baseUrl: string }>;
+    /** Berlin: one ALLRIS OParl 1.0 server per district (BVV). */
+    bvv?: Array<{ district: string; baseUrl: string }>;
+    /** Berlin: the Abgeordnetenhaus PARDOK XML feeds. */
     parliament?: {
       committeeUrl: string;
       plenaryUrl: string;
+    };
+    /**
+     * One OParl 1.1 body that holds the council, its committees and the
+     * district councils together (Köln, SOMACOS SessionNet).
+     */
+    oparlBody?: {
+      /** The body's meeting list (`…/bodies/<id>/meetings`). */
+      meetingsUrl: string;
+      /** The word that names a district council in a meeting's name ("Bezirksvertretung"); the words after it are the district. */
+      districtBody: string;
+      /** A meeting's web page is this prefix plus its OParl id's last segment, for a server whose meetings carry no `web`. */
+      webUrlPrefix?: string;
+    };
+    /** München: the RIS RSS feeds of city council (Stadtrat) and district committee (BA) meetings. */
+    muenchenRis?: {
+      councilFeedUrl: string;
+      districtFeedUrl: string;
     };
   };
 }
@@ -566,7 +591,7 @@ export interface NewsDigest {
   updatedAt: string;
 }
 
-// City events (kulturdaten.berlin, Ticketmaster, go~mus)
+// City events (kulturdaten.berlin, Ticketmaster, go~mus, Stadt Köln open data)
 export interface CityEvent {
   id: string;
   title: string;
@@ -577,7 +602,7 @@ export interface CityEvent {
   url: string;
   description?: string;
   free?: boolean;
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
+  source: 'kulturdaten' | 'ticketmaster' | 'gomus' | 'stadt-koeln';
   price?: string;
 }
 

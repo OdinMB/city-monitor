@@ -65,6 +65,9 @@ Sources with **hardcoded URLs or version-pinned data** that need periodic manual
 | **LAGeSo Bathing CSV** | `data.lageso.de/baden/0_letzte/letzte.csv` | Seasonal (May–Sep) | Start of each bathing season | URL is stable but data stops updating in winter. |
 | **abgeordnetenwatch** | API v2 | Per election cycle | After federal/state/local elections | Constituency IDs and parliament IDs change with redistricting. |
 | **Population XLSX (EWR)** | `SB_A01-16-00_2025h02_BE.xlsx` | Semi-annual (h01=Jun, h02=Dec) | Q1 and Q3 each year (published ~3 months after snapshot) | URL contains hash segments that change per edition. Update hardcoded URL in `ingest-population.ts`. |
+| **München RIS RSS** | `risi.muenchen.de/risi/rss?feed=StR-Sitzungen` / `BA-Sitzungen` | Unversioned, scraped title format | Q1 each year, and whenever München's council tile goes empty | No API: the RSS is the RIS front end's own feed. A new RIS or a changed title wording ("… am Donnerstag, 12. November 2026, 19:30 Uhr") makes `parseRisTitle` skip every item. `MUENCHEN_BEZIRKE` in `ingest-council-meetings.ts` maps BA numbers to Stadtbezirk names. |
+| **Köln SessionNet OParl** | `buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings` | Per vendor update | Q1 each year | Host and body id are SOMACOS-specific; the other host (`ratsinformation.stadt-koeln.de/oparl`) resets connections. `webUrlPrefix` (`si0057.asp?__ksinr=`) is SessionNet's page pattern, not part of OParl. |
+| **Stadt Köln events** | `stadt-koeln.de/externe-dienste/open-data/events-od.php` | Unversioned script URL | Q1 each year | A PHP script URL rather than a dataset API; check the offenedaten-koeln.de dataset if it stops answering. |
 | **Bezirksbürgermeister** | Hardcoded array in `ingest-political.ts` | Per election cycle | After Berlin local elections (next: 2028) | Names, parties, and profile URLs of 12 district mayors are hardcoded. Must be manually updated after each BVV election. |
 
 ---

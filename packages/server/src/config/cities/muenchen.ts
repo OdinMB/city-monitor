@@ -4,9 +4,9 @@ import type { CityConfig } from '@city-monitor/shared';
  * München, wired only to the Germany-wide sources (DWD, Open-Meteo, NINA,
  * OpenStreetMap, aponet.de). No PEGELONLINE gauge: the Isar through München
  * is a Bavarian water, not a federal waterway, so the city has no water
- * levels. City-specific sources (news feeds, police, transit, events, council
- * meetings, district boundaries) are not configured yet, so their jobs fetch
- * nothing for München.
+ * levels. Council meetings come from the RIS RSS feeds. Other city-specific
+ * sources (news feeds, police, transit, events, district boundaries) are not
+ * configured yet, so their jobs fetch nothing for München.
  */
 export const muenchen: CityConfig = {
   id: 'muenchen',
@@ -40,6 +40,14 @@ export const muenchen: CityConfig = {
       provider: 'dwd',
       regionId: 120,        // Bayern
       partregionId: 121,    // Allgäu/Oberbayern/Bay. Wald
+    },
+    // The RIS has no OParl; its RSS feeds list the next ~10 days of Stadtrat
+    // and Bezirksausschuss meetings (official public records, no licence stated).
+    councilMeetings: {
+      muenchenRis: {
+        councilFeedUrl: 'https://risi.muenchen.de/risi/rss?feed=StR-Sitzungen',
+        districtFeedUrl: 'https://risi.muenchen.de/risi/rss?feed=BA-Sitzungen',
+      },
     },
   },
 };

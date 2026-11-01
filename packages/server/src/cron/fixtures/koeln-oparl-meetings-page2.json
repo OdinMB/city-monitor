@@ -1,0 +1,86 @@
+{
+  "data": [
+    {
+      "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings/33978",
+      "type": "https://schema.oparl.org/1.1/Meeting",
+      "name": "Sitzung der Bezirksvertretung Lindenthal",
+      "start": "2026-11-02T16:00:00+01:00",
+      "end": "2026-11-02T00:00:00+01:00",
+      "location": {
+        "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/locations/rm/40",
+        "type": "https://schema.oparl.org/1.1/Location",
+        "streetAddress": "",
+        "room": "Großer Sitzungssaal",
+        "postalCode": "",
+        "subLocality": "",
+        "locality": ""
+      },
+      "organization": ["https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/organizations/gr/22"],
+      "agendaItem": [
+        {
+          "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/agendaitems/452438",
+          "type": "https://schema.oparl.org/1.1/AgendaItem",
+          "number": "",
+          "order": 1,
+          "name": "Besuch Stadtkämmerin und Stadtdirektorin Frau Prof. Dr. Diemert",
+          "public": true
+        },
+        {
+          "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/agendaitems/451733",
+          "type": "https://schema.oparl.org/1.1/AgendaItem",
+          "number": "1",
+          "order": 2,
+          "name": "Einwohnerfragestunde",
+          "public": true
+        }
+      ],
+      "created": "2025-11-14T10:29:15+01:00",
+      "modified": "2026-10-19T17:17:15+02:00"
+    },
+    {
+      "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings/33691",
+      "type": "https://schema.oparl.org/1.1/Meeting",
+      "name": "Sitzung des Rates - Verabschiedung des Haushalts",
+      "start": "2026-11-12T14:30:00+01:00",
+      "end": "2026-11-12T00:00:00+01:00",
+      "location": {
+        "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/locations/rm/1",
+        "type": "https://schema.oparl.org/1.1/Location",
+        "streetAddress": "",
+        "room": "Ratssaal",
+        "postalCode": "",
+        "subLocality": "",
+        "locality": ""
+      },
+      "organization": ["https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/organizations/gr/1"],
+      "created": "2025-10-27T09:12:40+01:00",
+      "modified": "2026-10-21T15:02:11+02:00"
+    },
+    {
+      "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings/32065",
+      "type": "https://schema.oparl.org/1.1/Meeting",
+      "name": "32. Sitzung der Bezirksvertretung Kalk",
+      "start": "2025-06-26T17:00:00+02:00",
+      "end": "2025-06-26T19:18:00+02:00",
+      "location": {
+        "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/locations/rm/43",
+        "type": "https://schema.oparl.org/1.1/Location",
+        "streetAddress": "",
+        "room": "Raum 901",
+        "postalCode": "",
+        "subLocality": "",
+        "locality": ""
+      },
+      "organization": ["https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/organizations/gr/27"],
+      "created": "2024-10-09T08:48:36+02:00",
+      "modified": "2026-03-27T09:00:30+01:00"
+    }
+  ],
+  "links": {
+    "first": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings?limit=100",
+    "prev": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings?limit=100",
+    "self": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings?page=2&limit=100",
+    "next": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings?page=3&limit=100"
+  },
+  "pagination": { "elementsPerPage": 100, "currentPage": 2 }
+}

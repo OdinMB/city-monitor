@@ -52,9 +52,12 @@ const PARLIAMENT_KEY = 'parliament';
 
 // ── Meeting row ─────────────────────────────────────────────────
 
-function MeetingRow({ meeting, t, locale }: { meeting: CouncilMeeting; t: (key: string, opts?: Record<string, unknown>) => string; locale: string }) {
+function MeetingRow({ meeting, t, locale, cityId }: { meeting: CouncilMeeting; t: (key: string, opts?: Record<string, unknown>) => string; locale: string; cityId: string }) {
   const isBvv = meeting.source === 'bvv';
-  const sourceBadge = isBvv ? t('panel.councilMeetings.bvv') : t('panel.councilMeetings.parliament');
+  // A city's own names for its bodies (`parliament_koeln`), else Berlin's
+  const sourceBadge = isBvv
+    ? t('panel.councilMeetings.bvv', { context: cityId })
+    : t('panel.councilMeetings.parliament', { context: cityId });
   const badgeColor = isBvv ? 'tag-council-bvv' : 'tag-council-parliament';
 
   return (
@@ -145,7 +148,7 @@ export function CouncilMeetingsStrip() {
         className="w-full text-sm rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-2 py-1.5 mb-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
       >
         <option value={PARLIAMENT_KEY}>
-          {t('panel.councilMeetings.parliament')}
+          {t('panel.councilMeetings.parliament', { context: cityId })}
         </option>
         {districts.map((d) => (
           <option key={d} value={d}>{d}</option>
@@ -166,7 +169,7 @@ export function CouncilMeetingsStrip() {
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {group.meetings.map((meeting) => (
-                  <MeetingRow key={meeting.id} meeting={meeting} t={t} locale={i18n.language} />
+                  <MeetingRow key={meeting.id} meeting={meeting} t={t} locale={i18n.language} cityId={cityId} />
                 ))}
               </div>
             </div>

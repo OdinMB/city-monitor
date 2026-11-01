@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
-import { createEventsIngestion, type CityEvent } from './ingest-events.js';
+import { createEventsIngestion, parseKoelnEvents, koelnStartTime, type CityEvent } from './ingest-events.js';
 
 // Use future dates relative to now so the future-events filter doesn't discard them
 function futureDate(daysFromNow: number, time = '12:00:00'): string {
@@ -233,5 +234,48 @@ describe('ingest-events', () => {
     expect(sources.has('gomus')).toBe(true);
 
     delete process.env.TICKETMASTER_CONSUMER_KEY;
+  });
+});
+
+describe('Stadt Köln open-data events', () => {
+  /** Trimmed from a response recorded on 2026-11-01. */
+  const raw = JSON.parse(readFileSync(new URL('./fixtures/koeln-events.json', import.meta.url), 'utf8'));
+
+  it('maps each item to an event in local time, with its venue and an https link', () => {
+    const events = parseKoelnEvents(raw);
+    const talk = events.find((e) => e.id === 'stadt-koeln-39394')!;
+    expect(talk).toMatchObject({
+      title: 'Wissenschaft im Rathaus: Wenn Zellen aus dem Takt geraten – Einblick in die Ursachen neurodegenerativer Erkrankungen',
+      venue: 'Rathaus - Spanischer Bau, Altstadt/Nord',
+      date: '2026-11-02T18:30:00',
+      url: 'https://www.stadt-koeln.de/leben-in-koeln/veranstaltungen/daten/39394/index.html',
+      free: true,
+      source: 'stadt-koeln',
+    });
+    expect(talk.endDate).toBeUndefined();
+    expect(talk.price).toBeUndefined();
+  });
+
+  it('keeps a multi-day end date and a price that is not free', () => {
+    const concert = parseKoelnEvents(raw).find((e) => e.id === 'stadt-koeln-41012')!;
+    expect(concert).toMatchObject({ date: '2026-11-07T00:00:00', endDate: '2026-11-08', category: 'music', price: '15 Euro, ermäßigt 8 Euro' });
+    expect(concert.free).toBeUndefined();
+    expect(concert.description).toBeUndefined();
+  });
+
+  it('skips items without a title or a readable date', () => {
+    expect(parseKoelnEvents({ items: [{ title: '', beginndatum: '2026-11-02' }, { title: 'X', beginndatum: 'bald' }] })).toEqual([]);
+    expect(parseKoelnEvents({})).toEqual([]);
+  });
+
+  it.each([
+    ['von 18:30 bis 19:30', '18:30:00'],
+    ['15 bis 16:30 Uhr (ab 6 Jahre), 16:30 bis 18 Uhr (ab 12 Jahre)', '15:00:00'],
+    ['13-19 Uhr', '13:00:00'],
+    ['13:15 Uhr', '13:15:00'],
+    ['', '00:00:00'],
+    ['ganztägig', '00:00:00'],
+  ])('reads the start of "%s" as %s', (text, time) => {
+    expect(koelnStartTime(text)).toBe(time);
   });
 });

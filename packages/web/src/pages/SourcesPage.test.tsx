@@ -84,8 +84,11 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['service.berlin.de', (c) => c.dataSources.appointments !== undefined],
   ['Berlin Budget (Doppelhaushalt)', (c) => c.dataSources.budget !== undefined],
   ['MSS 2023 (Social Atlas)', (c) => c.dataSources.socialAtlas !== undefined],
-  ['ALLRIS OParl (BVV)', (c) => (c.dataSources.councilMeetings?.bvv.length ?? 0) > 0],
+  ['Stadt Köln Open Data (Events)', (c) => usesEvents(c, 'stadt-koeln')],
+  ['ALLRIS OParl (BVV)', (c) => (c.dataSources.councilMeetings?.bvv?.length ?? 0) > 0],
   ['PARDOK (Abgeordnetenhaus)', (c) => c.dataSources.councilMeetings?.parliament !== undefined],
+  ['Stadt Köln SessionNet (OParl)', (c) => c.dataSources.councilMeetings?.oparlBody !== undefined],
+  ['München RIS', (c) => c.dataSources.councilMeetings?.muenchenRis !== undefined],
   ['LAGeSo Bathing Water', berlinOnly],
   ['LAGeSo Wastewater Monitoring', berlinOnly],
   ['RKI AMELAG Wastewater Surveillance', berlinOnly],
@@ -172,6 +175,7 @@ describe('SourcesPage licence credits', () => {
     'Berlin Budget (Doppelhaushalt)': 'Licensed CC BY.',
     'ALLRIS OParl (BVV)': 'Licensed CC BY 3.0 DE.',
     'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/zero-2-0.',
+    'Stadt Köln Open Data (Events)': 'Licensed dl-de/zero-2-0.',
   };
 
   it('finds every listed source on some city page', () => {

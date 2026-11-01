@@ -1,10 +1,10 @@
 import type { CityConfig } from '@city-monitor/shared';
 
 /**
- * Köln, wired only to the Germany-wide sources (DWD, Open-Meteo, NINA,
- * PEGELONLINE). City-specific sources (news feeds, police, transit, events,
- * council meetings, district boundaries) are not configured yet, so their
- * jobs fetch nothing for Köln.
+ * Köln, wired to the Germany-wide sources (DWD, Open-Meteo, NINA, PEGELONLINE)
+ * plus the city's own events and its council information system. Other
+ * city-specific sources (news feeds, police, transit, district boundaries)
+ * are not configured yet, so their jobs fetch nothing for Köln.
  */
 export const koeln: CityConfig = {
   id: 'koeln',
@@ -42,6 +42,19 @@ export const koeln: CityConfig = {
       stations: [
         { uuid: 'a6ee8177-107b-47dd-bcfd-30960ccc6e9c', name: 'Köln', waterBody: 'Rhein' },
       ],
+    },
+    // The city's own events (Stadt Köln open data, dl-de/zero-2.0)
+    events: [
+      { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },
+    ],
+    // SessionNet OParl 1.1: council, committees and the nine Bezirksvertretungen in one body.
+    // Official public records; the API states no licence.
+    councilMeetings: {
+      oparlBody: {
+        meetingsUrl: 'https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings',
+        districtBody: 'Bezirksvertretung',
+        webUrlPrefix: 'https://buergerinfo.stadt-koeln.de/si0057.asp?__ksinr=',
+      },
     },
   },
 };

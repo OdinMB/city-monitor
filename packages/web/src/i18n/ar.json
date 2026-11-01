@@ -163,7 +163,8 @@
       "source": {
         "community": "مجتمع",
         "tickets": "تذاكر",
-        "museums": "متاحف"
+        "museums": "متاحف",
+        "city": "البلدية"
       },
       "moreInfo": "المزيد",
       "showMore": "{{count}} أخرى"
@@ -426,6 +427,8 @@
       "filterLabel": "تصفية حسب الهيئة",
       "bvv": "مجلس المنطقة",
       "parliament": "برلمان الولاية",
+      "parliament_koeln": "مجلس المدينة",
+      "parliament_muenchen": "مجلس المدينة",
       "agendaItems_zero": "{{count}} بند في جدول الأعمال",
       "agendaItems_one": "بند واحد في جدول الأعمال",
       "agendaItems_two": "بندان في جدول الأعمال",

@@ -1,0 +1,29 @@
+{
+  "data": [
+    {
+      "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings/31727",
+      "type": "https://schema.oparl.org/1.1/Meeting",
+      "name": "Sitzung des Verkehrsausschusses",
+      "start": "2025-05-13T15:00:00+02:00",
+      "end": "2025-05-13T17:40:00+02:00",
+      "location": {
+        "id": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/locations/rm/1",
+        "type": "https://schema.oparl.org/1.1/Location",
+        "streetAddress": "",
+        "room": "Ratssaal",
+        "postalCode": "",
+        "subLocality": "",
+        "locality": ""
+      },
+      "organization": ["https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/organizations/gr/9"],
+      "created": "2024-09-30T12:00:00+02:00",
+      "modified": "2025-05-14T08:00:00+02:00"
+    }
+  ],
+  "links": {
+    "first": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings?limit=100",
+    "self": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings?page=3&limit=100",
+    "next": "https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings?page=4&limit=100"
+  },
+  "pagination": { "elementsPerPage": 100, "currentPage": 3 }
+}
