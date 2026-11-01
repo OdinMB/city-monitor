@@ -18,7 +18,7 @@ Every place outside `packages/*/src/config/cities/` that is keyed by a city ID, 
 | `cityId === 'berlin'` | `packages/server/src/db/warm-cache.ts` | Berlin only | Restores those jobs' data, noise sensors and council meetings for Berlin alone. |
 | `cityArg === -1 ? 'berlin'` | `packages/server/src/dev-synthetic.ts` | nothing | Synthetic mode, and the guarded browser run built on it, serve one configured city per run: Berlin by default, any other with `--city <id>` after `npm run db:seed -- --city <id>` (`.context/dev-database.md`). |
 | `ALL_CITIES` | `packages/web/src/config/index.ts` | every city | The web never loads the config. |
-| `ACTIVE_CITY_IDS` | `packages/web/src/config/index.ts` | when activating | `/<id>` redirects to Berlin. |
+| `ACTIVE_CITY_IDS` | `packages/web/src/config/index.ts` | when activating | `/<id>` goes to the city picker at `/` (or to the one city when only one is active). |
 | `WAQI_AGENCIES` | `packages/web/src/lib/aqi.ts` | every city | WAQI is credited without the state's monitoring agencies, which its terms require (`.context/weather.md`, "Credit"). |
 | `CITY_SOURCES` | `packages/web/src/pages/SourcesPage.tsx` | every city | The Sources page lists only the sources every city shares. |
 | `[data-city=` | `packages/web/src/globals.css` | every city | The default blue accent. Add a light block and a `.dark` block. |
@@ -41,7 +41,7 @@ Extend these when you add a city; nothing fails if you forget.
 - `packages/server/src/config/config.test.ts`, "every configured city": the `ACTIVE_CITIES` stub and the ID list. Without the new ID, its centre, bounds and NINA key go unchecked.
 - `packages/web/src/config/index.test.ts`: the `cities` list in "every configured city", and "active cities".
 - `packages/web/src/lib/aqi.test.ts`: the `it.each` over cities in "WAQI originating agencies".
-- `packages/web/src/App.test.tsx`: one "redirects /<id> to /berlin" test per inactive city (Köln), and one "renders the … dashboard at /<id>" test per active one. Change it when the city goes live.
+- `packages/web/src/App.test.tsx`: one "sends /<id> to the city picker" test per inactive city (Köln), and one "renders the … dashboard at /<id>" test per active one. Change it when the city goes live.
 - `packages/web/src/components/map/layers/political-matching.test.ts`: one entry per city with district GeoJSON.
 - `packages/web/src/App.default-city.test.tsx` mocks Berlin and Hamburg only, which is enough unless the default-city rule changes.
 
