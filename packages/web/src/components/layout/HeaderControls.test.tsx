@@ -2,7 +2,27 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import i18n from 'i18next';
 import { CityProvider } from '../../hooks/CityProvider.js';
+import { CityContext } from '../../hooks/CityContext.js';
+import { hamburg } from '../../config/cities/hamburg.js';
 import { HeaderControls } from './HeaderControls.js';
+
+describe('HeaderControls languages', () => {
+  // Hamburg writes its briefing in German and English only, but the interface
+  // is translated into all four: a Turkish or Arabic visitor keeps the language.
+  it('offers every interface language in a city with fewer briefing languages, and shows the chosen one as pressed', async () => {
+    await i18n.changeLanguage('tr');
+    render(
+      <CityContext.Provider value={hamburg}>
+        <HeaderControls />
+      </CityContext.Provider>,
+    );
+    for (const code of ['DE', 'EN', 'TR', 'AR']) {
+      expect(screen.getAllByRole('button', { name: `${i18n.t('topbar.language')}: ${code}` }).length).toBeGreaterThan(0);
+    }
+    const tr = screen.getAllByRole('button', { name: `${i18n.t('topbar.language')}: TR` })[0]!;
+    expect(tr.getAttribute('aria-pressed')).toBe('true');
+  });
+});
 
 // Berlin offers DE, EN, TR and AR. The inline buttons (desktop) and the
 // hamburger menu (phones) both render here: jsdom applies no stylesheet, so

@@ -51,7 +51,7 @@ const IMAGES: OgImageConfig[] = [
   },
   {
     filename: 'og-hamburg.png',
-    claim: 'Elbe tidal levels to HVV disruptions. Real-time city intelligence for Hamburg.',
+    claim: 'Elbe tidal levels to police reports. Real-time city intelligence for Hamburg.',
     tagline: 'City Monitor — Hamburg',
     accent: '#0284c7',
   },

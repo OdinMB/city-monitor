@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
 import { useCityConfig } from '../hooks/useCityConfig.js';
 import { PageShell } from '../components/layout/PageShell.js';
 import { safeUrl } from '../lib/safe-url.js';
@@ -16,6 +17,8 @@ interface Source {
    * the credits against the server configs.
    */
   cities?: readonly string[];
+  /** A shared source credited only where the city has this feature. */
+  requires?: CityFeature;
 }
 
 interface SourceGroup {
@@ -98,6 +101,7 @@ const SHARED_SOURCES: SourceGroup[] = [
         name: 'abgeordnetenwatch.de',
         url: 'https://www.abgeordnetenwatch.de/',
         description: 'Parliamentary representatives for Bundestag and state parliaments, mapped to city constituencies.',
+        requires: 'political',
       },
     ],
   },
@@ -305,10 +309,12 @@ function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] 
   }));
 }
 
-/** The groups with only the sources credited for `cityId`, leaving out a group that has none. */
-function forCity(groups: SourceGroup[], cityId: string): SourceGroup[] {
+/** The groups with only the sources credited for `city`, leaving out a group that has none. */
+function forCity(groups: SourceGroup[], city: WebCityConfig): SourceGroup[] {
+  const credited = (s: Source) =>
+    (!s.cities || s.cities.includes(city.id)) && (!s.requires || city.features.includes(s.requires));
   return groups
-    .map((group) => ({ ...group, sources: group.sources.filter((s) => !s.cities || s.cities.includes(cityId)) }))
+    .map((group) => ({ ...group, sources: group.sources.filter(credited) }))
     .filter((group) => group.sources.length > 0);
 }
 
@@ -318,7 +324,7 @@ export function SourcesPage() {
   const citySources = CITY_SOURCES[city.id] ?? [];
   const groups = forCity(
     mergeGroups([...SHARED_SOURCES, aiProcessingGroup(t)], [waqiGroup(city.id), ...citySources]),
-    city.id,
+    city,
   );
 
   const sourceCount = groups.reduce((n, g) => n + g.sources.length, 0);

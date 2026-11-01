@@ -44,6 +44,7 @@
       "headlines": "Headlines",
       "empty": "No articles available",
       "generatedAgo": "Generated {{time}}",
+      "briefingOnlyIn": "This briefing is only available in {{language}}.",
       "headlines_count": "{{count}} headlines",
       "all": "All",
       "retry": "Retry",

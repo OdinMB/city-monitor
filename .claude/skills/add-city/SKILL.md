@@ -29,16 +29,17 @@ References beside this file:
 | `coordinates` | nothing; weather reads `dataSources.weather`, which tests require to match | the map (`CityMap.tsx`) |
 | `boundingBox` | TomTom traffic, WAQI stations | which news items go on the map |
 | `timezone` | weather days, briefing | the UV value for today |
-| `languages` | briefing languages, the news summary's `lang` | language switcher |
+| `languages` | briefing languages, the news summary's `lang` | the language the briefing is asked for; the switcher offers all four interface languages in every city, and a briefing in another language than the page's says so |
 | `map.bounds`, `minZoom`, `maxZoom` | nothing | the map opens on `bounds` and cannot pan past them, so `bounds` is required |
 | `map.center`, `map.zoom`, `theme.accent` | nothing (tests only) | nothing; the accent comes from `globals.css` |
-| `feeds`, `dataSources` | every job | nothing; the web copy keeps `feeds: []` and `weather` because the type requires them |
+| `feeds`, `dataSources` | every job | not in the web config (`WebCityConfig`) |
+| `features` (web only) | nothing; `cityFeatures` in `packages/server/src/lib/city-features.ts` derives the same list from the server config | which tiles, map layers, sub-layers, political views and Sources-page credits the city shows: nothing else, so nothing shows empty |
 
 ## Order of work
 
 1. **First slice.** Configure the city with the Germany-wide sources only, and leave it inactive: `/<id>` keeps redirecting to Berlin and no job fetches for it. That is a complete change on its own, as Köln was. Add each city-specific source later, in its own change, after its licence check.
 2. **Server config.** Copy `packages/server/src/config/cities/koeln.ts` to `<id>.ts`. Set the identity fields, `coordinates` (the centre), `boundingBox` (the city limits), `map.center` as `[lon, lat]` of the centre, `map.bounds` around the box, and `dataSources.weather` at the centre (`config.test.ts` checks these agree). Find `nina`, `pollen` and `waterLevels` with [source-lookups.md](source-lookups.md). Add the city to `ALL_CITIES` in `packages/server/src/config/index.ts`.
-3. **Web config.** Copy `packages/web/src/config/cities/koeln.ts`, with the same identity and `map`. Add it to `ALL_CITIES` in `packages/web/src/config/index.ts`, not to `ACTIVE_CITY_IDS`.
+3. **Web config.** Copy `packages/web/src/config/cities/koeln.ts`, with the same identity and `map`. List in `features` what the server ingests for the city (`cityFeatures`; `config/index.test.ts` fails until the two agree) and the web app's own: `noiseMap`/`noiseTotal` with a noise map, `crisis` and `rentMap` for Berlin alone. Add it to `ALL_CITIES` in `packages/web/src/config/index.ts`, not to `ACTIVE_CITY_IDS`. Wiring a source later (step 6) adds its feature here in the same change.
 4. **Code keyed by city ID.** Add every entry [city-keyed-code.md](city-keyed-code.md) marks `every city` or `every DE city`: the pharmacy postcode, the `check:weather` list, the WAQI agencies, the Sources page and the accent colours.
 5. **City-state assumptions.** Decide each one below; don't paper over it with a Berlin-style branch.
 6. **City-specific sources.** Licence first, then wire ([source-lookups.md](source-lookups.md#licence-check-for-city-specific-sources)).
@@ -54,11 +55,14 @@ Berlin and Hamburg are city-states, and three lookups depend on it:
 - **State parliament.** `ingest-political.ts` counts every member of the state parliament in `PARLIAMENT_CONFIG` as the city's, so an entry for a city inside a state shows the whole Landtag. `ParliamentConfig` has no Bundestag-only form. Leave the city out, so it has no political data, until the state part can filter by constituency.
 - **Labour market.** `ingest-labor-market.ts` fetches `Bundesland=Berlin`, for Berlin only. A state's figure is not a city's, so leave the tile Berlin-only (it already is). A city would need the Bundesagentur's district tables, licence-checked.
 
-## What stays empty or Berlin-only
+## What a city without a source shows
 
-- **Berlin-only:** the Wastewater, Fire Department, Unemployment, Population, Crisis Services and Council Meetings tiles, and the social atlas, rent map, population, total-noise and live noise-sensor layers (README, "Adding a City", step 9).
-- **Shown for every city, empty without a source:** Briefing and News (feeds and `OPENAI_API_KEY`), Transit, Events, Appointments, Budget, Bathing, Political and Water levels, and the political and noise toggles. The Sources page's shared groups credit Ticketmaster and abgeordnetenwatch.de for every city.
-- Hiding a tile per city is a separate change. Say in the commit which tiles stay empty.
+Nothing for it. Each tile, map layer, sub-layer, political view and feature-bound Sources-page credit needs a feature in the web config's `features` (`CityFeature` in `shared/types.ts`), so a city shows exactly what it has data for: no empty tile, no "all clear" without data, no Berlin-only copy. A sub-layer list with one entry left is not shown; a number key whose layer the city lacks does nothing. The dashboard grid fills the holes missing tiles leave (`grid-flow-row-dense` in `DashboardGrid`).
+
+- **Berlin-only features:** wastewater, fire brigade, labour market, population, bathing (their jobs fetch for Berlin alone), crisis services and the rent map (Berlin's own directory and WMS), district mayors and state members by Bezirk (hand-kept tables in `ingest-political.ts`).
+- **Every city, no feature:** weather, air quality, rain radar, traffic incidents, pharmacies and defibrillators.
+- The Briefing needs `OPENAI_API_KEY` besides feeds; without it the tile says there are no articles.
+- Say in the commit which features the city has.
 
 ## Tests
 

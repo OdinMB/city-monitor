@@ -1,6 +1,6 @@
-import type { CityConfig } from '@city-monitor/shared';
+import type { WebCityConfig } from '@city-monitor/shared';
 
-export const berlin: CityConfig = {
+export const berlin: WebCityConfig = {
   id: 'berlin',
   name: 'Berlin',
   country: 'DE',
@@ -19,8 +19,12 @@ export const berlin: CityConfig = {
     ],
   },
   theme: { accent: '#E2001A' },
-  feeds: [],
-  dataSources: {
-    weather: { provider: 'open-meteo', lat: 52.52, lon: 13.405 },
-  },
+  // Every feature there is: Berlin is the city with every source.
+  features: [
+    'news', 'police', 'nina', 'pollen', 'waterLevels', 'transit', 'events', 'appointments',
+    'budget', 'roadworks', 'socialAtlas', 'noiseSensors', 'councilMeetings',
+    'political', 'districtMayors', 'stateByDistrict',
+    'bathing', 'wastewater', 'laborMarket', 'population', 'feuerwehr',
+    'crisis', 'rentMap', 'noiseMap', 'noiseTotal',
+  ],
 };

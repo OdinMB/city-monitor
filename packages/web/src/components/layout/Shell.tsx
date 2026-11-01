@@ -1,6 +1,7 @@
-import { type ReactNode, useState, useEffect, useRef, useCallback } from 'react';
+import { type ReactNode, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js';
+import { cityLayers } from '../../lib/map-layers.js';
 import { useIsDesktop } from '../../hooks/useMediaQuery.js';
 import { TopBar } from './TopBar.js';
 import { NewsMarquee } from './NewsMarquee.js';
@@ -10,7 +11,8 @@ import { Footer } from './Footer.js';
 
 export function Shell({ children }: { children: ReactNode }) {
   const city = useCityConfig();
-  const { hintsOpen, closeHints } = useKeyboardShortcuts();
+  const cityMapLayers = useMemo(() => cityLayers(city).layers, [city]);
+  const { hintsOpen, closeHints } = useKeyboardShortcuts(cityMapLayers);
   // Phones (below sm) don't slide the bar: it starts at the top of the page and
   // sticks there, and CommandLayout puts the warnings and the ticker under it.
   const isPhone = !useIsDesktop();

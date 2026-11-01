@@ -1,7 +1,10 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
+import type { WebCityConfig } from '@city-monitor/shared';
 import type { PoliticalDistrict } from '../../lib/api.js';
+import { berlin } from '../../config/cities/berlin.js';
+import { hamburg } from '../../config/cities/hamburg.js';
 import { PoliticalStrip } from './PoliticalStrip.js';
 
 const DISTRICTS: PoliticalDistrict[] = [
@@ -15,13 +18,56 @@ const DISTRICTS: PoliticalDistrict[] = [
   },
 ];
 
+const state = vi.hoisted(() => ({ city: null as WebCityConfig | null, levels: [] as string[] }));
+
 vi.mock('../../hooks/useCityConfig.js', () => ({
-  useCityConfig: () => ({ id: 'berlin', name: 'Berlin' }),
+  useCityConfig: () => state.city,
 }));
 
 vi.mock('../../hooks/usePolitical.js', () => ({
-  usePolitical: () => ({ data: DISTRICTS, fetchedAt: null, isLoading: false, isError: false, refetch: vi.fn() }),
+  usePolitical: (_cityId: string, level: string) => {
+    state.levels.push(level);
+    return { data: DISTRICTS, fetchedAt: null, isLoading: false, isError: false, refetch: vi.fn() };
+  },
 }));
+
+beforeEach(() => {
+  state.city = berlin;
+  state.levels = [];
+});
+
+describe('PoliticalStrip views per city', () => {
+  afterEach(async () => {
+    cleanup();
+    await i18n.changeLanguage('en');
+  });
+
+  it('gives Berlin its state members by Bezirk, its district mayors and the Bundestag', () => {
+    render(<PoliticalStrip expanded={false} />);
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(state.levels.at(-1)).toBe('state-bezirke');
+  });
+
+  it('gives Hamburg its state parliament by constituency and the Bundestag, with no district-mayor view', () => {
+    state.city = hamburg;
+    render(<PoliticalStrip expanded={false} />);
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    expect(screen.queryByRole('tab', { name: i18n.t('sidebar.political.bezirke') })).toBeNull();
+    expect(state.levels.at(-1)).toBe('state');
+  });
+
+  it('names each city\'s state parliament in German', async () => {
+    await i18n.changeLanguage('de');
+    const names = [berlin, hamburg].map((city) => {
+      state.city = city;
+      const { unmount } = render(<PoliticalStrip expanded={false} />);
+      const name = screen.getAllByRole('tab')[0]!.textContent;
+      unmount();
+      return name;
+    });
+    expect(new Set(names).size).toBe(2);
+  });
+});
 
 describe('PoliticalStrip profile link', () => {
   afterEach(async () => {

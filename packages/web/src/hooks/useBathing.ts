@@ -1,10 +1,12 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api, type BathingSpot, type ApiResponse } from '../lib/api.js';
 
-export function useBathing(cityId: string) {
+/** `enabled` false for a city without bathing spots. */
+export function useBathing(cityId: string, enabled = true) {
   const query = useQuery<ApiResponse<BathingSpot[]>>({
     queryKey: ['bathing', cityId],
     queryFn: () => api.getBathing(cityId),
+    enabled,
     refetchInterval: 24 * 60 * 60 * 1000,
     refetchIntervalInBackground: false,
     staleTime: 12 * 60 * 60 * 1000,

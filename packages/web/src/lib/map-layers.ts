@@ -1,0 +1,82 @@
+import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
+import type {
+  DataLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
+} from '../hooks/useCommandCenter.js';
+
+/**
+ * The map layers and sub-layers a city has data for, from its features. The
+ * sidebar lists only these, and the map draws only these, whatever the shared
+ * layer state holds (it outlives a switch to another city).
+ */
+export interface CityLayers {
+  layers: ReadonlySet<DataLayer>;
+  news: readonly NewsSubLayer[];
+  traffic: readonly TrafficSubLayer[];
+  water: readonly WaterSubLayer[];
+  /** The noise maps (WMS). */
+  noise: readonly NoiseLayer[];
+  /** Live noise sensors. */
+  noiseLive: boolean;
+  social: readonly SocialLayer[];
+  political: readonly PoliticalLayer[];
+}
+
+const SOCIAL_ATLAS_LAYERS: readonly SocialLayer[] = ['unemployment', 'single-parent', 'welfare', 'child-poverty'];
+
+/** The keys whose condition holds, in the order given. */
+function present<T>(entries: ReadonlyArray<readonly [T, boolean]>): T[] {
+  return entries.filter(([, on]) => on).map(([key]) => key);
+}
+
+export function cityLayers({ features }: Pick<WebCityConfig, 'features'>): CityLayers {
+  const has = (feature: CityFeature) => features.includes(feature);
+
+  const news = present<NewsSubLayer>([['news', has('news')], ['police', has('police')]]);
+  // TomTom traffic incidents cover every city.
+  const traffic = present<TrafficSubLayer>([['public-transport', has('transit')], ['incidents', true], ['roadworks', has('roadworks')]]);
+  const water = present<WaterSubLayer>([['levels', has('waterLevels')], ['bathing', has('bathing')]]);
+  const noise = present<NoiseLayer>([
+    ['total', has('noiseTotal')], ['road', has('noiseMap')], ['rail', has('noiseMap')], ['air', has('noiseMap')],
+  ]);
+  const noiseLive = has('noiseSensors');
+  const social = present<SocialLayer>([...SOCIAL_ATLAS_LAYERS.map((key) => [key, has('socialAtlas')] as const), ['rent', has('rentMap')]]);
+  const political = has('political')
+    ? present<PoliticalLayer>([['bezirke', has('districtMayors')], ['bundestag', true], ['landesparlament', has('stateByDistrict')]])
+    : [];
+
+  const layers = new Set(present<DataLayer>([
+    ['warnings', has('nina')],
+    ['news', news.length > 0],
+    ['traffic', true],
+    ['weather', true],
+    ['air-quality', true],
+    ['noise', noise.length > 0 || noiseLive],
+    ['water', water.length > 0],
+    ['emergencies', true],
+    ['social', social.length > 0],
+    ['population', has('population')],
+    ['political', political.length > 0],
+  ]));
+
+  return { layers, news, traffic, water, noise, noiseLive, social, political };
+}
+
+/** The selected sub-layers the city has, or every one it has when none of the selected ones is there. */
+export function effectiveSubLayers<T>(selected: ReadonlySet<T>, available: readonly T[]): ReadonlySet<T> {
+  const kept = available.filter((key) => selected.has(key));
+  return new Set(kept.length > 0 ? kept : available);
+}
+
+/** The selection when the city has it, otherwise the first option it has. */
+export function effectiveChoice<T>(selected: T, available: readonly T[]): T | undefined {
+  return available.includes(selected) ? selected : available[0];
+}
+
+/**
+ * The noise map to draw. No map (null) stays so only while live sensors are
+ * there to show; otherwise the selection, or the city's first map.
+ */
+export function effectiveNoiseLayer(selected: NoiseWmsLayer, { noise, noiseLive }: CityLayers): NoiseWmsLayer {
+  if (selected === null && noiseLive) return null;
+  return (selected !== null && noise.includes(selected) ? selected : noise[0]) ?? null;
+}

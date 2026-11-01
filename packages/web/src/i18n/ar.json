@@ -44,6 +44,7 @@
       "headlines": "العناوين",
       "empty": "لا توجد مقالات",
       "generatedAgo": "تم الإنشاء {{time}}",
+      "briefingOnlyIn": "هذا الملخص متاح باللغة {{language}} فقط.",
       "headlines_count": "{{count}} عناوين",
       "all": "الكل",
       "retry": "إعادة المحاولة",

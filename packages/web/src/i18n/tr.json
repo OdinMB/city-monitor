@@ -44,6 +44,7 @@
       "headlines": "Başlıklar",
       "empty": "Makale bulunamadı",
       "generatedAgo": "{{time}} oluşturuldu",
+      "briefingOnlyIn": "Bu özet yalnızca {{language}} olarak mevcut.",
       "headlines_count": "{{count}} başlık",
       "all": "Tümü",
       "retry": "Tekrar dene",

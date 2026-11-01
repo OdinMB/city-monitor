@@ -6,8 +6,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import type { NinaWarning } from '@city-monitor/shared';
+import i18n from 'i18next';
+import type { CityFeature, NinaWarning, WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
+import { CityContext } from '../../hooks/CityContext.js';
+import { berlin } from '../../config/cities/berlin.js';
+import { hamburg } from '../../config/cities/hamburg.js';
 import { CommandLayout } from './CommandLayout.js';
 
 // Only where the warnings sit matters here, not the map itself.
@@ -166,5 +170,68 @@ describe('CommandLayout warnings', { timeout: 30_000 }, () => {
     const slots = [...container.querySelectorAll('.empty\\:hidden')].filter((el) => follows(el, onMap));
     expect(slots.length).toBeGreaterThan(0);
     for (const slot of slots) expect(slot.childNodes).toHaveLength(0);
+  });
+});
+
+/** Each tile that needs a feature, by its title's translation key. */
+const FEATURE_TILES: ReadonlyArray<[CityFeature, string]> = [
+  ['news', 'panel.news.briefing'],
+  ['news', 'panel.news.title'],
+  ['transit', 'panel.transit.title'],
+  ['pollen', 'panel.pollen.title'],
+  ['wastewater', 'panel.wastewater.title'],
+  ['feuerwehr', 'panel.feuerwehr.title'],
+  ['bathing', 'panel.bathing.title'],
+  ['events', 'panel.events.title'],
+  ['appointments', 'panel.appointments.title'],
+  ['laborMarket', 'panel.laborMarket.title'],
+  ['population', 'panel.population.title'],
+  ['crisis', 'panel.crisis.title'],
+  ['budget', 'panel.budget.title'],
+  ['councilMeetings', 'panel.councilMeetings.title'],
+  ['political', 'sidebar.layers.political'],
+  ['waterLevels', 'panel.waterLevels.title'],
+];
+
+describe('CommandLayout tiles', { timeout: 30_000 }, () => {
+  let fetchSpy: { mockRestore: () => void };
+
+  beforeEach(() => {
+    localStorage.clear();
+    fetchSpy = vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  function tileTitles(city: WebCityConfig): string[] {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <CityContext.Provider value={city}>
+            <CommandLayout />
+          </CityContext.Provider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    return screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent ?? '');
+  }
+
+  const cities: ReadonlyArray<[string, WebCityConfig]> = [
+    ['Berlin', berlin],
+    ['Hamburg', hamburg],
+    ['a city with no features', { ...hamburg, features: [] }],
+  ];
+
+  it.each(cities)('shows a tile for each feature %s has, and none for the others', (_name, city) => {
+    const titles = tileTitles(city);
+    for (const [feature, key] of FEATURE_TILES) {
+      const shown = titles.some((title) => title.startsWith(i18n.t(key)));
+      expect(shown, `${feature}: ${key}`).toBe(city.features.includes(feature));
+    }
+    // Every city has weather and air quality.
+    expect(titles).toEqual(expect.arrayContaining([i18n.t('panel.weather.title'), i18n.t('panel.airQuality.title')]));
   });
 });

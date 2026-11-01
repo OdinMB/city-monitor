@@ -22,9 +22,11 @@ function isInputFocused(): boolean {
  * The page-wide single-key shortcuts: ? for the shortcuts dialog, D for dark
  * mode, 1-9 for a data layer and 0 to clear them. They work anywhere on the
  * page, as they always have, until someone switches them off in that dialog
- * (WCAG 2.1.4); Escape still closes the dialog then.
+ * (WCAG 2.1.4); Escape still closes the dialog then. A number keeps its layer
+ * in every city, and does nothing in a city without that layer (`layers`, the
+ * ones the city has).
  */
-export function useKeyboardShortcuts() {
+export function useKeyboardShortcuts(layers: ReadonlySet<DataLayer>) {
   const { toggle: toggleTheme } = useTheme();
   const toggleLayer = useCommandCenter((s) => s.toggleLayer);
   const setActiveLayers = useCommandCenter((s) => s.setActiveLayers);
@@ -72,7 +74,7 @@ export function useKeyboardShortcuts() {
       }
 
       const num = parseInt(key, 10);
-      if (num >= 1 && num <= 9 && num <= LAYER_ORDER.length) {
+      if (num >= 1 && num <= 9 && num <= LAYER_ORDER.length && layers.has(LAYER_ORDER[num - 1])) {
         e.preventDefault();
         toggleLayer(LAYER_ORDER[num - 1]);
       }
@@ -80,7 +82,7 @@ export function useKeyboardShortcuts() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [enabled, hintsOpen, setHintsOpen, toggleTheme, toggleLayer, setActiveLayers]);
+  }, [enabled, hintsOpen, setHintsOpen, toggleTheme, toggleLayer, setActiveLayers, layers]);
 
   return { hintsOpen, openHints, closeHints };
 }

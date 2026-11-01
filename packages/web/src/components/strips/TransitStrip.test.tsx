@@ -4,10 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import i18n from 'i18next';
 import type { ReactNode } from 'react';
-import type { ApiResponse, CityConfig, TransitAlert } from '@city-monitor/shared';
+import type { ApiResponse, TransitAlert } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
-import { CityContext } from '../../hooks/CityContext.js';
-import { hamburg } from '../../config/cities/hamburg.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { TransitStrip } from './TransitStrip.js';
 
@@ -25,24 +23,21 @@ const ALERT: TransitAlert = {
 };
 
 /**
- * Berlin by default. `fetchedAt` defaults to now; null is what the API sends
- * when it has no transit data. `city` sets the config directly, for a city
- * that is not active yet.
+ * Berlin, the city with a transit source. `fetchedAt` defaults to now; null is
+ * what the API sends when it has no transit data.
  */
 function createWrapper(
   alerts: TransitAlert[],
-  { fetchedAt = new Date().toISOString(), city }: { fetchedAt?: string | null; city?: CityConfig } = {},
+  { fetchedAt = new Date().toISOString() }: { fetchedAt?: string | null } = {},
 ) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const response: ApiResponse<TransitAlert[]> = { data: alerts, fetchedAt };
-  queryClient.setQueryData(['transit', city?.id ?? 'berlin'], response);
+  queryClient.setQueryData(['transit', 'berlin'], response);
 
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        {city
-          ? <CityContext.Provider value={city}>{children}</CityContext.Provider>
-          : <CityProvider cityId="berlin">{children}</CityProvider>}
+        <CityProvider cityId="berlin">{children}</CityProvider>
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -207,15 +202,6 @@ describe('TransitStrip all-clear and freshness', () => {
     expect(screen.getByText('No transit data available')).toBeTruthy();
     expect(screen.queryByText(/All clear/)).toBeNull();
     expect(screen.queryByText(/Checked/)).toBeNull();
-  });
-
-  it('says there is no transit data for a city without a transit source', () => {
-    // Hamburg has no transit source; the API answers { data: [], fetchedAt: null } for it.
-    expect(hamburg.dataSources.transit).toBeUndefined();
-    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: null, city: hamburg }) });
-
-    expect(screen.getByText('No transit data available')).toBeTruthy();
-    expect(screen.queryByText(/All clear/)).toBeNull();
   });
 
   it('never says all clear on stale data: an empty list shows the outdated note instead', () => {

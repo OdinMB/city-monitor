@@ -11,6 +11,8 @@ Every place outside `packages/*/src/config/cities/` that is keyed by a city ID, 
 | `CITIES` | `packages/server/src/scripts/check-weather-sources.ts` | every city | `npm run check:weather -- --city <id>` stops with "Unknown city". |
 | `PARLIAMENT_CONFIG` | `packages/server/src/cron/ingest-political.ts` | city-states | No political data. An entry counts every member of the state parliament as the city's (SKILL.md, "City-state assumptions"). |
 | `BEZIRKSBUERGERMEISTER` | `packages/server/src/cron/ingest-political.ts` | optional | No district mayors. Hand-maintained, Berlin only. |
+| `STATE_CONSTITUENCY_BEZIRKE` | `packages/server/src/cron/ingest-political.ts` | optional | The state members are not grouped by Bezirk: the political tile's state view reads them by constituency, and the map has no state-parliament view. Only for a city whose state constituencies are named after its Bezirke (Berlin). |
+| `BERLIN_OWN_SOURCES` | `packages/server/src/lib/city-features.ts` | Berlin only | Bathing, wastewater, labour market, population and fire brigade count as features of Berlin alone, as their jobs fetch for it alone. |
 | `admin_level` | `packages/server/src/cron/ingest-aeds.ts` | city-states | The Overpass query looks for a state-level area with the city's name, so a city inside a state gets no AEDs. |
 | `BERLIN_ONLY_JOBS` | `packages/server/src/app.ts` | Berlin only | Bathing, wastewater, labour market, population and fire brigade: Berlin's own sources, stored under `berlin`. |
 | `cityId === 'berlin'` | `packages/server/src/db/warm-cache.ts` | Berlin only | Restores those jobs' data, noise sensors and council meetings for Berlin alone. |
@@ -21,11 +23,8 @@ Every place outside `packages/*/src/config/cities/` that is keyed by a city ID, 
 | `CITY_SOURCES` | `packages/web/src/pages/SourcesPage.tsx` | every city | The Sources page lists only the sources every city shares. |
 | `[data-city=` | `packages/web/src/globals.css` | every city | The default blue accent. Add a light block and a `.dark` block. |
 | `DISTRICT_URLS` | `packages/web/src/components/map/constants.ts` | optional | No district outlines on the political layer. The GeoJSON goes in `packages/web/src/data/districts/`; check its licence. |
-| `NOISE_WMS_BASE` | `packages/web/src/components/map/constants.ts` | optional | No noise map (`NOISE_WMS_LAYERS` beside it). Its host needs the `SERVICES` and `connect-src` rows below. |
-| `LAYER_META` | `packages/web/src/components/sidebar/DataLayerToggles.tsx` | Berlin only | `cities: ['berlin']`, here and in `NOISE_SUB_META`, keeps the social atlas (with the rent map), population and total-noise toggles to Berlin; `CityMap.tsx` checks the ID again. Every other toggle shows for every city, with or without data. |
-| `cityId === 'berlin'` | `packages/web/src/components/layout/CommandLayout.tsx` | Berlin only | Wastewater, Fire Department, Unemployment, Population, Crisis Services and Council Meetings tiles. |
+| `NOISE_WMS_BASE` | `packages/web/src/components/map/constants.ts` | optional | No noise map (`NOISE_WMS_LAYERS` beside it, the credit in `NOISE_WMS_ATTRIBUTION`; the web config's `noiseMap` and `noiseTotal` features must match, `config/index.test.ts` checks). Its host needs the `SERVICES` and `connect-src` rows below. |
 | `BerlinSkyline` | `packages/web/src/components/layout/SkylineSeparator.tsx` | optional | The generic skyline. |
-| `/berlin/sources` | `packages/web/src/pages/PrivacyPage.tsx` | Berlin only | The privacy page links Berlin's Sources page. |
 | `SERVICES` | `packages/web/src/pages/PrivacyPage.tsx` | per browser host | A host the browser loads from (WMS layers, tiles) must be named here and in the CSP; `PrivacyPage.test.tsx` checks the two agree. |
 | `connect-src` | `render.yaml` | per browser host | The browser refuses a host the CSP's `connect-src` and `img-src` don't name. Deploy configuration. |
 | `ACTIVE_CITIES` | `render.yaml` | when activating | The blueprint's default, `berlin`. The deployment's owner sets the live value. |

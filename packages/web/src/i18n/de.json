@@ -44,6 +44,7 @@
       "headlines": "Schlagzeilen",
       "empty": "Keine Artikel verfügbar",
       "generatedAgo": "Erstellt {{time}}",
+      "briefingOnlyIn": "Dieses Briefing gibt es nur auf {{language}}.",
       "headlines_count": "{{count}} Schlagzeilen",
       "all": "Alle",
       "retry": "Erneut versuchen",
@@ -499,7 +500,9 @@
     "political": {
       "bezirke": "Bezirke",
       "bundestag": "Bundestag",
-      "landesparlament": "Abgeordnetenhaus"
+      "landesparlament": "Landesparlament",
+      "landesparlament_berlin": "Abgeordnetenhaus",
+      "landesparlament_hamburg": "Bürgerschaft"
     }
   },
   "mapPopup": {

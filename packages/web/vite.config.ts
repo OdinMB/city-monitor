@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => ({
         {
           path: '/hamburg',
           title: 'City Monitor — Hamburg',
-          description: 'Real-time Hamburg dashboard: news, weather, transit, events, tidal levels, and more.',
+          description: 'Real-time Hamburg dashboard: news, police reports, weather, air quality, Elbe tidal levels, and more.',
           ogImage: 'og-hamburg.png',
         },
         {

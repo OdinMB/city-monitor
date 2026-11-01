@@ -1,4 +1,4 @@
 import { createContext } from 'react';
-import type { CityConfig } from '@city-monitor/shared';
+import type { WebCityConfig } from '@city-monitor/shared';
 
-export const CityContext = createContext<CityConfig | null>(null);
+export const CityContext = createContext<WebCityConfig | null>(null);

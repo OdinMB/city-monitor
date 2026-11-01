@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import i18n from 'i18next';
+import type { WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
-import { useCommandCenter } from '../../hooks/useCommandCenter.js';
+import { CityContext } from '../../hooks/CityContext.js';
+import { hamburg } from '../../config/cities/hamburg.js';
+import { cityLayers } from '../../lib/map-layers.js';
+import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { DataLayerToggles } from './DataLayerToggles.js';
 
@@ -105,5 +109,44 @@ describe('DataLayerToggles shortcuts', () => {
     expect(opener.getAttribute('aria-haspopup')).toBe('dialog');
     fireEvent.click(opener);
     expect(useShortcutSettings.getState().hintsOpen).toBe(true);
+  });
+});
+
+describe('DataLayerToggles per city', () => {
+  function renderFor(city: WebCityConfig) {
+    return render(
+      <CityContext.Provider value={city}>
+        <DataLayerToggles />
+      </CityContext.Provider>,
+    );
+  }
+  const shown = (label: string) => screen.queryAllByText(label, { exact: true }).length > 0;
+
+  it('lists only the layers the city has', () => {
+    renderFor(hamburg);
+    const expected = cityLayers(hamburg).layers;
+    for (const layer of ['warnings', 'news', 'traffic', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political']) {
+      expect(shown(i18n.t(`sidebar.layers.${layer}`)), layer).toBe(expected.has(layer as DataLayer));
+    }
+  });
+
+  it('lists a layer\'s sub-layers only when the city has more than one', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic', 'water', 'noise', 'political', 'news']) });
+    renderFor(hamburg);
+    // Hamburg has only the traffic incidents, the river gauges and the Bundestag view.
+    expect(shown(i18n.t('sidebar.traffic.incidents'))).toBe(false);
+    expect(shown(i18n.t('sidebar.water.levels'))).toBe(false);
+    expect(shown(i18n.t('sidebar.political.bundestag'))).toBe(false);
+    // It has news and police, and three noise maps without the all-sources one or live sensors.
+    expect(shown(i18n.t('sidebar.news.police'))).toBe(true);
+    expect(['road', 'rail', 'air'].every((key) => shown(i18n.t(`sidebar.noise.${key}`)))).toBe(true);
+    expect(shown(i18n.t('sidebar.noise.total'))).toBe(false);
+    expect(shown(i18n.t('sidebar.noise.live'))).toBe(false);
+  });
+
+  it('marks the noise map shown where the selected one is missing', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['noise']), noiseLayer: 'total' });
+    renderFor(hamburg);
+    expect(buttonWith(i18n.t('sidebar.noise.road')).getAttribute('aria-pressed')).toBe('true');
   });
 });

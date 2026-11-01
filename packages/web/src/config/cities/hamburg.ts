@@ -1,6 +1,6 @@
-import type { CityConfig } from '@city-monitor/shared';
+import type { WebCityConfig } from '@city-monitor/shared';
 
-export const hamburg: CityConfig = {
+export const hamburg: WebCityConfig = {
   id: 'hamburg',
   name: 'Hamburg',
   country: 'DE',
@@ -19,8 +19,9 @@ export const hamburg: CityConfig = {
     ],
   },
   theme: { accent: '#004B93' },
-  feeds: [],
-  dataSources: {
-    weather: { provider: 'open-meteo', lat: 53.5511, lon: 9.9937 },
-  },
+  // No transit (HVV has no free API), events, appointments, budget, roadworks,
+  // social atlas, noise sensors, council meetings, district mayors or Berlin's
+  // own sources. The Bürgerschaft's constituencies are not Bezirke, so its
+  // members are not grouped by Bezirk.
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'political', 'noiseMap'],
 };

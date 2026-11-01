@@ -1,12 +1,14 @@
-import { createElement, type ReactNode } from 'react';
+import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity } from 'lucide';
-import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NoiseWmsLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
+import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
+import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import type { IconNode } from '../../lib/map-icons.js';
 
-const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: string[] }[] = [
+// Each city sees only the layers and sub-layers it has data for (cityLayers).
+const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'warnings', icon: TriangleAlert as IconNode, color: '#ef4444' },
   { layer: 'news', icon: Newspaper as IconNode, color: '#6366f1' },
   { layer: 'traffic', icon: Car as IconNode, color: '#8b5cf6' },
@@ -15,8 +17,8 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string; cities?: st
   { layer: 'noise', icon: Volume2 as IconNode, color: '#f97316' },
   { layer: 'water', icon: Droplets as IconNode, color: '#3b82f6' },
   { layer: 'emergencies', icon: HeartPulse as IconNode, color: '#ef4444' },
-  { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6', cities: ['berlin'] },
-  { layer: 'population', icon: Users as IconNode, color: '#3b82f6', cities: ['berlin'] },
+  { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6' },
+  { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
 ];
 
@@ -38,8 +40,8 @@ const EMERGENCY_SUB_META: { key: EmergencySubLayer; icon: IconNode; color: strin
   { key: 'aeds', icon: HeartPulse as IconNode, color: '#ef4444' },
 ];
 
-const NOISE_SUB_META: { key: NoiseLayer; icon: IconNode; color: string; cities?: string[] }[] = [
-  { key: 'total', icon: Volume2 as IconNode, color: '#f97316', cities: ['berlin'] },
+const NOISE_SUB_META: { key: NoiseLayer; icon: IconNode; color: string }[] = [
+  { key: 'total', icon: Volume2 as IconNode, color: '#f97316' },
   { key: 'road', icon: Car as IconNode, color: '#f97316' },
   { key: 'rail', icon: TrainTrack as IconNode, color: '#f97316' },
   { key: 'air', icon: Plane as IconNode, color: '#f97316' },
@@ -112,6 +114,38 @@ function SubLayerItem({ icon, color, active, label, onClick, parentColor }: { ic
   );
 }
 
+/**
+ * A layer's sub-layer buttons for the ones the city has, or nothing when it
+ * has one or none: a lone sub-layer is the layer itself. `minItems` is 1 where
+ * another button sits beside the list (noise's live sensors).
+ */
+function SubLayerList<K extends string>({ meta, available, isActive, onSelect, label, parentColor, minItems = 2 }: {
+  meta: ReadonlyArray<{ key: K; icon: IconNode; color: string }>;
+  available: readonly K[];
+  isActive: (key: K) => boolean;
+  onSelect: (key: K) => void;
+  label: (key: K) => string;
+  parentColor: string;
+  minItems?: number;
+}) {
+  if (available.length < minItems) return null;
+  return (
+    <>
+      {meta.filter(({ key }) => available.includes(key)).map(({ key, icon, color }) => (
+        <SubLayerItem
+          key={key}
+          icon={icon}
+          color={color}
+          active={isActive(key)}
+          label={label(key)}
+          onClick={() => onSelect(key)}
+          parentColor={parentColor}
+        />
+      ))}
+    </>
+  );
+}
+
 export function DataLayerToggles() {
   const { t } = useTranslation();
   const city = useCityConfig();
@@ -140,6 +174,13 @@ export function DataLayerToggles() {
   // With the single-key shortcuts switched off, the number badges would point to keys that do nothing.
   const shortcutsOn = useShortcutSettings((s) => s.enabled);
   const setHintsOpen = useShortcutSettings((s) => s.setHintsOpen);
+  const available = useMemo(() => cityLayers(city), [city]);
+  const news = effectiveSubLayers(newsSubLayers, available.news);
+  const traffic = effectiveSubLayers(trafficSubLayers, available.traffic);
+  const water = effectiveSubLayers(waterSubLayers, available.water);
+  const noise = effectiveNoiseLayer(noiseLayer, available);
+  const social = effectiveChoice(socialLayer, available.social);
+  const political = effectiveChoice(politicalLayer, available.political);
 
   return (
     <div>
@@ -170,64 +211,33 @@ export function DataLayerToggles() {
         </button>
       </div>
       <div className="space-y-0.5">
-        {LAYER_META.filter(({ cities }) => !cities || cities.includes(city.id)).map(({ layer, icon, color }) => {
+        {LAYER_META.filter(({ layer }) => available.layers.has(layer)).map(({ layer, icon, color }) => {
           const active = activeLayers.has(layer);
 
           let subItems: ReactNode = null;
           if (layer === 'news' && active) {
-            subItems = NEWS_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
-              <SubLayerItem
-                key={key}
-                icon={subIcon}
-                color={subColor}
-                active={newsSubLayers.has(key)}
-                label={t(`sidebar.news.${key}`)}
-                onClick={() => toggleNewsSubLayer(key)}
-                parentColor={color}
-              />
-            ));
+            subItems = (
+              <SubLayerList meta={NEWS_SUB_META} available={available.news} parentColor={color}
+                isActive={(key) => news.has(key)} onSelect={toggleNewsSubLayer} label={(key) => t(`sidebar.news.${key}`)} />
+            );
           } else if (layer === 'traffic' && active) {
-            subItems = TRAFFIC_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
-              <SubLayerItem
-                key={key}
-                icon={subIcon}
-                color={subColor}
-                active={trafficSubLayers.has(key)}
-                label={t(`sidebar.traffic.${key}`)}
-                onClick={() => toggleTrafficSubLayer(key)}
-                parentColor={color}
-              />
-            ));
+            subItems = (
+              <SubLayerList meta={TRAFFIC_SUB_META} available={available.traffic} parentColor={color}
+                isActive={(key) => traffic.has(key)} onSelect={toggleTrafficSubLayer} label={(key) => t(`sidebar.traffic.${key}`)} />
+            );
           } else if (layer === 'emergencies' && active) {
-            subItems = EMERGENCY_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
-              <SubLayerItem
-                key={key}
-                icon={subIcon}
-                color={subColor}
-                active={emergencySubLayers.has(key)}
-                label={t(`sidebar.emergencies.${key}`)}
-                onClick={() => toggleEmergencySubLayer(key)}
-                parentColor={color}
-              />
-            ));
+            subItems = (
+              <SubLayerList meta={EMERGENCY_SUB_META} available={EMERGENCY_SUB_META.map((m) => m.key)} parentColor={color}
+                isActive={(key) => emergencySubLayers.has(key)} onSelect={toggleEmergencySubLayer} label={(key) => t(`sidebar.emergencies.${key}`)} />
+            );
           } else if (layer === 'water' && active) {
-            subItems = WATER_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
-              <SubLayerItem
-                key={key}
-                icon={subIcon}
-                color={subColor}
-                active={waterSubLayers.has(key)}
-                label={t(`sidebar.water.${key}`)}
-                onClick={() => toggleWaterSubLayer(key)}
-                parentColor={color}
-              />
-            ));
+            subItems = (
+              <SubLayerList meta={WATER_SUB_META} available={available.water} parentColor={color}
+                isActive={(key) => water.has(key)} onSelect={toggleWaterSubLayer} label={(key) => t(`sidebar.water.${key}`)} />
+            );
           } else if (layer === 'noise' && active) {
-            // Hamburg has no 'total' sub-layer — fall back to 'road' for active state highlight
-            const effectiveNoise: NoiseWmsLayer = (noiseLayer === 'total' && city.id !== 'berlin') ? 'road' : noiseLayer;
-            // Cities without live sensors can't deselect the last WMS map (nothing would be visible)
-            const hasLiveSensors = city.id === 'berlin';
-            const liveItem = hasLiveSensors ? (
+            // Without live sensors the last noise map can't be switched off: nothing would be visible.
+            const liveItem = available.noiseLive && (available.noise.length > 0) ? (
               <SubLayerItem
                 key="live"
                 icon={Activity as IconNode}
@@ -238,56 +248,33 @@ export function DataLayerToggles() {
                 parentColor={color}
               />
             ) : null;
-            const wmsItems = NOISE_SUB_META
-              .filter(({ cities: c }) => !c || c.includes(city.id))
-              .map(({ key, icon: subIcon, color: subColor }) => (
-              <SubLayerItem
-                key={key}
-                icon={subIcon}
-                color={subColor}
-                active={effectiveNoise === key}
-                label={t(`sidebar.noise.${key}`)}
-                onClick={() => { if (hasLiveSensors || effectiveNoise !== key) setNoiseLayer(key); }}
-                parentColor={color}
-              />
-            ));
-            subItems = <>{liveItem}{wmsItems}</>;
+            subItems = (
+              <>
+                {liveItem}
+                <SubLayerList meta={NOISE_SUB_META} available={available.noise} parentColor={color}
+                  minItems={liveItem ? 1 : 2}
+                  isActive={(key) => noise === key}
+                  onSelect={(key) => { if (available.noiseLive || noise !== key) setNoiseLayer(key); }}
+                  label={(key) => t(`sidebar.noise.${key}`)} />
+              </>
+            );
           } else if (layer === 'social' && active) {
-            subItems = SOCIAL_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
-              <SubLayerItem
-                key={key}
-                icon={subIcon}
-                color={subColor}
-                active={socialLayer === key}
-                label={t(`sidebar.social.${key}`)}
-                onClick={() => setSocialLayer(key)}
-                parentColor={color}
-              />
-            ));
+            subItems = (
+              <SubLayerList meta={SOCIAL_SUB_META} available={available.social} parentColor={color}
+                isActive={(key) => social === key} onSelect={setSocialLayer} label={(key) => t(`sidebar.social.${key}`)} />
+            );
           } else if (layer === 'population' && active) {
-            subItems = POPULATION_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
-              <SubLayerItem
-                key={key}
-                icon={subIcon}
-                color={subColor}
-                active={populationLayer === key}
-                label={t(`sidebar.population.${key}`)}
-                onClick={() => setPopulationLayer(key)}
-                parentColor={color}
-              />
-            ));
+            subItems = (
+              <SubLayerList meta={POPULATION_SUB_META} available={POPULATION_SUB_META.map((m) => m.key)} parentColor={color}
+                isActive={(key) => populationLayer === key} onSelect={setPopulationLayer} label={(key) => t(`sidebar.population.${key}`)} />
+            );
           } else if (layer === 'political' && active) {
-            subItems = POLITICAL_SUB_META.map(({ key, icon: subIcon, color: subColor }) => (
-              <SubLayerItem
-                key={key}
-                icon={subIcon}
-                color={subColor}
-                active={politicalLayer === key}
-                label={t(`sidebar.political.${key}`)}
-                onClick={() => setPoliticalLayer(key)}
-                parentColor={color}
-              />
-            ));
+            // The state parliament has its own name per city (the `_<city id>` keys).
+            subItems = (
+              <SubLayerList meta={POLITICAL_SUB_META} available={available.political} parentColor={color}
+                isActive={(key) => political === key} onSelect={setPoliticalLayer}
+                label={(key) => t(`sidebar.political.${key}`, { context: city.id })} />
+            );
           }
 
           const shortcut = shortcutsOn ? LAYER_SHORTCUT[layer] : undefined;

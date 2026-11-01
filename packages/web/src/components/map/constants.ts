@@ -87,6 +87,18 @@ const NOISE_WMS_BASE: Record<string, string> = {
   hamburg: 'https://geodienste.hamburg.de/wms_strategische_laermkarten',
 };
 
+/** The map credit for each city's noise map, as its provider and licence ask. */
+const NOISE_WMS_ATTRIBUTION: Record<string, string> = {
+  berlin: '&copy; <a href="https://daten.berlin.de" target="_blank">Open Data</a>',
+  hamburg:
+    '&copy; <a href="https://geodienste.hamburg.de/wms_strategische_laermkarten" target="_blank">Freie und Hansestadt Hamburg</a>, ' +
+    '<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank">dl-de/by-2-0</a>',
+};
+
+export function getNoiseWmsAttribution(cityId: string): string | undefined {
+  return NOISE_WMS_ATTRIBUTION[cityId];
+}
+
 export function getNoiseWmsUrl(cityId: string, noiseLayer: string): string | null {
   const base = NOISE_WMS_BASE[cityId];
   const layers = NOISE_WMS_LAYERS[cityId];

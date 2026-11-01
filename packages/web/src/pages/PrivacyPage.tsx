@@ -1,5 +1,7 @@
+import { Fragment } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
+import { getAllCities } from '../config/index.js';
 import { PageShell } from '../components/layout/PageShell.js';
 import { ObfuscatedEmail } from '../components/ObfuscatedContact.js';
 
@@ -186,7 +188,13 @@ export function PrivacyPage() {
             </table>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            See our <Link to="/berlin/sources" className="text-link hover:underline">data sources</Link> page for a full list of APIs we use.
+            Each city&apos;s data sources page lists the APIs we use for it:{' '}
+            {getAllCities().map((city, i) => (
+              <Fragment key={city.id}>
+                {i > 0 && ', '}
+                <Link to={`/${city.id}/sources`} className="text-link hover:underline">{city.name}</Link>
+              </Fragment>
+            ))}.
             Everything else on the dashboard, including the rain radar, comes through our own server,
             so those data providers never receive requests from your browser when the dashboard loads
             its data. The interface uses your

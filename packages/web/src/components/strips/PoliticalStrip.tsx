@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CityFeature } from '@city-monitor/shared';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
@@ -15,12 +16,22 @@ import { TileFooter } from '../layout/TileFooter.js';
 import type { PoliticalDistrict, Representative } from '../../lib/api.js';
 
 type View = 'state' | 'bezirke' | 'bundestag';
+type Level = 'bezirke' | 'bundestag' | 'state' | 'state-bezirke';
 
-const VIEW_LEVELS: Record<View, 'bezirke' | 'bundestag' | 'state-bezirke'> = {
-  state: 'state-bezirke',
-  bezirke: 'bezirke',
-  bundestag: 'bundestag',
-};
+/**
+ * The views the city has data for, each with the level it reads. The state
+ * parliament's seat chart reads its members grouped by Bezirk where the
+ * political job groups them (Berlin), otherwise by constituency; the district
+ * mayors exist only where they are kept (Berlin).
+ */
+function viewsOf(features: readonly CityFeature[]): Array<{ key: View; level: Level }> {
+  const views: Array<{ key: View; level: Level }> = [
+    { key: 'state', level: features.includes('stateByDistrict') ? 'state-bezirke' : 'state' },
+  ];
+  if (features.includes('districtMayors')) views.push({ key: 'bezirke', level: 'bezirke' });
+  views.push({ key: 'bundestag', level: 'bundestag' });
+  return views;
+}
 
 /* ── helpers ──────────────────────────────────────────────── */
 
@@ -191,19 +202,22 @@ const PREVIEW_COUNT = 5;
 const FRESH_MAX_AGE = staleAfter('political');
 
 export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onExpand?: () => void }) {
-  const [view, setView] = useState<View>('state');
-  const { id: cityId } = useCityConfig();
+  const [selected, setView] = useState<View>('state');
+  const { id: cityId, features } = useCityConfig();
   const { t } = useTranslation();
 
-  const { data, fetchedAt, isLoading, isError, refetch } = usePolitical(cityId, VIEW_LEVELS[view]);
+  // The state parliament has its own name per city (the `_<city id>` keys).
+  const views = useMemo(() => viewsOf(features).map((v) => ({
+    ...v,
+    label: t(`sidebar.political.${v.key === 'state' ? 'landesparlament' : v.key}`, { context: cityId }),
+  })), [features, cityId, t]);
+  const current = views.find((v) => v.key === selected) ?? views[0]!;
+  const view = current.key;
+
+  const { data, fetchedAt, isLoading, isError, refetch } = usePolitical(cityId, current.level);
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  const views = useMemo<{ key: View; label: string }[]>(() => [
-    { key: 'state', label: t('sidebar.political.landesparlament') },
-    { key: 'bezirke', label: t('sidebar.political.bezirke') },
-    { key: 'bundestag', label: t('sidebar.political.bundestag') },
-  ], [t]);
-  const viewIdx = views.findIndex((v) => v.key === view);
+  const viewIdx = views.indexOf(current);
   const selectViewByIdx = useCallback((i: number) => setView(views[i]!.key), [views]);
   const { setTabRef, onKeyDown } = useTabKeys(views.length, viewIdx, selectViewByIdx);
 

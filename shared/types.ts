@@ -34,6 +34,58 @@ export interface CityConfig {
   dataSources: CityDataSources;
 }
 
+/**
+ * What a city has data for, beyond what every city gets (weather, air quality,
+ * rain radar, traffic incidents, pharmacies and defibrillators). The web app
+ * shows a tile, a map layer or a sub-layer only for the features its city
+ * config lists (packages/web/src/lib/city-features.ts).
+ *
+ * Most come from the server's ingestion: `cityFeatures` in
+ * packages/server/src/lib/city-features.ts derives them from a server config,
+ * and packages/web/src/config/index.test.ts checks that each web config lists
+ * exactly those. The rest are the web app's own (WEB_ONLY_FEATURES there): a
+ * map service or a directory the browser shows for the city.
+ */
+export type CityFeature =
+  // From the server config's feeds and dataSources
+  | 'news'            // feeds: briefing, news tiles, news map layer
+  | 'police'          // dataSources.police: police reports on the map
+  | 'nina'            // dataSources.nina: civil-protection warnings
+  | 'pollen'
+  | 'waterLevels'
+  | 'transit'
+  | 'events'
+  | 'appointments'
+  | 'budget'
+  | 'roadworks'
+  | 'socialAtlas'
+  | 'noiseSensors'
+  | 'councilMeetings'
+  // From the political ingestion's own tables
+  | 'political'       // PARLIAMENT_CONFIG: Bundestag and state parliament members
+  | 'districtMayors'  // BEZIRKSBUERGERMEISTER
+  | 'stateByDistrict' // state members grouped by Bezirk
+  // Berlin's own sources, ingested for Berlin alone
+  | 'bathing'
+  | 'wastewater'
+  | 'laborMarket'
+  | 'population'
+  | 'feuerwehr'
+  // The web app's own
+  | 'crisis'          // the crisis-service directory
+  | 'rentMap'         // the rent map WMS
+  | 'noiseMap'        // a strategic noise map WMS (road, rail, air)
+  | 'noiseTotal';     // its all-sources layer
+
+/**
+ * A city as the web app holds it: the shared identity and map, without the
+ * server's ingestion settings (feeds, dataSources), and with the features the
+ * city has.
+ */
+export type WebCityConfig = Omit<CityConfig, 'feeds' | 'dataSources'> & {
+  features: readonly CityFeature[];
+};
+
 export interface FeedConfig {
   name: string;
   url: string;

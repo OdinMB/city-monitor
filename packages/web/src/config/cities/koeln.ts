@@ -1,6 +1,6 @@
-import type { CityConfig } from '@city-monitor/shared';
+import type { WebCityConfig } from '@city-monitor/shared';
 
-export const koeln: CityConfig = {
+export const koeln: WebCityConfig = {
   id: 'koeln',
   name: 'Köln',
   country: 'DE',
@@ -19,8 +19,6 @@ export const koeln: CityConfig = {
     ],
   },
   theme: { accent: '#C8102E' },
-  feeds: [],
-  dataSources: {
-    weather: { provider: 'brightsky', lat: 50.9375, lon: 6.9603 },
-  },
+  // The Germany-wide sources only.
+  features: ['nina', 'pollen', 'waterLevels'],
 };
