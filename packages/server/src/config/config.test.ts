@@ -127,6 +127,17 @@ describe('Köln config', () => {
     });
   });
 
+  it('takes events from the city’s open data and council meetings from its OParl 1.1 body', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'koeln');
+    const { dataSources } = getCityConfig('koeln')!;
+    expect(dataSources.events).toEqual([
+      { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },
+    ]);
+    expect(dataSources.councilMeetings?.oparlBody?.meetingsUrl)
+      .toBe('https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings');
+    expect(dataSources.councilMeetings?.oparlBody?.districtBody).toBe('Bezirksvertretung');
+  });
+
   it('has its licence-checked feeds, Polizei Köln and roadworks, and no other city-specific source', () => {
     vi.stubEnv('ACTIVE_CITIES', 'koeln');
     const config = getCityConfig('koeln')!;
@@ -134,7 +145,10 @@ describe('Köln config', () => {
     // Polizei Köln (presseportal newsroom 12415), not another force's newsroom
     expect(config.dataSources.police?.url).toBe('https://www.presseportal.de/rss/dienststelle_12415.rss2');
     expect(config.dataSources.roadworks?.provider).toBe('koeln-wfs');
-    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water, police: _police, roadworks: _roadworks, ...rest } = config.dataSources;
+    const {
+      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
+      police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council, ...rest
+    } = config.dataSources;
     expect(rest).toEqual({});
   });
 
@@ -195,13 +209,23 @@ describe('München config', () => {
     expect(dataSources.pollen).toEqual({ provider: 'dwd', regionId: 120, partregionId: 121 });
   });
 
+  it('takes council meetings from the RIS RSS feeds, as the RIS has no OParl', () => {
+    const { dataSources } = getCityConfig('muenchen')!;
+    expect(dataSources.councilMeetings).toEqual({
+      muenchenRis: {
+        councilFeedUrl: 'https://risi.muenchen.de/risi/rss?feed=StR-Sitzungen',
+        districtFeedUrl: 'https://risi.muenchen.de/risi/rss?feed=BA-Sitzungen',
+      },
+    });
+  });
+
   it('has its licence-checked feeds and roadworks, and no river gauge, police or other city-specific source', () => {
     const config = getCityConfig('muenchen')!;
     expect(config.feeds.map((f) => f.name)).toEqual(['BR24 Oberbayern', 'Feuerwehr München']);
     // polizei.bayern.de's robots.txt disallows all; the Polizeipräsidium is not on presseportal
     expect(config.dataSources.police).toBeUndefined();
     expect(config.dataSources.roadworks?.provider).toBe('muenchen-wfs');
-    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, ...rest } = config.dataSources;
+    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council, ...rest } = config.dataSources;
     expect(rest).toEqual({});
   });
 });

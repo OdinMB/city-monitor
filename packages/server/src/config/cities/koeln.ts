@@ -2,9 +2,9 @@ import type { CityConfig } from '@city-monitor/shared';
 
 /**
  * Köln: the Germany-wide sources (DWD, Open-Meteo, NINA, PEGELONLINE) plus
- * news feeds, Polizei Köln and the city's roadworks WFS. The other
- * city-specific sources (transit, events, council meetings, district
- * boundaries) are not configured yet, so their jobs fetch nothing for Köln.
+ * news feeds, Polizei Köln, the city's roadworks WFS, its own events and its
+ * council information system. Transit and district boundaries are not
+ * configured yet, so their jobs fetch nothing for Köln.
  */
 export const koeln: CityConfig = {
   id: 'koeln',
@@ -114,6 +114,19 @@ export const koeln: CityConfig = {
         'strassenbauarbeiten', 'versorgungsarbeiten', 'kanalsanierung', 'ampelarbeiten', 'notfall',
         'brueckenarbeiten', 'gleisbau', 'tunnelarbeiten', 'markierungsarbeiten', 'sondierungsarbeiten',
       ],
+    },
+    // The city's own events (Stadt Köln open data, dl-de/zero-2.0)
+    events: [
+      { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },
+    ],
+    // SessionNet OParl 1.1: council, committees and the nine Bezirksvertretungen in one body.
+    // Official public records; the API states no licence.
+    councilMeetings: {
+      oparlBody: {
+        meetingsUrl: 'https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings',
+        districtBody: 'Bezirksvertretung',
+        webUrlPrefix: 'https://buergerinfo.stadt-koeln.de/si0057.asp?__ksinr=',
+      },
     },
   },
 };

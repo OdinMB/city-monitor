@@ -47,11 +47,11 @@ Source URL configured per city in `dataSources.police.url`.
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-events.ts`) — Runs every 6 hours. For each city with `dataSources.events` (Berlin only), fetches every configured source in turn (kulturdaten.berlin, Ticketmaster, go~mus), keeps future events, and saves each source's events to the DB (`saveEvents`). Then merges all sources, sorts by date, caps at 200 (`MAX_FUTURE_EVENTS`) and writes `CityEvent[]` to cache key `{cityId}:events:upcoming` (TTL 6h); an empty merge leaves the cache as it was. A failing source is logged and skipped.
+1. **Ingestion** (`packages/server/src/cron/ingest-events.ts`) — Runs every 6 hours. For each city with `dataSources.events` (Berlin and Köln), fetches every configured source in turn (kulturdaten.berlin, Ticketmaster, go~mus for Berlin; Stadt Köln open data for Köln), keeps future events, and saves each source's events to the DB (`saveEvents`). Then merges all sources, sorts by date, caps at 200 (`MAX_FUTURE_EVENTS`) and writes `CityEvent[]` to cache key `{cityId}:events:upcoming` (TTL 6h); an empty merge leaves the cache as it was. A failing source is logged and skipped.
 
 2. **API** (`packages/server/src/routes/events.ts`) — `GET /api/:city/events` returns cached events, falls back to the DB (`loadEvents`), then `[]`. Past events are filtered out on every read.
 
-3. **Frontend** (`packages/web/src/components/strips/EventsStrip.tsx`) — `useEvents()` (refetch 30 min). Source filter (All / Community / Tickets / Museums), shown when at least two sources have events; category filter pills for categories present; up to 25 events (`MAX_VISIBLE`). Each row shows category icon, title, day and time, and a "Free" badge; rows with detail expand to venue, description, end date, price and a link.
+3. **Frontend** (`packages/web/src/components/strips/EventsStrip.tsx`) — `useEvents()` (refetch 30 min). Source filter (All / Community / Tickets / Museums / City), shown when at least two sources have events (so never for Köln, which has one); category filter pills for categories present; up to 25 events (`MAX_VISIBLE`). Each row shows category icon, title, day and time, and a "Free" badge; rows with detail expand to venue, description, end date, price and a link.
 
 ### Data Sources
 
@@ -60,28 +60,30 @@ Configured per city as `EventSourceConfig[]` (`source`, `url`, optional `lookahe
 - **kulturdaten.berlin API** (Technologiestiftung Berlin; free, no API key): `https://api-v2.kulturdaten.berlin/api/events`. Events from Berlin district calendars (Bezirkskalender) for the next `lookaheadDays` (default 14), up to 3 pages of 50, published events only. Swagger docs: `https://api-v2.kulturdaten.berlin/api/docs/`
 - **Ticketmaster Discovery API**: `https://app.ticketmaster.com/discovery/v2/events.json`, queried by city name and country, 100 events. Skipped without `TICKETMASTER_CONSUMER_KEY` (see `deployment.md`).
 - **go~mus** (Berlin state museums): `https://smb.gomus.de/api/v4/events`, bookable events; the date is the first upcoming booking time.
+- **Stadt Köln open data** (`source: 'stadt-koeln'`, Köln): `https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php?ndays=<lookaheadDays>&nobrs=1`, JSON `{ count, items, success }`. Only events the city runs itself (libraries, museums, town hall, district offices), ~110 in 14 days. Licence dl-de/zero-2.0 ([dataset](https://www.offenedaten-koeln.de/dataset/veranstaltungen-der-stadt-koeln)), credited on the Sources page anyway. Each item has `title`, `description`, `beginndatum`/`endedatum` (dates), a free-text `uhrzeit` ("von 18:30 bis 19:30", "15 bis 16:30 Uhr"; `koelnStartTime` takes the first hour, else midnight = no time shown), `veranstaltungsort` + `stadtteil` (joined as venue), `preis` (free when it says kostenlos/Eintritt frei, else kept as the price) and `link` (rewritten to https; its numeric id becomes `stadt-koeln-<id>`). Dates are offset-less local time, like kulturdaten. An exhibition that began before today is dropped by the future-only filter, as for every source. The http URL answers 403; use https.
+- **München:** no open events feed (opendata.muenchen.de has only historic CSVs; muenchen.de's event pages are private-use only), so no events source.
 
 ### Key Types
 
 ```typescript
 interface CityEvent {
-  id: string;           // source id (go~mus ids are prefixed "gomus-")
+  id: string;           // source id (go~mus ids are prefixed "gomus-", Köln ids "stadt-koeln-")
   title: string;
   venue?: string;
   date: string;         // ISO date+time
   endDate?: string;
   category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'museum' | 'other';
   url: string;          // empty for kulturdaten and go~mus
-  description?: string; // go~mus only (HTML stripped, 500 chars)
+  description?: string; // go~mus (HTML stripped) and Stadt Köln, 500 chars
   free?: boolean;
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
-  price?: string;       // Ticketmaster price range
+  source: 'kulturdaten' | 'ticketmaster' | 'gomus' | 'stadt-koeln';
+  price?: string;       // Ticketmaster price range, Stadt Köln `preis` text
 }
 ```
 
 ### Category Classification
 
-- **kulturdaten:** keywords in the title (German and English): Konzert/Musik -> music, Ausstellung/Galerie -> art, Theater/Bühne -> theater, Markt/Flohmarkt -> market, Food/Essen -> food, Sport/Lauf -> sport, Workshop/Treff -> community, Museum -> museum, default -> other.
+- **kulturdaten and Stadt Köln:** keywords in the title (German and English): Konzert/Musik -> music, Ausstellung/Galerie -> art, Theater/Bühne -> theater, Markt/Flohmarkt -> market, Food/Essen -> food, Sport/Lauf -> sport, Workshop/Treff -> community, Museum -> museum, default -> other.
 - **Ticketmaster:** the segment name: Music -> music, Sports -> sport, Arts & Theatre -> theater, default -> other.
 - **go~mus:** Bühne/Musik/Film/Konzert -> music, Workshop/Kurs/Führung -> community, default -> museum.
 

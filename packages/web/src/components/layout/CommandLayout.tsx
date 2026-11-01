@@ -249,7 +249,7 @@ export function CommandLayout() {
             </Tile>
           )}
           {has('councilMeetings') && (
-            <Tile title={t('panel.councilMeetings.title')} span={2}>
+            <Tile title={t('panel.councilMeetings.title', { context: cityId })} span={2}>
               <CouncilMeetingsStrip />
             </Tile>
           )}

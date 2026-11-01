@@ -303,6 +303,18 @@ const KOELN_SOURCES: SourceGroup[] = [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time Rhine water level from the Köln gauge.' },
     ],
   },
+  {
+    category: 'Events',
+    sources: [
+      { name: 'Stadt Köln Open Data (Events)', url: 'https://www.offenedaten-koeln.de/dataset/veranstaltungen-der-stadt-koeln', description: 'Events the City of Cologne runs itself — libraries, museums, the town hall. Licensed dl-de/zero-2-0.' },
+    ],
+  },
+  {
+    category: 'Council Meetings',
+    sources: [
+      { name: 'Stadt Köln SessionNet (OParl)', url: 'https://buergerinfo.stadt-koeln.de/', description: 'Meetings of the city council, its committees and the nine Bezirksvertretungen via the OParl 1.1 API. Official public records; the API states no licence.' },
+    ],
+  },
 ];
 
 // No river gauge: the Isar through München is not a federal waterway.
@@ -325,6 +337,12 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'Baustellen München (Geoportal)', url: 'https://opendata.muenchen.de/dataset/baustellen_4_weeks_opendata', description: 'Construction works that narrow or close the carriageway, from the city\'s roadworks service map. Source: Landeshauptstadt München – opendata.muenchen.de, dl-de/by-2-0. City Monitor shows each site as a point at the middle of its area.' },
+    ],
+  },
+  {
+    category: 'Council Meetings',
+    sources: [
+      { name: 'München RIS', url: 'https://risi.muenchen.de/', description: 'Stadtrat committee and Bezirksausschuss meetings from the council information system’s RSS feeds. Official public records; the feeds state no licence.' },
     ],
   },
 ];
