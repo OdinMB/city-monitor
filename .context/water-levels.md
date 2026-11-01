@@ -15,8 +15,8 @@ Water level stations are configured per city in `packages/server/src/config/citi
 
 - **Berlin** — 5 stations: Muhlendamm, Charlottenburg, Kopenick (Spree), Spandau (Havel), Schmockwitz (Dahme)
 - **Hamburg** — 3 tidal Elbe stations: St. Pauli, Bunthaus, Seemannshoft
-- **Köln** (configured, not active) — 1 Rhein station: Köln (Rhein-km 688)
-- **München** (configured, not active) — none: the Isar is a Bavarian water, not a federal waterway, so PEGELONLINE has no gauge in the city and `waterLevels` is left out (no `waterLevels` feature). The Bavarian Hochwassernachrichtendienst (hnd.bayern.de) has Isar gauges, behind its own licence check.
+- **Köln** — 1 Rhein station: Köln (Rhein-km 688)
+- **München** — none: the Isar is a Bavarian water, not a federal waterway, so PEGELONLINE has no gauge in the city and `waterLevels` is left out (no `waterLevels` feature). The Bavarian Hochwassernachrichtendienst (hnd.bayern.de) has Isar gauges, behind its own licence check.
 
 Config shape: `waterLevels.stations[].{ uuid, name, waterBody, tidal? }` in `CityDataSources`.
 

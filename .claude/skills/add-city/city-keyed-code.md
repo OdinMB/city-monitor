@@ -26,7 +26,7 @@ Every place outside `packages/*/src/config/cities/` that is keyed by a city ID, 
 | `SKYLINES` | `packages/web/src/components/skylines/CitySkyline.tsx` | optional | The generic skyline. A drawing goes in its own file beside it; `Skyline.tsx` says how (landmarks between x 260 and 940, readable at true proportions and stretched, overlap shapes that touch). |
 | `SERVICES` | `packages/web/src/pages/PrivacyPage.tsx` | per browser host | A host the browser loads from (WMS layers, tiles) must be named here and in the CSP; `PrivacyPage.test.tsx` checks the two agree. |
 | `connect-src` | `render.yaml` | per browser host | The browser refuses a host the CSP's `connect-src` and `img-src` don't name. Deploy configuration. |
-| `ACTIVE_CITIES` | `render.yaml` | when activating | The blueprint's default, `berlin,hamburg`. The deployment's owner sets the live value. |
+| `ACTIVE_CITIES` | `render.yaml` | when activating | The blueprint's default, `berlin,hamburg,koeln,muenchen`. The deployment's owner sets the live value. |
 | `CITY_META` | `packages/web/src/lib/seo-pages.ts` | when activating | The web build fails once the city is active: `/<id>` and `/<id>/sources` are pre-rendered and in the sitemap, with their title, description and share image, from this entry. Köln and München have theirs. |
 | `IMAGES` | `packages/web/scripts/generate-og-images.ts` | when activating | No `packages/web/public/og-<id>.png` to share, and the web build fails once the city is active. Köln and München have entries, not yet their images: `npm run generate:og` in `packages/web` makes them (it fetches its font, so it needs the network). |
 | `FAVICON_SLUGS` | `packages/web/src/lib/news-favicons.ts` | per feed | `news-favicons.test.ts` fails (`.context/news.md`, "Favicons"). |
@@ -39,7 +39,7 @@ Extend these when you add a city; nothing fails if you forget.
 - `packages/server/src/config/config.test.ts`, "every configured city": the `ACTIVE_CITIES` stub and the ID list. Without the new ID, its centre, bounds and NINA key go unchecked.
 - `packages/web/src/config/index.test.ts`: the `cities` list in "every configured city", and "active cities".
 - `packages/web/src/lib/aqi.test.ts`: the `it.each` over cities in "WAQI originating agencies".
-- `packages/web/src/App.test.tsx`: one "sends /<id> to the city picker" test per inactive city (Köln, München), and one "renders the … dashboard at /<id>" test per active one. Change it when the city goes live.
+- `packages/web/src/App.test.tsx`: one "sends /<id> to the city picker" test per inactive city (none today), and one "renders the … dashboard at /<id>" test per active one. Change it when the city goes live.
 - `packages/web/src/components/map/layers/political-matching.test.ts`: one entry per city with district GeoJSON.
 - `packages/web/src/App.default-city.test.tsx` mocks Berlin and Hamburg only, which is enough unless the default-city rule changes.
 

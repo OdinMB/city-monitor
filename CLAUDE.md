@@ -1,6 +1,6 @@
 # City Monitor
 
-Real-time multi-city dashboard (Berlin, Hamburg). Inspired by [World Monitor](https://worldmonitor.io).
+Real-time multi-city dashboard (Berlin, Hamburg, Köln, München; only Berlin has every source). Inspired by [World Monitor](https://worldmonitor.io).
 
 > **Dev servers are already running.** The web app (port 5173) and API server (port 3001) are up. Do **not** start additional instances via `npm run dev` or similar.
 

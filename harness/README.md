@@ -98,8 +98,7 @@ Playwright's own touch input only taps, so `swipe` ([`lib/swipe.mjs`](lib/swipe.
 
 ## Cities
 
-`--city <id>` names the city a run seeds, serves and shows. It has to be registered in `ALL_CITIES` in both `packages/server/src/config/index.ts` and `packages/web/src/config/index.ts`; the parent reads both files before anything starts ([`lib/cities.mjs`](lib/cities.mjs)). Today that is `berlin`, the default, `hamburg`, `koeln` and `muenchen`. Köln and München are inactive in the real app; a run shows them anyway, as the run makes its city the active one.
-
+`--city <id>` names the city a run seeds, serves and shows. It has to be registered in `ALL_CITIES` in both `packages/server/src/config/index.ts` and `packages/web/src/config/index.ts`; the parent reads both files before anything starts ([`lib/cities.mjs`](lib/cities.mjs)). Today that is `berlin`, the default, `hamburg`, `koeln` and `muenchen`.
 The run's city is the only active one. The seed script and the API get `--city` and serve that city alone (`ACTIVE_CITIES`). The web build makes it the one entry of the web config's `ACTIVE_CITY_IDS`: a Vite plugin rewrites that one line in the build, the file in the checkout is not changed, and the build fails if it never saw the file. So `/` leads to the run's city, another city's path redirects there, and `--path` defaults to `/<city>`.
 
 The seed (`generateSyntheticCityData` in `packages/server/src/synthetic/generate.ts`) holds the data sets the real app ingests for that city, as `syntheticCoverage` there lists them, and no others:

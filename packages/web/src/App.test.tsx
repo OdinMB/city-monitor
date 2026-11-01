@@ -16,8 +16,8 @@ describe('App', () => {
         <LocationProbe />
       </MemoryRouter>,
     );
-    const links = await screen.findAllByRole('link', { name: /^(Berlin|Hamburg)/ });
-    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/berlin', '/hamburg']);
+    const links = await screen.findAllByRole('link', { name: /^(Berlin|Hamburg|Köln|München)/ });
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/berlin', '/hamburg', '/koeln', '/muenchen']);
     expect(screen.getByTestId('pathname').textContent).toBe('/');
   });
 
@@ -63,28 +63,21 @@ describe('App', () => {
     expect(screen.queryByText('BERLIN')).toBeNull();
   });
 
-  it('sends /koeln to the city picker (Köln not active)', async () => {
+  it.each([
+    ['/koeln', 'KÖLN'],
+    ['/muenchen', 'MÜNCHEN'],
+  ])('renders the dashboard at %s without news tiles', async (path, upperName) => {
     render(
-      <MemoryRouter initialEntries={['/koeln']}>
+      <MemoryRouter initialEntries={[path]}>
         <App />
-        <LocationProbe />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/'));
-    expect(screen.getByRole('link', { name: /^Berlin/ }).getAttribute('href')).toBe('/berlin');
-    expect(screen.queryByRole('link', { name: /^Köln/ })).toBeNull();
-  });
-
-  it('sends /muenchen to the city picker (München not active)', async () => {
-    render(
-      <MemoryRouter initialEntries={['/muenchen']}>
-        <App />
-        <LocationProbe />
-      </MemoryRouter>,
-    );
-    await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/'));
-    expect(screen.getByRole('link', { name: /^Berlin/ }).getAttribute('href')).toBe('/berlin');
-    expect(screen.queryByRole('link', { name: /^München/ })).toBeNull();
+    await waitFor(() => {
+      expect(screen.getAllByText(upperName).length).toBeGreaterThanOrEqual(1);
+    });
+    // No news feeds configured: no Briefing tile, and nothing Berlin-named.
+    expect(screen.queryByText('Briefing')).toBeNull();
+    expect(screen.queryByText('BERLIN')).toBeNull();
   });
 
   it('sends an unknown city to the city picker', async () => {
