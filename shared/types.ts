@@ -124,7 +124,7 @@ export interface CityDataSources {
     lon: number;
     /**
      * The DWD warn region whose warnings are the city's, by its exact name in warnings.json
-     * ("Stadt München"). Without it, every region whose name contains the city's `name` counts,
+     * ("Stadt Köln"). Without it, every region whose name contains the city's `name` counts,
      * which suits a city-state but also takes in a Landkreis named after the city.
      */
     dwdWarnRegion?: string;

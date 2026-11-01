@@ -16,9 +16,8 @@ const FAVICON_SOURCES: Record<string, string> = {
   gruenderszene: 'www.businessinsider.de',
   // Hamburg
   'ndr-hamburg': 'www.ndr.de',
-  'hamburger-abendblatt': 'www.abendblatt.de',
   mopo: 'www.mopo.de',
-  'hamburg-de-news': 'www.hamburg.de',
+  'feuerwehr-hamburg': 'www.presseportal.de',
 };
 
 const OUT_DIR = join(import.meta.dirname, '..', 'public', 'favicons');

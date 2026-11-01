@@ -171,8 +171,8 @@ describe('München config', () => {
   it('uses the Germany-wide sources that cover München', () => {
     const { dataSources } = getCityConfig('muenchen')!;
     expect(dataSources.weather.provider).toBe('brightsky');
-    // DWD warn cell 109162000 (cap_warncellids_csv.csv), not the Landkreis's 109184000
-    expect(dataSources.weather.dwdWarnRegion).toBe('Stadt München');
+    // DWD's one region for city and Landkreis (dwd:Warngebiete_Kreise, 2026-11-01)
+    expect(dataSources.weather.dwdWarnRegion).toBe('Kreis und Stadt München');
     // kreisfreie Stadt München, AGS 09162000
     expect(dataSources.nina).toEqual({ ars: '091620000000' });
     // The kreisfreie Stadt's OSM boundary, not the state's (4)

@@ -35,7 +35,9 @@ Map pins come from two steps: `geolocateReports()` (`lib/openai.ts`, model `OPEN
 ### Data Sources
 
 - **Berlin:** `https://www.berlin.de/presse/pressemitteilungen/index/feed?institutions[]=Polizei+Berlin`
-- **Hamburg:** `https://www.presseportal.de/rss/dienststelle_6013.rss2`
+- **Hamburg:** `https://www.presseportal.de/rss/dienststelle_6337.rss2` (Polizei Hamburg). Until 2026-11-01 the config pointed at newsroom 6013, which is Polizeipräsidium Mittelfranken, so Hamburg showed Nürnberg and Fürth reports; old rows go with the safety retention. Find a force's newsroom number on `presseportal.de/blaulicht/l/<state>` and check the feed's `<title>` before wiring it.
+
+Licence (checked 2026-11-01): presseportal's terms (`/nutzungsbedingungen`) allow editorial use and name processing "mithilfe von künstlicher Intelligenz" as part of it, with media-law responsibility passing to the user; use "für eigene Geschäftszwecke" needs news aktuell's written permission. Automatically embedding ots content on a third-party site formally needs an application, with these rules (`api.presseportal.de/nutzungsbestimmungen/`): show `(ots)`, link the original, publish any usage notes, hide after 2 years. `robots.txt` blocks AI training crawlers but not `/rss/`; no RSL file, no `tdmrep.json`. No explicit AI-input ban, so the feed stays; whether to file the embedding application is open.
 
 Source URL configured per city in `dataSources.police.url`.
 

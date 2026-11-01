@@ -104,7 +104,8 @@ describe('grid point scale', () => {
 describe('WAQI originating agencies', () => {
   it.each([berlin.id, hamburg.id, koeln.id, muenchen.id])('lists the agencies for every configured city (%s)', (cityId) => {
     const agencies = waqiAgencies(cityId);
-    expect(agencies?.short).toMatch(/^Umweltbundesamt, \w+$/);
-    expect(agencies?.full).toContain('Umweltbundesamt');
+    // The state network's acronym, after the European Environment Agency where it relays the stations
+    expect(agencies?.short).toMatch(/^(European Environment Agency, )?\w+$/);
+    expect(agencies?.full).toContain(agencies!.short.split(', ').at(-1)!);
   });
 });

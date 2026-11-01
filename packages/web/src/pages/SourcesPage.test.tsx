@@ -92,6 +92,8 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Bundesagentur für Arbeit', berlinOnly],
   ['Amt für Statistik Berlin-Brandenburg', berlinOnly],
   ['Berliner Feuerwehr Open Data', berlinOnly],
+  // ingest-feeds classifies news items and ingest-safety places police reports with the LLM
+  ['OpenAI', (c) => c.feeds.length > 0 || c.dataSources.police !== undefined],
 ];
 
 describe('SourcesPage credits per city', () => {
@@ -169,7 +171,7 @@ describe('SourcesPage licence credits', () => {
     'VIZ Berlin': 'Source: Digitale Plattform Stadtverkehr Berlin, dl-de/by-2-0.',
     'Berlin Budget (Doppelhaushalt)': 'Licensed CC BY.',
     'ALLRIS OParl (BVV)': 'Licensed CC BY 3.0 DE.',
-    'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/by-2-0.',
+    'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/zero-2-0.',
   };
 
   it('finds every listed source on some city page', () => {
@@ -228,7 +230,7 @@ describe('SourcesPage WAQI credit', () => {
     expect(waqi.getAttribute('href')).toBe('https://waqi.info/');
     const card = waqi.parentElement!;
     expect(within(card).getByText(
-      /Data from the Umweltbundesamt \(German Environment Agency\) and the Berlin air quality monitoring network \(BLUME\), via the World Air Quality Index Project\./,
+      /Data from the European Environment Agency and the Berlin air quality monitoring network \(BLUME\), via the World Air Quality Index Project\./,
     )).toBeTruthy();
     expect(within(card).getByText(/not archived/)).toBeTruthy();
 

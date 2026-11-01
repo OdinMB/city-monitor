@@ -118,4 +118,17 @@ describe('App city switch', () => {
       expect(document.activeElement).toBe(screen.getByRole('button', { name: /^Hamburg/ })),
     );
   });
+
+  it("wears the city's colours on its Sources page too, and drops them on leaving the city", async () => {
+    renderAt('/berlin/sources');
+    await screen.findByRole('heading', { level: 1, name: /Berlin/ });
+    expect(document.documentElement.getAttribute('data-city')).toBe('berlin');
+
+    switchWith(document.body, 'Berlin', 'Hamburg');
+    await screen.findByRole('heading', { level: 1, name: /Hamburg/ });
+    expect(document.documentElement.getAttribute('data-city')).toBe('hamburg');
+
+    cleanup();
+    expect(document.documentElement.hasAttribute('data-city')).toBe(false);
+  });
 });

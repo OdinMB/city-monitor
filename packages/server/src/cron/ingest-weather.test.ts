@@ -262,13 +262,14 @@ describe('ingest-weather', () => {
       vi.stubEnv('ACTIVE_CITIES', 'muenchen');
     });
 
-    it('keeps the DWD warnings for the Stadt München region, not for the Landkreis named after it', async () => {
-      // warnings.json's shape (see dwdWarningsJsonp above), invented values
+    it('keeps the DWD warnings for the joint "Kreis und Stadt München" region, not a neighbouring Landkreis', async () => {
+      // warnings.json's shape (see dwdWarningsJsonp above), invented values; the
+      // region names are DWD's live ones (2026-11-01)
       const warnings = {
         time: Date.UTC(2026, 4, 1, 10),
         warnings: {
-          '109162000': [{ headline: 'Amtliche WARNUNG vor STURMBÖEN', description: 'München', level: 3, end: Date.UTC(2026, 4, 1, 18), regionName: 'Stadt München' }],
-          '109184000': [{ headline: 'Amtliche WARNUNG vor ORKANBÖEN', description: 'Landkreis', level: 4, end: Date.UTC(2026, 4, 1, 18), regionName: 'Kreis München' }],
+          '109184000': [{ headline: 'Amtliche WARNUNG vor STURMBÖEN', description: 'München', level: 3, end: Date.UTC(2026, 4, 1, 18), regionName: 'Kreis und Stadt München' }],
+          '109179000': [{ headline: 'Amtliche WARNUNG vor ORKANBÖEN', description: 'Fürstenfeldbruck', level: 4, end: Date.UTC(2026, 4, 1, 18), regionName: 'Kreis Fürstenfeldbruck' }],
         },
         vorabInformation: {},
       };

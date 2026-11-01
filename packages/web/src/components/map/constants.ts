@@ -92,7 +92,9 @@ const NOISE_WMS_ATTRIBUTION: Record<string, string> = {
   berlin: '&copy; <a href="https://daten.berlin.de" target="_blank">Open Data</a>',
   hamburg:
     '&copy; <a href="https://geodienste.hamburg.de/wms_strategische_laermkarten" target="_blank">Freie und Hansestadt Hamburg</a>, ' +
-    '<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank">dl-de/by-2-0</a>',
+    // GetCapabilities <Fees>: Datenlizenz Deutschland – Zero – Version 2.0 (checked 2026-11-01).
+    // Zero asks for no credit; it is kept as a courtesy.
+    '<a href="https://www.govdata.de/dl-de/zero-2-0" target="_blank">dl-de/zero-2-0</a>',
 };
 
 export function getNoiseWmsAttribution(cityId: string): string | undefined {

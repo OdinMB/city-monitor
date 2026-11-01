@@ -10,8 +10,9 @@ const read = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.met
 const rules = () => read('../../globals.css').replace(/\/\*[\s\S]*?\*\//g, '');
 
 // Mock hooks
+let cityFeatures: string[] = ['news'];
 vi.mock('../../hooks/useCityConfig.js', () => ({
-  useCityConfig: () => ({ id: 'berlin', name: 'Berlin' }),
+  useCityConfig: () => ({ id: 'berlin', name: 'Berlin', features: cityFeatures }),
 }));
 
 const mockItems = [
@@ -228,5 +229,22 @@ describe('NewsMarquee', () => {
     expect(container.innerHTML).toBe('');
 
     vi.restoreAllMocks();
+  });
+
+  it('asks for no news and shows nothing, not even a placeholder, in a city without feeds', async () => {
+    cityFeatures = ['weather'];
+    const mod = await import('../../hooks/useNewsDigest.js');
+    const spy = vi.spyOn(mod, 'useNewsDigest').mockReturnValue({
+      data: undefined,
+      fetchedAt: null,
+      isPending: true,
+    } as unknown as ReturnType<typeof mod.useNewsDigest>);
+
+    const { container } = render(<NewsMarquee reserveSpace />);
+    expect(container.innerHTML).toBe('');
+    expect(spy).toHaveBeenCalledWith('berlin', false);
+
+    vi.restoreAllMocks();
+    cityFeatures = ['news'];
   });
 });

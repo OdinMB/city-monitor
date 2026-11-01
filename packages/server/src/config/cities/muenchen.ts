@@ -30,8 +30,10 @@ export const muenchen: CityConfig = {
   theme: { accent: '#A16207' },
   feeds: [],
   dataSources: {
-    // DWD warn cell 109162000, by its name: not also the Landkreis ("Kreis München").
-    weather: { provider: 'brightsky', lat: 48.1374, lon: 11.5755, dwdWarnRegion: 'Stadt München' },
+    // DWD warns for city and Landkreis together, in one region (warnings.json cell
+    // 109184000; dwd:Warngebiete_Kreise 909184999, checked 2026-11-01). The older
+    // cap_warncellids_csv.csv still lists a "Stadt München" (109162000) DWD no longer uses.
+    weather: { provider: 'brightsky', lat: 48.1374, lon: 11.5755, dwdWarnRegion: 'Kreis und Stadt München' },
     nina: { ars: '091620000000' }, // kreisfreie Stadt München, AGS 09162000
     aeds: { adminLevel: 6 },       // OSM boundary "München" of the kreisfreie Stadt
     pollen: {

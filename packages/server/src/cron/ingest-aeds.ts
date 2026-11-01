@@ -35,13 +35,26 @@ function buildOverpassQuery(cityName: string, adminLevel: number): string {
   return `[out:json][timeout:25];area["name"="${cityName}"]["admin_level"="${adminLevel}"]["boundary"="administrative"]->.s;node["emergency"="defibrillator"](area.s);out body;`;
 }
 
-export function createAedIngestion(cache: Cache, db: Db | null = null) {
+/**
+ * Overpass gives each address a couple of query slots and answers 429 (or a
+ * 504 under load) when they are taken. With four cities queried back to back
+ * at startup, the later ones were turned away and stayed empty until the next
+ * daily run, so the cities are spaced out and a busy answer is retried.
+ */
+const PAUSE_BETWEEN_CITIES_MS = 5_000;
+const RETRY_DELAYS_MS = [15_000, 45_000];
+const BUSY_STATUSES = new Set([429, 502, 503, 504]);
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** `wait` is for tests, which skip the pauses. */
+export function createAedIngestion(cache: Cache, db: Db | null = null, wait: (ms: number) => Promise<void> = sleep) {
   return async function ingestAeds(): Promise<void> {
-    const cities = getActiveCities();
-    for (const city of cities) {
-      if (city.country !== 'DE') continue;
+    const cities = getActiveCities().filter((c) => c.country === 'DE');
+    for (const [i, city] of cities.entries()) {
+      if (i > 0) await wait(PAUSE_BETWEEN_CITIES_MS);
       try {
-        await ingestCityAeds(city, cache, db);
+        await ingestCityAeds(city, cache, db, wait);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -49,19 +62,34 @@ export function createAedIngestion(cache: Cache, db: Db | null = null) {
   };
 }
 
-async function ingestCityAeds(city: CityConfig, cache: Cache, db: Db | null): Promise<void> {
+async function askOverpass(cityId: string, query: string, wait: (ms: number) => Promise<void>): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const response = await log.fetch(OVERPASS_URL, {
+      method: 'POST',
+      body: `data=${encodeURIComponent(query)}`,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'CityMonitor/1.0 (+https://citymonitor.app)',
+      },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    const delay = RETRY_DELAYS_MS[attempt];
+    if (!BUSY_STATUSES.has(response.status) || delay === undefined) return response;
+    log.warn(`${cityId}: Overpass busy (${response.status}), retrying in ${delay / 1000}s`);
+    await wait(delay);
+  }
+}
+
+async function ingestCityAeds(
+  city: CityConfig,
+  cache: Cache,
+  db: Db | null,
+  wait: (ms: number) => Promise<void>,
+): Promise<void> {
   const cityId = city.id;
   const query = buildOverpassQuery(city.name, city.dataSources.aeds?.adminLevel ?? DEFAULT_ADMIN_LEVEL);
 
-  const response = await log.fetch(OVERPASS_URL, {
-    method: 'POST',
-    body: `data=${encodeURIComponent(query)}`,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'CityMonitor/1.0',
-    },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
+  const response = await askOverpass(cityId, query, wait);
 
   if (!response.ok) {
     log.warn(`${cityId}: Overpass API returned ${response.status}`);
@@ -70,7 +98,9 @@ async function ingestCityAeds(city: CityConfig, cache: Cache, db: Db | null): Pr
 
   const data = await response.json() as OverpassResponse;
 
-  if (data.remark && /runtime error|timed out/i.test(data.remark)) {
+  // Overpass adds a remark only when the query failed part-way (timeout, out
+  // of memory, rate limit), so whatever elements came back are incomplete.
+  if (data.remark) {
     log.warn(`${cityId}: Overpass query error — ${data.remark}`);
     return;
   }

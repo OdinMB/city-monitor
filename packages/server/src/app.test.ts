@@ -3,7 +3,8 @@ import type { Server } from 'node:http';
 import { gzipSync } from 'node:zlib';
 import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { createApp } from './app.js';
+import { BERLIN_ONLY_JOBS, createApp } from './app.js';
+import { BERLIN_OWN_SOURCES } from './lib/city-features.js';
 import { hamburg } from './config/cities/hamburg.js';
 import { CK } from './lib/cache-keys.js';
 import type { ScheduledJob } from './lib/scheduler.js';
@@ -83,7 +84,13 @@ describe('createApp in synthetic mode', () => {
 });
 
 describe('createApp startup runs for Berlin-only jobs', () => {
-  const BERLIN_ONLY = ['ingest-bathing', 'ingest-wastewater', 'ingest-labor-market', 'ingest-population', 'ingest-feuerwehr'];
+  // Each of Berlin's own sources (city-features.ts) has its job, `ingest-<feature in kebab case>`.
+  const BERLIN_ONLY = BERLIN_OWN_SOURCES.map((f) => `ingest-${f.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`);
+
+  it("lists exactly the jobs of Berlin's own sources as Berlin-only, so the features and the jobs stay in step", () => {
+    expect([...BERLIN_ONLY_JOBS].sort()).toEqual([...BERLIN_ONLY].sort());
+  });
+
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {

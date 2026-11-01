@@ -69,7 +69,9 @@ export type WarnRegionMatch = (regionName: string) => boolean;
  * The city's warn regions: with `exactRegion`, the region of that name alone; without, every
  * region whose name contains the city name. Both ignore case. The name alone suits a city-state
  * ("Berlin", "Hamburg"), but a city inside a state shares its name with the Landkreis around it
- * ("Stadt München", "Kreis München"), so such a city names its own region exactly.
+ * (Köln has "Stadt Köln"; a "Kreis Köln" would match too), so such a city names its own region
+ * exactly. Where DWD warns for city and Landkreis in one region, that is the region to name
+ * (München: "Kreis und Stadt München").
  */
 export function warnRegionMatcher(cityName: string, exactRegion?: string): WarnRegionMatch {
   if (exactRegion !== undefined) {

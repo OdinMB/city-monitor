@@ -19,8 +19,8 @@ interface Source {
    * the credits against the server configs.
    */
   cities?: readonly string[];
-  /** A shared source credited only where the city has this feature. */
-  requires?: CityFeature;
+  /** A shared source credited only where the city has this feature, or one of these features. */
+  requires?: CityFeature | readonly CityFeature[];
 }
 
 interface SourceGroup {
@@ -135,6 +135,8 @@ function aiProcessingGroup(t: TFunction): SourceGroup {
         name: 'OpenAI',
         url: 'https://openai.com/',
         description: t('sources.aiProcessing.description'),
+        // The LLM reads only news items and police reports, so a city with neither makes no AI calls.
+        requires: ['news', 'police'],
       },
     ],
   };
@@ -239,22 +241,21 @@ const HAMBURG_SOURCES: SourceGroup[] = [
   {
     category: 'Maps',
     sources: [
-      { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/by-2-0.' },
+      { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/zero-2-0.' },
     ],
   },
   {
     category: 'News',
     sources: [
       { name: 'NDR Hamburg', url: 'https://www.ndr.de/nachrichten/hamburg/', description: 'Regional public broadcaster for Northern Germany.' },
-      { name: 'Hamburger Abendblatt', url: 'https://www.abendblatt.de/', description: 'Major Hamburg daily newspaper.' },
-      { name: 'hamburg.de', url: 'https://www.hamburg.de/', description: 'Official Hamburg state government news.' },
       { name: 'MOPO', url: 'https://www.mopo.de/', description: 'Hamburg daily newspaper.' },
+      { name: 'Feuerwehr Hamburg (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/82522', description: 'Hamburg fire brigade press releases.' },
     ],
   },
   {
     category: 'Safety',
     sources: [
-      { name: 'Hamburg Police (Presseportal)', url: 'https://www.presseportal.de/', description: 'Hamburg police press releases.' },
+      { name: 'Hamburg Police (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/6337', description: 'Hamburg police press releases.' },
     ],
   },
   {
@@ -326,8 +327,9 @@ function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] 
 
 /** The groups with only the sources credited for `city`, leaving out a group that has none. */
 function forCity(groups: SourceGroup[], city: WebCityConfig): SourceGroup[] {
-  const credited = (s: Source) =>
-    (!s.cities || s.cities.includes(city.id)) && (!s.requires || city.features.includes(s.requires));
+  const hasAny = (required: CityFeature | readonly CityFeature[]) =>
+    (typeof required === 'string' ? [required] : required).some((f) => city.features.includes(f));
+  const credited = (s: Source) => (!s.cities || s.cities.includes(city.id)) && (!s.requires || hasAny(s.requires));
   return groups
     .map((group) => ({ ...group, sources: group.sources.filter(credited) }))
     .filter((group) => group.sources.length > 0);
@@ -343,6 +345,11 @@ export function SourcesPage() {
   );
 
   const sourceCount = groups.reduce((n, g) => n + g.sources.length, 0);
+
+  // Reached from the footer of a scrolled dashboard: open at the top.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [city.id]);
 
   useEffect(() => {
     document.title = `Data Sources — City Monitor ${city.name}`;

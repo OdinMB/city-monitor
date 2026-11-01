@@ -15,9 +15,8 @@ export const FAVICON_SLUGS: Record<string, string> = {
   'Gründerszene Berlin': 'gruenderszene',
   // Hamburg
   'NDR Hamburg': 'ndr-hamburg',
-  'Hamburger Abendblatt': 'hamburger-abendblatt',
   MOPO: 'mopo',
-  'hamburg.de News': 'hamburg-de-news',
+  'Feuerwehr Hamburg': 'feuerwehr-hamburg',
 };
 
 /** URL of a news source's favicon, or null when the source has none. */

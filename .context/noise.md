@@ -9,7 +9,7 @@ EU Directive 2002/49/EC strategic noise maps served as WMS tile overlays. No bac
 ### Data Sources
 
 - **Berlin:** `https://gdi.berlin.de/services/wms/ua_stratlaerm_2022` (SenMVKU, 2022 data)
-- **Hamburg:** `https://geodienste.hamburg.de/wms_strategische_laermkarten`
+- **Hamburg:** `https://geodienste.hamburg.de/wms_strategische_laermkarten`, published by LGV Hamburg under dl-de/zero-2-0 (GetCapabilities `<Fees>`, checked 2026-11-01; no attribution required, credited anyway)
 - **Update frequency:** ~5 years (EU directive cycle)
 
 ### Sub-Layers

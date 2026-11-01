@@ -152,8 +152,8 @@ describe('updateAqGridLayer attribution', () => {
   }
 
   it.each([
-    ['berlin', 'Umweltbundesamt, BLUME'],
-    ['hamburg', 'Umweltbundesamt, HaLm'],
+    ['berlin', 'European Environment Agency, BLUME'],
+    ['hamburg', 'HaLm'],
   ])('credits WAQI and the originating agencies while WAQI stations are shown (%s)', (cityId, agencies) => {
     const map = fakeMap();
     updateAqGridLayer(map as unknown as maplibregl.Map, [WAQI_POINT, SC_POINT], false, cityId);

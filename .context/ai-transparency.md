@@ -92,7 +92,7 @@ The Sources page's AI section (`packages/web/src/pages/SourcesPage.tsx`, `aiProc
   | Where | Keys | Form |
   |---|---|---|
   | Briefing tile heading (CM-1, with CM-2 folded in on 2026-09-26) | `aiLabel.generated`, `aiLabel.tooltip` | `AiLabel`: one tag (dark pill) with the text, `role="img"` named by that text; the tooltip is its native `title` (hover only) and accessible description. The notice line inside the tile was removed; `data-ai-generated` on the text is unchanged |
-  | Sources page, AI section (CM-3) | `sources.aiProcessing.title`, `.description` | Section heading and text; vendor named, model not |
+  | Sources page, AI section (CM-3) | `sources.aiProcessing.title`, `.description` | Section heading and text; vendor named, model not. Shown only for a city with news feeds or a police feed, the only inputs the LLM reads; Köln and München, with neither, make no AI calls and show no section (since 2026-11-01) |
   | News tile, under the category tabs (CM-4) | `aiNotice.newsLegend` | `role="note"` line |
   | News tile "NN%" score (CM-4) | `aiNotice.importanceScore` | `role="meter"` named by the key, same text as tooltip |
   | Map popups for news and police, after `📍 label` (CM-5) | `aiNotice.locationEstimated` | Inline text after " · ", escaped; looked up when the popup opens |
