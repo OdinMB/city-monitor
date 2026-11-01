@@ -16,7 +16,7 @@ Feeds are defined in city config files (e.g. `packages/server/src/config/cities/
 - `name`, `url`, `tier` (1=primary, 2=secondary, 3=tertiary; the type also allows 4), `type` (kind of source: 'wire'|'gov'|'mainstream'|'tech'|'other' — the parser detects RSS vs Atom itself), `lang`, optional `category` (the item's category until the LLM classifier assigns one, which replaces it; default `local`)
 - optional `storeText: false` for a feed whose terms forbid archiving its content. Its items are classified with their description and the cached digest keeps it, but `news_items` stores only title and link (with the verdict and location). `ingest-feeds.ts` drops the description just before `saveNewsItems`, matching items to the feed by `sourceUrl`. Set it on any feed with such terms.
 
-Berlin has 6 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, Berliner Zeitung, Polizei Berlin (category=crime), Gründerszene.
+Berlin has 6 feeds: rbb24, Tagesspiegel, Berliner Morgenpost, Berliner Zeitung, Polizei Berlin (category=crime), Gründerszene. Hamburg has 3 (NDR Hamburg, MOPO, Feuerwehr Hamburg), Köln 4 (WDR Rheinland, Kölner Stadt-Anzeiger, EXPRESS, Stadt Köln), München 2 (BR24 Oberbayern, Feuerwehr München).
 
 Feed status (checked 2026-09-24):
 
@@ -35,11 +35,22 @@ Hamburg feed status (checked 2026-11-01). The standard: an explicit ban on AI in
 - **Rejected replacements:** WELT Hamburg (`/rsl.xml` prohibits `ai-train ai-input`); ZEIT Hamburg, taz Nord and t-online Hamburg (each `robots.txt` reserves TDM and says "the use of robots or other automated means to access … without the express permission … is strictly prohibited").
 - **The same rule applies to every city:** a blanket "automated access is prohibited without permission" notice rules a feed out (taz Berlin was removed for it), unlike a TDM reservation alone.
 
-Use Node's `fetch` to probe a feed, not curl. Some CDN front ends (BZ's Akamai, for one) return 403 to curl even for the homepage, but serve Node's fetch, which is what production uses.
+Köln and München feed status (checked 2026-11-01, same standard as Hamburg; the research is in the PM repo, `references/engineering/2026-11-01_koeln-muenchen-hamburg-sources.md`). Neither city had feeds before 2026-11-01.
+
+- **WDR Rheinland (Köln): added 2026-11-01.** Atom (`/nrw/rheinland/uebersicht-rheinland-100.feed`, ~35 entries with summaries). ARD's `robots.txt` "Nutzungsvorbehalt" reserves AI training but allows "retrieval-augmented generation (RAG) or grounding, provided … the content is attributed to its original source", as for NDR and rbb24; no RSL file. The feed carries no no-archiving notice, so unlike rbb24 it keeps `storeText`. It covers the whole Rheinland (Bonn, Düsseldorf, Leverkusen too); no Köln-only WDR feed exists, so the classifier filters for relevance.
+- **Kölner Stadt-Anzeiger: added 2026-11-01.** `feed.ksta.de/feed/rss/koeln/index.rss` (~260 items with descriptions). DuMont's `robots.txt` lists AI agents but disallows them only from `*/dpa/`; no RSL file, no `tdmrep.json`, no RSS terms found.
+- **EXPRESS: added 2026-11-01** as tier 2 (tabloid). `feed.express.de/feed/rss/koeln/index.rss` (~140 items), same DuMont terms as the Stadt-Anzeiger.
+- **Stadt Köln Pressemeldungen: added 2026-11-01** as `type: 'gov'`. 15 items; each description is only the date and a subtitle (`30. Oktober 2026, 14:58<br />…`). `robots.txt` has no AI rules; no feed terms found.
+- **Kölnische Rundschau: not added.** Same DuMont newsroom as the Stadt-Anzeiger, and the newest items are identical.
+- **BR24 Oberbayern (München): added 2026-11-01.** `nachrichtenfeeds.br.de/rdf/boards/UZlJdUE` is RSS 1.0 (RDF, 25 items with descriptions); the parser reads RDF since the same change. ARD robots as for WDR; `nachrichtenfeeds.br.de` has no `robots.txt`; no no-archiving notice in the feed. It covers all of Oberbayern and BR24's sport, so many items are not about München and the classifier drops them.
+- **Feuerwehr München (presseportal.de newsroom 131419): added 2026-11-01**, like Feuerwehr Hamburg, with the same presseportal terms and the same open embedding-application question (`events-safety.md`, "Licence"). Polizeipräsidium München is not on presseportal and polizei.bayern.de's `robots.txt` disallows everything, so München has no police feed.
+- **Not added for München, pending permission:** Abendzeitung (its RSS terms forbid "Weitergabe von Texten … an Dritte"; ask whether the LLM provider counts) and Rathaus Umschau (muenchen.de terms allow private use only; ask the Presse- und Informationsamt or rely on § 5 UrhG). **Rejected:** Süddeutsche and tz (each `robots.txt`: "the use of robots or other automated means to access … without the express permission … is strictly prohibited"; tz also `Disallow: /` for `*`).
+
+Use Node's `fetch` to probe a feed, not curl. Some CDN front ends (BZ's Akamai, for one) return 403 to curl even for the homepage, but serve Node's fetch, which is what production uses. (The reverse can happen inside a Claude Code session: its egress proxy answered Node's fetch with "403 Blocked by egress policy" for the WDR, KStA, EXPRESS and BR hosts on 2026-11-01 while curl got the feeds. That is the session's proxy, not the publisher.)
 
 ### Favicons
 
-News source favicons are self-hosted in `packages/web/public/favicons/`, one `<slug>.png` per feed, with the slug taken from the feed name. Polizei Berlin's feed is published on berlin.de, so `polizei-berlin.png` is the berlin.de icon. When adding or removing a feed source:
+News source favicons are self-hosted in `packages/web/public/favicons/`, one `<slug>.png` per feed, with the slug taken from the feed name. Polizei Berlin's feed is published on berlin.de, so `polizei-berlin.png` is the berlin.de icon; the Feuerwehr Hamburg and Feuerwehr München icons are presseportal.de's. Google's favicon service has no icon for `www.stadt-koeln.de` (404 and a generic globe), so `stadt-koeln` is fetched for the bare `stadt-koeln.de`. If the script's Node fetch is blocked (a session proxy), `curl -L 'https://www.google.com/s2/favicons?domain=<host>&sz=32' -o <slug>.png` gets the same file. When adding or removing a feed source:
 
 1. Add (or remove) the source name → slug mapping in `FAVICON_SLUGS` in `packages/web/src/lib/news-favicons.ts`
 2. Add the slug → domain mapping to `FAVICON_SOURCES` in `packages/web/scripts/fetch-favicons.ts`
@@ -57,7 +68,7 @@ News source favicons are self-hosted in `packages/web/public/favicons/`, one `<s
 
 ### RSS Parser (`packages/server/src/lib/rss-parser.ts`)
 
-Supports RSS 2.0 and Atom formats. Returns normalized `FeedItem[]` with title, url, publishedAt, description, imageUrl. Decodes numeric (`&#228;`) and common HTML (`&nbsp;`) character references (`htmlEntities: true`) — rbb24 encodes umlauts that way. RSS 1.0 (RDF) is not supported.
+Supports RSS 2.0, RSS 1.0 (RDF) and Atom formats. Returns normalized `FeedItem[]` with title, url, publishedAt, description, imageUrl. Decodes numeric (`&#228;`) and common HTML (`&nbsp;`) character references (`htmlEntities: true`) — rbb24 encodes umlauts that way. RDF items are siblings of `<channel>` under `rdf:RDF` (read from there, or from inside `channel` if a feed nests them); the date is `dc:date`, and an item without `<link>` takes its `rdf:about` as URL. RDF support was added on 2026-11-01 for BR24 Oberbayern; NDR's old `index-rss.xml` is RDF too, but Hamburg stays on the RSS 2.0 URL.
 ## AI Summarization
 
 ### Data Flow

@@ -127,12 +127,25 @@ describe('Köln config', () => {
     });
   });
 
-  it('has no city-specific source yet, so those jobs fetch nothing for Köln', () => {
+  it('has its licence-checked feeds and Polizei Köln, and no other city-specific source', () => {
     vi.stubEnv('ACTIVE_CITIES', 'koeln');
     const config = getCityConfig('koeln')!;
-    expect(config.feeds).toEqual([]);
-    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water, ...rest } = config.dataSources;
+    expect(config.feeds.map((f) => f.name)).toEqual(['WDR Rheinland', 'Kölner Stadt-Anzeiger', 'EXPRESS', 'Stadt Köln']);
+    // Polizei Köln (presseportal newsroom 12415), not another force's newsroom
+    expect(config.dataSources.police?.url).toBe('https://www.presseportal.de/rss/dienststelle_12415.rss2');
+    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water, police: _police, ...rest } = config.dataSources;
     expect(rest).toEqual({});
+  });
+
+  it('lists every police district before any later name it is part of', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'koeln');
+    // The first name found in a title wins, so a name must not contain an earlier one.
+    const districts = getCityConfig('koeln')!.dataSources.police!.districts!;
+    for (const [i, later] of districts.entries()) {
+      for (const earlier of districts.slice(0, i)) {
+        expect(later.includes(earlier), `${later} contains the earlier ${earlier}`).toBe(false);
+      }
+    }
   });
 });
 
@@ -181,9 +194,11 @@ describe('München config', () => {
     expect(dataSources.pollen).toEqual({ provider: 'dwd', regionId: 120, partregionId: 121 });
   });
 
-  it('has no river gauge and no city-specific source yet, so those jobs fetch nothing for München', () => {
+  it('has its licence-checked feeds, and no river gauge, police or other city-specific source', () => {
     const config = getCityConfig('muenchen')!;
-    expect(config.feeds).toEqual([]);
+    expect(config.feeds.map((f) => f.name)).toEqual(['BR24 Oberbayern', 'Feuerwehr München']);
+    // polizei.bayern.de's robots.txt disallows all; the Polizeipräsidium is not on presseportal
+    expect(config.dataSources.police).toBeUndefined();
     const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, ...rest } = config.dataSources;
     expect(rest).toEqual({});
   });

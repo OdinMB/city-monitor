@@ -66,7 +66,7 @@ describe('App', () => {
   it.each([
     ['/koeln', 'KÖLN'],
     ['/muenchen', 'MÜNCHEN'],
-  ])('renders the dashboard at %s without news tiles', async (path, upperName) => {
+  ])('renders the dashboard at %s with its news tiles', async (path, upperName) => {
     render(
       <MemoryRouter initialEntries={[path]}>
         <App />
@@ -75,8 +75,8 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getAllByText(upperName).length).toBeGreaterThanOrEqual(1);
     });
-    // No news feeds configured: no Briefing tile, and nothing Berlin-named.
-    expect(screen.queryByText('Briefing')).toBeNull();
+    // News feeds configured since 2026-11-01: a Briefing tile, and nothing Berlin-named.
+    expect(screen.getByText('Briefing')).toBeDefined();
     expect(screen.queryByText('BERLIN')).toBeNull();
   });
 

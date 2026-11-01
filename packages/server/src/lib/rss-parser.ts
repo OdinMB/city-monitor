@@ -1,5 +1,5 @@
 /**
- * RSS/Atom feed parser using fast-xml-parser.
+ * RSS 2.0, RSS 1.0 (RDF) and Atom feed parser using fast-xml-parser.
  */
 
 import { XMLParser } from 'fast-xml-parser';
@@ -32,6 +32,15 @@ export function parseFeed(xml: string): FeedItem[] {
       return arr.map(parseRssItem).filter((i): i is FeedItem => i !== null);
     }
 
+    // RSS 1.0 (RDF): items are siblings of <channel>, not inside it (BR24, NDR's old URL)
+    const rdf = doc['rdf:RDF'];
+    if (rdf) {
+      const items = rdf.item ?? rdf.channel?.item;
+      if (!items) return [];
+      const arr = Array.isArray(items) ? items : [items];
+      return arr.map(parseRdfItem).filter((i): i is FeedItem => i !== null);
+    }
+
     // Atom
     if (doc.feed?.entry) {
       const entries = doc.feed.entry;
@@ -56,6 +65,20 @@ function parseRssItem(item: Record<string, unknown>): FeedItem | null {
     publishedAt: extractText(item.pubDate) || new Date().toISOString(),
     description: extractText(item.description),
     imageUrl: extractMediaUrl(item),
+  };
+}
+
+function parseRdfItem(item: Record<string, unknown>): FeedItem | null {
+  const title = extractText(item.title);
+  const about = item['@_rdf:about'];
+  const url = extractText(item.link) || (typeof about === 'string' ? about.trim() : undefined);
+  if (!title || !url) return null;
+
+  return {
+    title,
+    url,
+    publishedAt: extractText(item['dc:date']) || new Date().toISOString(),
+    description: extractText(item.description),
   };
 }
 

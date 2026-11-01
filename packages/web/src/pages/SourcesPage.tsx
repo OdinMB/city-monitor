@@ -273,6 +273,21 @@ const HAMBURG_SOURCES: SourceGroup[] = [
 
 const KOELN_SOURCES: SourceGroup[] = [
   {
+    category: 'News',
+    sources: [
+      { name: 'WDR Rheinland', url: 'https://www1.wdr.de/nrw/rheinland/', description: 'Regional public broadcaster for North Rhine-Westphalia, Rheinland edition.' },
+      { name: 'Kölner Stadt-Anzeiger', url: 'https://www.ksta.de/koeln/', description: 'Köln daily newspaper.' },
+      { name: 'EXPRESS', url: 'https://www.express.de/koeln/', description: 'Köln tabloid newspaper.' },
+      { name: 'Stadt Köln', url: 'https://www.stadt-koeln.de/politik-und-verwaltung/presseservice/', description: 'Press releases of the City of Köln.' },
+    ],
+  },
+  {
+    category: 'Safety',
+    sources: [
+      { name: 'Köln Police (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/12415', description: 'Köln and Leverkusen police press releases.' },
+    ],
+  },
+  {
     category: 'Transit & Traffic',
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
@@ -288,6 +303,13 @@ const KOELN_SOURCES: SourceGroup[] = [
 
 // No river gauge: the Isar through München is not a federal waterway.
 const MUENCHEN_SOURCES: SourceGroup[] = [
+  {
+    category: 'News',
+    sources: [
+      { name: 'BR24 Oberbayern', url: 'https://www.br.de/nachrichten/themen/oberbayern,UZlJdUE', description: 'Regional public broadcaster for Bavaria, Oberbayern edition.' },
+      { name: 'Feuerwehr München (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/131419', description: 'München fire brigade press releases.' },
+    ],
+  },
   {
     category: 'Transit & Traffic',
     sources: [

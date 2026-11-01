@@ -1,6 +1,6 @@
 # AI transparency record (EU AI Act, Art. 50)
 
-_Last assessed: 2026-09-25 · by: agent run (ai-act-disclosure skill, improvement mode) · labels implemented 2026-09-25 from the owner-approved copy, pending deploy · Briefing label changed by the owner 2026-09-26 to one tag with a tooltip, notice line removed, pending deploy · skill facts verified: 2026-09-25 · next re-test: 2026-11-15_
+_Last assessed: 2026-09-25 · by: agent run (ai-act-disclosure skill, improvement mode) · labels implemented 2026-09-25 from the owner-approved copy, pending deploy · Briefing label changed by the owner 2026-09-26 to one tag with a tooltip, notice line removed, pending deploy · feature inventory updated 2026-11-01 (Köln and München feeds, Polizei Köln: §2) · skill facts verified: 2026-09-25 · next re-test: 2026-11-15_
 
 <!-- Next re-test 2026-11-15: the briefing's text-marking gap waits on OpenAI, and the latest deadline under any reading is 2026-12-02.
      Also re-test whenever a feature, model or label changes. -->
@@ -14,7 +14,7 @@ _Last assessed: 2026-09-25 · by: agent run (ai-act-disclosure skill, improvemen
 | Name on the system (F1) | "City Monitor" (citymonitor.app), run by the operator named in the imprint as a private individual | `packages/web/src/pages/ImprintPage.tsx`; `LICENSE`; `NOTICE` |
 | Our role | Provider of all four AI features, and deployer of the briefing, which the site publishes | [G ¶¶10–11, 15] |
 | Partner and written role split (F6) | No partner | — |
-| Audience; minors or vulnerable users (F2) | Public, no login, de/en/tr/ar. No age gate; minors not ruled out | `packages/web/src/i18n/index.ts`; `render.yaml` (`ACTIVE_CITIES=berlin`) |
+| Audience; minors or vulnerable users (F2) | Public, no login, de/en/tr/ar. No age gate; minors not ruled out | `packages/web/src/i18n/index.ts`; `render.yaml` (`ACTIVE_CITIES=berlin,hamburg,koeln,muenchen`) |
 | Professional or personal (F3) | Free and donation-funded (Ko-fi), no ads. Treated as **professional** (conservative) until the owner answers §11 Q3 | `packages/web/src/lib/constants.ts`; `.github/FUNDING.yml` |
 | Open source; hosted instance (F5) | AGPL-3.0-or-later; hosted on Render (Frankfurt), assumed live. Open source gives no Art. 50 exemption [G ¶23] | `LICENSE`; `render.yaml` |
 | Code of Practice signatory | No | — |
@@ -25,10 +25,12 @@ All four run server-side on cron, through OpenAI via LangChain. Model defaults l
 
 | # | Feature | Call site | Vendor · model id | Modality | Length | Mode | Destination | Human review | First public (F4) |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Daily briefing, two paragraphs per language (the city's `languages`: Berlin de/en/tr/ar, Hamburg de/en, in one call; a visitor in another interface language sees the city's first language under a note saying so, with the same AI tag) | `cron/summarize.ts` → `lib/openai.ts` `summarizeHeadlines`; prompt `lib/llm-prompts.ts` | OpenAI · `gpt-6-luna` @ `high` (`OPENAI_MODEL`, `OPENAI_SUMMARY_EFFORT`) | text | **≥200 tokens** in every language (~140–194 words, `.context/news.md`) | cron, every 6 h | dashboard hero tile (`strips/BriefingStrip.tsx`); public JSON `GET /api/:city/news/summary`; DB `ai_summaries` ≤7 days | none | ~Mar 2026 (§11 Q2); model switched 2026-09-24 |
+| 1 | Daily briefing, two paragraphs per language (the city's `languages`: Berlin de/en/tr/ar, Hamburg, Köln and München de/en, in one call; a visitor in another interface language sees the city's first language under a note saying so, with the same AI tag) | `cron/summarize.ts` → `lib/openai.ts` `summarizeHeadlines`; prompt `lib/llm-prompts.ts` | OpenAI · `gpt-6-luna` @ `high` (`OPENAI_MODEL`, `OPENAI_SUMMARY_EFFORT`) | text | **≥200 tokens** in every language (~140–194 words, `.context/news.md`) | cron, every 6 h | dashboard hero tile (`strips/BriefingStrip.tsx`); public JSON `GET /api/:city/news/summary`; DB `ai_summaries` ≤7 days | none | ~Mar 2026 (§11 Q2); model switched 2026-09-24 |
 | 2 | News relevance filter, category, importance score | `lib/openai.ts` filter pipeline; drop logic `cron/ingest-feeds.ts` | OpenAI · `gpt-6-luna` @ `medium` (`OPENAI_FILTER_MODEL`) | classification / score | single words, a number | cron, every 10 min | News tile, ticker, map popups, digest API | none | ~Mar 2026 |
 | 3 | Place labels and map pins for news (the prompt lets the model infer places) | same call as #2 (`locationLabel`) | OpenAI · `gpt-6-luna` @ `medium` | short text | 1–5 words | cron | map popup `📍 label`, News tile pin | none | ~Mar 2026 |
 | 4 | Place extraction for police reports | `lib/openai.ts` geo pipeline | OpenAI · `gpt-6-luna` @ `none` (`OPENAI_GEO_MODEL`, then `OPENAI_FILTER_MODEL`) | short text (extracted) | 1–5 words | cron, every 10 min | map popup, police sub-layer (off by default) | none | ~Mar 2026 |
+
+Which cities make which calls (since 2026-11-01): every city with feeds gets #1–#3 (Berlin, Hamburg, Köln, München); #4 runs for a city with a police feed (Berlin, Hamburg, Köln; München has none). Köln and München started making LLM calls on 2026-11-01, once their feeds were wired and `ACTIVE_CITIES` names them. The classifier prompt's place examples are still Berlin's (`lib/llm-prompts.ts`); changing them waits on a model-eval run (`.context/model-eval.md`).
 
 Not AI: OG images, favicons, Firecrawl (scrape only), transit/event/police-district tags (keyword rules). No chatbot, no image/audio/video generation, no outbound feeds, newsletters, social posts or exports. The model-eval harness (`npm run eval:models`) is developer-only and not a feature.
 
@@ -92,7 +94,7 @@ The Sources page's AI section (`packages/web/src/pages/SourcesPage.tsx`, `aiProc
   | Where | Keys | Form |
   |---|---|---|
   | Briefing tile heading (CM-1, with CM-2 folded in on 2026-09-26) | `aiLabel.generated`, `aiLabel.tooltip` | `AiLabel`: one tag (dark pill) with the text, `role="img"` named by that text; the tooltip is its native `title` (hover only) and accessible description. The notice line inside the tile was removed; `data-ai-generated` on the text is unchanged |
-  | Sources page, AI section (CM-3) | `sources.aiProcessing.title`, `.description` | Section heading and text; vendor named, model not. Shown only for a city with news feeds or a police feed, the only inputs the LLM reads; Köln and München, with neither, make no AI calls and show no section (since 2026-11-01) |
+  | Sources page, AI section (CM-3) | `sources.aiProcessing.title`, `.description` | Section heading and text; vendor named, model not. Shown only for a city with news feeds or a police feed, the only inputs the LLM reads. Since 2026-11-01 every configured city has feeds, so all four show it (Köln and München showed none while they had neither) |
   | News tile, under the category tabs (CM-4) | `aiNotice.newsLegend` | `role="note"` line |
   | News tile "NN%" score (CM-4) | `aiNotice.importanceScore` | `role="meter"` named by the key, same text as tooltip |
   | Map popups for news and police, after `📍 label` (CM-5) | `aiNotice.locationEstimated` | Inline text after " · ", escaped; looked up when the popup opens |

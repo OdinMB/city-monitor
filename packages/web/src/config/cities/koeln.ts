@@ -19,6 +19,6 @@ export const koeln: WebCityConfig = {
     ],
   },
   theme: { accent: '#C8102E' },
-  // The Germany-wide sources only.
-  features: ['nina', 'pollen', 'waterLevels', 'pharmacies', 'aeds'],
+  // The Germany-wide sources, news feeds and Polizei Köln.
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'pharmacies', 'aeds'],
 };

@@ -16,6 +16,14 @@ export const FAVICON_SLUGS: Record<string, string> = {
   'NDR Hamburg': 'ndr-hamburg',
   MOPO: 'mopo',
   'Feuerwehr Hamburg': 'feuerwehr-hamburg',
+  // Köln
+  'WDR Rheinland': 'wdr-rheinland',
+  'Kölner Stadt-Anzeiger': 'koelner-stadt-anzeiger',
+  EXPRESS: 'express',
+  'Stadt Köln': 'stadt-koeln',
+  // München
+  'BR24 Oberbayern': 'br24-oberbayern',
+  'Feuerwehr München': 'feuerwehr-muenchen',
 };
 
 /** URL of a news source's favicon, or null when the source has none. */

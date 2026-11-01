@@ -26,7 +26,7 @@ interface SafetyReport {
 
 ### District Extraction
 
-`extractDistrict()` returns the first name from the city's `dataSources.police.districts` that appears in the report title. Berlin lists its districts and larger neighbourhoods (Mitte, Kreuzberg, …); Hamburg lists its Bezirke and Stadtteile, longer compound names before the shorter names they contain (e.g. `Altona-Altstadt` before `Altona`). A city without a list gets no district.
+`extractDistrict()` returns the first name from the city's `dataSources.police.districts` that appears in the report title. Berlin lists its districts and larger neighbourhoods (Mitte, Kreuzberg, …); Hamburg lists its Bezirke and Stadtteile, longer compound names before the shorter names they contain (e.g. `Altona-Altstadt` before `Altona`). Köln lists its 9 Stadtbezirke, then Stadtteile in the same order rule (`Weidenpesch` before `Weiden` and `Pesch`), leaving out names that are common words or parts of other words (`Brück`, `Rath`, `Wahn`, `Weiß`, `Eil`, `Esch`, `Lind`); `config.test.ts` checks that no name contains an earlier one. The match is case-sensitive and the district is only a label in the popup: nothing joins it to political or boundary data, so a city without political data or district outlines (Köln) loses nothing. A city without a list gets no district.
 
 ### Location Extraction
 
@@ -36,6 +36,8 @@ Map pins come from two steps: `geolocateReports()` (`lib/openai.ts`, model `OPEN
 
 - **Berlin:** `https://www.berlin.de/presse/pressemitteilungen/index/feed?institutions[]=Polizei+Berlin`
 - **Hamburg:** `https://www.presseportal.de/rss/dienststelle_6337.rss2` (Polizei Hamburg). Until 2026-11-01 the config pointed at newsroom 6013, which is Polizeipräsidium Mittelfranken, so Hamburg showed Nürnberg and Fürth reports; old rows go with the safety retention. Find a force's newsroom number on `presseportal.de/blaulicht/l/<state>` and check the feed's `<title>` before wiring it.
+- **Köln:** `https://www.presseportal.de/rss/dienststelle_12415.rss2` (Polizei Köln, added 2026-11-01; channel "Presseportal.de - Polizei Köln", titles `POL-K: …`). The force also covers Leverkusen (titles with `-LEV` in the case number), so `Leverkusen` closes the district list; the LLM place extraction and geocoding decide the pin. Same presseportal licence as Hamburg (below).
+- **München:** none. Polizeipräsidium München is not a presseportal newsroom, and polizei.bayern.de has no RSS and a `robots.txt` with `User-agent: *` / `Disallow: /`, although its imprint allows reprinting press releases with attribution. Building a scraper waits on the press office's permission. Feuerwehr München's presseportal feed is a news feed instead (`news.md`).
 
 Licence (checked 2026-11-01): presseportal's terms (`/nutzungsbedingungen`) allow editorial use and name processing "mithilfe von künstlicher Intelligenz" as part of it, with media-law responsibility passing to the user; use "für eigene Geschäftszwecke" needs news aktuell's written permission. Automatically embedding ots content on a third-party site formally needs an application, with these rules (`api.presseportal.de/nutzungsbestimmungen/`): show `(ots)`, link the original, publish any usage notes, hide after 2 years. `robots.txt` blocks AI training crawlers but not `/rss/`; no RSL file, no `tdmrep.json`. No explicit AI-input ban, so the feed stays; whether to file the embedding application is open.
 

@@ -132,12 +132,15 @@ describe('SourcesPage credits per city', () => {
   it.each(CITIES.map((c) => [c.id, c] as const))('credits each news and police feed of %s, and no other news source', (id, city) => {
     renderCity(id);
     const cards = creditedCards();
-    const feedHosts = new Set(city.feeds.map((f) => new URL(f.url).hostname));
-    const creditedHosts = new Set(cards.map((card) => card.host));
+    // Compared by site, not host: a feed often has its own host (feed.ksta.de,
+    // nachrichtenfeeds.br.de) while the credit links the publisher's site.
+    const site = (url: string) => new URL(url).hostname.split('.').slice(-2).join('.');
+    const feedSites = new Set(city.feeds.map((f) => site(f.url)));
+    const creditedSites = new Set(cards.map((card) => site(`https://${card.host}`)));
 
-    for (const host of feedHosts) expect(creditedHosts, host).toContain(host);
-    if (city.dataSources.police) expect(creditedHosts).toContain(new URL(city.dataSources.police.url).hostname);
-    for (const card of cards.filter((c) => c.section === 'News')) expect(feedHosts, card.name).toContain(card.host);
+    for (const s of feedSites) expect(creditedSites, s).toContain(s);
+    if (city.dataSources.police) expect(creditedSites).toContain(site(city.dataSources.police.url));
+    for (const card of cards.filter((c) => c.section === 'News')) expect(feedSites, card.name).toContain(site(`https://${card.host}`));
   });
 
   it.each(CITIES.map((c) => [c.id] as const))('credits the host of the noise map on %s', (id) => {

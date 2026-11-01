@@ -5,7 +5,7 @@ description: Add a new city to City Monitor, or activate one that is configured 
 
 # Add a city
 
-The README's "Adding a City" is the overview for contributors. This is the working order, with the traps. Köln (`koeln`) is the template for a city with the Germany-wide sources only, München (`muenchen`) for one that also has no federal river gauge. Both are cities inside a state ("City-state assumptions"). Berlin is the only city with every source.
+The README's "Adding a City" is the overview for contributors. This is the working order, with the traps. Köln (`koeln`) is the template for a city inside a state with the Germany-wide sources, München (`muenchen`) for one that also has no federal river gauge. Both are cities inside a state ("City-state assumptions"). Since 2026-11-01 both also have news feeds, and Köln a police feed: when you copy them for the first slice, empty `feeds` and drop `police`, whose sources are theirs alone. Berlin is the only city with every source.
 
 References beside this file:
 

@@ -1,7 +1,7 @@
 <h1 align="center">City Monitor</h1>
 
 <p align="center">
-  Real-time city dashboard, currently covering Berlin and Hamburg.<br>
+  Real-time city dashboard, currently covering Berlin, Hamburg, Köln and München.<br>
   Inspired by <a href="https://worldmonitor.io">World Monitor</a>.
 </p>
 
@@ -87,7 +87,7 @@ The [`add-city` skill](.claude/skills/add-city/SKILL.md) holds the same work in 
 
 1. **Define the shared type** — the `CityConfig` interface lives in `shared/types.ts`. You shouldn't need to change it unless your city needs a new data source type.
 
-2. **Create a server config** — add `packages/server/src/config/cities/<city>.ts` exporting a `CityConfig`. Use `koeln.ts` as a template for a city with the Germany-wide sources only (weather, DWD warnings, UV and pollen, NINA, river gauges), or `berlin.ts` for one with its own feeds and sources. This is where you declare RSS feeds, transit stations, weather coordinates, police feeds, water level gauges, and every other data source the cron jobs will ingest.
+2. **Create a server config** — add `packages/server/src/config/cities/<city>.ts` exporting a `CityConfig`. Use `koeln.ts` as a template for a city inside a state with the Germany-wide sources (weather, DWD warnings, UV and pollen, NINA, river gauges), emptying its Köln-only `feeds` and `police`, or `berlin.ts` for one with its own feeds and sources. This is where you declare RSS feeds, transit stations, weather coordinates, police feeds, water level gauges, and every other data source the cron jobs will ingest.
 
 3. **Register the server config** — import your city in `packages/server/src/config/index.ts` and add it to the `ALL_CITIES` map.
 

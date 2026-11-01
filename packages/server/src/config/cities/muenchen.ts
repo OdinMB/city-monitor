@@ -4,9 +4,11 @@ import type { CityConfig } from '@city-monitor/shared';
  * München, wired only to the Germany-wide sources (DWD, Open-Meteo, NINA,
  * OpenStreetMap, aponet.de). No PEGELONLINE gauge: the Isar through München
  * is a Bavarian water, not a federal waterway, so the city has no water
- * levels. City-specific sources (news feeds, police, transit, events, council
- * meetings, district boundaries) are not configured yet, so their jobs fetch
- * nothing for München.
+ * levels. News feeds are configured; police has no usable source
+ * (polizei.bayern.de's robots.txt disallows all, and the Polizeipräsidium is
+ * not on presseportal). The other city-specific sources (transit, events,
+ * council meetings, district boundaries) are not configured yet, so their
+ * jobs fetch nothing for München.
  */
 export const muenchen: CityConfig = {
   id: 'muenchen',
@@ -28,7 +30,14 @@ export const muenchen: CityConfig = {
     ],
   },
   theme: { accent: '#A16207' },
-  feeds: [],
+  feeds: [
+    // Licence verdicts: .context/news.md, "Köln and München feed status". Süddeutsche
+    // and tz forbid automated access; Abendzeitung and Rathaus Umschau await permission.
+    // BR24 Oberbayern is RSS 1.0 (RDF) and covers all of Oberbayern; the classifier
+    // drops what isn't about München.
+    { name: 'BR24 Oberbayern', url: 'https://nachrichtenfeeds.br.de/rdf/boards/UZlJdUE', tier: 1, type: 'mainstream', lang: 'de' },
+    { name: 'Feuerwehr München', url: 'https://www.presseportal.de/rss/dienststelle_131419.rss2', tier: 2, type: 'gov', lang: 'de' },
+  ],
   dataSources: {
     // DWD warns for city and Landkreis together, in one region (warnings.json cell
     // 109184000; dwd:Warngebiete_Kreise 909184999, checked 2026-11-01). The older
