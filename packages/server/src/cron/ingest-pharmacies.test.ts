@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseDateTimeDE, formatDateDE, parsePharmaciesFromHtml, extractFormTokens, createPharmacyIngestion } from './ingest-pharmacies.js';
+import { parseDateTimeDE, formatDateDE, parsePharmaciesFromHtml, extractFormTokens, createPharmacyIngestion, hasPharmacySearch } from './ingest-pharmacies.js';
+import { berlin } from '../config/cities/berlin.js';
 import { createCache } from '../lib/cache.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -10,6 +11,14 @@ describe('parseDateTimeDE', () => {
 
   it('defaults to 00:00 when time is empty', () => {
     expect(parseDateTimeDE('25.12.2026', '')).toBe('2026-12-25T00:00:00');
+  });
+});
+
+describe('hasPharmacySearch', () => {
+  it('searches a German city with a postcode, and no city without one or outside Germany', () => {
+    expect(hasPharmacySearch(berlin)).toBe(true);
+    expect(hasPharmacySearch({ ...berlin, id: 'nowhere' })).toBe(false);
+    expect(hasPharmacySearch({ ...berlin, country: 'AT' })).toBe(false);
   });
 });
 

@@ -38,7 +38,7 @@ References beside this file:
 ## Order of work
 
 1. **First slice.** Configure the city with the Germany-wide sources only, and leave it inactive: `/<id>` keeps going to the city picker and no job fetches for it. That is a complete change on its own, as Köln was. Add each city-specific source later, in its own change, after its licence check.
-2. **Server config.** Copy `packages/server/src/config/cities/koeln.ts` to `<id>.ts`. Set the identity fields, `coordinates` (the centre), `boundingBox` (the city limits), `map.center` as `[lon, lat]` of the centre, `map.bounds` around the box, and `dataSources.weather` at the centre (`config.test.ts` checks these agree). Find `nina`, `pollen` and `waterLevels` with [source-lookups.md](source-lookups.md). Add the city to `ALL_CITIES` in `packages/server/src/config/index.ts`.
+2. **Server config.** Copy `packages/server/src/config/cities/koeln.ts` to `<id>.ts`. Set the identity fields, `coordinates` (the centre), `boundingBox` (the city limits), `map.center` as `[lon, lat]` of the centre, `map.bounds` around the box, and `dataSources.weather` at the centre (`config.test.ts` checks these agree). Find `nina`, `pollen`, `waterLevels`, `weather.dwdWarnRegion` and `aeds` with [source-lookups.md](source-lookups.md); a city inside a state needs the last two (below). Add the city to `ALL_CITIES` in `packages/server/src/config/index.ts`.
 3. **Web config.** Copy `packages/web/src/config/cities/koeln.ts`, with the same identity and `map`. List in `features` what the server ingests for the city (`cityFeatures`; `config/index.test.ts` fails until the two agree) and the web app's own: `noiseMap`/`noiseTotal` with a noise map, `crisis` and `rentMap` for Berlin alone. Add it to `ALL_CITIES` in `packages/web/src/config/index.ts`, not to `ACTIVE_CITY_IDS`. Wiring a source later (step 6) adds its feature here in the same change.
 4. **Code keyed by city ID.** Add every entry [city-keyed-code.md](city-keyed-code.md) marks `every city` or `every DE city`: the pharmacy postcode, the `check:weather` list, the WAQI agencies, the Sources page and the accent colours.
 5. **City-state assumptions.** Decide each one below; don't paper over it with a Berlin-style branch.
@@ -49,9 +49,10 @@ References beside this file:
 
 ## City-state assumptions
 
-Berlin and Hamburg are city-states, and three lookups depend on it:
+Berlin and Hamburg are city-states. Köln and München are not, and four lookups depend on it:
 
-- **AEDs.** `ingest-aeds.ts` asks Overpass for a state-level area (`admin_level=4`) with the city's name, so any other city gets an empty AED layer and no error. Leave it empty, or make the admin level a config field in its own tested change (in German OpenStreetMap a kreisfreie Stadt is level 6).
+- **AEDs.** `ingest-aeds.ts` asks Overpass for the area with the city's name at `dataSources.aeds.adminLevel`, or at the state level (4) without it, which an empty AED layer and no error would show for a city inside a state. Set `aeds: { adminLevel: 6 }` for a kreisfreie Stadt, as Köln and München do, and confirm it (source-lookups.md).
+- **DWD warnings.** A name match also takes in the Landkreis named after the city; set `dataSources.weather.dwdWarnRegion` (source-lookups.md).
 - **State parliament.** `ingest-political.ts` counts every member of the state parliament in `PARLIAMENT_CONFIG` as the city's, so an entry for a city inside a state shows the whole Landtag. `ParliamentConfig` has no Bundestag-only form. Leave the city out, so it has no political data, until the state part can filter by constituency.
 - **Labour market.** `ingest-labor-market.ts` fetches `Bundesland=Berlin`, for Berlin only. A state's figure is not a city's, so leave the tile Berlin-only (it already is). A city would need the Bundesagentur's district tables, licence-checked.
 
@@ -60,7 +61,8 @@ Berlin and Hamburg are city-states, and three lookups depend on it:
 Nothing for it. Each tile, map layer, sub-layer, political view and feature-bound Sources-page credit needs a feature in the web config's `features` (`CityFeature` in `shared/types.ts`), so a city shows exactly what it has data for: no empty tile, no "all clear" without data, no Berlin-only copy. A sub-layer list with one entry left is not shown; a number key whose layer the city lacks does nothing. The dashboard grid fills the holes missing tiles leave (`grid-flow-row-dense` in `DashboardGrid`).
 
 - **Berlin-only features:** wastewater, fire brigade, labour market, population, bathing (their jobs fetch for Berlin alone), crisis services and the rent map (Berlin's own directory and WMS), district mayors and state members by Bezirk (hand-kept tables in `ingest-political.ts`).
-- **Every city, no feature:** weather, air quality, rain radar, traffic incidents, pharmacies and defibrillators.
+- **Every city, no feature:** weather, air quality, rain radar and traffic incidents.
+- **Every German city, as features:** `aeds` (defibrillators) and `pharmacies` (with a postcode in `CITY_PLZ`). The Emergencies layer shows with either, and its sub-layer buttons with both.
 - The Briefing needs `OPENAI_API_KEY` besides feeds; without it the tile says there are no articles.
 - Say in the commit which features the city has.
 

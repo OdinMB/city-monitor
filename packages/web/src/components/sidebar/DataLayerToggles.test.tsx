@@ -144,6 +144,23 @@ describe('DataLayerToggles per city', () => {
     expect(shown(i18n.t('sidebar.noise.live'))).toBe(false);
   });
 
+  it('lists the emergencies layer only with pharmacies or defibrillators, and only the ones the city has', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['emergencies']), emergencySubLayers: new Set(['pharmacies']) });
+    renderFor(hamburg);
+    expect(shown(i18n.t('sidebar.emergencies.pharmacies'))).toBe(true);
+    expect(shown(i18n.t('sidebar.emergencies.aeds'))).toBe(true);
+    cleanup();
+
+    renderFor({ ...hamburg, features: hamburg.features.filter((f) => f !== 'pharmacies') });
+    expect(shown(i18n.t('sidebar.layers.emergencies'))).toBe(true);
+    // A lone sub-layer is the layer itself.
+    expect(shown(i18n.t('sidebar.emergencies.pharmacies'))).toBe(false);
+    cleanup();
+
+    renderFor({ ...hamburg, features: hamburg.features.filter((f) => f !== 'pharmacies' && f !== 'aeds') });
+    expect(shown(i18n.t('sidebar.layers.emergencies'))).toBe(false);
+  });
+
   it('marks the noise map shown where the selected one is missing', () => {
     useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['noise']), noiseLayer: 'total' });
     renderFor(hamburg);

@@ -72,11 +72,13 @@ const SHARED_SOURCES: SourceGroup[] = [
         name: 'NINA (BBK)',
         url: 'https://warnung.bund.de/',
         description: 'Official civil protection warnings (MOWAS, BIWAPP, KATWARN) from the Federal Office of Civil Protection.',
+        requires: 'nina',
       },
       {
         name: 'aponet.de',
         url: 'https://www.aponet.de/',
         description: 'On-call emergency pharmacy locations and hours.',
+        requires: 'pharmacies',
       },
       {
         name: 'OpenStreetMap',

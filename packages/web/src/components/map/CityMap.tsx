@@ -128,8 +128,8 @@ export function CityMap() {
   const { data: newsDigest } = useNewsDigest(city.id);
   const { data: safetyReports } = useSafety(city.id);
   const { data: ninaWarnings } = useNina(city.id);
-  const { data: pharmacyList } = usePharmacies(city.id);
-  const { data: aedList } = useAeds(city.id);
+  const { data: pharmacyList } = usePharmacies(city.id, available.emergencies.includes('pharmacies'));
+  const { data: aedList } = useAeds(city.id, available.emergencies.includes('aeds'));
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
   const { data: constructionSites } = useConstruction(city.id, available.traffic.includes('roadworks'));
   const { data: aqGrid } = useAirQualityGrid(city.id);
@@ -143,7 +143,8 @@ export function CityMap() {
   );
   const selectedNews = useCommandCenter((s) => s.newsSubLayers);
   const newsSubLayers = useMemo(() => effectiveSubLayers(selectedNews, available.news), [selectedNews, available]);
-  const emergencySubLayers = useCommandCenter((s) => s.emergencySubLayers);
+  const selectedEmergencies = useCommandCenter((s) => s.emergencySubLayers);
+  const emergencySubLayers = useMemo(() => effectiveSubLayers(selectedEmergencies, available.emergencies), [selectedEmergencies, available]);
   const politicalActive = activeLayers.has('political');
   // Falls back to 'bundestag' for a layer only political cities have; unused while the layer is off.
   const politicalLayer = effectiveChoice(useCommandCenter((s) => s.politicalLayer), available.political) ?? 'bundestag';

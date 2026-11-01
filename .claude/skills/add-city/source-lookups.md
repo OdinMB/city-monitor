@@ -40,7 +40,7 @@ How to find the identifiers the Germany-wide sources need for a German city, how
 - **BrightSky weather and Open-Meteo air quality** use `dataSources.weather` lat/lon. `check:weather` confirms both.
 - **WAQI stations** come from the bounding box (`ingest-air-quality-grid.ts`, needs `WAQI_API_TOKEN`). Add the city's agencies to `WAQI_AGENCIES`: the Umweltbundesamt and the state's monitoring network, checked against the stations' aqicn.org pages (`.context/weather.md`, "Credit"). Sensor.Community stations (`airQuality.sensorCommunityStations`) are optional.
 - **TomTom traffic** queries the bounding box (`ingest-traffic.ts`, needs `TOMTOM_API_KEY`).
-- **AEDs** query Overpass by `name`, at state level only (SKILL.md, "City-state assumptions").
+- **AEDs** query Overpass for the boundary whose `name` is the city's and whose `admin_level` is `dataSources.aeds.adminLevel`, 4 (a state) without it (SKILL.md, "City-state assumptions"). In German OpenStreetMap a kreisfreie Stadt is 6. Confirm that the area exists and holds defibrillators: `curl -s https://overpass-api.de/api/interpreter --data-urlencode 'data=[out:json][timeout:25];area["name"="Köln"]["admin_level"="6"]["boundary"="administrative"]->.s;node["emergency"="defibrillator"](area.s);out count;'` answers with a count above 0 (the query `ingest-aeds.ts` sends, counting instead of listing). A Landkreis named after the city has a longer name ("Landkreis München"), so the exact name keeps it out.
 - **Emergency pharmacies** search aponet.de by one central postcode: `CITY_PLZ` (`city-keyed-code.md`).
 - **Bundestag members** come from abgeordnetenwatch.de, filtered by a constituency or list label that contains `name`, and only for a city in `PARLIAMENT_CONFIG`.
 

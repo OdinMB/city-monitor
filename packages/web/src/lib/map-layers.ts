@@ -1,6 +1,6 @@
 import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
 import type {
-  DataLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
+  DataLayer, EmergencySubLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
 } from '../hooks/useCommandCenter.js';
 
 /**
@@ -11,6 +11,7 @@ import type {
 export interface CityLayers {
   layers: ReadonlySet<DataLayer>;
   news: readonly NewsSubLayer[];
+  emergencies: readonly EmergencySubLayer[];
   traffic: readonly TrafficSubLayer[];
   water: readonly WaterSubLayer[];
   /** The noise maps (WMS). */
@@ -32,6 +33,7 @@ export function cityLayers({ features }: Pick<WebCityConfig, 'features'>): CityL
   const has = (feature: CityFeature) => features.includes(feature);
 
   const news = present<NewsSubLayer>([['news', has('news')], ['police', has('police')]]);
+  const emergencies = present<EmergencySubLayer>([['pharmacies', has('pharmacies')], ['aeds', has('aeds')]]);
   // TomTom traffic incidents cover every city.
   const traffic = present<TrafficSubLayer>([['public-transport', has('transit')], ['incidents', true], ['roadworks', has('roadworks')]]);
   const water = present<WaterSubLayer>([['levels', has('waterLevels')], ['bathing', has('bathing')]]);
@@ -52,13 +54,13 @@ export function cityLayers({ features }: Pick<WebCityConfig, 'features'>): CityL
     ['air-quality', true],
     ['noise', noise.length > 0 || noiseLive],
     ['water', water.length > 0],
-    ['emergencies', true],
+    ['emergencies', emergencies.length > 0],
     ['social', social.length > 0],
     ['population', has('population')],
     ['political', political.length > 0],
   ]));
 
-  return { layers, news, traffic, water, noise, noiseLive, social, political };
+  return { layers, news, emergencies, traffic, water, noise, noiseLive, social, political };
 }
 
 /** The selected sub-layers the city has, or every one it has when none of the selected ones is there. */

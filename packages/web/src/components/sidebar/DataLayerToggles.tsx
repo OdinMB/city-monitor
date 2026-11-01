@@ -176,6 +176,7 @@ export function DataLayerToggles() {
   const setHintsOpen = useShortcutSettings((s) => s.setHintsOpen);
   const available = useMemo(() => cityLayers(city), [city]);
   const news = effectiveSubLayers(newsSubLayers, available.news);
+  const emergencies = effectiveSubLayers(emergencySubLayers, available.emergencies);
   const traffic = effectiveSubLayers(trafficSubLayers, available.traffic);
   const water = effectiveSubLayers(waterSubLayers, available.water);
   const noise = effectiveNoiseLayer(noiseLayer, available);
@@ -227,8 +228,8 @@ export function DataLayerToggles() {
             );
           } else if (layer === 'emergencies' && active) {
             subItems = (
-              <SubLayerList meta={EMERGENCY_SUB_META} available={EMERGENCY_SUB_META.map((m) => m.key)} parentColor={color}
-                isActive={(key) => emergencySubLayers.has(key)} onSelect={toggleEmergencySubLayer} label={(key) => t(`sidebar.emergencies.${key}`)} />
+              <SubLayerList meta={EMERGENCY_SUB_META} available={available.emergencies} parentColor={color}
+                isActive={(key) => emergencies.has(key)} onSelect={toggleEmergencySubLayer} label={(key) => t(`sidebar.emergencies.${key}`)} />
             );
           } else if (layer === 'water' && active) {
             subItems = (

@@ -7,13 +7,12 @@ Every place outside `packages/*/src/config/cities/` that is keyed by a city ID, 
 | Find | In | Entry needed for | Without one |
 |---|---|---|---|
 | `ALL_CITIES` | `packages/server/src/config/index.ts` | every city | The server never loads the config. |
-| `CITY_PLZ` | `packages/server/src/cron/ingest-pharmacies.ts` | every DE city | No emergency pharmacies: aponet.de is searched by one central postcode. The job only logs a warning. |
+| `CITY_PLZ` | `packages/server/src/cron/ingest-pharmacies.ts` | every DE city | No emergency pharmacies: aponet.de is searched by one central postcode. The city has no `pharmacies` feature, so no pharmacy sub-layer or aponet.de credit. |
 | `CITIES` | `packages/server/src/scripts/check-weather-sources.ts` | every city | `npm run check:weather -- --city <id>` stops with "Unknown city". |
 | `PARLIAMENT_CONFIG` | `packages/server/src/cron/ingest-political.ts` | city-states | No political data. An entry counts every member of the state parliament as the city's (SKILL.md, "City-state assumptions"). |
 | `BEZIRKSBUERGERMEISTER` | `packages/server/src/cron/ingest-political.ts` | optional | No district mayors. Hand-maintained, Berlin only. |
 | `STATE_CONSTITUENCY_BEZIRKE` | `packages/server/src/cron/ingest-political.ts` | optional | The state members are not grouped by Bezirk: the political tile's state view reads them by constituency, and the map has no state-parliament view. Only for a city whose state constituencies are named after its Bezirke (Berlin). |
 | `BERLIN_OWN_SOURCES` | `packages/server/src/lib/city-features.ts` | Berlin only | Bathing, wastewater, labour market, population and fire brigade count as features of Berlin alone, as their jobs fetch for it alone. |
-| `admin_level` | `packages/server/src/cron/ingest-aeds.ts` | city-states | The Overpass query looks for a state-level area with the city's name, so a city inside a state gets no AEDs. |
 | `BERLIN_ONLY_JOBS` | `packages/server/src/app.ts` | Berlin only | Bathing, wastewater, labour market, population and fire brigade: Berlin's own sources, stored under `berlin`. |
 | `cityId === 'berlin'` | `packages/server/src/db/warm-cache.ts` | Berlin only | Restores those jobs' data, noise sensors and council meetings for Berlin alone. |
 | `cityArg === -1 ? 'berlin'` | `packages/server/src/dev-synthetic.ts` | nothing | Synthetic mode, and the guarded browser run built on it, serve one configured city per run: Berlin by default, any other with `--city <id>` after `npm run db:seed -- --city <id>` (`.context/dev-database.md`). |

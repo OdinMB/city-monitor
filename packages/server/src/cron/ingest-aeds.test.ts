@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createAedIngestion } from './ingest-aeds.js';
 import type { AedLocation } from '@city-monitor/shared';
@@ -195,5 +195,37 @@ describe('ingest-aeds', () => {
       expect.any(Array),
       86400, // 24 hours
     );
+  });
+
+  describe('the area it asks Overpass for', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    /** The boundary filters of each Overpass query the ingestion sent, by city name. */
+    async function areasAskedFor(activeCities: string): Promise<string[]> {
+      vi.stubEnv('ACTIVE_CITIES', activeCities);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+        new Response(JSON.stringify({ elements: [] }), { status: 200 }),
+      );
+      await createAedIngestion(createCache())();
+      return fetchSpy.mock.calls.map(([, init]) => {
+        const query = new URLSearchParams(String(init?.body)).get('data') ?? '';
+        return /area(\[[^;]*?\])->/.exec(query)?.[1] ?? query;
+      });
+    }
+
+    it('looks for a state-level area named like a city-state, which names no admin level', async () => {
+      expect(await areasAskedFor('berlin,hamburg')).toEqual([
+        '["name"="Berlin"]["admin_level"="4"]["boundary"="administrative"]',
+        '["name"="Hamburg"]["admin_level"="4"]["boundary"="administrative"]',
+      ]);
+    });
+
+    it('looks for the area at the admin level a city inside a state names', async () => {
+      expect(await areasAskedFor('koeln')).toEqual([
+        '["name"="Köln"]["admin_level"="6"]["boundary"="administrative"]',
+      ]);
+    });
   });
 });

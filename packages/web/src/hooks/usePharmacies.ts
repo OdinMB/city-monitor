@@ -1,10 +1,12 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api, type EmergencyPharmacy, type ApiResponse } from '../lib/api.js';
 
-export function usePharmacies(cityId: string) {
+/** `enabled` false for a city without emergency pharmacies. */
+export function usePharmacies(cityId: string, enabled = true) {
   const query = useQuery<ApiResponse<EmergencyPharmacy[]>>({
     queryKey: ['pharmacies', cityId],
     queryFn: () => api.getPharmacies(cityId),
+    enabled,
     refetchInterval: 6 * 60 * 60 * 1000,
     refetchIntervalInBackground: false,
     staleTime: 3 * 60 * 60 * 1000,

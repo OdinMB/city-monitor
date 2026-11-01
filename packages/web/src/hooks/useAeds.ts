@@ -1,10 +1,12 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api, type AedLocation, type ApiResponse } from '../lib/api.js';
 
-export function useAeds(cityId: string) {
+/** `enabled` false for a city without defibrillator data. */
+export function useAeds(cityId: string, enabled = true) {
   const query = useQuery<ApiResponse<AedLocation[]>>({
     queryKey: ['aeds', cityId],
     queryFn: () => api.getAeds(cityId),
+    enabled,
     refetchInterval: 24 * 60 * 60 * 1000,
     refetchIntervalInBackground: false,
     staleTime: 12 * 60 * 60 * 1000,

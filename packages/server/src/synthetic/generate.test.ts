@@ -11,6 +11,7 @@ import {
 import type { AirQuality, CityConfig } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
+import { koeln } from '../config/cities/koeln.js';
 import {
   generateSyntheticAirQuality, generateSyntheticCityData, generateSyntheticData, seedFromModel, syntheticCoverage,
   syntheticDistricts, syntheticModel, type CitySyntheticData,
@@ -372,17 +373,26 @@ describe('generateSyntheticCityData', () => {
     };
     const d = generateSyntheticCityData({ now: NOW, city });
     expect(syntheticDistricts('teststadt')).toEqual([]);
+    // No pharmacies: the pharmacy job has no postcode to search for it (CITY_PLZ)
     expect(Object.keys(d).filter((key) => key !== 'cityId' && key !== 'history').sort()).toEqual([
-      'aeds', 'airQuality', 'airQualityGrid', 'news', 'pharmacies', 'safety', 'summary', 'traffic', 'waterLevels', 'weather',
+      'aeds', 'airQuality', 'airQualityGrid', 'news', 'safety', 'summary', 'traffic', 'waterLevels', 'weather',
     ]);
     expectInside(d, city, 150);
     for (const s of d.safety!) {
       expect(s.district).toBeUndefined();
       expect(s.title).toMatch(/ in Teststadt$/);
     }
-    for (const p of d.pharmacies!) expect(p.district).toBeUndefined();
     for (const n of d.news!) if (n.location) expect(n.location.label).toBe('Teststadt');
     for (const [name, schema, value] of schemaChecks(d)) expect(schema.safeParse(value).error, name).toBeUndefined();
+    expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);
+  });
+
+  it('gives Köln, which has no Bezirk boundaries, what production holds for it, its pharmacies without a district', () => {
+    const d = generateSyntheticCityData({ now: NOW, city: koeln });
+    expect(Object.keys(d).filter((key) => key !== 'cityId' && key !== 'history')).toEqual(syntheticCoverage(koeln));
+    expect(d.pharmacies!.length).toBeGreaterThan(0);
+    for (const p of d.pharmacies!) expect(p.district).toBeUndefined();
+    expectInside(d, koeln, 20);
     expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);
   });
 

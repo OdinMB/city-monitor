@@ -1,5 +1,6 @@
 import type { CityConfig, CityFeature } from '@city-monitor/shared';
 import { groupsStateMembersByBezirk, hasDistrictMayors, hasParliamentConfig } from '../cron/ingest-political.js';
+import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
 
 /**
  * Berlin's own sources. Each of their jobs fetches for Berlin alone and stores
@@ -26,6 +27,9 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['socialAtlas', (c) => c.dataSources.socialAtlas !== undefined],
   ['noiseSensors', (c) => c.dataSources.noiseSensors !== undefined],
   ['councilMeetings', (c) => c.dataSources.councilMeetings !== undefined],
+  ['pharmacies', hasPharmacySearch],
+  // A German city without dataSources.aeds is asked for at the state level (ingest-aeds.ts).
+  ['aeds', (c) => c.country === 'DE'],
   ['political', hasParliamentConfig],
   ['districtMayors', hasDistrictMayors],
   ['stateByDistrict', (c) => hasParliamentConfig(c) && groupsStateMembersByBezirk(c)],

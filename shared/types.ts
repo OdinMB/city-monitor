@@ -36,7 +36,7 @@ export interface CityConfig {
 
 /**
  * What a city has data for, beyond what every city gets (weather, air quality,
- * rain radar, traffic incidents, pharmacies and defibrillators). The web app
+ * rain radar and traffic incidents). The web app
  * shows a tile, a map layer or a sub-layer only for the features its city
  * config lists (packages/web/src/lib/city-features.ts).
  *
@@ -61,6 +61,9 @@ export type CityFeature =
   | 'socialAtlas'
   | 'noiseSensors'
   | 'councilMeetings'
+  // The emergencies map layer's sub-layers, which German cities have
+  | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
+  | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
   // From the political ingestion's own tables
   | 'political'       // PARLIAMENT_CONFIG: Bundestag and state parliament members
   | 'districtMayors'  // BEZIRKSBUERGERMEISTER
@@ -138,6 +141,12 @@ export interface CityDataSources {
   events?: EventSourceConfig[];
   police?: { provider: 'rss'; url: string; districts?: string[] };
   nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings
+  /**
+   * Defibrillators from OpenStreetMap: the Overpass query takes the nodes inside the boundary
+   * whose `name` is the city's and whose `admin_level` is this one. Without it, 4: a state,
+   * which fits a city-state. A kreisfreie Stadt inside a state is 6 in German OSM.
+   */
+  aeds?: { adminLevel: number };
   roadworks?: { url: string };
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {

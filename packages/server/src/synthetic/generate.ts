@@ -27,6 +27,7 @@ import type { PersistedNewsItem } from '../db/writes.js';
 import { aggregateBudgetData, type ParsedBudgetRow } from '../cron/ingest-budget.js';
 import { deriveStatus } from '../cron/ingest-appointments.js';
 import { berlinUtcOffset } from '../cron/ingest-council-meetings.js';
+import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
 import { computeLevel, computeTrend } from '../cron/ingest-wastewater.js';
 import { hashString } from '../lib/hash.js';
 
@@ -113,7 +114,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   budget: (c) => c.dataSources.budget !== undefined,
   construction: (c) => c.dataSources.roadworks !== undefined,
   traffic: () => true,
-  pharmacies: (c) => c.country === 'DE',
+  pharmacies: hasPharmacySearch,
   aeds: (c) => c.country === 'DE',
   socialAtlas: (c) => c.dataSources.socialAtlas !== undefined,
   population: berlinOnly,

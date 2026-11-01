@@ -118,6 +118,8 @@ describe('Köln config', () => {
     // DWD warn cell 105315000 (cap_warncellids_csv.csv)
     expect(dataSources.weather.dwdWarnRegion).toBe('Stadt Köln');
     expect(dataSources.nina).toEqual({ ars: '053150000000' });
+    // The kreisfreie Stadt's OSM boundary: a city inside a state is not at the state level (4)
+    expect(dataSources.aeds).toEqual({ adminLevel: 6 });
     expect(dataSources.pollen).toEqual({ provider: 'dwd', regionId: 40, partregionId: 41 });
     expect(dataSources.waterLevels).toEqual({
       provider: 'pegelonline',
@@ -129,7 +131,7 @@ describe('Köln config', () => {
     vi.stubEnv('ACTIVE_CITIES', 'koeln');
     const config = getCityConfig('koeln')!;
     expect(config.feeds).toEqual([]);
-    const { weather: _weather, nina: _nina, pollen: _pollen, waterLevels: _water, ...rest } = config.dataSources;
+    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water, ...rest } = config.dataSources;
     expect(rest).toEqual({});
   });
 });

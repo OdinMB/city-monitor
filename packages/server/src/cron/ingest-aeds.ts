@@ -1,4 +1,4 @@
-import type { AedLocation } from '@city-monitor/shared';
+import type { AedLocation, CityConfig } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveAeds } from '../db/writes.js';
@@ -28,8 +28,11 @@ interface OverpassResponse {
   remark?: string;
 }
 
-function buildOverpassQuery(cityName: string): string {
-  return `[out:json][timeout:25];area["name"="${cityName}"]["admin_level"="4"]["boundary"="administrative"]->.s;node["emergency"="defibrillator"](area.s);out body;`;
+/** OSM admin_level of a state, where a city-state's boundary is. */
+const DEFAULT_ADMIN_LEVEL = 4;
+
+function buildOverpassQuery(cityName: string, adminLevel: number): string {
+  return `[out:json][timeout:25];area["name"="${cityName}"]["admin_level"="${adminLevel}"]["boundary"="administrative"]->.s;node["emergency"="defibrillator"](area.s);out body;`;
 }
 
 export function createAedIngestion(cache: Cache, db: Db | null = null) {
@@ -38,7 +41,7 @@ export function createAedIngestion(cache: Cache, db: Db | null = null) {
     for (const city of cities) {
       if (city.country !== 'DE') continue;
       try {
-        await ingestCityAeds(city.id, city.name, cache, db);
+        await ingestCityAeds(city, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -46,8 +49,9 @@ export function createAedIngestion(cache: Cache, db: Db | null = null) {
   };
 }
 
-async function ingestCityAeds(cityId: string, cityName: string, cache: Cache, db: Db | null): Promise<void> {
-  const query = buildOverpassQuery(cityName);
+async function ingestCityAeds(city: CityConfig, cache: Cache, db: Db | null): Promise<void> {
+  const cityId = city.id;
+  const query = buildOverpassQuery(city.name, city.dataSources.aeds?.adminLevel ?? DEFAULT_ADMIN_LEVEL);
 
   const response = await log.fetch(OVERPASS_URL, {
     method: 'POST',

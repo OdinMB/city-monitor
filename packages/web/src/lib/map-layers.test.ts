@@ -9,8 +9,9 @@ const withFeatures = (...features: CityFeature[]) => cityLayers({ features });
 describe('cityLayers', () => {
   it('gives a city without features only the layers every city has, each with what every city has', () => {
     const none = withFeatures();
-    expect([...none.layers].sort()).toEqual(['air-quality', 'emergencies', 'traffic', 'weather']);
+    expect([...none.layers].sort()).toEqual(['air-quality', 'traffic', 'weather']);
     expect(none.traffic).toEqual(['incidents']);
+    expect(none.emergencies).toEqual([]);
     expect(none.news).toEqual([]);
     expect(none.water).toEqual([]);
     expect(none.noise).toEqual([]);
@@ -25,6 +26,7 @@ describe('cityLayers', () => {
       'air-quality', 'emergencies', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'warnings', 'water', 'weather',
     ]);
     expect(all.news).toEqual(['news', 'police']);
+    expect(all.emergencies).toEqual(['pharmacies', 'aeds']);
     expect(all.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
     expect(all.water).toEqual(['levels', 'bathing']);
     expect(all.noise).toEqual(['total', 'road', 'rail', 'air']);
@@ -50,6 +52,9 @@ describe('cityLayers', () => {
     expect(withFeatures('bathing').layers.has('water')).toBe(true);
     expect(withFeatures('noiseSensors').layers.has('noise')).toBe(true);
     expect(withFeatures('rentMap').social).toEqual(['rent']);
+    expect(withFeatures('aeds').layers.has('emergencies')).toBe(true);
+    expect(withFeatures('aeds').emergencies).toEqual(['aeds']);
+    expect(withFeatures('pharmacies').emergencies).toEqual(['pharmacies']);
   });
 
   it('shows the political layer only with political data, and the district-mayor and state views only with theirs', () => {

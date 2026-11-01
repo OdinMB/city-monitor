@@ -22,7 +22,7 @@ export const berlin: WebCityConfig = {
   // Every feature there is: Berlin is the city with every source.
   features: [
     'news', 'police', 'nina', 'pollen', 'waterLevels', 'transit', 'events', 'appointments',
-    'budget', 'roadworks', 'socialAtlas', 'noiseSensors', 'councilMeetings',
+    'budget', 'roadworks', 'socialAtlas', 'noiseSensors', 'councilMeetings', 'pharmacies', 'aeds',
     'political', 'districtMayors', 'stateByDistrict',
     'bathing', 'wastewater', 'laborMarket', 'population', 'feuerwehr',
     'crisis', 'rentMap', 'noiseMap', 'noiseTotal',
