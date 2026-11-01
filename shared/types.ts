@@ -53,6 +53,7 @@ export type CityFeature =
   | 'nina'            // dataSources.nina: civil-protection warnings
   | 'pollen'
   | 'waterLevels'
+  | 'floodStatus'     // dataSources.floodStatus: flood class of state gauges (LHP)
   | 'transit'
   | 'events'
   | 'appointments'
@@ -166,6 +167,18 @@ export interface CityDataSources {
   waterLevels?: {
     provider: 'pegelonline';
     stations: Array<{ uuid: string; name: string; waterBody: string; tidal?: boolean }>;
+  };
+  /**
+   * Flood class (Meldestufe or the state's equivalent) of state flood gauges from the
+   * Länderübergreifendes Hochwasserportal (LHP) public API, for rivers PEGELONLINE lacks.
+   * No water levels: the API gives none (.context/water-levels.md, "Flood Status").
+   */
+  floodStatus?: {
+    provider: 'lhp';
+    /** The LHP `states` filter the gauges and warnings are asked for with ("BY"). */
+    state: string;
+    /** LHP station ids ("BY_16005701"), in the order the tile lists them. */
+    stations: Array<{ id: string; name: string; waterBody: string; upstream?: boolean }>;
   };
   budget?: {
     provider: 'berlin-doppelhaushalt';
@@ -589,6 +602,49 @@ export interface PollenForecast {
   pollen: Record<PollenType, PollenTypeForecast>;
 }
 
+// Flood status (LHP public API): flood classes at state gauges and regional flood warnings
+/**
+ * LHP's nationwide flood class at a gauge: 0 no flood, 1 minor … 4 very severe flood.
+ * Each state maps its own levels onto it; in Bavaria class N is Meldestufe N.
+ */
+export type FloodClass = 0 | 1 | 2 | 3 | 4;
+
+export interface FloodGauge {
+  /** LHP station id, e.g. "BY_16005701" */
+  id: string;
+  name: string;
+  waterBody: string;
+  /** Upstream of the city, listed as an early sign. */
+  upstream: boolean;
+  /** null when LHP has no current data for the gauge (its class -1). */
+  floodClass: FloodClass | null;
+  /** The state's own label for the class, as LHP gives it ("Keine Meldestufe", "Meldestufe 2"). */
+  stateLabel: string | null;
+  /** When the gauge's class was determined (ISO 8601 with offset). */
+  measuredAt: string | null;
+  /** The state flood service's page for the gauge. */
+  url: string | null;
+}
+
+export interface FloodAlert {
+  id: string;
+  headline: string;
+  /** The warned region or river section ("Stadt München"). */
+  area: string;
+  /** LHP warning class: 1 all-clear, 2 pre-warning, 4 flood, 5 severe flood, 6 very severe flood. */
+  level: number;
+  /** LHP's name for the class ("Vorwarnung"). */
+  levelName: string;
+  url: string | null;
+}
+
+export interface FloodStatus {
+  gauges: FloodGauge[];
+  alerts: FloodAlert[];
+  /** LHP's `updated` (the "Stand" its licence asks to show), ISO 8601 with offset. */
+  updated: string;
+}
+
 // News feed items
 export interface NewsItem {
   id: string;
@@ -683,6 +739,7 @@ export interface BootstrapData {
   traffic: ApiResponse<TrafficIncident[]> | null;
   construction: ApiResponse<ConstructionSite[]> | null;
   waterLevels: ApiResponse<WaterLevelData> | null;
+  floodStatus: ApiResponse<FloodStatus | null> | null;
   budget: ApiResponse<BudgetSummary | null> | null;
   appointments: ApiResponse<BuergeramtData> | null;
   laborMarket: ApiResponse<LaborMarketSummary | null> | null;

@@ -12,6 +12,7 @@ import { CityProvider } from '../../hooks/CityProvider.js';
 import { CityContext } from '../../hooks/CityContext.js';
 import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
+import { muenchen } from '../../config/cities/muenchen.js';
 import { CommandLayout } from './CommandLayout.js';
 
 // Only where the warnings sit matters here, not the map itself.
@@ -191,6 +192,7 @@ const FEATURE_TILES: ReadonlyArray<[CityFeature, string]> = [
   ['councilMeetings', 'panel.councilMeetings.title'],
   ['political', 'sidebar.layers.political'],
   ['waterLevels', 'panel.waterLevels.title'],
+  ['floodStatus', 'panel.floodStatus.title'],
 ];
 
 describe('CommandLayout tiles', { timeout: 30_000 }, () => {
@@ -222,6 +224,7 @@ describe('CommandLayout tiles', { timeout: 30_000 }, () => {
   const cities: ReadonlyArray<[string, WebCityConfig]> = [
     ['Berlin', berlin],
     ['Hamburg', hamburg],
+    ['München', muenchen],
     ['a city with no features', { ...hamburg, features: [] }],
   ];
 

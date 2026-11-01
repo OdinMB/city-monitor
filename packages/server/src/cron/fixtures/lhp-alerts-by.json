@@ -1,0 +1,27 @@
+{
+  "apiVersion": "1.0 beta, 2025-02-04",
+  "status": "success",
+  "lang": "de",
+  "source": "https://www.hochwasserzentralen.de",
+  "sourceName": "Länderübergreifendes Hochwasserportal (LHP)",
+  "sourceLogo": "https://api.hochwasserzentralen.de/public/v1/images/logo",
+  "licence": "https://creativecommons.org/licenses/by/4.0/deed.de",
+  "licenceName": "CC BY 4.0 - Namensnennung",
+  "title": "Aktuelle Hochwasser-Warnungen",
+  "description": "Aktuelle regionale Hochwasser-Warnungen der deutschen Bundesländer",
+  "updated": "2026-11-01T20:43:47+01:00",
+  "lastModified": "2026-11-01T20:00:47+01:00",
+  "legend": {
+    "title": "Hochwasser-Warnungen",
+    "items": [
+      { "lhpClass": 6, "lhpClassName": "Sehr großes Hochwasser", "color": "#765e9c" },
+      { "lhpClass": 5, "lhpClassName": "Großes Hochwasser", "color": "#e53935" },
+      { "lhpClass": 4, "lhpClassName": "Hochwasser", "color": "#fb8c00" },
+      { "lhpClass": 2, "lhpClassName": "Vorwarnung", "cssStyle": { "background-image": "repeating-linear-gradient(135deg, #F0F0F0, #F0F0F0 12px, #e53935 12px, #e53935 18px)" } },
+      { "lhpClass": 1, "lhpClassName": "Entwarnung", "color": "#60bf41" }
+    ]
+  },
+  "bbox": [5.839, 55.0933, 15.0916, 47.2318],
+  "type": "FeatureCollection",
+  "features": []
+}

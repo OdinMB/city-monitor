@@ -81,6 +81,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Baustellen Köln (Offene Daten Köln)', (c) => c.dataSources.roadworks?.provider === 'koeln-wfs'],
   ['Baustellen München (Geoportal)', (c) => c.dataSources.roadworks?.provider === 'muenchen-wfs'],
   ['PEGELONLINE (WSV)', (c) => c.dataSources.waterLevels !== undefined],
+  ['Länderübergreifendes Hochwasserportal (LHP)', (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0],
   ['Ticketmaster', (c) => usesEvents(c, 'ticketmaster')],
   ['kulturdaten.berlin', (c) => usesEvents(c, 'kulturdaten')],
   ['go~mus (State Museums)', (c) => usesEvents(c, 'gomus')],
@@ -185,6 +186,7 @@ describe('SourcesPage licence credits', () => {
     'ALLRIS OParl (BVV)': 'Licensed CC BY 3.0 DE.',
     'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/zero-2-0.',
     'Stadt Köln Open Data (Events)': 'Licensed dl-de/zero-2-0.',
+    'Länderübergreifendes Hochwasserportal (LHP)': 'Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.',
   };
 
   it('finds every listed source on some city page', () => {

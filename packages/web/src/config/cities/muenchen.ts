@@ -19,8 +19,8 @@ export const muenchen: WebCityConfig = {
     ],
   },
   theme: { accent: '#A16207' },
-  // The Germany-wide sources without a river gauge, news feeds (no police
-  // source), the city's roadworks, council meetings and the crisis-services
-  // directory.
-  features: ['news', 'nina', 'pollen', 'roadworks', 'councilMeetings', 'pharmacies', 'aeds', 'crisis'],
+  // The Germany-wide sources without a river gauge, the Isar's flood class
+  // (LHP), news feeds (no police source), the city's roadworks, council
+  // meetings and the crisis-services directory.
+  features: ['news', 'nina', 'pollen', 'floodStatus', 'roadworks', 'councilMeetings', 'pharmacies', 'aeds', 'crisis'],
 };

@@ -19,6 +19,7 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['nina', (c) => c.country === 'DE' && c.dataSources.nina !== undefined],
   ['pollen', (c) => c.dataSources.pollen !== undefined],
   ['waterLevels', (c) => (c.dataSources.waterLevels?.stations.length ?? 0) > 0],
+  ['floodStatus', (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0],
   ['transit', (c) => (c.dataSources.transit?.stations?.length ?? 0) > 0],
   ['events', (c) => (c.dataSources.events?.length ?? 0) > 0],
   ['appointments', (c) => c.dataSources.appointments !== undefined],

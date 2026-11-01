@@ -12,6 +12,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   police: 'sidebar.news.police',
   events: 'panel.events.title',
   waterLevels: 'panel.waterLevels.title',
+  floodStatus: 'panel.floodStatus.title',
   appointments: 'panel.appointments.title',
   bathing: 'panel.bathing.title',
   pollen: 'panel.pollen.title',

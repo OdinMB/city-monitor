@@ -324,6 +324,22 @@
       "vsNormal": "gg. {{diff}} normal",
       "empty": "Keine Pegeldaten"
     },
+    "floodStatus": {
+      "title": "Hochwasserlage",
+      "class": {
+        "0": "Kein Hochwasser",
+        "1": "Kleines Hochwasser",
+        "2": "Mittleres Hochwasser",
+        "3": "Großes Hochwasser",
+        "4": "Sehr großes Hochwasser",
+        "none": "Derzeit keine Daten"
+      },
+      "upstream": "Oberlauf",
+      "warnings": "Hochwasserwarnungen",
+      "noWarnings": "Keine Hochwasserwarnungen",
+      "asOf": "Stand:",
+      "empty": "Keine Hochwasserdaten"
+    },
     "pollen": {
       "title": "Pollenvorhersage",
       "empty": "Keine Daten verfügbar",

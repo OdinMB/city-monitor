@@ -69,6 +69,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'dwd-pollen',         retentionMs: 2 * DAY_MS },
   { type: 'sc-dnms',            retentionMs: 2 * DAY_MS },
   { type: 'oparl-meetings',     retentionMs: 2 * DAY_MS },
+  { type: 'lhp-flood',          retentionMs: 2 * DAY_MS },
 
   // Infrequent (7 days). keepLatest where the job runs weekly or monthly; the
   // daily jobs write a fresh row each run.

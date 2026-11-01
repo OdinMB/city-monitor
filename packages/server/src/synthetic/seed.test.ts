@@ -3,7 +3,8 @@ import { getTableName, type SQL, type Table } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import postgres from 'postgres';
 import { hamburg } from '../config/cities/hamburg.js';
-import { SNAPSHOT_TYPES } from '../db/schema.js';
+import { muenchen } from '../config/cities/muenchen.js';
+import { SNAPSHOT_TYPES, type SnapshotType } from '../db/schema.js';
 import { generateSyntheticCityData, generateSyntheticData, syntheticModel } from './generate.js';
 import { LOCAL_DATABASE_URL } from './local-guard.js';
 import { APP_TABLES, openLocalDatabase, seedDatabase, wipeDatabase, type LocalDatabase } from './seed.js';
@@ -14,6 +15,9 @@ vi.mock('postgres', () => ({ default: vi.fn(() => ({ end: pg.end })) }));
 vi.mock('drizzle-orm/postgres-js', () => ({ drizzle: vi.fn(() => pg.db) }));
 
 type Row = Record<string, unknown>;
+
+/** Snapshot types of sources Berlin's config lacks: München's seed writes them instead. */
+const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood'];
 
 /** Records what the write functions insert, per table name. */
 function fakeDb() {
@@ -109,11 +113,11 @@ describe('seedDatabase', () => {
     const snapshots = rows.snapshots ?? [];
     const types = new Set(snapshots.map((r) => r.type));
     // A new data source fails here until generate.ts and seed.ts cover it
-    expect(SNAPSHOT_TYPES.filter((t) => !types.has(t))).toEqual([]);
+    expect(SNAPSHOT_TYPES.filter((t) => !types.has(t) && !NOT_IN_BERLIN.includes(t))).toEqual([]);
 
     // One current row per type, stamped by the database; history rows carry their own time
     const current = snapshots.filter((r) => !('fetchedAt' in r));
-    expect(current).toHaveLength(SNAPSHOT_TYPES.length);
+    expect(current).toHaveLength(SNAPSHOT_TYPES.length - NOT_IN_BERLIN.length);
     expect(snapshots.length - current.length).toBe(data.history.length);
 
     expect(rows.news_items).toHaveLength(data.news.length);
@@ -148,5 +152,12 @@ describe('seedDatabase', () => {
     expect(rows.safety_reports).toHaveLength(data.safety!.length);
     expect((rows.ai_summaries ?? []).map((r) => r.lang).sort()).toEqual(['de', 'en']);
     expect(Object.values(rows).flat().every((r) => r.cityId === 'hamburg')).toBe(true);
+  });
+
+  it('writes the snapshot types Berlin lacks for a city that has their source', async () => {
+    const { local, rows } = fakeDb();
+    await seedDatabase(local, generateSyntheticCityData({ now: new Date(), city: muenchen }));
+    const types = new Set((rows.snapshots ?? []).map((r) => r.type));
+    expect(NOT_IN_BERLIN.filter((t) => !types.has(t))).toEqual([]);
   });
 });

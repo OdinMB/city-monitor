@@ -219,13 +219,18 @@ describe('München config', () => {
     });
   });
 
-  it('has its licence-checked feeds and roadworks, and no river gauge, police or other city-specific source', () => {
+  it('has its licence-checked feeds, roadworks and Isar flood gauges, and no river levels, police or other city-specific source', () => {
     const config = getCityConfig('muenchen')!;
     expect(config.feeds.map((f) => f.name)).toEqual(['BR24 Oberbayern', 'Feuerwehr München']);
     // polizei.bayern.de's robots.txt disallows all; the Polizeipräsidium is not on presseportal
     expect(config.dataSources.police).toBeUndefined();
     expect(config.dataSources.roadworks?.provider).toBe('muenchen-wfs');
-    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council, ...rest } = config.dataSources;
+    // The Isar is not on PEGELONLINE: flood class from the LHP instead, the city's gauge first
+    expect(config.dataSources.floodStatus?.stations.map((s) => s.id)).toEqual(['BY_16005701', 'BY_16004403']);
+    const {
+      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
+      floodStatus: _flood, ...rest
+    } = config.dataSources;
     expect(rest).toEqual({});
   });
 });

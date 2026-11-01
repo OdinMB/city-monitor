@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   AedLocationSchema, AirQualityGridSchema, BathingSpotSchema, BudgetSummarySchema, BuergeramtDataSchema,
-  ConstructionSiteSchema, CouncilMeetingSchema, EmergencyPharmacySchema, FeuerwehrSummarySchema,
+  ConstructionSiteSchema, CouncilMeetingSchema, EmergencyPharmacySchema, FeuerwehrSummarySchema, FloodStatusSchema,
   LaborMarketSummarySchema, NinaWarningSchema, NoiseSensorSchema, PoliticalDistrictSchema, PollenForecastSchema,
   PopulationSummarySchema, TrafficIncidentSchema, TransitAlertSchema, WastewaterSummarySchema,
   WaterLevelDataSchema, WeatherDataSchema,
@@ -89,6 +89,7 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['pollen', PollenForecastSchema, d.pollen],
     ['noise', z.array(NoiseSensorSchema), d.noiseSensors],
     ['council', z.array(CouncilMeetingSchema), d.councilMeetings],
+    ['flood status', FloodStatusSchema, d.floodStatus],
     ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
       [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
   ];
@@ -396,6 +397,8 @@ describe('generateSyntheticCityData', () => {
       expect(d.pharmacies!.length).toBeGreaterThan(0);
       for (const p of d.pharmacies!) expect(p.district).toBeUndefined();
       expect(d.waterLevels === undefined).toBe(city.dataSources.waterLevels === undefined);
+      expect(d.floodStatus === undefined).toBe(city.dataSources.floodStatus === undefined);
+      for (const [name, schema, value] of schemaChecks(d)) expect(schema.safeParse(value).error, name).toBeUndefined();
       expectInside(d, city, 20);
       expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);
     },

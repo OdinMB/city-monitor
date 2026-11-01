@@ -9,14 +9,14 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
-  TransitAlertSchema, NinaWarningSchema,
+  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -183,6 +183,11 @@ export async function loadFeuerwehr(db: Db, cityId: string): Promise<DbResult<Fe
 
 export async function loadPollen(db: Db, cityId: string): Promise<DbResult<PollenForecast>> {
   return loadSnapshot(db, cityId, 'dwd-pollen', { schema: PollenForecastSchema, maxAgeMs: 48 * 3600_000 });
+}
+
+/** At most 30 minutes old: an older flood class could hide a rising river (the job runs every 5). */
+export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {
+  return loadSnapshot(db, cityId, 'lhp-flood', { schema: FloodStatusSchema, maxAgeMs: 30 * 60_000 });
 }
 
 export async function loadNoiseSensors(db: Db, cityId: string): Promise<DbResult<NoiseSensor[]>> {

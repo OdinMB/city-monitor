@@ -19,6 +19,7 @@ import { AirQualityStrip } from '../strips/AirQualityStrip.js';
 import { WeatherStrip } from '../strips/WeatherStrip.js';
 import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
+import { FloodStatusStrip } from '../strips/FloodStatusStrip.js';
 import { BathingStrip } from '../strips/BathingStrip.js';
 import { useBathingOffSeason } from '../../hooks/useBathingOffSeason.js';
 import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
@@ -263,6 +264,11 @@ export function CommandLayout() {
           {has('waterLevels') && (
             <Tile title={t('panel.waterLevels.title')} span={1}>
               <WaterLevelStrip />
+            </Tile>
+          )}
+          {has('floodStatus') && (
+            <Tile title={t('panel.floodStatus.title')} span={1}>
+              <FloodStatusStrip />
             </Tile>
           )}
         </DashboardGrid>

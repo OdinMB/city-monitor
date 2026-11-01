@@ -61,6 +61,7 @@ App (HelmetProvider)
                     Tile(span=2) → CouncilMeetingsStrip †
                     Tile(expandable) → PoliticalStrip
                     Tile → WaterLevelStrip (gauge bars)
+                    Tile → FloodStatusStrip (LHP flood class and warnings; München)
                 Footer (AGPL source link)
 ```
 
@@ -68,7 +69,7 @@ App (HelmetProvider)
 
 ### Bootstrap Pattern
 
-On mount, `useBootstrap(cityId)` fetches `GET /api/:city/bootstrap` — a single request returning the cached value of every domain in `CK.bootstrapKeys` (news, weather, transit, events, safety, NINA warnings, air quality, pharmacies, AEDs, traffic, construction, water levels, budget, appointments, labor market, wastewater, population summary, Feuerwehr, pollen, noise sensors, council meetings). Large GeoJSON (social atlas, population map) is not included. The response is split and injected into React Query's cache via `queryClient.setQueryData()`, so downstream hooks get instant data without their own initial fetch.
+On mount, `useBootstrap(cityId)` fetches `GET /api/:city/bootstrap` — a single request returning the cached value of every domain in `CK.bootstrapKeys` (news, weather, transit, events, safety, NINA warnings, air quality, pharmacies, AEDs, traffic, construction, water levels, flood status, budget, appointments, labor market, wastewater, population summary, Feuerwehr, pollen, noise sensors, council meetings). Large GeoJSON (social atlas, population map) is not included. The response is split and injected into React Query's cache via `queryClient.setQueryData()`, so downstream hooks get instant data without their own initial fetch.
 
 ### Per-Domain Hooks
 

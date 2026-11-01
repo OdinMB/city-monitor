@@ -11,6 +11,13 @@ How to find the identifiers the Germany-wide sources need for a German city, how
 - **Confirm:** `…/stations.json?ids=<uuid>&includeTimeseries=true&includeCurrentMeasurement=true&includeCharacteristicValues=true` (`ingest-water-levels.ts`) returns the station with a current measurement.
 - **Licence:** DL-DE-Zero (`.context/water-levels.md`). Add the city's gauges to that file's city list.
 
+### LHP flood gauges: `dataSources.floodStatus` (rivers PEGELONLINE lacks)
+
+- **Find:** `curl -H 'Accept: application/json' 'https://api.hochwasserzentralen.de/public/v1/data/stations?states=BY'` lists the state's flood gauges (`id`, `name`, `water`, `coordinates`); `states` takes the two-letter code. Take the city's gauge and at most one upstream.
+- **Fill:** `{ provider: 'lhp', state, stations: [{ id, name, waterBody }, { …, upstream: true }] }`, and `floodStatus` in the web `features`; add the LHP credit to the city's Sources list (`.context/water-levels.md`, "Flood Status (LHP)").
+- **Confirm:** the ids are in that response with a `timestamp`; `ingest-flood-status` logs "LHP lists no gauge …" otherwise.
+- **Licence:** CC BY 4.0 with a fixed credit, the "Stand" and a 10-minute refresh, all handled by the tile.
+
 ### NINA warnings: `dataSources.nina.ars`
 
 - **Find:** NINA wants the 12-digit Amtlicher Regionalschlüssel (ARS) at district level: the first five digits of the city's ARS, then seven zeros. For a kreisfreie Stadt those five digits are its own district (Köln, AGS `05315000`, gives `053150000000`). A city-state is its state key and zeros (Berlin `110000000000`, Hamburg `020000000000`). A city inside a Landkreis gets the warnings for its whole Landkreis. The keys are in Destatis' Gemeindeverzeichnis and in the Regionalschlüssel list linked from the NINA API documentation (github.com/bundesAPI/nina-api).

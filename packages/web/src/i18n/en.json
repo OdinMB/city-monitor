@@ -326,6 +326,22 @@
         "high": "High"
       }
     },
+    "floodStatus": {
+      "title": "Flood Status",
+      "class": {
+        "0": "No flood",
+        "1": "Minor flood",
+        "2": "Moderate flood",
+        "3": "Major flood",
+        "4": "Severe flood",
+        "none": "No current data"
+      },
+      "upstream": "Upstream",
+      "warnings": "Flood warnings",
+      "noWarnings": "No flood warnings in force",
+      "asOf": "As of",
+      "empty": "No flood data"
+    },
     "pollen": {
       "title": "Pollen Forecast",
       "empty": "No data available",

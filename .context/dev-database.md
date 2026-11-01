@@ -71,6 +71,7 @@ The data is dated when you seed it. Once the cache-warm TTLs expire, the routes 
 
 | Data | Refused after |
 |---|---|
+| Flood status (München) | 30 min |
 | Noise sensors | 2h |
 | NINA warnings | 3h |
 | AQ grid | 6h |

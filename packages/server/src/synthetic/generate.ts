@@ -16,7 +16,7 @@ import SunCalc from 'suncalc';
 import type {
   AedLocation, AirQuality, AirQualityGridPoint, BathingSpot, BudgetSummary, BuergeramtData,
   CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, EmergencyPharmacy,
-  FeuerwehrMonthData, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, NinaWarning,
+  FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
   TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
@@ -73,6 +73,8 @@ export interface SyntheticData {
   noiseSensors: NoiseSensor[];
   councilMeetings: CouncilMeeting[];
   political: Record<PoliticalLevel, PoliticalDistrict[]>;
+  /** Not in Berlin's data set: Berlin has no LHP gauges configured (NOT_IN_BERLIN). */
+  floodStatus?: FloodStatus;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -126,7 +128,11 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   noiseSensors: (c) => c.dataSources.noiseSensors !== undefined,
   councilMeetings: (c) => c.dataSources.councilMeetings !== undefined,
   political: (c) => c.country === 'DE' && politicalLevels(c.id).length > 0,
+  floodStatus: (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0,
 };
+
+/** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
+const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus'];
 
 /** The data sets the synthetic seed writes for `city`: those production would hold for it. */
 export function syntheticCoverage(city: CityConfig): SyntheticDataSet[] {
@@ -160,10 +166,11 @@ const EXAMPLE = 'https://example.com/synthetic';
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-/** Berlin's data set, which covers every data set. */
+/** Berlin's data set, which covers every data set but those of NOT_IN_BERLIN. */
 export function generateSyntheticData(options: { now: Date; seed?: number }): SyntheticData {
   const data = generateSyntheticCityData({ ...options, city: berlin });
-  const missing = (Object.keys(COVERED) as SyntheticDataSet[]).filter((set) => data[set] === undefined);
+  const missing = (Object.keys(COVERED) as SyntheticDataSet[])
+    .filter((set) => !NOT_IN_BERLIN.includes(set) && data[set] === undefined);
   if (missing.length > 0) throw new Error(`the synthetic Berlin data set lacks ${missing.join(', ')}`);
   return data as SyntheticData;
 }
@@ -230,6 +237,8 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('noiseSensors')) sets.noiseSensors = generateNoiseSensors(rng, place);
   if (has.has('councilMeetings')) sets.councilMeetings = generateCouncilMeetings(rng, now, place);
   if (has.has('political')) sets.political = generatePolitical(rng, place);
+  // Drawn last, so adding it left the other data sets' values as they were
+  if (has.has('floodStatus')) sets.floodStatus = generateFloodStatus(rng, now, city);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1319,6 +1328,43 @@ function generatePollen(rng: Rng, now: Date, place: Place): PollenForecast {
   const pollen = Object.fromEntries((Object.keys(POLLEN_SEASONS) as PollenType[]).map((type): [PollenType, PollenTypeForecast] =>
     [type, { today: level(type), tomorrow: level(type), dayAfterTomorrow: level(type) }])) as Record<PollenType, PollenTypeForecast>;
   return { region: place.details.pollenRegion, updatedAt: `${today} 11:00 Uhr`, pollen };
+}
+
+/**
+ * The configured LHP gauges, mostly without flood; now and then the upstream
+ * gauge at Meldestufe 1 with a made-up pre-warning for the city.
+ */
+function generateFloodStatus(rng: Rng, now: Date, city: CityConfig): FloodStatus {
+  const stations = city.dataSources.floodStatus?.stations ?? [];
+  const rising = rng.chance(0.3);
+  const measured = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000);
+  const measuredAt = `${localIso(measured)}:00${berlinUtcOffset(`${local(measured).date} 12:00:00`)}`;
+  return {
+    gauges: stations.map((s) => {
+      const floodClass: FloodClass = rising && s.upstream ? 1 : 0;
+      return {
+        id: s.id,
+        name: s.name,
+        waterBody: s.waterBody,
+        upstream: s.upstream ?? false,
+        floodClass,
+        stateLabel: floodClass === 0 ? 'Keine Meldestufe' : `Meldestufe ${floodClass}`,
+        measuredAt,
+        url: `${EXAMPLE}/pegel/${s.id}`,
+      };
+    }),
+    alerts: rising
+      ? [{
+          id: 'SYN_1',
+          headline: `${MARK} Vorwarnung: steigende Wasserstände`,
+          area: city.name,
+          level: 2,
+          levelName: 'Vorwarnung',
+          url: `${EXAMPLE}/hochwasser`,
+        }]
+      : [],
+    updated: new Date(now.getTime() - 60_000).toISOString(),
+  };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

@@ -4,7 +4,7 @@ import type { CityConfig } from '@city-monitor/shared';
  * München, wired only to the Germany-wide sources (DWD, Open-Meteo, NINA,
  * OpenStreetMap, aponet.de). No PEGELONLINE gauge: the Isar through München
  * is a Bavarian water, not a federal waterway, so the city has no water
- * levels. News feeds, roadworks and council meetings (RIS RSS feeds) are
+ * levels; its flood class comes from the LHP instead (floodStatus). News feeds, roadworks and council meetings (RIS RSS feeds) are
  * configured; police has no usable source (polizei.bayern.de's robots.txt
  * disallows all, and the Polizeipräsidium is not on presseportal). The other
  * city-specific sources (transit, events, district boundaries) are not
@@ -49,6 +49,17 @@ export const muenchen: CityConfig = {
       provider: 'dwd',
       regionId: 120,        // Bayern
       partregionId: 121,    // Allgäu/Oberbayern/Bay. Wald
+    },
+    // The Isar's flood class (Meldestufe) from the LHP public API (CC BY 4.0): the HND gauge
+    // München (16005701, Meldestufen at 240/300/380 cm and a 4th) and Puppling, the last
+    // gauge upstream, about 25 km south. LHP gives no water levels (checked 2026-11-01).
+    floodStatus: {
+      provider: 'lhp',
+      state: 'BY',
+      stations: [
+        { id: 'BY_16005701', name: 'München', waterBody: 'Isar' },
+        { id: 'BY_16004403', name: 'Puppling', waterBody: 'Isar', upstream: true },
+      ],
     },
     // Roadworks and no-parking zones of the coming four weeks (dl-de/by-2.0); the job adds a
     // CQL filter for works on the carriageway (lib/roadworks-parsers.ts).

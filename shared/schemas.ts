@@ -327,6 +327,30 @@ export const PollenForecastSchema = z.object({
   ),
 });
 
+// --- Flood Status (LHP) ---
+
+export const FloodStatusSchema = z.object({
+  gauges: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    waterBody: z.string(),
+    upstream: z.boolean(),
+    floodClass: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).nullable(),
+    stateLabel: z.string().nullable(),
+    measuredAt: z.string().nullable(),
+    url: z.string().nullable(),
+  })),
+  alerts: z.array(z.object({
+    id: z.string(),
+    headline: z.string(),
+    area: z.string(),
+    level: z.number(),
+    levelName: z.string(),
+    url: z.string().nullable(),
+  })),
+  updated: z.string(),
+});
+
 // --- Population Demographics ---
 
 export const PopulationSummarySchema = z.object({

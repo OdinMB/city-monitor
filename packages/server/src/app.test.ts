@@ -114,7 +114,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
       vi.stubEnv('ACTIVE_CITIES', activeCities);
       await createApp();
 
-      expect(scheduled.jobs).toHaveLength(26);
+      expect(scheduled.jobs).toHaveLength(27);
       for (const name of BERLIN_ONLY) expect(names(scheduled.jobs)).toContain(name);
       expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
         .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention')));
@@ -125,7 +125,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
     vi.stubEnv('ACTIVE_CITIES', 'hamburg');
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(26);
+    expect(scheduled.jobs).toHaveLength(27);
     expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
       .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention' && !BERLIN_ONLY.includes(j.name))));
   });
@@ -162,7 +162,7 @@ describe('createApp startup runs with fresh stored data', () => {
   it('still runs the air-quality grid job on start, since the stored grid has no WAQI stations', async () => {
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(26);
+    expect(scheduled.jobs).toHaveLength(27);
     const startup = scheduled.jobs.filter((j) => j.runOnStart).map((j) => j.name);
     expect(startup).toEqual(['ingest-aq-grid']);
   });
@@ -191,12 +191,21 @@ describe('createApp startup runs per active city', () => {
     expect(startupRuns()).toEqual(['ingest-aq-grid']);
   });
 
-  it('runs every ingestion job when Berlin, the only active city, has no data', async () => {
+  it('runs every ingestion job that serves Berlin when Berlin, the only active city, has no data', async () => {
     vi.stubEnv('ACTIVE_CITIES', 'berlin');
     stored.execute = rowsFreshFor([]);
     await createApp();
 
-    expect(startupRuns()).toEqual(ingestionJobs());
+    // Berlin has no LHP gauges (its rivers are on PEGELONLINE)
+    expect(startupRuns()).toEqual(ingestionJobs().filter((name) => name !== 'ingest-flood-status'));
+  });
+
+  it('runs the flood-status job for München without data', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,muenchen');
+    stored.execute = rowsFreshFor(['berlin']);
+    await createApp();
+
+    expect(startupRuns()).toContain('ingest-flood-status');
   });
 
   it('runs only the air-quality grid job when every active city has fresh data', async () => {

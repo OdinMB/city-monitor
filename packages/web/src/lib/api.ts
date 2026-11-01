@@ -24,6 +24,7 @@ export type {
   PollenTypeForecast, NoiseSensor, CouncilMeeting, NinaWarning,
   TrafficIncident, EmergencyPharmacy, Representative, PoliticalDistrict,
   TransitAlert, AirQuality, BootstrapData, NewsSummaryData,
+  FloodStatus, FloodGauge, FloodAlert, FloodClass,
 } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
@@ -35,7 +36,7 @@ import type {
   PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor,
   CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy,
   PoliticalDistrict, TransitAlert, AirQuality, BootstrapData,
-  NewsSummaryData,
+  NewsSummaryData, FloodStatus,
 } from '@city-monitor/shared';
 
 export const api = {
@@ -55,6 +56,7 @@ export const api = {
   getAeds: (city: string) => fetchJson<ApiResponse<AedLocation[]>>(`${API_BASE}/${city}/aeds`),
   getBathing: (city: string) => fetchJson<ApiResponse<BathingSpot[]>>(`${API_BASE}/${city}/bathing`),
   getWaterLevels: (city: string) => fetchJson<ApiResponse<WaterLevelData>>(`${API_BASE}/${city}/water-levels`),
+  getFloodStatus: (city: string) => fetchJson<ApiResponse<FloodStatus | null>>(`${API_BASE}/${city}/flood-status`),
   getPolitical: (city: string, level: 'bundestag' | 'state' | 'bezirke' | 'state-bezirke') => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),

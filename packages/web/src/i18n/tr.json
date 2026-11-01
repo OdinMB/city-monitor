@@ -323,6 +323,22 @@
       "vsNormal": "normal: {{diff}}",
       "empty": "Seviye verisi yok"
     },
+    "floodStatus": {
+      "title": "Taşkın Durumu",
+      "class": {
+        "0": "Taşkın yok",
+        "1": "Küçük taşkın",
+        "2": "Orta taşkın",
+        "3": "Büyük taşkın",
+        "4": "Çok büyük taşkın",
+        "none": "Güncel veri yok"
+      },
+      "upstream": "Yukarı akış",
+      "warnings": "Taşkın uyarıları",
+      "noWarnings": "Yürürlükte taşkın uyarısı yok",
+      "asOf": "Durum:",
+      "empty": "Taşkın verisi yok"
+    },
     "pollen": {
       "title": "Polen Tahmini",
       "empty": "Veri mevcut değil",

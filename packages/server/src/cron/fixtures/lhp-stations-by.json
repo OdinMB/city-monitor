@@ -1,0 +1,77 @@
+{
+  "apiVersion": "1.0 beta, 2025-02-04",
+  "status": "success",
+  "lang": "de",
+  "source": "https://www.hochwasserzentralen.de",
+  "sourceName": "Länderübergreifendes Hochwasserportal (LHP)",
+  "sourceLogo": "https://api.hochwasserzentralen.de/public/v1/images/logo",
+  "licence": "https://creativecommons.org/licenses/by/4.0/deed.de",
+  "licenceName": "CC BY 4.0 - Namensnennung",
+  "title": "Aktuelle Hochwassersituation",
+  "description": "Aktuelle Hochwassersituation an den Pegeln in Deutschland",
+  "updated": "2026-11-01T20:41:47+01:00",
+  "lastModified": "2026-11-01T20:41:47+01:00",
+  "legend": {
+    "title": "Situation am Pegel",
+    "items": [
+      { "lhpClass": 4, "lhpClassName": "Sehr großes Hochwasser", "color": "#941094" },
+      { "lhpClass": 3, "lhpClassName": "Großes Hochwasser", "color": "#de0000" },
+      { "lhpClass": 2, "lhpClassName": "Mittleres Hochwasser", "color": "#ffa500" },
+      { "lhpClass": 1, "lhpClassName": "Kleines Hochwasser", "color": "#ffff00" },
+      { "lhpClass": 0, "lhpClassName": "Kein Hochwasser", "color": "#7CBD5C" },
+      { "lhpClass": -1, "lhpClassName": "Derzeit keine Daten", "color": "#7b7b7b" }
+    ]
+  },
+  "stateLinks": { "DE-BY": "https://www.hnd.bayern.de" },
+  "bbox": [5.839, 55.0933, 15.0916, 47.2318],
+  "data": [
+    {
+      "kind": "Station",
+      "id": "BY_16004403",
+      "coordinates": [11.4461, 47.9162],
+      "name": "Puppling",
+      "water": "Isar",
+      "timestamp": "2026-11-01 20:30:00",
+      "lhpClass": 0,
+      "stateClassName": "Keine Meldestufe",
+      "stationLink": "https://www.hnd.bayern.de/search/go?suche=pegel&id=16004403",
+      "stateId": "DE-BY"
+    },
+    {
+      "kind": "Station",
+      "id": "BY_16005701",
+      "coordinates": [11.5968, 48.1454],
+      "name": "München",
+      "water": "Isar",
+      "timestamp": "2026-11-01 20:30:00",
+      "lhpClass": 0,
+      "stateClassName": "Keine Meldestufe",
+      "stationLink": "https://www.hnd.bayern.de/search/go?suche=pegel&id=16005701",
+      "stateId": "DE-BY"
+    },
+    {
+      "kind": "Station",
+      "id": "BY_16006500",
+      "coordinates": [11.7522, 48.3981],
+      "name": "Freising",
+      "water": "Isar",
+      "timestamp": "2026-11-01 20:30:00",
+      "lhpClass": 0,
+      "stateClassName": "Keine Meldestufe",
+      "stationLink": "https://www.hnd.bayern.de/search/go?suche=pegel&id=16006500",
+      "stateId": "DE-BY"
+    },
+    {
+      "kind": "Station",
+      "id": "BY_12402007",
+      "coordinates": [10.4231, 47.6019],
+      "name": "Sebastianskapelle",
+      "water": "Wertach",
+      "timestamp": null,
+      "lhpClass": -1,
+      "stateClassName": "Derzeit keine Daten",
+      "stationLink": "https://www.hnd.bayern.de/search/go?suche=pegel&id=12402007",
+      "stateId": "DE-BY"
+    }
+  ]
+}

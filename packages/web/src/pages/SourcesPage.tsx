@@ -317,7 +317,8 @@ const KOELN_SOURCES: SourceGroup[] = [
   },
 ];
 
-// No river gauge: the Isar through München is not a federal waterway.
+// No river level: the Isar through München is not a federal waterway, so not on
+// PEGELONLINE; its flood class comes from the LHP.
 const MUENCHEN_SOURCES: SourceGroup[] = [
   {
     category: 'News',
@@ -337,6 +338,12 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'Baustellen München (Geoportal)', url: 'https://opendata.muenchen.de/dataset/baustellen_4_weeks_opendata', description: 'Construction works that narrow or close the carriageway, from the city\'s roadworks service map. Source: Landeshauptstadt München – opendata.muenchen.de, dl-de/by-2-0. City Monitor shows each site as a point at the middle of its area.' },
+    ],
+  },
+  {
+    category: 'Water',
+    sources: [
+      { name: 'Länderübergreifendes Hochwasserportal (LHP)', url: 'https://www.hochwasserzentralen.de/', description: 'Flood class (Meldestufe) of the Isar gauges München and Puppling, set by the Bavarian flood warning service, and active flood warnings for München, via the LHP public API. Unchecked raw data; no water levels. Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.' },
     ],
   },
   {
