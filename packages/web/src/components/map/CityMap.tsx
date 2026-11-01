@@ -31,7 +31,7 @@ import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { usePopulation } from '../../hooks/usePopulation.js';
 import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
-import { useIsTouchPhone } from '../../hooks/useMediaQuery.js';
+import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
@@ -107,6 +107,24 @@ function animateMarkerEntrance(map: maplibregl.Map) {
   }
 }
 
+/**
+ * Opening zoom in the phone layout (below `sm`), where the map is a short band
+ * a few hundred pixels across. Fitting the whole city there opens near the
+ * minimum zoom, so phones open on the city's centre at roughly the inner-city
+ * scale instead (Berlin: about the Ringbahn). Desktop still fits the bounds.
+ */
+const PHONE_OPENING_ZOOM = 10.5;
+
+/** Opening view for a new map: the city centre on phones, the whole city otherwise. */
+function initialMapView(
+  mapConfig: { center: [number, number]; zoom: number; bounds?: [[number, number], [number, number]] },
+  isPhoneLayout: boolean,
+): Pick<maplibregl.MapOptions, 'center' | 'zoom' | 'bounds' | 'fitBoundsOptions'> {
+  if (isPhoneLayout) return { center: mapConfig.center, zoom: PHONE_OPENING_ZOOM };
+  if (!mapConfig.bounds) return { center: mapConfig.center, zoom: mapConfig.zoom };
+  return { bounds: mapConfig.bounds, fitBoundsOptions: { padding: 20 } };
+}
+
 function asError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
 }
@@ -116,6 +134,8 @@ export function CityMap() {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const isTouchPhone = useIsTouchPhone();
+  // Read once when the map is created; a later resize keeps the user's view.
+  const isPhoneLayoutRef = useRef(!useIsDesktop());
   // A base-map style that fails to load rejects a promise, which no error
   // boundary sees; it is kept here and thrown during render (see the end).
   const [styleError, setStyleError] = useState<Error | null>(null);
@@ -304,8 +324,7 @@ export function CityMap() {
       const map = new maplibregl.Map({
         container: containerRef.current,
         style,
-        bounds: bounds,
-        fitBoundsOptions: { padding: 20 },
+        ...initialMapView(mapConfig, isPhoneLayoutRef.current),
         minZoom: mapConfig.minZoom ?? 9,
         maxZoom: mapConfig.maxZoom ?? 16,
         maxBounds: bounds,
