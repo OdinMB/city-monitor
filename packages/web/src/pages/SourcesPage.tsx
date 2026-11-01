@@ -255,6 +255,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Safety',
     sources: [
       { name: 'Hamburg Police (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/6337', description: 'Hamburg police press releases.' },
+      { name: 'Hamburgisches Krisentelefon', url: 'https://www.hamburg.de/politik-und-verwaltung/bezirke/altona/themen/gesundheit/krisentelefon-61202', description: 'Crisis line for acute psychological crises (evenings, nights, weekends) and nationwide hotlines in the Crisis Services tile.' },
     ],
   },
   {
@@ -285,6 +286,7 @@ const KOELN_SOURCES: SourceGroup[] = [
     category: 'Safety',
     sources: [
       { name: 'Köln Police (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/12415', description: 'Köln and Leverkusen police press releases.' },
+      { name: 'Sozialpsychiatrischer Dienst Köln', url: 'https://www.stadt-koeln.de/service/adressen/sozialpsychiatrischer-dienst', description: 'The health department\'s social psychiatric service (office hours) and nationwide hotlines in the Crisis Services tile.' },
     ],
   },
   {
@@ -308,6 +310,12 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'BR24 Oberbayern', url: 'https://www.br.de/nachrichten/themen/oberbayern,UZlJdUE', description: 'Regional public broadcaster for Bavaria, Oberbayern edition.' },
       { name: 'Feuerwehr München (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/131419', description: 'München fire brigade press releases.' },
+    ],
+  },
+  {
+    category: 'Safety',
+    sources: [
+      { name: 'Krisendienst Psychiatrie Oberbayern', url: 'https://www.bezirk-oberbayern.de/Soziales/Psychiatrie/Krisendienst-Psychiatrie', description: '24/7 psychiatric crisis line and nationwide hotlines in the Crisis Services tile.' },
     ],
   },
   {

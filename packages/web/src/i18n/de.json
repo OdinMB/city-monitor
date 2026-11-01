@@ -362,6 +362,12 @@
       "hoursMoSa": "Mo–Sa 14–20",
       "hoursDaily17_19": "tägl. 17–19 Uhr",
       "hoursMoFr9_19": "Mo–Fr 9–19 Uhr",
+      "hoursEveningsWeekends": "abends & am Wochenende",
+      "hoursOffice": "Bürozeiten",
+      "note": {
+        "hamburg": "Hamburgisches Krisentelefon: Mo–Do 17–23:30 Uhr; Fr 17 Uhr bis Sa 7:30 Uhr; Sa 10 Uhr bis So 7:30 Uhr; Sonn- und Feiertage 10–23:30 Uhr. Außerhalb dieser Zeiten: TelefonSeelsorge (rund um die Uhr) oder im Notfall 112.",
+        "koeln": "Sozialpsychiatrischer Dienst (Gesundheitsamt Köln): Mo–Do 9–15 Uhr, Fr 9–13 Uhr. Außerhalb dieser Zeiten: TelefonSeelsorge (rund um die Uhr) oder im Notfall 112."
+      },
       "showMore": "{{count}} weitere",
       "emergency": "Notrufnummern",
       "website": "Offizielle Website: {{name}}",
@@ -380,7 +386,11 @@
         "kinderJugendtelefon": "Kinder-/Jugendtelefon",
         "drogennotdienst": "Drogennotdienst",
         "maneo": "Maneo (Anti-Gewalt)",
-        "schwulenberatung": "Schwulenberatung Berlin"
+        "schwulenberatung": "Schwulenberatung Berlin",
+        "krisentelefonHamburg": "Hamburgisches Krisentelefon",
+        "kinderschutzHamburg": "Kinderschutz-Telefon",
+        "krisendienstOberbayern": "Krisendienst Psychiatrie Oberbayern",
+        "spdKoeln": "Sozialpsychiatrischer Dienst"
       }
     },
     "bathing": {
