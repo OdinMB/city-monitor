@@ -168,7 +168,6 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'Tagesspiegel', url: 'https://www.tagesspiegel.de/', description: 'Major Berlin daily newspaper.' },
       { name: 'Berliner Morgenpost', url: 'https://www.morgenpost.de/', description: 'Berlin daily newspaper.' },
       { name: 'Berliner Zeitung', url: 'https://www.berliner-zeitung.de/', description: 'Berlin daily newspaper.' },
-      { name: 'taz Berlin', url: 'https://taz.de/', description: 'Left-leaning national daily, Berlin section.' },
       { name: 'Gründerszene', url: 'https://www.businessinsider.de/gruenderszene/', description: 'Berlin startup and tech news.' },
     ],
   },

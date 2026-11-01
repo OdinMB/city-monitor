@@ -10,7 +10,6 @@ export const FAVICON_SLUGS: Record<string, string> = {
   Tagesspiegel: 'tagesspiegel',
   'Berliner Morgenpost': 'berliner-morgenpost',
   'Berliner Zeitung': 'berliner-zeitung',
-  'taz Berlin': 'taz-berlin',
   'Polizei Berlin': 'polizei-berlin',
   'Gründerszene Berlin': 'gruenderszene',
   // Hamburg

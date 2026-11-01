@@ -11,7 +11,6 @@ const FAVICON_SOURCES: Record<string, string> = {
   tagesspiegel: 'www.tagesspiegel.de',
   'berliner-morgenpost': 'www.morgenpost.de',
   'berliner-zeitung': 'www.berliner-zeitung.de',
-  'taz-berlin': 'taz.de',
   'polizei-berlin': 'www.berlin.de',
   gruenderszene: 'www.businessinsider.de',
   // Hamburg

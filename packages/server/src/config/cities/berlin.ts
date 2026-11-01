@@ -25,7 +25,6 @@ export const berlin: CityConfig = {
     { name: 'Tagesspiegel', url: 'https://www.tagesspiegel.de/contentexport/feed/home', tier: 1, type: 'mainstream', lang: 'de' },
     { name: 'Berliner Morgenpost', url: 'https://www.morgenpost.de/berlin/rss', tier: 2, type: 'mainstream', lang: 'de' },
     { name: 'Berliner Zeitung', url: 'https://www.berliner-zeitung.de/feed.xml', tier: 2, type: 'mainstream', lang: 'de' },
-    { name: 'taz Berlin', url: 'https://taz.de/Berlin/!p4649;rss/', tier: 2, type: 'mainstream', lang: 'de' },
     { name: 'Polizei Berlin', url: 'https://www.berlin.de/presse/pressemitteilungen/index/feed?institutions[]=Polizei+Berlin', tier: 1, type: 'gov', lang: 'de', category: 'crime' },
     { name: 'Gründerszene Berlin', url: 'https://www.businessinsider.de/gruenderszene/feed/', tier: 3, type: 'tech', lang: 'de' },
   ],
