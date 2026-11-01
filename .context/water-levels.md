@@ -27,6 +27,8 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 1. If `currentLevel > MHW` (or MThw for tidal) → `very_high`
 2. Otherwise, map API's `stateMnwMhw` field: `low` → `low`, `normal` → `normal`, `high` → `high`, anything else → `unknown`
 
+PEGELONLINE answers `stateMnwMhw: "unknown"` for tidal gauges, and the Elbe gauges Bunthaus and Seemannshöft have no characteristic values at all, so their state is always `unknown` (St. Pauli is `unknown` too unless it is above MThw). The frontend shows an `unknown` gauge's level on its own: no state badge in the tile, no state line in the popup, the figure in the plain text colour, and a neutral grey map badge. "Unknown" would read as a fault rather than "no reference values".
+
 ## Server Pipeline
 
 1. **Cron** (`*/15 * * * *`): `createWaterLevelIngestion(cache, db)` fetches PEGELONLINE batch API, derives state, writes to cache (key: `{cityId}:water-levels`, TTL: 900s) then DB
@@ -42,7 +44,7 @@ The cron job (`ingest-water-levels.ts`) maps API data to a state enum:
 ## Frontend
 
 - **Hook**: `useWaterLevels(cityId)` — 15-min refetch, 5-min stale, bootstrap-seeded
-- **Dashboard tile**: `WaterLevelStrip` — gauge bars showing current level within MNW-MHW range, color-coded by state (blue=low, green=normal, amber=high, red=very_high, gray=unknown), tidal badge. Not expandable, no trend chart (last tile of the grid)
+- **Dashboard tile**: `WaterLevelStrip` — gauge bars showing current level within MNW-MHW range, color-coded by state (blue=low, green=normal, amber=high, red=very_high; an unknown state gets no badge), tidal badge. Not expandable, no trend chart (last tile of the grid)
 - **History endpoint**: `GET /api/:city/water-levels/history?range=Nd` — returns `HistoryPoint[]` (avg level across stations), cached 900s. Default 7d, max 30d. The `useWaterLevelHistory` hook exists but no component calls it
 - **Map markers**: Droplets icon colored by state, label showing current level in cm, popup with name/waterBody/level/state
 - **Sidebar toggle**: `water` parent layer with sub-layers `levels` and `bathing` (same pattern as emergencies with pharmacies/AEDs)

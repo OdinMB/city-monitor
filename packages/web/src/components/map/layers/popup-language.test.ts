@@ -158,6 +158,13 @@ describe('map popups in German', () => {
     expect(textOf(constructionPopupHtml({ ...CONSTRUCTION, validity: 'permit' }))).toContain('Permit period: 01.10.2026 – 30.11.2026');
   });
 
+  it('shows a gauge with no known state with its level and no state line', async () => {
+    await i18n.changeLanguage('de');
+    const text = textOf(waterLevelPopupHtml({ ...GAUGE, name: 'Bunthaus', waterBody: 'Elbe', currentLevel: 653, state: 'unknown' }));
+    expect(text).toContain('Pegel: 653 cm');
+    expect(text).not.toContain(i18n.t('panel.waterLevels.state.unknown'));
+  });
+
   it('shows the end of a roadworks site whose start the feed does not give', async () => {
     await i18n.changeLanguage('de');
     expect(textOf(constructionPopupHtml({ ...CONSTRUCTION, validFrom: '' }))).toContain('– 30.11.2026');
