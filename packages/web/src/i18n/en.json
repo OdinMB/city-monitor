@@ -525,6 +525,7 @@
     "today": "Today",
     "tomorrow": "Tomorrow",
     "delay": "Delay: ~{{count}} min",
+    "permitPeriod": "Permit period",
     "roadEvent": {
       "jam": "Traffic jam",
       "closure": "Road closure",

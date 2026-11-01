@@ -570,6 +570,7 @@
     "delay_few": "التأخير: نحو {{count}} دقائق",
     "delay_many": "التأخير: نحو {{count}} دقيقة",
     "delay_other": "التأخير: نحو {{count}} دقيقة",
+    "permitPeriod": "مدة التصريح",
     "roadEvent": {
       "jam": "ازدحام مروري",
       "closure": "إغلاق طريق",

@@ -1,0 +1,11 @@
+{
+  "type": "FeatureCollection",
+  "numberReturned": 3,
+  "numberMatched": 145,
+  "timeStamp": "2026-11-01T18:57:17Z",
+  "features": [
+    {"type":"Feature","id":336810,"geometry":{"type":"Point","coordinates":[10.056955,53.536266]},"properties":{"titel":"Billstraße, Gustav-Kunst-Straße, Großmannstr. / Abwasser","organisation":"HAMBURG WASSER","anlass":"Funktion als Sammler nicht mehr gegeben, dient nur noch zur Ableitung der örtlichen Vorflut. Schlechter Allgemeinzustand.","umfang":"Restarbeiten in Großmannstraße Höhe Hausnr. 237 vom 02.11.2026 bis 20.11.2026 mit einer Fahrspur je Richtung.","baubeginn":"27.03.2023","bauende":"30.11.2026"}},
+    {"type":"Feature","id":4088992,"geometry":{"type":"Point","coordinates":[9.966581,53.571644]},"properties":{"titel":"Hohe Weide/ Kranarbeiten","organisation":"Sonstige","anlass":"Kranarbeiten","umfang":"Die Hohe Weide wird zwischen der Felix-Dahn-Straße und der Gorch-Fock-Straße vollgesperrt.","baubeginn":"30.10.2026","bauende":"06.11.2026"}},
+    {"type":"Feature","id":4093868,"geometry":{"type":"Point","coordinates":[10.177896,53.492092]},"properties":{"titel":"Friedrich-Frank-Bogen, Umgestaltung","organisation":"Bezirksamt Bergedorf","anlass":"Anlass ist eine 2021 durchgeführte Fußverkehrsuntersuchung, welche die Notwendigkeit einer verbesserten Fußinfrastruktur aufgezeigt hat. Gleichzeitig ist die Fahrbahn in einem schlechten Zustand und muss grundhaft erneuert werden.","umfang":"Die zu erneuernde Strecke beginnt an der nördlichen Anbindung am Ladenbeker Furtweg und erstreckt sich bis zur Hausnr. 69 im Süden. Um so wenig Parkraum wie möglich durch die Bauarbeiten einzuschränken, wird der Ausbau der Straße in 7 Bauphasen durchgeführt. Dabei wird jede Bauphase unter Vollsperrung realisiert, da entsprechende Sicherheitsabstände für eine Aufrechterhaltung des motorisierten Verkehrs nicht zur Verfügung stehen. Zudem soll die Bauzeit so kurz wie möglich gehalten werden.","baubeginn":"05.10.2026","bauende":"31.12.2027"}}
+  ]
+}

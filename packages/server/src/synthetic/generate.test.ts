@@ -298,12 +298,12 @@ describe('generateSyntheticCityData', () => {
       expect(data.cityId).toBe('hamburg');
       const held = Object.keys(data).filter((key) => key !== 'cityId' && key !== 'history');
       expect(held).toEqual(syntheticCoverage(hamburg));
-      // No transit (its HVV source is offline), events, roadworks, budget, appointments,
+      // No transit (its HVV source is offline), events, budget, appointments,
       // social atlas, noise or council config; population, wastewater, bathing, labour
       // market and fire brigade are Berlin-only sources
       expect([...held].sort()).toEqual([
-        'aeds', 'airQuality', 'airQualityGrid', 'news', 'nina', 'pharmacies', 'political', 'pollen', 'safety',
-        'summary', 'traffic', 'waterLevels', 'weather',
+        'aeds', 'airQuality', 'airQualityGrid', 'construction', 'news', 'nina', 'pharmacies', 'political', 'pollen',
+        'safety', 'summary', 'traffic', 'waterLevels', 'weather',
       ]);
       // No Bezirk mayors or state members by Bezirk outside Berlin
       expect(Object.keys(data.political!).sort()).toEqual(['bundestag', 'state']);
@@ -320,8 +320,8 @@ describe('generateSyntheticCityData', () => {
     it('passes the Zod schemas the database reads validate with', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
-        'aeds', 'aq grid', 'nina', 'pharmacies', 'political bundestag', 'political state', 'pollen', 'traffic',
-        'water levels', 'weather',
+        'aeds', 'aq grid', 'construction', 'nina', 'pharmacies', 'political bundestag', 'political state', 'pollen',
+        'traffic', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {
         expect(schema.safeParse(value).error, name).toBeUndefined();

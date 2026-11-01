@@ -95,7 +95,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `pegelonline` | PEGELONLINE/WSV water levels |
 | `service-berlin` | service.berlin.de appointments (via Firecrawl) |
 | `berlin-haushalt` | Berlin Doppelhaushalt budget CSV |
-| `viz-roadworks` | VIZ Berlin construction/roadworks |
+| `viz-roadworks` | Roadworks of every city (VIZ Berlin, Hamburg, Köln, München; the name is historical) |
 | `tomtom-traffic` | TomTom traffic incidents |
 | `aponet` | aponet.de emergency pharmacies |
 | `osm-aeds` | OpenStreetMap AED locations (Overpass) |

@@ -127,11 +127,12 @@ describe('Köln config', () => {
     });
   });
 
-  it('has no city-specific source yet, so those jobs fetch nothing for Köln', () => {
+  it('has no city-specific source but roadworks yet, so the other jobs fetch nothing for Köln', () => {
     vi.stubEnv('ACTIVE_CITIES', 'koeln');
     const config = getCityConfig('koeln')!;
     expect(config.feeds).toEqual([]);
-    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water, ...rest } = config.dataSources;
+    expect(config.dataSources.roadworks?.provider).toBe('koeln-wfs');
+    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water, roadworks: _roadworks, ...rest } = config.dataSources;
     expect(rest).toEqual({});
   });
 });
@@ -181,10 +182,11 @@ describe('München config', () => {
     expect(dataSources.pollen).toEqual({ provider: 'dwd', regionId: 120, partregionId: 121 });
   });
 
-  it('has no river gauge and no city-specific source yet, so those jobs fetch nothing for München', () => {
+  it('has no river gauge and no city-specific source but roadworks yet, so the other jobs fetch nothing for München', () => {
     const config = getCityConfig('muenchen')!;
     expect(config.feeds).toEqual([]);
-    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, ...rest } = config.dataSources;
+    expect(config.dataSources.roadworks?.provider).toBe('muenchen-wfs');
+    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, ...rest } = config.dataSources;
     expect(rest).toEqual({});
   });
 });

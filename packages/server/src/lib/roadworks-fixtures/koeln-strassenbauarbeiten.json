@@ -1,0 +1,9 @@
+{
+"type": "FeatureCollection",
+"numberMatched": 41,
+"name": "strassenbauarbeiten",
+"features": [
+{ "type": "Feature", "properties": { "Kategorie": "Straßenbauarbeiten", "Aktenzeichen": "1181321", "Adresse": "L 84/ Kennedystr.", "Genehmigungs-Zeitraum": "13-10-2025 bis 31-07-2029" }, "geometry": { "type": "Point", "coordinates": [ 365299.700000000011642, 5638862.599999999627471 ] } },
+{ "type": "Feature", "properties": { "Kategorie": "Straßenbauarbeiten", "Aktenzeichen": "1225137", "Adresse": "Frankenforster Str.", "Genehmigungs-Zeitraum": "14-09-2026 bis 02-04-2027" }, "geometry": { "type": "Point", "coordinates": [ 362515.599999999976717, 5649521.200000000186265 ] } }
+]
+}

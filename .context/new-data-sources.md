@@ -65,6 +65,8 @@ Sources with **hardcoded URLs or version-pinned data** that need periodic manual
 | **LAGeSo Bathing CSV** | `data.lageso.de/baden/0_letzte/letzte.csv` | Seasonal (May–Sep) | Start of each bathing season | URL is stable but data stops updating in winter. |
 | **abgeordnetenwatch** | API v2 | Per election cycle | After federal/state/local elections | Constituency IDs and parliament IDs change with redistricting. |
 | **Population XLSX (EWR)** | `SB_A01-16-00_2025h02_BE.xlsx` | Semi-annual (h01=Jun, h02=Dec) | Q1 and Q3 each year (published ~3 months after snapshot) | URL contains hash segments that change per edition. Update hardcoded URL in `ingest-population.ts`. |
+| **München roadworks filter** | CQL on `art` and `beeintraechtigung` (`MUENCHEN_CQL_FILTER` in `lib/roadworks-parsers.ts`) | Daily data, free-text values | Twice a year, or when the München site count drops sharply | The filter matches words in a free-text field; ~870 of ~5,600 features matched in 2026-11. See [roadworks.md](roadworks.md). |
+| **Köln roadworks layers** | 10 layer names in `koeln.ts` (`strassenbauarbeiten` …) | Unannounced | When `ingest-construction` logs a Köln failure | A renamed or removed layer fails the whole Köln run (by design, so no kind of works silently vanishes). |
 | **Bezirksbürgermeister** | Hardcoded array in `ingest-political.ts` | Per election cycle | After Berlin local elections (next: 2028) | Names, parties, and profile URLs of 12 district mayors are hardcoded. Must be manually updated after each BVV election. |
 
 ---

@@ -115,14 +115,20 @@ export function trafficPopupHtml(props: Record<string, unknown>): string {
  * `trafficPopupHtml`. The validity range is feed data in German format
  * ("01.03.2026 06:00 – 30.11.2026 17:00") with no words, so it stays one
  * left-to-right run; in an Arabic popup its dates and times would otherwise
- * swap places.
+ * swap places. A range without a start reads "– 31.12.2026". A permit period
+ * (`validity: 'permit'`, Köln) is labelled as one, since the works need not
+ * fill it.
  */
 export function constructionPopupHtml(p: Record<string, unknown>): string {
+  const range = p.validFrom
+    ? `${escapeHtml(p.validFrom)}${p.validUntil ? ` – ${escapeHtml(p.validUntil)}` : ''}`
+    : p.validUntil ? `– ${escapeHtml(p.validUntil)}` : '';
+  const label = range && p.validity === 'permit' ? `${escapeHtml(i18n.t('mapPopup.permitPeriod'))}: ` : '';
   return `<div style="font-size:13px;max-width:280px">
     <div style="font-weight:600;margin-bottom:4px">${escapeHtml(roadEventLabel(p.subtype))}: ${sourceText(p.street)}</div>
     ${p.section ? `<div style="font-size:12px;opacity:0.7">${sourceText(p.section)}</div>` : ''}
     ${p.description ? `<div style="font-size:12px;margin-top:2px">${sourceText(p.description)}</div>` : ''}
-    ${p.validFrom ? `<div style="font-size:11px;opacity:0.6;margin-top:4px">${ltr(`${escapeHtml(p.validFrom)}${p.validUntil ? ` – ${escapeHtml(p.validUntil)}` : ''}`)}</div>` : ''}
+    ${range ? `<div style="font-size:11px;opacity:0.6;margin-top:4px">${label}${ltr(range)}</div>` : ''}
     ${p.direction ? `<div style="font-size:11px;opacity:0.6">${sourceText(p.direction)}</div>` : ''}
   </div>`;
 }
@@ -141,6 +147,7 @@ function constructionToGeoJSON(sites: ConstructionSite[]): { lines: GeoJSON.Feat
       direction: site.direction ?? '',
       validFrom: site.validFrom ?? '',
       validUntil: site.validUntil ?? '',
+      validity: site.validity ?? '',
       color,
       iconImage: `construction-icon-${site.subtype}`,
     };

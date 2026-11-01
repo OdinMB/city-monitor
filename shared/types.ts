@@ -117,6 +117,20 @@ export interface EventSourceConfig {
   lookaheadDays?: number; // Default: 14
 }
 
+/**
+ * A city's roadworks feed, by the provider whose format it is in. Each
+ * provider has its own parser in packages/server/src/lib/roadworks-parsers.ts.
+ */
+export type RoadworksSource =
+  /** VIZ Berlin's GeoJSON (baustellen_sperrungen.json) */
+  | { provider: 'viz-berlin'; url: string }
+  /** Hamburg's OGC API Features collection `baustelle` (Bauweiser) */
+  | { provider: 'hamburg-ogc'; url: string }
+  /** Stadt Köln's MapServer WFS, one request per layer (`ms:<layer>`) */
+  | { provider: 'koeln-wfs'; url: string; layers: readonly string[] }
+  /** München's GeoServer WFS GetFeature URL for `baustellen_opendata` (GeoJSON, EPSG:4326) */
+  | { provider: 'muenchen-wfs'; url: string };
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -147,7 +161,7 @@ export interface CityDataSources {
    * which fits a city-state. A kreisfreie Stadt inside a state is 6 in German OSM.
    */
   aeds?: { adminLevel: number };
-  roadworks?: { url: string };
+  roadworks?: RoadworksSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -308,7 +322,7 @@ export interface AirQualityGridPoint {
   url?: string;
 }
 
-// Construction / roadworks (VIZ Berlin)
+// Construction / roadworks (VIZ Berlin, Hamburg, Köln, München; see RoadworksSource)
 export interface ConstructionSite {
   id: string;
   subtype: 'construction' | 'closure' | 'disruption';
@@ -316,8 +330,14 @@ export interface ConstructionSite {
   section?: string;
   description: string;
   direction?: string;
+  /** Feed date, shown as it is: German format from every provider ("01.03.2026" or "01.03.2026 06:00") */
   validFrom?: string;
   validUntil?: string;
+  /**
+   * 'permit' when validFrom/validUntil are the permit period, which the works
+   * need not fill (Köln). Missing: the period of the works themselves.
+   */
+  validity?: 'permit';
   isFuture: boolean;
   geometry: { type: string; coordinates: number[] | number[][] | Array<{ type: string; coordinates: number[] | number[][] }> };
 }

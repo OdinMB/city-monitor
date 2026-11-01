@@ -150,6 +150,19 @@ describe('map popups in German', () => {
     for (const s of expected) expect(text).toContain(s);
   });
 
+  it('labels a permit period as one, and only that', async () => {
+    await i18n.changeLanguage('de');
+    expect(textOf(constructionPopupHtml({ ...CONSTRUCTION, validity: 'permit' }))).toContain('Genehmigungszeitraum: 01.10.2026 – 30.11.2026');
+    expect(textOf(constructionPopupHtml(CONSTRUCTION))).not.toContain('Genehmigungszeitraum');
+    await i18n.changeLanguage('en');
+    expect(textOf(constructionPopupHtml({ ...CONSTRUCTION, validity: 'permit' }))).toContain('Permit period: 01.10.2026 – 30.11.2026');
+  });
+
+  it('shows the end of a roadworks site whose start the feed does not give', async () => {
+    await i18n.changeLanguage('de');
+    expect(textOf(constructionPopupHtml({ ...CONSTRUCTION, validFrom: '' }))).toContain('– 30.11.2026');
+  });
+
   it('names today and tomorrow for a pharmacy on duty overnight', async () => {
     await i18n.changeLanguage('de');
     expect(formatPharmacyDuty(localAt(0, 9), localAt(1, 9))).toBe('Heute 09:00 – Morgen 09:00');

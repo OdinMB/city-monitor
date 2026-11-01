@@ -39,7 +39,7 @@ describe('cityLayers', () => {
     const hh = cityLayers(hamburg);
     expect(hh.layers.has('social')).toBe(false);
     expect(hh.layers.has('population')).toBe(false);
-    expect(hh.traffic).toEqual(['incidents']);
+    expect(hh.traffic).toEqual(['incidents', 'roadworks']);
     expect(hh.water).toEqual(['levels']);
     expect(hh.noise).toEqual(['road', 'rail', 'air']);
     expect(hh.noiseLive).toBe(false);

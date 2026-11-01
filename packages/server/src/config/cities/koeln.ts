@@ -1,10 +1,10 @@
 import type { CityConfig } from '@city-monitor/shared';
 
 /**
- * Köln, wired only to the Germany-wide sources (DWD, Open-Meteo, NINA,
- * PEGELONLINE). City-specific sources (news feeds, police, transit, events,
- * council meetings, district boundaries) are not configured yet, so their
- * jobs fetch nothing for Köln.
+ * Köln, wired to the Germany-wide sources (DWD, Open-Meteo, NINA,
+ * PEGELONLINE) and the city's roadworks WFS. Other city-specific sources (news
+ * feeds, police, transit, events, council meetings, district boundaries) are
+ * not configured yet, so their jobs fetch nothing for Köln.
  */
 export const koeln: CityConfig = {
   id: 'koeln',
@@ -41,6 +41,17 @@ export const koeln: CityConfig = {
       provider: 'pegelonline',
       stations: [
         { uuid: 'a6ee8177-107b-47dd-bcfd-30960ccc6e9c', name: 'Köln', waterBody: 'Rhein' },
+      ],
+    },
+    // Permitted roadworks (dl-de/zero-2.0). Of the WFS's 15 layers, the ones that take road
+    // space: building construction, site set-up, containers, aerial platforms and green-space
+    // works are left out, being mostly on pavements and private plots.
+    roadworks: {
+      provider: 'koeln-wfs',
+      url: 'https://geoportal.stadt-koeln.de/wss/service/baustellen_wfs/guest',
+      layers: [
+        'strassenbauarbeiten', 'versorgungsarbeiten', 'kanalsanierung', 'ampelarbeiten', 'notfall',
+        'brueckenarbeiten', 'gleisbau', 'tunnelarbeiten', 'markierungsarbeiten', 'sondierungsarbeiten',
       ],
     },
   },
