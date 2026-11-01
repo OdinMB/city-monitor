@@ -47,7 +47,12 @@ export function CityPickerPage({ cities }: { cities: WebCityConfig[] }) {
                 </h2>
                 <p className="mt-1 text-sm text-muted">{summary(city)}</p>
               </div>
-              <CitySkyline cityId={city.id} fill="var(--accent)" className="w-full h-12" />
+              {/* True proportions in any tile width: scaled by the height alone, the sides
+                  cropped (or the top, in a tile wider than ten times its height). Never
+                  preserveAspectRatio="none", which squashes it into a narrow tile. */}
+              <svg aria-hidden="true" viewBox="0 0 1200 120" preserveAspectRatio="xMidYMax slice" className="block w-full h-12">
+                <CitySkyline cityId={city.id} fill="var(--accent)" />
+              </svg>
             </Link>
           </li>
         ))}

@@ -23,7 +23,7 @@ Every place outside `packages/*/src/config/cities/` that is keyed by a city ID, 
 | `[data-city=` | `packages/web/src/globals.css` | every city | The default blue accent. Add a light block and a `.dark` block. |
 | `DISTRICT_URLS` | `packages/web/src/components/map/constants.ts` | optional | No district outlines on the political layer. The GeoJSON goes in `packages/web/src/data/districts/`; check its licence. |
 | `NOISE_WMS_BASE` | `packages/web/src/components/map/constants.ts` | optional | No noise map (`NOISE_WMS_LAYERS` beside it, the credit in `NOISE_WMS_ATTRIBUTION`; the web config's `noiseMap` and `noiseTotal` features must match, `config/index.test.ts` checks). Its host needs the `SERVICES` and `connect-src` rows below. |
-| `SKYLINES` | `packages/web/src/components/skylines/CitySkyline.tsx` | optional | The generic skyline. A drawing goes in its own file beside it; `Skyline.tsx` says how (true proportions, landmarks between x 260 and 940, overlap shapes that touch). |
+| `SKYLINES` | `packages/web/src/components/skylines/CitySkyline.tsx` | optional | The generic skyline. A drawing goes in its own file beside it; `Skyline.tsx` says how (landmarks between x 260 and 940, readable at true proportions and stretched, overlap shapes that touch). |
 | `SERVICES` | `packages/web/src/pages/PrivacyPage.tsx` | per browser host | A host the browser loads from (WMS layers, tiles) must be named here and in the CSP; `PrivacyPage.test.tsx` checks the two agree. |
 | `connect-src` | `render.yaml` | per browser host | The browser refuses a host the CSP's `connect-src` and `img-src` don't name. Deploy configuration. |
 | `ACTIVE_CITIES` | `render.yaml` | when activating | The blueprint's default, `berlin,hamburg`. The deployment's owner sets the live value. |

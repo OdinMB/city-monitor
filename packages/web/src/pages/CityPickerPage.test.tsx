@@ -25,6 +25,15 @@ describe('CityPickerPage', () => {
     expect(tiles.map((tile) => within(tile).getByRole('heading', { level: 2 }).textContent)).toEqual(['Berlin', 'Hamburg']);
   });
 
+  it('draws each skyline at its true proportions, scaled by height and never stretched to the tile', () => {
+    renderPicker();
+    for (const tile of screen.getAllByRole('listitem')) {
+      const svg = tile.querySelector('svg')!;
+      expect(svg.getAttribute('preserveAspectRatio')).toBe('xMidYMax slice');
+      expect(svg.getAttribute('viewBox')).toBe('0 0 1200 120');
+    }
+  });
+
   it('sums up what each city covers from its own features', () => {
     renderPicker();
     for (const city of [berlin, hamburg]) {
