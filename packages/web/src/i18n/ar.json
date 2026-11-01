@@ -30,6 +30,10 @@
   "topbar": {
     "language": "اللغة",
     "menu": "القائمة",
+    "city": {
+      "switch": "{{city}}، تغيير المدينة",
+      "list": "المدن"
+    },
     "theme": {
       "light": "فاتح",
       "dark": "داكن",

@@ -30,6 +30,10 @@
   "topbar": {
     "language": "Sprache",
     "menu": "Menü",
+    "city": {
+      "switch": "{{city}}, Stadt wechseln",
+      "list": "Städte"
+    },
     "theme": {
       "light": "Hell",
       "dark": "Dunkel",

@@ -30,6 +30,10 @@
   "topbar": {
     "language": "Dil",
     "menu": "Menü",
+    "city": {
+      "switch": "{{city}}, şehir değiştir",
+      "list": "Şehirler"
+    },
     "theme": {
       "light": "Açık",
       "dark": "Koyu",

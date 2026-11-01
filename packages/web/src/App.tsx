@@ -53,8 +53,11 @@ function CityRoute() {
     return <Navigate to="/" replace />;
   }
 
+  // Keyed by city: a switch mounts the city's page afresh. The map is made once
+  // per mount with its city's bounds, and the data hooks would show the last
+  // city's data as a placeholder until the new city's arrived.
   return (
-    <CityProvider cityId={cityId}>
+    <CityProvider key={cityId} cityId={cityId}>
       <Routes>
         <Route index element={<Dashboard />} />
         <Route path="sources" element={<SourcesPage />} />

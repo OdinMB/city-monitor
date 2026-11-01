@@ -30,6 +30,10 @@
   "topbar": {
     "language": "Language",
     "menu": "Menu",
+    "city": {
+      "switch": "{{city}}, change city",
+      "list": "Cities"
+    },
     "theme": {
       "light": "Light",
       "dark": "Dark",

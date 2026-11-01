@@ -1,0 +1,78 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
+import * as maplibregl from 'maplibre-gl';
+import type { StyleSpecification } from 'maplibre-gl';
+import { App } from './App.js';
+import { berlin } from './config/cities/berlin.js';
+import { hamburg } from './config/cities/hamburg.js';
+import { loadStyle } from './components/map/base.js';
+
+// Two active cities whatever the config holds, so the top bar's switcher shows.
+vi.mock('./config/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./config/index.js')>();
+  const { berlin } = await import('./config/cities/berlin.js');
+  const { hamburg } = await import('./config/cities/hamburg.js');
+  const cities = [berlin, hamburg];
+  return {
+    ...actual,
+    getCityConfig: (id: string) => cities.find((c) => c.id === id),
+    getAllCities: () => cities,
+    getDefaultCityId: () => 'berlin',
+  };
+});
+
+// The base-map style resolves at once; the stand-in map is test-setup.ts's.
+vi.mock('./components/map/base.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./components/map/base.js')>()),
+  loadStyle: vi.fn(),
+}));
+
+const STYLE = { version: 8, sources: {}, layers: [] } as unknown as StyleSpecification;
+const MapMock = vi.mocked(maplibregl.Map);
+const lastMapBounds = () => (MapMock.mock.calls.at(-1)?.[0] as maplibregl.MapOptions | undefined)?.bounds;
+
+function LocationProbe() {
+  return <output data-testid="pathname">{useLocation().pathname}</output>;
+}
+
+describe('App city switch', () => {
+  // Restore only this spy, not every mock: test-setup.ts's ResizeObserver stays.
+  let fetchSpy: { mockRestore: () => void };
+
+  beforeEach(() => {
+    // The tiles' data hooks get no data; a fresh Response per call, since a body reads once.
+    fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('null'));
+    // The stand-in map fires 'load' at once, which draws the marker icons.
+    vi.stubGlobal('Path2D', vi.fn());
+    vi.mocked(loadStyle).mockResolvedValue(STYLE);
+    MapMock.mockClear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    fetchSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows the chosen city\'s map, not the last one\'s, and gives focus back to the switcher', async () => {
+    render(
+      <MemoryRouter initialEntries={['/berlin']}>
+        <App />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+    // The map is made once per mount with its city's bounds, so a switch has
+    // to mount the city's page afresh.
+    await waitFor(() => expect(lastMapBounds()).toEqual(berlin.map.bounds));
+
+    const button = screen.getByRole('button', { name: /^Berlin/ });
+    fireEvent.click(button);
+    const list = document.getElementById(button.getAttribute('aria-controls') ?? '')!;
+    fireEvent.click(within(list).getByRole('link', { name: 'Hamburg' }));
+
+    expect(screen.getByTestId('pathname').textContent).toBe('/hamburg');
+    await waitFor(() => expect(lastMapBounds()).toEqual(hamburg.map.bounds));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: /^Hamburg/ })));
+  });
+});

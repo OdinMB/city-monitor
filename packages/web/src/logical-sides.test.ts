@@ -122,6 +122,11 @@ const SOURCE_FIELD_IN_PAGE_DIRECTION: { file: string; found: string; reason: str
     found: '{city.name}',
     reason: 'the city name comes from the app config and is written the same in every language',
   },
+  {
+    file: 'components/layout/CitySwitcher.tsx',
+    found: '{city.name}',
+    reason: 'the city names in the switcher come from the app config and are written the same in every language',
+  },
 ];
 
 /** A unit typed straight after a value (`{temp}°C`, `{percent}%`) instead of coming from format-value. */
