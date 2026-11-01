@@ -1,6 +1,6 @@
 ---
 name: add-city
-description: Add a new city to City Monitor, or activate one that is configured but switched off (Hamburg, Köln). Use when asked to add, configure, wire up, enable or activate a city, or to wire an existing source (news feed, gauge, pollen region, NINA key) to a city. Covers both packages' city configs, the code keyed by city ID outside them, the identifiers for the Germany-wide sources, licence checks, tests, verification and activation.
+description: Add a new city to City Monitor, or activate one that is configured but switched off (Köln). Use when asked to add, configure, wire up, enable or activate a city, or to wire an existing source (news feed, gauge, pollen region, NINA key) to a city. Covers both packages' city configs, the code keyed by city ID outside them, the identifiers for the Germany-wide sources, licence checks, tests, verification and activation.
 ---
 
 # Add a city
@@ -81,7 +81,7 @@ Nothing for it. Each tile, map layer, sub-layer, political view and feature-boun
 
 Two switches. Turn on the server first, so the page never opens on an API that refuses the city.
 
-1. **Server:** `ACTIVE_CITIES` on the API service, such as `berlin,<id>`. This is deploy configuration, set by whoever runs the deployment, not by a code change (Render: the API service's Environment; `render.yaml` holds the blueprint's default, `berlin`). See `.context/deploy-on-render.md`, "Adding a City". With feeds or a police feed, it also starts the city's LLM calls: new items every 10 minutes, a briefing every 6 hours.
+1. **Server:** `ACTIVE_CITIES` on the API service, such as `berlin,<id>`. This is deploy configuration, set by whoever runs the deployment, not by a code change (Render: the API service's Environment; `render.yaml` holds the blueprint's default, `berlin,hamburg`). See `.context/deploy-on-render.md`, "Adding a City". With feeds or a police feed, it also starts the city's LLM calls: new items every 10 minutes, a briefing every 6 hours.
 2. **Web:** add the ID to `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts`, which ships with the next static-site build. Update the city's tests in `App.test.tsx` and `config/index.test.ts`, add `/<id>` and `/<id>/sources` to `vite.config.ts` and to `DASHBOARD_ROUTES` in `vite-plugin-seo.ts`, and add an OG image to `IMAGES` in `packages/web/scripts/generate-og-images.ts`. A skyline is optional (README step 10).
 
 When the API starts with the city active, the startup check looks at each active city a job serves (its `serves` predicate in `FRESHNESS_SPECS`, `packages/server/src/app.ts`) and runs the job when any of them has no fresh data, so the new city fills at startup rather than at each job's next scheduled run. `ingest-appointments` alone keeps the table-wide check (`.context/server.md`, "Which cities a job serves").

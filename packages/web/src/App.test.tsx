@@ -45,16 +45,17 @@ describe('App', () => {
     expect(within(heading).queryByText('AI')).toBeNull();
   });
 
-  it('redirects /hamburg to /berlin (Hamburg disabled)', async () => {
+  it('renders the Hamburg dashboard at /hamburg', async () => {
     render(
       <MemoryRouter initialEntries={['/hamburg']}>
         <App />
       </MemoryRouter>,
     );
-    // Hamburg is not active, so it redirects to / → /berlin
     await waitFor(() => {
-      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('HAMBURG').length).toBeGreaterThanOrEqual(1);
     });
+    expect(screen.getByText('Briefing')).toBeDefined();
+    expect(screen.queryByText('BERLIN')).toBeNull();
   });
 
   it('redirects /koeln to /berlin (Köln not active)', async () => {

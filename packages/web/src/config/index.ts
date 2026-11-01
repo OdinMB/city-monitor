@@ -9,10 +9,10 @@ const ALL_CITIES: Record<string, WebCityConfig> = {
   koeln,
 };
 
-/** Cities that are ready for users. Hamburg and Köln are kept in ALL_CITIES
- *  but excluded from the active set until their data sources are complete.
- *  Activating a city takes its ID here and in the server's ACTIVE_CITIES. */
-const ACTIVE_CITY_IDS = new Set(['berlin']);
+/** Cities that are ready for users. Köln is kept in ALL_CITIES but excluded
+ *  from the active set. Activating a city takes its ID here and in the
+ *  server's ACTIVE_CITIES. */
+const ACTIVE_CITY_IDS = new Set(['berlin', 'hamburg']);
 
 export function getCityConfig(cityId: string): WebCityConfig | undefined {
   const config = ALL_CITIES[cityId];

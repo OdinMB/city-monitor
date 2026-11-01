@@ -30,13 +30,13 @@ describe('getDefaultCityId', () => {
 });
 
 describe('active cities', () => {
-  it('ships with Berlin as the only active city', () => {
-    expect(getAllCities().map((c) => c.id)).toEqual(['berlin']);
+  it('ships with Berlin and Hamburg active', () => {
+    expect(getAllCities().map((c) => c.id)).toEqual(['berlin', 'hamburg']);
     expect(getCityConfig('berlin')).toBe(berlin);
+    expect(getCityConfig('hamburg')).toBe(hamburg);
   });
 
-  it('keeps Hamburg and Köln configured but inactive', () => {
-    expect(getCityConfig('hamburg')).toBeUndefined();
+  it('keeps Köln configured but inactive', () => {
     expect(getCityConfig('koeln')).toBeUndefined();
   });
 });

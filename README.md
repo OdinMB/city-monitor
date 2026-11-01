@@ -1,7 +1,7 @@
 <h1 align="center">City Monitor</h1>
 
 <p align="center">
-  Real-time city dashboard, currently covering Berlin.<br>
+  Real-time city dashboard, currently covering Berlin and Hamburg.<br>
   Inspired by <a href="https://worldmonitor.io">World Monitor</a>.
 </p>
 
