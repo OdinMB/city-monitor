@@ -18,7 +18,7 @@ react-router-dom with `BrowserRouter` in `main.tsx`. Routes defined in `App.tsx`
 | `/:cityId/sources` | `SourcesPage` | Per-city data sources list |
 | `/:cityId/*` | redirect to `/:cityId` | Unknown sub-paths redirect to dashboard |
 
-`CityRoute` validates the `cityId` param against `getCityConfig()`. Unknown cities redirect to `/`. Static pages (imprint, privacy, no-tracking) use `PageShell` layout (no city context). Sources page uses `PageShell` within `CityProvider`.
+`CityRoute` validates the `cityId` param against `getCityConfig()`. Unknown cities redirect to `/`. It keys `CityProvider` by city, so switching city mounts the page afresh: `CityMap` is created once per mount with its city's bounds, and the hooks' `keepPreviousData` would otherwise show the last city's data. Static pages (imprint, privacy, no-tracking) use `PageShell` layout (no city context). Sources page uses `PageShell` within `CityProvider`.
 
 ## Component Tree
 
@@ -35,7 +35,7 @@ App (HelmetProvider)
           CityProvider (context: CityConfig from URL param)
             Dashboard or SourcesPage
               Shell / PageShell
-                TopBar (city name link, weather, HeaderControls)
+                TopBar (city switcher, weather, HeaderControls)
                 CommandLayout
                   NinaBanner (phones: above the news ticker and the map)
                   Sidebar (single/multi view toggle, data layer icon toggles) — hidden < lg
@@ -118,7 +118,7 @@ All data types come from `@city-monitor/shared`; `api.ts` re-exports them so com
 - **DashboardGrid** — CSS Grid: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 p-4`. No 3-column breakpoint to avoid gaps with span-2 tiles.
 - **Tile** — Card wrapper with `title`, optional `titleBadge` (node next to the heading), `span` (1 | 2 | 'full'), `rowSpan` (1 | 2, `xl:row-span-2`), optional `expandable` + `defaultExpanded` (chevron toggle in header, render-function children receiving `(expanded, setExpanded)`), optional `height` ('auto' | 'sm' | 'md' | 'lg'). Rounded border, shadow, `@container` body for container queries. Maps span to `col-span-*` classes.
 - **Tile content accessibility (WCAG 2.2 AA)** — Muted text is `text-muted`, gray-500 in light mode and gray-400 in dark (4.8:1 on white, 6.8:1 on the dark surfaces; see Colour roles under Theme System); `text-gray-400` in light mode is 2.6:1 and `dark:text-gray-500` 3.7:1, so neither is used for text. On a `bg-gray-100` track or badge, muted text is `text-gray-600` (gray-500 there is 4.4:1). Only decorative separators and dimmed off-season or inactive rows stay lighter. Interactive targets are at least 24×24 CSS px (2.5.8): small ones get `min-h-6`/`min-w-6` or extra padding, with a matching negative margin so the layout does not move (`StripErrorFallback`'s Retry, the "+N more" buttons, the council and political row links). Prefer letting a row of focusable children wrap, as the Events filter chip rows do; a horizontally scrolling container with focusable children needs 4px of padding (and `scroll-px-1`) so the 2px focus outline at 2px offset is not clipped.
-- **TopBar** — City name (link back to `/`), current weather + AQI popovers, `HeaderControls` (language switcher + theme toggle). While a DWD warning is in force, the weather chip carries a badge with the most serious level, and its accessible name ends with that level's name ([weather.md](weather.md#dwd-warnings-on-screen)). On a narrow phone the AQI chip gives way: its words end in "…" while its number stays whole.
+- **TopBar** — City switcher (`CitySwitcher`): with more than one active city the name is a disclosure button listing every active city as links (current one `aria-current="page"`), keeping a sub-page every city has (`lib/city-path.ts`, `/berlin/sources` → `/hamburg/sources`), else the dashboard; Escape returns focus to the button, a press outside or tabbing past closes it, and while open it sets `data-popover-pinned` so the sliding bar stays. One active city: the plain name. Then current weather + AQI popovers, `HeaderControls` (language switcher + theme toggle). While a DWD warning is in force, the weather chip carries a badge with the most serious level, and its accessible name ends with that level's name ([weather.md](weather.md#dwd-warnings-on-screen)). On a narrow phone the AQI chip gives way: its words end in "…" while its number stays whole.
 - **PageShell** — Simplified layout for static pages (imprint, privacy, etc.). "City Monitor" logo link, `HeaderControls`, centered prose container, Footer. No city context dependency.
 - **HeaderControls** — Shared language switcher + theme toggle. Language buttons are built dynamically from `useCityConfig().languages` (per-city: Berlin shows DE/EN/TR/AR, Hamburg shows DE/EN). Desktop: inline buttons. Mobile: hamburger menu dropdown. Used by both TopBar and PageShell.
 - **Footer** — AGPL source code link, World Monitor attribution, Ko-fi support link, internal legal links (Legal Notice, Privacy, No Tracking).
