@@ -115,7 +115,17 @@ export interface EventSourceConfig {
 }
 
 export interface CityDataSources {
-  weather: { provider: 'open-meteo' | 'brightsky'; lat: number; lon: number };
+  weather: {
+    provider: 'open-meteo' | 'brightsky';
+    lat: number;
+    lon: number;
+    /**
+     * The DWD warn region whose warnings are the city's, by its exact name in warnings.json
+     * ("Stadt München"). Without it, every region whose name contains the city's `name` counts,
+     * which suits a city-state but also takes in a Landkreis named after the city.
+     */
+    dwdWarnRegion?: string;
+  };
   airQuality?: {
     sensorCommunityStations?: Array<{ sensorId: number; name: string; fallbackIds?: number[] }>;
   };

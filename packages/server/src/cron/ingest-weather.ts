@@ -6,7 +6,7 @@ import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { fetchBrightSkyForecast } from '../lib/brightsky.js';
-import { DWD_WARNINGS_URL, parseDwdWarnings, parseDwdWarningsJsonp } from '../lib/dwd-warnings.js';
+import { DWD_WARNINGS_URL, cityWarnRegions, parseDwdWarnings, parseDwdWarningsJsonp } from '../lib/dwd-warnings.js';
 
 const log = createLogger('ingest-weather');
 
@@ -152,7 +152,7 @@ async function fetchDwdAlerts(city: CityConfig): Promise<WeatherAlert[]> {
   const text = await response.text();
   let alerts: WeatherAlert[] | null = null;
   try {
-    alerts = parseDwdWarnings(parseDwdWarningsJsonp(text), city.name);
+    alerts = parseDwdWarnings(parseDwdWarningsJsonp(text), cityWarnRegions(city));
   } catch {
     // not JSON: reported below like any other unexpected shape
   }

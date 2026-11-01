@@ -17,7 +17,7 @@ import type { CityConfig } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
 import { koeln } from '../config/cities/koeln.js';
-import { DWD_WARNINGS_URL, assertDwdWarningsShape, parseDwdWarnings, parseDwdWarningsJsonp } from '../lib/dwd-warnings.js';
+import { DWD_WARNINGS_URL, assertDwdWarningsShape, cityWarnRegions, parseDwdWarnings, parseDwdWarningsJsonp } from '../lib/dwd-warnings.js';
 
 const CITIES: Record<string, CityConfig> = { berlin, hamburg, koeln };
 
@@ -130,10 +130,11 @@ function checkDwdWarnings(city: CityConfig) {
     const json = parseDwdWarningsJsonp(body);
     // Throws when the payload is not in the shape the ingestion reads.
     const { cells, entries } = assertDwdWarningsShape(json);
-    const name = city.name.toLowerCase();
-    const named = entries.filter((e) => e.regionName.toLowerCase().includes(name)).length;
-    const shown = parseDwdWarnings(json, city.name)?.length ?? 0;
-    return { status, detail: `${entries.length} warnings in ${cells} warncells; ${named} name ${city.name}, ${shown} shown` };
+    const isCityRegion = cityWarnRegions(city);
+    const regions = city.dataSources.weather.dwdWarnRegion ?? `regions naming ${city.name}`;
+    const named = entries.filter((e) => isCityRegion(e.regionName)).length;
+    const shown = parseDwdWarnings(json, isCityRegion)?.length ?? 0;
+    return { status, detail: `${entries.length} warnings in ${cells} warncells; ${named} in ${regions}, ${shown} shown` };
   });
 }
 

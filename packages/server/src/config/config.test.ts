@@ -93,7 +93,7 @@ describe('Köln config', () => {
     vi.stubEnv('ACTIVE_CITIES', 'koeln');
     const config = getCityConfig('koeln')!;
     expect(config.id).toBe('koeln');
-    // DWD warnings ("Stadt Köln") and the DWD UV file are matched by this name
+    // The DWD UV file is matched by this name
     expect(config.name).toBe('Köln');
     expect(config.country).toBe('DE');
     expect(config.timezone).toBe('Europe/Berlin');
@@ -115,6 +115,8 @@ describe('Köln config', () => {
     vi.stubEnv('ACTIVE_CITIES', 'koeln');
     const { dataSources } = getCityConfig('koeln')!;
     expect(dataSources.weather.provider).toBe('brightsky');
+    // DWD warn cell 105315000 (cap_warncellids_csv.csv)
+    expect(dataSources.weather.dwdWarnRegion).toBe('Stadt Köln');
     expect(dataSources.nina).toEqual({ ars: '053150000000' });
     expect(dataSources.pollen).toEqual({ provider: 'dwd', regionId: 40, partregionId: 41 });
     expect(dataSources.waterLevels).toEqual({

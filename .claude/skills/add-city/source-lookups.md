@@ -22,12 +22,12 @@ How to find the identifiers the Germany-wide sources need for a German city, how
 - **Confirm:** the pair appears in that file. `ingest-pollen.ts` matches both IDs and logs "No pollen data for <id>" when none matches.
 - **Licence:** CC BY 4.0 (`.context/pollen.md`). Add the city to that file's "Region Mapping".
 
-### DWD warnings: matched by `name`
+### DWD warnings: `dataSources.weather.dwdWarnRegion`, else `name`
 
-- **How it matches:** `fetchDwdAlerts` in `ingest-weather.ts` keeps a warning when its `regionName` contains the city's `name` (case-insensitive). Regions are DWD warn cells at district level, such as "Stadt Köln".
-- **Find:** DWD's list of warn cells (`cap_warncellids_csv.csv`, linked from DWD's open-data help pages on warnings) names every cell. Find the city's row (Köln: `105315000`, "Stadt Köln") and check that `name` is contained in it.
-- **Watch for:** a surrounding district named after the city (a "Landkreis <name>") contains the name too, so the city also shows that district's warnings.
-- **Confirm:** `warnings.json` lists only regions with a warning in force, so neither it nor `check:weather` can confirm the name. The warn-cell list can.
+- **How it matches:** `fetchDwdAlerts` in `ingest-weather.ts` keeps a warning from the city's warn regions (`cityWarnRegions` in `lib/dwd-warnings.ts`). With `dwdWarnRegion`, that is the one region whose `regionName` equals it (case-insensitive); without, every region whose `regionName` contains the city's `name`. Regions are DWD warn cells at district level, such as "Stadt Köln".
+- **Find:** DWD's list of warn cells (`cap_warncellids_csv.csv`, linked from DWD's open-data help pages on warnings) names every cell. Find the city's row (Köln: `105315000`, "Stadt Köln"; München: `109162000`, "Stadt München").
+- **Fill:** a kreisfreie Stadt shares its name with the Landkreis around it ("Kreis München"), whose warnings a name match would take in, so set `dwdWarnRegion` to the city's own cell name, as Köln and München do. A city-state (Berlin, Hamburg) leaves it out and matches by `name`, which also takes in the cells it is split into.
+- **Confirm:** `warnings.json` lists only regions with a warning in force, so neither it nor `check:weather` can confirm the name. The warn-cell list can; so can a day with a warning in force there, when `check:weather` counts it under the region.
 
 ### DWD UV index: matched by `name`
 

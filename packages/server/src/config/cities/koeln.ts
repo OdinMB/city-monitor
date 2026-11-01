@@ -8,7 +8,7 @@ import type { CityConfig } from '@city-monitor/shared';
  */
 export const koeln: CityConfig = {
   id: 'koeln',
-  // The German name: DWD warnings ("Stadt Köln") and DWD UV are matched by it.
+  // The German name: DWD UV is matched by it.
   name: 'Köln',
   country: 'DE',
   coordinates: { lat: 50.9375, lon: 6.9603 },
@@ -28,7 +28,8 @@ export const koeln: CityConfig = {
   theme: { accent: '#C8102E' },
   feeds: [],
   dataSources: {
-    weather: { provider: 'brightsky', lat: 50.9375, lon: 6.9603 },
+    // DWD warn cell 105315000, by its name: warnings for this region alone.
+    weather: { provider: 'brightsky', lat: 50.9375, lon: 6.9603, dwdWarnRegion: 'Stadt Köln' },
     nina: { ars: '053150000000' }, // kreisfreie Stadt Köln, AGS 05315000
     pollen: {
       provider: 'dwd',
