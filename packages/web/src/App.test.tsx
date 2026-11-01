@@ -1,19 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { App } from './App.js';
 import { APPROVED_AI_COPY } from './test-fixtures/approved-ai-copy.js';
 
+function LocationProbe() {
+  return <output data-testid="pathname">{useLocation().pathname}</output>;
+}
+
 describe('App', () => {
-  it('redirects / to /berlin', async () => {
+  it('shows the city picker at /, with a link to every active city', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
+        <LocationProbe />
       </MemoryRouter>,
     );
-    await waitFor(() => {
-      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
-    });
+    const links = await screen.findAllByRole('link', { name: /^(Berlin|Hamburg)/ });
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/berlin', '/hamburg']);
+    expect(screen.getByTestId('pathname').textContent).toBe('/');
   });
 
   it('renders Berlin dashboard at /berlin', async () => {
@@ -58,28 +63,27 @@ describe('App', () => {
     expect(screen.queryByText('BERLIN')).toBeNull();
   });
 
-  it('redirects /koeln to /berlin (Köln not active)', async () => {
+  it('sends /koeln to the city picker (Köln not active)', async () => {
     render(
       <MemoryRouter initialEntries={['/koeln']}>
         <App />
+        <LocationProbe />
       </MemoryRouter>,
     );
-    await waitFor(() => {
-      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
-    });
-    expect(screen.queryByText('KÖLN')).toBeNull();
+    await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/'));
+    expect(screen.getByRole('link', { name: /^Berlin/ }).getAttribute('href')).toBe('/berlin');
+    expect(screen.queryByRole('link', { name: /^Köln/ })).toBeNull();
   });
 
-  it('redirects unknown city to /berlin', async () => {
+  it('sends an unknown city to the city picker', async () => {
     render(
       <MemoryRouter initialEntries={['/unknown-city']}>
         <App />
+        <LocationProbe />
       </MemoryRouter>,
     );
-    // Should redirect unknown city → / → /berlin
-    await waitFor(() => {
-      expect(screen.getAllByText('BERLIN').length).toBeGreaterThanOrEqual(1);
-    });
+    await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/'));
+    expect(screen.getByRole('link', { name: /^Hamburg/ }).getAttribute('href')).toBe('/hamburg');
   });
 
   it('renders theme toggle on dashboard', async () => {

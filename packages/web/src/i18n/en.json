@@ -4,6 +4,13 @@
     "noscript": "This site requires JavaScript.",
     "scrollToDashboard": "Scroll to dashboard"
   },
+  "cityPicker": {
+    "title": "City Monitor — choose your city",
+    "intro": "Real-time dashboards from open data: news, weather, warnings and more. Choose a city to see what is happening there now.",
+    "topics_one": "{{count}} topic",
+    "topics_other": "{{count}} topics",
+    "summary": "{{topics}}, including {{highlights}}"
+  },
   "aiLabel": {
     "generated": "AI-generated",
     "tooltip": "Not reviewed by an editor, may contain errors."

@@ -58,11 +58,15 @@
   transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 
+/* A city's colours: on <html> on its dashboard (App.tsx), and on each tile of
+   the city picker (pages/CityPickerPage.tsx), inside a page that has none.
+   Hence the dark rules also match a descendant of .dark. */
 [data-city='berlin'] {
   --accent: #e2001a;
   --accent-rgb: 226, 0, 26;
 }
-.dark[data-city='berlin'] {
+.dark[data-city='berlin'],
+.dark [data-city='berlin'] {
   --accent: #ff4d5e;
   --accent-rgb: 255, 77, 94;
   --surface-0: #0e0c0f;      /* warm-tinted deep black */
@@ -76,7 +80,8 @@
   --accent: #004b93;
   --accent-rgb: 0, 75, 147;
 }
-.dark[data-city='hamburg'] {
+.dark[data-city='hamburg'],
+.dark [data-city='hamburg'] {
   --accent: #5b9bd5;
   --accent-rgb: 91, 155, 213;
   --surface-0: #0a0d14;      /* cool-tinted deep black */
@@ -90,7 +95,8 @@
   --accent: #c8102e;
   --accent-rgb: 200, 16, 46;
 }
-.dark[data-city='koeln'] {
+.dark[data-city='koeln'],
+.dark [data-city='koeln'] {
   --accent: #ff5a6a;
   --accent-rgb: 255, 90, 106;
 }

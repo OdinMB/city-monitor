@@ -25,6 +25,15 @@ export default defineConfig(({ mode }) => ({
     seoPlugin(
       [
         {
+          // The city picker (App.tsx), with more than one active city; with
+          // one, / redirects to it. Its HTML is dist/index.html, which also
+          // answers every route not listed here (render.yaml's rewrite).
+          path: '/',
+          title: 'City Monitor — Choose your city',
+          description: 'Real-time dashboards for Berlin and Hamburg from open data: news, weather, warnings, water levels and more.',
+          ogImage: 'og-default.png',
+        },
+        {
           path: '/imprint',
           title: 'Legal Notice — City Monitor',
           description: 'Legal notice and contact information for City Monitor.',

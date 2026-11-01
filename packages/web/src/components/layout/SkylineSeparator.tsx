@@ -47,7 +47,7 @@ export function SkylineSeparator({ cityId }: SkylineSeparatorProps) {
         preserveAspectRatio="xMidYMax slice"
         className="relative w-full h-16 sm:hidden"
       >
-        {cityId === 'berlin' ? <BerlinSkyline /> : <GenericSkyline />}
+        <CitySkyline cityId={cityId} />
       </svg>
       {/* Desktop: stretch to fill — shorter without cropping buildings */}
       <svg
@@ -55,16 +55,29 @@ export function SkylineSeparator({ cityId }: SkylineSeparatorProps) {
         preserveAspectRatio="none"
         className="relative w-full hidden sm:block sm:h-10 lg:h-12"
       >
-        {cityId === 'berlin' ? <BerlinSkyline /> : <GenericSkyline />}
+        <CitySkyline cityId={cityId} />
       </svg>
     </div>
   );
 }
 
+interface SkylineProps {
+  /** The silhouette's colour: the page background by default, so it reads as the ground under the map. */
+  fill?: string;
+}
+
+/**
+ * The city's skyline silhouette, or a generic one for a city without its own,
+ * for an `<svg>` with a viewBox inside 0 0 1200 120.
+ */
+export function CitySkyline({ cityId, fill }: SkylineProps & { cityId: string }) {
+  return cityId === 'berlin' ? <BerlinSkyline fill={fill} /> : <GenericSkyline fill={fill} />;
+}
+
 /** Berlin skyline: TV Tower, Brandenburg Gate, Cathedral, buildings */
-function BerlinSkyline() {
+function BerlinSkyline({ fill = 'var(--surface-0)' }: SkylineProps) {
   return (
-    <g style={{ fill: 'var(--surface-0)' }}>
+    <g style={{ fill }}>
       {/* Base ground */}
       <rect x="0" y="110" width="1200" height="10" />
 
@@ -130,9 +143,9 @@ function BerlinSkyline() {
 }
 
 /** Generic city skyline for cities without a custom design */
-function GenericSkyline() {
+function GenericSkyline({ fill = 'var(--surface-0)' }: SkylineProps) {
   return (
-    <g style={{ fill: 'var(--surface-0)' }}>
+    <g style={{ fill }}>
       <rect x="0" y="110" width="1200" height="10" />
       <rect x="50" y="70" width="40" height="50" />
       <rect x="100" y="55" width="50" height="65" />

@@ -9,7 +9,8 @@ import { useTheme } from './hooks/useTheme.js';
 import { useBootstrap } from './hooks/useBootstrap.js';
 import { Shell } from './components/layout/Shell.js';
 import { CommandLayout } from './components/layout/CommandLayout.js';
-import { getCityConfig, getDefaultCityId } from './config/index.js';
+import { getAllCities, getCityConfig, getDefaultCityId } from './config/index.js';
+import { CityPickerPage } from './pages/CityPickerPage.js';
 import { ImprintPage } from './pages/ImprintPage.js';
 import { PrivacyPage } from './pages/PrivacyPage.js';
 import { NoTrackingPage } from './pages/NoTrackingPage.js';
@@ -43,6 +44,16 @@ function Dashboard() {
       <CommandLayout />
     </Shell>
   );
+}
+
+/**
+ * `/`: the city picker while several cities are active, else straight to the
+ * one city's dashboard, so a fork with one city sees no picker.
+ */
+function Home() {
+  const cities = getAllCities();
+  if (cities.length < 2) return <Navigate to={`/${getDefaultCityId(cities)}`} replace />;
+  return <CityPickerPage cities={cities} />;
 }
 
 function CityRoute() {
@@ -85,7 +96,7 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary FallbackComponent={AppErrorFallback}>
           <Routes>
-            <Route path="/" element={<Navigate to={`/${getDefaultCityId()}`} replace />} />
+            <Route path="/" element={<Home />} />
             <Route path="/imprint" element={<ImprintPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/no-ads-no-tracking" element={<NoTrackingPage />} />

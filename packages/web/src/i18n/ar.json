@@ -4,6 +4,17 @@
     "noscript": "يتطلب هذا الموقع JavaScript.",
     "scrollToDashboard": "الانتقال إلى لوحة المعلومات"
   },
+  "cityPicker": {
+    "title": "City Monitor — اختر مدينتك",
+    "intro": "لوحات معلومات آنية من البيانات المفتوحة: أخبار وطقس وتحذيرات والمزيد. اختر مدينة لترى ما يجري فيها الآن.",
+    "topics_zero": "لا مواضيع",
+    "topics_one": "موضوع واحد",
+    "topics_two": "موضوعان",
+    "topics_few": "{{count}} مواضيع",
+    "topics_many": "{{count}} موضوعًا",
+    "topics_other": "{{count}} موضوع",
+    "summary": "{{topics}}، منها {{highlights}}"
+  },
   "aiLabel": {
     "generated": "مُنشأ بالذكاء الاصطناعي",
     "tooltip": "لم يراجعه محرر، وقد يحتوي على أخطاء."
