@@ -19,8 +19,8 @@ interface Source {
    * the credits against the server configs.
    */
   cities?: readonly string[];
-  /** A shared source credited only where the city has this feature. */
-  requires?: CityFeature;
+  /** A shared source credited only where the city has this feature, or one of these features. */
+  requires?: CityFeature | readonly CityFeature[];
 }
 
 interface SourceGroup {
@@ -135,6 +135,8 @@ function aiProcessingGroup(t: TFunction): SourceGroup {
         name: 'OpenAI',
         url: 'https://openai.com/',
         description: t('sources.aiProcessing.description'),
+        // The LLM reads only news items and police reports, so a city with neither makes no AI calls.
+        requires: ['news', 'police'],
       },
     ],
   };
@@ -166,7 +168,6 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'Tagesspiegel', url: 'https://www.tagesspiegel.de/', description: 'Major Berlin daily newspaper.' },
       { name: 'Berliner Morgenpost', url: 'https://www.morgenpost.de/', description: 'Berlin daily newspaper.' },
       { name: 'Berliner Zeitung', url: 'https://www.berliner-zeitung.de/', description: 'Berlin daily newspaper.' },
-      { name: 'taz Berlin', url: 'https://taz.de/', description: 'Left-leaning national daily, Berlin section.' },
       { name: 'Gründerszene', url: 'https://www.businessinsider.de/gruenderszene/', description: 'Berlin startup and tech news.' },
     ],
   },
@@ -239,28 +240,29 @@ const HAMBURG_SOURCES: SourceGroup[] = [
   {
     category: 'Maps',
     sources: [
-      { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/by-2-0.' },
+      { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/zero-2-0.' },
     ],
   },
   {
     category: 'News',
     sources: [
       { name: 'NDR Hamburg', url: 'https://www.ndr.de/nachrichten/hamburg/', description: 'Regional public broadcaster for Northern Germany.' },
-      { name: 'Hamburger Abendblatt', url: 'https://www.abendblatt.de/', description: 'Major Hamburg daily newspaper.' },
-      { name: 'hamburg.de', url: 'https://www.hamburg.de/', description: 'Official Hamburg state government news.' },
       { name: 'MOPO', url: 'https://www.mopo.de/', description: 'Hamburg daily newspaper.' },
+      { name: 'Feuerwehr Hamburg (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/82522', description: 'Hamburg fire brigade press releases.' },
     ],
   },
   {
     category: 'Safety',
     sources: [
-      { name: 'Hamburg Police (Presseportal)', url: 'https://www.presseportal.de/', description: 'Hamburg police press releases.' },
+      { name: 'Hamburg Police (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/6337', description: 'Hamburg police press releases.' },
+      { name: 'Hamburgisches Krisentelefon', url: 'https://www.hamburg.de/politik-und-verwaltung/bezirke/altona/themen/gesundheit/krisentelefon-61202', description: 'Crisis line for acute psychological crises (evenings, nights, weekends) and nationwide hotlines in the Crisis Services tile.' },
     ],
   },
   {
     category: 'Transit & Traffic',
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
+      { name: 'Baustellen Hamburg (Bauweiser)', url: 'https://api.hamburg.de/datasets/v1/baustellen', description: 'Construction sites on main roads and federal highways, with their traffic impact and construction period. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0. City Monitor shows the sites running now or starting within two weeks and shortens long descriptions.' },
     ],
   },
   {
@@ -273,9 +275,26 @@ const HAMBURG_SOURCES: SourceGroup[] = [
 
 const KOELN_SOURCES: SourceGroup[] = [
   {
+    category: 'News',
+    sources: [
+      { name: 'WDR Rheinland', url: 'https://www1.wdr.de/nrw/rheinland/', description: 'Regional public broadcaster for North Rhine-Westphalia, Rheinland edition.' },
+      { name: 'Kölner Stadt-Anzeiger', url: 'https://www.ksta.de/koeln/', description: 'Köln daily newspaper.' },
+      { name: 'EXPRESS', url: 'https://www.express.de/koeln/', description: 'Köln tabloid newspaper.' },
+      { name: 'Stadt Köln', url: 'https://www.stadt-koeln.de/politik-und-verwaltung/presseservice/', description: 'Press releases of the City of Köln.' },
+    ],
+  },
+  {
+    category: 'Safety',
+    sources: [
+      { name: 'Köln Police (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/12415', description: 'Köln and Leverkusen police press releases.' },
+      { name: 'Sozialpsychiatrischer Dienst Köln', url: 'https://www.stadt-koeln.de/service/adressen/sozialpsychiatrischer-dienst', description: 'The health department\'s social psychiatric service (office hours) and nationwide hotlines in the Crisis Services tile.' },
+    ],
+  },
+  {
     category: 'Transit & Traffic',
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
+      { name: 'Baustellen Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/baustellen-koeln', description: 'Permitted roadworks on city streets — road, utility, sewer, traffic-light, bridge, track and emergency works. The dates are the permit period, which the works need not fill. Source: Stadt Köln, dl-de/zero-2-0.' },
     ],
   },
   {
@@ -284,14 +303,46 @@ const KOELN_SOURCES: SourceGroup[] = [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time Rhine water level from the Köln gauge.' },
     ],
   },
+  {
+    category: 'Events',
+    sources: [
+      { name: 'Stadt Köln Open Data (Events)', url: 'https://www.offenedaten-koeln.de/dataset/veranstaltungen-der-stadt-koeln', description: 'Events the City of Cologne runs itself — libraries, museums, the town hall. Licensed dl-de/zero-2-0.' },
+    ],
+  },
+  {
+    category: 'Council Meetings',
+    sources: [
+      { name: 'Stadt Köln SessionNet (OParl)', url: 'https://buergerinfo.stadt-koeln.de/', description: 'Meetings of the city council, its committees and the nine Bezirksvertretungen via the OParl 1.1 API. Official public records; the API states no licence.' },
+    ],
+  },
 ];
 
 // No river gauge: the Isar through München is not a federal waterway.
 const MUENCHEN_SOURCES: SourceGroup[] = [
   {
+    category: 'News',
+    sources: [
+      { name: 'BR24 Oberbayern', url: 'https://www.br.de/nachrichten/themen/oberbayern,UZlJdUE', description: 'Regional public broadcaster for Bavaria, Oberbayern edition.' },
+      { name: 'Feuerwehr München (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/131419', description: 'München fire brigade press releases.' },
+    ],
+  },
+  {
+    category: 'Safety',
+    sources: [
+      { name: 'Krisendienst Psychiatrie Oberbayern', url: 'https://www.bezirk-oberbayern.de/Soziales/Psychiatrie/Krisendienst-Psychiatrie', description: '24/7 psychiatric crisis line and nationwide hotlines in the Crisis Services tile.' },
+    ],
+  },
+  {
     category: 'Transit & Traffic',
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
+      { name: 'Baustellen München (Geoportal)', url: 'https://opendata.muenchen.de/dataset/baustellen_4_weeks_opendata', description: 'Construction works that narrow or close the carriageway, from the city\'s roadworks service map. Source: Landeshauptstadt München – opendata.muenchen.de, dl-de/by-2-0. City Monitor shows each site as a point at the middle of its area.' },
+    ],
+  },
+  {
+    category: 'Council Meetings',
+    sources: [
+      { name: 'München RIS', url: 'https://risi.muenchen.de/', description: 'Stadtrat committee and Bezirksausschuss meetings from the council information system’s RSS feeds. Official public records; the feeds state no licence.' },
     ],
   },
 ];
@@ -326,8 +377,9 @@ function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] 
 
 /** The groups with only the sources credited for `city`, leaving out a group that has none. */
 function forCity(groups: SourceGroup[], city: WebCityConfig): SourceGroup[] {
-  const credited = (s: Source) =>
-    (!s.cities || s.cities.includes(city.id)) && (!s.requires || city.features.includes(s.requires));
+  const hasAny = (required: CityFeature | readonly CityFeature[]) =>
+    (typeof required === 'string' ? [required] : required).some((f) => city.features.includes(f));
+  const credited = (s: Source) => (!s.cities || s.cities.includes(city.id)) && (!s.requires || hasAny(s.requires));
   return groups
     .map((group) => ({ ...group, sources: group.sources.filter(credited) }))
     .filter((group) => group.sources.length > 0);
@@ -343,6 +395,11 @@ export function SourcesPage() {
   );
 
   const sourceCount = groups.reduce((n, g) => n + g.sources.length, 0);
+
+  // Reached from the footer of a scrolled dashboard: open at the top.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [city.id]);
 
   useEffect(() => {
     document.title = `Data Sources — City Monitor ${city.name}`;

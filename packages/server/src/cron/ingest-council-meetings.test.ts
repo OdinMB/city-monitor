@@ -1,5 +1,19 @@
-import { describe, it, expect } from 'vitest';
-import { extractCommittee, buildLocation, parsePardokXml, berlinUtcOffset } from './ingest-council-meetings.js';
+import { readFileSync } from 'node:fs';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import {
+  extractCommittee,
+  buildLocation,
+  parsePardokXml,
+  berlinUtcOffset,
+  fetchOparlMeetings,
+  parseOparlMeetings,
+  parseMuenchenRisFeed,
+  parseRisTitle,
+  type OparlTarget,
+} from './ingest-council-meetings.js';
+
+/** Trimmed from responses recorded on 2026-11-01. */
+const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
 
 describe('extractCommittee', () => {
   it('extracts committee after "des"', () => {
@@ -147,5 +161,160 @@ describe('parsePardokXml', () => {
     const result = parsePardokXml(xml, 'committee', now, windowMs);
     expect(result[0].source).toBe('parliament');
     expect(result[0].webUrl).toBe('https://www.parlament-berlin.de/termine');
+  });
+});
+
+// ── Köln: one OParl 1.1 body (SOMACOS) ─────────────────────────
+
+const KOELN_MEETINGS = 'https://buergerinfo.stadt-koeln.de/oparl/bodies/stadtverwaltung_koeln/meetings';
+const KOELN: OparlTarget = {
+  label: 'koeln',
+  firstUrl: `${KOELN_MEETINGS}?limit=100`,
+  districtBody: 'Bezirksvertretung',
+  webUrlPrefix: 'https://buergerinfo.stadt-koeln.de/si0057.asp?__ksinr=',
+};
+const NOV_1 = new Date('2026-11-01T12:00:00Z').getTime();
+const FOURTEEN_DAYS = 14 * 24 * 60 * 60 * 1000;
+
+describe('parseOparlMeetings (Köln, OParl 1.1)', () => {
+  const page1 = JSON.parse(fixture('koeln-oparl-meetings-page1.json')).data;
+  const page2 = JSON.parse(fixture('koeln-oparl-meetings-page2.json')).data;
+  const page3 = JSON.parse(fixture('koeln-oparl-meetings-page3.json')).data;
+
+  it('keeps only meetings in the 14-day window, though the list reaches years ahead', () => {
+    const { meetings, anyInFuture } = parseOparlMeetings(page1, KOELN, NOV_1, FOURTEEN_DAYS);
+    expect(anyInFuture).toBe(true);
+    expect(meetings.map((m) => m.id)).toEqual([`${KOELN_MEETINGS}/36080`]);
+  });
+
+  it('files a Bezirksvertretung under its district and everything else under the council', () => {
+    const { meetings } = parseOparlMeetings(page2, KOELN, NOV_1, FOURTEEN_DAYS);
+    const lindenthal = meetings.find((m) => m.id.endsWith('/33978'))!;
+    expect(lindenthal).toMatchObject({ source: 'bvv', district: 'Lindenthal', committee: 'Bezirksvertretung Lindenthal' });
+    const rat = meetings.find((m) => m.id.endsWith('/33691'))!;
+    expect(rat.source).toBe('parliament');
+    expect(rat.district).toBeUndefined();
+  });
+
+  it('drops the end time SOMACOS gives as midnight before the start', () => {
+    const { meetings } = parseOparlMeetings(page2, KOELN, NOV_1, FOURTEEN_DAYS);
+    const lindenthal = meetings.find((m) => m.id.endsWith('/33978'))!;
+    expect(lindenthal.start).toBe('2026-11-02T16:00:00+01:00');
+    expect(lindenthal.end).toBeUndefined();
+  });
+
+  it('links each meeting to its SessionNet page and keeps room and agenda', () => {
+    const { meetings } = parseOparlMeetings(page2, KOELN, NOV_1, FOURTEEN_DAYS);
+    const lindenthal = meetings.find((m) => m.id.endsWith('/33978'))!;
+    expect(lindenthal.webUrl).toBe('https://buergerinfo.stadt-koeln.de/si0057.asp?__ksinr=33978');
+    expect(lindenthal.location).toBe('Großer Sitzungssaal');
+    expect(lindenthal.agendaItems).toHaveLength(2);
+  });
+
+  it('reports a page of past meetings as having none ahead', () => {
+    const { meetings, anyInFuture } = parseOparlMeetings(page3, KOELN, NOV_1, FOURTEEN_DAYS);
+    expect(meetings).toEqual([]);
+    expect(anyInFuture).toBe(false);
+  });
+
+  it('skips cancelled and non-public meetings', () => {
+    const base = page1[1];
+    const { meetings } = parseOparlMeetings(
+      [{ ...base, cancelled: true }, { ...base, id: 'x', name: 'Nichtöffentliche Sitzung des Hauptausschusses' }],
+      KOELN, NOV_1, FOURTEEN_DAYS,
+    );
+    expect(meetings).toEqual([]);
+  });
+
+  it('keeps Berlin’s fixed district and the server’s own web link', () => {
+    const { meetings } = parseOparlMeetings(
+      [{ id: 'b1', name: '12. Sitzung der BVV Mitte', start: '2026-11-05T17:00:00+01:00', end: '2026-11-05T21:00:00+01:00', web: 'https://example.org/b1' }],
+      { label: 'Mitte', firstUrl: 'https://example.org/meetings.asp?body=1', district: 'Mitte' },
+      NOV_1, FOURTEEN_DAYS,
+    );
+    expect(meetings[0]).toMatchObject({ source: 'bvv', district: 'Mitte', committee: 'BVV Mitte', end: '2026-11-05T21:00:00+01:00', webUrl: 'https://example.org/b1' });
+  });
+});
+
+describe('fetchOparlMeetings', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('follows the next links until a page has nothing ahead', async () => {
+    const pages: Record<string, string> = {
+      [`${KOELN_MEETINGS}?limit=100`]: fixture('koeln-oparl-meetings-page1.json'),
+      [`${KOELN_MEETINGS}?page=2&limit=100`]: fixture('koeln-oparl-meetings-page2.json'),
+      [`${KOELN_MEETINGS}?page=3&limit=100`]: fixture('koeln-oparl-meetings-page3.json'),
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const body = pages[String(input)];
+      return body ? new Response(body, { status: 200 }) : new Response('not found', { status: 404 });
+    });
+
+    const meetings = await fetchOparlMeetings(KOELN, NOV_1, FOURTEEN_DAYS);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3); // page 4 is never asked for
+    expect(meetings.map((m) => m.id.split('/').pop()).sort()).toEqual(['33691', '33978', '36080']);
+  });
+});
+
+// ── München: RIS RSS ───────────────────────────────────────────
+
+describe('parseRisTitle', () => {
+  it('reads body and local time from a BA title, in CET', () => {
+    expect(parseRisTitle('BA-Sitzung BA 16 - Vollgremium am Donnerstag, 12. November 2026, 19:30 Uhr'))
+      .toEqual({ kind: 'BA', body: 'BA 16 - Vollgremium', start: '2026-11-12T19:30:00+01:00' });
+  });
+
+  it('applies summer time (CEST) to a date in July', () => {
+    expect(parseRisTitle('StR-Sitzung Bauausschuss am Dienstag, 7. Juli 2026, 09:30 Uhr')?.start)
+      .toBe('2026-07-07T09:30:00+02:00');
+  });
+
+  it('reads März and a trailing note', () => {
+    expect(parseRisTitle('StR-Sitzung Mobilitätsausschuss am Mittwoch, 3. März 2027, 9:30 Uhr  im Anschluss an vorhergehende Sitzung.'))
+      .toEqual({ kind: 'StR', body: 'Mobilitätsausschuss', start: '2027-03-03T09:30:00+01:00' });
+  });
+
+  it('returns null for a title it cannot read', () => {
+    expect(parseRisTitle('StR-Sitzung Bauausschuss')).toBeNull();
+    expect(parseRisTitle('StR-Sitzung Bauausschuss am Mittwoch, 31. Foo 2026, 09:30 Uhr')).toBeNull();
+  });
+});
+
+describe('parseMuenchenRisFeed', () => {
+  it('turns Stadtrat items into council meetings with room and RIS link', () => {
+    const meetings = parseMuenchenRisFeed(fixture('muenchen-ris-str.xml'), NOV_1, FOURTEEN_DAYS);
+    expect(meetings).toHaveLength(3);
+    expect(meetings[0]).toEqual({
+      id: 'muenchen-ris-9142825',
+      source: 'parliament',
+      committee: 'Gesundheitsausschuss',
+      start: '2026-11-12T14:00:00+01:00',
+      location: 'Großer Sitzungssaal',
+      webUrl: 'https://risi.muenchen.de/risi/sitzung/detail/9142825',
+    });
+  });
+
+  it('files BA items under the Stadtbezirk and decodes the double-encoded umlauts', () => {
+    const meetings = parseMuenchenRisFeed(fixture('muenchen-ris-ba.xml'), NOV_1, FOURTEEN_DAYS);
+    expect(meetings[0]).toMatchObject({
+      id: 'muenchen-ris-9343298',
+      source: 'bvv',
+      district: 'Ramersdorf-Perlach',
+      committee: 'Bezirksausschuss 16 – Vollgremium',
+      start: '2026-11-12T19:30:00+01:00',
+    });
+    expect(meetings[0].location).toBe('Pfarrsaal der Kath. Pfarrgemeinde Christus Erlöser (St. Stephan), Lüdersstr. 12, 81737 München, Hinweis: barrierefreier Zugang möglich');
+    expect(meetings[1].district).toBe('Schwanthalerhöhe');
+  });
+
+  it('leaves out meetings outside the window', () => {
+    const later = new Date('2026-11-11T12:00:00Z').getTime();
+    const meetings = parseMuenchenRisFeed(fixture('muenchen-ris-str.xml'), later, FOURTEEN_DAYS);
+    expect(meetings.map((m) => m.committee)).toEqual(['Gesundheitsausschuss']);
+  });
+
+  it('returns nothing for a broken feed', () => {
+    expect(parseMuenchenRisFeed('<html>error</html>', NOV_1, FOURTEEN_DAYS)).toEqual([]);
   });
 });

@@ -43,9 +43,64 @@ const mockOverpassResponse = {
   ],
 };
 
+const noWait = async () => {};
+
 describe('ingest-aeds', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+  });
+
+  describe('when Overpass is busy', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it('retries a 429 after a pause and keeps the answer that follows', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response('rate limited', { status: 429 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(mockOverpassResponse), { status: 200 }));
+      const waits: number[] = [];
+
+      const cache = createCache();
+      await createAedIngestion(cache, null, async (ms) => { waits.push(ms); })();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(waits).toEqual([15_000]);
+      expect(cache.get<AedLocation[]>('berlin:aed:locations')).toHaveLength(3);
+    });
+
+    it('gives up after two retries and leaves the cache as it was', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('', { status: 504 }));
+
+      const cache = createCache();
+      await createAedIngestion(cache, null, noWait)();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+      expect(cache.get<AedLocation[]>('berlin:aed:locations')).toBeNull();
+    });
+
+    it('pauses between cities, so the later ones are not turned away', async () => {
+      vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg,koeln');
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+        new Response(JSON.stringify(mockOverpassResponse), { status: 200 }),
+      );
+      const waits: number[] = [];
+
+      await createAedIngestion(createCache(), null, async (ms) => { waits.push(ms); })();
+
+      expect(waits).toEqual([5_000, 5_000]);
+    });
+
+    it('stores nothing from an answer carrying any remark, whose elements are incomplete', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ elements: [], remark: 'runtime error: open64: 0 Success /osm3s_v0.7.62_osm_base Dispatcher_Client::request_read_and_idx::rate_limited' }), { status: 200 }),
+      );
+
+      const cache = createCache();
+      await createAedIngestion(cache, null, noWait)();
+
+      expect(cache.get<AedLocation[]>('berlin:aed:locations')).toBeNull();
+    });
   });
 
   it('fetches Overpass API and writes AedLocation[] to cache', async () => {
@@ -208,7 +263,7 @@ describe('ingest-aeds', () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
         new Response(JSON.stringify({ elements: [] }), { status: 200 }),
       );
-      await createAedIngestion(createCache())();
+      await createAedIngestion(createCache(), null, noWait)();
       return fetchSpy.mock.calls.map(([, init]) => {
         const query = new URLSearchParams(String(init?.body)).get('data') ?? '';
         return /area(\[[^;]*?\])->/.exec(query)?.[1] ?? query;

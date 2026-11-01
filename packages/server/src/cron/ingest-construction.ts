@@ -1,49 +1,21 @@
-import type { ConstructionSite } from '@city-monitor/shared';
+import type { ConstructionSite, RoadworksSource } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveConstructionSites } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import {
+  koelnLayerUrl, muenchenUrl, parseHamburgRoadworks, parseKoelnRoadworks, parseMuenchenRoadworks, parseVizBerlin,
+} from '../lib/roadworks-parsers.js';
 
 const log = createLogger('ingest-construction');
 
 export type { ConstructionSite };
 
 const FETCH_TIMEOUT_MS = 15_000;
-
-/** Map VIZ German subtype strings to normalized values */
-const SUBTYPE_MAP: Record<string, ConstructionSite['subtype'] | null> = {
-  Baustelle: 'construction',
-  Bauarbeiten: 'construction',
-  Sperrung: 'closure',
-  Fahrstreifensperrung: 'closure',
-  Storung: 'disruption',
-  Störung: 'disruption',
-  Gefahr: 'disruption',
-  Unfall: null, // filtered out
-};
-
-interface VizFeature {
-  type: string;
-  geometry: { type: string; coordinates: unknown };
-  properties: {
-    id: string;
-    subtype: string;
-    street: string;
-    section?: string | null;
-    content: string;
-    direction?: string | null;
-    icon: string;
-    is_future: boolean;
-    validity?: { from?: string | null; to?: string | null };
-  };
-}
-
-interface VizGeoJSON {
-  type: string;
-  features?: VizFeature[];
-}
+/** München's filtered WFS answer is about 1 MB and the server is slow. */
+const SLOW_FETCH_TIMEOUT_MS = 45_000;
 
 export function createConstructionIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestConstruction(): Promise<void> {
@@ -51,7 +23,7 @@ export function createConstructionIngestion(cache: Cache, db: Db | null = null) 
     for (const city of cities) {
       if (!city.dataSources.roadworks) continue;
       try {
-        await ingestCityConstruction(city.id, city.dataSources.roadworks.url, cache, db);
+        await ingestCityConstruction(city.id, city.dataSources.roadworks, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -59,43 +31,53 @@ export function createConstructionIngestion(cache: Cache, db: Db | null = null) 
   };
 }
 
-async function ingestCityConstruction(cityId: string, url: string, cache: Cache, db: Db | null): Promise<void> {
+/** The response's JSON, or null (logged) when the provider did not answer 2xx. */
+async function fetchJson(cityId: string, url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<unknown | null> {
   const response = await log.fetch(url, {
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
     headers: { 'User-Agent': 'CityMonitor/1.0' },
   });
-
   if (!response.ok) {
-    log.warn(`${cityId}: VIZ returned ${response.status}`);
-    return;
+    log.warn(`${cityId}: roadworks source returned ${response.status}`);
+    return null;
   }
+  return response.json();
+}
 
-  const data = await response.json() as VizGeoJSON;
-  const raw = data?.features ?? [];
-
-  const sites: ConstructionSite[] = [];
-  for (const feature of raw) {
-    const props = feature.properties;
-    const mapped = SUBTYPE_MAP[props.subtype];
-    if (mapped === undefined) {
-      log.warn(`${cityId}: unknown VIZ subtype "${props.subtype}"`);
-      continue;
+/**
+ * The city's current sites from its provider, or null when the source failed,
+ * so that the last good data stays.
+ */
+async function fetchSites(cityId: string, source: RoadworksSource, now: Date): Promise<ConstructionSite[] | null> {
+  switch (source.provider) {
+    case 'viz-berlin': {
+      const data = await fetchJson(cityId, source.url);
+      return data === null ? null : parseVizBerlin(data, (m) => log.warn(`${cityId}: ${m}`));
     }
-    if (!mapped) continue; // filter out accidents (Unfall)
-
-    sites.push({
-      id: String(props.id),
-      subtype: mapped,
-      street: props.street || '',
-      section: props.section ?? undefined,
-      description: props.content || '',
-      direction: props.direction ?? undefined,
-      validFrom: props.validity?.from ?? undefined,
-      validUntil: props.validity?.to ?? undefined,
-      isFuture: props.is_future ?? false,
-      geometry: feature.geometry as ConstructionSite['geometry'],
-    });
+    case 'hamburg-ogc': {
+      const data = await fetchJson(cityId, source.url);
+      return data === null ? null : parseHamburgRoadworks(data, now);
+    }
+    case 'koeln-wfs': {
+      // One request per layer, in turn; a failed layer fails the run rather than drop its sites.
+      const sites: ConstructionSite[] = [];
+      for (const layer of source.layers) {
+        const data = await fetchJson(cityId, koelnLayerUrl(source.url, layer));
+        if (data === null) return null;
+        sites.push(...parseKoelnRoadworks(data, layer, now));
+      }
+      return sites;
+    }
+    case 'muenchen-wfs': {
+      const data = await fetchJson(cityId, muenchenUrl(source.url), SLOW_FETCH_TIMEOUT_MS);
+      return data === null ? null : parseMuenchenRoadworks(data, now);
+    }
   }
+}
+
+async function ingestCityConstruction(cityId: string, source: RoadworksSource, cache: Cache, db: Db | null): Promise<void> {
+  const sites = await fetchSites(cityId, source, new Date());
+  if (sites === null) return;
 
   cache.set(CK.constructionSites(cityId), sites, 1800);
 

@@ -150,6 +150,7 @@ export const ConstructionSiteSchema = z.object({
   direction: z.string().optional(),
   validFrom: z.string().optional(),
   validUntil: z.string().optional(),
+  validity: z.literal('permit').optional(),
   isFuture: z.boolean().default(false),
   geometry: z.object({
     type: z.string(),

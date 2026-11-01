@@ -9,6 +9,7 @@ import { hamburg } from './cities/hamburg.js';
 import { koeln } from './cities/koeln.js';
 import { muenchen } from './cities/muenchen.js';
 import { getNoiseWmsAttribution, getNoiseWmsUrl } from '../components/map/constants.js';
+import { getCrisisDirectory } from '../components/strips/crisis-services.js';
 
 /** Features the web app holds itself, which the server knows nothing about. */
 const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal'];
@@ -146,10 +147,21 @@ describe('the web app\'s own features', () => {
     },
   );
 
-  it('keeps the directory and rent map, which name Berlin\'s services, to Berlin', () => {
+  it('keeps the rent map, which shows Berlin\'s rent zones, to Berlin', () => {
     for (const city of ALL_CONFIGURED.filter((c) => c.id !== 'berlin')) {
-      expect(city.features, city.id).not.toContain('crisis');
       expect(city.features, city.id).not.toContain('rentMap');
     }
+  });
+
+  // The crisis tile shows the city's own directory (crisis-services.ts), so a
+  // city listing the feature without one would show an empty tile, and one
+  // leaving it out would hide numbers it has.
+  it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists the crisis tile exactly when it has a crisis directory', (id, city) => {
+    expect(city.features.includes('crisis'), id).toBe(getCrisisDirectory(id) !== null);
+  });
+
+  it('has a crisis directory for no city it does not configure', () => {
+    expect(getCrisisDirectory('nowhere')).toBeNull();
+    expect(getCrisisDirectory('toString')).toBeNull();
   });
 });

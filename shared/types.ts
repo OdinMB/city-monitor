@@ -112,10 +112,24 @@ export interface CityMapLayer {
 }
 
 export interface EventSourceConfig {
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
+  source: CityEvent['source'];
   url: string;
   lookaheadDays?: number; // Default: 14
 }
+
+/**
+ * A city's roadworks feed, by the provider whose format it is in. Each
+ * provider has its own parser in packages/server/src/lib/roadworks-parsers.ts.
+ */
+export type RoadworksSource =
+  /** VIZ Berlin's GeoJSON (baustellen_sperrungen.json) */
+  | { provider: 'viz-berlin'; url: string }
+  /** Hamburg's OGC API Features collection `baustelle` (Bauweiser) */
+  | { provider: 'hamburg-ogc'; url: string }
+  /** Stadt Köln's MapServer WFS, one request per layer (`ms:<layer>`) */
+  | { provider: 'koeln-wfs'; url: string; layers: readonly string[] }
+  /** München's GeoServer WFS GetFeature URL for `baustellen_opendata` (GeoJSON, EPSG:4326) */
+  | { provider: 'muenchen-wfs'; url: string };
 
 export interface CityDataSources {
   weather: {
@@ -124,7 +138,7 @@ export interface CityDataSources {
     lon: number;
     /**
      * The DWD warn region whose warnings are the city's, by its exact name in warnings.json
-     * ("Stadt München"). Without it, every region whose name contains the city's `name` counts,
+     * ("Stadt Köln"). Without it, every region whose name contains the city's `name` counts,
      * which suits a city-state but also takes in a Landkreis named after the city.
      */
     dwdWarnRegion?: string;
@@ -147,7 +161,7 @@ export interface CityDataSources {
    * which fits a city-state. A kreisfreie Stadt inside a state is 6 in German OSM.
    */
   aeds?: { adminLevel: number };
-  roadworks?: { url: string };
+  roadworks?: RoadworksSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -176,11 +190,36 @@ export interface CityDataSources {
     lon: number;
     radius: number; // km
   };
+  /**
+   * Upcoming council meetings, from whichever of these adapters the city has
+   * (packages/server/src/cron/ingest-council-meetings.ts). A meeting of the
+   * city-wide body or one of its committees is `source: 'parliament'`; one of a
+   * district body is `source: 'bvv'` with its `district`.
+   */
   councilMeetings?: {
-    bvv: Array<{ district: string; baseUrl: string }>;
+    /** Berlin: one ALLRIS OParl 1.0 server per district (BVV). */
+    bvv?: Array<{ district: string; baseUrl: string }>;
+    /** Berlin: the Abgeordnetenhaus PARDOK XML feeds. */
     parliament?: {
       committeeUrl: string;
       plenaryUrl: string;
+    };
+    /**
+     * One OParl 1.1 body that holds the council, its committees and the
+     * district councils together (Köln, SOMACOS SessionNet).
+     */
+    oparlBody?: {
+      /** The body's meeting list (`…/bodies/<id>/meetings`). */
+      meetingsUrl: string;
+      /** The word that names a district council in a meeting's name ("Bezirksvertretung"); the words after it are the district. */
+      districtBody: string;
+      /** A meeting's web page is this prefix plus its OParl id's last segment, for a server whose meetings carry no `web`. */
+      webUrlPrefix?: string;
+    };
+    /** München: the RIS RSS feeds of city council (Stadtrat) and district committee (BA) meetings. */
+    muenchenRis?: {
+      councilFeedUrl: string;
+      districtFeedUrl: string;
     };
   };
 }
@@ -308,7 +347,7 @@ export interface AirQualityGridPoint {
   url?: string;
 }
 
-// Construction / roadworks (VIZ Berlin)
+// Construction / roadworks (VIZ Berlin, Hamburg, Köln, München; see RoadworksSource)
 export interface ConstructionSite {
   id: string;
   subtype: 'construction' | 'closure' | 'disruption';
@@ -316,8 +355,14 @@ export interface ConstructionSite {
   section?: string;
   description: string;
   direction?: string;
+  /** Feed date, shown as it is: German format from every provider ("01.03.2026" or "01.03.2026 06:00") */
   validFrom?: string;
   validUntil?: string;
+  /**
+   * 'permit' when validFrom/validUntil are the permit period, which the works
+   * need not fill (Köln). Missing: the period of the works themselves.
+   */
+  validity?: 'permit';
   isFuture: boolean;
   geometry: { type: string; coordinates: number[] | number[][] | Array<{ type: string; coordinates: number[] | number[][] }> };
 }
@@ -566,7 +611,7 @@ export interface NewsDigest {
   updatedAt: string;
 }
 
-// City events (kulturdaten.berlin, Ticketmaster, go~mus)
+// City events (kulturdaten.berlin, Ticketmaster, go~mus, Stadt Köln open data)
 export interface CityEvent {
   id: string;
   title: string;
@@ -577,7 +622,7 @@ export interface CityEvent {
   url: string;
   description?: string;
   free?: boolean;
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
+  source: 'kulturdaten' | 'ticketmaster' | 'gomus' | 'stadt-koeln';
   price?: string;
 }
 

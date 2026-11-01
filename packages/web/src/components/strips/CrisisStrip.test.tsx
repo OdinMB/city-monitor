@@ -95,7 +95,7 @@ function shownDistrictNumbers(): Record<string, string> {
 
 describe('CrisisStrip emergency numbers', () => {
   it('shows 112 and 110 above the tabs, also while the tile is collapsed', () => {
-    render(<CrisisStrip expanded={false} onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded={false} onExpand={() => {}} />);
     const list = screen.getByRole('list', { name: 'Emergency numbers' });
     for (const [name, phone] of EMERGENCY) {
       const row = rowOf(name);
@@ -109,7 +109,7 @@ describe('CrisisStrip emergency numbers', () => {
 
 describe('CrisisStrip city-wide services', () => {
   it('shows each service with its number and the hours its official page gives', () => {
-    render(<CrisisStrip expanded onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     for (const [name, phone, hours] of CITYWIDE) {
       const row = rowOf(name);
       expect(row.textContent).toBe(`${name}↗${hours ?? ''}${phone}`);
@@ -118,7 +118,7 @@ describe('CrisisStrip city-wide services', () => {
   });
 
   it('never shows 030 390 63-00, which the Krisendienst does not list', () => {
-    const { container } = render(<CrisisStrip expanded onExpand={() => {}} />);
+    const { container } = render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     const citywide = container.innerHTML;
     openLocalTab();
     for (const html of [citywide, container.innerHTML]) {
@@ -128,14 +128,14 @@ describe('CrisisStrip city-wide services', () => {
   });
 
   it('shows the first four services while collapsed and counts the rest', () => {
-    render(<CrisisStrip expanded={false} onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded={false} onExpand={() => {}} />);
     for (const [name] of CITYWIDE.slice(0, 4)) expect(screen.getByText(name)).toBeTruthy();
     for (const [name] of CITYWIDE.slice(4)) expect(screen.queryByText(name)).toBeNull();
     expect(screen.getByRole('button', { name: '6 more' })).toBeTruthy();
   });
 
   it('links every entry to its official page, opened in a new tab', () => {
-    render(<CrisisStrip expanded onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     const entries = [...EMERGENCY.map(([name, , url]) => [name, url]), ...CITYWIDE.map(([name, , , url]) => [name, url])];
     expect(entries).toHaveLength(12);
     for (const [name, url] of entries) {
@@ -148,7 +148,7 @@ describe('CrisisStrip city-wide services', () => {
 
   it('makes every number and website link a 24px target that keeps the row height (WCAG 2.5.8)', () => {
     // jsdom does no layout, so check the classes the size relies on.
-    render(<CrisisStrip expanded onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     for (const link of screen.getAllByRole('link')) {
       expect(link.classList.contains('min-h-6'), link.outerHTML).toBe(true);
       expect(link.classList.contains('-my-1'), link.outerHTML).toBe(true);
@@ -162,7 +162,7 @@ describe('CrisisStrip city-wide services', () => {
 
 describe('CrisisStrip regional crisis service', () => {
   it('gives every Berlin district exactly the number of its regional site', () => {
-    render(<CrisisStrip expanded onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     openLocalTab();
     const shown = shownDistrictNumbers();
     expect(shown).toEqual(DISTRICT_NUMBERS);
@@ -170,7 +170,7 @@ describe('CrisisStrip regional crisis service', () => {
   });
 
   it('links the official page below the list', () => {
-    render(<CrisisStrip expanded onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     openLocalTab();
     const list = screen.getByRole('list', { name: 'Regional sites' });
     const site = screen.getByRole('link', { name: 'Official website: Berliner Krisendienst' });
@@ -185,7 +185,7 @@ describe('CrisisStrip regional crisis service', () => {
 describe('CrisisStrip Local note: the on-call service and its hours, in every language', () => {
   it.each(LOCAL_NOTE)('%s', async (lang, expected) => {
     await i18n.changeLanguage(lang);
-    render(<CrisisStrip expanded onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     fireEvent.click(screen.getAllByRole('tab')[1]!);
     const note = screen.getByRole('tabpanel').querySelector('p')!;
     expect(note.textContent).toBe(expected);
@@ -204,7 +204,7 @@ describe('CrisisStrip says when the numbers were checked', () => {
     ['ar', `آخر تحقق من الأرقام: ${new Date('2026-10-27T00:00:00Z').toLocaleDateString('ar', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}`],
   ])('%s', async (lang, footer) => {
     await i18n.changeLanguage(lang);
-    const { container } = render(<CrisisStrip expanded onExpand={() => {}} />);
+    const { container } = render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     expect(container.textContent).toContain(footer);
     if (lang === 'ar') expect(container.textContent).toContain('أكتوبر');
   });
@@ -213,7 +213,7 @@ describe('CrisisStrip says when the numbers were checked', () => {
 describe('CrisisStrip translations', () => {
   it.each(['de', 'en', 'tr', 'ar'])('%s: every word on both tabs comes from the bundle', async (lang) => {
     await i18n.changeLanguage(lang);
-    const { container } = render(<CrisisStrip expanded onExpand={() => {}} />);
+    const { container } = render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     const words = () => [
       container.textContent!,
       ...[...container.querySelectorAll('[aria-label]')].map((el) => el.getAttribute('aria-label')!),
@@ -229,7 +229,7 @@ describe('CrisisStrip translations', () => {
 describe('CrisisStrip phone numbers in Arabic (right-to-left)', () => {
   it('keeps every city-wide hotline and emergency number left-to-right', async () => {
     await i18n.changeLanguage('ar');
-    render(<CrisisStrip expanded onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     const links = phoneLinks();
     expect(links).toHaveLength(EMERGENCY.length + CITYWIDE.length);
     expect(links).toContainEqual({ href: 'tel:08001110111', ltr: '0800 111 0 111' });
@@ -240,7 +240,7 @@ describe('CrisisStrip phone numbers in Arabic (right-to-left)', () => {
 
   it('keeps the regional crisis service numbers left-to-right', async () => {
     await i18n.changeLanguage('ar');
-    render(<CrisisStrip expanded onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded onExpand={() => {}} />);
     openLocalTab('محلي');
     const links = phoneLinks(screen.getByRole('tabpanel'));
     expect(links).toHaveLength(9);
@@ -250,7 +250,146 @@ describe('CrisisStrip phone numbers in Arabic (right-to-left)', () => {
 
   it('names the hidden services in Arabic', async () => {
     await i18n.changeLanguage('ar');
-    render(<CrisisStrip expanded={false} onExpand={() => {}} />);
+    render(<CrisisStrip cityId="berlin" expanded={false} onExpand={() => {}} />);
     expect(screen.getByRole('button', { name: '6 أخرى' })).toBeTruthy();
+  });
+});
+
+/* ── Hamburg, Köln, München ────────────────────────────── */
+
+type Row = [name: string, phone: string, hours: string | null, url: string];
+
+const CRISIS_HELPLINE: Row = ['Crisis Helpline', '0800 111 0 111', '24/7', 'https://www.telefonseelsorge.de/telefon/'];
+const VIOLENCE_HELPLINE: Row = ['Violence Against Women Helpline', '116 016', '24/7', 'https://www.hilfetelefon.de/'];
+const YOUTH_HELPLINE: Row = ['Children/Youth Helpline', '116 111', 'Mon–Sat 2–8pm', 'https://www.nummergegenkummer.de/'];
+
+/** Each city's emergency and city-wide rows, note and hidden count, as checked on 2026-11-01. */
+const OTHER_CITIES: Array<{
+  id: string;
+  emergency: Array<[name: string, phone: string, url: string]>;
+  services: Row[];
+  note: string | null;
+}> = [
+  {
+    id: 'hamburg',
+    emergency: [
+      ['Fire & ambulance', '112', 'https://www.feuerwehr.hamburg/'],
+      ['Police', '110', 'https://www.polizei.hamburg/'],
+    ],
+    services: [
+      CRISIS_HELPLINE,
+      ['Hamburg Crisis Line', '040 42811 3000', 'evenings & weekends', 'https://www.hamburg.de/politik-und-verwaltung/bezirke/altona/themen/gesundheit/krisentelefon-61202'],
+      VIOLENCE_HELPLINE,
+      ['Child Protection Hotline', '040 428 15 32 00', '24/7', 'https://www.hamburg.de/politik-und-verwaltung/behoerden/bsfb/familie/kinderschutz'],
+      YOUTH_HELPLINE,
+    ],
+    note: 'Hamburg Crisis Line hours: Mon–Thu 5pm–11:30pm; Fri 5pm to Sat 7:30am; Sat 10am to Sun 7:30am; Sundays and holidays 10am–11:30pm. Outside these hours: the Crisis Helpline (24/7) or, in an emergency, 112.',
+  },
+  {
+    id: 'koeln',
+    emergency: [
+      ['Fire & ambulance', '112', 'https://www.stadt-koeln.de/politik-und-verwaltung/feuerwehr/'],
+      ['Police', '110', 'https://koeln.polizei.nrw/'],
+    ],
+    services: [
+      CRISIS_HELPLINE,
+      ['Social Psychiatric Service', '0221 221-24710', 'office hours', 'https://www.stadt-koeln.de/service/adressen/sozialpsychiatrischer-dienst'],
+      VIOLENCE_HELPLINE,
+      YOUTH_HELPLINE,
+    ],
+    note: 'Social Psychiatric Service (Cologne Health Department): Mon–Thu 9am–3pm, Fri 9am–1pm. Outside these hours: the Crisis Helpline (24/7) or, in an emergency, 112.',
+  },
+  {
+    id: 'muenchen',
+    emergency: [
+      ['Fire & ambulance', '112', 'https://stadt.muenchen.de/infos/feuerwehr-muenchen.html'],
+      ['Police', '110', 'https://www.polizei.bayern.de/'],
+    ],
+    services: [
+      CRISIS_HELPLINE,
+      ['Upper Bavaria Psychiatric Crisis Service', '0800 655 3000', '24/7', 'https://www.bezirk-oberbayern.de/Soziales/Psychiatrie/Krisendienst-Psychiatrie'],
+      VIOLENCE_HELPLINE,
+      YOUTH_HELPLINE,
+    ],
+    note: null,
+  },
+];
+
+describe.each(OTHER_CITIES)('CrisisStrip in $id', ({ id, emergency, services, note }) => {
+  it('shows 112 and 110 first, with their tel: links and official pages', () => {
+    render(<CrisisStrip cityId={id} expanded onExpand={() => {}} />);
+    const list = screen.getByRole('list', { name: 'Emergency numbers' });
+    for (const [name, phone, url] of emergency) {
+      const row = rowOf(name);
+      expect(list.contains(row)).toBe(true);
+      expect(phoneLinks(row)).toEqual([{ href: telHref(phone), ltr: phone }]);
+      expect(within(row).getByRole('link', { name: `Official website: ${name}` }).getAttribute('href')).toBe(url);
+    }
+  });
+
+  it('shows each service with its number, hours, tel: link and official page', () => {
+    render(<CrisisStrip cityId={id} expanded onExpand={() => {}} />);
+    for (const [name, phone, hours, url] of services) {
+      const row = rowOf(name);
+      expect(row.textContent).toBe(`${name}↗${hours ?? ''}${phone}`);
+      expect(phoneLinks(row)).toEqual([{ href: telHref(phone), ltr: phone }]);
+      const site = within(row).getByRole('link', { name: `Official website: ${name}` });
+      expect(site.getAttribute('href')).toBe(url);
+      expect(site.getAttribute('target')).toBe('_blank');
+    }
+    expect(phoneLinks()).toHaveLength(emergency.length + services.length);
+  });
+
+  it('shows no Berlin numbers and no tabs, which only a regional service needs', () => {
+    const { container } = render(<CrisisStrip cityId={id} expanded onExpand={() => {}} />);
+    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(container.innerHTML).not.toContain('030');
+    expect(container.textContent).not.toContain('Berlin');
+  });
+
+  it(note ? 'gives the hours too long for a badge, and what to call outside them' : 'needs no note', () => {
+    const { container } = render(<CrisisStrip cityId={id} expanded={false} onExpand={() => {}} />);
+    const notes = [...container.querySelectorAll('p')].map((p) => p.textContent);
+    expect(notes).toEqual(note ? [note] : []);
+  });
+
+  it('shows the first four services while collapsed and counts the rest', () => {
+    render(<CrisisStrip cityId={id} expanded={false} onExpand={() => {}} />);
+    for (const [name] of services.slice(0, 4)) expect(screen.getByText(name)).toBeTruthy();
+    for (const [name] of services.slice(4)) expect(screen.queryByText(name)).toBeNull();
+    const more = screen.queryByRole('button', { name: /more$/ });
+    expect(more?.textContent ?? null).toBe(services.length > 4 ? `${services.length - 4} more` : null);
+  });
+
+  it('says the numbers were checked on 2026-11-01', () => {
+    const { container } = render(<CrisisStrip cityId={id} expanded onExpand={() => {}} />);
+    expect(container.textContent).toContain('Numbers last checked: Nov 1, 2026');
+  });
+
+  it.each(['de', 'en', 'tr', 'ar'])('%s: every word comes from the bundle', async (lang) => {
+    await i18n.changeLanguage(lang);
+    const { container } = render(<CrisisStrip cityId={id} expanded onExpand={() => {}} />);
+    const texts = [
+      container.textContent!,
+      ...[...container.querySelectorAll('[aria-label]')].map((el) => el.getAttribute('aria-label')!),
+    ];
+    for (const text of texts) expect(text).not.toMatch(/panel\.crisis|\{\{/);
+  });
+
+  it('keeps every number left-to-right in Arabic', async () => {
+    await i18n.changeLanguage('ar');
+    render(<CrisisStrip cityId={id} expanded onExpand={() => {}} />);
+    const links = phoneLinks();
+    expect(links).toHaveLength(emergency.length + services.length);
+    for (const [, phone] of [...emergency, ...services]) {
+      expect(links).toContainEqual({ href: telHref(phone), ltr: phone });
+    }
+  });
+});
+
+describe('CrisisStrip in a city without a directory', () => {
+  it('renders nothing', () => {
+    const { container } = render(<CrisisStrip cityId="nowhere" expanded onExpand={() => {}} />);
+    expect(container.innerHTML).toBe('');
   });
 });

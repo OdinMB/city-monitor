@@ -1,0 +1,10 @@
+{
+"type": "FeatureCollection",
+"numberMatched": 107,
+"name": "notfall",
+"features": [
+{ "type": "Feature", "properties": { "Kategorie": "Notfall", "Aktenzeichen": "1207593", "Adresse": "Vogelsanger Str. 64", "Genehmigungs-Zeitraum": "13-04-2026 bis 13-02-2027" }, "geometry": { "type": "Point", "coordinates": [ 354061.0, 5645748.0 ] } },
+{ "type": "Feature", "properties": { "Kategorie": "Notfall", "Aktenzeichen": "1177439", "Adresse": "Deutz-Mülheimer Str. 147-151", "Genehmigungs-Zeitraum": "11-08-2025 bis 31-01-2027" }, "geometry": { "type": "Point", "coordinates": [ 358892.799999999988358, 5646601.299999999813735 ] } },
+{ "type": "Feature", "properties": { "Kategorie": "Notfall", "Aktenzeichen": "1177439", "Adresse": "Deutz-Mülheimer Str. 147-151", "Genehmigungs-Zeitraum": "11-08-2025 bis 31-01-2027" }, "geometry": { "type": "Point", "coordinates": [ 358892.799999999988358, 5646601.299999999813735 ] } }
+]
+}

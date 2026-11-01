@@ -159,7 +159,8 @@
       "source": {
         "community": "Topluluk",
         "tickets": "Biletler",
-        "museums": "Müzeler"
+        "museums": "Müzeler",
+        "city": "Belediye"
       },
       "moreInfo": "Daha fazla",
       "showMore": "{{count}} daha"
@@ -361,6 +362,12 @@
       "hoursMoSa": "Pzt–Cmt 14–20",
       "hoursDaily17_19": "günlük 17–19",
       "hoursMoFr9_19": "Pzt–Cum 9–19",
+      "hoursEveningsWeekends": "akşamları ve hafta sonu",
+      "hoursOffice": "mesai saatleri",
+      "note": {
+        "hamburg": "Hamburg Kriz Telefonu: Pzt–Per 17–23:30; Cum 17'den Cmt 7:30'a; Cmt 10'dan Paz 7:30'a; pazar ve resmî tatillerde 10–23:30. Bu saatler dışında: Kriz Hattı (7/24) veya acil durumda 112.",
+        "koeln": "Sosyal Psikiyatri Servisi (Köln Sağlık Dairesi): Pzt–Per 9–15, Cum 9–13. Bu saatler dışında: Kriz Hattı (7/24) veya acil durumda 112."
+      },
       "showMore": "{{count}} daha",
       "emergency": "Acil durum numaraları",
       "website": "Resmî web sitesi: {{name}}",
@@ -379,7 +386,11 @@
         "kinderJugendtelefon": "Çocuk/Gençlik Hattı",
         "drogennotdienst": "Uyuşturucu Acil Hizmeti",
         "maneo": "Şiddete Karşı (LGBTİ+)",
-        "schwulenberatung": "LGBTİ+ Danışmanlık"
+        "schwulenberatung": "LGBTİ+ Danışmanlık",
+        "krisentelefonHamburg": "Hamburg Kriz Telefonu",
+        "kinderschutzHamburg": "Çocuk Koruma Hattı",
+        "krisendienstOberbayern": "Yukarı Bavyera Psikiyatrik Kriz Servisi",
+        "spdKoeln": "Sosyal Psikiyatri Servisi"
       }
     },
     "bathing": {
@@ -402,6 +413,8 @@
       "filterLabel": "Organa göre filtrele",
       "bvv": "İlçe Meclisi",
       "parliament": "Eyalet Parlamentosu",
+      "parliament_koeln": "Belediye Meclisi",
+      "parliament_muenchen": "Belediye Meclisi",
       "agendaItems": "{{count}} gündem maddesi",
       "openDetails": "Toplantı ayrıntılarını aç",
       "today": "Bugün",
@@ -521,6 +534,7 @@
     "today": "Bugün",
     "tomorrow": "Yarın",
     "delay": "Gecikme: ~{{count}} dk",
+    "permitPeriod": "İzin süresi",
     "roadEvent": {
       "jam": "Trafik sıkışıklığı",
       "closure": "Yol kapanması",

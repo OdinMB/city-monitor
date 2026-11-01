@@ -17,12 +17,15 @@ const STATE_COLORS: Record<string, { text: string; fill: string }> = {
   normal: { text: 'text-signal-good', fill: 'bg-signal-good' },
   high: { text: 'text-signal-caution', fill: 'bg-signal-caution' },
   very_high: { text: 'text-signal-bad', fill: 'bg-signal-bad' },
-  unknown: { text: 'text-signal-unknown', fill: 'bg-signal-unknown' },
 };
 
+/** A gauge without a known state (no characteristic values, as on Bunthaus and Seemannshöft): plain figure, no badge. */
+const NO_STATE = { text: 'text-gray-900 dark:text-gray-100', fill: '' };
+
 const StationRow = memo(function StationRow({ station, t }: { station: WaterLevelStation; t: (k: string) => string }) {
-  const color = STATE_COLORS[station.state] ?? STATE_COLORS.unknown;
-  const stateKey = station.state === 'very_high' ? 'veryHigh' : (station.state ?? 'unknown');
+  const color = STATE_COLORS[station.state] ?? NO_STATE;
+  const stateKey = station.state === 'very_high' ? 'veryHigh' : station.state;
+  const showState = station.state in STATE_COLORS;
 
   return (
     <div className="flex items-center gap-2 min-w-0">
@@ -50,14 +53,16 @@ const StationRow = memo(function StationRow({ station, t }: { station: WaterLeve
         </div>
       </div>
 
-      {/* Right: current level + state badge */}
+      {/* Right: current level + state badge (none when the state is not known) */}
       <div className="shrink-0 flex items-center gap-1.5">
         <span className={`text-sm font-semibold tabular-nums ${color.text}`}>
           {withUnit(formatDecimal(station.currentLevel), 'cm')}
         </span>
-        <span className={`px-1 py-0.5 rounded text-[9px] font-medium text-white leading-tight ${color.fill}`}>
-          {t(`panel.waterLevels.state.${stateKey}`)}
-        </span>
+        {showState && (
+          <span className={`px-1 py-0.5 rounded text-[9px] font-medium text-white leading-tight ${color.fill}`}>
+            {t(`panel.waterLevels.state.${stateKey}`)}
+          </span>
+        )}
       </div>
     </div>
   );

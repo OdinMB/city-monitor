@@ -6,6 +6,7 @@ import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { getActiveCities } from '../config/index.js';
 import { createRateGate } from '../lib/rate-gate.js';
+import { parseFeed } from '../lib/rss-parser.js';
 import { XMLParser } from 'fast-xml-parser';
 
 const log = createLogger('ingest-council-meetings');
@@ -31,14 +32,35 @@ interface OparlMeeting {
   name?: string;
   start?: string;
   end?: string;
+  cancelled?: boolean | null;
   location?: { description?: string; streetAddress?: string; room?: string };
   agendaItem?: Array<{ number?: string; name?: string; public?: boolean }>;
-  web?: string;
+  web?: string | null;
 }
 
 interface OparlResponse {
   data?: OparlMeeting[];
   links?: { next?: string };
+}
+
+/**
+ * One OParl meeting list to read. Berlin has one server per district, so the
+ * district is fixed; Köln has one body for the council, its committees and the
+ * district councils, so a meeting's district comes from its name.
+ */
+export interface OparlTarget {
+  /** For log lines. */
+  label: string;
+  /** The first page of the meeting list. */
+  firstUrl: string;
+  /** Every meeting of this list is this district's (Berlin BVV). */
+  district?: string;
+  /** The word naming a district council in a meeting's name; the rest is the district (Köln "Bezirksvertretung"). */
+  districtBody?: string;
+  /** A meeting's web page is this plus its id's last segment, for a server whose meetings carry no `web`. */
+  webUrlPrefix?: string;
+  /** Pages to read at most. Default 10. */
+  maxPages?: number;
 }
 
 export function extractCommittee(name: string): string {
@@ -54,17 +76,72 @@ export function buildLocation(loc: OparlMeeting['location']): string | undefined
   return parts.length > 0 ? parts.join(', ') : undefined;
 }
 
-async function fetchOparlMeetings(
-  baseUrl: string,
-  district: string,
+/**
+ * The meetings of one OParl page that fall in the window, and whether any of
+ * the page's meetings lies ahead at all. Both servers list meetings newest
+ * first (ALLRIS by date, SOMACOS by creation), so a page with nothing ahead
+ * ends the walk.
+ */
+export function parseOparlMeetings(
+  data: OparlMeeting[],
+  target: OparlTarget,
+  now: number,
+  windowMs: number,
+): { meetings: CouncilMeeting[]; anyInFuture: boolean } {
+  const meetings: CouncilMeeting[] = [];
+  let anyInFuture = false;
+  const districtPattern = target.districtBody
+    ? new RegExp(`\\b${target.districtBody}\\s+(.+?)\\s*$`, 'i')
+    : null;
+
+  for (const m of data) {
+    if (!m.start) continue;
+
+    const t = new Date(m.start).getTime();
+    if (Number.isNaN(t) || t < now) continue;
+    anyInFuture = true;
+
+    if (t > now + windowMs) continue; // too far in the future
+    if (m.cancelled === true) continue;
+    // Skip nichtöffentlich (non-public) sessions
+    if (m.name && /nichtöffentlich/i.test(m.name)) continue;
+
+    const district = target.district ?? (districtPattern ? m.name?.match(districtPattern)?.[1] : undefined);
+    // SOMACOS gives an unknown end as midnight of the meeting day
+    const end = m.end && new Date(m.end).getTime() > t ? m.end : undefined;
+    const webUrl = m.web
+      ?? (target.webUrlPrefix ? `${target.webUrlPrefix}${m.id.split('/').pop()}` : undefined);
+
+    meetings.push({
+      id: m.id,
+      source: district ? 'bvv' : 'parliament',
+      ...(district ? { district } : {}),
+      committee: extractCommittee(m.name ?? district ?? target.label),
+      start: m.start,
+      end,
+      location: buildLocation(m.location),
+      agendaItems: m.agendaItem?.map((a) => ({
+        number: a.number ?? '',
+        name: a.name ?? '',
+        public: a.public ?? true,
+      })),
+      webUrl,
+    });
+  }
+
+  return { meetings, anyInFuture };
+}
+
+export async function fetchOparlMeetings(
+  target: OparlTarget,
   now: number,
   windowMs: number,
 ): Promise<CouncilMeeting[]> {
   const meetings: CouncilMeeting[] = [];
-  let url: string | undefined = `${baseUrl}/meetings.asp?body=1`;
+  let url: string | undefined = target.firstUrl;
   let pages = 0;
 
-  while (url && pages < 10) {
+  while (url && pages < (target.maxPages ?? 10)) {
     pages++;
     const res = await log.fetch(url, {
       headers: BROWSER_HEADERS,
@@ -72,7 +149,7 @@ async function fetchOparlMeetings(
     });
 
     if (!res.ok) {
-      log.warn(`${district} OParl returned ${res.status}`);
+      log.warn(`${target.label} OParl returned ${res.status}`);
       break;
     }
 
@@ -80,49 +157,143 @@ async function fetchOparlMeetings(
     try {
       json = await res.json() as OparlResponse;
     } catch {
-      log.warn(`${district} OParl returned invalid JSON`);
+      log.warn(`${target.label} OParl returned invalid JSON`);
       break;
     }
 
     if (!json.data || json.data.length === 0) break;
 
-    // OParl returns meetings sorted newest-first; check if any are in our window
-    let anyInFuture = false;
-    for (const m of json.data) {
-      if (!m.start) continue;
-
-      const t = new Date(m.start).getTime();
-      if (t < now) continue; // past meeting — stop if all are past
-      anyInFuture = true;
-
-      if (t > now + windowMs) continue; // too far in the future
-
-      // Skip nichtöffentlich (non-public) sessions
-      if (m.name && /nichtöffentlich/i.test(m.name)) continue;
-
-      meetings.push({
-        id: m.id,
-        source: 'bvv',
-        district,
-        committee: extractCommittee(m.name ?? district),
-        start: m.start,
-        end: m.end,
-        location: buildLocation(m.location),
-        agendaItems: m.agendaItem?.map((a) => ({
-          number: a.number ?? '',
-          name: a.name ?? '',
-          public: a.public ?? true,
-        })),
-        webUrl: m.web,
-      });
-    }
+    const page = parseOparlMeetings(json.data, target, now, windowMs);
+    meetings.push(...page.meetings);
 
     // If no meetings are in the future, remaining pages are even older
-    if (!anyInFuture) break;
+    if (!page.anyInFuture) break;
 
     url = json.links?.next;
   }
 
+  return meetings;
+}
+
+// ── München RIS RSS ─────────────────────────────────────────────
+
+const GERMAN_MONTHS: Record<string, number> = {
+  januar: 1, februar: 2, märz: 3, april: 4, mai: 5, juni: 6,
+  juli: 7, august: 8, september: 9, oktober: 10, november: 11, dezember: 12,
+};
+
+/** München's 25 Stadtbezirke, by the number of their Bezirksausschuss (BA). */
+const MUENCHEN_BEZIRKE: Record<number, string> = {
+  1: 'Altstadt-Lehel', 2: 'Ludwigsvorstadt-Isarvorstadt', 3: 'Maxvorstadt', 4: 'Schwabing-West',
+  5: 'Au-Haidhausen', 6: 'Sendling', 7: 'Sendling-Westpark', 8: 'Schwanthalerhöhe',
+  9: 'Neuhausen-Nymphenburg', 10: 'Moosach', 11: 'Milbertshofen-Am Hart', 12: 'Schwabing-Freimann',
+  13: 'Bogenhausen', 14: 'Berg am Laim', 15: 'Trudering-Riem', 16: 'Ramersdorf-Perlach',
+  17: 'Obergiesing-Fasangarten', 18: 'Untergiesing-Harlaching',
+  19: 'Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln', 20: 'Hadern',
+  21: 'Pasing-Obermenzing', 22: 'Aubing-Lochhausen-Langwied', 23: 'Allach-Untermenzing',
+  24: 'Feldmoching-Hasenbergl', 25: 'Laim',
+};
+
+const RIS_TITLE = /^(StR|BA)-Sitzung\s+(.+?)\s+am\s+[A-Za-zäöüÄÖÜß]+,\s*(\d{1,2})\.\s*([A-Za-zäöüÄÖÜß]+)\s+(\d{4}),\s*(\d{1,2}):(\d{2})\s*Uhr/;
+
+const pad2 = (n: number | string) => String(n).padStart(2, '0');
+
+/**
+ * A RIS item title, such as "BA-Sitzung BA 16 - Vollgremium am Donnerstag,
+ * 12. November 2026, 19:30 Uhr": the feed, the body, and the start as an ISO
+ * time with München's UTC offset on that day (CET or CEST).
+ */
+export function parseRisTitle(title: string): { kind: 'StR' | 'BA'; body: string; start: string } | null {
+  const m = title.trim().match(RIS_TITLE);
+  if (!m) return null;
+  const [, kind, body, day, monthName, year, hour, minute] = m;
+  const month = GERMAN_MONTHS[monthName!.toLowerCase()];
+  if (!month || Number(hour) > 23 || Number(minute) > 59) return null;
+  const local = `${year}-${pad2(month)}-${pad2(day!)} ${pad2(hour!)}:${minute}:00`;
+  return {
+    kind: kind as 'StR' | 'BA',
+    body: body!,
+    start: local.replace(' ', 'T') + berlinUtcOffset(local),
+  };
+}
+
+const HTML_ENTITIES: Record<string, string> = {
+  amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', nbsp: ' ',
+  auml: 'ä', ouml: 'ö', uuml: 'ü', Auml: 'Ä', Ouml: 'Ö', Uuml: 'Ü', szlig: 'ß',
+};
+
+function decodeHtml(text: string): string {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, ref: string) => {
+    if (ref[0] === '#') {
+      const code = ref[1]?.toLowerCase() === 'x' ? parseInt(ref.slice(2), 16) : parseInt(ref.slice(1), 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
+    }
+    return HTML_ENTITIES[ref] ?? whole;
+  });
+}
+
+/** The "Sitzungsort" line of a RIS item description, whose HTML carries its own entities a second time. */
+function risLocation(description: string | undefined): string | undefined {
+  if (!description) return undefined;
+  const m = description.match(/Sitzungsort:\s*<\/strong>\s*([^<]+)/i);
+  const place = m ? decodeHtml(m[1]!).replace(/\s+/g, ' ').trim() : '';
+  return place || undefined;
+}
+
+/**
+ * The meetings of one München RIS feed (StR-Sitzungen or BA-Sitzungen) in the
+ * window. A Stadtrat committee is the council; a Bezirksausschuss is filed
+ * under its Stadtbezirk.
+ */
+export function parseMuenchenRisFeed(xml: string, now: number, windowMs: number): CouncilMeeting[] {
+  const meetings: CouncilMeeting[] = [];
+  for (const item of parseFeed(xml)) {
+    const parsed = parseRisTitle(item.title);
+    if (!parsed) continue;
+    const t = new Date(parsed.start).getTime();
+    if (t < now || t > now + windowMs) continue;
+
+    const id = `muenchen-ris-${item.url.split('/').pop()}`;
+    const location = risLocation(item.description);
+    const base = { id, start: parsed.start, ...(location ? { location } : {}), webUrl: item.url };
+
+    if (parsed.kind === 'BA') {
+      // "BA 16 - Vollgremium", "BA 3 - Unterausschuss Bau"
+      const ba = parsed.body.match(/^BA\s*(\d{1,2})\s*(?:-\s*(.+))?$/);
+      const number = ba ? Number(ba[1]) : undefined;
+      const district = (number && MUENCHEN_BEZIRKE[number]) || parsed.body;
+      const committee = number
+        ? `Bezirksausschuss ${number}${ba?.[2] ? ` – ${ba[2].trim()}` : ''}`
+        : parsed.body;
+      meetings.push({ ...base, source: 'bvv', district, committee });
+    } else {
+      meetings.push({ ...base, source: 'parliament', committee: parsed.body });
+    }
+  }
+  return meetings;
+}
+
+async function fetchMuenchenRis(
+  urls: string[],
+  now: number,
+  windowMs: number,
+): Promise<CouncilMeeting[]> {
+  const results = await Promise.allSettled(urls.map(async (url) => {
+    const res = await log.fetch(url, {
+      headers: { 'User-Agent': BROWSER_HEADERS['User-Agent'], Accept: 'application/rss+xml, application/xml, text/xml' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      log.warn(`München RIS returned ${res.status} for ${url}`);
+      return [];
+    }
+    return parseMuenchenRisFeed(await res.text(), now, windowMs);
+  }));
+  const meetings: CouncilMeeting[] = [];
+  for (const r of results) {
+    if (r.status === 'fulfilled') meetings.push(...r.value);
+    else log.warn(`München RIS failed: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+  }
   return meetings;
 }
 
@@ -260,21 +431,47 @@ export function createCouncilMeetingIngestion(cache: Cache, db: Db | null = null
         // Fetch BVV OParl districts (rate-gated concurrent)
         const gate = createRateGate(DELAY_BETWEEN_DISTRICTS_MS);
 
-        const bvvResults = await Promise.allSettled(
-          cfg.bvv.map(async (district) => {
+        const oparlTargets: OparlTarget[] = (cfg.bvv ?? []).map((d) => ({
+          label: d.district,
+          firstUrl: `${d.baseUrl}/meetings.asp?body=1`,
+          district: d.district,
+        }));
+        if (cfg.oparlBody) {
+          // OParl 1.1 `limit`: 100 a page, so the walk back to today takes a few pages, not dozens
+          oparlTargets.push({
+            label: city.id,
+            firstUrl: `${cfg.oparlBody.meetingsUrl}?limit=100`,
+            districtBody: cfg.oparlBody.districtBody,
+            webUrlPrefix: cfg.oparlBody.webUrlPrefix,
+            maxPages: 15,
+          });
+        }
+
+        const oparlResults = await Promise.allSettled(
+          oparlTargets.map(async (target) => {
             await gate();
-            const meetings = await fetchOparlMeetings(district.baseUrl, district.district, now, windowMs);
-            log.info(`${city.id} ${district.district}: ${meetings.length} meetings`);
+            const meetings = await fetchOparlMeetings(target, now, windowMs);
+            log.info(`${city.id} ${target.label}: ${meetings.length} meetings`);
             return meetings;
           }),
         );
 
-        for (const r of bvvResults) {
+        for (const r of oparlResults) {
           if (r.status === 'fulfilled') {
             allMeetings.push(...r.value);
           } else {
-            log.warn(`BVV OParl failed: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+            log.warn(`${city.id} OParl failed: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
           }
+        }
+
+        if (cfg.muenchenRis) {
+          const meetings = await fetchMuenchenRis(
+            [cfg.muenchenRis.councilFeedUrl, cfg.muenchenRis.districtFeedUrl],
+            now,
+            windowMs,
+          );
+          allMeetings.push(...meetings);
+          log.info(`${city.id} RIS: ${meetings.length} meetings`);
         }
 
         // Fetch PARDOK (parliament)

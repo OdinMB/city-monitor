@@ -159,7 +159,8 @@
       "source": {
         "community": "Community",
         "tickets": "Tickets",
-        "museums": "Museums"
+        "museums": "Museums",
+        "city": "City"
       },
       "moreInfo": "More info",
       "showMore": "{{count}} more"
@@ -364,6 +365,12 @@
       "hoursMoSa": "Mon–Sat 2–8pm",
       "hoursDaily17_19": "daily 5–7pm",
       "hoursMoFr9_19": "Mon–Fri 9am–7pm",
+      "hoursEveningsWeekends": "evenings & weekends",
+      "hoursOffice": "office hours",
+      "note": {
+        "hamburg": "Hamburg Crisis Line hours: Mon–Thu 5pm–11:30pm; Fri 5pm to Sat 7:30am; Sat 10am to Sun 7:30am; Sundays and holidays 10am–11:30pm. Outside these hours: the Crisis Helpline (24/7) or, in an emergency, 112.",
+        "koeln": "Social Psychiatric Service (Cologne Health Department): Mon–Thu 9am–3pm, Fri 9am–1pm. Outside these hours: the Crisis Helpline (24/7) or, in an emergency, 112."
+      },
       "showMore": "{{count}} more",
       "emergency": "Emergency numbers",
       "website": "Official website: {{name}}",
@@ -382,7 +389,11 @@
         "kinderJugendtelefon": "Children/Youth Helpline",
         "drogennotdienst": "Drug Emergency Service",
         "maneo": "Anti-Violence (LGBTQ+)",
-        "schwulenberatung": "LGBTQ+ Counseling"
+        "schwulenberatung": "LGBTQ+ Counseling",
+        "krisentelefonHamburg": "Hamburg Crisis Line",
+        "kinderschutzHamburg": "Child Protection Hotline",
+        "krisendienstOberbayern": "Upper Bavaria Psychiatric Crisis Service",
+        "spdKoeln": "Social Psychiatric Service"
       }
     },
     "bathing": {
@@ -405,6 +416,8 @@
       "filterLabel": "Filter by body",
       "bvv": "District Assembly",
       "parliament": "State Parliament",
+      "parliament_koeln": "City Council",
+      "parliament_muenchen": "City Council",
       "agendaItems_one": "{{count}} agenda item",
       "agendaItems_other": "{{count}} agenda items",
       "openDetails": "Open meeting details",
@@ -525,6 +538,7 @@
     "today": "Today",
     "tomorrow": "Tomorrow",
     "delay": "Delay: ~{{count}} min",
+    "permitPeriod": "Permit period",
     "roadEvent": {
       "jam": "Traffic jam",
       "closure": "Road closure",

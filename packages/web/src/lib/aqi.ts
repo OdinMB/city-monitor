@@ -94,24 +94,27 @@ export interface WaqiAgencies {
 /**
  * Originating agencies of the WAQI stations in each city's bounding box. WAQI's
  * terms make credit to the World Air Quality Index Project and to the
- * originating agencies mandatory wherever its data is shown.
+ * originating agencies mandatory wherever its data is shown. Each entry names
+ * the agencies the stations' aqicn.org pages credit (checked 2026-11-01): the
+ * state network, plus the European Environment Agency where it relays the
+ * stations; none credits the Umweltbundesamt.
  */
 const WAQI_AGENCIES: Record<string, WaqiAgencies> = {
   berlin: {
-    short: 'Umweltbundesamt, BLUME',
-    full: 'the Umweltbundesamt (German Environment Agency) and the Berlin air quality monitoring network (BLUME)',
+    short: 'European Environment Agency, BLUME',
+    full: 'the European Environment Agency and the Berlin air quality monitoring network (BLUME)',
   },
   hamburg: {
-    short: 'Umweltbundesamt, HaLm',
-    full: 'the Umweltbundesamt (German Environment Agency) and the Hamburg air quality monitoring network (HaLm)',
+    short: 'HaLm',
+    full: 'the Hamburg air quality monitoring network (Hamburger Luftmessnetz, HaLm)',
   },
   koeln: {
-    short: 'Umweltbundesamt, LANUK',
-    full: 'the Umweltbundesamt (German Environment Agency) and the North Rhine-Westphalia air quality monitoring network (LUQS) of the Landesamt für Natur, Umwelt und Klima (LANUK)',
+    short: 'European Environment Agency, LANUK',
+    full: 'the European Environment Agency and the North Rhine-Westphalia air quality monitoring network (LUQS) of the Landesamt für Natur, Umwelt und Klima (LANUK, formerly LANUV)',
   },
   muenchen: {
-    short: 'Umweltbundesamt, LfU',
-    full: 'the Umweltbundesamt (German Environment Agency) and the Bavarian air quality monitoring network (LÜB) of the Bayerisches Landesamt für Umwelt (LfU)',
+    short: 'European Environment Agency, LfU',
+    full: 'the European Environment Agency and the Bavarian air quality monitoring network (LÜB) of the Bayerisches Landesamt für Umwelt (LfU)',
   },
 };
 

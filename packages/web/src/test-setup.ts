@@ -25,6 +25,11 @@ if (hasDom) {
   window.URL.revokeObjectURL = window.URL.revokeObjectURL || (() => {});
 }
 
+// jsdom has no layout, so scrolling does nothing (it would log "Not implemented")
+if (hasDom) {
+  window.scrollTo = (() => {}) as typeof window.scrollTo;
+}
+
 // Mock canvas 2D context for map icon generation (jsdom doesn't support canvas)
 const mockCtx = {
   beginPath: vi.fn(),

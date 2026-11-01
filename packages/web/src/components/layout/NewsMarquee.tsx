@@ -18,10 +18,13 @@ import type { NewsItem } from '../../lib/api.js';
  */
 export function NewsMarquee({ reserveSpace = false }: { reserveSpace?: boolean }) {
   const { t } = useTranslation();
-  const { id: cityId } = useCityConfig();
-  const { data, isPending } = useNewsDigest(cityId);
+  const { id: cityId, features } = useCityConfig();
+  // A city without news feeds asks for no news and shows no bar.
+  const hasNews = features.includes('news');
+  const { data, isPending } = useNewsDigest(cityId, hasNews);
   const [paused, setPaused] = useState(false);
 
+  if (!hasNews) return null;
   const items = data?.items?.slice(0, 10);
   if (!items?.length) {
     return reserveSpace && isPending ? (

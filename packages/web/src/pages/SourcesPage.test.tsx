@@ -76,7 +76,10 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['OpenStreetMap', (c) => c.country === 'DE'],
   ['TomTom Traffic', () => true],
   ['VBB transport.rest', (c) => (c.dataSources.transit?.stations?.length ?? 0) > 0],
-  ['VIZ Berlin', (c) => c.dataSources.roadworks !== undefined],
+  ['VIZ Berlin', (c) => c.dataSources.roadworks?.provider === 'viz-berlin'],
+  ['Baustellen Hamburg (Bauweiser)', (c) => c.dataSources.roadworks?.provider === 'hamburg-ogc'],
+  ['Baustellen Köln (Offene Daten Köln)', (c) => c.dataSources.roadworks?.provider === 'koeln-wfs'],
+  ['Baustellen München (Geoportal)', (c) => c.dataSources.roadworks?.provider === 'muenchen-wfs'],
   ['PEGELONLINE (WSV)', (c) => c.dataSources.waterLevels !== undefined],
   ['Ticketmaster', (c) => usesEvents(c, 'ticketmaster')],
   ['kulturdaten.berlin', (c) => usesEvents(c, 'kulturdaten')],
@@ -84,14 +87,19 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['service.berlin.de', (c) => c.dataSources.appointments !== undefined],
   ['Berlin Budget (Doppelhaushalt)', (c) => c.dataSources.budget !== undefined],
   ['MSS 2023 (Social Atlas)', (c) => c.dataSources.socialAtlas !== undefined],
-  ['ALLRIS OParl (BVV)', (c) => (c.dataSources.councilMeetings?.bvv.length ?? 0) > 0],
+  ['Stadt Köln Open Data (Events)', (c) => usesEvents(c, 'stadt-koeln')],
+  ['ALLRIS OParl (BVV)', (c) => (c.dataSources.councilMeetings?.bvv?.length ?? 0) > 0],
   ['PARDOK (Abgeordnetenhaus)', (c) => c.dataSources.councilMeetings?.parliament !== undefined],
+  ['Stadt Köln SessionNet (OParl)', (c) => c.dataSources.councilMeetings?.oparlBody !== undefined],
+  ['München RIS', (c) => c.dataSources.councilMeetings?.muenchenRis !== undefined],
   ['LAGeSo Bathing Water', berlinOnly],
   ['LAGeSo Wastewater Monitoring', berlinOnly],
   ['RKI AMELAG Wastewater Surveillance', berlinOnly],
   ['Bundesagentur für Arbeit', berlinOnly],
   ['Amt für Statistik Berlin-Brandenburg', berlinOnly],
   ['Berliner Feuerwehr Open Data', berlinOnly],
+  // ingest-feeds classifies news items and ingest-safety places police reports with the LLM
+  ['OpenAI', (c) => c.feeds.length > 0 || c.dataSources.police !== undefined],
 ];
 
 describe('SourcesPage credits per city', () => {
@@ -130,12 +138,15 @@ describe('SourcesPage credits per city', () => {
   it.each(CITIES.map((c) => [c.id, c] as const))('credits each news and police feed of %s, and no other news source', (id, city) => {
     renderCity(id);
     const cards = creditedCards();
-    const feedHosts = new Set(city.feeds.map((f) => new URL(f.url).hostname));
-    const creditedHosts = new Set(cards.map((card) => card.host));
+    // Compared by site, not host: a feed often has its own host (feed.ksta.de,
+    // nachrichtenfeeds.br.de) while the credit links the publisher's site.
+    const site = (url: string) => new URL(url).hostname.split('.').slice(-2).join('.');
+    const feedSites = new Set(city.feeds.map((f) => site(f.url)));
+    const creditedSites = new Set(cards.map((card) => site(`https://${card.host}`)));
 
-    for (const host of feedHosts) expect(creditedHosts, host).toContain(host);
-    if (city.dataSources.police) expect(creditedHosts).toContain(new URL(city.dataSources.police.url).hostname);
-    for (const card of cards.filter((c) => c.section === 'News')) expect(feedHosts, card.name).toContain(card.host);
+    for (const s of feedSites) expect(creditedSites, s).toContain(s);
+    if (city.dataSources.police) expect(creditedSites).toContain(site(city.dataSources.police.url));
+    for (const card of cards.filter((c) => c.section === 'News')) expect(feedSites, card.name).toContain(site(`https://${card.host}`));
   });
 
   it.each(CITIES.map((c) => [c.id] as const))('credits the host of the noise map on %s', (id) => {
@@ -167,9 +178,13 @@ describe('SourcesPage licence credits', () => {
     'LAGeSo Wastewater Monitoring': 'Source: Lageso Berlin and Berliner Wasserbetriebe, dl-de/by-2-0.',
     'Amt für Statistik Berlin-Brandenburg': 'Source: Amt für Statistik Berlin-Brandenburg, CC BY.',
     'VIZ Berlin': 'Source: Digitale Plattform Stadtverkehr Berlin, dl-de/by-2-0.',
+    'Baustellen Hamburg (Bauweiser)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    'Baustellen Köln (Offene Daten Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
+    'Baustellen München (Geoportal)': 'Source: Landeshauptstadt München – opendata.muenchen.de, dl-de/by-2-0.',
     'Berlin Budget (Doppelhaushalt)': 'Licensed CC BY.',
     'ALLRIS OParl (BVV)': 'Licensed CC BY 3.0 DE.',
-    'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/by-2-0.',
+    'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/zero-2-0.',
+    'Stadt Köln Open Data (Events)': 'Licensed dl-de/zero-2-0.',
   };
 
   it('finds every listed source on some city page', () => {
@@ -228,7 +243,7 @@ describe('SourcesPage WAQI credit', () => {
     expect(waqi.getAttribute('href')).toBe('https://waqi.info/');
     const card = waqi.parentElement!;
     expect(within(card).getByText(
-      /Data from the Umweltbundesamt \(German Environment Agency\) and the Berlin air quality monitoring network \(BLUME\), via the World Air Quality Index Project\./,
+      /Data from the European Environment Agency and the Berlin air quality monitoring network \(BLUME\), via the World Air Quality Index Project\./,
     )).toBeTruthy();
     expect(within(card).getByText(/not archived/)).toBeTruthy();
 

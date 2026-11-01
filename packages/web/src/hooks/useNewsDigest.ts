@@ -1,10 +1,12 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api, type NewsDigest, type ApiResponse } from '../lib/api.js';
 
-export function useNewsDigest(cityId: string) {
+/** `enabled` false for a city without news feeds. */
+export function useNewsDigest(cityId: string, enabled = true) {
   const query = useQuery<ApiResponse<NewsDigest>>({
     queryKey: ['news', 'digest', cityId],
     queryFn: () => api.getNewsDigest(cityId),
+    enabled,
     refetchInterval: 5 * 60 * 1000,
     refetchIntervalInBackground: false,
     staleTime: 2 * 60 * 1000,

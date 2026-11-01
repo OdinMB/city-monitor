@@ -34,10 +34,8 @@ function Dashboard() {
   useBootstrap(city.id);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-city', city.id);
     document.title = `City Monitor — ${city.name}`;
-    return () => document.documentElement.removeAttribute('data-city');
-  }, [city.id, city.name]);
+  }, [city.name]);
 
   return (
     <Shell>
@@ -59,6 +57,15 @@ function Home() {
 function CityRoute() {
   const { cityId } = useParams<{ cityId: string }>();
   const config = cityId ? getCityConfig(cityId) : undefined;
+  const configId = config?.id;
+
+  // The city's colours (globals.css, [data-city]) on every page of the city:
+  // its dashboard and its Sources page.
+  useEffect(() => {
+    if (!configId) return;
+    document.documentElement.setAttribute('data-city', configId);
+    return () => document.documentElement.removeAttribute('data-city');
+  }, [configId]);
 
   if (!config) {
     return <Navigate to="/" replace />;

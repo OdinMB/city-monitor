@@ -145,8 +145,8 @@ export function CityMap() {
   // map draws only what this city has, and asks the API for nothing else.
   const available = useMemo(() => cityLayers(city), [city]);
   const { data: transitAlerts } = useTransit(city.id, available.traffic.includes('public-transport'));
-  const { data: newsDigest } = useNewsDigest(city.id);
-  const { data: safetyReports } = useSafety(city.id);
+  const { data: newsDigest } = useNewsDigest(city.id, available.news.includes('news'));
+  const { data: safetyReports } = useSafety(city.id, available.news.includes('police'));
   const { data: ninaWarnings } = useNina(city.id);
   const { data: pharmacyList } = usePharmacies(city.id, available.emergencies.includes('pharmacies'));
   const { data: aedList } = useAeds(city.id, available.emergencies.includes('aeds'));

@@ -20,17 +20,19 @@ export const hamburg: CityConfig = {
   },
   theme: { accent: '#004B93' },
   feeds: [
-    { name: 'NDR Hamburg', url: 'https://www.ndr.de/nachrichten/hamburg/index-rss.xml', tier: 1, type: 'mainstream', lang: 'de' },
-    { name: 'Hamburger Abendblatt', url: 'https://www.abendblatt.de/hamburg/rss', tier: 1, type: 'mainstream', lang: 'de' },
+    // Licence verdicts and why Abendblatt and hamburg.de are gone: .context/news.md, "Feed status".
+    // NDR's old index-rss.xml redirects to an RSS 1.0 (RDF) feed, which the parser can't read.
+    { name: 'NDR Hamburg', url: 'https://www.ndr.de/nachrichten/hamburg/index~rss2.xml', tier: 1, type: 'mainstream', lang: 'de' },
     { name: 'MOPO', url: 'https://www.mopo.de/feed/', tier: 2, type: 'mainstream', lang: 'de' },
-    { name: 'hamburg.de News', url: 'https://www.hamburg.de/rss/aktuelles/', tier: 1, type: 'gov', lang: 'de' },
+    { name: 'Feuerwehr Hamburg', url: 'https://www.presseportal.de/rss/dienststelle_82522.rss2', tier: 2, type: 'gov', lang: 'de' },
   ],
   dataSources: {
     weather: { provider: 'brightsky', lat: 53.5511, lon: 9.9937 },
     // HVV transport.rest API is deprecated and offline (March 2026) — no free alternative
     police: {
       provider: 'rss',
-      url: 'https://www.presseportal.de/rss/dienststelle_6013.rss2',
+      // Polizei Hamburg's presseportal newsroom (6013, used until 2026-11-01, is Polizeipräsidium Mittelfranken)
+      url: 'https://www.presseportal.de/rss/dienststelle_6337.rss2',
       districts: [
         // Bezirke (longer compound names before shorter substrings)
         'Hamburg-Mitte', 'Hamburg-Nord',
@@ -72,6 +74,9 @@ export const hamburg: CityConfig = {
       ],
     },
     nina: { ars: '020000000000' },
+    // Bauweiser construction sites on main roads (dl-de/by-2.0). The Transparenzportal's
+    // baustellen-hamburg WFS is an archive frozen in 2020.
+    roadworks: { provider: 'hamburg-ogc', url: 'https://api.hamburg.de/datasets/v1/baustellen/collections/baustelle/items?f=json&limit=1000' },
     pollen: {
       provider: 'dwd',
       regionId: 10,         // Schleswig-Holstein und Hamburg

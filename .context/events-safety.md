@@ -26,7 +26,7 @@ interface SafetyReport {
 
 ### District Extraction
 
-`extractDistrict()` returns the first name from the city's `dataSources.police.districts` that appears in the report title. Berlin lists its districts and larger neighbourhoods (Mitte, Kreuzberg, …); Hamburg lists its Bezirke and Stadtteile, longer compound names before the shorter names they contain (e.g. `Altona-Altstadt` before `Altona`). A city without a list gets no district.
+`extractDistrict()` returns the first name from the city's `dataSources.police.districts` that appears in the report title. Berlin lists its districts and larger neighbourhoods (Mitte, Kreuzberg, …); Hamburg lists its Bezirke and Stadtteile, longer compound names before the shorter names they contain (e.g. `Altona-Altstadt` before `Altona`). Köln lists its 9 Stadtbezirke, then Stadtteile in the same order rule (`Weidenpesch` before `Weiden` and `Pesch`), leaving out names that are common words or parts of other words (`Brück`, `Rath`, `Wahn`, `Weiß`, `Eil`, `Esch`, `Lind`); `config.test.ts` checks that no name contains an earlier one. The match is case-sensitive and the district is only a label in the popup: nothing joins it to political or boundary data, so a city without political data or district outlines (Köln) loses nothing. A city without a list gets no district.
 
 ### Location Extraction
 
@@ -35,7 +35,11 @@ Map pins come from two steps: `geolocateReports()` (`lib/openai.ts`, model `OPEN
 ### Data Sources
 
 - **Berlin:** `https://www.berlin.de/presse/pressemitteilungen/index/feed?institutions[]=Polizei+Berlin`
-- **Hamburg:** `https://www.presseportal.de/rss/dienststelle_6013.rss2`
+- **Hamburg:** `https://www.presseportal.de/rss/dienststelle_6337.rss2` (Polizei Hamburg). Until 2026-11-01 the config pointed at newsroom 6013, which is Polizeipräsidium Mittelfranken, so Hamburg showed Nürnberg and Fürth reports; old rows go with the safety retention. Find a force's newsroom number on `presseportal.de/blaulicht/l/<state>` and check the feed's `<title>` before wiring it.
+- **Köln:** `https://www.presseportal.de/rss/dienststelle_12415.rss2` (Polizei Köln, added 2026-11-01; channel "Presseportal.de - Polizei Köln", titles `POL-K: …`). The force also covers Leverkusen (titles with `-LEV` in the case number), so `Leverkusen` closes the district list; the LLM place extraction and geocoding decide the pin. Same presseportal licence as Hamburg (below).
+- **München:** none. Polizeipräsidium München is not a presseportal newsroom, and polizei.bayern.de has no RSS and a `robots.txt` with `User-agent: *` / `Disallow: /`, although its imprint allows reprinting press releases with attribution. Building a scraper waits on the press office's permission. Feuerwehr München's presseportal feed is a news feed instead (`news.md`).
+
+Licence (checked 2026-11-01): presseportal's terms (`/nutzungsbedingungen`) allow editorial use and name processing "mithilfe von künstlicher Intelligenz" as part of it, with media-law responsibility passing to the user; use "für eigene Geschäftszwecke" needs news aktuell's written permission. Automatically embedding ots content on a third-party site formally needs an application, with these rules (`api.presseportal.de/nutzungsbestimmungen/`): show `(ots)`, link the original, publish any usage notes, hide after 2 years. `robots.txt` blocks AI training crawlers but not `/rss/`; no RSL file, no `tdmrep.json`. No explicit AI-input ban, so the feed stays; whether to file the embedding application is open.
 
 Source URL configured per city in `dataSources.police.url`.
 
@@ -43,11 +47,11 @@ Source URL configured per city in `dataSources.police.url`.
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-events.ts`) — Runs every 6 hours. For each city with `dataSources.events` (Berlin only), fetches every configured source in turn (kulturdaten.berlin, Ticketmaster, go~mus), keeps future events, and saves each source's events to the DB (`saveEvents`). Then merges all sources, sorts by date, caps at 200 (`MAX_FUTURE_EVENTS`) and writes `CityEvent[]` to cache key `{cityId}:events:upcoming` (TTL 6h); an empty merge leaves the cache as it was. A failing source is logged and skipped.
+1. **Ingestion** (`packages/server/src/cron/ingest-events.ts`) — Runs every 6 hours. For each city with `dataSources.events` (Berlin and Köln), fetches every configured source in turn (kulturdaten.berlin, Ticketmaster, go~mus for Berlin; Stadt Köln open data for Köln), keeps future events, and saves each source's events to the DB (`saveEvents`). Then merges all sources, sorts by date, caps at 200 (`MAX_FUTURE_EVENTS`) and writes `CityEvent[]` to cache key `{cityId}:events:upcoming` (TTL 6h); an empty merge leaves the cache as it was. A failing source is logged and skipped.
 
 2. **API** (`packages/server/src/routes/events.ts`) — `GET /api/:city/events` returns cached events, falls back to the DB (`loadEvents`), then `[]`. Past events are filtered out on every read.
 
-3. **Frontend** (`packages/web/src/components/strips/EventsStrip.tsx`) — `useEvents()` (refetch 30 min). Source filter (All / Community / Tickets / Museums), shown when at least two sources have events; category filter pills for categories present; up to 25 events (`MAX_VISIBLE`). Each row shows category icon, title, day and time, and a "Free" badge; rows with detail expand to venue, description, end date, price and a link.
+3. **Frontend** (`packages/web/src/components/strips/EventsStrip.tsx`) — `useEvents()` (refetch 30 min). Source filter (All / Community / Tickets / Museums / City), shown when at least two sources have events (so never for Köln, which has one); category filter pills for categories present; up to 25 events (`MAX_VISIBLE`). Each row shows category icon, title, day and time, and a "Free" badge; rows with detail expand to venue, description, end date, price and a link.
 
 ### Data Sources
 
@@ -56,28 +60,30 @@ Configured per city as `EventSourceConfig[]` (`source`, `url`, optional `lookahe
 - **kulturdaten.berlin API** (Technologiestiftung Berlin; free, no API key): `https://api-v2.kulturdaten.berlin/api/events`. Events from Berlin district calendars (Bezirkskalender) for the next `lookaheadDays` (default 14), up to 3 pages of 50, published events only. Swagger docs: `https://api-v2.kulturdaten.berlin/api/docs/`
 - **Ticketmaster Discovery API**: `https://app.ticketmaster.com/discovery/v2/events.json`, queried by city name and country, 100 events. Skipped without `TICKETMASTER_CONSUMER_KEY` (see `deployment.md`).
 - **go~mus** (Berlin state museums): `https://smb.gomus.de/api/v4/events`, bookable events; the date is the first upcoming booking time.
+- **Stadt Köln open data** (`source: 'stadt-koeln'`, Köln): `https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php?ndays=<lookaheadDays>&nobrs=1`, JSON `{ count, items, success }`. Only events the city runs itself (libraries, museums, town hall, district offices), ~110 in 14 days. Licence dl-de/zero-2.0 ([dataset](https://www.offenedaten-koeln.de/dataset/veranstaltungen-der-stadt-koeln)), credited on the Sources page anyway. Each item has `title`, `description`, `beginndatum`/`endedatum` (dates), a free-text `uhrzeit` ("von 18:30 bis 19:30", "15 bis 16:30 Uhr"; `koelnStartTime` takes the first hour, else midnight = no time shown), `veranstaltungsort` + `stadtteil` (joined as venue), `preis` (free when it says kostenlos/Eintritt frei, else kept as the price) and `link` (rewritten to https; its numeric id becomes `stadt-koeln-<id>`). Dates are offset-less local time, like kulturdaten. An exhibition that began before today is dropped by the future-only filter, as for every source. The http URL answers 403; use https.
+- **München:** no open events feed (opendata.muenchen.de has only historic CSVs; muenchen.de's event pages are private-use only), so no events source.
 
 ### Key Types
 
 ```typescript
 interface CityEvent {
-  id: string;           // source id (go~mus ids are prefixed "gomus-")
+  id: string;           // source id (go~mus ids are prefixed "gomus-", Köln ids "stadt-koeln-")
   title: string;
   venue?: string;
   date: string;         // ISO date+time
   endDate?: string;
   category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'museum' | 'other';
   url: string;          // empty for kulturdaten and go~mus
-  description?: string; // go~mus only (HTML stripped, 500 chars)
+  description?: string; // go~mus (HTML stripped) and Stadt Köln, 500 chars
   free?: boolean;
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus';
-  price?: string;       // Ticketmaster price range
+  source: 'kulturdaten' | 'ticketmaster' | 'gomus' | 'stadt-koeln';
+  price?: string;       // Ticketmaster price range, Stadt Köln `preis` text
 }
 ```
 
 ### Category Classification
 
-- **kulturdaten:** keywords in the title (German and English): Konzert/Musik -> music, Ausstellung/Galerie -> art, Theater/Bühne -> theater, Markt/Flohmarkt -> market, Food/Essen -> food, Sport/Lauf -> sport, Workshop/Treff -> community, Museum -> museum, default -> other.
+- **kulturdaten and Stadt Köln:** keywords in the title (German and English): Konzert/Musik -> music, Ausstellung/Galerie -> art, Theater/Bühne -> theater, Markt/Flohmarkt -> market, Food/Essen -> food, Sport/Lauf -> sport, Workshop/Treff -> community, Museum -> museum, default -> other.
 - **Ticketmaster:** the segment name: Music -> music, Sports -> sport, Arts & Theatre -> theater, default -> other.
 - **go~mus:** Bühne/Musik/Film/Konzert -> music, Workshop/Kurs/Führung -> community, default -> museum.
 

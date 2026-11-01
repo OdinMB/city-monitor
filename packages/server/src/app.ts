@@ -70,7 +70,7 @@ import type { CityConfig } from '@city-monitor/shared';
  * 'berlin'). Their handlers return early when Berlin is not active, so they
  * also get no freshness check and no startup run then.
  */
-const BERLIN_ONLY_JOBS = new Set([
+export const BERLIN_ONLY_JOBS: ReadonlySet<string> = new Set([
   'ingest-bathing',
   'ingest-wastewater',
   'ingest-labor-market',

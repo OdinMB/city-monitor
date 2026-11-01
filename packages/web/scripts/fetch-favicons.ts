@@ -11,14 +11,21 @@ const FAVICON_SOURCES: Record<string, string> = {
   tagesspiegel: 'www.tagesspiegel.de',
   'berliner-morgenpost': 'www.morgenpost.de',
   'berliner-zeitung': 'www.berliner-zeitung.de',
-  'taz-berlin': 'taz.de',
   'polizei-berlin': 'www.berlin.de',
   gruenderszene: 'www.businessinsider.de',
   // Hamburg
   'ndr-hamburg': 'www.ndr.de',
-  'hamburger-abendblatt': 'www.abendblatt.de',
   mopo: 'www.mopo.de',
-  'hamburg-de-news': 'www.hamburg.de',
+  'feuerwehr-hamburg': 'www.presseportal.de',
+  // Köln
+  'wdr-rheinland': 'www1.wdr.de',
+  'koelner-stadt-anzeiger': 'www.ksta.de',
+  express: 'www.express.de',
+  // Google has no icon for www.stadt-koeln.de (404, default globe); the bare domain has the coat of arms.
+  'stadt-koeln': 'stadt-koeln.de',
+  // München
+  'br24-oberbayern': 'www.br.de',
+  'feuerwehr-muenchen': 'www.presseportal.de',
 };
 
 const OUT_DIR = join(import.meta.dirname, '..', 'public', 'favicons');

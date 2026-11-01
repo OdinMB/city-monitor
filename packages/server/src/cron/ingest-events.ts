@@ -143,6 +143,9 @@ async function ingestCityEvents(
         case 'gomus':
           fetched = await fetchGomus(config.url);
           break;
+        case 'stadt-koeln':
+          fetched = await fetchKoelnEvents(config.url, config.lookaheadDays ?? 14);
+          break;
       }
 
       // Filter to future events only
@@ -360,6 +363,80 @@ function transformGomusEvent(raw: GomusEvent, now: string): CityEvent | null {
     source: 'gomus',
     description,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Stadt Köln open data (the city's own events; dl-de/zero-2.0)
+// ---------------------------------------------------------------------------
+
+interface KoelnEvent {
+  link?: string | null;
+  beginndatum?: string | null;
+  endedatum?: string | null;
+  title?: string | null;
+  description?: string | null;
+  uhrzeit?: string | null;
+  veranstaltungsort?: string | null;
+  stadtteil?: string | null;
+  preis?: string | null;
+}
+
+const KOELN_FREE = /kostenlos|kostenfrei|eintritt frei|gebührenfrei|entgeltfrei|^frei$/i;
+
+/**
+ * The start time in a Köln `uhrzeit` text ("von 18:30 bis 19:30", "15 bis
+ * 16:30 Uhr", "13-19 Uhr"), or midnight, which the tile shows as no time.
+ */
+export function koelnStartTime(text: string | null | undefined): string {
+  const m = (text ?? '').match(/(\d{1,2})(?::(\d{2}))?\s*(?:Uhr|bis|-|–)/);
+  if (!m || Number(m[1]) > 23) return '00:00:00';
+  return `${m[1]!.padStart(2, '0')}:${m[2] ?? '00'}:00`;
+}
+
+/** The items of the Köln events feed, as events in offset-less local time like the kulturdaten adapter. */
+export function parseKoelnEvents(raw: { items?: KoelnEvent[] }): CityEvent[] {
+  const events: CityEvent[] = [];
+  for (const item of raw.items ?? []) {
+    const title = item.title?.trim();
+    const start = item.beginndatum?.trim() ?? '';
+    if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(start)) continue;
+
+    const end = item.endedatum?.trim();
+    const place = item.veranstaltungsort?.trim();
+    const quarter = item.stadtteil?.trim();
+    const venue = [place, quarter && !place?.includes(quarter) ? quarter : undefined].filter(Boolean).join(', ');
+    const price = item.preis?.trim();
+    const free = !!price && KOELN_FREE.test(price);
+    const link = item.link?.trim().replace(/^http:\/\//, 'https://') ?? '';
+    const id = link.match(/\/daten\/(\d+)\//)?.[1] ?? `${start}-${title}`;
+
+    events.push({
+      id: `stadt-koeln-${id}`,
+      title,
+      venue: venue || undefined,
+      date: `${start}T${koelnStartTime(item.uhrzeit)}`,
+      endDate: end && /^\d{4}-\d{2}-\d{2}$/.test(end) && end !== start ? end : undefined,
+      category: classifyEventTitle(title),
+      url: link,
+      description: item.description?.trim().slice(0, 500) || undefined,
+      free: free || undefined,
+      source: 'stadt-koeln',
+      price: !free && price ? price.slice(0, 80) : undefined,
+    });
+  }
+  return events;
+}
+
+async function fetchKoelnEvents(baseUrl: string, lookaheadDays: number): Promise<CityEvent[]> {
+  const url = `${baseUrl}?ndays=${lookaheadDays}&nobrs=1`;
+  const response = await log.fetch(url, {
+    signal: AbortSignal.timeout(EVENTS_TIMEOUT_MS),
+    headers: { 'User-Agent': 'CityMonitor/1.0 (+https://citymonitor.app)', 'Accept': 'application/json' },
+  });
+  if (!response.ok) return [];
+  const raw = await response.json() as { success?: boolean; items?: KoelnEvent[] };
+  if (raw.success === false) return [];
+  return parseKoelnEvents(raw);
 }
 
 // ---------------------------------------------------------------------------

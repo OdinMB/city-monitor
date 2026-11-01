@@ -10,14 +10,20 @@ export const FAVICON_SLUGS: Record<string, string> = {
   Tagesspiegel: 'tagesspiegel',
   'Berliner Morgenpost': 'berliner-morgenpost',
   'Berliner Zeitung': 'berliner-zeitung',
-  'taz Berlin': 'taz-berlin',
   'Polizei Berlin': 'polizei-berlin',
   'Gründerszene Berlin': 'gruenderszene',
   // Hamburg
   'NDR Hamburg': 'ndr-hamburg',
-  'Hamburger Abendblatt': 'hamburger-abendblatt',
   MOPO: 'mopo',
-  'hamburg.de News': 'hamburg-de-news',
+  'Feuerwehr Hamburg': 'feuerwehr-hamburg',
+  // Köln
+  'WDR Rheinland': 'wdr-rheinland',
+  'Kölner Stadt-Anzeiger': 'koelner-stadt-anzeiger',
+  EXPRESS: 'express',
+  'Stadt Köln': 'stadt-koeln',
+  // München
+  'BR24 Oberbayern': 'br24-oberbayern',
+  'Feuerwehr München': 'feuerwehr-muenchen',
 };
 
 /** URL of a news source's favicon, or null when the source has none. */

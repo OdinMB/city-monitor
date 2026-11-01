@@ -4,9 +4,9 @@ import type { CityEvent } from '../../lib/api.js';
 import { EventsStrip } from './EventsStrip.js';
 
 const CATEGORIES: CityEvent['category'][] = ['music', 'art', 'theater', 'food', 'market', 'sport', 'community', 'museum', 'other'];
-const SOURCES: CityEvent['source'][] = ['kulturdaten', 'ticketmaster', 'gomus'];
+const SOURCES: CityEvent['source'][] = ['kulturdaten', 'ticketmaster', 'gomus', 'stadt-koeln'];
 
-// Every category from all three sources: both filter rows render, each wider than a phone-width tile.
+// Every category from all sources: both filter rows render, each wider than a phone-width tile.
 const EVENTS: CityEvent[] = CATEGORIES.map((category, i) => ({
   id: `e${i}`,
   title: `Event ${i}`,

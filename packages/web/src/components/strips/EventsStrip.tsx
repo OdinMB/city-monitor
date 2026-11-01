@@ -27,13 +27,14 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 const ALL_CATEGORIES = ['all', 'music', 'art', 'theater', 'food', 'market', 'sport', 'community', 'museum', 'other'] as const;
 
-type SourceFilter = 'all' | 'kulturdaten' | 'ticketmaster' | 'gomus';
+type SourceFilter = 'all' | CityEvent['source'];
 
 const SOURCE_FILTERS: { key: SourceFilter; labelKey: string }[] = [
   { key: 'all', labelKey: 'panel.events.all' },
   { key: 'kulturdaten', labelKey: 'panel.events.source.community' },
   { key: 'ticketmaster', labelKey: 'panel.events.source.tickets' },
   { key: 'gomus', labelKey: 'panel.events.source.museums' },
+  { key: 'stadt-koeln', labelKey: 'panel.events.source.city' },
 ];
 
 const MAX_VISIBLE = 25;
