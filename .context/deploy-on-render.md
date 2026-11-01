@@ -92,7 +92,7 @@ After the blueprint deploys, skip to [Post-Deploy Verification](#post-deploy-ver
 |-----|-------|-------|
 | `NODE_ENV` | `production` | Required |
 | `PORT` | `3001` | Required |
-| `ACTIVE_CITIES` | `berlin` | Required. Use `berlin,hamburg` for multi-city |
+| `ACTIVE_CITIES` | `berlin,hamburg` | Required. Must name every city the web build activates |
 | `DATABASE_URL` | *(paste the Internal Database URL from Step 1)* | Required. Or use "Connect a Database" button to auto-inject |
 | `ALLOWED_ORIGINS` | `https://city-monitor-web.onrender.com` | Required unless you serve the site on citymonitor.app. Every origin your static site is served on, comma-separated (add your custom domain later). The browser calls the API cross-origin, and CORS refuses any other origin |
 | `OPENAI_API_KEY` | *(your key)* | Optional, but news needs it — without it the news tile stays empty and there is no briefing |

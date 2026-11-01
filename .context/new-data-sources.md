@@ -27,6 +27,7 @@ Follow every step when adding a new data source. Skip items marked with a surfac
 16. **Map rendering** (map layer) — add an `update*Layer()` / `update*Markers()` function (plus its popup HTML builder) in `packages/web/src/components/map/layers/<name>.ts`, then the reactive wiring in `packages/web/src/components/map/CityMap.tsx`
 17. **Dashboard tile** (tile) — create strip component in `packages/web/src/components/strips/<Name>Strip.tsx`, mount in `packages/web/src/components/layout/CommandLayout.tsx`. If it shows freshness, add a row for its feed to `packages/web/src/lib/freshness.ts` and use `staleAfter()`
 18. **i18n** — add translation keys in all 4 locale files (`en.json`, `de.json`, `tr.json`, `ar.json`)
+19. **City feature** — add a `CityFeature` in `shared/types.ts`, its ingestion condition in `packages/server/src/lib/city-features.ts` (the same check the cron job makes), and the feature in the `features` list of each web city config that has the source. Gate the tile, map toggle, hook (`enabled`) and Sources credit on it (`.context/frontend.md`, "City Context"). The parity test in `packages/web/src/config/index.test.ts` fails until server and web agree.
 
 ### Favicons (if adding news feeds)
 

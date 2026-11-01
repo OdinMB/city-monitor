@@ -160,3 +160,44 @@ describe('index guard on model responses', () => {
     expect(result?.map((r) => r.index)).toEqual([10, 11]);
   });
 });
+
+describe('places outside the city are not pinned', () => {
+  beforeEach(() => {
+    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    vi.mocked(invokeStructured).mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  // The geocode mock answers Berlin's centre (52.52, 13.41) for every query —
+  // what a Berlin landmark label would give for a Hamburg story.
+  it('drops a news item location that lies outside the city', async () => {
+    vi.mocked(invokeStructured).mockResolvedValueOnce(modelReturns({
+      items: [{ index: 0, relevant_to_city: true, category: 'politics', importance: 0.7, locationLabel: 'Rotes Rathaus, Mitte' }],
+    }));
+    const result = await filterAndGeolocateNews('hamburg', 'Hamburg', [{ title: 'Senat beschließt Haushalt', sourceName: 'NDR Hamburg' }]);
+    expect(result?.[0]?.locationLabel).toBe('Rotes Rathaus, Mitte');
+    expect(result?.[0]?.lat).toBeUndefined();
+    expect(result?.[0]?.lon).toBeUndefined();
+  });
+
+  it('keeps a news item location inside the city', async () => {
+    vi.mocked(invokeStructured).mockResolvedValueOnce(modelReturns({
+      items: [{ index: 0, relevant_to_city: true, category: 'politics', importance: 0.7, locationLabel: 'Rotes Rathaus, Mitte' }],
+    }));
+    const result = await filterAndGeolocateNews('berlin', 'Berlin', [{ title: 'Senat beschließt Haushalt', sourceName: 'rbb24' }]);
+    expect(result?.[0]?.lat).toBe(52.52);
+  });
+
+  it('drops a police report location that lies outside the city', async () => {
+    vi.mocked(invokeStructured).mockResolvedValueOnce(modelReturns({
+      items: [{ index: 0, locationLabel: 'Alexanderplatz' }],
+    }));
+    const result = await geolocateReports('hamburg', 'Hamburg', [{ title: 'Raub in St. Georg' }]);
+    expect(result?.[0]?.locationLabel).toBe('Alexanderplatz');
+    expect(result?.[0]?.lat).toBeUndefined();
+  });
+});

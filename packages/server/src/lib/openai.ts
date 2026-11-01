@@ -6,6 +6,7 @@
  */
 
 import { createLogger } from './logger.js';
+import { getCityConfig } from '../config/index.js';
 import { resolveSiteTarget, invokeStructured, describeTarget, estimateCostUsd, type ModelTarget } from './llm-client.js';
 import { buildBriefingRequest, buildFilterRequest, buildGeoRequest, VALID_CATEGORIES, type BriefingMoment, type FilterResult } from './llm-prompts.js';
 
@@ -180,6 +181,18 @@ async function classifyBatch(
   return { items: checked.items.map((item) => ({ ...item, index: item.index + startIndex })), ...tokens };
 }
 
+/**
+ * Whether a geocoded point lies inside the city's bounding box. The geocoder
+ * searches "<label>, <city>" across Germany, so a label naming another city's
+ * landmark (the classifier's examples are Berlin's) can resolve elsewhere; such
+ * a point gets no pin. A city without a known box keeps the point.
+ */
+function insideCity(cityId: string, point: { lat: number; lon: number }): boolean {
+  const box = getCityConfig(cityId)?.boundingBox;
+  if (!box) return true;
+  return point.lat >= box.south && point.lat <= box.north && point.lon >= box.west && point.lon <= box.east;
+}
+
 export async function filterAndGeolocateNews(
   cityId: string,
   cityName: string,
@@ -242,7 +255,7 @@ export async function filterAndGeolocateNews(
 
       if (label) {
         const geo = await geocode(label, cityName);
-        if (geo) {
+        if (geo && insideCity(cityId, geo)) {
           filtered.lat = geo.lat;
           filtered.lon = geo.lon;
         }
@@ -316,7 +329,7 @@ export async function geolocateReports(
 
       if (label) {
         const geo = await geocode(label, cityName);
-        if (geo) {
+        if (geo && insideCity(cityId, geo)) {
           geoResult.lat = geo.lat;
           geoResult.lon = geo.lon;
         }

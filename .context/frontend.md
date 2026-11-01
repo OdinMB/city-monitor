@@ -175,6 +175,8 @@ The privacy page lists every `localStorage` key the app uses (`STORED_VALUES` in
 
 `CityProvider` wraps each city dashboard, provides `useCityConfig()` hook that returns the active `CityConfig` object. City ID comes from the URL `:cityId` param. Config loaded from `packages/web/src/config/` (mirrors server config structure).
 
+**Per-city features.** Each web city config lists its `features` (`CityFeature` in `shared/types.ts`). Tiles in `CommandLayout`, map layers and sub-layers (`packages/web/src/lib/map-layers.ts`), the number-key shortcuts, each polling hook's `enabled` flag and the Sources page credits all follow that list, so a city sees only what it has data for: a missing source hides its tile or toggle rather than showing an empty or "all clear" state. The server derives its own list from its config (`packages/server/src/lib/city-features.ts`); `packages/web/src/config/index.test.ts` fails when the two disagree. Web-only features (`crisis`, `rentMap`, `noiseMap`, `noiseTotal`) are listed by hand. The dashboard grid uses `grid-flow-row-dense`, so tiles that drop out leave no holes.
+
 `getAllCities()` returns the active city configs. `getDefaultCityId()` returns `'berlin'` while Berlin is active, otherwise the first active city, so the home redirect never targets an inactive city (which would redirect back to `/` in a loop).
 
 ## Map (`packages/web/src/components/map/CityMap.tsx`)

@@ -133,7 +133,9 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 
 ## City Configuration (`packages/server/src/config/`)
 
-- `index.ts` — `getActiveCities()` reads `ACTIVE_CITIES` env var (comma-separated IDs, default "berlin"), returns matching `CityConfig[]`. `getCityConfig(id)` for single lookup.
+- `index.ts` — `getActiveCities()` reads `ACTIVE_CITIES` env var (comma-separated IDs, default "berlin"; the Render blueprint sets `berlin,hamburg`), returns matching `CityConfig[]`. `getCityConfig(id)` for single lookup.
+- `lib/city-features.ts` — `cityFeatures(city)` lists the features the server ingests for a city, from the same conditions the jobs check; the web configs' `features` must match (`.context/frontend.md`, "City Context").
+- News and police map pins: a geocoded place outside the city's `boundingBox` gets no coordinates (`insideCity` in `lib/openai.ts`), since the classifier's location examples are Berlin's and the geocoder searches all of Germany.
 - `cities/berlin.ts` — Berlin config with 7 RSS feeds, weather (BrightSky), transit (VBB via `v6.vbb.transport.rest`, 12 stations), events (kulturdaten.berlin, Ticketmaster, gomus), police (berlin.de press-release RSS of Polizei Berlin).
 - `cities/hamburg.ts` — Hamburg config with 4 RSS feeds (NDR, Abendblatt, MOPO, hamburg.de), weather (BrightSky), police (presseportal.de RSS). No transit config, so Hamburg has no transit alerts.
 - `cities/koeln.ts` — Köln config with the Germany-wide sources only: weather (BrightSky, DWD warnings and UV matched by the name `Köln`), NINA (ARS `053150000000`), DWD pollen (region 40/41) and the PEGELONLINE Rhein gauge Köln. No feeds, police, transit, events or council meetings. Inactive on the server unless `ACTIVE_CITIES` names `koeln`, and inactive in the web build.
