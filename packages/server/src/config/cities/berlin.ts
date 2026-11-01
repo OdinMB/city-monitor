@@ -101,7 +101,8 @@ export const berlin: CityConfig = {
     },
     socialAtlas: {
       provider: 'mss-wfs',
-      wfsUrl: 'https://gdi.berlin.de/services/wfs/mss_2023',
+      // MSS 2025 (data as of 2024-12-31); the next edition, MSS 2027, is due in 2027
+      wfsUrl: 'https://gdi.berlin.de/services/wfs/mss_2025',
     },
     pollen: {
       provider: 'dwd',

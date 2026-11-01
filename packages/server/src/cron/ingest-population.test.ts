@@ -178,7 +178,7 @@ describe('ingest-population', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       expect(fetchSpy.mock.calls[0]![0]).toBe(
-        'https://download.statistik-berlin-brandenburg.de/1df9da7ea6dbfa3a/f6ac408f14cd/SB_A01-16-00_2025h02_BE.xlsx',
+        'https://download.statistik-berlin-brandenburg.de/fca0a030166493d0/1289b0921aa2/SB_A01-16-00_2026h01_BE.xlsx',
       );
       expect(mockLoadPopulationSummary).toHaveBeenCalledWith(db, 'berlin');
       expect(setSpy.mock.calls.map((c) => [c[0], c[2]])).toEqual([

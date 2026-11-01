@@ -11,7 +11,7 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
 ## Berlin
 
 - **Has:** everything. On top of the shared sources: 6 news feeds with AI briefing, police (berlin.de), VBB transit, events (kulturdaten.berlin, Ticketmaster, go~mus), Spree/Havel/Dahme gauges and bathing water, council meetings (BVV OParl + Abgeordnetenhaus), political data (Bundestag, Abgeordnetenhaus, district mayors), budget, social atlas, population, labour market, wastewater, fire brigade, Bürgeramt appointments (Firecrawl), live noise sensors, noise map, rent map.
-- **Stale data to check:** the hand-kept district-mayor table was last verified 2026-03-02, before the September 2026 Berlin elections.
+- **Stale data to check:** the hand-kept district-mayor table (verified 2026-11-01) has only Reinickendorf's and Spandau's mayors elected for the new term; the other ten BVVs had not yet elected their Bezirksamt, so it lists the outgoing mayors. Re-check in December 2026. The pinned editions (MSS 2025, Wohnlagenkarte 2026, population 2026h01, noise maps 2022, Doppelhaushalt 2026/27) are in the freshness inventory in [new-data-sources.md](new-data-sources.md).
 - **Ruled out:** BZ Berlin (AI-input ban), taz Berlin (terms forbid automated access; removed 2026-11-01).
 - **Pending requests:** none.
 

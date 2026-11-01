@@ -247,6 +247,26 @@ describe('constituencyToBezirk', () => {
   it('matches case-insensitively', () => {
     expect(constituencyToBezirk('mitte 1', bezirke)).toBe('Mitte');
   });
+
+  it('maps the Abgeordnetenhaus 2026–2031 constituency labels, one per Bezirk', () => {
+    // As abgeordnetenwatch labels them for period 176 (recorded 2026-11-01):
+    // four-digit numbers from Marzahn-Hellersdorf on, the same "<Bezirk> <n>" names.
+    const labels = [
+      '101 - Mitte 1 (Berlin 2026 - 2031)',
+      '201 - Friedrichshain-Kreuzberg 1 (Berlin 2026 - 2031)',
+      '301 - Pankow 1 (Berlin 2026 - 2031)',
+      '401 - Charlottenburg-Wilmersdorf 1 (Berlin 2026 - 2031)',
+      '501 - Spandau 1 (Berlin 2026 - 2031)',
+      '601 - Steglitz-Zehlendorf 1 (Berlin 2026 - 2031)',
+      '701 - Tempelhof-Schöneberg 1 (Berlin 2026 - 2031)',
+      '801 - Neukölln 1 (Berlin 2026 - 2031)',
+      '901 - Treptow-Köpenick 1 (Berlin 2026 - 2031)',
+      '1001 - Marzahn-Hellersdorf 1 (Berlin 2026 - 2031)',
+      '1101 - Lichtenberg 1 (Berlin 2026 - 2031)',
+      '1201 - Reinickendorf 1 (Berlin 2026 - 2031)',
+    ];
+    expect(labels.map((l) => constituencyToBezirk(normalizeConstituencyName(l), bezirke))).toEqual(bezirke);
+  });
 });
 
 describe('createPoliticalIngestion — weekly refresh', () => {

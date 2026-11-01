@@ -87,7 +87,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['go~mus (State Museums)', (c) => usesEvents(c, 'gomus')],
   ['service.berlin.de', (c) => c.dataSources.appointments !== undefined],
   ['Berlin Budget (Doppelhaushalt)', (c) => c.dataSources.budget !== undefined],
-  ['MSS 2023 (Social Atlas)', (c) => c.dataSources.socialAtlas !== undefined],
+  ['MSS 2025 (Social Atlas)', (c) => c.dataSources.socialAtlas !== undefined],
   ['Stadt Köln Open Data (Events)', (c) => usesEvents(c, 'stadt-koeln')],
   ['ALLRIS OParl (BVV)', (c) => (c.dataSources.councilMeetings?.bvv?.length ?? 0) > 0],
   ['PARDOK (Abgeordnetenhaus)', (c) => c.dataSources.councilMeetings?.parliament !== undefined],

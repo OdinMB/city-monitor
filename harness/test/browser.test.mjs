@@ -27,7 +27,7 @@ const OFF_PORT = [
   'https://tiles.basemaps.cartocdn.com/fonts/Open Sans Regular/0-255.pbf',
   'https://basemaps.cartocdn.com/gl/positron-gl-style/sprite.json',
   'http://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json',
-  'https://gdi.berlin.de/services/wms/wohnlagenadr2024?service=WMS&request=GetMap',
+  'https://gdi.berlin.de/services/wms/wohnlagenadr2026?service=WMS&request=GetMap',
   'https://scripts.simpleanalyticscdn.com/latest.js',
   PLANTED.networkUrl,
   'http://127.0.0.1:3001/api/health',

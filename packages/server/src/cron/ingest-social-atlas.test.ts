@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
-import { createSocialAtlasIngestion } from './ingest-social-atlas.js';
+import { createSocialAtlasIngestion, mssLayerNames } from './ingest-social-atlas.js';
 
-// Mock WFS response for index indicators layer (mss2023_indexind_542)
+// Mock WFS response for index indicators layer (mss2025_indexind_542)
 const mockIndexIndResponse = {
   type: 'FeatureCollection',
   features: [
@@ -39,14 +39,14 @@ const mockIndexIndResponse = {
       geometry: { type: 'MultiPolygon', coordinates: [[[[13.5, 52.5], [13.51, 52.5], [13.51, 52.51], [13.5, 52.51], [13.5, 52.5]]]] },
       properties: {
         plr_id: '99990101', plr_name: 'Unbewohnt', bez_id: '99',
-        ew: 0, kom: 'nicht bewohnt', zeit: 202212,
+        ew: 120, kom: 'ungültig (EW unter 300)', zeit: 202412,
         s1: null, s2: null, s3: null, s4: null,
       },
     },
   ],
 };
 
-// Mock WFS response for composite indices layer (mss2023_indizes_542)
+// Mock WFS response for composite indices layer (mss2025_indizes_542)
 const mockIndizesResponse = {
   type: 'FeatureCollection',
   features: [
@@ -90,9 +90,34 @@ function mockFetchResponses() {
   });
 }
 
+describe('mssLayerNames', () => {
+  it('derives both layer names from the edition in the WFS URL', () => {
+    expect(mssLayerNames('https://gdi.berlin.de/services/wfs/mss_2025')).toEqual({
+      indicators: 'mss_2025:mss2025_indexind_542',
+      indices: 'mss_2025:mss2025_indizes_542',
+    });
+    expect(mssLayerNames('https://gdi.berlin.de/services/wfs/mss_2027/').indicators).toBe('mss_2027:mss2027_indexind_542');
+  });
+
+  it('rejects a URL that names no edition', () => {
+    expect(() => mssLayerNames('https://gdi.berlin.de/services/wfs/mss')).toThrow(/mss_<year>/);
+  });
+});
+
 describe('ingest-social-atlas', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('requests the layers of the configured edition', async () => {
+    mockFetchResponses();
+
+    const cache = createCache();
+    await createSocialAtlasIngestion(cache)();
+
+    const urls = vi.mocked(globalThis.fetch).mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.startsWith('https://gdi.berlin.de/services/wfs/mss_2025?') && u.includes('typeNames=mss_2025:mss2025_indexind_542'))).toBe(true);
+    expect(urls.some((u) => u.includes('typeNames=mss_2025:mss2025_indizes_542'))).toBe(true);
   });
 
   it('fetches both WFS layers and caches GeoJSON', async () => {

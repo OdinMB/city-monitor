@@ -528,10 +528,10 @@
       "bathing": "Bathing Water"
     },
     "social": {
-      "unemployment": "Unemployment (2023)",
-      "single-parent": "Single-Parent HH (2023)",
-      "welfare": "Welfare Recipients (2023)",
-      "child-poverty": "Child Poverty (2023)",
+      "unemployment": "Unemployment (2025)",
+      "single-parent": "Single-Parent HH (2025)",
+      "welfare": "Welfare Recipients (2025)",
+      "child-poverty": "Child Poverty (2025)",
       "rent": "Rent"
     },
     "population": {

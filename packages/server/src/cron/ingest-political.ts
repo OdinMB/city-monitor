@@ -44,7 +44,11 @@ interface HandKeptTable {
  * by hand and with no open dataset to read them from.
  */
 const BEZIRKSBUERGERMEISTER: Record<string, HandKeptTable> = {
-  berlin: { lastVerified: '2026-03-02', source: 'https://berlin.de/rbmskzl/regierender-buergermeister/buergermeister-von-berlin/rat-der-buergermeister/', districts: [
+  // After the elections of 20 September 2026 the BVVs met on 29 October 2026.
+  // Reinickendorf elected its new Bezirksamt that evening, Spandau re-elected
+  // Frank Bewig; the other ten Bezirksämter were not yet elected on 2026-11-01,
+  // so their outgoing mayors stay in office until then (re-check December 2026).
+  berlin: { lastVerified: '2026-11-01', source: 'https://berlin.de/rbmskzl/regierender-buergermeister/buergermeister-von-berlin/rat-der-buergermeister/', districts: [
     { id: 'bm-mitte', name: 'Mitte', level: 'bezirk', representatives: [{ name: 'Stefanie Remlinger', party: 'Grüne', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-mitte/politik-und-verwaltung/bezirksamt/' }] },
     { id: 'bm-friedrichshain-kreuzberg', name: 'Friedrichshain-Kreuzberg', level: 'bezirk', representatives: [{ name: 'Clara Herrmann', party: 'Grüne', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-friedrichshain-kreuzberg/politik-und-verwaltung/bezirksamt/' }] },
     { id: 'bm-pankow', name: 'Pankow', level: 'bezirk', representatives: [{ name: 'Dr. Cordelia Koch', party: 'Grüne', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-pankow/politik-und-verwaltung/bezirksamt/' }] },
@@ -56,7 +60,7 @@ const BEZIRKSBUERGERMEISTER: Record<string, HandKeptTable> = {
     { id: 'bm-treptow-koepenick', name: 'Treptow-Köpenick', level: 'bezirk', representatives: [{ name: 'Oliver Igel', party: 'SPD', role: 'Bezirksbürgermeister', profileUrl: 'https://www.berlin.de/ba-treptow-koepenick/politik-und-verwaltung/bezirksamt/' }] },
     { id: 'bm-marzahn-hellersdorf', name: 'Marzahn-Hellersdorf', level: 'bezirk', representatives: [{ name: 'Nadja Zivkovic', party: 'CDU', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-marzahn-hellersdorf/politik-und-verwaltung/bezirksamt/' }] },
     { id: 'bm-lichtenberg', name: 'Lichtenberg', level: 'bezirk', representatives: [{ name: 'Martin Schaefer', party: 'CDU', role: 'Bezirksbürgermeister', profileUrl: 'https://www.berlin.de/ba-lichtenberg/politik-und-verwaltung/bezirksamt/' }] },
-    { id: 'bm-reinickendorf', name: 'Reinickendorf', level: 'bezirk', representatives: [{ name: 'Emine Demirbüken-Wegner', party: 'CDU', role: 'Bezirksbürgermeisterin', profileUrl: 'https://www.berlin.de/ba-reinickendorf/politik-und-verwaltung/bezirksamt/' }] },
+    { id: 'bm-reinickendorf', name: 'Reinickendorf', level: 'bezirk', representatives: [{ name: 'Sebastian Pieper', party: 'CDU', role: 'Bezirksbürgermeister', profileUrl: 'https://www.berlin.de/ba-reinickendorf/politik-und-verwaltung/bezirksamt/' }] },
   ] },
   // Elected by the Bezirksvertretungen after the local elections of
   // 14 September 2025; next local elections in 2030. One page per Stadtbezirk.

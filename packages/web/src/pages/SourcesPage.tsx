@@ -208,7 +208,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'Bundesagentur für Arbeit', url: 'https://statistik.arbeitsagentur.de/', description: 'Monthly unemployment rates, SGB II recipients, and underemployment data.' },
       { name: 'Amt für Statistik Berlin-Brandenburg', url: 'https://www.statistik-berlin-brandenburg.de/', description: 'Semi-annual population register statistics per planning area — population, age groups, foreign residents. Source: Amt für Statistik Berlin-Brandenburg, CC BY. City Monitor derives the shares and the population density.' },
-      { name: 'MSS 2023 (Social Atlas)', url: 'https://www.berlin.de/sen/sbw/stadtdaten/stadtwissen/monitoring-soziale-stadtentwicklung/', description: 'Biennial social indicators per planning area — unemployment, poverty, welfare rates.' },
+      { name: 'MSS 2025 (Social Atlas)', url: 'https://www.berlin.de/sen/sbw/stadtdaten/stadtwissen/monitoring-soziale-stadtentwicklung/', description: 'Biennial social indicators per planning area — unemployment, poverty, welfare rates.' },
       { name: 'Berlin Budget (Doppelhaushalt)', url: 'https://www.berlin.de/sen/finanzen/', description: 'City budget 2026 — revenues and expenses by district and function category. Licensed CC BY.' },
     ],
   },
@@ -230,7 +230,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'Sensor.Community', url: 'https://sensor.community/', description: 'Citizen-run air quality sensors — PM2.5 and PM10 readings. © Sensor.Community contributors, ODbL.' },
       { name: 'Sensor.Community DNMS', url: 'https://sensor.community/en/sensors/dnms/', description: 'Citizen-run noise sensors — LAeq, LAmin, LAmax readings (Berlin only). © Sensor.Community contributors, ODbL.' },
-      { name: 'Berlin Open Data (Rent Map)', url: 'https://daten.berlin.de/', description: 'Residential rent zone map (Wohnlagenkarte 2024) as WMS overlay.' },
+      { name: 'Berlin Open Data (Rent Map)', url: 'https://daten.berlin.de/', description: 'Residential rent zone map (Wohnlagenkarte 2026) as WMS overlay.' },
       { name: 'Berlin Noise Map (SenMVKU)', url: 'https://gdi.berlin.de/services/wms/ua_stratlaerm_2022', description: 'EU strategic noise map 2022 — total, road, rail, and air noise as WMS overlay.' },
     ],
   },

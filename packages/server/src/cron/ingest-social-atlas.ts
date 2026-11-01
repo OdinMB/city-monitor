@@ -33,6 +33,22 @@ interface GeoJsonFeatureCollection {
   features: GeoJsonFeature[];
 }
 
+/**
+ * The two MSS layers of the edition the WFS URL names. Each edition is its own
+ * service (`…/wfs/mss_2025`) whose layers carry the year (`mss_2025:mss2025_indexind_542`),
+ * so a new edition only needs a new `wfsUrl` in the city config.
+ */
+export function mssLayerNames(wfsUrl: string): { indicators: string; indices: string } {
+  const workspace = wfsUrl.replace(/\/+$/, '').split('/').pop() ?? '';
+  const match = /^mss_(\d{4})$/.exec(workspace);
+  if (!match) throw new Error(`social atlas wfsUrl must end in mss_<year>: ${wfsUrl}`);
+  const year = match[1];
+  return {
+    indicators: `${workspace}:mss${year}_indexind_542`,
+    indices: `${workspace}:mss${year}_indizes_542`,
+  };
+}
+
 function buildWfsUrl(baseUrl: string, layerName: string): string {
   return `${baseUrl}?service=WFS&version=2.0.0&request=GetFeature&typeNames=${layerName}&outputFormat=application/json&srsName=EPSG:4326`;
 }
@@ -53,8 +69,9 @@ export function createSocialAtlasIngestion(cache: Cache, db: Db | null = null) {
 
 async function ingestCitySocialAtlas(cityId: string, wfsUrl: string, cache: Cache, db: Db | null): Promise<void> {
   // Fetch both WFS layers
-  const indicatorUrl = buildWfsUrl(wfsUrl, 'mss_2023:mss2023_indexind_542');
-  const indicesUrl = buildWfsUrl(wfsUrl, 'mss_2023:mss2023_indizes_542');
+  const layers = mssLayerNames(wfsUrl);
+  const indicatorUrl = buildWfsUrl(wfsUrl, layers.indicators);
+  const indicesUrl = buildWfsUrl(wfsUrl, layers.indices);
 
   const [indicatorRes, indicesRes] = await Promise.all([
     log.fetch(indicatorUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }),

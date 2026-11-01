@@ -100,7 +100,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `tomtom-traffic` | TomTom traffic incidents |
 | `aponet` | aponet.de emergency pharmacies |
 | `osm-aeds` | OpenStreetMap AED locations (Overpass) |
-| `mss-social-atlas` | MSS 2023 WFS social atlas |
+| `mss-social-atlas` | MSS WFS social atlas (MSS 2025) |
 | `lageso-wastewater` | Lageso wastewater viral monitoring |
 | `lageso-bathing` | Lageso bathing water quality |
 | `ba-labor-market` | Bundesagentur für Arbeit unemployment |

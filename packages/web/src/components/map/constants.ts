@@ -60,9 +60,10 @@ export const WEATHER_LAYER = 'weather-precip-layer';
 
 export const RENT_MAP_SOURCE = 'rent-map-wms';
 export const RENT_MAP_LAYER = 'rent-map-layer';
+/** Wohnlagenkarte zum Berliner Mietspiegel 2026; a new Mietspiegel (every two years) brings a new service name. */
 export const RENT_MAP_WMS_URL =
-  'https://gdi.berlin.de/services/wms/wohnlagenadr2024?service=WMS&version=1.1.1&request=GetMap' +
-  '&layers=wohnlagenadr2024&styles=&format=image/png&transparent=true' +
+  'https://gdi.berlin.de/services/wms/wohnlagenadr2026?service=WMS&version=1.1.1&request=GetMap' +
+  '&layers=wohnlagenadr2026&styles=&format=image/png&transparent=true' +
   '&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}';
 
 export const NOISE_SOURCE = 'noise-wms';

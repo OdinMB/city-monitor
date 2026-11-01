@@ -1,22 +1,22 @@
 # Social Atlas & Labor Market
 
-## Social Atlas Map Layer (MSS 2023)
+## Social Atlas Map Layer (MSS 2025)
 
-**Monitoring Soziale Stadtentwicklung (MSS) 2023** from Berlin Senate, served via WFS.
+**Monitoring Soziale Stadtentwicklung (MSS) 2025** from Berlin Senate, served via WFS.
 
-- **WFS URL:** `https://gdi.berlin.de/services/wfs/mss_2023`
+- **WFS URL:** `https://gdi.berlin.de/services/wfs/mss_2025` (switched from `mss_2023` on 2026-11-01; same fields)
 - **License:** dl-de-zero-2.0 (free, no attribution required)
-- **Data period:** 2020-2022 observation, published 2023 (biennial)
-- **Granularity:** 536 valid Planungsraume (smallest LOR planning area unit)
+- **Data period:** data as of 31 Dec 2024 (`zeit` 202412), report 2025, WFS registered on daten.berlin.de 2026-10 (biennial; MSS 2027 next)
+- **Granularity:** 535 valid of 542 Planungsräume (LOR 2021, the same areas as the population XLSX); MSS 2023 had 536
 
-Two WFS layers are fetched and joined on `plr_id`:
+Two WFS layers are fetched and joined on `plr_id`. `mssLayerNames` derives them from the edition at the end of `wfsUrl`, so a new edition is a one-line change in `berlin.ts` as long as its fields stay the same:
 
 | Layer | Purpose |
 |-------|---------|
-| `mss2023_indexind_542` | Raw indicators: unemployment (s1), single-parent (s2), welfare (s3), child poverty (s4), population (ew), geometry |
-| `mss2023_indizes_542` | Composite status index: si_n (1-4 scale), si_v (verbal label) |
+| `mss2025_indexind_542` | Raw indicators: unemployment (s1), single-parent (s2), welfare (s3), child poverty (s4), population (ew), geometry |
+| `mss2025_indizes_542` | Composite status index: si_n (1-4 scale), si_v (verbal label) |
 
-Features with `kom !== 'gultig'` (uninhabited areas) are filtered out.
+Features with `kom !== 'gültig'` (`ungültig (EW unter 300)`, `ungültig (Ausreißer)`) are filtered out. The population layer takes its PLR outlines from this layer's cache entry, so an area dropped here also drops from the population map.
 
 ### Architecture
 

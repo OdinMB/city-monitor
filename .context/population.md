@@ -6,7 +6,8 @@
 
 - **File pattern**: `SB_A01-16-00_{YYYY}h{01|02}_BE.xlsx`
 - **Download base**: `https://download.statistik-berlin-brandenburg.de/` (hashed URL paths, see freshness inventory)
-- **Current URL**: `https://download.statistik-berlin-brandenburg.de/1df9da7ea6dbfa3a/f6ac408f14cd/SB_A01-16-00_2025h02_BE.xlsx`
+- **Current URL**: `https://download.statistik-berlin-brandenburg.de/fca0a030166493d0/1289b0921aa2/SB_A01-16-00_2026h01_BE.xlsx` (30 June 2026, 3,917,196 residents; same sheet and column layout as 2025h02, checked 2026-11-01)
+- **Where to find the next one**: the publication page `https://www.statistik-berlin-brandenburg.de/a-i-16-hj` links the newest XLSX (the page also carries a `…_Karte_Ausl.xlsx`, which is not the one)
 - **Snapshots**: h01 = June 30, h02 = December 31 (published ~3 months later)
 - **Granularity**: 536 LOR Planungsräume
 - **License**: CC-BY

@@ -488,7 +488,7 @@ export interface BuergeramtData {
   bookingUrl: string;
 }
 
-// Social Atlas (MSS 2023)
+// Social Atlas (MSS, edition set by the city's socialAtlas.wfsUrl)
 export interface SocialAtlasFeatureProps {
   plrId: string;
   plrName: string;

@@ -10,9 +10,10 @@ import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-population');
 
-// Hardcoded URL for the latest verified XLSX (Dec 2025 data).
-// Must be updated manually each semester when a new file is published.
-const XLSX_URL = 'https://download.statistik-berlin-brandenburg.de/1df9da7ea6dbfa3a/f6ac408f14cd/SB_A01-16-00_2025h02_BE.xlsx';
+// Hardcoded URL for the latest verified XLSX (30 June 2026 data), linked from
+// https://www.statistik-berlin-brandenburg.de/a-i-16-hj. Must be updated
+// manually each semester when a new file is published.
+const XLSX_URL = 'https://download.statistik-berlin-brandenburg.de/fca0a030166493d0/1289b0921aa2/SB_A01-16-00_2026h01_BE.xlsx';
 const FETCH_TIMEOUT_MS = 60_000;
 /**
  * 37.2 days: the longest gap between monthly runs (31 days) × 1.2, so an entry
