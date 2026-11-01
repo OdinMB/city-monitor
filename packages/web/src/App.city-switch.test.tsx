@@ -30,7 +30,9 @@ vi.mock('./components/map/base.js', async (importOriginal) => ({
 
 const STYLE = { version: 8, sources: {}, layers: [] } as unknown as StyleSpecification;
 const MapMock = vi.mocked(maplibregl.Map);
-const lastMapBounds = () => (MapMock.mock.calls.at(-1)?.[0] as maplibregl.MapOptions | undefined)?.bounds;
+// The pan limit is the city's bounds in every layout (phones open on the
+// centre instead of fitting the bounds, so `bounds` itself is layout-dependent).
+const lastMapBounds = () => (MapMock.mock.calls.at(-1)?.[0] as maplibregl.MapOptions | undefined)?.maxBounds;
 
 function LocationProbe() {
   return <output data-testid="pathname">{useLocation().pathname}</output>;

@@ -169,6 +169,39 @@ describe('CityMap', () => {
     expect(map.remove).not.toHaveBeenCalled();
   });
 
+  describe('opening view', () => {
+    beforeEach(() => {
+      loadStyleMock.mockResolvedValue(STYLE);
+    });
+
+    it.each([
+      ['a touch phone', TOUCH_PHONE],
+      ['a narrow window', []],
+    ])('on %s, opens zoomed in on the inner city', async (_name, media) => {
+      setMedia(...media);
+      renderMap();
+      await waitFor(() => expect(MapMock).toHaveBeenCalledOnce());
+
+      expect(lastOptions().center).toEqual([13.405, 52.52]);
+      expect(lastOptions().zoom).toBeGreaterThanOrEqual(10);
+      expect(lastOptions().bounds).toBeUndefined();
+      // Panning still stops at the city's edge.
+      expect(lastOptions().maxBounds).toBeDefined();
+    });
+
+    it.each([
+      ['a desktop', DESKTOP],
+      ['a phone held sideways or a tablet', TOUCH_LANDSCAPE],
+    ])('on %s, fits the whole city', async (_name, media) => {
+      setMedia(...media);
+      renderMap();
+      await waitFor(() => expect(MapMock).toHaveBeenCalledOnce());
+
+      expect(lastOptions().bounds).toEqual(lastOptions().maxBounds);
+      expect(lastOptions().zoom).toBeUndefined();
+    });
+  });
+
   describe('gestures', () => {
     beforeEach(() => {
       loadStyleMock.mockResolvedValue(STYLE);
