@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { WebCityConfig } from '@city-monitor/shared';
 import { PageShell } from '../components/layout/PageShell.js';
-import { CitySkyline } from '../components/layout/SkylineSeparator.js';
+import { CitySkyline } from '../components/skylines/CitySkyline.js';
 import { cityTopics } from '../lib/city-topics.js';
 
 /**
@@ -47,9 +47,7 @@ export function CityPickerPage({ cities }: { cities: WebCityConfig[] }) {
                 </h2>
                 <p className="mt-1 text-sm text-muted">{summary(city)}</p>
               </div>
-              <svg aria-hidden="true" viewBox="0 30 1200 90" preserveAspectRatio="none" className="block w-full h-12">
-                <CitySkyline cityId={city.id} fill="var(--accent)" />
-              </svg>
+              <CitySkyline cityId={city.id} fill="var(--accent)" className="w-full h-12" />
             </Link>
           </li>
         ))}
