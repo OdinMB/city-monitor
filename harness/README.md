@@ -35,7 +35,7 @@ The server processes load the product's TypeScript through `tsx` and `shared/*.t
 | Parameter | Default | What it varies |
 |---|---|---|
 | `--out <folder>` | required | Where the run writes. Each run makes `<folder>/<run id>/`, so one folder can hold several runs. Refused when it is inside the checkout or holds it, and, from a linked worktree (such as one under `.claude/worktrees/`), when it is inside the main checkout (the folder with the common `.git`) or holds it. |
-| `--city <id>` | `berlin` | The city the run seeds, serves and shows: one that both `packages/server` and `packages/web` register, today `berlin`, `hamburg` or `koeln` (see "Cities"). Any other id exits 1 with the list. |
+| `--city <id>` | `berlin` | The city the run seeds, serves and shows: one that both `packages/server` and `packages/web` register, today `berlin`, `hamburg`, `koeln` or `muenchen` (see "Cities"). Any other id exits 1 with the list. |
 | `--path <path>` | `/<city>` | A page on the run's own web server. Repeatable. Must start with one `/`. |
 | `--viewport <WxH>` | `1440x900` | Browser viewport. Repeatable or comma-separated, e.g. `390x844,1440x900`. Widths under 768 get touch and mobile emulation. |
 | `--lang <de\|en\|tr\|ar>` | `de` | The app's language (set in `localStorage` before load) and the browser locale. Repeatable or comma-separated. |
@@ -98,7 +98,7 @@ Playwright's own touch input only taps, so `swipe` ([`lib/swipe.mjs`](lib/swipe.
 
 ## Cities
 
-`--city <id>` names the city a run seeds, serves and shows. It has to be registered in `ALL_CITIES` in both `packages/server/src/config/index.ts` and `packages/web/src/config/index.ts`; the parent reads both files before anything starts ([`lib/cities.mjs`](lib/cities.mjs)). Today that is `berlin`, the default, `hamburg` and `koeln`.
+`--city <id>` names the city a run seeds, serves and shows. It has to be registered in `ALL_CITIES` in both `packages/server/src/config/index.ts` and `packages/web/src/config/index.ts`; the parent reads both files before anything starts ([`lib/cities.mjs`](lib/cities.mjs)). Today that is `berlin`, the default, `hamburg`, `koeln` and `muenchen`. Köln and München are inactive in the real app; a run shows them anyway, as the run makes its city the active one.
 
 The run's city is the only active one. The seed script and the API get `--city` and serve that city alone (`ACTIVE_CITIES`). The web build makes it the one entry of the web config's `ACTIVE_CITY_IDS`: a Vite plugin rewrites that one line in the build, the file in the checkout is not changed, and the build fails if it never saw the file. So `/` leads to the run's city, another city's path redirects there, and `--path` defaults to `/<city>`.
 
@@ -108,8 +108,10 @@ The seed (`generateSyntheticCityData` in `packages/server/src/synthetic/generate
 |---|---|---|
 | `berlin` | every data set the generator makes, exactly as before `--city` existed | none |
 | `hamburg` | news and the briefing, police reports, weather with DWD warnings and UV, air quality and its grid, civil-protection warnings, water levels (three Elbe gauges), traffic, pharmacies, defibrillators, pollen, members of the Bundestag and the Bürgerschaft | events, transit, citizen-office appointments, budget, construction, social atlas, population, wastewater, bathing water, labour market, fire brigade, noise sensors, council meetings, district politics |
+| `koeln` | weather with DWD warnings and UV, air quality and its grid, civil-protection warnings, water levels (the Rhein gauge Köln), traffic, pharmacies, defibrillators, pollen | news and the briefing, police reports, political data, and everything Hamburg lacks |
+| `muenchen` | weather with DWD warnings and UV, air quality and its grid, civil-protection warnings, traffic, pharmacies, defibrillators, pollen | water levels (no federal gauge on the Isar), and everything Köln lacks |
 
-Every coordinate lies inside the city's bounding box. Where the web app has district outlines for the city (`packages/web/src/data/districts/<city>-bezirke.geojson`), the data names those districts, each at a point inside its outline: Hamburg's seven Bezirke. A city without them gets nine places spread around its centre, named after the city, and no district fields. The app shows a city only the tiles, map layers and source credits its web config lists in `features` (`packages/web/src/config/cities/<city>.ts`), so a data set left unseeded has no tile: Hamburg's dashboard has no transit, events, appointments, budget or Berlin-only tiles, as in the real app. Apart from the names of districts and river gauges, which match the city's config, every name, number and text is invented, and nothing is fetched. The seed works out local dates and hours in Europe/Berlin, the zone of both configured cities.
+Every coordinate lies inside the city's bounding box. Where the web app has district outlines for the city (`packages/web/src/data/districts/<city>-bezirke.geojson`), the data names those districts, each at a point inside its outline: Hamburg's seven Bezirke. A city without them gets nine places spread around its centre, named after the city, and no district fields. The app shows a city only the tiles, map layers and source credits its web config lists in `features` (`packages/web/src/config/cities/<city>.ts`), so a data set left unseeded has no tile: Hamburg's dashboard has no transit, events, appointments, budget or Berlin-only tiles, as in the real app. Apart from the names of districts and river gauges, which match the city's config, every name, number and text is invented, and nothing is fetched. The seed works out local dates and hours in Europe/Berlin, the zone of every configured city.
 
 ## Scenarios
 

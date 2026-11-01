@@ -286,10 +286,21 @@ const KOELN_SOURCES: SourceGroup[] = [
   },
 ];
 
+// No river gauge: the Isar through München is not a federal waterway.
+const MUENCHEN_SOURCES: SourceGroup[] = [
+  {
+    category: 'Transit & Traffic',
+    sources: [
+      { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
+    ],
+  },
+];
+
 const CITY_SOURCES: Record<string, SourceGroup[]> = {
   berlin: BERLIN_SOURCES,
   hamburg: HAMBURG_SOURCES,
   koeln: KOELN_SOURCES,
+  muenchen: MUENCHEN_SOURCES,
 };
 
 function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] {

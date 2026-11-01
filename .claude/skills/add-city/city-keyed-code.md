@@ -40,7 +40,7 @@ Extend these when you add a city; nothing fails if you forget.
 - `packages/server/src/config/config.test.ts`, "every configured city": the `ACTIVE_CITIES` stub and the ID list. Without the new ID, its centre, bounds and NINA key go unchecked.
 - `packages/web/src/config/index.test.ts`: the `cities` list in "every configured city", and "active cities".
 - `packages/web/src/lib/aqi.test.ts`: the `it.each` over cities in "WAQI originating agencies".
-- `packages/web/src/App.test.tsx`: one "sends /<id> to the city picker" test per inactive city (Köln), and one "renders the … dashboard at /<id>" test per active one. Change it when the city goes live.
+- `packages/web/src/App.test.tsx`: one "sends /<id> to the city picker" test per inactive city (Köln, München), and one "renders the … dashboard at /<id>" test per active one. Change it when the city goes live.
 - `packages/web/src/components/map/layers/political-matching.test.ts`: one entry per city with district GeoJSON.
 - `packages/web/src/App.default-city.test.tsx` mocks Berlin and Hamburg only, which is enough unless the default-city rule changes.
 

@@ -95,7 +95,7 @@ The [`add-city` skill](.claude/skills/add-city/SKILL.md) holds the same work in 
 
 5. **Register the web config** — import your city in `packages/web/src/config/index.ts`, add it to `ALL_CITIES`, and add the city ID to the `ACTIVE_CITY_IDS` set when it should go live. Until then `/<city>` redirects to the home page. Once two or more cities are active, the home page (`/`) shows a tile for each to choose from and the top bar gets a city switcher; with one, `/` goes straight to its dashboard. On a running deployment, set `ACTIVE_CITIES` (step 6) first.
 
-6. **Activate on the server** — set the `ACTIVE_CITIES` environment variable to include your city (comma-separated, e.g. `berlin,hamburg,munich`). This controls which cities the cron jobs ingest data for and which city IDs the API accepts.
+6. **Activate on the server** — set the `ACTIVE_CITIES` environment variable to include your city (comma-separated, e.g. `berlin,hamburg,muenchen`). This controls which cities the cron jobs ingest data for and which city IDs the API accepts.
 
 7. **Add translations** — the city's name on screen is the config's `name`, in every language, so it needs no translation. Add any city-specific UI strings to all four locale files in `packages/web/src/i18n/` (`en.json`, `de.json`, `tr.json`, `ar.json`). Use the German name (`Köln`, not `Cologne`): the DWD warnings and UV forecast are matched by it.
 

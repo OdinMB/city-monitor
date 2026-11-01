@@ -354,4 +354,15 @@ describe('createPharmacyIngestion', () => {
     expect(searched).toEqual(['10115', '50667']);
     expect(cache.get(CK.pharmacies('koeln'))).toHaveLength(1);
   });
+
+  it('searches around central München (Marienplatz, 80331) when München is active', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+    const searched = mockAponet();
+    const cache = createCache();
+
+    await createPharmacyIngestion(cache)();
+
+    expect(searched).toEqual(['80331']);
+    expect(cache.get(CK.pharmacies('muenchen'))).toHaveLength(1);
+  });
 });

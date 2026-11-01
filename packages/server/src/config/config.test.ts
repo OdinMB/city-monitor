@@ -136,13 +136,66 @@ describe('Köln config', () => {
   });
 });
 
+describe('München config', () => {
+  beforeEach(() => {
+    vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+  });
+
+  it('is configured but inactive until ACTIVE_CITIES names it', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    expect(getCityConfig('muenchen')).toBeUndefined();
+  });
+
+  it('has its German name, country and time zone', () => {
+    const config = getCityConfig('muenchen')!;
+    expect(config.id).toBe('muenchen');
+    // The DWD UV file is matched by this name
+    expect(config.name).toBe('München');
+    expect(config.country).toBe('DE');
+    expect(config.timezone).toBe('Europe/Berlin');
+    expect(config.languages).toEqual(['de', 'en']);
+  });
+
+  it('sits on the Isar at München', () => {
+    const { coordinates, boundingBox } = getCityConfig('muenchen')!;
+    // Marienplatz, 48.1372 N 11.5755 E, is the centre
+    expect(coordinates.lat).toBeCloseTo(48.137, 2);
+    expect(coordinates.lon).toBeCloseTo(11.576, 2);
+    // The city reaches from Feldmoching (~48.24 N) to Solln (~48.07 N), Pasing (~11.37 E) to Trudering (~11.71 E)
+    expect(boundingBox.north).toBeGreaterThan(48.24);
+    expect(boundingBox.south).toBeLessThan(48.07);
+    expect(boundingBox.west).toBeLessThan(11.37);
+    expect(boundingBox.east).toBeGreaterThan(11.71);
+  });
+
+  it('uses the Germany-wide sources that cover München', () => {
+    const { dataSources } = getCityConfig('muenchen')!;
+    expect(dataSources.weather.provider).toBe('brightsky');
+    // DWD warn cell 109162000 (cap_warncellids_csv.csv), not the Landkreis's 109184000
+    expect(dataSources.weather.dwdWarnRegion).toBe('Stadt München');
+    // kreisfreie Stadt München, AGS 09162000
+    expect(dataSources.nina).toEqual({ ars: '091620000000' });
+    // The kreisfreie Stadt's OSM boundary, not the state's (4)
+    expect(dataSources.aeds).toEqual({ adminLevel: 6 });
+    // DWD pollen region Bayern, part-region Allgäu/Oberbayern/Bay. Wald
+    expect(dataSources.pollen).toEqual({ provider: 'dwd', regionId: 120, partregionId: 121 });
+  });
+
+  it('has no river gauge and no city-specific source yet, so those jobs fetch nothing for München', () => {
+    const config = getCityConfig('muenchen')!;
+    expect(config.feeds).toEqual([]);
+    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, ...rest } = config.dataSources;
+    expect(rest).toEqual({});
+  });
+});
+
 describe('every configured city', () => {
   beforeEach(() => {
-    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg,koeln');
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg,koeln,muenchen');
   });
 
   it('is found by its id', () => {
-    for (const id of ['berlin', 'hamburg', 'koeln']) {
+    for (const id of ['berlin', 'hamburg', 'koeln', 'muenchen']) {
       expect(getCityConfig(id)?.id).toBe(id);
     }
   });

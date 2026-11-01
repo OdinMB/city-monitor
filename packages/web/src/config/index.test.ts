@@ -7,12 +7,13 @@ import { getAllCities, getCityConfig, getDefaultCityId } from './index.js';
 import { berlin } from './cities/berlin.js';
 import { hamburg } from './cities/hamburg.js';
 import { koeln } from './cities/koeln.js';
+import { muenchen } from './cities/muenchen.js';
 import { getNoiseWmsAttribution, getNoiseWmsUrl } from '../components/map/constants.js';
 
 /** Features the web app holds itself, which the server knows nothing about. */
 const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal'];
 
-const ALL_CONFIGURED = [berlin, hamburg, koeln];
+const ALL_CONFIGURED = [berlin, hamburg, koeln, muenchen];
 
 describe('getDefaultCityId', () => {
   it('returns berlin with the shipped active cities', () => {
@@ -36,8 +37,9 @@ describe('active cities', () => {
     expect(getCityConfig('hamburg')).toBe(hamburg);
   });
 
-  it('keeps Köln configured but inactive', () => {
+  it('keeps Köln and München configured but inactive', () => {
     expect(getCityConfig('koeln')).toBeUndefined();
+    expect(getCityConfig('muenchen')).toBeUndefined();
   });
 });
 
@@ -51,8 +53,18 @@ describe('Köln config', () => {
   });
 });
 
+describe('München config', () => {
+  it('has its German name and time zone', () => {
+    expect(muenchen.id).toBe('muenchen');
+    expect(muenchen.name).toBe('München');
+    expect(muenchen.country).toBe('DE');
+    expect(muenchen.timezone).toBe('Europe/Berlin');
+    expect(muenchen.languages).toEqual(['de', 'en']);
+  });
+});
+
 describe('every configured city', () => {
-  const cities = [berlin, hamburg, koeln];
+  const cities = ALL_CONFIGURED;
 
   it('has its centre inside its bounding box', () => {
     for (const { id, coordinates: { lat, lon }, boundingBox: box } of cities) {

@@ -75,6 +75,18 @@ describe('App', () => {
     expect(screen.queryByRole('link', { name: /^Köln/ })).toBeNull();
   });
 
+  it('sends /muenchen to the city picker (München not active)', async () => {
+    render(
+      <MemoryRouter initialEntries={['/muenchen']}>
+        <App />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/'));
+    expect(screen.getByRole('link', { name: /^Berlin/ }).getAttribute('href')).toBe('/berlin');
+    expect(screen.queryByRole('link', { name: /^München/ })).toBeNull();
+  });
+
   it('sends an unknown city to the city picker', async () => {
     render(
       <MemoryRouter initialEntries={['/unknown-city']}>

@@ -12,6 +12,7 @@ import type { AirQuality, CityConfig } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
 import { koeln } from '../config/cities/koeln.js';
+import { muenchen } from '../config/cities/muenchen.js';
 import {
   generateSyntheticAirQuality, generateSyntheticCityData, generateSyntheticData, seedFromModel, syntheticCoverage,
   syntheticDistricts, syntheticModel, type CitySyntheticData,
@@ -387,14 +388,18 @@ describe('generateSyntheticCityData', () => {
     expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);
   });
 
-  it('gives Köln, which has no Bezirk boundaries, what production holds for it, its pharmacies without a district', () => {
-    const d = generateSyntheticCityData({ now: NOW, city: koeln });
-    expect(Object.keys(d).filter((key) => key !== 'cityId' && key !== 'history')).toEqual(syntheticCoverage(koeln));
-    expect(d.pharmacies!.length).toBeGreaterThan(0);
-    for (const p of d.pharmacies!) expect(p.district).toBeUndefined();
-    expectInside(d, koeln, 20);
-    expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);
-  });
+  it.each([koeln, muenchen].map((c) => [c.name, c] as const))(
+    'gives %s, which has no Bezirk boundaries, what production holds for it, its pharmacies without a district',
+    (_name, city) => {
+      const d = generateSyntheticCityData({ now: NOW, city });
+      expect(Object.keys(d).filter((key) => key !== 'cityId' && key !== 'history')).toEqual(syntheticCoverage(city));
+      expect(d.pharmacies!.length).toBeGreaterThan(0);
+      for (const p of d.pharmacies!) expect(p.district).toBeUndefined();
+      expect(d.waterLevels === undefined).toBe(city.dataSources.waterLevels === undefined);
+      expectInside(d, city, 20);
+      expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);
+    },
+  );
 
   it('holds weather and transit only where their ingestion would fetch them', () => {
     // ingest-weather has an adapter for brightsky only; ingest-transit skips a city with no stations

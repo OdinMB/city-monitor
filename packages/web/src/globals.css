@@ -101,6 +101,18 @@
   --accent-rgb: 255, 90, 106;
 }
 
+/* München's gold, from its black-and-gold city colours: 4.7:1 on the light
+   page background, 11:1 on the dark card. */
+[data-city='muenchen'] {
+  --accent: #a16207;
+  --accent-rgb: 161, 98, 7;
+}
+.dark[data-city='muenchen'],
+.dark [data-city='muenchen'] {
+  --accent: #facc15;
+  --accent-rgb: 250, 204, 21;
+}
+
 /* Colour roles: what a colour means, set once for light and dark. A component
    writes text-link, bg-signal-good or badge-good rather than a palette colour
    and its dark: partner, so a contrast fix is one value here. Values are

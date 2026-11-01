@@ -1,11 +1,11 @@
 ---
 name: add-city
-description: Add a new city to City Monitor, or activate one that is configured but switched off (Köln). Use when asked to add, configure, wire up, enable or activate a city, or to wire an existing source (news feed, gauge, pollen region, NINA key) to a city. Covers both packages' city configs, the code keyed by city ID outside them, the identifiers for the Germany-wide sources, licence checks, tests, verification and activation.
+description: Add a new city to City Monitor, or activate one that is configured but switched off (Köln, München). Use when asked to add, configure, wire up, enable or activate a city, or to wire an existing source (news feed, gauge, pollen region, NINA key) to a city. Covers both packages' city configs, the code keyed by city ID outside them, the identifiers for the Germany-wide sources, licence checks, tests, verification and activation.
 ---
 
 # Add a city
 
-The README's "Adding a City" is the overview for contributors. This is the working order, with the traps. Köln (`koeln`) is the template for a city with the Germany-wide sources only. Berlin is the only city with every source.
+The README's "Adding a City" is the overview for contributors. This is the working order, with the traps. Köln (`koeln`) is the template for a city with the Germany-wide sources only, München (`muenchen`) for one that also has no federal river gauge. Both are cities inside a state ("City-state assumptions"). Berlin is the only city with every source.
 
 References beside this file:
 

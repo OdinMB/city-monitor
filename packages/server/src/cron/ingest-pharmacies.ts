@@ -19,6 +19,7 @@ const CITY_PLZ: Record<string, string> = {
   berlin: '10115',
   hamburg: '20095',
   koeln: '50667',
+  muenchen: '80331',
 };
 
 /** Whether the job searches emergency pharmacies for the city: a German city with a postcode above. */
