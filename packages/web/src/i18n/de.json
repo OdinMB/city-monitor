@@ -535,6 +535,7 @@
     "today": "Heute",
     "tomorrow": "Morgen",
     "delay": "Verzögerung: ~{{count}} Min.",
+    "permitPeriod": "Genehmigungszeitraum",
     "roadEvent": {
       "jam": "Stau",
       "closure": "Sperrung",

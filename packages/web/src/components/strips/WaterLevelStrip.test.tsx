@@ -41,6 +41,16 @@ describe('WaterLevelStrip levels', () => {
     expect(screen.getByText(isolate('87 cm'))).toBeTruthy();
   });
 
+  // PEGELONLINE gives no state for a gauge without characteristic values (the
+  // Elbe gauges Bunthaus and Seemannshöft), so the level stands alone.
+  it('shows the level of a gauge with no known state without a state badge', () => {
+    data = { ...DATA, stations: [station('d', 653, 'unknown'), station('e', 87, 'normal')] };
+    render(<WaterLevelStrip />);
+    expect(screen.getByText(isolate('653 cm'))).toBeTruthy();
+    expect(screen.queryByText(i18n.t('panel.waterLevels.state.unknown'))).toBeNull();
+    expect(screen.getByText(i18n.t('panel.waterLevels.state.normal'))).toBeTruthy();
+  });
+
   it('keeps the German river and station names in their own direction in Arabic, so they are cut at their end', async () => {
     data = {
       ...DATA,

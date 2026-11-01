@@ -82,6 +82,8 @@ export function updateWaterLevelMarkers(map: maplibregl.Map, stations: WaterLeve
  */
 export function waterLevelPopupHtml(props: Record<string, unknown>): string {
   const state = String(props.state ?? 'unknown');
+  // A gauge without a known state (no characteristic values) shows its level alone.
+  const known = state !== 'unknown';
   const stateColor = WATER_STATE_COLORS[state] ?? WATER_STATE_COLORS.unknown;
   const stateKey = state === 'very_high' ? 'veryHigh' : state;
   const stateLabel = i18n.t(`panel.waterLevels.state.${stateKey}`, state.replace('_', ' '));
@@ -91,8 +93,8 @@ export function waterLevelPopupHtml(props: Record<string, unknown>): string {
   return `<div style="font-size:13px;max-width:240px">
       <div style="font-weight:600;margin-bottom:4px">${sourceText(props.name)}</div>
       <div style="font-size:12px;opacity:0.7">${sourceText(props.waterBody)}${tidal}</div>
-      <div style="font-size:12px;margin-top:4px">${escapeHtml(i18n.t('panel.waterLevels.level'))}: <strong style="color:${stateColor}">${ltr(`${escapeHtml(props.currentLevel)} cm`)}</strong></div>
-      <div style="font-size:11px;margin-top:2px;color:${stateColor}">${escapeHtml(stateLabel)}</div>
+      <div style="font-size:12px;margin-top:4px">${escapeHtml(i18n.t('panel.waterLevels.level'))}: <strong${known ? ` style="color:${stateColor}"` : ''}>${ltr(`${escapeHtml(props.currentLevel)} cm`)}</strong></div>
+      ${known ? `<div style="font-size:11px;margin-top:2px;color:${stateColor}">${escapeHtml(stateLabel)}</div>` : ''}
     </div>`;
 }
 

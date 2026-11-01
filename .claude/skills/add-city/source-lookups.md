@@ -58,7 +58,7 @@ Check every source that only this city has before you wire it: news RSS (`feeds`
 
 Then wire it:
 
-- Many jobs parse one provider's format (`roadworks` reads VIZ Berlin's JSON, `budget` is `berlin-doppelhaushalt`, `appointments` is `service-berlin`, `socialAtlas` is `mss-wfs`). Read the job before you point it at another city's URL. A new format is a new data source: follow `.context/new-data-sources.md`.
+- Many jobs parse one provider's format (`roadworks` has a parser per `provider`: `viz-berlin`, `hamburg-ogc`, `koeln-wfs`, `muenchen-wfs`, see `.context/roadworks.md`; `budget` is `berlin-doppelhaushalt`, `appointments` is `service-berlin`, `socialAtlas` is `mss-wfs`). Read the job before you point it at another city's URL. A new format is a new data source: follow `.context/new-data-sources.md`.
 - A feed needs its favicon (`FAVICON_SLUGS`, `FAVICON_SOURCES`; `.context/news.md`, "Favicons").
 - A host the browser loads from needs the CSP in `render.yaml` and `SERVICES` in `PrivacyPage.tsx`.
 - Feeds or police reports for a new city mean AI text served for it: check `.context/ai-transparency.md` still describes what is served, in the same change.

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createConstructionIngestion } from './ingest-construction.js';
 import type { ConstructionSite } from '@city-monitor/shared';
@@ -181,6 +181,68 @@ describe('ingest-construction', () => {
 
     const sites = cache.get<ConstructionSite[]>('berlin:construction:sites');
     expect(sites).toEqual([]);
+  });
+
+  describe('other providers', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.useRealTimers();
+    });
+
+    const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
+    const urlOf = (call: unknown[]) => new URL(String(call[0]));
+
+    it('reads Hamburg from its OGC API', async () => {
+      vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+      vi.useFakeTimers({ now: new Date('2026-11-01T11:00:00Z'), toFake: ['Date'] });
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json({
+        type: 'FeatureCollection',
+        features: [{ type: 'Feature', id: 1, geometry: { type: 'Point', coordinates: [10, 53.55] }, properties: { titel: 'Test', organisation: 'LSBG', umfang: 'Fahrstreifen gesperrt', baubeginn: '01.10.2026', bauende: '30.11.2026' } }],
+      }));
+
+      const cache = createCache();
+      await createConstructionIngestion(cache)();
+
+      expect(urlOf(fetchSpy.mock.calls[0]!).hostname).toBe('api.hamburg.de');
+      expect(cache.get<ConstructionSite[]>('hamburg:construction:sites')).toEqual([
+        expect.objectContaining({ id: 'hh-1', street: 'Test', validUntil: '30.11.2026' }),
+      ]);
+    });
+
+    it('asks Köln for each configured layer and keeps the last data when one fails', async () => {
+      vi.stubEnv('ACTIVE_CITIES', 'koeln');
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => json({ type: 'FeatureCollection', features: [] }));
+
+      const cache = createCache();
+      await createConstructionIngestion(cache)();
+      const layers = fetchSpy.mock.calls.map((c) => urlOf(c).searchParams.get('typeNames'));
+      expect(layers).toContain('ms:notfall');
+      expect(layers).toContain('ms:strassenbauarbeiten');
+      expect(layers).not.toContain('ms:hochbau');
+      expect(cache.get<ConstructionSite[]>('koeln:construction:sites')).toEqual([]);
+
+      cache.set('koeln:construction:sites', [{ id: 'kept' }], 1800);
+      fetchSpy.mockReset();
+      fetchSpy.mockImplementation(async (input) => new URL(String(input)).searchParams.get('typeNames') === 'ms:kanalsanierung'
+        ? new Response('', { status: 503 })
+        : json({ type: 'FeatureCollection', features: [] }));
+      await createConstructionIngestion(cache)();
+      expect(cache.get('koeln:construction:sites')).toEqual([{ id: 'kept' }]);
+    });
+
+    it('filters München on the server', async () => {
+      vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json({ type: 'FeatureCollection', features: [] }));
+
+      const cache = createCache();
+      await createConstructionIngestion(cache)();
+
+      const url = urlOf(fetchSpy.mock.calls[0]!);
+      expect(url.hostname).toBe('geoportal.muenchen.de');
+      expect(url.searchParams.get('srsName')).toBe('EPSG:4326');
+      expect(url.searchParams.get('CQL_FILTER')).toContain('beeintraechtigung');
+      expect(cache.get<ConstructionSite[]>('muenchen:construction:sites')).toEqual([]);
+    });
   });
 
   it('skips cities without roadworks config', async () => {

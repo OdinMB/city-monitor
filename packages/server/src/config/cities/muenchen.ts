@@ -4,11 +4,11 @@ import type { CityConfig } from '@city-monitor/shared';
  * München, wired only to the Germany-wide sources (DWD, Open-Meteo, NINA,
  * OpenStreetMap, aponet.de). No PEGELONLINE gauge: the Isar through München
  * is a Bavarian water, not a federal waterway, so the city has no water
- * levels. News feeds are configured; police has no usable source
- * (polizei.bayern.de's robots.txt disallows all, and the Polizeipräsidium is
- * not on presseportal). The other city-specific sources (transit, events,
- * council meetings, district boundaries) are not configured yet, so their
- * jobs fetch nothing for München.
+ * levels. News feeds and roadworks are configured; police has no usable
+ * source (polizei.bayern.de's robots.txt disallows all, and the
+ * Polizeipräsidium is not on presseportal). The other city-specific sources
+ * (transit, events, council meetings, district boundaries) are not configured
+ * yet, so their jobs fetch nothing for München.
  */
 export const muenchen: CityConfig = {
   id: 'muenchen',
@@ -49,6 +49,12 @@ export const muenchen: CityConfig = {
       provider: 'dwd',
       regionId: 120,        // Bayern
       partregionId: 121,    // Allgäu/Oberbayern/Bay. Wald
+    },
+    // Roadworks and no-parking zones of the coming four weeks (dl-de/by-2.0); the job adds a
+    // CQL filter for works on the carriageway (lib/roadworks-parsers.ts).
+    roadworks: {
+      provider: 'muenchen-wfs',
+      url: 'https://geoportal.muenchen.de/geoserver/mor_wfs/ows?service=WFS&version=1.1.0&request=GetFeature&typeName=mor_wfs:baustellen_opendata&outputFormat=application/json&srsName=EPSG:4326',
     },
   },
 };

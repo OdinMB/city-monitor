@@ -84,7 +84,7 @@ export const berlin: CityConfig = {
       ],
     },
     nina: { ars: '110000000000' },
-    roadworks: { url: 'https://api.viz.berlin.de/daten/baustellen_sperrungen.json' },
+    roadworks: { provider: 'viz-berlin', url: 'https://api.viz.berlin.de/daten/baustellen_sperrungen.json' },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

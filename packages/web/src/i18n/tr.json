@@ -531,6 +531,7 @@
     "today": "Bugün",
     "tomorrow": "Yarın",
     "delay": "Gecikme: ~{{count}} dk",
+    "permitPeriod": "İzin süresi",
     "roadEvent": {
       "jam": "Trafik sıkışıklığı",
       "closure": "Yol kapanması",

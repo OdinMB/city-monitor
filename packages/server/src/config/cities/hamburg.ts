@@ -74,6 +74,9 @@ export const hamburg: CityConfig = {
       ],
     },
     nina: { ars: '020000000000' },
+    // Bauweiser construction sites on main roads (dl-de/by-2.0). The Transparenzportal's
+    // baustellen-hamburg WFS is an archive frozen in 2020.
+    roadworks: { provider: 'hamburg-ogc', url: 'https://api.hamburg.de/datasets/v1/baustellen/collections/baustelle/items?f=json&limit=1000' },
     pollen: {
       provider: 'dwd',
       regionId: 10,         // Schleswig-Holstein und Hamburg

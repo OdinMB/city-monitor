@@ -133,11 +133,13 @@ describe('DataLayerToggles per city', () => {
   it('lists a layer\'s sub-layers only when the city has more than one', () => {
     useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic', 'water', 'noise', 'political', 'news']) });
     renderFor(hamburg);
-    // Hamburg has only the traffic incidents, the river gauges and the Bundestag view.
-    expect(shown(i18n.t('sidebar.traffic.incidents'))).toBe(false);
+    // Hamburg has only the river gauges and the Bundestag view.
     expect(shown(i18n.t('sidebar.water.levels'))).toBe(false);
     expect(shown(i18n.t('sidebar.political.bundestag'))).toBe(false);
-    // It has news and police, and three noise maps without the all-sources one or live sensors.
+    // It has traffic incidents and roadworks, news and police, and three noise maps without
+    // the all-sources one or live sensors.
+    expect(shown(i18n.t('sidebar.traffic.incidents'))).toBe(true);
+    expect(shown(i18n.t('sidebar.traffic.roadworks'))).toBe(true);
     expect(shown(i18n.t('sidebar.news.police'))).toBe(true);
     expect(['road', 'rail', 'air'].every((key) => shown(i18n.t(`sidebar.noise.${key}`)))).toBe(true);
     expect(shown(i18n.t('sidebar.noise.total'))).toBe(false);
