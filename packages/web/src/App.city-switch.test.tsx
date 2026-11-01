@@ -55,24 +55,65 @@ describe('App city switch', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows the chosen city\'s map, not the last one\'s, and gives focus back to the switcher', async () => {
+  function renderAt(path: string) {
     render(
-      <MemoryRouter initialEntries={['/berlin']}>
+      <MemoryRouter initialEntries={[path]}>
         <App />
         <LocationProbe />
       </MemoryRouter>,
     );
+  }
+
+  /** Opens the switcher in `region` and follows its link to `city`. */
+  function switchWith(region: HTMLElement, from: string, city: string) {
+    const button = within(region).getByRole('button', { name: new RegExp(`^${from}`) });
+    fireEvent.click(button);
+    const list = document.getElementById(button.getAttribute('aria-controls') ?? '')!;
+    fireEvent.click(within(list).getByRole('link', { name: city }));
+  }
+
+  // The top bar is the page's banner; the map's sidebar its complementary region.
+  const topBar = () => screen.getByRole('banner');
+  const sidebar = () => screen.getByRole('complementary');
+
+  it('shows the chosen city\'s map, not the last one\'s, and gives focus back to the switcher', async () => {
+    renderAt('/berlin');
     // The map is made once per mount with its city's bounds, so a switch has
     // to mount the city's page afresh.
     await waitFor(() => expect(lastMapBounds()).toEqual(berlin.map.bounds));
 
-    const button = screen.getByRole('button', { name: /^Berlin/ });
-    fireEvent.click(button);
-    const list = document.getElementById(button.getAttribute('aria-controls') ?? '')!;
-    fireEvent.click(within(list).getByRole('link', { name: 'Hamburg' }));
+    switchWith(topBar(), 'Berlin', 'Hamburg');
 
     expect(screen.getByTestId('pathname').textContent).toBe('/hamburg');
     await waitFor(() => expect(lastMapBounds()).toEqual(hamburg.map.bounds));
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: /^Hamburg/ })));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(within(topBar()).getByRole('button', { name: /^Hamburg/ })),
+    );
+  });
+
+  it('switches from the sidebar too, giving focus back to the sidebar\'s switcher', async () => {
+    renderAt('/berlin');
+    await waitFor(() => expect(lastMapBounds()).toEqual(berlin.map.bounds));
+
+    switchWith(sidebar(), 'Berlin', 'Hamburg');
+
+    expect(screen.getByTestId('pathname').textContent).toBe('/hamburg');
+    await waitFor(() =>
+      expect(document.activeElement).toBe(within(sidebar()).getByRole('button', { name: /^Hamburg/ })),
+    );
+  });
+
+  it('switches the Sources page to the other city\'s Sources page', async () => {
+    renderAt('/berlin/sources');
+    await screen.findByRole('heading', { level: 1, name: /Berlin/ });
+
+    // Its one switcher, in the page header.
+    switchWith(document.body, 'Berlin', 'Hamburg');
+
+    expect(screen.getByTestId('pathname').textContent).toBe('/hamburg/sources');
+    await screen.findByRole('heading', { level: 1, name: /Hamburg/ });
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: /^Hamburg/ })),
+    );
   });
 });

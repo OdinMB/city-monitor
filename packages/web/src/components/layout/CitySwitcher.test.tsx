@@ -12,12 +12,29 @@ function LocationProbe() {
   return <output data-testid="pathname">{useLocation().pathname}</output>;
 }
 
-function renderSwitcher(cities: WebCityConfig[], path = '/berlin') {
+function renderSwitcher(cities: WebCityConfig[], path = '/berlin', props: { hideWhenAlone?: boolean } = {}) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <CityProvider cityId="berlin">
-        <CitySwitcher cities={cities} />
+        <CitySwitcher cities={cities} placement="test" {...props} />
         <button type="button">elsewhere</button>
+      </CityProvider>
+      <LocationProbe />
+    </MemoryRouter>,
+  );
+}
+
+/** Two switchers on one page, as the top bar and the map's sidebar have them. */
+function renderTwoSwitchers() {
+  return render(
+    <MemoryRouter initialEntries={['/berlin']}>
+      <CityProvider cityId="berlin">
+        <div data-testid="first">
+          <CitySwitcher cities={[berlin, hamburg]} placement="first" />
+        </div>
+        <div data-testid="second">
+          <CitySwitcher cities={[berlin, hamburg]} placement="second" />
+        </div>
       </CityProvider>
       <LocationProbe />
     </MemoryRouter>,
@@ -49,9 +66,20 @@ describe('CitySwitcher with one active city', () => {
     expect(screen.queryByRole('navigation')).toBeNull();
     expect(screen.queryByRole('link')).toBeNull();
   });
+
+  it('shows nothing at all where it is asked to hide alone', () => {
+    renderSwitcher([berlin], '/berlin', { hideWhenAlone: true });
+    expect(screen.queryByText('BERLIN')).toBeNull();
+    expect(screen.queryByRole('navigation')).toBeNull();
+  });
 });
 
 describe('CitySwitcher with several active cities', () => {
+  it('shows its menu where it is asked to hide alone', () => {
+    renderSwitcher([berlin, hamburg], '/berlin', { hideWhenAlone: true });
+    expect(trigger().getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('starts closed, showing the current city on its button', () => {
     renderSwitcher([berlin, hamburg]);
     const button = trigger();
@@ -139,5 +167,34 @@ describe('CitySwitcher with several active cities', () => {
     expect(trigger().hasAttribute('data-popover-pinned')).toBe(false);
     open();
     expect(trigger().hasAttribute('data-popover-pinned')).toBe(true);
+  });
+});
+
+describe('two CitySwitchers on one page', () => {
+  const triggerIn = (testId: string) =>
+    within(screen.getByTestId(testId)).getByRole('button', { name: /^Berlin/ });
+
+  it('open and close independently, each controlling its own list', () => {
+    renderTwoSwitchers();
+    fireEvent.click(triggerIn('first'));
+    expect(triggerIn('second').getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(triggerIn('second'));
+    const ids = [triggerIn('first'), triggerIn('second')].map((b) => b.getAttribute('aria-controls'));
+    expect(ids[0]).toBeTruthy();
+    expect(ids[1]).toBeTruthy();
+    expect(ids[0]).not.toBe(ids[1]);
+    expect(within(screen.getByTestId('first')).getAllByRole('link')).toHaveLength(2);
+    expect(within(screen.getByTestId('second')).getAllByRole('link')).toHaveLength(2);
+  });
+
+  it.each(['first', 'second'])('gives focus back to the %s switcher after a switch made with it', (used) => {
+    renderTwoSwitchers();
+    fireEvent.click(triggerIn(used));
+    const link = within(screen.getByTestId(used)).getByRole('link', { name: 'Hamburg' });
+    link.focus();
+    fireEvent.click(link);
+    expect(screen.getByTestId('pathname').textContent).toBe('/hamburg');
+    expect(document.activeElement).toBe(triggerIn(used));
   });
 });

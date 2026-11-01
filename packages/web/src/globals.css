@@ -584,14 +584,17 @@ select:focus-visible,
   }
 }
 /* From sm up, warnings at the top of the map column (CommandLayout) push the
-   map below the ticker, so its controls and the layer drawer's panel
-   (MobileLayerDrawer, pt-12) need no offset either. Unlayered, this rule
-   outranks the panel's utility classes. */
+   map below the ticker, so its controls, the layer drawer's panel
+   (MobileLayerDrawer, pt-12) and the map's city switcher (top-12) need no
+   offset either. Unlayered, these rules outrank the utility classes. */
 .hero-warnings:not(:empty) + * .maplibregl-ctrl-top-right {
   top: 0 !important;
 }
 .hero-warnings:not(:empty) + * .layer-drawer-panel {
   padding-top: 0.75rem;
+}
+.hero-warnings:not(:empty) + * .hero-city-switcher {
+  top: 0.75rem;
 }
 
 /* Hide map zoom controls on mobile — finger gestures handle zoom */

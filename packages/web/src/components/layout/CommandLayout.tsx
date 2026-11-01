@@ -36,6 +36,8 @@ import { SkylineSeparator } from './SkylineSeparator.js';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MapErrorFallback } from '../ErrorFallback.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
+import { getAllCities } from '../../config/index.js';
+import { CitySwitcher } from './CitySwitcher.js';
 import type { CityFeature } from '@city-monitor/shared';
 
 const CityMap = lazy(() =>
@@ -106,6 +108,17 @@ export function CommandLayout() {
             </div>
           )}
           <div className="flex-1 min-h-0 relative">
+            {/* From sm to lg, where there is no sidebar, the city switcher sits
+                on the map's top corner, so it is on the first screen while the
+                top bar is off screen (Sidebar has it from lg up). Below the
+                ticker, or at the map's edge when warnings push the map down
+                (globals.css); under the layer drawer when that is open. */}
+            <CitySwitcher
+              cities={getAllCities()}
+              placement="map"
+              hideWhenAlone
+              className="hero-city-switcher absolute top-12 start-3 z-30 hidden sm:block lg:hidden p-0.5 rounded-lg border border-border bg-surface-1/90 backdrop-blur-sm shadow-lg"
+            />
             <ErrorBoundary FallbackComponent={MapErrorFallback}>
               <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
                 <CityMap />

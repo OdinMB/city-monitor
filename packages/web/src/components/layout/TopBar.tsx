@@ -43,6 +43,7 @@ export function TopBar() {
             way it comes first in reading and Tab order, as the name did. */}
         <CitySwitcher
           cities={getAllCities()}
+          placement="topbar"
           className="relative shrink-0 me-1 md:me-0 md:absolute md:left-1/2 md:-translate-x-1/2"
         />
         {current && weatherInfo && (

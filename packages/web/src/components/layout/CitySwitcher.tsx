@@ -5,9 +5,9 @@ import type { WebCityConfig } from '@city-monitor/shared';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { citySwitchPath } from '../../lib/city-path.js';
 
-/** Whether the router state is the one a city link carries (`fromCitySwitcher`). */
-const cameFromSwitcher = (state: unknown) =>
-  typeof state === 'object' && state !== null && 'fromCitySwitcher' in state;
+/** The placement of the switcher a city link was followed from: its router state (`fromCitySwitcher`). */
+const switcherUsed = (state: unknown): unknown =>
+  typeof state === 'object' && state !== null && 'fromCitySwitcher' in state ? state.fromCitySwitcher : undefined;
 
 const NAME_CLASSES = 'text-lg font-bold';
 const ACCENT = { color: 'var(--accent)' };
@@ -15,29 +15,39 @@ const ACCENT = { color: 'var(--accent)' };
 interface CitySwitcherProps {
   /** The active cities (`getAllCities()`). With only one, the plain name shows. */
   cities: WebCityConfig[];
-  /** Placement in the top bar. */
+  /**
+   * Names this switcher among the others on the page (the top bar's, the map
+   * sidebar's, the map corner's), so that after a switch focus returns to the
+   * one used. Unique per page.
+   */
+  placement: string;
+  /** With only one active city, show nothing rather than the plain name. */
+  hideWhenAlone?: boolean;
+  /** Position and frame on the page, on the outer element. */
   className?: string;
 }
 
 /**
- * The top bar's city name. With several active cities it is a button that
- * opens a list of them, each a link to the same page of that city where every
- * city has it, else its dashboard. A disclosure (button and links), not an
- * ARIA menu: the items are plain links, reached with Tab.
+ * The city name. With several active cities it is a button that opens a list
+ * of them, each a link to the same page of that city where every city has it,
+ * else its dashboard. A disclosure (button and links), not an ARIA menu: the
+ * items are plain links, reached with Tab. Several may share a page, each with
+ * its own `placement`.
  */
-export function CitySwitcher({ cities, className = '' }: CitySwitcherProps) {
+export function CitySwitcher({ cities, placement, hideWhenAlone = false, className = '' }: CitySwitcherProps) {
   const current = useCityConfig();
   if (cities.length < 2) {
+    if (hideWhenAlone) return null;
     return (
       <span className={`${NAME_CLASSES} ${className}`} style={ACCENT}>
         {current.name.toUpperCase()}
       </span>
     );
   }
-  return <CityList cities={cities} className={className} />;
+  return <CityList cities={cities} placement={placement} className={className} />;
 }
 
-function CityList({ cities, className }: Required<CitySwitcherProps>) {
+function CityList({ cities, placement, className }: Required<Omit<CitySwitcherProps, 'hideWhenAlone'>>) {
   const current = useCityConfig();
   const { t } = useTranslation();
   const location = useLocation();
@@ -47,10 +57,11 @@ function CityList({ cities, className }: Required<CitySwitcherProps>) {
   const listId = useId();
 
   // A switch mounts the new city's page afresh (App.tsx), so focus would be
-  // lost with the old one: put it back on this button, without scrolling.
+  // lost with the old one: put it back on the button of the switcher used,
+  // without scrolling.
   useEffect(() => {
-    if (cameFromSwitcher(location.state)) buttonRef.current?.focus({ preventScroll: true });
-  }, [location.state]);
+    if (switcherUsed(location.state) === placement) buttonRef.current?.focus({ preventScroll: true });
+  }, [location.state, placement]);
 
   useEffect(() => {
     if (!open) return;
@@ -88,7 +99,8 @@ function CityList({ cities, className }: Required<CitySwitcherProps>) {
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
         aria-label={t('topbar.city.switch', { city: current.name })}
-        // The list hangs from the sliding top bar: keep the bar on screen while it is open (globals.css).
+        // In the sliding top bar, keeps the bar on screen while the list hanging from it is open
+        // (globals.css); elsewhere it does nothing.
         data-popover-pinned={open ? '' : undefined}
         className={`${NAME_CLASSES} inline-flex items-center gap-1 px-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer`}
         style={ACCENT}
@@ -124,7 +136,7 @@ function CityList({ cities, className }: Required<CitySwitcherProps>) {
                   to={citySwitchPath(location.pathname, city.id)}
                   // A new object per render, so choosing the current city twice
                   // still changes the state and runs the focus effect above.
-                  state={{ fromCitySwitcher: true }}
+                  state={{ fromCitySwitcher: placement }}
                   aria-current={isCurrent ? 'page' : undefined}
                   onClick={() => setOpen(false)}
                   className={`block px-3 py-1.5 text-sm rounded ${

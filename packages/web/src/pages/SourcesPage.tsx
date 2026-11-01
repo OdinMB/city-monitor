@@ -4,6 +4,8 @@ import type { TFunction } from 'i18next';
 import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
 import { useCityConfig } from '../hooks/useCityConfig.js';
 import { PageShell } from '../components/layout/PageShell.js';
+import { CitySwitcher } from '../components/layout/CitySwitcher.js';
+import { getAllCities } from '../config/index.js';
 import { safeUrl } from '../lib/safe-url.js';
 import { waqiAgencies } from '../lib/aqi.js';
 
@@ -340,7 +342,9 @@ export function SourcesPage() {
   }, [city.name, sourceCount]);
 
   return (
-    <PageShell>
+    <PageShell
+      besideTitle={<CitySwitcher cities={getAllCities()} placement="page-header" hideWhenAlone className="relative" />}
+    >
       <article className="space-y-10">
         <header>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
