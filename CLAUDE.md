@@ -35,6 +35,7 @@ The server runs cron jobs that fetch external data, classify/process it, write t
 
 ## Context Files
 
+- [`.context/cities.md`](.context/cities.md) — Per city: which sources it has, what was looked for and not found or ruled out, and which requests to data owners are still unanswered. Update it whenever a city gains or loses a source or a request is answered.
 - [`.context/licensing.md`](.context/licensing.md) — AGPL-3.0 license rules and Section 13 footer requirements.
 - [`.context/server.md`](.context/server.md) — App factory, startup sequence, 27 cron jobs, logging system, health & bootstrap endpoints, history endpoints, multi-city config, LLM reasoning-effort values, utility libraries. Appointments ingestion uses Firecrawl API to scrape service.berlin.de (Varnish WAF blocks plain HTTP).
 - [`.context/data-layer.md`](.context/data-layer.md) — In-memory cache API (TTL, coalescing, negative caching), Drizzle ORM schema (6 tables: unified `snapshots` + 5 specialized), read/write patterns, cache warming, freshness-based startup checks, data retention.

@@ -23,5 +23,5 @@ export const hamburg: WebCityConfig = {
   // social atlas, noise sensors, council meetings, district mayors or Berlin's
   // own sources. The Bürgerschaft's constituencies are not Bezirke, so its
   // members are not grouped by Bezirk.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis'],
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap'],
 };

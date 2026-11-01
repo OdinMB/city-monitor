@@ -541,6 +541,7 @@
     },
     "political": {
       "bezirke": "Districts",
+      "mayor": "City Hall",
       "bundestag": "Bundestag",
       "landesparlament": "State Parliament"
     }

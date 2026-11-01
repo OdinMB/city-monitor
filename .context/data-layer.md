@@ -113,7 +113,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `vbb-disruptions` | VBB/HAFAS transit disruptions |
 | `aqi-grid` | Sensor.Community air quality points; the WAQI stations of the same grid are cached, never stored ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
 | `bbk-nina` | BBK NINA civil protection warnings |
-| `abgwatch-*` | Abgeordnetenwatch political districts (4 sub-types) |
+| `abgwatch-*` | Political districts (5 sub-types): `bundestag`, `state`, `state-bezirke` from abgeordnetenwatch; `bezirke` and `mayor` from the hand-kept tables in `ingest-political.ts` |
 
 All tables have `id` (serial PK), and all but `geocodeLookups` have `cityId` (text). Snapshots have `fetchedAt` (timestamptz, default now).
 

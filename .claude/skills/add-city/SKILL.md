@@ -5,7 +5,7 @@ description: Add a new city to City Monitor, or activate one that is configured 
 
 # Add a city
 
-The README's "Adding a City" is the overview for contributors. This is the working order, with the traps. Köln (`koeln`) is the template for a city inside a state with the Germany-wide sources, München (`muenchen`) for one that also has no federal river gauge. Both are cities inside a state ("City-state assumptions"). Since 2026-11-01 both also have news feeds, and Köln a police feed: when you copy them for the first slice, empty `feeds` and drop `police`, whose sources are theirs alone. Berlin is the only city with every source.
+The README's "Adding a City" is the overview for contributors. This is the working order, with the traps. Köln (`koeln`) is the template for a city inside a state with the Germany-wide sources, München (`muenchen`) for one that also has no federal river gauge. Both are cities inside a state ("City-state assumptions"), and since 2026-11-01 both have political data by constituency. Since 2026-11-01 both also have news feeds, and Köln a police feed: when you copy them for the first slice, empty `feeds` and drop `police`, whose sources are theirs alone. Berlin is the only city with every source.
 
 References beside this file:
 
@@ -15,7 +15,7 @@ References beside this file:
 ## Rules that fail silently when broken
 
 - **ID.** Lowercase ASCII that matches `CITY_ID_PATTERN` in `packages/server/src/lib/validate-city.ts`; the API answers 400 to anything else. Transliterate (`koeln`, `muenchen`). The ID becomes the URL `/<id>`, the `[data-city='<id>']` selector, the `<id>:` cache prefix and the `city_id` of every stored row, so don't change it once the city is live. Name the config file `<id>.ts` in both packages and export only the config from it.
-- **Name.** The German name with umlauts, as DWD and OpenStreetMap write it: `Köln`, never `Cologne` or `Koeln`. It has no translation key, so every language shows it as it is. The server matches on it: DWD warnings (the region name contains it, unless `dataSources.weather.dwdWarnRegion` names the region exactly, as a city inside a state must: [source-lookups.md](source-lookups.md)), DWD UV (`uvi.json` city equals it), the AED Overpass area (OSM `name` equals it), Bundestag members (the constituency or list label contains it) and Ticketmaster events (`city=`). The news classifier and the briefing prompt name the city with it.
+- **Name.** The German name with umlauts, as DWD and OpenStreetMap write it: `Köln`, never `Cologne` or `Koeln`. It has no translation key, so every language shows it as it is. The server matches on it: DWD warnings (the region name contains it, unless `dataSources.weather.dwdWarnRegion` names the region exactly, as a city inside a state must: [source-lookups.md](source-lookups.md)), DWD UV (`uvi.json` city equals it), the AED Overpass area (OSM `name` equals it), a city-state's Bundestag members (the constituency or list label contains it) and Ticketmaster events (`city=`). The news classifier and the briefing prompt name the city with it.
 - **One identity in both packages.** `id`, `name`, `country`, `coordinates`, `boundingBox`, `timezone` and `languages` must be equal in the web and server configs (`packages/web/src/config/index.test.ts` checks).
 - **Germany only, so far.** `country: 'DE'` switches on DWD warnings and UV, NINA, pharmacies, AEDs and political data. A city elsewhere needs a weather adapter first (`.context/weather.md`, "Adding a non-German city").
 
@@ -49,18 +49,19 @@ References beside this file:
 
 ## City-state assumptions
 
-Berlin and Hamburg are city-states. Köln and München are not, and four lookups depend on it:
+Berlin and Hamburg are city-states. Köln and München are not, and four lookups depend on it (and the political map layer, below):
 
 - **AEDs.** `ingest-aeds.ts` asks Overpass for the area with the city's name at `dataSources.aeds.adminLevel`, or at the state level (4) without it, which an empty AED layer and no error would show for a city inside a state. Set `aeds: { adminLevel: 6 }` for a kreisfreie Stadt, as Köln and München do, and confirm it (source-lookups.md).
 - **DWD warnings.** A name match also takes in the Landkreis named after the city; set `dataSources.weather.dwdWarnRegion` (source-lookups.md).
-- **State parliament.** `ingest-political.ts` counts every member of the state parliament in `PARLIAMENT_CONFIG` as the city's, so an entry for a city inside a state shows the whole Landtag. `ParliamentConfig` has no Bundestag-only form. Leave the city out, so it has no political data, until the state part can filter by constituency.
+- **Parliaments.** A `PARLIAMENT_CONFIG` entry in `ingest-political.ts` without `constituencies` counts every member of the state parliament as the city's, and the Bundestag members whose constituency or Landesliste label contains `name`: right for a city-state, the whole Landtag and half the state's Bundestag list for anyone else. A city inside a state names its constituencies instead, `constituencies: { bundestag, state }`, as abgeordnetenwatch labels them without number and period (`92 - Köln I (Bundestag 2025 - 2029)` is `Köln I`); then only members whose candidacy was in one of them count, list members included, and nobody from the state list who stood elsewhere. Find them in the period's mandates (source-lookups.md), leave out a Landkreis named after the city (`München-Land`), keep a Wahlkreis the city shares (`Leverkusen – Köln IV`), and pin them in `ingest-political.test.ts`. They change with each redistricting: a name no mandate stood in is logged, and a level where none matches keeps its previous data. In Bavaria the CDU/CSU Bundestag group is the CSU (`unionParty: 'CSU'`). Hand-kept office holders are optional: `OBERBUERGERMEISTER` (the `mayor` feature, the political tile's City Hall view) and `BEZIRKSBUERGERMEISTER` (`districtMayors`), each with its source page and verification date. Group state members by Bezirk (`STATE_CONSTITUENCY_BEZIRKE`) only where the constituencies are named after Bezirke (Berlin).
 - **Labour market.** `ingest-labor-market.ts` fetches `Bundesland=Berlin`, for Berlin only. A state's figure is not a city's, so leave the tile Berlin-only (it already is). A city would need the Bundesagentur's district tables, licence-checked.
+- **Political map layer.** It colours the Bezirk outlines in `DISTRICT_URLS` by the members whose constituency names the Bezirk, which works where constituencies are named after Bezirke. A city inside a state has Stadtbezirke that are not its constituencies, so it gets no outlines and no `politicalMap` feature (web-only; `config/index.test.ts` checks it against `DISTRICT_URLS`), and its political data shows in the tile alone.
 
 ## What a city without a source shows
 
 Nothing for it. Each tile, map layer, sub-layer, political view and feature-bound Sources-page credit needs a feature in the web config's `features` (`CityFeature` in `shared/types.ts`), so a city shows exactly what it has data for: no empty tile, no "all clear" without data, no Berlin-only copy. A sub-layer list with one entry left is not shown; a number key whose layer the city lacks does nothing. The dashboard grid fills the holes missing tiles leave (`grid-flow-row-dense` in `DashboardGrid`).
 
-- **Berlin-only features:** wastewater, fire brigade, labour market, population, bathing (their jobs fetch for Berlin alone), the rent map (Berlin's own WMS), the crisis tile's regional Local tab (Berliner Krisendienst), district mayors and state members by Bezirk (hand-kept tables in `ingest-political.ts`).
+- **Berlin-only features:** wastewater, fire brigade, labour market, population, bathing (their jobs fetch for Berlin alone), the rent map (Berlin's own WMS), the crisis tile's regional Local tab (Berliner Krisendienst), state members by Bezirk (`STATE_CONSTITUENCY_BEZIRKE`). District mayors are Berlin's and Köln's, the Oberbürgermeister Köln's and München's (hand-kept tables in `ingest-political.ts`); the political map layer Berlin's and Hamburg's (`politicalMap`, their district outlines).
 - **Every city, no feature:** weather, air quality, rain radar and traffic incidents.
 - **Every German city, as features:** `aeds` (defibrillators) and `pharmacies` (with a postcode in `CITY_PLZ`). The Emergencies layer shows with either, and its sub-layer buttons with both.
 - The Briefing needs `OPENAI_API_KEY` besides feeds; without it the tile says there are no articles.
@@ -69,7 +70,7 @@ Nothing for it. Each tile, map layer, sub-layer, political view and feature-boun
 ## Tests
 
 - Extend the tests that list cities by hand ([city-keyed-code.md](city-keyed-code.md#tests-that-list-cities-by-hand)): nothing fails if you forget them.
-- Pin the identifiers you looked up, as Köln's tests do: the "Köln config" block in `packages/server/src/config/config.test.ts`, the name match in `packages/server/src/cron/ingest-weather.test.ts` and the postcode in `packages/server/src/cron/ingest-pharmacies.test.ts`.
+- Pin the identifiers you looked up, as Köln's tests do: the "Köln config" block in `packages/server/src/config/config.test.ts`, the name match in `packages/server/src/cron/ingest-weather.test.ts`, the postcode in `packages/server/src/cron/ingest-pharmacies.test.ts` and the constituencies in `packages/server/src/cron/ingest-political.test.ts` ("PARLIAMENT_CONFIG for cities inside a state").
 - `packages/web/src/config/add-city-skill.test.ts` keeps this skill honest: the files it names exist, the city-keyed table still matches the code, every configured city appears where `every city` says it must, and each ID passes the API's pattern and matches its file name.
 
 ## Verify

@@ -28,6 +28,9 @@ import { aggregateBudgetData, type ParsedBudgetRow } from '../cron/ingest-budget
 import { deriveStatus } from '../cron/ingest-appointments.js';
 import { berlinUtcOffset } from '../cron/ingest-council-meetings.js';
 import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
+import {
+  PARLIAMENT_CONFIG, groupsStateMembersByBezirk, handKeptAreas, hasDistrictMayors, hasMayor, hasParliamentConfig,
+} from '../cron/ingest-political.js';
 import { computeLevel, computeTrend } from '../cron/ingest-wastewater.js';
 import { hashString } from '../lib/hash.js';
 
@@ -42,7 +45,7 @@ export interface PolygonFeatureCollection<P> {
   features: Array<{ type: 'Feature'; geometry: { type: 'Polygon'; coordinates: number[][][] }; properties: P }>;
 }
 
-export type PoliticalLevel = 'bezirke' | 'bundestag' | 'state' | 'state-bezirke';
+export type PoliticalLevel = 'bezirke' | 'mayor' | 'bundestag' | 'state' | 'state-bezirke';
 
 export interface SyntheticData {
   cityId: string;
@@ -72,7 +75,8 @@ export interface SyntheticData {
   pollen: PollenForecast;
   noiseSensors: NoiseSensor[];
   councilMeetings: CouncilMeeting[];
-  political: Record<PoliticalLevel, PoliticalDistrict[]>;
+  /** Berlin's full set has every level but `mayor`, which only a city inside a state has. */
+  political: Record<Exclude<PoliticalLevel, 'mayor'>, PoliticalDistrict[]> & { mayor?: PoliticalDistrict[] };
   /** Not in Berlin's data set: Berlin has no LHP gauges configured (NOT_IN_BERLIN). */
   floodStatus?: FloodStatus;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
@@ -127,7 +131,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   pollen: (c) => c.dataSources.pollen !== undefined,
   noiseSensors: (c) => c.dataSources.noiseSensors !== undefined,
   councilMeetings: (c) => c.dataSources.councilMeetings !== undefined,
-  political: (c) => c.country === 'DE' && politicalLevels(c.id).length > 0,
+  political: (c) => politicalLevels(c).length > 0,
   floodStatus: (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0,
 };
 
@@ -405,18 +409,19 @@ export function syntheticDistricts(cityId: string): ReadonlyArray<Point & { name
 }
 
 /**
- * The political levels production fills per city, and what its state
- * parliament's members are called (cron/ingest-political.ts): Bezirk mayors
- * (BEZIRKSBUERGERMEISTER) and state members by Bezirk (BERLIN_BEZIRKE) for
- * Berlin, Bundestag and state parliament for every city in PARLIAMENT_CONFIG.
+ * The political levels production fills for a city (cron/ingest-political.ts):
+ * Bundestag and state parliament for every city in PARLIAMENT_CONFIG, Bezirk
+ * mayors and the Oberbürgermeister where their hand-kept tables have the city,
+ * state members by Bezirk where STATE_CONSTITUENCY_BEZIRKE has it.
  */
-const POLITICAL: Readonly<Record<string, { levels: readonly PoliticalLevel[]; stateRole: string }>> = {
-  berlin: { levels: ['bezirke', 'bundestag', 'state', 'state-bezirke'], stateRole: 'MdA' },
-  hamburg: { levels: ['bundestag', 'state'], stateRole: 'MdHB' },
-};
-
-function politicalLevels(cityId: string): readonly PoliticalLevel[] {
-  return Object.hasOwn(POLITICAL, cityId) ? POLITICAL[cityId]!.levels : [];
+function politicalLevels(city: CityConfig): readonly PoliticalLevel[] {
+  if (!hasParliamentConfig(city)) return [];
+  const levels: PoliticalLevel[] = [];
+  if (hasDistrictMayors(city)) levels.push('bezirke');
+  if (hasMayor(city)) levels.push('mayor');
+  levels.push('bundestag', 'state');
+  if (groupsStateMembersByBezirk(city)) levels.push('state-bezirke');
+  return levels;
 }
 
 /** Placeholder street names, so no address is a real one. */
@@ -1437,13 +1442,16 @@ function generateCouncilMeetings(rng: Rng, now: Date, place: Place): CouncilMeet
 const PARTIES = ['CDU', 'SPD', 'Grüne', 'Die Linke', 'AfD', 'FDP', 'BSW'];
 
 /**
- * The levels production fills for the city (POLITICAL), all named by
- * the Bezirk names the map's district boundaries carry; Bundestag
- * constituencies put the city in front ("Berlin-Mitte", "Hamburg-Altona").
+ * The levels production fills for the city (politicalLevels). A city-state's
+ * are named by the Bezirk names the map's district boundaries carry; Bundestag
+ * constituencies put the city in front ("Berlin-Mitte", "Hamburg-Altona"). A
+ * city inside a state's are named by the constituencies PARLIAMENT_CONFIG
+ * lists for it and the areas of its hand-kept tables.
  */
 function generatePolitical(rng: Rng, place: Place): Partial<Record<PoliticalLevel, PoliticalDistrict[]>> {
-  const levels = new Set(politicalLevels(place.city.id));
   const { districts, city } = place;
+  const levels = new Set(politicalLevels(city));
+  const config = PARLIAMENT_CONFIG[city.id]!;
   let count = 0;
   const person = (party: string, role: string, constituency?: string): Representative => {
     count++;
@@ -1459,23 +1467,44 @@ function generatePolitical(rng: Rng, place: Place): Partial<Record<PoliticalLeve
 
   const political: Partial<Record<PoliticalLevel, PoliticalDistrict[]>> = {};
   if (levels.has('bezirke')) {
-    political.bezirke = districts.map((d): PoliticalDistrict => ({
-      id: `bm-${slug(d.name)}`,
-      name: d.name,
+    const areas = districts.length > 0 ? districts.map((d) => d.name) : handKeptAreas('bezirke', city.id);
+    political.bezirke = areas.map((name): PoliticalDistrict => ({
+      id: `bm-${slug(name)}`,
+      name,
       level: 'bezirk',
       representatives: [person(rng.pick(PARTIES.slice(0, 4)), 'Bezirksbürgermeister:in')],
     }));
   }
+  if (levels.has('mayor')) {
+    political.mayor = handKeptAreas('mayor', city.id).map((name): PoliticalDistrict => ({
+      id: `ob-${slug(name)}`,
+      name,
+      level: 'stadt',
+      representatives: [person(rng.pick(PARTIES.slice(0, 4)), 'Oberbürgermeister:in')],
+    }));
+  }
   if (levels.has('bundestag')) {
-    political.bundestag = districts.map((d): PoliticalDistrict => {
-      const name = d.name.startsWith(`${city.name}-`) ? d.name : `${city.name}-${d.name}`;
-      return { id: `bundestag-${slug(name)}`, name, level: 'bundestag', representatives: [person(rng.pick(PARTIES), 'MdB', name)] };
-    });
+    const names = config.constituencies?.bundestag
+      ?? districts.map((d) => (d.name.startsWith(`${city.name}-`) ? d.name : `${city.name}-${d.name}`));
+    political.bundestag = names.map((name): PoliticalDistrict => (
+      { id: `bundestag-${slug(name)}`, name, level: 'bundestag', representatives: [person(rng.pick(PARTIES), 'MdB', name)] }
+    ));
   }
   if (!levels.has('state') && !levels.has('state-bezirke')) return political;
-  const role = POLITICAL[city.id]!.stateRole;
-  const stateReps = districts.map((d) => [1, 2].map((n) => person(rng.pick(PARTIES), role, `${d.name} ${n}`)));
-  if (levels.has('state')) {
+  const role = config.state.role;
+  // A city inside a state: one member per constituency of the city and one list member
+  // who stood there; a city-state: two numbered constituencies per Bezirk.
+  const stateReps = config.constituencies
+    ? config.constituencies.state.map((c) => [person(rng.pick(PARTIES), role, c), person(rng.pick(PARTIES), role, c)])
+    : districts.map((d) => [1, 2].map((n) => person(rng.pick(PARTIES), role, `${d.name} ${n}`)));
+  if (config.constituencies && levels.has('state')) {
+    political.state = config.constituencies.state.map((name, i): PoliticalDistrict => ({
+      id: `state-${slug(name)}`,
+      name,
+      level: 'landesparlament',
+      representatives: stateReps[i]!,
+    }));
+  } else if (levels.has('state')) {
     political.state = stateReps.flat().map((rep): PoliticalDistrict => ({
       id: `state-${slug(rep.constituency!)}`,
       name: rep.constituency!,

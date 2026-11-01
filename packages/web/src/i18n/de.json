@@ -543,10 +543,13 @@
     },
     "political": {
       "bezirke": "Bezirke",
+      "mayor": "Rathaus",
       "bundestag": "Bundestag",
       "landesparlament": "Landesparlament",
       "landesparlament_berlin": "Abgeordnetenhaus",
-      "landesparlament_hamburg": "Bürgerschaft"
+      "landesparlament_hamburg": "Bürgerschaft",
+      "landesparlament_koeln": "Landtag",
+      "landesparlament_muenchen": "Landtag"
     }
   },
   "mapPopup": {

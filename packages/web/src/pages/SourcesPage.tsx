@@ -104,7 +104,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'abgeordnetenwatch.de',
         url: 'https://www.abgeordnetenwatch.de/',
-        description: 'Parliamentary representatives for Bundestag and state parliaments, mapped to city constituencies.',
+        description: 'Members of the Bundestag and the state parliament for the city\'s constituencies. Licensed CC0 1.0.',
         requires: 'political',
       },
     ],
@@ -315,6 +315,12 @@ const KOELN_SOURCES: SourceGroup[] = [
       { name: 'Stadt Köln SessionNet (OParl)', url: 'https://buergerinfo.stadt-koeln.de/', description: 'Meetings of the city council, its committees and the nine Bezirksvertretungen via the OParl 1.1 API. Official public records; the API states no licence.' },
     ],
   },
+  {
+    category: 'Politics',
+    sources: [
+      { name: 'Stadt Köln (Oberbürgermeister, Bezirksvertretungen)', url: 'https://www.stadt-koeln.de/politik-und-verwaltung/bezirksvertretungen/', description: 'The Oberbürgermeister and the nine Bezirksbürgermeister, copied by hand from the city\'s pages and checked twice a year.' },
+    ],
+  },
 ];
 
 // No river level: the Isar through München is not a federal waterway, so not on
@@ -350,6 +356,12 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     category: 'Council Meetings',
     sources: [
       { name: 'München RIS', url: 'https://risi.muenchen.de/', description: 'Stadtrat committee and Bezirksausschuss meetings from the council information system’s RSS feeds. Official public records; the feeds state no licence.' },
+    ],
+  },
+  {
+    category: 'Politics',
+    sources: [
+      { name: 'Landeshauptstadt München (Oberbürgermeister)', url: 'https://stadt.muenchen.de/infos/oberbuergermeister.html', description: 'The Oberbürgermeister, copied by hand from the city\'s page and checked twice a year.' },
     ],
   },
 ];

@@ -1,5 +1,5 @@
 import type { CityConfig, CityFeature } from '@city-monitor/shared';
-import { groupsStateMembersByBezirk, hasDistrictMayors, hasParliamentConfig } from '../cron/ingest-political.js';
+import { groupsStateMembersByBezirk, hasDistrictMayors, hasMayor, hasParliamentConfig } from '../cron/ingest-political.js';
 import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
 
 /**
@@ -33,6 +33,7 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['aeds', (c) => c.country === 'DE'],
   ['political', hasParliamentConfig],
   ['districtMayors', hasDistrictMayors],
+  ['mayor', hasMayor],
   ['stateByDistrict', (c) => hasParliamentConfig(c) && groupsStateMembersByBezirk(c)],
   ...BERLIN_OWN_SOURCES.map((f): [CityFeature, (city: CityConfig) => boolean] => [f, (c) => c.id === 'berlin']),
 ];

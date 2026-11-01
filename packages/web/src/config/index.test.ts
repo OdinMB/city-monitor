@@ -8,11 +8,11 @@ import { berlin } from './cities/berlin.js';
 import { hamburg } from './cities/hamburg.js';
 import { koeln } from './cities/koeln.js';
 import { muenchen } from './cities/muenchen.js';
-import { getNoiseWmsAttribution, getNoiseWmsUrl } from '../components/map/constants.js';
+import { DISTRICT_URLS, getNoiseWmsAttribution, getNoiseWmsUrl } from '../components/map/constants.js';
 import { getCrisisDirectory } from '../components/strips/crisis-services.js';
 
 /** Features the web app holds itself, which the server knows nothing about. */
-const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal'];
+const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap'];
 
 const ALL_CONFIGURED = [berlin, hamburg, koeln, muenchen];
 
@@ -158,6 +158,13 @@ describe('the web app\'s own features', () => {
   // leaving it out would hide numbers it has.
   it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists the crisis tile exactly when it has a crisis directory', (id, city) => {
     expect(city.features.includes('crisis'), id).toBe(getCrisisDirectory(id) !== null);
+  });
+
+  // The political map layer colours district outlines the web app ships
+  // (DISTRICT_URLS); without them it would draw nothing. A city inside a state
+  // has none, as its Stadtbezirke are not its constituencies.
+  it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists the political map exactly when it has district outlines', (id, city) => {
+    expect(city.features.includes('politicalMap'), id).toBe(Object.hasOwn(DISTRICT_URLS, id));
   });
 
   it('has a crisis directory for no city it does not configure', () => {

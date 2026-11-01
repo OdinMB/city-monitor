@@ -3,6 +3,7 @@ import { getTableName, type SQL, type Table } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import postgres from 'postgres';
 import { hamburg } from '../config/cities/hamburg.js';
+import { koeln } from '../config/cities/koeln.js';
 import { muenchen } from '../config/cities/muenchen.js';
 import { SNAPSHOT_TYPES, type SnapshotType } from '../db/schema.js';
 import { generateSyntheticCityData, generateSyntheticData, syntheticModel } from './generate.js';
@@ -17,7 +18,8 @@ vi.mock('drizzle-orm/postgres-js', () => ({ drizzle: vi.fn(() => pg.db) }));
 type Row = Record<string, unknown>;
 
 /** Snapshot types of sources Berlin's config lacks: München's seed writes them instead. */
-const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood'];
+// Berlin has no LHP gauges, and no Oberbürgermeister: only a city inside a state has one.
+const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood', 'abgwatch-mayor'];
 
 /** Records what the write functions insert, per table name. */
 function fakeDb() {
@@ -159,5 +161,16 @@ describe('seedDatabase', () => {
     await seedDatabase(local, generateSyntheticCityData({ now: new Date(), city: muenchen }));
     const types = new Set((rows.snapshots ?? []).map((r) => r.type));
     expect(NOT_IN_BERLIN.filter((t) => !types.has(t))).toEqual([]);
+  });
+
+  it('writes a city inside a state its Oberbürgermeister and Bezirksbürgermeister', async () => {
+    const { local, rows } = fakeDb();
+    await seedDatabase(local, generateSyntheticCityData({ now: new Date(), city: koeln }));
+
+    const types = new Set((rows.snapshots ?? []).map((r) => r.type));
+    for (const type of ['abgwatch-mayor', 'abgwatch-bezirke', 'abgwatch-bundestag', 'abgwatch-state']) {
+      expect(types, type).toContain(type);
+    }
+    expect(types).not.toContain('abgwatch-state-bezirke');
   });
 });
