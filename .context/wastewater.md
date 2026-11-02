@@ -16,7 +16,7 @@ Weekly viral load in wastewater for all four cities (Influenza A, Influenza B, R
 - **Format:** Semicolon-delimited, German decimal format (comma), quoted fields
 - **Pathogens:** Influenza A, Influenza B, RSV
 - **Plants:** 3 treatment plants (Ruhleben, Schonerlinde, Wassmannsdorf) covering ~84% of Berlin
-- **Update frequency:** CSV updated daily. Since autumn 2026 Influenza A is sampled twice a week (Wednesday and Sunday), B and RSV on Wednesdays only; see "Known issue" below
+- **Update frequency:** CSV updated daily. Since autumn 2026 Influenza A is sampled twice a week (Wednesday and Sunday), B and RSV on Wednesdays only, so the newest sample date often holds Influenza A alone; the ingestion groups by calendar week for this reason
 - **License:** Datenlizenz Deutschland - Namensnennung - Version 2.0
 
 ### RKI AMELAG (all four cities)
@@ -35,7 +35,7 @@ Weekly viral load in wastewater for all four cities (Influenza A, Influenza B, R
 
 - Loops over the active cities with `dataSources.wastewater`. Downloads the AMELAG TSV **once** per run for the union of their `sites` (`parseAmelagSites`), then builds each city from its own plants' rows
 - **AMELAG city** (`buildAmelagSummary`): per pathogen (`buildAmelagPathogen`), each plant's samples are averaged per ISO calendar week (Monday start), then the plants are averaged weighted by `einwohner`. One value per week, so the sparkline's 7-day spacing holds; weeks without any sample are left out (a seasonal pause shortens the history). Value = latest week, previous = the week before, level against the highest week on record, history = last 12 weeks. Summary `sampleDate` = the newest sample date; a pathogen whose newest sample is older keeps its own `sampleDate`. `plantCount` = plants in the latest week
-- **Berlin** (`provider: 'lageso'`): LAGeSo CSV parsed as before (rows grouped by sample date, averaged across plants, unweighted), then SARS-CoV-2 from AMELAG for the three Berlin plants via the same weekly, weighted `buildAmelagPathogen`. Its `sampleDate` is set on the pathogen only when it differs from LAGeSo's
+- **Berlin** (`provider: 'lageso'`): LAGeSo's flu and RSV go through the same weekly grouping as AMELAG (`buildSummary` hands the rows to `buildAmelagSummary`, every plant weighted 1, as LAGeSo gives no population): each plant's Wednesday and Sunday samples become one weekly value, each pathogen keeps its own newest sample date, and the trend compares the latest week with the one before. Before 2026-11-02 it grouped by sample date and showed only the newest date's pathogens, so a Sunday with Influenza A alone hid Flu B and RSV (the case `cron/fixtures/lageso-bewac-trimmed.csv`, recorded 2026-11-02, pins). Then SARS-CoV-2 from AMELAG for the three Berlin plants via the same weekly, weighted `buildAmelagPathogen`. Its `sampleDate` is set on the pathogen only when it differs from LAGeSo's
 - Trend: latest vs previous (rising >1.5x, falling <0.67x, stable otherwise; "new" if previous=0, "gone" if current=0). Level: ≤25% of max low, ≤50% moderate, above high, 0 none
 - Failures: AMELAG failing leaves every `amelag` city's cache and DB row as they were and Berlin without SARS-CoV-2; LAGeSo failing skips Berlin only
 - DB: Unified `snapshots` table, type `lageso-wastewater` for every city (the name predates the AMELAG cities; renaming it would need a migration), one JSONB row per city and run
@@ -79,10 +79,6 @@ interface WastewaterSummary {
   plantCount: number;
 }
 ```
-
-## Known issue (Berlin, not yet fixed)
-
-`buildSummary` takes the pathogens of LAGeSo's latest sample date only and treats each date as a week. Since LAGeSo added a Sunday Influenza A sample (seen 2026-10), a Sunday-latest CSV gives Berlin's tile only Influenza A and SARS-CoV-2 (checked live 2026-11-02: latest date 2026-10-25, Flu A only), and the Flu A history mixes Wednesday and Sunday samples. Bucketing LAGeSo by week like AMELAG would fix both.
 
 ## Adding a city
 

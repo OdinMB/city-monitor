@@ -70,68 +70,15 @@ export function computeLevel(value: number, maxNonZero: number): WastewaterPatho
   return 'high';
 }
 
+/**
+ * Berlin's flu and RSV from the LAGeSo CSV, grouped by calendar week exactly
+ * like the AMELAG plants (`buildAmelagSummary`): LAGeSo samples Influenza A on
+ * Wednesdays and Sundays but B and RSV on Wednesdays only, so grouping by
+ * sample date would drop B and RSV whenever a Sunday is the newest date. The
+ * plants count equally, as LAGeSo gives no population per plant.
+ */
 function buildSummary(rows: CsvRow[]): WastewaterSummary | null {
-  if (rows.length === 0) return null;
-
-  // Get unique dates sorted descending
-  const dates = [...new Set(rows.map((r) => r.date))].sort().reverse();
-  const latestDate = dates[0];
-  const previousDate = dates[1] ?? null;
-
-  const latestRows = rows.filter((r) => r.date === latestDate);
-  const previousRows = previousDate ? rows.filter((r) => r.date === previousDate) : [];
-
-  // Unique plants in latest sample
-  const plants = new Set(latestRows.map((r) => r.plant));
-
-  // Unique pathogens in latest sample only
-  const pathogenNames = [...new Set(latestRows.map((r) => r.pathogen))].sort();
-
-  // History dates: last 12 dates (descending), then reversed to oldest-first
-  const historyDates = dates.slice(0, HISTORY_LENGTH).reverse();
-
-  const avg = (vals: number[]) => vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-
-  // Precompute per-pathogen max non-zero value across ALL dates
-  const maxNonZero = new Map<string, number>();
-  for (const name of pathogenNames) {
-    let max = 0;
-    for (const date of dates) {
-      const values = rows.filter((r) => r.date === date && r.pathogen === name).map((r) => r.value);
-      const a = avg(values);
-      if (a > max) max = a;
-    }
-    maxNonZero.set(name, max);
-  }
-
-  const pathogens: WastewaterPathogen[] = pathogenNames.map((name) => {
-    const latestValues = latestRows.filter((r) => r.pathogen === name).map((r) => r.value);
-    const previousValues = previousRows.filter((r) => r.pathogen === name).map((r) => r.value);
-
-    const value = avg(latestValues);
-    const previousValue = avg(previousValues);
-
-    // Build history: avg per pathogen per date, oldest-first
-    const history = historyDates.map((date) => {
-      const values = rows.filter((r) => r.date === date && r.pathogen === name).map((r) => r.value);
-      return avg(values);
-    });
-
-    return {
-      name,
-      value,
-      previousValue,
-      trend: previousDate ? computeTrend(value, previousValue) : 'stable',
-      level: computeLevel(value, maxNonZero.get(name) ?? 0),
-      history,
-    };
-  });
-
-  return {
-    sampleDate: latestDate,
-    pathogens,
-    plantCount: plants.size,
-  };
+  return buildAmelagSummary(rows.map((r) => ({ site: r.plant, date: r.date, pathogen: r.pathogen, value: r.value, population: 1 })));
 }
 
 // --- RKI AMELAG (amelag_einzelstandorte.tsv) ---

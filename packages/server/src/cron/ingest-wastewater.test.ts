@@ -46,6 +46,14 @@ function buildTsv(...rows: string[]): string {
 const AMELAG_FIXTURE = readFileSync(new URL('./fixtures/amelag-einzelstandorte-trimmed.tsv', import.meta.url), 'utf8');
 
 /**
+ * BEWAC_abwassermonitoring_berlin.csv as recorded on 2026-11-02, trimmed to
+ * the samples from 2026-10-12 (byte order mark dropped). Influenza A is also
+ * sampled on Sundays (2026-10-18, 2026-10-25), B and RSV on Wednesdays only,
+ * so the newest date holds Influenza A alone.
+ */
+const LAGESO_FIXTURE = readFileSync(new URL('./fixtures/lageso-bewac-trimmed.csv', import.meta.url), 'utf8');
+
+/**
  * Mock fetch to return different responses for Lageso and AMELAG URLs.
  * By default, AMELAG returns 500 so existing Lageso-only tests are unaffected.
  */
@@ -243,6 +251,49 @@ describe('ingest-wastewater (AMELAG cities, recorded file)', () => {
     expect(covid.value).toBe((72700 + 90800) / 2);
     expect(covid.previousValue).toBe(70500);
     expect(covid.sampleDate).toBe('2026-10-11');
+  });
+});
+
+describe('ingest-wastewater (Lageso, recorded file with a Sunday-only Influenza A sample)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  async function berlinSummary(): Promise<WastewaterSummary> {
+    mockFetch(LAGESO_FIXTURE); // AMELAG answers 500: LAGeSo's three alone
+    const cache = createCache();
+    await createWastewaterIngestion(cache)();
+    return cache.get<WastewaterSummary>('berlin:wastewater:summary')!;
+  }
+
+  it('keeps Influenza B and RSV when the newest sample date has Influenza A only', async () => {
+    const summary = await berlinSummary();
+    expect(summary.pathogens.map((p) => p.name)).toEqual(['Influenza A', 'Influenza B', 'RSV']);
+    expect(summary.sampleDate).toBe('2026-10-25');
+    expect(summary.plantCount).toBe(3);
+  });
+
+  it('averages each plant\'s Wednesday and Sunday samples into one weekly value, then the plants', async () => {
+    const [fluA] = (await berlinSummary()).pathogens;
+    // Week of 2026-10-12: Ruhleben 0 and 4,717.86; week of 2026-10-19: Schönerlinde 3,430.78 and 6,788.34
+    const previous = (0 + 4717.858244) / 2 / 3;
+    const latest = (3430.77743466667 + 6788.34334933333) / 2 / 3;
+    expect(fluA!.history).toHaveLength(2);
+    expect(fluA!.previousValue).toBeCloseTo(previous, 6);
+    expect(fluA!.value).toBeCloseTo(latest, 6);
+    expect(fluA!.trend).toBe('rising'); // 2.2x the week before
+    expect(fluA!.sampleDate).toBeUndefined();
+  });
+
+  it('dates Influenza B and RSV by their own Wednesday sample, compared with the week before', async () => {
+    const [, fluB, rsv] = (await berlinSummary()).pathogens;
+    expect(fluB).toMatchObject({ value: 3448.08710633333 / 3, previousValue: 0, trend: 'new', sampleDate: '2026-10-21' });
+    expect(rsv).toMatchObject({ value: 0, previousValue: 0, trend: 'stable', level: 'none', sampleDate: '2026-10-21' });
   });
 });
 
