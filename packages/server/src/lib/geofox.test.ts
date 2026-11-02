@@ -170,6 +170,79 @@ describe('parseGeofoxAnnouncements', () => {
     expect(alerts[1]).toMatchObject({ lines: ['hvv'], station: '', location: null, type: 'disruption' });
   });
 
+  describe('Hamburg network filter', () => {
+    const validities = [{ begin: '2017-10-12T00:00:00.000+0200' }];
+    const single = (name: string) => ({ type: 'SINGLE_LINE', line: { name } });
+    const announce = (summary: string, names: string[]) =>
+      ({ summary, description: `${summary}.`, validities, locations: names.map(single) });
+
+    it('keeps U-, S-Bahn, AKN, ferries, city, Xpress and night buses; drops 4-digit and suffixed regional buses', () => {
+      const keep = ['U1', 'S3', 'A1', '62', '5', '112', 'X35', '609', 'U3-SEV'];
+      const drop = ['2001', '6560', '8894', '2303-KVG', '332-VKP', 'SEV'];
+      const response: GtiAnnouncementResponse = {
+        returnCode: 'OK',
+        announcements: [...keep, ...drop].map((n) => announce(`Meldung ${n}`, [n])),
+      };
+      const alerts = parseGeofoxAnnouncements(response, NOW);
+      expect(alerts.map((a) => a.line)).toEqual(keep);
+    });
+
+    it('keeps an announcement with mixed lines but lists only the Hamburg ones', () => {
+      const response: GtiAnnouncementResponse = {
+        returnCode: 'OK',
+        announcements: [announce('Haltestellenausfall', ['6580', '411', 'X80', '2303-KVG'])],
+      };
+      const [alert] = parseGeofoxAnnouncements(response, NOW);
+      expect(alert.lines).toEqual(['411', 'X80']);
+      expect(alert.line).toBe('411, X80');
+    });
+
+    it('keeps regional trains, but not on the stand-alone replacement-bus stop notices', () => {
+      const response: GtiAnnouncementResponse = {
+        returnCode: 'OK',
+        announcements: [
+          announce('Haltestelleninformation für EV in Westerland(Sylt)', ['SEV']),
+          announce('Haltestelleninformation für EV in Kiel Hbf', ['SEV', 'RE7-SEV', 'RE7']),
+          announce('RE7: Störung zwischen Elmshorn und Hamburg Hbf', ['RE7', 'RB61']),
+        ],
+      };
+      const alerts = parseGeofoxAnnouncements(response, NOW);
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0].lines).toEqual(['RE7', 'RB61']);
+    });
+
+    it('keeps the whole hvv network and Hamburg carriers, drops regional carriers', () => {
+      const response: GtiAnnouncementResponse = {
+        returnCode: 'OK',
+        announcements: [
+          { summary: 'Unwetter', description: 'Unwetter.', validities, locations: [{ type: 'COMPLETE_NET', name: 'hvv' }] },
+          { summary: 'Streik HOCHBAHN', description: 'Streik.', validities, locations: [{ type: 'ALL_LINES_OF_CARRIER', name: 'HOCHBAHN' }] },
+          { summary: 'Warnstreiks bei der VKP', description: 'Streik.', validities, locations: [{ type: 'ALL_LINES_OF_CARRIER', name: 'VKP' }] },
+        ],
+      };
+      expect(parseGeofoxAnnouncements(response, NOW).map((a) => a.line)).toEqual(['hvv', 'HOCHBAHN']);
+    });
+  });
+
+  it('never rates planned work above medium, while unplanned closures and cancellations stay high', () => {
+    const validities = [{ begin: '2017-10-12T00:00:00.000+0200' }];
+    const bus = [{ type: 'SINGLE_LINE', line: { name: '3' } }];
+    const response: GtiAnnouncementResponse = {
+      returnCode: 'OK',
+      announcements: [
+        { summary: 'Sperrung Holstenstraße', description: 'Umleitung.', planned: true, reason: 'ROADWORKS', validities, locations: bus },
+        { summary: 'U2: Störung', description: 'Weichenstörung.', validities, locations: [{ type: 'SINGLE_LINE', line: { name: 'U2' } }] },
+        { summary: 'Ausfall', description: 'Fahrten fallen aus.', validities, locations: bus },
+      ],
+    };
+    const alerts = parseGeofoxAnnouncements(response, NOW);
+    expect(alerts.map((a) => [a.type, a.severity])).toEqual([
+      ['planned-work', 'medium'],
+      ['disruption', 'high'],
+      ['cancellation', 'high'],
+    ]);
+  });
+
   it('shortens a long first sentence for the message and keeps the full text as detail', () => {
     const description = `${'Sehr lange Meldung '.repeat(20)}Ende.`;
     const [alert] = parseGeofoxAnnouncements({ returnCode: 'OK', announcements: [{ description }] }, NOW);

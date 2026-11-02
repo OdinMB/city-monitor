@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hvvLineStyle } from './hvv-lines.js';
+import { hvvLineStyle, isHvvFerry } from './hvv-lines.js';
 
 describe('hvvLineStyle', () => {
   it('gives U- and S-Bahn lines the colours of hvv\'s icons', () => {
@@ -17,6 +17,12 @@ describe('hvvLineStyle', () => {
     expect(hvvLineStyle('X22')?.background).toBe('#1A9628');
     expect(hvvLineStyle('X11')?.background).toBe('#E2001A');
     expect(hvvLineStyle('5')?.background).toBe('#E2001A');
+  });
+
+  it('knows the HADAG ferries by number', () => {
+    expect(isHvvFerry('62')).toBe(true);
+    expect(isHvvFerry('66')).toBe(false);
+    expect(isHvvFerry('U3')).toBe(false);
   });
 
   it('leaves regional trains and unknown names to the generic badge', () => {

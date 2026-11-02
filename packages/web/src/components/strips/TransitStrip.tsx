@@ -9,10 +9,31 @@ import { StripErrorFallback } from '../ErrorFallback.js';
 import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
-import { hvvLineStyle, type LineStyle } from '../../lib/hvv-lines.js';
+import { hvvLineStyle, isHvvFerry, type LineStyle } from '../../lib/hvv-lines.js';
 import type { TransitAlert } from '../../lib/api.js';
 
 const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+/** U-Bahn, S-Bahn, AKN and regional trains, in any city: `U3`, `S41`, `A1`, `RE7`, `RB61`. */
+const RAIL_LINE = /^(U|S|A|RE|RB)\d+$/i;
+
+/**
+ * The tile's order: severity first; within it unplanned items (cancellations,
+ * disruptions, delays) before planned work; then alerts touching rail or a
+ * ferry before bus-only ones. The sort is stable, so the server's order
+ * decides the rest.
+ */
+function rank(alert: TransitAlert, isFerry?: (line: string) => boolean): [number, number, number] {
+  const lines = alert.lines ?? [alert.line];
+  const rail = lines.some((l) => RAIL_LINE.test(l.trim()) || !!isFerry?.(l));
+  return [SEVERITY_ORDER[alert.severity] ?? 3, alert.type === 'planned-work' ? 1 : 0, rail ? 0 : 1];
+}
+
+function sortAlerts(alerts: TransitAlert[], isFerry?: (line: string) => boolean): TransitAlert[] {
+  const ranked = alerts.map((alert) => ({ alert, key: rank(alert, isFerry) }));
+  ranked.sort((a, b) => a.key[0] - b.key[0] || a.key[1] - b.key[1] || a.key[2] - b.key[2]);
+  return ranked.map((r) => r.alert);
+}
 
 const COLLAPSED_MAX = 6;
 const EXPANDED_MAX = 12;
@@ -131,8 +152,15 @@ const FRESH_MAX_AGE = staleAfter('transit');
  * link visibly to hvv.de, and draw lines as hvv does. The credit texts are
  * translation keys; each language keeps the words "ohne Gewähr".
  */
-const CITY_SOURCE: Readonly<Record<string, { creditKey: string; noteKey: string; url: string; lineStyle: (line: string) => LineStyle | null }>> = {
-  hamburg: { creditKey: 'panel.transit.hvvSource', noteKey: 'panel.transit.noGuarantee', url: 'https://www.hvv.de/', lineStyle: hvvLineStyle },
+const CITY_SOURCE: Readonly<Record<string, {
+  creditKey: string;
+  noteKey: string;
+  url: string;
+  lineStyle: (line: string) => LineStyle | null;
+  /** Ferries named by number only (Hamburg's HADAG lines), ranked with rail. */
+  isFerry?: (line: string) => boolean;
+}>> = {
+  hamburg: { creditKey: 'panel.transit.hvvSource', noteKey: 'panel.transit.noGuarantee', url: 'https://www.hvv.de/', lineStyle: hvvLineStyle, isFerry: isHvvFerry },
 };
 
 export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
@@ -143,9 +171,7 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
   const source = CITY_SOURCE[cityId];
 
   const alerts = data ?? [];
-  const sorted = [...alerts].sort(
-    (a, b) => (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3),
-  );
+  const sorted = sortAlerts(alerts, source?.isFerry);
 
   const limit = expanded ? EXPANDED_MAX : COLLAPSED_MAX;
   const visible = sorted.slice(0, limit);
