@@ -81,14 +81,14 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-flood-status` | `*/5 * * * *` | LHP flood class of state gauges and flood warnings, for cities with `dataSources.floodStatus` (München's Isar; [water-levels.md](water-levels.md#flood-status-lhp)). Two requests per state per run |
 | `ingest-appointments` | `0 6,18 * * *` | Firecrawl-scraped Bürgeramt appointment availability. One scrape per service per run (~600 a month for Berlin's 10); twice a day to keep Firecrawl usage down, the morning run after offices release new slots |
 | `ingest-aeds` | `0 0 * * *` | OpenStreetMap AED locations (daily) |
-| `ingest-social-atlas` | `0 5 * * 0` | Social atlas GeoJSON by provider, for cities with `dataSources.socialAtlas`: MSS WFS (Berlin), Sozialmonitoring XLSX (Hamburg), Datenkatalog CSV (Köln) (weekly; [social-atlas.md](social-atlas.md)) |
+| `ingest-social-atlas` | `0 5 * * 0` | Social atlas GeoJSON by provider, for cities with `dataSources.socialAtlas`: MSS WFS (Berlin), Sozialmonitoring XLSX (Hamburg), Datenkatalog CSV (Köln), Indikatorenatlas CSVs via CKAN (München, 25 Stadtbezirke) (weekly; [social-atlas.md](social-atlas.md)) |
 | `ingest-budget` | `0 6 * * *` | Berlin Haushalt budget data (daily) |
 | `ingest-bathing` | `0 6 * * *` | Bathing water quality by provider, for cities with `dataSources.bathing`: LAGeSo CSV (Berlin), Geodienste WFS (Hamburg) ([water-levels.md](water-levels.md#bathing-water-quality)) |
 | `ingest-lift-outages` | `*/15 * * * *` | KVB lifts and escalators out of service, for cities with `dataSources.liftOutages` (Köln; [lift-outages.md](lift-outages.md)). Two requests per run |
 | `ingest-wastewater` | `0 6 * * *` | Wastewater viral loads: RKI AMELAG for every city with `dataSources.wastewater` (one download), plus LAGeSo for Berlin (daily) |
 | `ingest-labor-market` | `0 7 * * *` | BA unemployment statistics, the Land or Kreis table in `dataSources.laborMarket` (daily) |
 | `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly; skips the API only when the stored data is under 6 days old, so every weekly run refreshes) |
-| `ingest-population` | `0 6 1 * *` | Population per small area by provider, for cities with `dataSources.population`: EWR XLSX (Berlin), Stadtteil OGC API (Hamburg), Datenkatalog CSV (Köln) (monthly; [population.md](population.md)) |
+| `ingest-population` | `0 6 1 * *` | Population per small area by provider, for cities with `dataSources.population`: EWR XLSX (Berlin), Stadtteil OGC API (Hamburg), Datenkatalog CSV (Köln), Indikatorenatlas CSVs via CKAN (München) (monthly; [population.md](population.md)) |
 | `ingest-feuerwehr` | `0 8 * * *` | Berliner Feuerwehr operations (daily, Berlin-only) |
 | `ingest-pollen` | `0 */6 * * *` | DWD pollen forecast |
 | `ingest-noise-sensors` | `*/10 * * * *` | Sensor.Community DNMS noise sensors |

@@ -52,7 +52,9 @@ describe('cityLayers', () => {
   it('leaves out the social-atlas indicators a city\'s source lacks', () => {
     // Köln's Datenkatalog has no child-poverty figure
     expect(cityLayers(koeln).social).toEqual(['unemployment', 'single-parent', 'welfare']);
-    expect(cityLayers(muenchen).layers.has('social')).toBe(false);
+    // München's Indikatorenatlas has all four, and population; no rent map
+    expect(cityLayers(muenchen).social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty']);
+    expect(cityLayers(muenchen).layers.has('population')).toBe(true);
   });
 
   it('shows a parent layer when any one of its sub-layers is there', () => {

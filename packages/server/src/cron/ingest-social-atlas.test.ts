@@ -226,7 +226,7 @@ describe('ingest-social-atlas', () => {
   });
 });
 
-describe('ingest-social-atlas for Köln and Hamburg', () => {
+describe('ingest-social-atlas for Köln, Hamburg and München', () => {
   const fixture = (name: string) => readFileSync(new URL(`../lib/social-atlas-fixtures/${name}`, import.meta.url));
   type Collection = { features: Array<{ geometry: { type: string }; properties: SocialAtlasFeatureProps }> };
 
@@ -264,5 +264,52 @@ describe('ingest-social-atlas for Köln and Hamburg', () => {
     const geojson = cache.get<Collection>('hamburg:social-atlas:geojson')!;
     expect(geojson.features.map((f) => f.properties.plrId)).toEqual(['4001', '102001', '104001']);
     expect(geojson.features[1]!.properties).toMatchObject({ bezId: 'Harburg', statusLabel: 'mittel', childPoverty: 6.8 });
+  });
+
+  describe('München', () => {
+    const files: Record<string, string> = {
+      'indikatorenatlas-2014-arbeitsmarkt-arbeitslosendichte-83r65mct': 'muc-arbeitslose-anteil.csv',
+      'indikatorenatlas-bevoelkerung-haushalte-alleinerziehend': 'muc-haushalte-alleinerziehend.csv',
+      'indikatorenatlas-2014-arbeitsmarkt-regel-leistungsberechtigte-erwerbsfaehig-anteil-83r65mct': 'muc-leistungsberechtigte-erwerbsfaehig.csv',
+      'indikatorenatlas-arbeitsmarkt-regel-leistungsberechtigte-nicht-erwerbsfaehig-anteil-83r65mct': 'muc-leistungsberechtigte-nicht-erwerbsfaehig.csv',
+    };
+    /** package_show answers with a CSV named after the dataset; the CSV with its fixture, or 503 for `failing`. */
+    const mockCkan = (failing?: string) => vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const id = new URL(url).searchParams.get('id');
+      if (id) return new Response(JSON.stringify({ result: { resources: [{ format: 'CSV', url: `https://opendata.muenchen.de/download/${id}.csv` }] } }));
+      const dataset = url.split('/').pop()!.replace(/\.csv$/, '');
+      if (dataset === failing) return new Response('', { status: 503 });
+      return new Response(fixture(files[dataset]!), { status: 200 });
+    });
+
+    it('looks up each indicator\'s current CSV and draws the Stadtbezirke of the configured year', async () => {
+      vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+      const fetchSpy = mockCkan();
+
+      const cache = createCache();
+      await createSocialAtlasIngestion(cache)();
+
+      const ids = fetchSpy.mock.calls.map((c) => new URL(String(c[0])).searchParams.get('id')).filter(Boolean);
+      expect(new Set(ids)).toEqual(new Set(Object.keys(files)));
+      const geojson = cache.get<Collection>('muenchen:social-atlas:geojson')!;
+      expect(geojson.features.map((f) => f.properties.plrId)).toEqual(['01', '11', '19']);
+      expect(geojson.features[1]!.geometry.type).toMatch(/Polygon/);
+      expect(geojson.features[1]!.properties).toMatchObject({
+        plrName: 'Milbertshofen-Am Hart', bezId: '11', statusIndex: null,
+        unemployment: 4.3, singleParent: 3.8, welfare: 5.7, childPoverty: 12.4,
+      });
+    });
+
+    it('keeps what it had when one indicator\'s CSV fails', async () => {
+      vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+      mockCkan('indikatorenatlas-bevoelkerung-haushalte-alleinerziehend');
+
+      const cache = createCache();
+      cache.set('muenchen:social-atlas:geojson', { type: 'FeatureCollection', features: [{ id: 'old' }] }, 604800);
+      await createSocialAtlasIngestion(cache)();
+
+      expect(cache.get<{ features: unknown[] }>('muenchen:social-atlas:geojson')!.features).toEqual([{ id: 'old' }]);
+    });
   });
 });

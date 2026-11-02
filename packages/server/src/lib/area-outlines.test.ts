@@ -3,12 +3,14 @@ import type { CityConfig } from '@city-monitor/shared';
 import { loadAreaOutlines, parseAreaOutlines } from './area-outlines.js';
 import { hamburg } from '../config/cities/hamburg.js';
 import { koeln } from '../config/cities/koeln.js';
+import { muenchen } from '../config/cities/muenchen.js';
 
 /** Every outline file a city config names, with the city whose box its polygons must lie in. */
 const FILES: Array<[string, CityConfig, number]> = [
   ['koeln-quartiere.geojson', koeln, 570],
   ['hamburg-statistische-gebiete.geojson', hamburg, 857],
   ['hamburg-stadtteile.geojson', hamburg, 99],
+  ['muenchen-stadtbezirke.geojson', muenchen, 25],
 ];
 
 function* positions(coords: unknown): Generator<[number, number]> {
@@ -35,7 +37,7 @@ describe('shipped area outlines', () => {
   });
 
   it('names the outline files the city configs use', () => {
-    const named = [koeln, hamburg].flatMap((c) => [c.dataSources.socialAtlas, c.dataSources.population])
+    const named = [koeln, hamburg, muenchen].flatMap((c) => [c.dataSources.socialAtlas, c.dataSources.population])
       .flatMap((s) => (s && 'outlines' in s ? [s.outlines] : []));
     expect(new Set(named)).toEqual(new Set(FILES.map(([f]) => f)));
   });
@@ -44,6 +46,15 @@ describe('shipped area outlines', () => {
     const kapitol = (await loadAreaOutlines('koeln-quartiere.geojson')).get('101010001')!;
     expect(kapitol).toMatchObject({ name: 'Kapitol-Viertel', district: 'Innenstadt' });
     expect(kapitol.areaKm2).toBeCloseTo(0.13, 2);
+  });
+
+  it('numbers München\'s Stadtbezirke as the Indikatorenatlas does, with the GeodatenService\'s areas', async () => {
+    const outlines = await loadAreaOutlines('muenchen-stadtbezirke.geojson');
+    expect([...outlines.keys()]).toEqual(Array.from({ length: 25 }, (_, i) => String(i + 1).padStart(2, '0')));
+    expect(outlines.get('01')).toMatchObject({ name: 'Altstadt-Lehel', areaKm2: 3.146 });
+    // The Indikatorenatlas gives the city 310.7 km²
+    const total = [...outlines.values()].reduce((s, o) => s + o.areaKm2!, 0);
+    expect(total).toBeCloseTo(310.7, 0);
   });
 
   it('refuses a path instead of a file name', () => {

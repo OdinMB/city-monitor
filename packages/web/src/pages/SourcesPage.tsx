@@ -410,7 +410,10 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
   },
   {
     category: 'Social & Economic',
-    sources: [baSource('the Landeshauptstadt München')],
+    sources: [
+      baSource('the Landeshauptstadt München'),
+      { name: 'Indikatorenatlas München', url: 'https://opendata.muenchen.de/pages/indikatorenatlas', description: 'Yearly indicators for the 25 Stadtbezirke, the finest level the atlas keeps up to date — far coarser than the other cities\' areas. For the social atlas, data year 2024: unemployed (of residents aged 15–64), single-parent households (of all households), employable SGB II recipients (of residents aged 15–64) and children under 15 on SGB II (Sozialgeld, of residents under 15); no status index. For population, the newest year: residents by age group and non-German residents, as of 31 December. City Monitor derives the population shares and density. Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0. The labour-market figures come from the Bundesagentur für Arbeit through the city.' },
+    ],
   },
   {
     category: 'Council Meetings',
@@ -427,7 +430,7 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
   {
     category: 'Maps',
     sources: [
-      { name: 'Stadtbezirke München (GeodatenService)', url: 'https://opendata.muenchen.de/dataset/vablock_stadtbezirke_opendata', description: 'Outlines of the 25 Stadtbezirke on the map; the two parts of Untergiesing-Harlaching and of Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln merged and the lines simplified. Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.' },
+      { name: 'Stadtbezirke München (GeodatenService)', url: 'https://opendata.muenchen.de/dataset/vablock_stadtbezirke_opendata', description: 'Outlines of the 25 Stadtbezirke on the map and in the social atlas and population layers, with each district\'s area for the density; the two parts of Untergiesing-Harlaching and of Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln merged and the lines simplified. Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.' },
     ],
   },
 ];

@@ -7,8 +7,10 @@ import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { loadAreaOutlines } from '../lib/area-outlines.js';
 import { loadWorkbook, sheetToAoa } from '../lib/xlsx.js';
+import { fetchIndikatorCsv } from '../lib/muenchen-indikatorenatlas.js';
 import {
-  mssLayerNames, parseHamburgSozialmonitoring, parseKoelnSocialAtlas, parseMss, type SocialAtlasArea,
+  mssLayerNames, parseHamburgSozialmonitoring, parseKoelnSocialAtlas, parseMss, parseMuenchenSocialAtlas,
+  SOCIAL_ATLAS_METRICS, type MuenchenSocialCsvs, type SocialAtlasArea,
 } from '../lib/social-atlas-parsers.js';
 
 export { mssLayerNames } from '../lib/social-atlas-parsers.js';
@@ -88,6 +90,15 @@ async function fetchAreas(cityId: string, source: SocialAtlasSource): Promise<So
       const indicatorSheet = wb.getWorksheet('II_Indikatoren');
       if (!indexSheet || !indicatorSheet) throw new Error('Sozialmonitoring XLSX lacks I_Indizes or II_Indikatoren');
       return parseHamburgSozialmonitoring(sheetToAoa(indexSheet), sheetToAoa(indicatorSheet));
+    }
+    case 'muenchen-indikatorenatlas': {
+      // One dataset per indicator; a failed one fails the run, so no slot silently goes blank.
+      const metrics = SOCIAL_ATLAS_METRICS[source.provider];
+      const texts = await Promise.all(metrics.map((m) =>
+        fetchIndikatorCsv(source.ckanApi, source.datasets[m], (url) => fetchOk(cityId, url, `Indikatorenatlas ${m}`))));
+      if (texts.some((t) => t === null)) return null;
+      const csvs = Object.fromEntries(metrics.map((m, i) => [m, texts[i]!])) as MuenchenSocialCsvs;
+      return parseMuenchenSocialAtlas(csvs, source.year);
     }
   }
 }

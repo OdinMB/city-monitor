@@ -6,6 +6,7 @@ import { CityProvider } from '../../hooks/CityProvider.js';
 import { CityContext } from '../../hooks/CityContext.js';
 import { hamburg } from '../../config/cities/hamburg.js';
 import { koeln } from '../../config/cities/koeln.js';
+import { muenchen } from '../../config/cities/muenchen.js';
 import { cityLayers } from '../../lib/map-layers.js';
 import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
@@ -145,6 +146,14 @@ describe('DataLayerToggles per city', () => {
     renderFor(hamburg);
     expect(shown('Children on minimum income (2025)')).toBe(true);
     expect(shown('Unemployment (2025)')).toBe(true);
+    cleanup();
+
+    // München's 25 Stadtbezirke are far coarser than the other cities' areas: the label says so
+    renderFor(muenchen);
+    expect(shown('Unemployment (2024, 25 districts only)')).toBe(true);
+    expect(shown('Single-parent households (2024, 25 districts only)')).toBe(true);
+    expect(shown('Employable SGB II recipients (2024, 25 districts only)')).toBe(true);
+    expect(shown('Children under 15 on SGB II (2024, 25 districts only)')).toBe(true);
   });
 
   it('lists a layer\'s sub-layers only when the city has more than one', () => {

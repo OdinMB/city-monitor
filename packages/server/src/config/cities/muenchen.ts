@@ -9,7 +9,9 @@ import type { CityConfig } from '@city-monitor/shared';
  * disallows all, and the Polizeipräsidium is not on presseportal). The other
  * city-specific sources (transit, events) are not configured yet, so their
  * jobs fetch nothing for München. Its Stadtbezirk outlines ship with the web
- * app (packages/web/src/data/districts).
+ * app (packages/web/src/data/districts), and again with each district's area
+ * in packages/server/data for the social atlas and population, which the
+ * Indikatorenatlas gives per Stadtbezirk.
  */
 export const muenchen: CityConfig = {
   id: 'muenchen',
@@ -78,6 +80,32 @@ export const muenchen: CityConfig = {
         councilFeedUrl: 'https://risi.muenchen.de/risi/rss?feed=StR-Sitzungen',
         districtFeedUrl: 'https://risi.muenchen.de/risi/rss?feed=BA-Sitzungen',
       },
+    },
+    // Indikatorenatlas of the Statistisches Amt (dl-de/by-2.0), one CKAN dataset per indicator,
+    // yearly, at the 25 Stadtbezirke only (no finer level is kept up to date). The outlines
+    // (GeodatenService, dl-de/by-2.0) ship in packages/server/data. The social atlas pins the
+    // year its labels name: the labour-market figures for 2025 come out around May 2027.
+    socialAtlas: {
+      provider: 'muenchen-indikatorenatlas',
+      ckanApi: 'https://opendata.muenchen.de/api/3/action',
+      datasets: {
+        unemployment: 'indikatorenatlas-2014-arbeitsmarkt-arbeitslosendichte-83r65mct',
+        singleParent: 'indikatorenatlas-bevoelkerung-haushalte-alleinerziehend',
+        welfare: 'indikatorenatlas-2014-arbeitsmarkt-regel-leistungsberechtigte-erwerbsfaehig-anteil-83r65mct',
+        childPoverty: 'indikatorenatlas-arbeitsmarkt-regel-leistungsberechtigte-nicht-erwerbsfaehig-anteil-83r65mct',
+      },
+      year: 2024,
+      outlines: 'muenchen-stadtbezirke.geojson',
+    },
+    // Population takes the newest year in the files (2025 as of 2026-11).
+    population: {
+      provider: 'muenchen-indikatorenatlas',
+      ckanApi: 'https://opendata.muenchen.de/api/3/action',
+      datasets: {
+        ageGroups: 'indikatorenatlas-bevoelkerung-altersgruppen-83r65mct',
+        foreign: 'indikatorenatlas-bevoelkerung-nichtdeutsche-83r65mct',
+      },
+      outlines: 'muenchen-stadtbezirke.geojson',
     },
   },
 };

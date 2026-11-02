@@ -626,11 +626,16 @@
       "sgb2": "SGB II yardımı alanlar",
       "sgb2Asylblg": "SGB II ve AsylbLG yardımı alanlar",
       "childPoverty": "Çocuk yoksulluğu",
-      "childrenMinimumIncome": "Asgari gelir desteği alan çocuklar"
+      "childrenMinimumIncome": "Asgari gelir desteği alan çocuklar",
+      "sgb2Employable": "Çalışabilir SGB II yardımı alanlar",
+      "childrenSgb2": "SGB II yardımı alan 15 yaş altı çocuklar"
     },
     "status": {
       "mss": "MSS durum endeksi",
       "hhSozialmonitoring": "Sozialmonitoring durum endeksi"
+    },
+    "areas": {
+      "muenchenStadtbezirke": "yalnızca 25 ilçe"
     }
   },
   "nina": {

@@ -630,11 +630,16 @@
       "sgb2": "SGB II recipients",
       "sgb2Asylblg": "SGB II and AsylbLG recipients",
       "childPoverty": "Child poverty",
-      "childrenMinimumIncome": "Children on minimum income"
+      "childrenMinimumIncome": "Children on minimum income",
+      "sgb2Employable": "Employable SGB II recipients",
+      "childrenSgb2": "Children under 15 on SGB II"
     },
     "status": {
       "mss": "MSS status index",
       "hhSozialmonitoring": "Sozialmonitoring status"
+    },
+    "areas": {
+      "muenchenStadtbezirke": "25 districts only"
     }
   },
   "nina": {

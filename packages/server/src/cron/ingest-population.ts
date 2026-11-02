@@ -10,8 +10,9 @@ import { loadAreaOutlines } from '../lib/area-outlines.js';
 import { loadWorkbook, sheetToAoa } from '../lib/xlsx.js';
 import {
   extractEwrSnapshotDate, hamburgStadtteileUrl, parseEwrSchluessel, parseEwrT2Sheet, parseHamburgStadtteile,
-  parseKoelnPopulation, type PopulationData,
+  parseKoelnPopulation, parseMuenchenPopulation, type PopulationData,
 } from '../lib/population-parsers.js';
+import { fetchIndikatorCsv } from '../lib/muenchen-indikatorenatlas.js';
 
 const log = createLogger('ingest-population');
 
@@ -115,6 +116,15 @@ async function fetchPopulation(
       const res = await fetchOk(city.id, hamburgStadtteileUrl(source.itemsUrl));
       if (!res) return null;
       return { data: parseHamburgStadtteile(await res.json()), shapes: await loadAreaOutlines(source.outlines) };
+    }
+    case 'muenchen-indikatorenatlas': {
+      const get = (url: string) => fetchOk(city.id, url);
+      const [ages, foreign] = await Promise.all([
+        fetchIndikatorCsv(source.ckanApi, source.datasets.ageGroups, get),
+        fetchIndikatorCsv(source.ckanApi, source.datasets.foreign, get),
+      ]);
+      if (ages === null || foreign === null) return null;
+      return { data: parseMuenchenPopulation(ages, foreign), shapes: await loadAreaOutlines(source.outlines) };
     }
   }
 }
@@ -223,7 +233,7 @@ async function ingestCityPopulation(city: CityConfig, source: PopulationSource, 
 
 /**
  * The change against the previous count: from the source where it carries the
- * year before (Köln, Hamburg), else against the previous database snapshot
+ * year before (Köln, Hamburg, München), else against the previous database snapshot
  * (Berlin). A rerun on the same count keeps the change that snapshot recorded
  * rather than comparing the count with itself.
  */

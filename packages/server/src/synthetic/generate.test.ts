@@ -441,6 +441,12 @@ describe('generateSyntheticCityData', () => {
     const hProps = generateSyntheticCityData({ now: NOW, city: hamburg }).socialAtlas!.features.map((f) => f.properties);
     expect(hProps.every((p) => typeof p.childPoverty === 'number' && typeof p.statusIndex === 'number')).toBe(true);
     expect(generateSyntheticCityData({ now: NOW, city: berlin }).population!.summary.changePeriod).toBe('half-year');
+
+    // München's Indikatorenatlas has all four indicators but no status index
+    const m = generateSyntheticCityData({ now: NOW, city: muenchen });
+    const mProps = m.socialAtlas!.features.map((f) => f.properties);
+    expect(mProps.every((p) => typeof p.childPoverty === 'number' && typeof p.singleParent === 'number' && p.statusIndex === null)).toBe(true);
+    expect(m.population!.summary.changePeriod).toBe('year');
   });
 
   it('holds weather and transit only where their ingestion would fetch them', () => {

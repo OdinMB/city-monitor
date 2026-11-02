@@ -149,7 +149,19 @@ export type SocialAtlasSource =
   /** Stadt Köln's Statistischer Datenkatalog CSV, the rows of one year at the Statistische Quartier level */
   | { provider: 'koeln-datenkatalog'; csvUrl: string; year: number; outlines: string }
   /** Hamburg's Sozialmonitoring report annex (XLSX), one per report year */
-  | { provider: 'hh-sozialmonitoring'; xlsxUrl: string; reportYear: number; outlines: string };
+  | { provider: 'hh-sozialmonitoring'; xlsxUrl: string; reportYear: number; outlines: string }
+  /**
+   * München's Indikatorenatlas: one CKAN dataset per indicator on `ckanApi`
+   * (`…/api/3/action`), whose CSV is looked up on each run (its file name
+   * carries the release date); the 25 Stadtbezirke of one year
+   */
+  | {
+    provider: 'muenchen-indikatorenatlas';
+    ckanApi: string;
+    datasets: { unemployment: string; singleParent: string; welfare: string; childPoverty: string };
+    year: number;
+    outlines: string;
+  };
 
 /**
  * A city's population source, by provider; parsers in
@@ -161,7 +173,9 @@ export type PopulationSource =
   /** The same Köln CSV as the social atlas: its newest year, compared with the year before */
   | { provider: 'koeln-datenkatalog'; csvUrl: string; outlines: string }
   /** Hamburg's "Regionalstatistische Daten der Stadtteile" (OGC API Features, no geometry fetched) */
-  | { provider: 'hh-stadtteile'; itemsUrl: string; outlines: string };
+  | { provider: 'hh-stadtteile'; itemsUrl: string; outlines: string }
+  /** München's Indikatorenatlas age-group and non-German datasets (CKAN, as for the social atlas): the newest year, compared with the year before */
+  | { provider: 'muenchen-indikatorenatlas'; ckanApi: string; datasets: { ageGroups: string; foreign: string }; outlines: string };
 
 /**
  * A city's bathing-water feed, by the provider whose format it is in. Each
@@ -574,9 +588,9 @@ export interface BuergeramtData {
  * per city (packages/web/src/lib/social-atlas.ts).
  */
 export interface SocialAtlasFeatureProps {
-  plrId: string;             // the area's ID: Berlin Planungsraum, Köln Statistisches Quartier, Hamburg Statistisches Gebiet
+  plrId: string;             // the area's ID: Berlin Planungsraum, Köln Statistisches Quartier, Hamburg Statistisches Gebiet, München Stadtbezirk
   plrName: string;
-  bezId: string;             // the district it lies in (Berlin: Bezirk number; Köln: Stadtbezirk; Hamburg: Bezirk)
+  bezId: string;             // the district it lies in (Berlin: Bezirk number; Köln: Stadtbezirk; Hamburg: Bezirk; München: its own number)
   population: number;
   statusIndex: number | null;   // 1 (hoch) – 4 (sehr niedrig), where the source has a status index (Berlin MSS, Hamburg)
   statusLabel: string | null;   // "hoch" | "mittel" | "niedrig" | "sehr niedrig"

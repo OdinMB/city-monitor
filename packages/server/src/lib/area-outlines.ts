@@ -2,7 +2,8 @@ import { readFile } from 'node:fs/promises';
 
 /**
  * Area outlines that ship with the server, for sources that publish figures
- * per area but no polygons (Köln's Statistischer Datenkatalog) or whose
+ * per area but no polygons (Köln's Statistischer Datenkatalog, München's
+ * Indikatorenatlas) or whose
  * polygons are too heavy to fetch on every run (Hamburg). Each is a GeoJSON
  * FeatureCollection in packages/server/data/, converted once from the city's
  * open data (the conversion is in .context/new-data-sources.md, "Data Freshness

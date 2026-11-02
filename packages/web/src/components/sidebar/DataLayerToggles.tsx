@@ -205,13 +205,14 @@ export function DataLayerToggles() {
   const noise = effectiveNoiseLayer(noiseLayer, available);
   const social = effectiveChoice(socialLayer, available.social);
   const political = effectiveChoice(politicalLayer, available.political);
-  // Each city names its social-atlas indicators its own way, with the edition they come from.
+  // Each city names its social-atlas indicators its own way, with the edition
+  // they come from and, for a coarse source, its areas.
   const socialAtlas = socialAtlasOf(city.id);
   const socialLabel = (key: SocialLayer) => {
     const indicator = indicatorOf(socialAtlas, key);
-    return indicator
-      ? `${t(`socialAtlas.indicator.${indicator.label}`)} (${socialAtlas!.edition})`
-      : t(`sidebar.social.${key}`);
+    if (!indicator) return t(`sidebar.social.${key}`);
+    const note = socialAtlas!.areas ? `${socialAtlas!.edition}, ${t(`socialAtlas.areas.${socialAtlas!.areas}`)}` : socialAtlas!.edition;
+    return `${t(`socialAtlas.indicator.${indicator.label}`)} (${note})`;
   };
 
   return (

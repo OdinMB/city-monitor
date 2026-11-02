@@ -43,7 +43,7 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
 
 ## München
 
-- **Has:** 2 news feeds (BR24 Oberbayern, Feuerwehr München) with AI briefing, roadworks (Geoportal WFS, filtered), council meetings (RIS RSS feeds, about 10 days ahead), Isar flood class and flood warnings for the München and Puppling gauges (LHP, [water-levels.md](water-levels.md)), political data (Bundestag members for München-Nord/-Ost/-Süd/-West-Mitte, Bayerischer Landtag members for Stimmkreise 101–109, by candidacy; München-Land left out; the Oberbürgermeister from a hand-kept table), crisis tile, labour market (BA Kreis table `München, Landeshauptstadt`, not the wider Agentur für Arbeit München) and wastewater (AMELAG plant `München`, serving about 1.24 million people), the last two since 2026-11-02. The 25 Stadtbezirk outlines (GeodatenService München, dl-de/by-2.0) on the map.
+- **Has:** 2 news feeds (BR24 Oberbayern, Feuerwehr München) with AI briefing, roadworks (Geoportal WFS, filtered), council meetings (RIS RSS feeds, about 10 days ahead), Isar flood class and flood warnings for the München and Puppling gauges (LHP, [water-levels.md](water-levels.md)), political data (Bundestag members for München-Nord/-Ost/-Süd/-West-Mitte, Bayerischer Landtag members for Stimmkreise 101–109, by candidacy; München-Land left out; the Oberbürgermeister from a hand-kept table), crisis tile, labour market (BA Kreis table `München, Landeshauptstadt`, not the wider Agentur für Arbeit München) and wastewater (AMELAG plant `München`, serving about 1.24 million people), the last two since 2026-11-02. The 25 Stadtbezirk outlines (GeodatenService München, dl-de/by-2.0) on the map. Social atlas and population from the Indikatorenatlas (Statistisches Amt, dl-de/by-2.0, one CKAN dataset per indicator, since 2026-11-02), at the 25 Stadtbezirke only, which the sidebar says ("25 districts only"): unemployed share of 15–64-year-olds, single-parent households, employable SGB II recipients and children under 15 on SGB II, data year 2024, no status index; residents, age and non-German share for the newest year (2025), yearly ([social-atlas.md](social-atlas.md), [population.md](population.md)).
 - **Looked for, not found or ruled out:**
   - News: Süddeutsche and tz forbid automated access; Rathaus Umschau and muenchen.de are private use only; Abendzeitung unclear.
   - Police: Polizeipräsidium München is not on presseportal, has no feed, and its robots.txt disallows all crawling.
@@ -54,7 +54,7 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
   - The 25 Bezirksausschuss chairs: one web page each, no dataset; too many to keep by hand.
   - Bathing water: Bavaria publishes no live samples as open data, so not built.
   - Rent map: no open Wohnlagen dataset found.
-- **Not built yet:** social atlas and population from the Indikatorenatlas, which covers only the 25 Stadtbezirke (coarse next to the other cities' 99–857 areas).
+  - Social atlas and population at a finer level: the Indikatorenatlas keeps only the 25 Stadtbezirke current (coarse next to the other cities' 99–857 areas); "Bevölkerung Stadtbezirksteile" (108 areas) stops at December 2017. No composite status index.
 
 ## Requests to data owners, all sent 2026-11-01
 

@@ -106,6 +106,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
   ['Bundesagentur für Arbeit', (c) => c.dataSources.laborMarket !== undefined],
   ['Amt für Statistik Berlin-Brandenburg', (c) => c.dataSources.population?.provider === 'afstat-ewr-xlsx'],
+  ['Indikatorenatlas München', (c) => c.dataSources.socialAtlas?.provider === 'muenchen-indikatorenatlas' || c.dataSources.population?.provider === 'muenchen-indikatorenatlas'],
   ['Berliner Feuerwehr Open Data', berlinOnly],
   // ingest-feeds classifies news items and ingest-safety places police reports with the LLM
   ['OpenAI', (c) => c.feeds.length > 0 || c.dataSources.police !== undefined],
@@ -204,6 +205,8 @@ describe('SourcesPage licence credits', () => {
     'Hamburger Wohnlagenverzeichnis (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.',
     'Badegewässer Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, dl-de/by-2-0.',
     'KVB Open Data (Aufzüge, Fahrtreppen)': 'Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.',
+    'Indikatorenatlas München': 'Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0.',
+    'Stadtbezirke München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
   };
 
   it('finds every listed source on some city page', () => {

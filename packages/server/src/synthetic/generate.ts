@@ -1657,6 +1657,7 @@ const CITY_DETAILS: Readonly<Record<string, CityDetails>> = {
     roads: ['A8', 'A9', 'A94', 'A95', 'A96', 'A99', 'B2R'],
     pollenRegion: 'Allgäu/Oberbayern/Bay. Wald',
     gauges: {},
-    deprivationCentres: [],
+    // Made-up hot spots for the synthetic indices
+    deprivationCentres: [{ lat: 48.215, lon: 11.54 }, { lat: 48.1, lon: 11.65 }, { lat: 48.19, lon: 11.57 }],
   },
 };

@@ -21,10 +21,11 @@ export const muenchen: WebCityConfig = {
   theme: { accent: '#A16207' },
   // The Germany-wide sources without a river gauge, the Isar's flood class
   // (LHP), news feeds (no police source), the city's roadworks, council
-  // meetings, the members of the Bundestag and Landtag for its constituencies,
-  // its Oberbürgermeister (no Bezirksausschuss chairs) and the crisis-services
-  // directory. Its 25 Stadtbezirke ship as outlines, but there is no political
-  // map layer: no Bezirksausschuss chairs, and its constituencies are not
-  // Stadtbezirke.
-  features: ['news', 'nina', 'pollen', 'floodStatus', 'roadworks', 'laborMarket', 'wastewater', 'councilMeetings', 'pharmacies', 'aeds', 'political', 'mayor', 'crisis'],
+  // meetings, the social atlas and population of its 25 Stadtbezirke (the
+  // Indikatorenatlas has no finer level), the members of the Bundestag and
+  // Landtag for its constituencies, its Oberbürgermeister (no Bezirksausschuss
+  // chairs) and the crisis-services directory. Its 25 Stadtbezirke ship as
+  // outlines, but there is no political map layer: no Bezirksausschuss chairs,
+  // and its constituencies are not Stadtbezirke.
+  features: ['news', 'nina', 'pollen', 'floodStatus', 'roadworks', 'socialAtlas', 'population', 'laborMarket', 'wastewater', 'councilMeetings', 'pharmacies', 'aeds', 'political', 'mayor', 'crisis'],
 };

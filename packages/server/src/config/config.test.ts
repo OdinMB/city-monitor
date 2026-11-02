@@ -237,6 +237,12 @@ describe('München config', () => {
     });
   });
 
+  it('takes social atlas and population from the Indikatorenatlas datasets, on the shipped Stadtbezirk outlines', () => {
+    const { dataSources } = getCityConfig('muenchen')!;
+    expect(dataSources.socialAtlas).toMatchObject({ provider: 'muenchen-indikatorenatlas', ckanApi: 'https://opendata.muenchen.de/api/3/action', year: 2024, outlines: 'muenchen-stadtbezirke.geojson' });
+    expect(dataSources.population).toMatchObject({ provider: 'muenchen-indikatorenatlas', ckanApi: 'https://opendata.muenchen.de/api/3/action', outlines: 'muenchen-stadtbezirke.geojson' });
+  });
+
   it('has its licence-checked feeds, roadworks and Isar flood gauges, and no river levels, police or other city-specific source', () => {
     const config = getCityConfig('muenchen')!;
     expect(config.feeds.map((f) => f.name)).toEqual(['BR24 Oberbayern', 'Feuerwehr München']);
@@ -250,7 +256,7 @@ describe('München config', () => {
     expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['München'] });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
-      floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, ...rest
+      floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });

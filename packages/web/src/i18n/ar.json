@@ -675,11 +675,16 @@
       "sgb2": "متلقو إعانة SGB II",
       "sgb2Asylblg": "متلقو إعانات SGB II وAsylbLG",
       "childPoverty": "فقر الأطفال",
-      "childrenMinimumIncome": "أطفال يتلقون الحد الأدنى من الدخل"
+      "childrenMinimumIncome": "أطفال يتلقون الحد الأدنى من الدخل",
+      "sgb2Employable": "متلقو إعانة SGB II القادرون على العمل",
+      "childrenSgb2": "أطفال دون 15 عامًا يتلقون إعانة SGB II"
     },
     "status": {
       "mss": "مؤشر الحالة MSS",
       "hhSozialmonitoring": "مؤشر الحالة (Sozialmonitoring)"
+    },
+    "areas": {
+      "muenchenStadtbezirke": "25 دائرة فقط"
     }
   },
   "nina": {

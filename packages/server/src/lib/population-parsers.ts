@@ -6,6 +6,7 @@
  */
 import type { PopulationSource } from '@city-monitor/shared';
 import { KOELN_QUARTIER_LEVEL, parseKoelnDatenkatalog } from './koeln-datenkatalog.js';
+import { districtRows, parseIndikatorCsv, type IndikatorRow } from './muenchen-indikatorenatlas.js';
 
 export type PopulationProvider = PopulationSource['provider'];
 
@@ -27,7 +28,7 @@ export interface PopulationData {
   snapshotDate: string;
   /**
    * The city's total at the previous count, for a source that carries it
-   * (Köln and Hamburg: the year before). Berlin's XLSX holds one count, so its
+   * (Köln, Hamburg and München: the year before). Berlin's XLSX holds one count, so its
    * change comes from the previous database snapshot instead.
    */
   previousTotal?: number;
@@ -211,5 +212,42 @@ export function parseHamburgStadtteile(json: unknown): PopulationData {
     })),
     snapshotDate: typeof latest[0]?.jahr_date === 'string' ? latest[0].jahr_date : `${year}-12-31`,
     previousTotal: previous.length > 0 ? previous.reduce((s, p) => s + n(p.bev_insgesamt), 0) : undefined,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// München: Indikatorenatlas ("Bevölkerung – Altersgruppen" and "– Nichtdeutsche")
+// ---------------------------------------------------------------------------
+
+/**
+ * The newest year's 25 Stadtbezirke and the year before's total. Counts are
+ * the residents with their main home in München (Hauptwohnsitzbevölkerung),
+ * from Basiswert 1 of the rows "insgesamt", "bis 17 Jahre" and "65 Jahre und
+ * älter" (age groups) and "insgesamt" (non-Germans), as of 31 December. The
+ * area comes from the outline file, which carries the GeodatenService's.
+ */
+export function parseMuenchenPopulation(ageGroupsCsv: string, foreignCsv: string): PopulationData {
+  const ages = parseIndikatorCsv(ageGroupsCsv);
+  const totals = districtRows(ages, 'insgesamt');
+  if (totals.length === 0) return { areas: [], snapshotDate: '' };
+  const year = Math.max(...totals.map((r) => r.year));
+  const byId = (rows: IndikatorRow[]) => new Map(rows.map((r) => [r.districtId!, r.base1 ?? 0]));
+  const youth = byId(districtRows(ages, 'bis 17 Jahre', year));
+  const elderly = byId(districtRows(ages, '65 Jahre und älter', year));
+  const foreign = byId(districtRows(parseIndikatorCsv(foreignCsv), 'insgesamt', year));
+
+  const areas = totals.filter((r) => r.year === year && (r.base1 ?? 0) > 0).map((r) => ({
+    id: r.districtId!,
+    name: r.name,
+    total: r.base1!,
+    youth: youth.get(r.districtId!) ?? 0,
+    elderly: elderly.get(r.districtId!) ?? 0,
+    foreign: foreign.get(r.districtId!) ?? 0,
+  }));
+  const previous = totals.filter((r) => r.year === year - 1);
+  return {
+    areas,
+    snapshotDate: `${year}-12-31`,
+    previousTotal: previous.length > 0 ? previous.reduce((s, r) => s + (r.base1 ?? 0), 0) : undefined,
   };
 }

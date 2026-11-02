@@ -2,13 +2,14 @@
 
 ## Social Atlas Map Layer
 
-Berlin, Hamburg and Köln. `dataSources.socialAtlas` names a provider, and `lib/social-atlas-parsers.ts` has one parser per provider that turns the source into `SocialAtlasFeatureProps` per area. The four indicator slots (`unemployment`, `singleParent`, `welfare`, `childPoverty`) mean roughly the same in every city but each source defines them its own way, so the web app labels them per city and never as Berlin's MSS terms (see "Frontend Map Layer"). A slot the source lacks stays `null` and its sub-layer is hidden for that city.
+All four cities. `dataSources.socialAtlas` names a provider, and `lib/social-atlas-parsers.ts` has one parser per provider that turns the source into `SocialAtlasFeatureProps` per area. The four indicator slots (`unemployment`, `singleParent`, `welfare`, `childPoverty`) mean roughly the same in every city but each source defines them its own way, so the web app labels them per city and never as Berlin's MSS terms (see "Frontend Map Layer"). A slot the source lacks stays `null` and its sub-layer is hidden for that city.
 
 | City | Provider | Areas | Indicators (slot → source definition) | Status index | Edition |
 |------|----------|-------|----------------------------------------|--------------|---------|
 | Berlin | `mss-wfs` | 535 Planungsräume | s1 unemployment, s2 children in single-parent households, s3 transfer receipt, s4 child poverty | MSS status index (4 classes) | MSS 2025 (data 31 Dec 2024) |
 | Hamburg | `hh-sozialmonitoring` | 857 Statistische Gebiete | S4 unemployed (SGB II/III), S2 children of single parents, S3 SGB II and AsylbLG recipients, S5 children on minimum income | Sozialmonitoring Statusindex (4 classes; not the MSS index) | Bericht 2025 |
 | Köln | `koeln-datenkatalog` | 570 Statistische Quartiere | D0001P unemployment rate, A0269P single-parent households (share of households), C0007P SGB II recipients under pension age | none | data year 2025 (31 Dec) |
+| München | `muenchen-indikatorenatlas` | 25 Stadtbezirke | Arbeitslose – Anteil (of residents 15–64), Haushalte Alleinerziehend (share of households), employable SGB II recipients (of residents 15–64), non-employable SGB II recipients (Sozialgeld, of residents 0–14) | none | data year 2024 |
 
 `socialAtlasEdition(source)` gives the edition the web app prints next to each indicator; `config/index.test.ts` on the web side checks that the web table (`lib/social-atlas.ts`) has the same provider, edition, indicators and status flag as the server config.
 
@@ -46,6 +47,16 @@ Features with `kom !== 'gültig'` (`ungültig (EW unter 300)`, `ungültig (Ausre
 - **No child-poverty slot:** the Datenkatalog has no SGB II share of children, so that sub-layer is hidden for Köln. No status index either.
 - **Outlines:** `packages/server/data/koeln-quartiere.geojson` (570 Quartiere with name, Stadtbezirk and area), from `Statistisches_Quartier_0.zip` on Offene Daten Köln (dl-de/zero-2.0).
 
+### München: Indikatorenatlas
+
+- **Source:** the Statistisches Amt's Indikatorenatlas on opendata.muenchen.de, split into one CKAN dataset per indicator (`datasets` in `muenchen.ts`). Each dataset has one CSV whose file name carries the release date (`indikat_2605arbeitsmarkt_arbeitslose_-_anteil_18_05_26.csv`), so `fetchIndikatorCsv` (`lib/muenchen-indikatorenatlas.ts`) asks `package_show` for the current URL on every run: two requests per indicator. A failed indicator fails the run, which keeps the previous cache entry.
+- **CSV:** `Indikator, Ausprägung, Jahr, Raumbezug, Indikatorwert, Basiswert 1, Basiswert 2, …`, quoted, decimal points, unquoted `NA` for an empty cell. `Raumbezug` is "Stadt München" or "01 Altstadt - Lehel"; the two-digit number is the area ID, matching the outline file. Every year since 2000 (2006 for SGB II), with breakdowns such as `insgesamt`, `deutsch`, `nichtdeutsch`; the parser reads `insgesamt` of the configured `year`.
+- **Indicators:** unemployment `indikatorenatlas-2014-arbeitsmarkt-arbeitslosendichte-83r65mct` (unemployed per resident aged 15–64, the same base as Berlin's and Hamburg's); single parents `indikatorenatlas-bevoelkerung-haushalte-alleinerziehend` (single-parent households with a child under 18 per private household, as Köln's); welfare `…-regel-leistungsberechtigte-erwerbsfaehig-anteil-83r65mct` (employable SGB II recipients per resident aged 15–64); child poverty `…-regel-leistungsberechtigte-nicht-erwerbsfaehig-anteil-83r65mct` (non-employable SGB II recipients, Sozialgeld, per resident aged 0–14, nearly Berlin's MSS s4). The labour-market counts are fractional, which suggests yearly averages of the BA's monthly figures; the source does not say.
+- **Edition:** `year: 2024` in `muenchen.ts`. The May 2026 release has 2024 for the labour-market indicators and 2025 for single-parent households; all four are pinned to 2024 so one edition names them. `population` is the unemployment figure's base (residents 15–64), since none of these files counts all residents; the popup does not show it.
+- **Coarse:** 25 Stadtbezirke, against hundreds of small areas elsewhere. The sidebar labels say so ("Unemployment (2024, 25 districts only)", `areas` in `SOCIAL_ATLAS.muenchen`), and district averages sit in a narrow band (unemployment 2.9–5.2 % in 2024), so München has its own colour stops. No finer level: "Bevölkerung Stadtbezirksteile" (108 areas) stops at 2017.
+- **Licence:** `dl-by-de/2.0` on every Indikatorenatlas dataset; credit "Landeshauptstadt München, Statistisches Amt". The labour-market figures come from the Bundesagentur für Arbeit through the city.
+- **Outlines:** `packages/server/data/muenchen-stadtbezirke.geojson` (25 Stadtbezirke with `id` "01"…"25", name and area), the web app's district file with each district's `flaeche_qm` from the GeodatenService WFS (sum 310.7 km², as the Indikatorenatlas has it).
+
 ### Outline files
 
 Area outlines that do not come with the data ship in `packages/server/data/*.geojson` and load through `lib/area-outlines.ts` (`loadAreaOutlines(file)`, memoized; ids as strings). Each config's `outlines` names one file. `area-outlines.test.ts` checks counts, that every outline lies in its city, and that every configured file exists. They were made with mapshaper (run from a scratch folder, not a repo dependency); the commands are in the freshness inventory in [new-data-sources.md](new-data-sources.md).
@@ -54,14 +65,14 @@ Area outlines that do not come with the data ship in `packages/server/data/*.geo
 
 - **Cron:** `ingest-social-atlas` runs weekly (Sunday 5AM) for every active city with `dataSources.socialAtlas`, conditional `runOnStart` based on DB freshness. An empty result keeps the previous cache entry instead of overwriting it.
 - **DB:** Unified `snapshots` table, type `mss-social-atlas` for every provider (the name predates the other cities; kept so stored rows stay readable)
-- **Cache key:** `${cityId}:social-atlas:geojson` (full GeoJSON: Berlin ~500KB, Hamburg ~760KB, Köln ~430KB)
+- **Cache key:** `${cityId}:social-atlas:geojson` (full GeoJSON: Berlin ~500KB, Hamburg ~760KB, Köln ~430KB, München ~25KB)
 - **TTL:** 604800 seconds (7 days)
 - **City config:** `dataSources.socialAtlas: SocialAtlasSource` (`shared/types.ts`), a union tagged by `provider`
 - **API:** `GET /api/:city/social-atlas` - full GeoJSON FeatureCollection (for map layer)
 
 ### Frontend Map Layer
 - **DataLayer:** `'social'`, for cities with the `socialAtlas` feature (`cityLayers` in `lib/map-layers.ts`). Sub-layers (`SocialLayer`): `unemployment` (default), `single-parent`, `welfare`, `child-poverty` draw this choropleth, limited to the indicators the city's source has; `rent` (the `rentMap` feature: Berlin and Hamburg, `RENT_MAP_WMS` per city) swaps it for the rent-map WMS overlay and its legend instead. In Hamburg the indicators come first and the rent map last.
-- **Per-city labels:** `SOCIAL_ATLAS` in `packages/web/src/lib/social-atlas.ts`, keyed by city ID: provider, edition, status index (if any) and one entry per indicator with its label key (`socialAtlas.indicator.*`) and optional colour stops (Köln's single-parent households use 0–10 %). The sidebar reads "label (edition)".
+- **Per-city labels:** `SOCIAL_ATLAS` in `packages/web/src/lib/social-atlas.ts`, keyed by city ID: provider, edition, status index (if any), an optional `areas` note for a coarse source (`socialAtlas.areas.*`) and one entry per indicator with its label key (`socialAtlas.indicator.*`) and optional colour stops (Köln's single-parent households use 0–10 %; München has stops for all four). The sidebar reads "label (edition)", or "label (edition, areas)" for München.
 - **Lazy fetch:** GeoJSON only fetched while one of the indicator sub-layers is on (`useSocialAtlas` with `enabled` flag)
 - **Choropleth:** Fill layer colored by the selected indicator's percentage, each with its own 5-stop ramp (`SOCIAL_ATLAS_COLOR_RAMPS` in `map/constants.ts`, overridable per city) + thin line borders. Null values draw transparent. The status index is not drawn.
 - **Popup:** area name, the status index where the city has one (`socialAtlas.status.*`), and the city's indicators with its own labels (`socialAtlasPopupHtml(props, atlas)`); a missing value shows a dash
@@ -106,7 +117,7 @@ Area outlines that do not come with the data ship in `packages/server/data/*.geo
 - Data pre-populated from bootstrap for instant display
 
 ### i18n
-- Map layer: `sidebar.layers.social`, `sidebar.social.rent`; indicator labels (sidebar and popup) under `socialAtlas.indicator.*`, status-index names under `socialAtlas.status.*`
+- Map layer: `sidebar.layers.social`, `sidebar.social.rent`; indicator labels (sidebar and popup) under `socialAtlas.indicator.*`, status-index names under `socialAtlas.status.*`, area notes under `socialAtlas.areas.*`
 - Dashboard tile: keys under `panel.laborMarket.*`
 - All 4 languages: EN, DE, TR, AR
 
@@ -117,6 +128,7 @@ Area outlines that do not come with the data ship in `packages/server/data/*.geo
 | `packages/server/src/cron/ingest-social-atlas.ts` | Fetch per provider, join outlines, cache + DB (map layer) |
 | `packages/server/src/lib/social-atlas-parsers.ts` | One parser per provider, indicators and status flag per provider, edition |
 | `packages/server/src/lib/koeln-datenkatalog.ts` | Köln Datenkatalog CSV parser (also used by population) |
+| `packages/server/src/lib/muenchen-indikatorenatlas.ts` | München Indikatorenatlas: CKAN lookup and CSV parser (also used by population) |
 | `packages/server/src/lib/area-outlines.ts` | Loads the committed outline files in `packages/server/data/` |
 | `packages/server/src/lib/social-atlas-fixtures/` | Trimmed recorded source files for the parser tests |
 | `packages/web/src/lib/social-atlas.ts` | Per-city labels, edition and status index |

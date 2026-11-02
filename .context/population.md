@@ -1,12 +1,20 @@
 # Population Demographics
 
-Berlin, Hamburg and Köln. `dataSources.population` names a provider; `lib/population-parsers.ts` has one parser per provider that returns per-area counts (total, youth, elderly, foreign, optional area) and the snapshot date.
+All four cities. `dataSources.population` names a provider; `lib/population-parsers.ts` has one parser per provider that returns per-area counts (total, youth, elderly, foreign, optional area) and the snapshot date.
 
 | City | Provider | Areas | Counted | Change compared with | Licence |
 |------|----------|-------|---------|----------------------|---------|
 | Berlin | `afstat-ewr-xlsx` | 536 Planungsräume | half-yearly (30 Jun, 31 Dec) | previous stored snapshot (half-year) | CC-BY |
 | Hamburg | `hh-stadtteile` | 99 Stadtteile | yearly (31 Dec) | the previous year in the same source | dl-de/by-2-0 |
 | Köln | `koeln-datenkatalog` | 570 Statistische Quartiere | yearly (31 Dec) | the previous year in the same source | dl-de/by-2-0 |
+| München | `muenchen-indikatorenatlas` | 25 Stadtbezirke | yearly (31 Dec) | the previous year in the same source | dl-de/by-2-0 |
+
+## München: Indikatorenatlas
+
+- **Source**: two Indikatorenatlas datasets on opendata.muenchen.de, looked up through CKAN `package_show` as for München's social atlas ([social-atlas.md](social-atlas.md)): "Bevölkerung – Altersgruppen" (`indikatorenatlas-bevoelkerung-altersgruppen-83r65mct`, ~1.1 MB) and "Bevölkerung – Nichtdeutsche" (`indikatorenatlas-bevoelkerung-nichtdeutsche-83r65mct`). Every year since 2000; the parser takes the newest (2025 in the May 2026 release), so a new year needs no change.
+- **Fields used**: Basiswert 1 (the count, not the share in Indikatorwert) of the rows `insgesamt`, `bis 17 Jahre` and `65 Jahre und älter`, and the non-Germans' `insgesamt`. Residents with their main home in München (Hauptwohnsitzbevölkerung).
+- **Outlines and area**: `packages/server/data/muenchen-stadtbezirke.geojson`, which carries each Stadtbezirk's area from the GeodatenService. Densities match the Indikatorenatlas's own "Bevölkerungsdichte" (Altstadt-Lehel 6,550/km²).
+- **Coarse**: 25 Stadtbezirke; the map is a district map, not a small-area one. Checked live 2026-11-02: 1,612,429 residents on 31 Dec 2025, +8,653 (+0.5 %) on the year before.
 
 ## Hamburg: Regionalstatistische Daten der Stadtteile
 
@@ -60,11 +68,11 @@ Config-driven: the job runs for every active city with `dataSources.population`,
 
 1. Fetch the source named in the city config (60s timeout) and parse it with the provider's parser (Berlin: sheets T2 and Schlüssel via ExcelJS, `lib/xlsx.ts`)
 2. For each area: total, youth (0-17), elderly (65+), foreign count, and the area if the source gives one
-3. Polygons: Berlin from the social atlas cache (`CK.socialAtlasGeojson`), the others from their outline file (`lib/area-outlines.ts`)
+3. Polygons: Berlin from the social atlas cache (`CK.socialAtlasGeojson`), the others from their outline file (`lib/area-outlines.ts`; München's carries the area too)
 4. Area: the source's, else the outline's, else the polygon's via the geodetic Shoelace formula (`polygonAreaKm2`)
 5. Build GeoJSON FeatureCollection with `PopulationFeatureProps` per feature
 6. Aggregate city-wide `PopulationSummary` (weighted percentages; density = residents of mapped areas / their area)
-7. Change: where the source has the previous year (Köln, Hamburg), against that, with `changePeriod: 'year'`; otherwise against the previous stored snapshot (`'half-year'`). A rerun over the same snapshot date keeps the change it recorded the first time instead of resetting it to 0.
+7. Change: where the source has the previous year (Köln, Hamburg, München), against that, with `changePeriod: 'year'`; otherwise against the previous stored snapshot (`'half-year'`). A rerun over the same snapshot date keeps the change it recorded the first time instead of resetting it to 0.
 8. Write to DB + cache
 
 ## API Endpoints
@@ -93,7 +101,7 @@ The `population` data layer (its own sidebar toggle, for cities with the `popula
 | `pop-elderly` | `elderlyPct` | Amber (0% → 40%) |
 | `pop-foreign` | `foreignPct` | Cyan (0% → 50%) |
 
-Popup shows the area name + all 5 metrics for any sub-layer. The density ramp tops out at Berlin's 30000/km²; Hamburg's Stadtteile and Köln's Quartiere sit lower on it.
+Popup shows the area name + all 5 metrics for any sub-layer. The density ramp tops out at Berlin's 30000/km²; Hamburg's Stadtteile and Köln's Quartiere sit lower on it, and München's district averages (about 1,900 to 16,000/km²) are smoothed over whole Stadtbezirke.
 
 ### Dashboard Tile
 
@@ -104,8 +112,8 @@ Popup shows the area name + all 5 metrics for any sub-layer. The density ramp to
 | File | Role |
 |------|------|
 | `packages/server/src/cron/ingest-population.ts` | Fetch per provider, GeoJSON build, change, cache + DB write |
-| `packages/server/src/cron/ingest-population.test.ts` | Unit tests with mock XLSX and the Köln/Hamburg fixtures |
-| `packages/server/src/lib/population-parsers.ts` | One parser per provider (Berlin EWR XLSX, Köln CSV, Hamburg OGC JSON) |
+| `packages/server/src/cron/ingest-population.test.ts` | Unit tests with mock XLSX and the Köln, Hamburg and München fixtures |
+| `packages/server/src/lib/population-parsers.ts` | One parser per provider (Berlin EWR XLSX, Köln CSV, Hamburg OGC JSON, München Indikatorenatlas CSVs) |
 | `packages/server/src/routes/population.ts` | REST endpoints (GeoJSON + summary) |
 | `packages/server/src/routes/population.test.ts` | 5 integration tests |
 | `packages/web/src/hooks/usePopulation.ts` | Lazy GeoJSON hook (map layer) |

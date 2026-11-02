@@ -10,6 +10,7 @@
  */
 import type { SocialAtlasFeatureProps, SocialAtlasSource } from '@city-monitor/shared';
 import { KOELN_QUARTIER_LEVEL, parseKoelnDatenkatalog } from './koeln-datenkatalog.js';
+import { districtRows, parseIndikatorCsv } from './muenchen-indikatorenatlas.js';
 
 export type SocialAtlasProvider = SocialAtlasSource['provider'];
 export type SocialAtlasMetric = 'unemployment' | 'singleParent' | 'welfare' | 'childPoverty';
@@ -26,6 +27,8 @@ export const SOCIAL_ATLAS_METRICS: Record<SocialAtlasProvider, readonly SocialAt
   'koeln-datenkatalog': ['unemployment', 'singleParent', 'welfare'],
   // Sozialmonitoring: S4 Arbeitslose, S2 Kinder von Alleinerziehenden, S3 SGB-II- und AsylbLG-Empfänger, S5 Kinder in Mindestsicherung
   'hh-sozialmonitoring': ['unemployment', 'singleParent', 'welfare', 'childPoverty'],
+  // Indikatorenatlas: Arbeitslose – Anteil, Haushalte Alleinerziehend, (Regel-)Leistungsberechtigte erwerbsfähig / nicht erwerbsfähig – Anteil
+  'muenchen-indikatorenatlas': ['unemployment', 'singleParent', 'welfare', 'childPoverty'],
 };
 
 /** Whether the provider has a status index (four classes, "hoch" … "sehr niedrig"), shown in the popup. */
@@ -33,14 +36,16 @@ export const SOCIAL_ATLAS_HAS_STATUS_INDEX: Record<SocialAtlasProvider, boolean>
   'mss-wfs': true,
   'koeln-datenkatalog': false,
   'hh-sozialmonitoring': true,
+  'muenchen-indikatorenatlas': false,
 };
 
-/** The edition the web app names next to each indicator: the MSS report year, Köln's data year, Hamburg's report year. */
+/** The edition the web app names next to each indicator: the MSS report year, Köln's and München's data year, Hamburg's report year. */
 export function socialAtlasEdition(source: SocialAtlasSource): string {
   switch (source.provider) {
     case 'mss-wfs': return mssLayerNames(source.wfsUrl).year;
     case 'koeln-datenkatalog': return String(source.year);
     case 'hh-sozialmonitoring': return String(source.reportYear);
+    case 'muenchen-indikatorenatlas': return String(source.year);
   }
 }
 
@@ -237,4 +242,57 @@ export function parseHamburgSozialmonitoring(indexRows: unknown[][], indicatorRo
     });
   }
   return areas;
+}
+
+// ---------------------------------------------------------------------------
+// München: Indikatorenatlas (one CSV per indicator)
+// ---------------------------------------------------------------------------
+
+/**
+ * The CSV of each slot's dataset (`datasets` in the city config), as read:
+ * - unemployment: "Arbeitslose – Anteil", unemployed per resident aged 15–64
+ * - singleParent: "Haushalte Alleinerziehend", single-parent households with a
+ *   child under 18, share of all private households
+ * - welfare: "(Regel-)Leistungsberechtigte – erwerbsfähig – Anteil", employable
+ *   SGB II recipients per resident aged 15–64
+ * - childPoverty: "(Regel-)Leistungsberechtigte – nicht erwerbsfähig – Anteil",
+ *   non-employable SGB II recipients (Sozialgeld) per resident aged 0–14
+ * Each at the breakdown "insgesamt", for the 25 Stadtbezirke.
+ */
+export type MuenchenSocialCsvs = Record<SocialAtlasMetric, string>;
+
+/**
+ * The 25 Stadtbezirke of `year`. `population` is the unemployment figure's
+ * base, residents aged 15–64, since none of these files counts all residents;
+ * the popup does not show it. A slot whose file has no row for a district or
+ * year stays null; no row in any file gives no areas.
+ */
+export function parseMuenchenSocialAtlas(csvs: MuenchenSocialCsvs, year: number): SocialAtlasArea[] {
+  const metrics = SOCIAL_ATLAS_METRICS['muenchen-indikatorenatlas'];
+  const byDistrict = new Map<string, { name: string; population: number; values: Partial<Record<SocialAtlasMetric, number | null>> }>();
+  for (const metric of metrics) {
+    for (const row of districtRows(parseIndikatorCsv(csvs[metric]), 'insgesamt', year)) {
+      const id = row.districtId!;
+      const entry = byDistrict.get(id) ?? { name: row.name, population: 0, values: {} };
+      entry.values[metric] = row.value;
+      if (metric === 'unemployment' && row.base2 !== null) entry.population = Math.round(row.base2);
+      byDistrict.set(id, entry);
+    }
+  }
+  return [...byDistrict.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([id, e]) => ({
+      props: {
+        plrId: id,
+        plrName: e.name,
+        bezId: id,
+        population: e.population,
+        statusIndex: null,
+        statusLabel: null,
+        unemployment: e.values.unemployment ?? null,
+        singleParent: e.values.singleParent ?? null,
+        welfare: e.values.welfare ?? null,
+        childPoverty: e.values.childPoverty ?? null,
+      },
+    }));
 }

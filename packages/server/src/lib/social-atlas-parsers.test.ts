@@ -2,14 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { loadWorkbook, sheetToAoa } from './xlsx.js';
 import {
-  mssLayerNames, parseHamburgSozialmonitoring, parseKoelnSocialAtlas, parseMss, socialAtlasEdition, statusIndexOf,
-  SOCIAL_ATLAS_METRICS,
+  mssLayerNames, parseHamburgSozialmonitoring, parseKoelnSocialAtlas, parseMss, parseMuenchenSocialAtlas, socialAtlasEdition,
+  statusIndexOf, SOCIAL_ATLAS_HAS_STATUS_INDEX, SOCIAL_ATLAS_METRICS, type MuenchenSocialCsvs,
 } from './social-atlas-parsers.js';
 
 /**
  * Recorded on 2026-11-02 and trimmed: the Köln Datenkatalog's header with the
  * city, one Stadtteil and three Quartiere for 2024 and 2025; the Hamburg
- * Sozialmonitoring 2025 annex with its header rows and three Statistische Gebiete.
+ * Sozialmonitoring 2025 annex with its header rows and three Statistische Gebiete;
+ * München's Indikatorenatlas CSVs (`muc-*.csv`, release of May 2026) with the city
+ * and Stadtbezirke 01, 11 and 19 for two years and two breakdowns.
  */
 const fixture = (name: string) => new URL(`./social-atlas-fixtures/${name}`, import.meta.url);
 
@@ -28,6 +30,10 @@ describe('socialAtlasEdition', () => {
     expect(socialAtlasEdition({ provider: 'mss-wfs', wfsUrl: 'https://gdi.berlin.de/services/wfs/mss_2027' })).toBe('2027');
     expect(socialAtlasEdition({ provider: 'koeln-datenkatalog', csvUrl: 'x', year: 2025, outlines: 'k.geojson' })).toBe('2025');
     expect(socialAtlasEdition({ provider: 'hh-sozialmonitoring', xlsxUrl: 'x', reportYear: 2025, outlines: 'h.geojson' })).toBe('2025');
+    expect(socialAtlasEdition({
+      provider: 'muenchen-indikatorenatlas', ckanApi: 'x', year: 2024, outlines: 'm.geojson',
+      datasets: { unemployment: 'a', singleParent: 'b', welfare: 'c', childPoverty: 'd' },
+    })).toBe('2024');
   });
 });
 
@@ -122,5 +128,45 @@ describe('parseHamburgSozialmonitoring', () => {
     const [index, indicators] = await sheets();
     const withoutStats = indicators.filter((r) => !(Array.isArray(r) && r.includes('Mittelwert')));
     expect(() => parseHamburgSozialmonitoring(index, withoutStats)).toThrow(/Mittelwert/);
+  });
+});
+
+describe('parseMuenchenSocialAtlas', () => {
+  const csvs: MuenchenSocialCsvs = {
+    unemployment: readFileSync(fixture('muc-arbeitslose-anteil.csv'), 'utf8'),
+    singleParent: readFileSync(fixture('muc-haushalte-alleinerziehend.csv'), 'utf8'),
+    welfare: readFileSync(fixture('muc-leistungsberechtigte-erwerbsfaehig.csv'), 'utf8'),
+    childPoverty: readFileSync(fixture('muc-leistungsberechtigte-nicht-erwerbsfaehig.csv'), 'utf8'),
+  };
+
+  it('reads the Stadtbezirke of the configured year, not the city total', () => {
+    const areas = parseMuenchenSocialAtlas(csvs, 2024);
+    expect(areas.map((a) => a.props.plrId)).toEqual(['01', '11', '19']);
+    expect(areas[2]!.props.plrName).toBe('Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln');
+  });
+
+  it('maps each indicator\'s "insgesamt" value to its slot, with no status index', () => {
+    const altstadt = parseMuenchenSocialAtlas(csvs, 2024)[0]!.props;
+    expect(altstadt).toEqual({
+      plrId: '01', plrName: 'Altstadt-Lehel', bezId: '01',
+      // The unemployment figure's base: residents aged 15–64
+      population: 15370,
+      statusIndex: null, statusLabel: null,
+      unemployment: 3, singleParent: 2.6, welfare: 2.2, childPoverty: 4.5,
+    });
+    expect(SOCIAL_ATLAS_METRICS['muenchen-indikatorenatlas']).toEqual(['unemployment', 'singleParent', 'welfare', 'childPoverty']);
+    expect(SOCIAL_ATLAS_HAS_STATUS_INDEX['muenchen-indikatorenatlas']).toBe(false);
+  });
+
+  it('leaves a slot null where its file has no row for the year', () => {
+    // The single-parent file's newest year is 2025, the labour-market files stop at 2024
+    const areas = parseMuenchenSocialAtlas(csvs, 2025);
+    expect(areas).toHaveLength(3);
+    expect(areas[1]!.props).toMatchObject({ singleParent: 3.7, population: 0, unemployment: null, welfare: null, childPoverty: null });
+    expect(parseMuenchenSocialAtlas(csvs, 2019)).toEqual([]);
+  });
+
+  it('fails loudly when a column it reads is gone', () => {
+    expect(() => parseMuenchenSocialAtlas({ ...csvs, welfare: csvs.welfare.replace('Raumbezug', 'Gebiet') }, 2024)).toThrow(/Raumbezug/);
   });
 });

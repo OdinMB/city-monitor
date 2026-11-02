@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { hamburgStadtteileUrl, parseHamburgStadtteile, parseKoelnPopulation } from './population-parsers.js';
+import { hamburgStadtteileUrl, parseHamburgStadtteile, parseKoelnPopulation, parseMuenchenPopulation } from './population-parsers.js';
 
 /** Recorded on 2026-11-02 and trimmed (see social-atlas-parsers.test.ts). */
 const fixture = (name: string) => readFileSync(new URL(`./social-atlas-fixtures/${name}`, import.meta.url), 'utf8');
@@ -52,5 +52,28 @@ describe('parseHamburgStadtteile', () => {
   it('gives nothing for an empty response', () => {
     expect(parseHamburgStadtteile({ features: [] })).toEqual({ areas: [], snapshotDate: '' });
     expect(parseHamburgStadtteile(null)).toEqual({ areas: [], snapshotDate: '' });
+  });
+});
+
+describe('parseMuenchenPopulation', () => {
+  const data = parseMuenchenPopulation(fixture('muc-altersgruppen.csv'), fixture('muc-nichtdeutsche.csv'));
+
+  it('reads the newest year\'s Stadtbezirke, counted on 31 December, without the city row', () => {
+    expect(data.snapshotDate).toBe('2025-12-31');
+    expect(data.areas.map((a) => a.id)).toEqual(['01', '11', '19']);
+  });
+
+  it('takes residents, under 18, 65 and older and non-Germans from the counts, not the shares', () => {
+    // 75 and older is part of 65 and older, not added to it
+    expect(data.areas[0]).toEqual({ id: '01', name: 'Altstadt-Lehel', total: 20606, youth: 2374, elderly: 3355, foreign: 5023 });
+  });
+
+  it('carries the year before\'s total of the same Stadtbezirke', () => {
+    expect(data.previousTotal).toBe(20876 + 77281 + 103717);
+  });
+
+  it('gives nothing for a file without Stadtbezirk rows', () => {
+    const header = fixture('muc-altersgruppen.csv').split('\n')[0]!;
+    expect(parseMuenchenPopulation(header, header)).toEqual({ areas: [], snapshotDate: '' });
   });
 });

@@ -636,11 +636,16 @@
       "sgb2": "SGB-II-Leistungsberechtigte",
       "sgb2Asylblg": "SGB-II- und AsylbLG-Empfänger",
       "childPoverty": "Kinderarmut",
-      "childrenMinimumIncome": "Kinder in Mindestsicherung"
+      "childrenMinimumIncome": "Kinder in Mindestsicherung",
+      "sgb2Employable": "Erwerbsfähige SGB-II-Leistungsberechtigte",
+      "childrenSgb2": "Kinder unter 15 im SGB-II-Bezug"
     },
     "status": {
       "mss": "MSS-Statusindex",
       "hhSozialmonitoring": "Statusindex (Sozialmonitoring)"
+    },
+    "areas": {
+      "muenchenStadtbezirke": "nur 25 Stadtbezirke"
     }
   },
   "nina": {

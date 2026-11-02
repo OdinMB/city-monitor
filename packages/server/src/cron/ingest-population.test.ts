@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, onTestFinished } from 'vitest';
 import { readFileSync } from 'node:fs';
 import ExcelJS from 'exceljs';
 import { createCache } from '../lib/cache.js';
+import { muenchen } from '../config/cities/muenchen.js';
 import type { PopulationSummary } from '@city-monitor/shared';
 import type { Db } from '../db/index.js';
 // A static import loads the module graph (Drizzle, the DB schema) while the
@@ -147,7 +148,16 @@ describe('ingest-population', () => {
     vi.unstubAllEnvs();
   });
 
+  // Every configured city has a population source now, so these tests take
+  // München's away to have an active city without one.
+  const muenchenPopulation = muenchen.dataSources.population;
+  const withoutMuenchenPopulation = () => {
+    delete muenchen.dataSources.population;
+    onTestFinished(() => { muenchen.dataSources.population = muenchenPopulation; });
+  };
+
   it('makes no request, reads nothing and writes nothing when no active city has a population source', async () => {
+    withoutMuenchenPopulation();
     vi.stubEnv('ACTIVE_CITIES', 'muenchen');
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
@@ -166,6 +176,7 @@ describe('ingest-population', () => {
   it.each(['berlin', 'berlin,muenchen', 'muenchen,berlin'])(
     'fetches the EWR XLSX and writes Berlin rows when ACTIVE_CITIES=%s',
     async (activeCities) => {
+      withoutMuenchenPopulation();
       vi.stubEnv('ACTIVE_CITIES', activeCities);
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
         new Response(xlsxBuf, { status: 200 }),
@@ -385,7 +396,7 @@ describe('ingest-population', () => {
   });
 });
 
-describe('ingest-population for Köln and Hamburg', () => {
+describe('ingest-population for Köln, Hamburg and München', () => {
   const fixture = (name: string) => readFileSync(new URL(`../lib/social-atlas-fixtures/${name}`, import.meta.url), 'utf8');
 
   beforeEach(() => {
@@ -438,6 +449,36 @@ describe('ingest-population for Köln and Hamburg', () => {
     const summary = cache.get<PopulationSummary>('hamburg:population:summary')!;
     expect(summary.total).toBe(2567 + 22028);
     expect(summary.changeAbsolute).toBe(2567 + 22028 - 2549 - 22377);
+    expect(summary.changePeriod).toBe('year');
+  });
+
+  it('looks up München\'s Indikatorenatlas CSVs and draws its Stadtbezirke with their official area', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+    const files: Record<string, string> = {
+      'indikatorenatlas-bevoelkerung-altersgruppen-83r65mct': 'muc-altersgruppen.csv',
+      'indikatorenatlas-bevoelkerung-nichtdeutsche-83r65mct': 'muc-nichtdeutsche.csv',
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const id = new URL(url).searchParams.get('id');
+      if (id) return new Response(JSON.stringify({ result: { resources: [{ format: 'CSV', url: `https://opendata.muenchen.de/download/${id}.csv` }] } }));
+      const dataset = url.split('/').pop()!.replace(/\.csv$/, '');
+      return new Response(fixture(files[dataset]!), { status: 200 });
+    });
+
+    const cache = createCache();
+    await createPopulationIngestion(cache)();
+
+    expect(fetchSpy.mock.calls.map((c) => String(c[0])).filter((u) => u.includes('package_show'))).toHaveLength(2);
+    const geojson = cache.get<{ features: Array<{ properties: Record<string, number | string> }> }>('muenchen:population:geojson')!;
+    expect(geojson.features.map((f) => [f.properties.plrId, f.properties.plrName])).toEqual([
+      ['01', 'Altstadt-Lehel'], ['11', 'Milbertshofen-Am Hart'], ['19', 'Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln'],
+    ]);
+    // 20,606 residents on the GeodatenService's 3.146 km²
+    expect(geojson.features[0]!.properties.density).toBe(Math.round(20606 / 3.146));
+    const summary = cache.get<PopulationSummary>('muenchen:population:summary')!;
+    expect(summary.snapshotDate).toBe('2025-12-31');
+    expect(summary.changeAbsolute).toBe(20606 + 77500 + 104237 - 20876 - 77281 - 103717);
     expect(summary.changePeriod).toBe('year');
   });
 });

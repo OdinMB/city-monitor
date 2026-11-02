@@ -7,7 +7,8 @@ import { SOCIAL_ATLAS_COLOR_RAMPS, type SocialAtlasMetric } from '../components/
  * source defines them its own way, so every city names its indicators with
  * its own label: Köln's unemployment is a rate of the labour force, Berlin's
  * and Hamburg's a share of residents aged 15–64; Köln counts single-parent
- * households, Berlin and Hamburg children of single parents. A slot the
+ * households, Berlin and Hamburg children of single parents; München's
+ * child-poverty slot is SGB II receipt of children under 15, as Berlin's. A slot the
  * city's source lacks is left out, and its sub-layer with it.
  *
  * Keyed by city ID. Each city with the `socialAtlas` feature needs an entry;
@@ -27,6 +28,12 @@ export interface CitySocialAtlas {
   provider: string;
   /** Shown next to each indicator in the sidebar: the report or data year. */
   edition: string;
+  /**
+   * Label key under `socialAtlas.areas`, shown after the edition, for a source
+   * whose areas are far coarser than the others' (München: 25 Stadtbezirke
+   * against hundreds of small areas), so the map is not read as fine-grained.
+   */
+  areas?: string;
   /** Label key under `socialAtlas.status` for the source's status index, where it has one. */
   status?: string;
   indicators: SocialIndicator[];
@@ -66,6 +73,21 @@ export const SOCIAL_ATLAS: Readonly<Record<string, CitySocialAtlas>> = {
       // A share of all households, about 4 % city-wide: the children's ramp up to 80 % would colour it all pale
       { metric: 'singleParent', label: 'singleParentHouseholds', stops: [[0, '#fef9c3'], [2, '#fde047'], [4, '#eab308'], [6, '#a16207'], [10, '#713f12']] },
       { metric: 'welfare', label: 'sgb2' },
+    ],
+  },
+  // Indikatorenatlas: Arbeitslose – Anteil, Haushalte Alleinerziehend, (Regel-)Leistungsberechtigte
+  // erwerbsfähig / nicht erwerbsfähig – Anteil; no status index. District averages sit in a narrow
+  // band (unemployment 2.9–5.2 % in 2024), so each gets stops that spread it.
+  muenchen: {
+    provider: 'muenchen-indikatorenatlas',
+    edition: '2024',
+    areas: 'muenchenStadtbezirke',
+    indicators: [
+      { metric: 'unemployment', label: 'unemployment', stops: [[0, '#dcfce7'], [2.5, '#86efac'], [3.5, '#22c55e'], [4.5, '#16a34a'], [6, '#14532d']] },
+      // A share of all households, as in Köln
+      { metric: 'singleParent', label: 'singleParentHouseholds', stops: [[0, '#fef9c3'], [2, '#fde047'], [3, '#eab308'], [4, '#a16207'], [6, '#713f12']] },
+      { metric: 'welfare', label: 'sgb2Employable', stops: [[0, '#ede9fe'], [2, '#c4b5fd'], [4, '#8b5cf6'], [6, '#6d28d9'], [9, '#3b0764']] },
+      { metric: 'childPoverty', label: 'childrenSgb2', stops: [[0, '#fce7f3'], [4, '#f9a8d4'], [8, '#ec4899'], [12, '#be185d'], [16, '#831843']] },
     ],
   },
 };
