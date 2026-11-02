@@ -45,6 +45,11 @@ const NIGHT_BUS: LineStyle = { background: '#000000', color: WHITE };
 /** HADAG harbour ferries, whose numbers would otherwise read as buses. */
 const FERRIES = new Set(['61', '62', '64', '65', '68', '72', '73', '75']);
 
+/** Whether a Hamburg line name is a HADAG ferry rather than a bus. */
+export function isHvvFerry(line: string): boolean {
+  return FERRIES.has(line.trim().toUpperCase());
+}
+
 /**
  * The badge style hvv uses for a line name, or null where hvv draws no coloured
  * badge (regional and long-distance trains) or the line is unknown.

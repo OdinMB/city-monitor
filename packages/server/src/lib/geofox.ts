@@ -154,6 +154,42 @@ function lineOf(location: GtiLocation): string | undefined {
   return name?.trim() || undefined;
 }
 
+/**
+ * GTI's stand-alone notices on where a regional train's replacement bus stops
+ * ("Haltestelleninformation für EV in Husum"), dozens of them, mostly outside
+ * Hamburg.
+ */
+const EV_STOP_NOTICE = /^Haltestelleninformation für EV\b/i;
+
+/** The carriers that run Hamburg's own network, for ALL_LINES_OF_CARRIER locations. */
+const HAMBURG_CARRIER = /hochbahn|vhh|hadag|s-bahn|akn|hvv/i;
+
+/**
+ * Whether a line belongs to Hamburg's own network (.context/transit.md#hamburg).
+ * GTI covers the whole hvv area and beyond, so most of its announcements are
+ * about regional buses in Schleswig-Holstein and Lower Saxony.
+ *
+ * - U-Bahn, S-Bahn, AKN (`U3`, `S5`, `A1`), also their replacement buses (`U3-SEV`);
+ * - city buses, Xpressbus, night buses and HADAG ferries: one to three digits,
+ *   optionally after an X (`5`, `112`, `X35`, `609`, `62`);
+ * - regional trains (`RE7`, `RB61`, `RE7-SEV`), except on the stand-alone
+ *   replacement-bus stop notices;
+ * - the whole network, and carriers of the city network (Hochbahn, VHH, HADAG,
+ *   S-Bahn, AKN).
+ *
+ * Out: four-digit regional buses (`6560`), suffixed regional lines
+ * (`2303-KVG`, `332-VKP`), the bare `SEV` and other carriers (`VKP`).
+ */
+function isHamburgLine(location: GtiLocation, name: string, evStopNotice: boolean): boolean {
+  if (location.type === 'COMPLETE_NET') return true;
+  if (location.type === 'ALL_LINES_OF_CARRIER') return HAMBURG_CARRIER.test(name);
+  const line = name.toUpperCase();
+  if (/^[USA]\d+(-SEV)?$/.test(line)) return true;
+  if (/^X?\d{1,3}$/.test(line)) return true;
+  if (/^R[EB]\d+(-SEV)?$/.test(line)) return !evStopNotice;
+  return false;
+}
+
 /** The affected section of a location: "Poppenbüttel – Wedel", one stop, or empty for a whole line. */
 function sectionOf(location: GtiLocation | undefined): string {
   const names = [location?.begin?.name?.trim(), location?.end?.name?.trim()].filter((n): n is string => !!n);
@@ -189,8 +225,17 @@ export function parseGeofoxAnnouncements(response: GtiAnnouncementResponse, now:
 
     const message = messageOf(a, description);
     const locations = a.locations ?? [];
+    const evStopNotice = EV_STOP_NOTICE.test(message);
     const lines: string[] = [];
-    for (const location of locations) uniquePush(lines, lineOf(location));
+    let anyLine = false;
+    for (const location of locations) {
+      const name = lineOf(location);
+      if (!name) continue;
+      anyLine = true;
+      if (isHamburgLine(location, name, evStopNotice)) uniquePush(lines, name);
+    }
+    // Every line is outside Hamburg's network; one naming no line at all stays
+    if (anyLine && lines.length === 0) continue;
 
     const stops: string[] = [];
     for (const location of locations) {
@@ -212,13 +257,17 @@ export function parseGeofoxAnnouncements(response: GtiAnnouncementResponse, now:
 
     let type = classifyDisruption(message);
     if (type === 'disruption' && (a.planned === true || a.reason === 'ROADWORKS')) type = 'planned-work';
+    // Planned work never outranks an unplanned disruption: "Sperrung" alone
+    // would make every bus diversion high
+    let severity = classifySeverity(message);
+    if (type === 'planned-work' && severity === 'high') severity = 'medium';
 
     alerts.set(dedupeKey, {
       id: hashString(dedupeKey),
       line: lines.join(', '),
       lines,
       type,
-      severity: classifySeverity(message),
+      severity,
       message,
       detail: description || message,
       station,

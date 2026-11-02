@@ -229,6 +229,34 @@ describe('TransitStrip all-clear and freshness', () => {
     expect(screen.getByText('U3').style.backgroundColor).toBe('');
   });
 
+  it('orders by severity, then disruptions before planned work, then rail and ferries before buses', () => {
+    const make = (id: string, lines: string[], type: TransitAlert['type'], severity: TransitAlert['severity']): TransitAlert =>
+      ({ ...ALERT, id, lines, line: lines.join(', '), type, severity, message: `msg-${id}`, detail: '' });
+    const alerts = [
+      make('bus-planned', ['3'], 'planned-work', 'medium'),
+      make('bus-disruption', ['5'], 'disruption', 'medium'),
+      make('ferry-planned', ['62'], 'planned-work', 'medium'),
+      make('rail-planned', ['U3'], 'planned-work', 'medium'),
+      make('rail-disruption', ['S1'], 'disruption', 'medium'),
+      make('low-rail', ['U1'], 'disruption', 'low'),
+      make('high-bus', ['6'], 'cancellation', 'high'),
+    ];
+    render(<TransitStrip expanded />, { wrapper: createWrapper(alerts, { fetchedAt: FRESH, cityId: 'hamburg' }) });
+    const order = screen.getAllByText(/^msg-/).map((el) => el.textContent);
+    expect(order).toEqual([
+      'msg-high-bus', 'msg-rail-disruption', 'msg-bus-disruption',
+      // ferry and rail rank alike, so the server's order stands between them
+      'msg-ferry-planned', 'msg-rail-planned', 'msg-bus-planned', 'msg-low-rail',
+    ]);
+    cleanup();
+
+    // In Berlin a two-digit number is a bus, not a ferry
+    render(<TransitStrip expanded />, { wrapper: createWrapper(alerts, { fetchedAt: FRESH }) });
+    expect(screen.getAllByText(/^msg-/).map((el) => el.textContent).slice(3, 6)).toEqual([
+      'msg-rail-planned', 'msg-bus-planned', 'msg-ferry-planned',
+    ]);
+  });
+
   it('says there is no transit data, not all clear, before any data has arrived', () => {
     render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: null }) });
 
