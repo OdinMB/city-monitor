@@ -93,6 +93,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['PARDOK (Abgeordnetenhaus)', (c) => c.dataSources.councilMeetings?.parliament !== undefined],
   ['Stadt Köln SessionNet (OParl)', (c) => c.dataSources.councilMeetings?.oparlBody !== undefined],
   ['München RIS', (c) => c.dataSources.councilMeetings?.muenchenRis !== undefined],
+  ['Hamburgische Bürgerschaft (Termine)', (c) => c.dataSources.councilMeetings?.hamburgBuergerschaft !== undefined],
   ['LAGeSo Bathing Water', berlinOnly],
   ['LAGeSo Wastewater Monitoring', berlinOnly],
   ['RKI AMELAG Wastewater Surveillance', berlinOnly],

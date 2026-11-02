@@ -20,8 +20,9 @@ export const hamburg: WebCityConfig = {
   },
   theme: { accent: '#004B93' },
   // No transit (HVV has no free API), events, appointments, budget,
-  // social atlas, noise sensors, council meetings, district mayors or Berlin's
-  // own sources. The Bürgerschaft's constituencies are not Bezirke, so its
-  // members are not grouped by Bezirk.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap'],
+  // social atlas, noise sensors, district mayors or Berlin's own sources.
+  // Council meetings are the Bürgerschaft's only; no Bezirksversammlung source.
+  // The Bürgerschaft's constituencies are not Bezirke, so its members are not
+  // grouped by Bezirk.
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'councilMeetings', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap'],
 };

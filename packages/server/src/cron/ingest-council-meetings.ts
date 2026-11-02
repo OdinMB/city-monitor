@@ -8,6 +8,7 @@ import { getActiveCities } from '../config/index.js';
 import { createRateGate } from '../lib/rate-gate.js';
 import { parseFeed } from '../lib/rss-parser.js';
 import { XMLParser } from 'fast-xml-parser';
+import { gzipSync } from 'node:zlib';
 
 const log = createLogger('ingest-council-meetings');
 
@@ -297,6 +298,101 @@ async function fetchMuenchenRis(
   return meetings;
 }
 
+// ── Hamburg Bürgerschaft calendar ───────────────────────────────
+
+/**
+ * The calendar's search state: CoreMedia's result list takes its filter as
+ * gzipped JSON in `state`. No date bounds lists from today on, earliest first;
+ * 50 hits reach about six weeks ahead.
+ */
+const BUERGERSCHAFT_STATE = {
+  dateFrom: null, dateTo: null, facets: {}, hitsPerPage: 50, query: '',
+  sort: 'externallydisplayeddate asc', useDateConstraint: false,
+};
+
+export function buergerschaftSearchUrl(calendarUrl: string): string {
+  const state = gzipSync(JSON.stringify(BUERGERSCHAFT_STATE)).toString('base64url');
+  return `${calendarUrl}?state=${state}`;
+}
+
+const BUERGERSCHAFT_ORIGIN = 'https://www.hamburgische-buergerschaft.de';
+
+/** One teaser's text between a class marker and the next tag. */
+function teaserField(html: string, marker: RegExp): string | undefined {
+  const m = html.match(marker);
+  const text = m ? decodeHtml(m[1]!).replace(/\s+/g, ' ').trim() : '';
+  return text || undefined;
+}
+
+/**
+ * The public committee and plenary sessions of one page of the Bürgerschaft's
+ * calendar (hamburgische-buergerschaft.de/aktuelles/termine) in the window.
+ * The page has no year on its dates: the list starts today and runs forward,
+ * so a day before yesterday is next year's. Non-public and cancelled sessions,
+ * delegation trips and advisory boards are left out.
+ */
+export function parseBuergerschaftCalendar(html: string, now: number, windowMs: number): CouncilMeeting[] {
+  // The result list ends at its pagination; the slider after it repeats one event
+  const list = html.split('bkhh-pagination__form')[0]!;
+  const teasers = list.split('<div class="bkhh-teaser bkhh-teaser--events" >').slice(1);
+  const today = new Date(now);
+  const meetings: CouncilMeeting[] = [];
+
+  for (const teaser of teasers) {
+    const kind = teaserField(teaser, /bkhh-teaser__text"\s*>([^<]*)</) ?? '';
+    if (!/^(Ausschusssitzung|Sitzung der Bürgerschaft)\b/.test(kind)) continue;
+    if (/nicht öffentlich|entfällt/i.test(kind)) continue;
+
+    const committee = teaserField(teaser, /teaser__headline-inner">([^<]*)</);
+    const date = teaser.match(/bkhh-date" aria-label="(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ]+)"/);
+    const time = teaser.match(/bkhh-icon-label__label">(\d{1,2}):(\d{2})</);
+    const id = teaser.match(/\/(\d+)!ical/)?.[1];
+    if (!committee || !date || !time || !id) continue;
+
+    const month = GERMAN_MONTHS[date[2]!.toLowerCase()];
+    if (!month) continue;
+    const startOn = (year: number) => {
+      const local = `${year}-${pad2(month)}-${pad2(date[1]!)} ${pad2(time[1]!)}:${time[2]}:00`;
+      return local.replace(' ', 'T') + berlinUtcOffset(local);
+    };
+    let start = startOn(today.getUTCFullYear());
+    if (new Date(start).getTime() < now - 2 * 86_400_000) start = startOn(today.getUTCFullYear() + 1);
+    const t = new Date(start).getTime();
+    if (t < now || t > now + windowMs) continue;
+
+    // The location label is the one after the location icon
+    const location = teaserField(teaser, /icon-label-container--location">[\s\S]*?bkhh-icon-label__label">([^<]*)</);
+    // The agenda PDF once it is out (other PDFs are notices), else the committee's page, else the calendar
+    const agenda = teaser.match(/href="(\/resource\/blob\/[^"]+\.pdf)">\s*<span class="bkhh-link__text">Tagesordnung</)?.[1];
+    const committeePage = teaser.match(/href="(\/unsere-arbeit\/ausschuesse\/[^"]+)"/)?.[1];
+
+    meetings.push({
+      id: `hh-buergerschaft-${id}`,
+      source: 'parliament',
+      committee,
+      start,
+      ...(location ? { location } : {}),
+      webUrl: `${BUERGERSCHAFT_ORIGIN}${agenda ?? committeePage ?? '/aktuelles/termine'}`,
+    });
+  }
+  return meetings;
+}
+
+async function fetchBuergerschaftCalendar(calendarUrl: string, now: number, windowMs: number): Promise<CouncilMeeting[]> {
+  const url = buergerschaftSearchUrl(calendarUrl);
+  const get = () => log.fetch(url, {
+    headers: { ...BROWSER_HEADERS, Accept: 'text/html,application/xhtml+xml' },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  // The site's front resets a share of TLS connections; a second try gets through
+  const res = await get().catch(get);
+  if (!res.ok) {
+    log.warn(`Hamburg Bürgerschaft calendar returned ${res.status}`);
+    return [];
+  }
+  return parseBuergerschaftCalendar(await res.text(), now, windowMs);
+}
+
 // ── PARDOK XML ingestion ────────────────────────────────────────
 
 /** Determine CET (+01:00) or CEST (+02:00) offset for a given date in Europe/Berlin */
@@ -472,6 +568,16 @@ export function createCouncilMeetingIngestion(cache: Cache, db: Db | null = null
           );
           allMeetings.push(...meetings);
           log.info(`${city.id} RIS: ${meetings.length} meetings`);
+        }
+
+        if (cfg.hamburgBuergerschaft) {
+          try {
+            const meetings = await fetchBuergerschaftCalendar(cfg.hamburgBuergerschaft.calendarUrl, now, windowMs);
+            allMeetings.push(...meetings);
+            log.info(`${city.id} Bürgerschaft: ${meetings.length} meetings`);
+          } catch (err) {
+            log.warn(`${city.id} Bürgerschaft failed: ${err instanceof Error ? err.message : String(err)}`);
+          }
         }
 
         // Fetch PARDOK (parliament)

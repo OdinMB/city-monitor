@@ -300,12 +300,15 @@ describe('generateSyntheticCityData', () => {
       const held = Object.keys(data).filter((key) => key !== 'cityId' && key !== 'history');
       expect(held).toEqual(syntheticCoverage(hamburg));
       // No transit (its HVV source is offline), events, budget, appointments,
-      // social atlas, noise or council config; population, wastewater, bathing, labour
+      // social atlas or noise config; population, wastewater, bathing, labour
       // market and fire brigade are Berlin-only sources
       expect([...held].sort()).toEqual([
-        'aeds', 'airQuality', 'airQualityGrid', 'construction', 'news', 'nina', 'pharmacies', 'political', 'pollen',
-        'safety', 'summary', 'traffic', 'waterLevels', 'weather',
+        'aeds', 'airQuality', 'airQualityGrid', 'construction', 'councilMeetings', 'news', 'nina', 'pharmacies',
+        'political', 'pollen', 'safety', 'summary', 'traffic', 'waterLevels', 'weather',
       ]);
+      // The Bürgerschaft only: no district meetings
+      expect(data.councilMeetings!.length).toBeGreaterThan(0);
+      expect(data.councilMeetings!.every((m) => m.source === 'parliament')).toBe(true);
       // No Bezirk mayors or state members by Bezirk outside Berlin
       expect(Object.keys(data.political!).sort()).toEqual(['bundestag', 'state']);
       expect(new Set(data.history.map((h) => h.type))).toEqual(new Set(['open-meteo', 'pegelonline']));
@@ -321,8 +324,8 @@ describe('generateSyntheticCityData', () => {
     it('passes the Zod schemas the database reads validate with', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
-        'aeds', 'aq grid', 'construction', 'nina', 'pharmacies', 'political bundestag', 'political state', 'pollen',
-        'traffic', 'water levels', 'weather',
+        'aeds', 'aq grid', 'construction', 'council', 'nina', 'pharmacies', 'political bundestag', 'political state',
+        'pollen', 'traffic', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {
         expect(schema.safeParse(value).error, name).toBeUndefined();

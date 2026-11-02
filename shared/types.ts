@@ -236,6 +236,14 @@ export interface CityDataSources {
       councilFeedUrl: string;
       districtFeedUrl: string;
     };
+    /**
+     * Hamburg: the Bürgerschaft website's event calendar (CoreMedia result
+     * list, read as HTML), for its committee and plenary sessions.
+     */
+    hamburgBuergerschaft?: {
+      /** The calendar's search action (`…/aktuelles/termine/<id>!search`). */
+      calendarUrl: string;
+    };
   };
 }
 

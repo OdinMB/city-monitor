@@ -238,6 +238,12 @@ const BERLIN_SOURCES: SourceGroup[] = [
 
 const HAMBURG_SOURCES: SourceGroup[] = [
   {
+    category: 'Council Meetings',
+    sources: [
+      { name: 'Hamburgische Bürgerschaft (Termine)', url: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine', description: 'Public committee and plenary sessions of the state parliament, read from its website calendar. Official public records; the site states no licence.' },
+    ],
+  },
+  {
     category: 'Maps',
     sources: [
       { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/zero-2-0.' },

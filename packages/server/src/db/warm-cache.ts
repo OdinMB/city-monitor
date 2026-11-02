@@ -174,11 +174,13 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
         if (r) cache.set(CK.noiseSensors(cityId), r.data, 1200, r.fetchedAt);
       })().catch((err) => log.error(`${cityId} noise-sensors failed`, err)),
 
-      (async () => {
-        const r = await loadCouncilMeetings(db, cityId);
-        if (r) cache.set(CK.councilMeetings(cityId), r.data, 25920, r.fetchedAt);
-      })().catch((err) => log.error(`${cityId} council-meetings failed`, err)),
     ] : []),
+
+    // Configured per city (Berlin, Hamburg, Köln, München); a city without the source has no rows
+    (async () => {
+      const r = await loadCouncilMeetings(db, cityId);
+      if (r) cache.set(CK.councilMeetings(cityId), r.data, 25920, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} council-meetings failed`, err)),
   ];
 
   await Promise.allSettled(tasks);

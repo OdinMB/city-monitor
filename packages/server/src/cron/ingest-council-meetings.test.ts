@@ -9,8 +9,11 @@ import {
   parseOparlMeetings,
   parseMuenchenRisFeed,
   parseRisTitle,
+  parseBuergerschaftCalendar,
+  buergerschaftSearchUrl,
   type OparlTarget,
 } from './ingest-council-meetings.js';
+import { gunzipSync } from 'node:zlib';
 
 /** Trimmed from responses recorded on 2026-11-01. */
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
@@ -316,5 +319,68 @@ describe('parseMuenchenRisFeed', () => {
 
   it('returns nothing for a broken feed', () => {
     expect(parseMuenchenRisFeed('<html>error</html>', NOV_1, FOURTEEN_DAYS)).toEqual([]);
+  });
+});
+
+describe('buergerschaftSearchUrl', () => {
+  it('asks for 50 hits from today on, earliest first, in the gzipped state', () => {
+    const url = new URL(buergerschaftSearchUrl('https://www.hamburgische-buergerschaft.de/aktuelles/termine/1042880!search'));
+    expect(url.pathname).toBe('/aktuelles/termine/1042880!search');
+    const state = JSON.parse(gunzipSync(Buffer.from(url.searchParams.get('state')!, 'base64url')).toString('utf8'));
+    expect(state).toMatchObject({ dateFrom: null, dateTo: null, hitsPerPage: 50, sort: 'externallydisplayeddate asc' });
+  });
+});
+
+describe('parseBuergerschaftCalendar (Hamburg)', () => {
+  const NOV_2 = new Date('2026-11-02T03:00:00Z').getTime();
+  const html = fixture('hamburg-buergerschaft-termine.html');
+
+  it('keeps public committee and plenary sessions with room and agenda link', () => {
+    const meetings = parseBuergerschaftCalendar(html, NOV_2, FOURTEEN_DAYS);
+    expect(meetings).toEqual([
+      {
+        id: 'hh-buergerschaft-1104768',
+        source: 'parliament',
+        committee: 'Haushaltsausschuss',
+        start: '2026-11-03T17:00:00+01:00',
+        location: 'AP6, Sitzungssaal 2.04, 2. Obergeschoss, Adolphsplatz 6, 20457 Hamburg',
+        webUrl: 'https://www.hamburgische-buergerschaft.de/resource/blob/1104770/7a891eab7b543ddfb41d6a64faa63862/261103-dl-data.pdf',
+      },
+      {
+        id: 'hh-buergerschaft-1078320',
+        source: 'parliament',
+        committee: 'Bürgerschaftssitzung',
+        start: '2026-11-11T13:30:00+01:00',
+        location: 'Plenarsaal im Rathaus, Rathausmarkt 1, 20095 Hamburg',
+        webUrl: 'https://www.hamburgische-buergerschaft.de/resource/blob/1078322/f4bef770acb09d1fd42718770897626c/261111-dl-data.pdf',
+      },
+    ]);
+  });
+
+  it('leaves out non-public and cancelled sessions, the Präsidium, advisory boards and the slider after the list', () => {
+    const meetings = parseBuergerschaftCalendar(html, NOV_2, 60 * 24 * 60 * 60 * 1000);
+    // Not the Eingabenausschuss (nicht öffentlich), the cancelled Verfassungsausschuss,
+    // the NSU Beirat, the delegation trip, or the past plenary of 14 October
+    expect(meetings.map((m) => m.id)).toEqual([
+      'hh-buergerschaft-1104768', 'hh-buergerschaft-1078320', 'hh-buergerschaft-1078326',
+    ]);
+    // Without an agenda yet, the link is the calendar
+    expect(meetings[2].webUrl).toBe('https://www.hamburgische-buergerschaft.de/aktuelles/termine');
+  });
+
+  it('dates a January session after a December today in the next year, in CET', () => {
+    const teaser = html.split('<div class="bkhh-teaser bkhh-teaser--events" >')[3]!
+      .replace('aria-label="03. November"', 'aria-label="05. Januar"');
+    const page = `<div class="bkhh-teaser bkhh-teaser--events" >${teaser}`;
+    const dec20 = new Date('2026-12-20T12:00:00Z').getTime();
+    const [meeting] = parseBuergerschaftCalendar(page, dec20, 30 * 24 * 60 * 60 * 1000);
+    expect(meeting?.start).toBe('2027-01-05T17:00:00+01:00');
+    // A session on today's date stays this year
+    expect(parseBuergerschaftCalendar(page.replace('05. Januar', '20. Dezember'), dec20, FOURTEEN_DAYS)[0]?.start)
+      .toBe('2026-12-20T17:00:00+01:00');
+  });
+
+  it('returns nothing for a page without teasers', () => {
+    expect(parseBuergerschaftCalendar('<html>Wartungsarbeiten</html>', NOV_2, FOURTEEN_DAYS)).toEqual([]);
   });
 });
