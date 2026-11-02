@@ -60,6 +60,8 @@ export type CityFeature =
   | 'budget'
   | 'roadworks'
   | 'socialAtlas'
+  | 'laborMarket'     // dataSources.laborMarket: BA unemployment figures
+  | 'wastewater'      // dataSources.wastewater: viral load in wastewater
   | 'noiseSensors'
   | 'councilMeetings'
   | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
@@ -73,8 +75,6 @@ export type CityFeature =
   | 'mayor'           // OBERBUERGERMEISTER: a city inside a state's Oberbürgermeister
   | 'stateByDistrict' // state members grouped by Bezirk
   // Berlin's own sources, ingested for Berlin alone
-  | 'wastewater'
-  | 'laborMarket'
   | 'population'
   | 'feuerwehr'
   // The web app's own
@@ -217,6 +217,27 @@ export interface CityDataSources {
     provider: 'mss-wfs';
     wfsUrl: string;
   };
+  /**
+   * Monthly unemployment key figures from the Bundesagentur für Arbeit's
+   * Eckwertetabelle (packages/server/src/cron/ingest-labor-market.ts): the
+   * Land's table for a city-state, the Kreis table for a kreisfreie Stadt.
+   * `name` is the area's official name as the BA spells it ("Köln, Stadt").
+   */
+  laborMarket?: {
+    provider: 'ba';
+    scope: 'bundesland' | 'kreis';
+    name: string;
+  };
+  /**
+   * Weekly wastewater viral load (packages/server/src/cron/ingest-wastewater.ts).
+   * `amelag` takes Influenza A, Influenza B, RSV and SARS-CoV-2 from the RKI
+   * AMELAG treatment plants named in `sites` (their `standort`), weighted by the
+   * population each serves. `lageso` takes the first three from LAGeSo's
+   * Berlin CSV and only SARS-CoV-2 from the AMELAG `sites`.
+   */
+  wastewater?:
+    | { provider: 'amelag'; sites: readonly string[] }
+    | { provider: 'lageso'; csvUrl: string; sites: readonly string[] };
   pollen?: {
     provider: 'dwd';
     regionId: number;
@@ -258,6 +279,14 @@ export interface CityDataSources {
     muenchenRis?: {
       councilFeedUrl: string;
       districtFeedUrl: string;
+    };
+    /**
+     * Hamburg: the Bürgerschaft website's event calendar (CoreMedia result
+     * list, read as HTML), for its committee and plenary sessions.
+     */
+    hamburgBuergerschaft?: {
+      /** The calendar's search action (`…/aktuelles/termine/<id>!search`). */
+      calendarUrl: string;
     };
   };
 }

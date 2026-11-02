@@ -26,5 +26,5 @@ export const koeln: WebCityConfig = {
   // transit disruptions: KVB publishes none as data). Its nine Stadtbezirke
   // ship as outlines, so the political map layer has the Bezirksbürgermeister
   // view alone: its constituencies ("Köln I") are not Stadtbezirke.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'events', 'roadworks', 'councilMeetings', 'liftOutages', 'pharmacies', 'aeds', 'political', 'districtMayors', 'mayor', 'crisis', 'politicalMap'],
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'events', 'roadworks', 'laborMarket', 'wastewater', 'councilMeetings', 'liftOutages', 'pharmacies', 'aeds', 'political', 'districtMayors', 'mayor', 'crisis', 'politicalMap'],
 };

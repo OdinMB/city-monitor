@@ -59,6 +59,15 @@ describe('City config', () => {
     expect(config!.dataSources.transit).toBeUndefined();
   });
 
+  it('takes council meetings from the Bürgerschaft calendar alone, as no Bezirksversammlung source answers', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    expect(getCityConfig('hamburg')!.dataSources.councilMeetings).toEqual({
+      hamburgBuergerschaft: {
+        calendarUrl: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine/1042880!search',
+      },
+    });
+  });
+
   it('supports multiple active cities', () => {
     vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
     const cities = getActiveCities();
@@ -147,9 +156,13 @@ describe('Köln config', () => {
     expect(config.dataSources.roadworks?.provider).toBe('koeln-wfs');
     // KVB's lift and escalator outages, its only open transit data (dl-de/zero-2.0)
     expect(config.dataSources.liftOutages).toEqual({ provider: 'kvb', url: 'https://data.webservice-kvb.koeln/service/opendata' });
+    // The kreisfreie Stadt's own BA table and AMELAG plant
+    expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' });
+    expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['Köln'] });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
-      police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council, liftOutages: _lifts, ...rest
+      police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council,
+      liftOutages: _lifts, laborMarket: _labor, wastewater: _wastewater, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });
@@ -229,9 +242,12 @@ describe('München config', () => {
     expect(config.dataSources.roadworks?.provider).toBe('muenchen-wfs');
     // The Isar is not on PEGELONLINE: flood class from the LHP instead, the city's gauge first
     expect(config.dataSources.floodStatus?.stations.map((s) => s.id)).toEqual(['BY_16005701', 'BY_16004403']);
+    // The city's Kreis table, not the wider Agentur für Arbeit München
+    expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' });
+    expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['München'] });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
-      floodStatus: _flood, ...rest
+      floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });

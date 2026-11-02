@@ -106,6 +106,13 @@ export const berlin: CityConfig = {
       // MSS 2025 (data as of 2024-12-31); the next edition, MSS 2027, is due in 2027
       wfsUrl: 'https://gdi.berlin.de/services/wfs/mss_2025',
     },
+    laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Berlin' },
+    // Influenza A/B and RSV from LAGeSo (dl-de/by-2.0); SARS-CoV-2 from the same three plants in AMELAG
+    wastewater: {
+      provider: 'lageso',
+      csvUrl: 'https://data.lageso.de/infektionsschutz/opendata/abwassermonitoring/BEWAC_abwassermonitoring_berlin.csv',
+      sites: ['Berlin Ruhleben', 'Berlin Schönerlinde', 'Berlin Waßmannsdorf'],
+    },
     pollen: {
       provider: 'dwd',
       regionId: 50,         // Brandenburg und Berlin

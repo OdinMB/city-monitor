@@ -147,18 +147,18 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       if (r) cache.set(CK.liftOutages(cityId), r.data, 1200, r.fetchedAt); // LIFT_OUTAGES_TTL_SECONDS
     })().catch((err) => log.error(`${cityId} lift outages failed`, err)),
 
-    // Wastewater and labor market are Berlin-only data sources
+    (async () => {
+      const r = await loadWastewater(db, cityId);
+      if (r) cache.set(CK.wastewaterSummary(cityId), r.data, 604800, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} wastewater failed`, err)),
+
+    (async () => {
+      const r = await loadLaborMarket(db, cityId);
+      if (r) cache.set(CK.laborMarket(cityId), r.data, 86400, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} labor-market failed`, err)),
+
+    // Population and Feuerwehr are Berlin-only data sources; noise sensors only Berlin has
     ...(cityId === 'berlin' ? [
-      (async () => {
-        const r = await loadWastewater(db, cityId);
-        if (r) cache.set(CK.wastewaterSummary(cityId), r.data, 604800, r.fetchedAt);
-      })().catch((err) => log.error(`${cityId} wastewater failed`, err)),
-
-      (async () => {
-        const r = await loadLaborMarket(db, cityId);
-        if (r) cache.set(CK.laborMarket(cityId), r.data, 86400, r.fetchedAt);
-      })().catch((err) => log.error(`${cityId} labor-market failed`, err)),
-
       (async () => {
         const r = await loadPopulationGeojson(db, cityId);
         if (r) cache.set(CK.populationGeojson(cityId), r.data, POPULATION_TTL_SECONDS, r.fetchedAt);
@@ -179,11 +179,13 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
         if (r) cache.set(CK.noiseSensors(cityId), r.data, 1200, r.fetchedAt);
       })().catch((err) => log.error(`${cityId} noise-sensors failed`, err)),
 
-      (async () => {
-        const r = await loadCouncilMeetings(db, cityId);
-        if (r) cache.set(CK.councilMeetings(cityId), r.data, 25920, r.fetchedAt);
-      })().catch((err) => log.error(`${cityId} council-meetings failed`, err)),
     ] : []),
+
+    // Configured per city (Berlin, Hamburg, Köln, München); a city without the source has no rows
+    (async () => {
+      const r = await loadCouncilMeetings(db, cityId);
+      if (r) cache.set(CK.councilMeetings(cityId), r.data, 25920, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} council-meetings failed`, err)),
   ];
 
   await Promise.allSettled(tasks);

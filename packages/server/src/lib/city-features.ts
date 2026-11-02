@@ -7,7 +7,7 @@ import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
  * under `berlin` (BERLIN_ONLY_JOBS in app.ts, the `getCityConfig('berlin')`
  * check in each job).
  */
-export const BERLIN_OWN_SOURCES: readonly CityFeature[] = ['wastewater', 'laborMarket', 'population', 'feuerwehr'];
+export const BERLIN_OWN_SOURCES: readonly CityFeature[] = ['population', 'feuerwehr'];
 
 /**
  * Each feature the server ingests, with the condition its job checks before
@@ -28,6 +28,8 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['bathing', (c) => c.dataSources.bathing !== undefined],
   ['liftOutages', (c) => c.dataSources.liftOutages !== undefined],
   ['socialAtlas', (c) => c.dataSources.socialAtlas !== undefined],
+  ['laborMarket', (c) => c.dataSources.laborMarket !== undefined],
+  ['wastewater', (c) => c.dataSources.wastewater !== undefined],
   ['noiseSensors', (c) => c.dataSources.noiseSensors !== undefined],
   ['councilMeetings', (c) => c.dataSources.councilMeetings !== undefined],
   ['pharmacies', hasPharmacySearch],

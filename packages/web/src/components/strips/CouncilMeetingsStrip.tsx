@@ -141,7 +141,8 @@ export function CouncilMeetingsStrip() {
 
   return (
     <>
-      <select
+      {/* Hamburg has the Bürgerschaft only: nothing to pick between */}
+      {districts.length > 0 && <select
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         aria-label={t('panel.councilMeetings.filterLabel')}
@@ -153,7 +154,7 @@ export function CouncilMeetingsStrip() {
         {districts.map((d) => (
           <option key={d} value={d}>{d}</option>
         ))}
-      </select>
+      </select>}
 
       <div className="flex-1 min-h-0 max-h-[300px] overflow-y-auto scrollbar-thin pe-2">
         {filtered.length === 0 ? (

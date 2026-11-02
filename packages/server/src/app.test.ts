@@ -232,7 +232,7 @@ describe('createApp startup runs per active city', () => {
     expect(startupRuns()).toEqual([
       'ingest-feeds', 'summarize-news', 'ingest-weather', 'ingest-safety', 'ingest-nina',
       'ingest-pharmacies', 'ingest-traffic', 'ingest-political', 'ingest-aq-grid', 'ingest-construction', 'ingest-aeds',
-      'ingest-water-levels', 'ingest-bathing', 'ingest-pollen',
+      'ingest-water-levels', 'ingest-bathing', 'ingest-wastewater', 'ingest-labor-market', 'ingest-pollen', 'ingest-council-meetings',
     ]);
   });
 

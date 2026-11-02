@@ -231,7 +231,8 @@ describe('CommandLayout tiles', { timeout: 30_000 }, () => {
   it.each(cities)('shows a tile for each feature %s has, and none for the others', (_name, city) => {
     const titles = tileTitles(city);
     for (const [feature, key] of FEATURE_TILES) {
-      const shown = titles.some((title) => title.startsWith(i18n.t(key)));
+      // A city's own title where it has one (`title_hamburg`)
+      const shown = titles.some((title) => title.startsWith(i18n.t(key, { context: city.id })));
       expect(shown, `${feature}: ${key}`).toBe(city.features.includes(feature));
     }
     // Every city has weather and air quality.
