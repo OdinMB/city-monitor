@@ -36,7 +36,7 @@ import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } 
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
-import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle } from './base.js';
+import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle, zoomedInBounds } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
 import { gestureHintLocale, setCooperativeGestures } from './gestures.js';
 import { addDistrictLayer, addDistrictSource, removeDistrictLayers, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
@@ -115,7 +115,14 @@ function animateMarkerEntrance(map: maplibregl.Map) {
  * minimum zoom, so phones open on the city's centre at roughly the inner-city
  * scale instead (Berlin: about the Ringbahn). Desktop still fits the bounds.
  */
-const PHONE_OPENING_ZOOM = 10.5;
+const PHONE_OPENING_ZOOM = 11;
+
+/**
+ * How far past the fitted whole-city view a desktop map opens. Fitting the
+ * bounds shows the city's empty outskirts at the edges; half a zoom step in
+ * keeps the built-up city filling the map.
+ */
+const FITTED_OPENING_ZOOM_IN = 0.5;
 
 /** Opening view for a new map: the city centre on phones, the whole city otherwise. */
 function initialMapView(
@@ -124,7 +131,7 @@ function initialMapView(
 ): Pick<maplibregl.MapOptions, 'center' | 'zoom' | 'bounds' | 'fitBoundsOptions'> {
   if (isPhoneLayout) return { center: mapConfig.center, zoom: PHONE_OPENING_ZOOM };
   if (!mapConfig.bounds) return { center: mapConfig.center, zoom: mapConfig.zoom };
-  return { bounds: mapConfig.bounds, fitBoundsOptions: { padding: 20 } };
+  return { bounds: zoomedInBounds(mapConfig.bounds, FITTED_OPENING_ZOOM_IN), fitBoundsOptions: { padding: 20 } };
 }
 
 function asError(err: unknown): Error {

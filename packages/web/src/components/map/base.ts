@@ -69,6 +69,22 @@ const styleCache = new Map<string, StyleSpecification>();
  *  a style object ready for the Map constructor or setStyle(). Rejects on a
  *  network error, an error status or a body that is not a style; only a style
  *  that loaded is cached, so the next call asks again. */
+/**
+ * The bounds around the same centre that fit `zoomIn` zoom steps closer: each
+ * step halves the span.
+ */
+export function zoomedInBounds(
+  [[west, south], [east, north]]: [[number, number], [number, number]],
+  zoomIn: number,
+): [[number, number], [number, number]] {
+  const scale = 2 ** -zoomIn;
+  const lon = (west + east) / 2;
+  const lat = (south + north) / 2;
+  const halfLon = ((east - west) / 2) * scale;
+  const halfLat = ((north - south) / 2) * scale;
+  return [[lon - halfLon, lat - halfLat], [lon + halfLon, lat + halfLat]];
+}
+
 export async function loadStyle(url: string): Promise<StyleSpecification> {
   const cached = styleCache.get(url);
   if (cached) return cached;

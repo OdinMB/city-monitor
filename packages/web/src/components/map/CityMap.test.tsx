@@ -11,7 +11,7 @@ import { CityProvider } from '../../hooks/CityProvider.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { MapErrorFallback } from '../ErrorFallback.js';
 import { CityMap } from './CityMap.js';
-import { loadStyle } from './base.js';
+import { loadStyle, zoomedInBounds } from './base.js';
 
 // loadStyle's own failures (error status, network, bad JSON) are in base.test.ts;
 // here it simply resolves or rejects.
@@ -192,13 +192,19 @@ describe('CityMap', () => {
     it.each([
       ['a desktop', DESKTOP],
       ['a phone held sideways or a tablet', TOUCH_LANDSCAPE],
-    ])('on %s, fits the whole city', async (_name, media) => {
+    ])('on %s, fits the city half a zoom step in', async (_name, media) => {
       setMedia(...media);
       renderMap();
       await waitFor(() => expect(MapMock).toHaveBeenCalledOnce());
 
-      expect(lastOptions().bounds).toEqual(lastOptions().maxBounds);
+      const max = lastOptions().maxBounds as [[number, number], [number, number]];
+      expect(lastOptions().bounds).toEqual(zoomedInBounds(max, 0.5));
       expect(lastOptions().zoom).toBeUndefined();
+    });
+
+    it('zooms bounds in around their centre', () => {
+      const [[w, s], [e, n]] = zoomedInBounds([[0, 10], [4, 14]], 1);
+      expect([w, s, e, n]).toEqual([1, 11, 3, 13]);
     });
   });
 
