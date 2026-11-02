@@ -9,7 +9,7 @@ import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('route:political');
 
-const VALID_LEVELS = ['bundestag', 'state', 'bezirke', 'state-bezirke'];
+const VALID_LEVELS = ['bundestag', 'state', 'bezirke', 'mayor', 'state-bezirke'];
 
 export function createPoliticalRouter(cache: Cache, db: Db | null = null) {
   const router = Router();

@@ -5,6 +5,8 @@ import type { WebCityConfig } from '@city-monitor/shared';
 import type { PoliticalDistrict } from '../../lib/api.js';
 import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
+import { koeln } from '../../config/cities/koeln.js';
+import { muenchen } from '../../config/cities/muenchen.js';
 import { PoliticalStrip } from './PoliticalStrip.js';
 
 const DISTRICTS: PoliticalDistrict[] = [
@@ -54,6 +56,39 @@ describe('PoliticalStrip views per city', () => {
     expect(screen.getAllByRole('tab')).toHaveLength(2);
     expect(screen.queryByRole('tab', { name: i18n.t('sidebar.political.bezirke') })).toBeNull();
     expect(state.levels.at(-1)).toBe('state');
+  });
+
+  it('gives Köln its Landtag members by constituency, its Oberbürgermeister, its district mayors and the Bundestag', async () => {
+    state.city = koeln;
+    render(<PoliticalStrip expanded={false} />);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
+      i18n.t('sidebar.political.landesparlament'), i18n.t('sidebar.political.mayor'),
+      i18n.t('sidebar.political.bezirke'), i18n.t('sidebar.political.bundestag'),
+    ]);
+    expect(state.levels.at(-1)).toBe('state');
+
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('sidebar.political.mayor') }));
+    expect(state.levels.at(-1)).toBe('mayor');
+    // One office holder: the list without a count line
+    expect(screen.getByText('Erika Beispiel')).toBeTruthy();
+    expect(screen.queryByText(i18n.t('panel.political.representatives', { count: 1 }))).toBeNull();
+  });
+
+  it('gives München its Landtag, its Oberbürgermeister and the Bundestag, with no district-mayor view', () => {
+    state.city = muenchen;
+    render(<PoliticalStrip expanded={false} />);
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.queryByRole('tab', { name: i18n.t('sidebar.political.bezirke') })).toBeNull();
+  });
+
+  it('calls Köln\'s and München\'s state parliament the Landtag in German', async () => {
+    await i18n.changeLanguage('de');
+    for (const city of [koeln, muenchen]) {
+      state.city = city;
+      const { unmount } = render(<PoliticalStrip expanded={false} />);
+      expect(screen.getAllByRole('tab')[0]!.textContent, city.id).toBe('Landtag');
+      unmount();
+    }
   });
 
   it('names each city\'s state parliament in German', async () => {

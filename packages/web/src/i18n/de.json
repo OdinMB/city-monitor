@@ -147,7 +147,9 @@
       "mayBeOutdated": "Daten möglicherweise veraltet (zuletzt geprüft: {{time}})",
       "affectedStops": "Betroffene Haltestellen",
       "more": "weitere",
-      "station": "Gemeldet an der Haltestelle"
+      "station": "Gemeldet an der Haltestelle",
+      "hvvSource": "Quelle: hvv / Hamburger Hochbahn AG (hvv.de)",
+      "noGuarantee": "Alle Angaben ohne Gewähr"
     },
     "events": {
       "title": "Veranstaltungen",
@@ -265,6 +267,7 @@
       "workingAge": "Erwerbsfähiges Alter",
       "ageBreakdown": "Altersstruktur",
       "change": "ggü. Vorhalbjahr",
+      "changeYear": "ggü. Vorjahr",
       "empty": "Keine Daten verfügbar",
       "source": "Statistik Berlin-Brandenburg",
       "density": "pro km²",
@@ -323,6 +326,34 @@
       "tidal": "Tide",
       "vsNormal": "gg. {{diff}} normal",
       "empty": "Keine Pegeldaten"
+    },
+    "floodStatus": {
+      "title": "Hochwasserlage",
+      "class": {
+        "0": "Kein Hochwasser",
+        "1": "Kleines Hochwasser",
+        "2": "Mittleres Hochwasser",
+        "3": "Großes Hochwasser",
+        "4": "Sehr großes Hochwasser",
+        "none": "Derzeit keine Daten"
+      },
+      "upstream": "Oberlauf",
+      "warnings": "Hochwasserwarnungen",
+      "noWarnings": "Keine Hochwasserwarnungen",
+      "asOf": "Stand:",
+      "empty": "Keine Hochwasserdaten"
+    },
+    "liftOutages": {
+      "title": "Aufzüge & Fahrtreppen",
+      "lifts": "Aufzüge außer Betrieb: {{n}}",
+      "escalators": "Fahrtreppen außer Betrieb: {{n}}",
+      "noLifts": "Alle Aufzüge in Betrieb",
+      "noEscalators": "Alle Fahrtreppen in Betrieb",
+      "allWorking": "Alle Aufzüge und Fahrtreppen in Betrieb",
+      "more": "+{{n}} weitere",
+      "atStations": "Betroffene Haltestellen: {{n}}",
+      "asOf": "Stand:",
+      "empty": "Keine Störungsdaten"
     },
     "pollen": {
       "title": "Pollenvorhersage",
@@ -412,6 +443,7 @@
       "title": "BVV-Sitzungen",
       "title_koeln": "Ratssitzungen",
       "title_muenchen": "Ratssitzungen",
+      "title_hamburg": "Sitzungen der Bürgerschaft",
       "empty": "Keine anstehenden Sitzungen",
       "filterLabel": "Nach Gremium filtern",
       "bvv": "Bezirksverordnetenversammlung",
@@ -420,6 +452,7 @@
       "parliament": "Abgeordnetenhaus",
       "parliament_koeln": "Rat der Stadt",
       "parliament_muenchen": "Stadtrat",
+      "parliament_hamburg": "Bürgerschaft",
       "agendaItems_one": "{{count}} Tagesordnungspunkt",
       "agendaItems_other": "{{count}} Tagesordnungspunkte",
       "openDetails": "Sitzungsdetails öffnen",
@@ -514,11 +547,15 @@
       "bathing": "Badegewässer"
     },
     "social": {
-      "unemployment": "Arbeitslosigkeit (2023)",
-      "single-parent": "Alleinerziehende (2023)",
-      "welfare": "Transferbezug (2023)",
-      "child-poverty": "Kinderarmut (2023)",
       "rent": "Mietspiegel"
+    },
+    "rentLegend": {
+      "title": "Wohnlagen des Mietspiegels",
+      "simple": "Einfache Wohnlage",
+      "medium": "Mittlere Wohnlage",
+      "good": "Gute Wohnlage",
+      "normal": "Normale Wohnlage",
+      "unrated": "Nicht bewertet"
     },
     "population": {
       "pop-density": "Bevölkerungsdichte",
@@ -527,10 +564,13 @@
     },
     "political": {
       "bezirke": "Bezirke",
+      "mayor": "Rathaus",
       "bundestag": "Bundestag",
       "landesparlament": "Landesparlament",
       "landesparlament_berlin": "Abgeordnetenhaus",
-      "landesparlament_hamburg": "Bürgerschaft"
+      "landesparlament_hamburg": "Bürgerschaft",
+      "landesparlament_koeln": "Landtag",
+      "landesparlament_muenchen": "Landtag"
     }
   },
   "mapPopup": {
@@ -586,12 +626,28 @@
         "loud": "Laut",
         "veryLoud": "Sehr laut"
       }
-    },
-    "socialAtlas": {
+    }
+  },
+  "socialAtlas": {
+    "indicator": {
       "unemployment": "Arbeitslosigkeit",
-      "singleParent": "Alleinerziehende",
+      "unemploymentRate": "Arbeitslosenquote",
+      "singleParentChildren": "Kinder Alleinerziehender",
+      "singleParentHouseholds": "Alleinerziehenden-Haushalte",
       "welfare": "Transferbezug",
-      "childPoverty": "Kinderarmut"
+      "sgb2": "SGB-II-Leistungsberechtigte",
+      "sgb2Asylblg": "SGB-II- und AsylbLG-Empfänger",
+      "childPoverty": "Kinderarmut",
+      "childrenMinimumIncome": "Kinder in Mindestsicherung",
+      "sgb2Employable": "Erwerbsfähige SGB-II-Leistungsberechtigte",
+      "childrenSgb2": "Kinder unter 15 im SGB-II-Bezug"
+    },
+    "status": {
+      "mss": "MSS-Statusindex",
+      "hhSozialmonitoring": "Statusindex (Sozialmonitoring)"
+    },
+    "areas": {
+      "muenchenStadtbezirke": "nur 25 Stadtbezirke"
     }
   },
   "nina": {

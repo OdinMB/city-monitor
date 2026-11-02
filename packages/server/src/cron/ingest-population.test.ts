@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, onTestFinished } from 'vitest';
+import { readFileSync } from 'node:fs';
 import ExcelJS from 'exceljs';
 import { createCache } from '../lib/cache.js';
+import { muenchen } from '../config/cities/muenchen.js';
 import type { PopulationSummary } from '@city-monitor/shared';
 import type { Db } from '../db/index.js';
 // A static import loads the module graph (Drizzle, the DB schema) while the
@@ -146,8 +148,17 @@ describe('ingest-population', () => {
     vi.unstubAllEnvs();
   });
 
-  it('makes no request, reads nothing and writes nothing when Berlin is not active', async () => {
-    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+  // Every configured city has a population source now, so these tests take
+  // München's away to have an active city without one.
+  const muenchenPopulation = muenchen.dataSources.population;
+  const withoutMuenchenPopulation = () => {
+    delete muenchen.dataSources.population;
+    onTestFinished(() => { muenchen.dataSources.population = muenchenPopulation; });
+  };
+
+  it('makes no request, reads nothing and writes nothing when no active city has a population source', async () => {
+    withoutMuenchenPopulation();
+    vi.stubEnv('ACTIVE_CITIES', 'muenchen');
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -162,9 +173,10 @@ describe('ingest-population', () => {
     expect(mockSavePopulation).not.toHaveBeenCalled();
   });
 
-  it.each(['berlin', 'berlin,hamburg', 'hamburg,berlin'])(
+  it.each(['berlin', 'berlin,muenchen', 'muenchen,berlin'])(
     'fetches the EWR XLSX and writes Berlin rows when ACTIVE_CITIES=%s',
     async (activeCities) => {
+      withoutMuenchenPopulation();
       vi.stubEnv('ACTIVE_CITIES', activeCities);
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
         new Response(xlsxBuf, { status: 200 }),
@@ -178,7 +190,7 @@ describe('ingest-population', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       expect(fetchSpy.mock.calls[0]![0]).toBe(
-        'https://download.statistik-berlin-brandenburg.de/1df9da7ea6dbfa3a/f6ac408f14cd/SB_A01-16-00_2025h02_BE.xlsx',
+        'https://download.statistik-berlin-brandenburg.de/fca0a030166493d0/1289b0921aa2/SB_A01-16-00_2026h01_BE.xlsx',
       );
       expect(mockLoadPopulationSummary).toHaveBeenCalledWith(db, 'berlin');
       expect(setSpy.mock.calls.map((c) => [c[0], c[2]])).toEqual([
@@ -345,5 +357,128 @@ describe('ingest-population', () => {
     const summary = cache.get<PopulationSummary>('berlin:population:summary');
     expect(summary!.changeAbsolute).toBe(0);
     expect(summary!.changePct).toBe(0);
+    expect(summary!.changePeriod).toBe('half-year');
+  });
+
+  it('compares with the previous snapshot of an earlier count', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(xlsxBuf, { status: 200 }));
+    mockLoadPopulationSummary.mockResolvedValueOnce({
+      data: { total: 9000, changeAbsolute: 5, changePct: 0.1, snapshotDate: '2025-06-30' },
+      fetchedAt: new Date(),
+    });
+
+    const cache = createCache();
+    cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
+    await createPopulationIngestion(cache, {} as Db)();
+
+    const summary = cache.get<PopulationSummary>('berlin:population:summary')!;
+    expect(summary.changeAbsolute).toBe(1000);
+    expect(summary.changePct).toBeCloseTo(11.11, 2);
+  });
+
+  // The job runs monthly and the XLSX changes half-yearly: a rerun on the same
+  // count once compared the count with itself and showed no change.
+  it('keeps the recorded change on a rerun over the same count', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(xlsxBuf, { status: 200 }));
+    mockLoadPopulationSummary.mockResolvedValueOnce({
+      data: { total: 10000, changeAbsolute: 1000, changePct: 11.11, snapshotDate: '2025-12-31' },
+      fetchedAt: new Date(),
+    });
+
+    const cache = createCache();
+    cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
+    await createPopulationIngestion(cache, {} as Db)();
+
+    const summary = cache.get<PopulationSummary>('berlin:population:summary')!;
+    expect(summary.snapshotDate).toBe('2025-12-31');
+    expect(summary.changeAbsolute).toBe(1000);
+    expect(summary.changePct).toBe(11.11);
+  });
+});
+
+describe('ingest-population for Köln, Hamburg and München', () => {
+  const fixture = (name: string) => readFileSync(new URL(`../lib/social-atlas-fixtures/${name}`, import.meta.url), 'utf8');
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockSavePopulation.mockClear();
+    mockLoadPopulationSummary.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('draws Köln\'s Quartiere on the shipped outlines, with density from their area and the change since the year before', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'koeln');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixture('koeln-datenkatalog.csv'), { status: 200 }));
+
+    const cache = createCache();
+    await createPopulationIngestion(cache, {} as Db)();
+
+    expect(String(fetchSpy.mock.calls[0]![0])).toContain('Statistischer_Datenkatalog');
+    const geojson = cache.get<{ features: Array<{ geometry: { type: string }; properties: Record<string, number | string> }> }>('koeln:population:geojson')!;
+    expect(geojson.features.map((f) => f.properties.plrId)).toEqual(['101010001', '101020001', '309050002']);
+    const kapitol = geojson.features[0]!;
+    expect(kapitol.geometry.type).toMatch(/Polygon/);
+    expect(kapitol.properties.plrName).toBe('Kapitol-Viertel');
+    // 1,755 residents on 0.129 km²
+    expect(kapitol.properties.density).toBe(Math.round(1755 / 0.129));
+
+    const summary = cache.get<PopulationSummary>('koeln:population:summary')!;
+    expect(summary.snapshotDate).toBe('2025-12-31');
+    expect(summary.changePeriod).toBe('year');
+    expect(summary.changeAbsolute).not.toBe(0);
+    // The year before comes from the CSV, not the database
+    expect(mockLoadPopulationSummary).not.toHaveBeenCalled();
+    expect(mockSavePopulation).toHaveBeenCalledWith(expect.anything(), 'koeln', geojson, summary);
+  });
+
+  it('draws Hamburg\'s Stadtteile on the shipped outlines, asking the API for no geometry', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixture('hh-stadtteile.json'), { status: 200 }));
+
+    const cache = createCache();
+    await createPopulationIngestion(cache)();
+
+    expect(String(fetchSpy.mock.calls[0]![0])).toContain('skipGeometry=true');
+    const geojson = cache.get<{ features: Array<{ properties: Record<string, number | string> }> }>('hamburg:population:geojson')!;
+    expect(geojson.features.map((f) => [f.properties.plrId, f.properties.plrName])).toEqual([['101', 'Hamburg-Altstadt'], ['104', 'St. Pauli']]);
+    // 22,028 residents on 224 ha
+    expect(geojson.features[1]!.properties.density).toBe(Math.round(22028 / 2.24));
+    const summary = cache.get<PopulationSummary>('hamburg:population:summary')!;
+    expect(summary.total).toBe(2567 + 22028);
+    expect(summary.changeAbsolute).toBe(2567 + 22028 - 2549 - 22377);
+    expect(summary.changePeriod).toBe('year');
+  });
+
+  it('looks up München\'s Indikatorenatlas CSVs and draws its Stadtbezirke with their official area', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+    const files: Record<string, string> = {
+      'indikatorenatlas-bevoelkerung-altersgruppen-83r65mct': 'muc-altersgruppen.csv',
+      'indikatorenatlas-bevoelkerung-nichtdeutsche-83r65mct': 'muc-nichtdeutsche.csv',
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const id = new URL(url).searchParams.get('id');
+      if (id) return new Response(JSON.stringify({ result: { resources: [{ format: 'CSV', url: `https://opendata.muenchen.de/download/${id}.csv` }] } }));
+      const dataset = url.split('/').pop()!.replace(/\.csv$/, '');
+      return new Response(fixture(files[dataset]!), { status: 200 });
+    });
+
+    const cache = createCache();
+    await createPopulationIngestion(cache)();
+
+    expect(fetchSpy.mock.calls.map((c) => String(c[0])).filter((u) => u.includes('package_show'))).toHaveLength(2);
+    const geojson = cache.get<{ features: Array<{ properties: Record<string, number | string> }> }>('muenchen:population:geojson')!;
+    expect(geojson.features.map((f) => [f.properties.plrId, f.properties.plrName])).toEqual([
+      ['01', 'Altstadt-Lehel'], ['11', 'Milbertshofen-Am Hart'], ['19', 'Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln'],
+    ]);
+    // 20,606 residents on the GeodatenService's 3.146 km²
+    expect(geojson.features[0]!.properties.density).toBe(Math.round(20606 / 3.146));
+    const summary = cache.get<PopulationSummary>('muenchen:population:summary')!;
+    expect(summary.snapshotDate).toBe('2025-12-31');
+    expect(summary.changeAbsolute).toBe(20606 + 77500 + 104237 - 20876 - 77281 - 103717);
+    expect(summary.changePeriod).toBe('year');
   });
 });

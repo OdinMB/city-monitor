@@ -13,21 +13,22 @@ import { StripErrorFallback } from '../ErrorFallback.js';
 import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
-import type { PoliticalDistrict, Representative } from '../../lib/api.js';
+import type { PoliticalDistrict, PoliticalLevel, Representative } from '../../lib/api.js';
 
-type View = 'state' | 'bezirke' | 'bundestag';
-type Level = 'bezirke' | 'bundestag' | 'state' | 'state-bezirke';
+type View = 'state' | 'mayor' | 'bezirke' | 'bundestag';
 
 /**
  * The views the city has data for, each with the level it reads. The state
  * parliament's seat chart reads its members grouped by Bezirk where the
- * political job groups them (Berlin), otherwise by constituency; the district
- * mayors exist only where they are kept (Berlin).
+ * political job groups them (Berlin), otherwise by constituency; the
+ * Oberbürgermeister and the district mayors exist only where they are kept
+ * (Köln, München; Berlin, Köln).
  */
-function viewsOf(features: readonly CityFeature[]): Array<{ key: View; level: Level }> {
-  const views: Array<{ key: View; level: Level }> = [
+function viewsOf(features: readonly CityFeature[]): Array<{ key: View; level: PoliticalLevel }> {
+  const views: Array<{ key: View; level: PoliticalLevel }> = [
     { key: 'state', level: features.includes('stateByDistrict') ? 'state-bezirke' : 'state' },
   ];
+  if (features.includes('mayor')) views.push({ key: 'mayor', level: 'mayor' });
   if (features.includes('districtMayors')) views.push({ key: 'bezirke', level: 'bezirke' });
   views.push({ key: 'bundestag', level: 'bundestag' });
   return views;
@@ -262,6 +263,9 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
           <div className="flex-1 flex items-center justify-center">
             <SeatChart districts={data} />
           </div>
+        ) : view === 'mayor' ? (
+          /* Oberbürgermeister: one person, no count */
+          <RepList districts={data} />
         ) : (
           /* Bezirke / Bundestag: summary + rep list */
           <>

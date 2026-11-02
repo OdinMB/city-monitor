@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   AedLocationSchema, AirQualityGridSchema, BathingSpotSchema, BudgetSummarySchema, BuergeramtDataSchema,
-  ConstructionSiteSchema, CouncilMeetingSchema, EmergencyPharmacySchema, FeuerwehrSummarySchema,
-  LaborMarketSummarySchema, NinaWarningSchema, NoiseSensorSchema, PoliticalDistrictSchema, PollenForecastSchema,
+  ConstructionSiteSchema, CouncilMeetingSchema, EmergencyPharmacySchema, FeuerwehrSummarySchema, FloodStatusSchema,
+  LaborMarketSummarySchema, LiftOutageDataSchema, NinaWarningSchema, NoiseSensorSchema, PoliticalDistrictSchema, PollenForecastSchema,
   PopulationSummarySchema, TrafficIncidentSchema, TransitAlertSchema, WastewaterSummarySchema,
   WaterLevelDataSchema, WeatherDataSchema,
 } from '@city-monitor/shared/schemas.js';
@@ -89,6 +89,8 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['pollen', PollenForecastSchema, d.pollen],
     ['noise', z.array(NoiseSensorSchema), d.noiseSensors],
     ['council', z.array(CouncilMeetingSchema), d.councilMeetings],
+    ['flood status', FloodStatusSchema, d.floodStatus],
+    ['lift outages', LiftOutageDataSchema, d.liftOutages],
     ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
       [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
   ];
@@ -298,16 +300,27 @@ describe('generateSyntheticCityData', () => {
       expect(data.cityId).toBe('hamburg');
       const held = Object.keys(data).filter((key) => key !== 'cityId' && key !== 'history');
       expect(held).toEqual(syntheticCoverage(hamburg));
-      // No transit (its HVV source is offline), events, budget, appointments,
-      // social atlas, noise or council config; population, wastewater, bathing, labour
-      // market and fire brigade are Berlin-only sources
+      // No events, budget, appointments, or noise config; fire brigade is a
+      // Berlin-only source. Transit from Geofox (production has its
+      // credentials), bathing water from its own WFS, social atlas from the
+      // Sozialmonitoring.
       expect([...held].sort()).toEqual([
-        'aeds', 'airQuality', 'airQualityGrid', 'construction', 'news', 'nina', 'pharmacies', 'political', 'pollen',
-        'safety', 'summary', 'traffic', 'waterLevels', 'weather',
+        'aeds', 'airQuality', 'airQualityGrid', 'bathing', 'construction', 'councilMeetings', 'laborMarket', 'news', 'nina',
+        'pharmacies', 'political', 'pollen', 'population', 'safety', 'socialAtlas', 'summary', 'traffic', 'transit',
+        'wastewater', 'waterLevels', 'weather',
       ]);
+      // Geofox announcements have no reporting station or map point
+      expect(data.transit!.every((t) => t.station === '' && t.location === null)).toBe(true);
+      // The Bürgerschaft only: no district meetings
+      expect(data.councilMeetings!.length).toBeGreaterThan(0);
+      expect(data.councilMeetings!.every((m) => m.source === 'parliament')).toBe(true);
       // No Bezirk mayors or state members by Bezirk outside Berlin
       expect(Object.keys(data.political!).sort()).toEqual(['bundestag', 'state']);
-      expect(new Set(data.history.map((h) => h.type))).toEqual(new Set(['open-meteo', 'pegelonline']));
+      expect(new Set(data.history.map((h) => h.type))).toEqual(new Set(['open-meteo', 'pegelonline', 'ba-labor-market']));
+      // All four pathogens from AMELAG's two Hamburg plants, dated together
+      expect(data.wastewater!.plantCount).toBe(2);
+      expect(data.wastewater!.pathogens.map((p) => p.name)).toEqual(['Influenza A', 'Influenza B', 'RSV', 'SARS-CoV-2']);
+      expect(data.wastewater!.pathogens.every((p) => p.sampleDate === undefined)).toBe(true);
       expect(Object.keys(data.summary!.briefings).sort()).toEqual([...hamburg.languages].sort());
     });
 
@@ -320,8 +333,8 @@ describe('generateSyntheticCityData', () => {
     it('passes the Zod schemas the database reads validate with', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
-        'aeds', 'aq grid', 'construction', 'nina', 'pharmacies', 'political bundestag', 'political state', 'pollen',
-        'traffic', 'water levels', 'weather',
+        'aeds', 'aq grid', 'bathing', 'construction', 'council', 'labor market', 'nina', 'pharmacies', 'political bundestag',
+        'political state', 'pollen', 'population', 'traffic', 'transit', 'wastewater', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {
         expect(schema.safeParse(value).error, name).toBeUndefined();
@@ -389,17 +402,55 @@ describe('generateSyntheticCityData', () => {
   });
 
   it.each([koeln, muenchen].map((c) => [c.name, c] as const))(
-    'gives %s, which has no Bezirk boundaries, what production holds for it, its pharmacies without a district',
+    'gives %s what production holds for it, its pharmacies in its Stadtbezirke',
     (_name, city) => {
       const d = generateSyntheticCityData({ now: NOW, city });
       expect(Object.keys(d).filter((key) => key !== 'cityId' && key !== 'history')).toEqual(syntheticCoverage(city));
       expect(d.pharmacies!.length).toBeGreaterThan(0);
-      for (const p of d.pharmacies!) expect(p.district).toBeUndefined();
+      const bezirke = syntheticDistricts(city.id).map((b) => b.name);
+      for (const p of d.pharmacies!) expect(bezirke).toContain(p.district);
       expect(d.waterLevels === undefined).toBe(city.dataSources.waterLevels === undefined);
+      expect(d.floodStatus === undefined).toBe(city.dataSources.floodStatus === undefined);
+      expect(d.liftOutages === undefined).toBe(city.dataSources.liftOutages === undefined);
+      for (const [name, schema, value] of schemaChecks(d)) expect(schema.safeParse(value).error, name).toBeUndefined();
       expectInside(d, city, 20);
       expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);
     },
   );
+
+  it('names Köln\'s and München\'s political data by their constituencies, with their Oberbürgermeister', () => {
+    const k = generateSyntheticCityData({ now: NOW, city: koeln }).political!;
+    expect(Object.keys(k).sort()).toEqual(['bezirke', 'bundestag', 'mayor', 'state']);
+    expect(k.bundestag!.map((d) => d.name)).toEqual(['Köln I', 'Köln II', 'Köln III', 'Leverkusen – Köln IV']);
+    expect(k.state!.map((d) => d.name)).toEqual(['Köln I', 'Köln II', 'Köln III', 'Köln IV', 'Köln V', 'Köln VI', 'Köln VII']);
+    expect(k.bezirke).toHaveLength(9);
+    expect(k.mayor!.map((d) => d.name)).toEqual(['Köln']);
+
+    const m = generateSyntheticCityData({ now: NOW, city: muenchen }).political!;
+    expect(Object.keys(m).sort()).toEqual(['bundestag', 'mayor', 'state']);
+    expect(m.state).toHaveLength(9);
+    for (const d of [...m.bundestag!, ...m.state!]) expect(d.name).toMatch(/^München-/);
+  });
+
+  it('fills only the social-atlas indicators each city\'s source has, and counts yearly outside Berlin', () => {
+    const k = generateSyntheticCityData({ now: NOW, city: koeln });
+    const kProps = k.socialAtlas!.features.map((f) => f.properties);
+    // Köln's Datenkatalog has no child poverty and no status index
+    expect(kProps.every((p) => p.childPoverty === null && p.statusIndex === null && p.statusLabel === null)).toBe(true);
+    expect(kProps.every((p) => typeof p.unemployment === 'number' && typeof p.welfare === 'number')).toBe(true);
+    expect(k.population!.summary.changePeriod).toBe('year');
+    expect(k.population!.summary.snapshotDate).toMatch(/-12-31$/);
+
+    const hProps = generateSyntheticCityData({ now: NOW, city: hamburg }).socialAtlas!.features.map((f) => f.properties);
+    expect(hProps.every((p) => typeof p.childPoverty === 'number' && typeof p.statusIndex === 'number')).toBe(true);
+    expect(generateSyntheticCityData({ now: NOW, city: berlin }).population!.summary.changePeriod).toBe('half-year');
+
+    // München's Indikatorenatlas has all four indicators but no status index
+    const m = generateSyntheticCityData({ now: NOW, city: muenchen });
+    const mProps = m.socialAtlas!.features.map((f) => f.properties);
+    expect(mProps.every((p) => typeof p.childPoverty === 'number' && typeof p.singleParent === 'number' && p.statusIndex === null)).toBe(true);
+    expect(m.population!.summary.changePeriod).toBe('year');
+  });
 
   it('holds weather and transit only where their ingestion would fetch them', () => {
     // ingest-weather has an adapter for brightsky only; ingest-transit skips a city with no stations

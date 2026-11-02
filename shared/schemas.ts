@@ -272,7 +272,7 @@ export const RepresentativeSchema = z.object({
 export const PoliticalDistrictSchema = z.object({
   id: z.string(),
   name: z.string(),
-  level: z.enum(['bezirk', 'bundestag', 'landesparlament']),
+  level: z.enum(['stadt', 'bezirk', 'bundestag', 'landesparlament']),
   representatives: z.array(RepresentativeSchema),
 });
 
@@ -327,6 +327,45 @@ export const PollenForecastSchema = z.object({
   ),
 });
 
+// --- Lift and escalator outages (KVB) ---
+
+export const LiftOutageDataSchema = z.object({
+  outages: z.array(z.object({
+    id: z.string(),
+    kind: z.enum(['lift', 'escalator']),
+    station: z.string(),
+    unit: z.string(),
+    lat: z.number().nullable(),
+    lon: z.number().nullable(),
+    info: z.string().nullable(),
+  })),
+  updated: z.string().nullable(),
+});
+
+// --- Flood Status (LHP) ---
+
+export const FloodStatusSchema = z.object({
+  gauges: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    waterBody: z.string(),
+    upstream: z.boolean(),
+    floodClass: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).nullable(),
+    stateLabel: z.string().nullable(),
+    measuredAt: z.string().nullable(),
+    url: z.string().nullable(),
+  })),
+  alerts: z.array(z.object({
+    id: z.string(),
+    headline: z.string(),
+    area: z.string(),
+    level: z.number(),
+    levelName: z.string(),
+    url: z.string().nullable(),
+  })),
+  updated: z.string(),
+});
+
 // --- Population Demographics ---
 
 export const PopulationSummarySchema = z.object({
@@ -340,6 +379,7 @@ export const PopulationSummarySchema = z.object({
   changeAbsolute: z.number(),
   changePct: z.number(),
   snapshotDate: z.string(),
+  changePeriod: z.enum(['half-year', 'year']).optional(),
 });
 
 // --- Council Meetings ---

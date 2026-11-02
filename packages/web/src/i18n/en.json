@@ -147,7 +147,9 @@
       "mayBeOutdated": "Data may be outdated (last checked {{time}})",
       "affectedStops": "Affected stops",
       "more": "more",
-      "station": "Reported at"
+      "station": "Reported at",
+      "hvvSource": "Source: hvv / Hamburger Hochbahn AG (hvv.de)",
+      "noGuarantee": "All information without guarantee (ohne Gewähr)"
     },
     "events": {
       "title": "Events",
@@ -267,6 +269,7 @@
       "workingAge": "Working age",
       "ageBreakdown": "Age breakdown",
       "change": "vs. previous half-year",
+      "changeYear": "vs. previous year",
       "empty": "No data available",
       "source": "Statistik Berlin-Brandenburg",
       "density": "per km²",
@@ -325,6 +328,34 @@
         "moderate": "Moderate",
         "high": "High"
       }
+    },
+    "floodStatus": {
+      "title": "Flood Status",
+      "class": {
+        "0": "No flood",
+        "1": "Minor flood",
+        "2": "Moderate flood",
+        "3": "Major flood",
+        "4": "Severe flood",
+        "none": "No current data"
+      },
+      "upstream": "Upstream",
+      "warnings": "Flood warnings",
+      "noWarnings": "No flood warnings in force",
+      "asOf": "As of",
+      "empty": "No flood data"
+    },
+    "liftOutages": {
+      "title": "Lifts & Escalators",
+      "lifts": "Lifts out of service: {{n}}",
+      "escalators": "Escalators out of service: {{n}}",
+      "noLifts": "All lifts in service",
+      "noEscalators": "All escalators in service",
+      "allWorking": "All lifts and escalators in service",
+      "more": "+{{n}} more",
+      "atStations": "Stations affected: {{n}}",
+      "asOf": "As of",
+      "empty": "No outage data"
     },
     "pollen": {
       "title": "Pollen Forecast",
@@ -412,12 +443,14 @@
     },
     "councilMeetings": {
       "title": "Council Meetings",
+      "title_hamburg": "Parliament Meetings",
       "empty": "No upcoming meetings",
       "filterLabel": "Filter by body",
       "bvv": "District Assembly",
       "parliament": "State Parliament",
       "parliament_koeln": "City Council",
       "parliament_muenchen": "City Council",
+      "parliament_hamburg": "Hamburg Parliament",
       "agendaItems_one": "{{count}} agenda item",
       "agendaItems_other": "{{count}} agenda items",
       "openDetails": "Open meeting details",
@@ -512,11 +545,15 @@
       "bathing": "Bathing Water"
     },
     "social": {
-      "unemployment": "Unemployment (2023)",
-      "single-parent": "Single-Parent HH (2023)",
-      "welfare": "Welfare Recipients (2023)",
-      "child-poverty": "Child Poverty (2023)",
       "rent": "Rent"
+    },
+    "rentLegend": {
+      "title": "Residential location classes of the rent index",
+      "simple": "Simple location",
+      "medium": "Medium location",
+      "good": "Good location",
+      "normal": "Normal location",
+      "unrated": "Not rated"
     },
     "population": {
       "pop-density": "Population Density",
@@ -525,6 +562,7 @@
     },
     "political": {
       "bezirke": "Districts",
+      "mayor": "City Hall",
       "bundestag": "Bundestag",
       "landesparlament": "State Parliament"
     }
@@ -582,12 +620,28 @@
         "loud": "Loud",
         "veryLoud": "Very Loud"
       }
-    },
-    "socialAtlas": {
+    }
+  },
+  "socialAtlas": {
+    "indicator": {
       "unemployment": "Unemployment",
-      "singleParent": "Single-parent HH",
+      "unemploymentRate": "Unemployment rate",
+      "singleParentChildren": "Children of single parents",
+      "singleParentHouseholds": "Single-parent households",
       "welfare": "Welfare recipients",
-      "childPoverty": "Child poverty"
+      "sgb2": "SGB II recipients",
+      "sgb2Asylblg": "SGB II and AsylbLG recipients",
+      "childPoverty": "Child poverty",
+      "childrenMinimumIncome": "Children on minimum income",
+      "sgb2Employable": "Employable SGB II recipients",
+      "childrenSgb2": "Children under 15 on SGB II"
+    },
+    "status": {
+      "mss": "MSS status index",
+      "hhSozialmonitoring": "Sozialmonitoring status"
+    },
+    "areas": {
+      "muenchenStadtbezirke": "25 districts only"
     }
   },
   "nina": {

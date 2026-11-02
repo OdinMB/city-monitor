@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
-import { createBathingIngestion } from './ingest-bathing.js';
+import { createBathingIngestion, hamburgBathingUrl, parseHamburgBathing } from './ingest-bathing.js';
 import type { BathingSpot } from '@city-monitor/shared';
 import type { Db } from '../db/index.js';
+
+// Recorded from HH_WFS_Badegewaesser on 2026-11-02, trimmed to five spots
+// (one closed, one with a ban, one with a warning, two clean) and their
+// samples since 10 August.
+const fixture = (name: string) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8')) as unknown;
+const HH_SPOTS = fixture('hh-badegewaesser.json');
+const HH_SAMPLES = fixture('hh-badegewaesser-proben.json');
 
 const mockSaveBathingSpots = vi.fn().mockResolvedValue(undefined);
 vi.mock('../db/writes.js', () => ({
@@ -58,8 +66,8 @@ describe('ingest-bathing', () => {
     vi.unstubAllEnvs();
   });
 
-  it('makes no request and writes nothing when Berlin is not active', async () => {
-    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+  it('makes no request and writes nothing when no active city has a bathing source', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'koeln,muenchen');
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(buildCsv(GOOD_ROW), { status: 200 }),
     );
@@ -73,7 +81,7 @@ describe('ingest-bathing', () => {
     expect(mockSaveBathingSpots).not.toHaveBeenCalled();
   });
 
-  it.each(['berlin', 'berlin,hamburg', 'hamburg,berlin'])(
+  it.each(['berlin', 'berlin,koeln', 'koeln,berlin'])(
     'fetches the LAGeSo CSV and writes Berlin rows when ACTIVE_CITIES=%s',
     async (activeCities) => {
       vi.stubEnv('ACTIVE_CITIES', activeCities);
@@ -275,6 +283,43 @@ describe('ingest-bathing', () => {
     expect(spots[0].id).toBe('bath-B329');
   });
 
+  it('fetches each city from its own provider and stores it under that city', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('lageso')) return new Response(buildCsv(GOOD_ROW), { status: 200 });
+      return new Response(JSON.stringify(url.includes('badegewaesser_proben') ? HH_SAMPLES : HH_SPOTS), { status: 200 });
+    });
+
+    const cache = createCache();
+    const db = {} as Db;
+    await createBathingIngestion(cache, db)();
+
+    expect(fetchSpy.mock.calls.map(([u]) => String(u)).sort()).toEqual([
+      'https://data.lageso.de/baden/0_letzte/letzte.csv',
+      hamburgBathingUrl('https://geodienste.hamburg.de/HH_WFS_Badegewaesser', 'badegewaesser'),
+      hamburgBathingUrl('https://geodienste.hamburg.de/HH_WFS_Badegewaesser', 'badegewaesser_proben'),
+    ].sort());
+    expect(cache.get<BathingSpot[]>('berlin:bathing:spots')).toHaveLength(1);
+    expect(cache.get<BathingSpot[]>('hamburg:bathing:spots')).toHaveLength(5);
+    expect(mockSaveBathingSpots.mock.calls.map((c) => c[1]).sort()).toEqual(['berlin', 'hamburg']);
+  });
+
+  it('keeps Hamburg\'s previous spots when one of its two requests fails', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) =>
+      String(input).includes('badegewaesser_proben')
+        ? new Response('', { status: 503 })
+        : new Response(JSON.stringify(HH_SPOTS), { status: 200 }));
+
+    const cache = createCache();
+    const setSpy = vi.spyOn(cache, 'set');
+    await createBathingIngestion(cache, {} as Db)();
+
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(mockSaveBathingSpots).not.toHaveBeenCalled();
+  });
+
   it('parses German date DD.MM.YYYY to ISO YYYY-MM-DD', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(buildCsv(GOOD_ROW), { status: 200 }),
@@ -286,5 +331,89 @@ describe('ingest-bathing', () => {
 
     const spot = cache.get<BathingSpot[]>('berlin:bathing:spots')![0];
     expect(spot.measuredAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe('parseHamburgBathing', () => {
+  const SUMMER = new Date('2026-08-20T10:00:00Z');
+  const spots = parseHamburgBathing(HH_SPOTS, HH_SAMPLES, SUMMER)!;
+  const byName = (name: string) => spots.find((s) => s.name === name)!;
+
+  it('builds one spot per point of the spot layer, in its order', () => {
+    expect(spots.map((s) => s.name)).toEqual([
+      'Sommerbad Volksdorf', 'Eichbaumsee, Badestelle Nord', 'Eichbaumsee, Badestelle Ost',
+      'Naturbad Stadtparksee', 'Öjendorfer See, Badestelle Nord',
+    ]);
+    expect(new Set(spots.map((s) => s.id)).size).toBe(spots.length);
+  });
+
+  it('takes the newest sample of each spot, whatever order the samples come in', () => {
+    const ost = byName('Eichbaumsee, Badestelle Ost');
+    expect(ost.measuredAt).toBe('2026-09-07');
+    expect(ost.waterTemp).toBe(18.3);
+    expect(ost.visibility).toBe(1);
+    expect(ost.advisory).toBe('Baden verboten. Blaualgen (Stand 07.09.26)');
+    const oec = byName('Öjendorfer See, Badestelle Nord');
+    expect(oec.measuredAt).toBe('2026-08-25');
+    expect(oec.waterTemp).toBe(18.3);
+  });
+
+  it('rates a ban or a closed spot poor, a remark with "ggf." or few algae good', () => {
+    expect(byName('Öjendorfer See, Badestelle Nord').quality).toBe('poor');
+    expect(byName('Eichbaumsee, Badestelle Ost').quality).toBe('poor');
+    const closed = byName('Eichbaumsee, Badestelle Nord');
+    expect(closed.quality).toBe('poor');
+    expect(closed.advisory).toBe('Badestelle gesperrt');
+    expect(closed.measuredAt).toBe('');
+    expect(closed.waterTemp).toBeNull();
+    // The sample (17.08) is newer than the spot layer's warning (27.07)
+    const volksdorf = byName('Sommerbad Volksdorf');
+    expect(volksdorf.quality).toBe('good');
+    expect(volksdorf.advisory).toBe('keine Beanstandung, ggf. Blaualgen (Stand 17.08.)');
+    expect(volksdorf.algae).toBeNull();
+    const stadtpark = byName('Naturbad Stadtparksee');
+    expect(stadtpark.quality).toBe('good');
+    expect(stadtpark.advisory).toBeNull();
+    expect(stadtpark.visibility).toBe(2);
+  });
+
+  it('rates a warning, or many algae, as a warning', () => {
+    const warned = parseHamburgBathing(HH_SPOTS, { type: 'FeatureCollection', features: [] }, SUMMER)!;
+    // Without samples the spot layer's own remark counts
+    expect(warned.find((s) => s.name === 'Sommerbad Volksdorf')!.quality).toBe('warning');
+    const algae = parseHamburgBathing(HH_SPOTS, {
+      features: [{ properties: { name: 'Naturbad Stadtparksee', datum: '20260901', algen: 'viel', bemerkung_bsu: 'keine Beanstandung', icon: 'NNNN' } }],
+    }, SUMMER)!.find((s) => s.name === 'Naturbad Stadtparksee')!;
+    expect(algae.quality).toBe('warning');
+    expect(algae.algae).toBe('Algen: viel');
+  });
+
+  it('names the lake as the water body, and none for a pool named after itself', () => {
+    expect(byName('Eichbaumsee, Badestelle Ost').waterBody).toBe('Eichbaumsee');
+    expect(byName('Sommerbad Volksdorf').waterBody).toBe('');
+    expect(byName('Sommerbad Volksdorf').district).toBe('');
+  });
+
+  it('links the hamburg.de page over https and keeps the EU class out', () => {
+    const s = byName('Naturbad Stadtparksee');
+    expect(s.detailUrl).toBe('https://www.hamburg.de/go/naturbad-stadtparksee');
+    expect(s.classification).toBeNull();
+    expect(s.lat).toBeCloseTo(53.5931, 4);
+    expect(s.lon).toBeCloseTo(10.0282, 4);
+  });
+
+  it('puts each spot in season by its own dates', () => {
+    expect(byName('Sommerbad Volksdorf').inSeason).toBe(true);
+    const sept = parseHamburgBathing(HH_SPOTS, HH_SAMPLES, new Date('2026-09-05T10:00:00Z'))!;
+    // Volksdorf closed on 31 August, Stadtparksee runs until 14 September
+    expect(sept.find((s) => s.name === 'Sommerbad Volksdorf')!.inSeason).toBe(false);
+    expect(sept.find((s) => s.name === 'Naturbad Stadtparksee')!.inSeason).toBe(true);
+    const winter = parseHamburgBathing(HH_SPOTS, HH_SAMPLES, new Date('2026-11-02T10:00:00Z'))!;
+    expect(winter.every((s) => !s.inSeason)).toBe(true);
+  });
+
+  it('returns null for a response that is not a feature collection', () => {
+    expect(parseHamburgBathing({ error: 'x' }, HH_SAMPLES, SUMMER)).toBeNull();
+    expect(parseHamburgBathing(HH_SPOTS, null, SUMMER)).toBeNull();
   });
 });

@@ -55,8 +55,17 @@ describe('City config', () => {
     const config = getCityConfig('hamburg');
     expect(config!.feeds.length).toBeGreaterThan(0);
     expect(config!.dataSources.weather.provider).toBe('brightsky');
-    // Hamburg transit not supported — HVV transport.rest API is offline
-    expect(config!.dataSources.transit).toBeUndefined();
+    // HVV announcements from Geofox GTI (credentials from the environment, never the config)
+    expect(config!.dataSources.transit).toEqual({ provider: 'geofox', endpoint: 'https://gti.geofox.de' });
+  });
+
+  it('takes council meetings from the Bürgerschaft calendar alone, as no Bezirksversammlung source answers', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    expect(getCityConfig('hamburg')!.dataSources.councilMeetings).toEqual({
+      hamburgBuergerschaft: {
+        calendarUrl: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine/1042880!search',
+      },
+    });
   });
 
   it('supports multiple active cities', () => {
@@ -138,16 +147,25 @@ describe('Köln config', () => {
     expect(dataSources.councilMeetings?.oparlBody?.districtBody).toBe('Bezirksvertretung');
   });
 
-  it('has its licence-checked feeds, Polizei Köln and roadworks, and no other city-specific source', () => {
+  it('has its licence-checked feeds, Polizei Köln, roadworks, KVB lift outages and Datenkatalog, and no other city-specific source', () => {
     vi.stubEnv('ACTIVE_CITIES', 'koeln');
     const config = getCityConfig('koeln')!;
     expect(config.feeds.map((f) => f.name)).toEqual(['WDR Rheinland', 'Kölner Stadt-Anzeiger', 'EXPRESS', 'Stadt Köln']);
     // Polizei Köln (presseportal newsroom 12415), not another force's newsroom
     expect(config.dataSources.police?.url).toBe('https://www.presseportal.de/rss/dienststelle_12415.rss2');
     expect(config.dataSources.roadworks?.provider).toBe('koeln-wfs');
+    expect(config.dataSources.socialAtlas?.provider).toBe('koeln-datenkatalog');
+    expect(config.dataSources.population?.provider).toBe('koeln-datenkatalog');
+    // KVB's lift and escalator outages, its only open transit data (dl-de/zero-2.0)
+    expect(config.dataSources.liftOutages).toEqual({ provider: 'kvb', url: 'https://data.webservice-kvb.koeln/service/opendata' });
+    // The kreisfreie Stadt's own BA table and AMELAG plant
+    expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' });
+    expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['Köln'] });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
-      police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council, ...rest
+      police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council,
+      liftOutages: _lifts, laborMarket: _labor, wastewater: _wastewater,
+      socialAtlas: _socialAtlas, population: _population, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });
@@ -219,13 +237,27 @@ describe('München config', () => {
     });
   });
 
-  it('has its licence-checked feeds and roadworks, and no river gauge, police or other city-specific source', () => {
+  it('takes social atlas and population from the Indikatorenatlas datasets, on the shipped Stadtbezirk outlines', () => {
+    const { dataSources } = getCityConfig('muenchen')!;
+    expect(dataSources.socialAtlas).toMatchObject({ provider: 'muenchen-indikatorenatlas', ckanApi: 'https://opendata.muenchen.de/api/3/action', year: 2024, outlines: 'muenchen-stadtbezirke.geojson' });
+    expect(dataSources.population).toMatchObject({ provider: 'muenchen-indikatorenatlas', ckanApi: 'https://opendata.muenchen.de/api/3/action', outlines: 'muenchen-stadtbezirke.geojson' });
+  });
+
+  it('has its licence-checked feeds, roadworks and Isar flood gauges, and no river levels, police or other city-specific source', () => {
     const config = getCityConfig('muenchen')!;
     expect(config.feeds.map((f) => f.name)).toEqual(['BR24 Oberbayern', 'Feuerwehr München']);
     // polizei.bayern.de's robots.txt disallows all; the Polizeipräsidium is not on presseportal
     expect(config.dataSources.police).toBeUndefined();
     expect(config.dataSources.roadworks?.provider).toBe('muenchen-wfs');
-    const { weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council, ...rest } = config.dataSources;
+    // The Isar is not on PEGELONLINE: flood class from the LHP instead, the city's gauge first
+    expect(config.dataSources.floodStatus?.stations.map((s) => s.id)).toEqual(['BY_16005701', 'BY_16004403']);
+    // The city's Kreis table, not the wider Agentur für Arbeit München
+    expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' });
+    expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['München'] });
+    const {
+      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
+      floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population, ...rest
+    } = config.dataSources;
     expect(rest).toEqual({});
   });
 });

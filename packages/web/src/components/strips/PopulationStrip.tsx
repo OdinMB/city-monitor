@@ -116,7 +116,7 @@ export function PopulationStrip() {
         </div>
         {data.changeAbsolute !== 0 && (
           <div className={`text-sm font-medium mt-0.5 ${changeColor}`}>
-            {formatSignedCount(data.changeAbsolute, i18n.language, { plusOnZero: true })} ({formatSignedPercent(data.changePct, 1, { plusOnZero: true })}) {t('panel.population.change')}
+            {formatSignedCount(data.changeAbsolute, i18n.language, { plusOnZero: true })} ({formatSignedPercent(data.changePct, 1, { plusOnZero: true })}) {t(data.changePeriod === 'year' ? 'panel.population.changeYear' : 'panel.population.change')}
           </div>
         )}
       </div>

@@ -8,11 +8,14 @@ import { berlin } from './cities/berlin.js';
 import { hamburg } from './cities/hamburg.js';
 import { koeln } from './cities/koeln.js';
 import { muenchen } from './cities/muenchen.js';
-import { getNoiseWmsAttribution, getNoiseWmsUrl } from '../components/map/constants.js';
+import {
+  DISTRICT_URLS, getNoiseWmsAttribution, getNoiseWmsUrl, getRentMapAttribution, getRentMapLegend, getRentMapWmsUrl,
+} from '../components/map/constants.js';
 import { getCrisisDirectory } from '../components/strips/crisis-services.js';
+import { SOCIAL_ATLAS } from '../lib/social-atlas.js';
 
 /** Features the web app holds itself, which the server knows nothing about. */
-const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal'];
+const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap', 'bundestagByDistrict'];
 
 const ALL_CONFIGURED = [berlin, hamburg, koeln, muenchen];
 
@@ -126,6 +129,31 @@ describe('web and server city configs', () => {
       expect([...webIngested].sort(), file).toEqual(cityFeatures(server).sort());
     }
   });
+
+  // The sidebar and popup name each city's social-atlas indicators from
+  // lib/social-atlas.ts: a label for an indicator the source lacks would draw
+  // an empty map, and an edition other than the server's would misdate it.
+  it('label exactly the social-atlas indicators, status index and edition of each city\'s source', async () => {
+    const parsers = (await import(/* @vite-ignore */ resolve(here, '../../../server/src/lib/social-atlas-parsers.ts'))) as {
+      SOCIAL_ATLAS_METRICS: Record<string, readonly string[]>;
+      SOCIAL_ATLAS_HAS_STATUS_INDEX: Record<string, boolean>;
+      socialAtlasEdition: (source: NonNullable<CityConfig['dataSources']['socialAtlas']>) => string;
+    };
+    for (const file of cityFiles(SERVER_DIR)) {
+      const server = await load<CityConfig>(SERVER_DIR, file);
+      const source = server.dataSources.socialAtlas;
+      const atlas = SOCIAL_ATLAS[server.id];
+      if (!source) {
+        expect(atlas, file).toBeUndefined();
+        continue;
+      }
+      expect(atlas, file).toBeDefined();
+      expect(atlas!.provider, file).toBe(source.provider);
+      expect(atlas!.edition, file).toBe(parsers.socialAtlasEdition(source));
+      expect(atlas!.indicators.map((i) => i.metric), file).toEqual(parsers.SOCIAL_ATLAS_METRICS[source.provider]);
+      expect(atlas!.status !== undefined, file).toBe(parsers.SOCIAL_ATLAS_HAS_STATUS_INDEX[source.provider]);
+    }
+  });
 });
 
 describe('the web app\'s own features', () => {
@@ -147,10 +175,15 @@ describe('the web app\'s own features', () => {
     },
   );
 
-  it('keeps the rent map, which shows Berlin\'s rent zones, to Berlin', () => {
-    for (const city of ALL_CONFIGURED.filter((c) => c.id !== 'berlin')) {
-      expect(city.features, city.id).not.toContain('rentMap');
-    }
+  // The rent maps are WMS layers too, each with its own classes and credit.
+  it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists a rent map exactly when it has one, with a legend', (id, city) => {
+    const url = getRentMapWmsUrl(id);
+    expect(city.features.includes('rentMap'), id).toBe(url !== null);
+    if (url === null) return;
+    expect(getRentMapLegend(id).length, id).toBeGreaterThan(0);
+    const wmsHost = new URL(url).hostname;
+    const credited = [...getRentMapAttribution(id)!.matchAll(/href="([^"]+)"/g)].map((m) => new URL(m[1]!).hostname);
+    expect(credited.some((host) => host.split('.').slice(-2).join('.') === wmsHost.split('.').slice(-2).join('.')), id).toBe(true);
   });
 
   // The crisis tile shows the city's own directory (crisis-services.ts), so a
@@ -158,6 +191,19 @@ describe('the web app\'s own features', () => {
   // leaving it out would hide numbers it has.
   it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists the crisis tile exactly when it has a crisis directory', (id, city) => {
     expect(city.features.includes('crisis'), id).toBe(getCrisisDirectory(id) !== null);
+  });
+
+  // The political map layer colours district outlines the web app ships
+  // (DISTRICT_URLS); without them it would draw nothing. With them it still
+  // needs a view whose members map onto Bezirke (map-layers.ts), so München,
+  // with outlines but no such view, lists none.
+  it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists the political map only with district outlines and a view by Bezirk', (id, city) => {
+    const byBezirk = (['districtMayors', 'bundestagByDistrict', 'stateByDistrict'] as const).some((f) => city.features.includes(f));
+    expect(city.features.includes('politicalMap'), id).toBe(Object.hasOwn(DISTRICT_URLS, id) && city.features.includes('political') && byBezirk);
+  });
+
+  it('ships district outlines for every configured city', () => {
+    expect(Object.keys(DISTRICT_URLS).sort()).toEqual(ALL_CONFIGURED.map((c) => c.id).sort());
   });
 
   it('has a crisis directory for no city it does not configure', () => {

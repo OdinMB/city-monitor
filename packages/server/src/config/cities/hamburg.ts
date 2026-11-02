@@ -28,7 +28,9 @@ export const hamburg: CityConfig = {
   ],
   dataSources: {
     weather: { provider: 'brightsky', lat: 53.5511, lon: 9.9937 },
-    // HVV transport.rest API is deprecated and offline (March 2026) — no free alternative
+    // HVV's Geofox GTI announcements; runs only with GEOFOX_USER and GEOFOX_PASSWORD set
+    // (Hochbahn issues them per operator; a fork requests its own). .context/transit.md#hamburg
+    transit: { provider: 'geofox', endpoint: 'https://gti.geofox.de' },
     police: {
       provider: 'rss',
       // Polizei Hamburg's presseportal newsroom (6013, used until 2026-11-01, is Polizeipräsidium Mittelfranken)
@@ -77,11 +79,24 @@ export const hamburg: CityConfig = {
     // Bauweiser construction sites on main roads (dl-de/by-2.0). The Transparenzportal's
     // baustellen-hamburg WFS is an archive frozen in 2020.
     roadworks: { provider: 'hamburg-ogc', url: 'https://api.hamburg.de/datasets/v1/baustellen/collections/baustelle/items?f=json&limit=1000' },
+    // The 17 EU bathing spots and their samples (Behörde für Umwelt und Energie, dl-de/by-2.0)
+    bathing: { provider: 'hamburg-wfs', url: 'https://geodienste.hamburg.de/HH_WFS_Badegewaesser' },
     pollen: {
       provider: 'dwd',
       regionId: 10,         // Schleswig-Holstein und Hamburg
       partregionId: 12,     // Geest, Schleswig-Holstein und Hamburg
     },
+    // The Bürgerschaft's committee and plenary sessions from its website calendar
+    // (official public records, no licence stated). The Bezirksversammlungen' ALLRIS
+    // (sitzungsdienst-<bezirk>.hamburg.de) lists no OParl endpoint: .context/council-meetings.md.
+    councilMeetings: {
+      hamburgBuergerschaft: {
+        calendarUrl: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine/1042880!search',
+      },
+    },
+    laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Hamburg' },
+    // RKI AMELAG (CC BY 4.0): Hamburg's two plants, serving about 0.58 and 1.46 million people
+    wastewater: { provider: 'amelag', sites: ['Hamburg 01', 'Hamburg 02'] },
     waterLevels: {
       provider: 'pegelonline',
       stations: [
@@ -89,6 +104,23 @@ export const hamburg: CityConfig = {
         { uuid: 'ae1b91d0-e746-4f65-9f64-2d2e23603a82', name: 'Bunthaus', waterBody: 'Elbe', tidal: true },
         { uuid: '816affba-0118-4668-887f-fb882ed573b2', name: 'Seemannshöft', waterBody: 'Elbe', tidal: true },
       ],
+    },
+    // Sozialmonitoring Integrierte Stadtteilentwicklung, report annex (dl-de/by-2.0): 857
+    // Statistische Gebiete, data as of 31 Dec of the year before the report. A new GUID
+    // each year: find it on the Transparenzportal ("Sozialmonitoring Bericht Anhang").
+    // The outlines, from the dataset's OGC API, ship in packages/server/data.
+    socialAtlas: {
+      provider: 'hh-sozialmonitoring',
+      xlsxUrl: 'https://daten.transparenz.hamburg.de/Dataport.HmbTG.ZS.Webservice.GetRessource100/GetRessource100.svc/ee0ecec9-c569-43ca-bc90-fc3f560ff1a9/Upload__Sozialmonitoring-Bericht_2025_Ergebnistabellen.XLSX',
+      reportYear: 2025,
+      outlines: 'hamburg-statistische-gebiete.geojson',
+    },
+    // Regionalstatistische Daten der Stadtteile (Statistikamt Nord, dl-de/by-2.0): 99
+    // Stadtteile, yearly. Fetched without geometry; the outlines ship in packages/server/data.
+    population: {
+      provider: 'hh-stadtteile',
+      itemsUrl: 'https://api.hamburg.de/datasets/v1/regionalstatistische_daten_stadtteile/collections/regionalstatistische_daten_stadtteile/items',
+      outlines: 'hamburg-stadtteile.geojson',
     },
   },
 };

@@ -12,8 +12,10 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   police: 'sidebar.news.police',
   events: 'panel.events.title',
   waterLevels: 'panel.waterLevels.title',
+  floodStatus: 'panel.floodStatus.title',
   appointments: 'panel.appointments.title',
   bathing: 'panel.bathing.title',
+  liftOutages: 'panel.liftOutages.title',
   pollen: 'panel.pollen.title',
   nina: 'sidebar.layers.warnings',
   wastewater: 'panel.wastewater.title',
@@ -36,7 +38,10 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   noiseTotal: null,
   rentMap: null,
   districtMayors: null,
+  mayor: null,
   stateByDistrict: null,
+  politicalMap: null,
+  bundestagByDistrict: null,
 };
 
 /** Topics every city's dashboard has, whatever its features. */

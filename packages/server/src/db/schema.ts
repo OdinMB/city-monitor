@@ -15,9 +15,9 @@ export const SNAPSHOT_TYPES = [
   'viz-roadworks', 'tomtom-traffic', 'aponet', 'osm-aeds',
   'mss-social-atlas', 'lageso-wastewater', 'lageso-bathing',
   'ba-labor-market', 'afstat-population', 'bf-feuerwehr',
-  'dwd-pollen', 'sc-dnms', 'oparl-meetings',
+  'dwd-pollen', 'sc-dnms', 'oparl-meetings', 'lhp-flood', 'kvb-lift-outages',
   'vbb-disruptions', 'aqi-grid', 'bbk-nina',
-  'abgwatch-bezirke', 'abgwatch-bundestag', 'abgwatch-state', 'abgwatch-state-bezirke',
+  'abgwatch-bezirke', 'abgwatch-mayor', 'abgwatch-bundestag', 'abgwatch-state', 'abgwatch-state-bezirke',
 ] as const;
 export type SnapshotType = typeof SNAPSHOT_TYPES[number];
 

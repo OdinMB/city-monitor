@@ -19,6 +19,8 @@ import { AirQualityStrip } from '../strips/AirQualityStrip.js';
 import { WeatherStrip } from '../strips/WeatherStrip.js';
 import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
+import { FloodStatusStrip } from '../strips/FloodStatusStrip.js';
+import { LiftOutagesStrip } from '../strips/LiftOutagesStrip.js';
 import { BathingStrip } from '../strips/BathingStrip.js';
 import { useBathingOffSeason } from '../../hooks/useBathingOffSeason.js';
 import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
@@ -160,6 +162,12 @@ export function CommandLayout() {
               {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
             </Tile>
           )}
+          {/* Beside transit: where a city has no transit tile (Köln), the station information it has */}
+          {has('liftOutages') && (
+            <Tile title={t('panel.liftOutages.title')} span={1} expandable>
+              {(expanded) => <LiftOutagesStrip expanded={expanded} />}
+            </Tile>
+          )}
           <Tile title={t('support.title')} span={1}>
             <>
               <div className="flex flex-col items-center justify-center gap-6 h-full pb-4">
@@ -263,6 +271,11 @@ export function CommandLayout() {
           {has('waterLevels') && (
             <Tile title={t('panel.waterLevels.title')} span={1}>
               <WaterLevelStrip />
+            </Tile>
+          )}
+          {has('floodStatus') && (
+            <Tile title={t('panel.floodStatus.title')} span={1}>
+              <FloodStatusStrip />
             </Tile>
           )}
         </DashboardGrid>

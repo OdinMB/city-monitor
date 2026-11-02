@@ -69,6 +69,8 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'dwd-pollen',         retentionMs: 2 * DAY_MS },
   { type: 'sc-dnms',            retentionMs: 2 * DAY_MS },
   { type: 'oparl-meetings',     retentionMs: 2 * DAY_MS },
+  { type: 'lhp-flood',          retentionMs: 2 * DAY_MS },
+  { type: 'kvb-lift-outages',   retentionMs: 2 * DAY_MS },
 
   // Infrequent (7 days). keepLatest where the job runs weekly or monthly; the
   // daily jobs write a fresh row each run.
@@ -78,6 +80,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'bf-feuerwehr',       retentionMs: 7 * DAY_MS },                   // daily
   { type: 'afstat-population',  retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
   { type: 'abgwatch-bezirke',       retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'abgwatch-mayor',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-bundestag',     retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-state',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-state-bezirke', retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly

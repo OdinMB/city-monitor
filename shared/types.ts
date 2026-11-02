@@ -53,32 +53,37 @@ export type CityFeature =
   | 'nina'            // dataSources.nina: civil-protection warnings
   | 'pollen'
   | 'waterLevels'
+  | 'floodStatus'     // dataSources.floodStatus: flood class of state gauges (LHP)
   | 'transit'
   | 'events'
   | 'appointments'
   | 'budget'
   | 'roadworks'
-  | 'socialAtlas'
+  | 'socialAtlas'     // dataSources.socialAtlas: the social map layer's indicator sub-layers
+  | 'population'      // dataSources.population: population map layer and tile
+  | 'laborMarket'     // dataSources.laborMarket: BA unemployment figures
+  | 'wastewater'      // dataSources.wastewater: viral load in wastewater
   | 'noiseSensors'
   | 'councilMeetings'
+  | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
+  | 'liftOutages'     // dataSources.liftOutages: lift and escalator outages (KVB Köln)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
   // From the political ingestion's own tables
   | 'political'       // PARLIAMENT_CONFIG: Bundestag and state parliament members
   | 'districtMayors'  // BEZIRKSBUERGERMEISTER
+  | 'mayor'           // OBERBUERGERMEISTER: a city inside a state's Oberbürgermeister
   | 'stateByDistrict' // state members grouped by Bezirk
   // Berlin's own sources, ingested for Berlin alone
-  | 'bathing'
-  | 'wastewater'
-  | 'laborMarket'
-  | 'population'
   | 'feuerwehr'
   // The web app's own
   | 'crisis'          // the crisis-service directory
   | 'rentMap'         // the rent map WMS
   | 'noiseMap'        // a strategic noise map WMS (road, rail, air)
-  | 'noiseTotal';     // its all-sources layer
+  | 'noiseTotal'      // its all-sources layer
+  | 'politicalMap'    // the political map layer, on the city's district outlines (DISTRICT_URLS)
+  | 'bundestagByDistrict'; // its Bundestag view: constituencies named after Bezirke (Berlin, Hamburg)
 
 /**
  * A city as the web app holds it: the shared identity and map, without the
@@ -131,6 +136,66 @@ export type RoadworksSource =
   /** München's GeoServer WFS GetFeature URL for `baustellen_opendata` (GeoJSON, EPSG:4326) */
   | { provider: 'muenchen-wfs'; url: string };
 
+/**
+ * A city's social-atlas source, by the provider whose format it is in. Each
+ * provider has its own parser in packages/server/src/lib/social-atlas-parsers.ts,
+ * which also says which of the four indicators it has. `outlines` names a
+ * GeoJSON file in packages/server/data/ that holds the areas' polygons, for a
+ * source that ships none.
+ */
+export type SocialAtlasSource =
+  /** Berlin's Monitoring Soziale Stadtentwicklung WFS; the edition is the URL's last segment (`…/mss_2025`) */
+  | { provider: 'mss-wfs'; wfsUrl: string }
+  /** Stadt Köln's Statistischer Datenkatalog CSV, the rows of one year at the Statistische Quartier level */
+  | { provider: 'koeln-datenkatalog'; csvUrl: string; year: number; outlines: string }
+  /** Hamburg's Sozialmonitoring report annex (XLSX), one per report year */
+  | { provider: 'hh-sozialmonitoring'; xlsxUrl: string; reportYear: number; outlines: string }
+  /**
+   * München's Indikatorenatlas: one CKAN dataset per indicator on `ckanApi`
+   * (`…/api/3/action`), whose CSV is looked up on each run (its file name
+   * carries the release date); the 25 Stadtbezirke of one year
+   */
+  | {
+    provider: 'muenchen-indikatorenatlas';
+    ckanApi: string;
+    datasets: { unemployment: string; singleParent: string; welfare: string; childPoverty: string };
+    year: number;
+    outlines: string;
+  };
+
+/**
+ * A city's population source, by provider; parsers in
+ * packages/server/src/lib/population-parsers.ts.
+ */
+export type PopulationSource =
+  /** Amt für Statistik Berlin-Brandenburg's half-yearly EWR XLSX; the polygons come from the social atlas */
+  | { provider: 'afstat-ewr-xlsx'; xlsxUrl: string }
+  /** The same Köln CSV as the social atlas: its newest year, compared with the year before */
+  | { provider: 'koeln-datenkatalog'; csvUrl: string; outlines: string }
+  /** Hamburg's "Regionalstatistische Daten der Stadtteile" (OGC API Features, no geometry fetched) */
+  | { provider: 'hh-stadtteile'; itemsUrl: string; outlines: string }
+  /** München's Indikatorenatlas age-group and non-German datasets (CKAN, as for the social atlas): the newest year, compared with the year before */
+  | { provider: 'muenchen-indikatorenatlas'; ckanApi: string; datasets: { ageGroups: string; foreign: string }; outlines: string };
+
+/**
+ * A city's bathing-water feed, by the provider whose format it is in. Each
+ * provider has its own parser in packages/server/src/cron/ingest-bathing.ts
+ * (.context/water-levels.md, "Bathing Water Quality").
+ */
+export type BathingSource =
+  /** LAGeSo Berlin's semicolon CSV of the latest sample per spot */
+  | { provider: 'lageso'; url: string }
+  /** Hamburg's WFS `HH_WFS_Badegewaesser`: spots and samples, as GeoJSON */
+  | { provider: 'hamburg-wfs'; url: string };
+
+/**
+ * A city's lift and escalator outages, by provider. KVB Köln publishes the
+ * lifts and escalators out of service at its stations (.context/lift-outages.md).
+ */
+export type LiftOutageSource =
+  /** KVB's open-data service: `<url>/aufzugsstoerung/json` and `<url>/fahrtreppenstoerung/json` */
+  { provider: 'kvb'; url: string };
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -146,12 +211,23 @@ export interface CityDataSources {
   airQuality?: {
     sensorCommunityStations?: Array<{ sensorId: number; name: string; fallbackIds?: number[] }>;
   };
-  transit?: {
-    provider: 'hafas';
-    operatorId: string;
-    endpoint?: string;
-    stations?: Array<{ id: string; name: string }>;
-  };
+  transit?:
+    | {
+      /** transport.rest departures with disruption remarks, polled per station (VBB, Berlin). */
+      provider: 'hafas';
+      operatorId: string;
+      endpoint?: string;
+      stations?: Array<{ id: string; name: string }>;
+    }
+    | {
+      /**
+       * HVV's Geofox GTI `getAnnouncements` (Hamburg). Needs the GEOFOX_USER and
+       * GEOFOX_PASSWORD credentials Hochbahn issues per operator; without them the
+       * job skips the city. Default endpoint https://gti.geofox.de.
+       */
+      provider: 'geofox';
+      endpoint?: string;
+    };
   events?: EventSourceConfig[];
   police?: { provider: 'rss'; url: string; districts?: string[] };
   nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings
@@ -162,10 +238,24 @@ export interface CityDataSources {
    */
   aeds?: { adminLevel: number };
   roadworks?: RoadworksSource;
+  bathing?: BathingSource;
+  liftOutages?: LiftOutageSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
     stations: Array<{ uuid: string; name: string; waterBody: string; tidal?: boolean }>;
+  };
+  /**
+   * Flood class (Meldestufe or the state's equivalent) of state flood gauges from the
+   * Länderübergreifendes Hochwasserportal (LHP) public API, for rivers PEGELONLINE lacks.
+   * No water levels: the API gives none (.context/water-levels.md, "Flood Status").
+   */
+  floodStatus?: {
+    provider: 'lhp';
+    /** The LHP `states` filter the gauges and warnings are asked for with ("BY"). */
+    state: string;
+    /** LHP station ids ("BY_16005701"), in the order the tile lists them. */
+    stations: Array<{ id: string; name: string; waterBody: string; upstream?: boolean }>;
   };
   budget?: {
     provider: 'berlin-doppelhaushalt';
@@ -175,10 +265,30 @@ export interface CityDataSources {
     provider: 'service-berlin';
     services: Array<{ id: string; name: string }>;
   };
-  socialAtlas?: {
-    provider: 'mss-wfs';
-    wfsUrl: string;
+  socialAtlas?: SocialAtlasSource;
+  /** Residents per small area, for the population map layer and tile. */
+  population?: PopulationSource;
+  /**
+   * Monthly unemployment key figures from the Bundesagentur für Arbeit's
+   * Eckwertetabelle (packages/server/src/cron/ingest-labor-market.ts): the
+   * Land's table for a city-state, the Kreis table for a kreisfreie Stadt.
+   * `name` is the area's official name as the BA spells it ("Köln, Stadt").
+   */
+  laborMarket?: {
+    provider: 'ba';
+    scope: 'bundesland' | 'kreis';
+    name: string;
   };
+  /**
+   * Weekly wastewater viral load (packages/server/src/cron/ingest-wastewater.ts).
+   * `amelag` takes Influenza A, Influenza B, RSV and SARS-CoV-2 from the RKI
+   * AMELAG treatment plants named in `sites` (their `standort`), weighted by the
+   * population each serves. `lageso` takes the first three from LAGeSo's
+   * Berlin CSV and only SARS-CoV-2 from the AMELAG `sites`.
+   */
+  wastewater?:
+    | { provider: 'amelag'; sites: readonly string[] }
+    | { provider: 'lageso'; csvUrl: string; sites: readonly string[] };
   pollen?: {
     provider: 'dwd';
     regionId: number;
@@ -220,6 +330,14 @@ export interface CityDataSources {
     muenchenRis?: {
       councilFeedUrl: string;
       districtFeedUrl: string;
+    };
+    /**
+     * Hamburg: the Bürgerschaft website's event calendar (CoreMedia result
+     * list, read as HTML), for its committee and plenary sessions.
+     */
+    hamburgBuergerschaft?: {
+      /** The calendar's search action (`…/aktuelles/termine/<id>!search`). */
+      calendarUrl: string;
     };
   };
 }
@@ -299,7 +417,7 @@ export interface Representative {
 export interface PoliticalDistrict {
   id: string;
   name: string;
-  level: 'bezirk' | 'bundestag' | 'landesparlament';
+  level: 'stadt' | 'bezirk' | 'bundestag' | 'landesparlament';
   representatives: Representative[];
 }
 
@@ -473,18 +591,24 @@ export interface BuergeramtData {
   bookingUrl: string;
 }
 
-// Social Atlas (MSS 2023)
+// Social Atlas (dataSources.socialAtlas: Berlin MSS, Köln Datenkatalog, Hamburg Sozialmonitoring)
+/**
+ * One area of the social atlas. Each indicator is a percentage, or null where
+ * the city's source lacks it (Köln has no child poverty) or leaves the area
+ * out. What each indicator measures differs by city; the web app labels them
+ * per city (packages/web/src/lib/social-atlas.ts).
+ */
 export interface SocialAtlasFeatureProps {
-  plrId: string;
+  plrId: string;             // the area's ID: Berlin Planungsraum, Köln Statistisches Quartier, Hamburg Statistisches Gebiet, München Stadtbezirk
   plrName: string;
-  bezId: string;
+  bezId: string;             // the district it lies in (Berlin: Bezirk number; Köln: Stadtbezirk; Hamburg: Bezirk; München: its own number)
   population: number;
-  statusIndex: number;       // si_n: 1–4
-  statusLabel: string;       // si_v: "hoch" | "mittel" | "niedrig" | "sehr niedrig"
-  unemployment: number;      // s1: %
-  singleParent: number;      // s2: %
-  welfare: number;           // s3: %
-  childPoverty: number;      // s4: %
+  statusIndex: number | null;   // 1 (hoch) – 4 (sehr niedrig), where the source has a status index (Berlin MSS, Hamburg)
+  statusLabel: string | null;   // "hoch" | "mittel" | "niedrig" | "sehr niedrig"
+  unemployment: number | null;
+  singleParent: number | null;
+  welfare: number | null;
+  childPoverty: number | null;
 }
 
 // Labor market (Bundesagentur für Arbeit monthly)
@@ -538,10 +662,10 @@ export interface FeuerwehrSummary {
   previous: FeuerwehrMonthData | null;      // month before current, for MoM delta
 }
 
-// Population demographics (Amt für Statistik Berlin-Brandenburg, semi-annual)
+// Population demographics (dataSources.population: Berlin half-yearly, Köln and Hamburg yearly)
 export interface PopulationFeatureProps {
-  plrId: string;         // 8-digit Planungsraum ID (e.g. "01100101")
-  plrName: string;       // Planungsraum name (e.g. "Stülerstraße")
+  plrId: string;         // the area's ID: Berlin 8-digit Planungsraum ("01100101"), Köln Statistisches Quartier, Hamburg Stadtteil
+  plrName: string;       // its name (e.g. "Stülerstraße")
   population: number;    // total residents
   density: number;       // people per km²
   foreignPct: number;    // % non-German nationality
@@ -560,6 +684,8 @@ export interface PopulationSummary {
   changeAbsolute: number;   // vs previous snapshot (0 if first)
   changePct: number;
   snapshotDate: string;     // "2025-12-31"
+  /** What the change compares with: the previous half-year (Berlin, the default) or the previous year (Köln, Hamburg). */
+  changePeriod?: 'half-year' | 'year';
 }
 
 // Noise sensors (Sensor.Community DNMS)
@@ -587,6 +713,71 @@ export interface PollenForecast {
   region: string;
   updatedAt: string;
   pollen: Record<PollenType, PollenTypeForecast>;
+}
+
+// Lift and escalator outages (KVB Köln)
+export interface LiftOutage {
+  /** The operator's id of the lift or escalator ("011-04": station 011, unit 04). */
+  id: string;
+  kind: 'lift' | 'escalator';
+  /** The station as the operator names it ("Dom/HBf."). */
+  station: string;
+  /** The unit within the station ("Aufzug 04", "Fahrtreppe 51"). */
+  unit: string;
+  lat: number | null;
+  lon: number | null;
+  /** The operator's note on the outage, when it gives one. */
+  info: string | null;
+}
+
+export interface LiftOutageData {
+  /** Out of service now, lifts first, each kind by station. */
+  outages: LiftOutage[];
+  /** When the operator last updated its lists (ISO 8601 with offset), null when it gave no time. */
+  updated: string | null;
+}
+
+// Flood status (LHP public API): flood classes at state gauges and regional flood warnings
+/**
+ * LHP's nationwide flood class at a gauge: 0 no flood, 1 minor … 4 very severe flood.
+ * Each state maps its own levels onto it; in Bavaria class N is Meldestufe N.
+ */
+export type FloodClass = 0 | 1 | 2 | 3 | 4;
+
+export interface FloodGauge {
+  /** LHP station id, e.g. "BY_16005701" */
+  id: string;
+  name: string;
+  waterBody: string;
+  /** Upstream of the city, listed as an early sign. */
+  upstream: boolean;
+  /** null when LHP has no current data for the gauge (its class -1). */
+  floodClass: FloodClass | null;
+  /** The state's own label for the class, as LHP gives it ("Keine Meldestufe", "Meldestufe 2"). */
+  stateLabel: string | null;
+  /** When the gauge's class was determined (ISO 8601 with offset). */
+  measuredAt: string | null;
+  /** The state flood service's page for the gauge. */
+  url: string | null;
+}
+
+export interface FloodAlert {
+  id: string;
+  headline: string;
+  /** The warned region or river section ("Stadt München"). */
+  area: string;
+  /** LHP warning class: 1 all-clear, 2 pre-warning, 4 flood, 5 severe flood, 6 very severe flood. */
+  level: number;
+  /** LHP's name for the class ("Vorwarnung"). */
+  levelName: string;
+  url: string | null;
+}
+
+export interface FloodStatus {
+  gauges: FloodGauge[];
+  alerts: FloodAlert[];
+  /** LHP's `updated` (the "Stand" its licence asks to show), ISO 8601 with offset. */
+  updated: string;
 }
 
 // News feed items
@@ -683,6 +874,8 @@ export interface BootstrapData {
   traffic: ApiResponse<TrafficIncident[]> | null;
   construction: ApiResponse<ConstructionSite[]> | null;
   waterLevels: ApiResponse<WaterLevelData> | null;
+  floodStatus: ApiResponse<FloodStatus | null> | null;
+  liftOutages: ApiResponse<LiftOutageData | null> | null;
   budget: ApiResponse<BudgetSummary | null> | null;
   appointments: ApiResponse<BuergeramtData> | null;
   laborMarket: ApiResponse<LaborMarketSummary | null> | null;

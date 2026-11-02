@@ -1,6 +1,6 @@
 # Council Meetings
 
-Upcoming council meetings for Berlin (BVV district assemblies and Abgeordnetenhaus), Köln (Rat, committees and Bezirksvertretungen) and München (Stadtrat committees and Bezirksausschüsse). One job, one adapter per kind of source, chosen by the keys a city sets in `dataSources.councilMeetings`.
+Upcoming council meetings for Berlin (BVV district assemblies and Abgeordnetenhaus), Hamburg (Bürgerschaft committees and plenary only), Köln (Rat, committees and Bezirksvertretungen) and München (Stadtrat committees and Bezirksausschüsse). One job, one adapter per kind of source, chosen by the keys a city sets in `dataSources.councilMeetings`.
 
 ## Data Sources
 
@@ -33,6 +33,19 @@ Upcoming council meetings for Berlin (BVV district assemblies and Abgeordnetenha
 - The location is the description's "Sitzungsort" line; the description's HTML carries its entities a second time (`Gro&amp;szlig;er`), so it is decoded after the XML parser. The id is `muenchen-ris-<RIS id>` from the item link, which is also `webUrl`.
 - Licence: none stated; official public records of the city's council information system, credited on the Sources page as such.
 
+### Hamburg: Bürgerschaft website calendar (`hamburgBuergerschaft`)
+- No OParl, RSS or calendar feed. The Parlamentsdatenbank (`buergerschaft-hh.de/parldok`) holds documents only and answered nothing from our test machine (empty reply, 2026-11-02). The Transparenzportal (`suche.transparenz.hamburg.de`, CKAN) has Bezirk minutes after the fact, no upcoming dates.
+- Source: the event list of `hamburgische-buergerschaft.de/aktuelles/termine` (CoreMedia, built by ]init[). The job GETs `…/aktuelles/termine/1042880!search?state=<s>`, where `state` is gzipped, base64url JSON (`buergerschaftSearchUrl()`): no date bounds (= from today), `hitsPerPage: 50`, sorted `externallydisplayeddate asc`. 50 hits reach about six weeks ahead (292 events listed on 2026-11-02). Without `state` the list is unsorted and starts in the past. One request, no paging.
+- `parseBuergerschaftCalendar()` reads each `<div class="bkhh-teaser bkhh-teaser--events" >` before the pagination form (the slider after it repeats one past plenary). Kept: a teaser text starting "Ausschusssitzung" or "Sitzung der Bürgerschaft"; dropped: "(nicht öffentlich)" (Eingabenausschuss), "entfällt", "Beiratssitzung", Präsidium appointments and other events. The headline is the committee ("Haushaltsausschuss", "Bürgerschaftssitzung"); the clock label the start (no end); the location label the room and address. The id is `hh-buergerschaft-<n>` from the teaser's `…/<n>!ical` link.
+- **No year on the dates** ("03. November"): the year is today's, or the next one when that date lies more than two days back (the list starts today, so January follows December).
+- `webUrl`: the "Tagesordnung" PDF when the teaser has one (other PDFs are notices such as "Terminhinweis"), else the committee's page (`/unsere-arbeit/ausschuesse/…`), else the calendar.
+- The site resets a share of TLS connections (about one in three curl calls from the test machine), so the job tries once more on a network error. Node's `fetch` worked on 2026-11-02.
+- Licence: the Impressum and robots.txt state no terms of use and do not block `/aktuelles/termine`; official public records of the parliament, credited on the Sources page as such (as Köln and München). Contact: internetredaktion@bk.hamburg.de.
+
+### Hamburg: Bezirksversammlungen (not wired)
+- The seven Bezirke run classic ALLRIS at `sitzungsdienst-<bezirk>.hamburg.de/bi/` (altona, bergedorf, eimsbuettel, hamburg-mitte, hamburg-nord, harburg, wandsbek; linked from each Bezirk's page on hamburg.de). None is in the OParl endpoint list (`github.com/OParl/resources`, `endpoints.yml`), and no search turned up an OParl or iCal endpoint.
+- From our test machine every host reset the TLS connection (HTTPS) or answered 503 (HTTP, WebFetch), so `/oi/oparl/1.0/`, `/oparl/` and `/bi/oparl/` could not be probed (2026-11-02). Re-check from a German IP (Render, Frankfurt): `curl https://sitzungsdienst-altona.hamburg.de/oi/oparl/1.0/system.asp`. If an endpoint answers, the `bvv` adapter fits as it does for Berlin's ALLRIS.
+
 ## Pipeline
 
 1. **Cron** (`ingest-council-meetings.ts`): every 6h, runs the adapters the city configures, 14-day lookahead; merges, sorts by start and deduplicates by id. All adapters returning nothing keeps the old data.
@@ -62,8 +75,8 @@ interface CouncilMeeting {
 ## Frontend
 
 - Hook: `useCouncilMeetings` (1h refetch, 30min stale)
-- Strip: `CouncilMeetingsStrip` — a select picks the city-wide body (default) or one district; that source's meetings are grouped by day in a scrolling list (max 300 px), each with time, committee, district, location, agenda-item count and a link
-- Labels per city through i18next context (`{ context: cityId }`): `panel.councilMeetings.parliament_koeln` ("Rat der Stadt" / "City Council"), `parliament_muenchen` ("Stadtrat"), German `bvv_koeln` ("Bezirksvertretung"), `bvv_muenchen` ("Bezirksausschuss") and `title_koeln`/`title_muenchen` ("Ratssitzungen"); without a city key the Berlin wording is used
+- Strip: `CouncilMeetingsStrip` — a select picks the city-wide body (default) or one district; that source's meetings are grouped by day in a scrolling list (max 300 px), each with time, committee, district, location, agenda-item count and a link. Without any district meeting (Hamburg) the select is left out.
+- Labels per city through i18next context (`{ context: cityId }`): `panel.councilMeetings.parliament_koeln` ("Rat der Stadt" / "City Council"), `parliament_muenchen` ("Stadtrat"), `parliament_hamburg` ("Bürgerschaft" / "Hamburg Parliament"), German `bvv_koeln` ("Bezirksvertretung"), `bvv_muenchen` ("Bezirksausschuss"), `title_koeln`/`title_muenchen` ("Ratssitzungen") and `title_hamburg` in all four bundles ("Sitzungen der Bürgerschaft" / "Parliament Meetings"); without a city key the Berlin wording is used. No `bvv_hamburg` yet: add "Bezirksversammlung" with a Bezirk source.
 - Span-2 tile in `CommandLayout.tsx` (governance row, after Budget) for each city with the `councilMeetings` feature; not expandable
 - i18n: `panel.councilMeetings.*` keys in all 4 locales
 
@@ -83,6 +96,10 @@ councilMeetings: {
 councilMeetings: {
   muenchenRis: { councilFeedUrl: '…?feed=StR-Sitzungen', districtFeedUrl: '…?feed=BA-Sitzungen' },
 }
+// hamburg.ts
+councilMeetings: {
+  hamburgBuergerschaft: { calendarUrl: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine/1042880!search' },
+}
 ```
 
-Tests use trimmed recorded responses in `packages/server/src/cron/fixtures/` (`koeln-oparl-meetings-page*.json`, `muenchen-ris-*.xml`).
+Tests use trimmed recorded responses in `packages/server/src/cron/fixtures/` (`koeln-oparl-meetings-page*.json`, `muenchen-ris-*.xml`, `hamburg-buergerschaft-termine.html`).

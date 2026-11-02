@@ -5,7 +5,9 @@ import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
+import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
+import { getRentMapLegend } from '../map/constants.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -115,6 +117,27 @@ function SubLayerItem({ icon, color, active, label, onClick, parentColor }: { ic
 }
 
 /**
+ * The classes of the city's rent map with the colours its WMS draws them in.
+ * Each city has its own: Berlin's Mietspiegel knows simple, medium and good
+ * locations, Hamburg's only normal and good ones.
+ */
+export function RentMapLegend({ cityId }: { cityId: string }) {
+  const { t } = useTranslation();
+  const legend = getRentMapLegend(cityId);
+  if (legend.length === 0) return null;
+  return (
+    <ul aria-label={t('sidebar.rentLegend.title')} className="ps-9 pe-2 py-1 space-y-0.5">
+      {legend.map(({ key, color }) => (
+        <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+          <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
+          {t(`sidebar.rentLegend.${key}`)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
  * A layer's sub-layer buttons for the ones the city has, or nothing when it
  * has one or none: a lone sub-layer is the layer itself. `minItems` is 1 where
  * another button sits beside the list (noise's live sensors).
@@ -182,6 +205,15 @@ export function DataLayerToggles() {
   const noise = effectiveNoiseLayer(noiseLayer, available);
   const social = effectiveChoice(socialLayer, available.social);
   const political = effectiveChoice(politicalLayer, available.political);
+  // Each city names its social-atlas indicators its own way, with the edition
+  // they come from and, for a coarse source, its areas.
+  const socialAtlas = socialAtlasOf(city.id);
+  const socialLabel = (key: SocialLayer) => {
+    const indicator = indicatorOf(socialAtlas, key);
+    if (!indicator) return t(`sidebar.social.${key}`);
+    const note = socialAtlas!.areas ? `${socialAtlas!.edition}, ${t(`socialAtlas.areas.${socialAtlas!.areas}`)}` : socialAtlas!.edition;
+    return `${t(`socialAtlas.indicator.${indicator.label}`)} (${note})`;
+  };
 
   return (
     <div>
@@ -261,8 +293,11 @@ export function DataLayerToggles() {
             );
           } else if (layer === 'social' && active) {
             subItems = (
-              <SubLayerList meta={SOCIAL_SUB_META} available={available.social} parentColor={color}
-                isActive={(key) => social === key} onSelect={setSocialLayer} label={(key) => t(`sidebar.social.${key}`)} />
+              <>
+                <SubLayerList meta={SOCIAL_SUB_META} available={available.social} parentColor={color}
+                  isActive={(key) => social === key} onSelect={setSocialLayer} label={socialLabel} />
+                {social === 'rent' && <RentMapLegend cityId={city.id} />}
+              </>
             );
           } else if (layer === 'population' && active) {
             subItems = (

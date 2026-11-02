@@ -3,7 +3,9 @@ import { getTableName, type SQL, type Table } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import postgres from 'postgres';
 import { hamburg } from '../config/cities/hamburg.js';
-import { SNAPSHOT_TYPES } from '../db/schema.js';
+import { koeln } from '../config/cities/koeln.js';
+import { muenchen } from '../config/cities/muenchen.js';
+import { SNAPSHOT_TYPES, type SnapshotType } from '../db/schema.js';
 import { generateSyntheticCityData, generateSyntheticData, syntheticModel } from './generate.js';
 import { LOCAL_DATABASE_URL } from './local-guard.js';
 import { APP_TABLES, openLocalDatabase, seedDatabase, wipeDatabase, type LocalDatabase } from './seed.js';
@@ -14,6 +16,10 @@ vi.mock('postgres', () => ({ default: vi.fn(() => ({ end: pg.end })) }));
 vi.mock('drizzle-orm/postgres-js', () => ({ drizzle: vi.fn(() => pg.db) }));
 
 type Row = Record<string, unknown>;
+
+/** Snapshot types of sources Berlin's config lacks: München's seed writes them instead. */
+// Berlin has no LHP gauges, and no Oberbürgermeister: only a city inside a state has one.
+const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood', 'abgwatch-mayor', 'kvb-lift-outages'];
 
 /** Records what the write functions insert, per table name. */
 function fakeDb() {
@@ -109,11 +115,11 @@ describe('seedDatabase', () => {
     const snapshots = rows.snapshots ?? [];
     const types = new Set(snapshots.map((r) => r.type));
     // A new data source fails here until generate.ts and seed.ts cover it
-    expect(SNAPSHOT_TYPES.filter((t) => !types.has(t))).toEqual([]);
+    expect(SNAPSHOT_TYPES.filter((t) => !types.has(t) && !NOT_IN_BERLIN.includes(t))).toEqual([]);
 
     // One current row per type, stamped by the database; history rows carry their own time
     const current = snapshots.filter((r) => !('fetchedAt' in r));
-    expect(current).toHaveLength(SNAPSHOT_TYPES.length);
+    expect(current).toHaveLength(SNAPSHOT_TYPES.length - NOT_IN_BERLIN.length);
     expect(snapshots.length - current.length).toBe(data.history.length);
 
     expect(rows.news_items).toHaveLength(data.news.length);
@@ -136,17 +142,40 @@ describe('seedDatabase', () => {
 
     const snapshots = rows.snapshots ?? [];
     const current = snapshots.filter((r) => !('fetchedAt' in r));
-    // One row per snapshot type it holds; none for transit, events, budget or the Berlin-only sources
+    // One row per snapshot type it holds; none for events, budget or the Berlin-only sources.
+    // Transit (Geofox) is stored under the historical type vbb-disruptions.
     expect(new Set(current.map((r) => r.type))).toEqual(new Set([
-      'open-meteo', 'aqi-grid', 'bbk-nina', 'pegelonline', 'tomtom-traffic', 'viz-roadworks', 'aponet', 'osm-aeds',
-      'dwd-pollen', 'abgwatch-bundestag', 'abgwatch-state',
+      'open-meteo', 'vbb-disruptions', 'aqi-grid', 'bbk-nina', 'pegelonline', 'tomtom-traffic', 'viz-roadworks', 'aponet', 'osm-aeds',
+      'lageso-bathing', 'lageso-wastewater', 'ba-labor-market', 'dwd-pollen', 'abgwatch-bundestag', 'abgwatch-state', 'oparl-meetings',
+      'mss-social-atlas', 'afstat-population',
     ]));
-    expect(current).toHaveLength(11);
+    expect(current).toHaveLength(18);
     expect(snapshots.length - current.length).toBe(data.history.length);
     expect(rows.events).toBeUndefined();
     expect(rows.news_items).toHaveLength(data.news!.length);
     expect(rows.safety_reports).toHaveLength(data.safety!.length);
     expect((rows.ai_summaries ?? []).map((r) => r.lang).sort()).toEqual(['de', 'en']);
     expect(Object.values(rows).flat().every((r) => r.cityId === 'hamburg')).toBe(true);
+  });
+
+  it('writes the snapshot types Berlin lacks for a city that has their source', async () => {
+    const types = new Set<unknown>();
+    for (const city of [muenchen, koeln]) {
+      const { local, rows } = fakeDb();
+      await seedDatabase(local, generateSyntheticCityData({ now: new Date(), city }));
+      for (const r of rows.snapshots ?? []) types.add(r.type);
+    }
+    expect(NOT_IN_BERLIN.filter((t) => !types.has(t))).toEqual([]);
+  });
+
+  it('writes a city inside a state its Oberbürgermeister and Bezirksbürgermeister', async () => {
+    const { local, rows } = fakeDb();
+    await seedDatabase(local, generateSyntheticCityData({ now: new Date(), city: koeln }));
+
+    const types = new Set((rows.snapshots ?? []).map((r) => r.type));
+    for (const type of ['abgwatch-mayor', 'abgwatch-bezirke', 'abgwatch-bundestag', 'abgwatch-state']) {
+      expect(types, type).toContain(type);
+    }
+    expect(types).not.toContain('abgwatch-state-bezirke');
   });
 });

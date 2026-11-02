@@ -32,6 +32,11 @@ services:
           property: connectionString
       - key: OPENAI_API_KEY
         sync: false
+      # Hamburg transit (Geofox GTI): credentials Hochbahn issued to City Monitor; a fork requests its own
+      - key: GEOFOX_USER
+        sync: false
+      - key: GEOFOX_PASSWORD
+        sync: false
       - key: SENTRY_DSN
         sync: false
 

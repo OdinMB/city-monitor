@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import type { SocialAtlasFeatureProps } from '@city-monitor/shared';
 import { createCache } from '../lib/cache.js';
-import { createSocialAtlasIngestion } from './ingest-social-atlas.js';
+import { createSocialAtlasIngestion, mssLayerNames } from './ingest-social-atlas.js';
 
-// Mock WFS response for index indicators layer (mss2023_indexind_542)
+// Mock WFS response for index indicators layer (mss2025_indexind_542)
 const mockIndexIndResponse = {
   type: 'FeatureCollection',
   features: [
@@ -39,14 +41,14 @@ const mockIndexIndResponse = {
       geometry: { type: 'MultiPolygon', coordinates: [[[[13.5, 52.5], [13.51, 52.5], [13.51, 52.51], [13.5, 52.51], [13.5, 52.5]]]] },
       properties: {
         plr_id: '99990101', plr_name: 'Unbewohnt', bez_id: '99',
-        ew: 0, kom: 'nicht bewohnt', zeit: 202212,
+        ew: 120, kom: 'ungültig (EW unter 300)', zeit: 202412,
         s1: null, s2: null, s3: null, s4: null,
       },
     },
   ],
 };
 
-// Mock WFS response for composite indices layer (mss2023_indizes_542)
+// Mock WFS response for composite indices layer (mss2025_indizes_542)
 const mockIndizesResponse = {
   type: 'FeatureCollection',
   features: [
@@ -90,9 +92,40 @@ function mockFetchResponses() {
   });
 }
 
+describe('mssLayerNames', () => {
+  it('derives both layer names from the edition in the WFS URL', () => {
+    expect(mssLayerNames('https://gdi.berlin.de/services/wfs/mss_2025')).toEqual({
+      year: '2025',
+      indicators: 'mss_2025:mss2025_indexind_542',
+      indices: 'mss_2025:mss2025_indizes_542',
+    });
+    expect(mssLayerNames('https://gdi.berlin.de/services/wfs/mss_2027/').indicators).toBe('mss_2027:mss2027_indexind_542');
+  });
+
+  it('rejects a URL that names no edition', () => {
+    expect(() => mssLayerNames('https://gdi.berlin.de/services/wfs/mss')).toThrow(/mss_<year>/);
+  });
+});
+
 describe('ingest-social-atlas', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('requests the layers of the configured edition', async () => {
+    mockFetchResponses();
+
+    const cache = createCache();
+    await createSocialAtlasIngestion(cache)();
+
+    const urls = vi.mocked(globalThis.fetch).mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.startsWith('https://gdi.berlin.de/services/wfs/mss_2025?') && u.includes('typeNames=mss_2025:mss2025_indexind_542'))).toBe(true);
+    expect(urls.some((u) => u.includes('typeNames=mss_2025:mss2025_indizes_542'))).toBe(true);
   });
 
   it('fetches both WFS layers and caches GeoJSON', async () => {
@@ -178,17 +211,105 @@ describe('ingest-social-atlas', () => {
     expect(geojsonCall![2]).toBe(604800);
   });
 
-  it('handles empty WFS response', async () => {
+  // An empty answer replaced the cached areas once; the population layer, which
+  // takes Berlin's polygons from this entry, then lost its map too.
+  it('keeps what it had when the WFS answers with no areas', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
       new Response(JSON.stringify({ type: 'FeatureCollection', features: [] }), { status: 200 }),
     );
 
     const cache = createCache();
-    const ingest = createSocialAtlasIngestion(cache);
-    await ingest();
+    cache.set('berlin:social-atlas:geojson', { type: 'FeatureCollection', features: [{ id: 'old' }] }, 604800);
+    await createSocialAtlasIngestion(cache)();
 
-    const geojson = cache.get<{ type: string; features: Array<{ type: string; geometry: unknown; properties: Record<string, unknown> }> }>('berlin:social-atlas:geojson');
-    expect(geojson).toBeTruthy();
-    expect(geojson!.features).toHaveLength(0);
+    expect(cache.get<{ features: unknown[] }>('berlin:social-atlas:geojson')!.features).toEqual([{ id: 'old' }]);
+  });
+});
+
+describe('ingest-social-atlas for Köln, Hamburg and München', () => {
+  const fixture = (name: string) => readFileSync(new URL(`../lib/social-atlas-fixtures/${name}`, import.meta.url));
+  type Collection = { features: Array<{ geometry: { type: string }; properties: SocialAtlasFeatureProps }> };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('joins Köln\'s Quartiere of the configured year with the shipped outlines and their Stadtbezirk', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'koeln');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixture('koeln-datenkatalog.csv'), { status: 200 }));
+
+    const cache = createCache();
+    await createSocialAtlasIngestion(cache)();
+
+    const geojson = cache.get<Collection>('koeln:social-atlas:geojson')!;
+    expect(geojson.features.map((f) => f.properties.plrId)).toEqual(['101010001', '101020001', '309050002']);
+    const kapitol = geojson.features[0]!;
+    expect(kapitol.geometry.type).toMatch(/Polygon/);
+    expect(kapitol.properties).toMatchObject({ plrName: 'Kapitol-Viertel', bezId: 'Innenstadt', childPoverty: null, statusIndex: null });
+    expect(kapitol.properties.unemployment).toBeCloseTo(6.34, 2);
+  });
+
+  it('reads Hamburg\'s Sozialmonitoring annex onto the shipped Statistische Gebiete', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(fixture('hh-sozialmonitoring.xlsx'), { status: 200 }));
+
+    const cache = createCache();
+    await createSocialAtlasIngestion(cache)();
+
+    expect(String(fetchSpy.mock.calls[0]![0])).toMatch(/Sozialmonitoring-Bericht_2025_Ergebnistabellen\.XLSX$/);
+    const geojson = cache.get<Collection>('hamburg:social-atlas:geojson')!;
+    expect(geojson.features.map((f) => f.properties.plrId)).toEqual(['4001', '102001', '104001']);
+    expect(geojson.features[1]!.properties).toMatchObject({ bezId: 'Harburg', statusLabel: 'mittel', childPoverty: 6.8 });
+  });
+
+  describe('München', () => {
+    const files: Record<string, string> = {
+      'indikatorenatlas-2014-arbeitsmarkt-arbeitslosendichte-83r65mct': 'muc-arbeitslose-anteil.csv',
+      'indikatorenatlas-bevoelkerung-haushalte-alleinerziehend': 'muc-haushalte-alleinerziehend.csv',
+      'indikatorenatlas-2014-arbeitsmarkt-regel-leistungsberechtigte-erwerbsfaehig-anteil-83r65mct': 'muc-leistungsberechtigte-erwerbsfaehig.csv',
+      'indikatorenatlas-arbeitsmarkt-regel-leistungsberechtigte-nicht-erwerbsfaehig-anteil-83r65mct': 'muc-leistungsberechtigte-nicht-erwerbsfaehig.csv',
+    };
+    /** package_show answers with a CSV named after the dataset; the CSV with its fixture, or 503 for `failing`. */
+    const mockCkan = (failing?: string) => vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const id = new URL(url).searchParams.get('id');
+      if (id) return new Response(JSON.stringify({ result: { resources: [{ format: 'CSV', url: `https://opendata.muenchen.de/download/${id}.csv` }] } }));
+      const dataset = url.split('/').pop()!.replace(/\.csv$/, '');
+      if (dataset === failing) return new Response('', { status: 503 });
+      return new Response(fixture(files[dataset]!), { status: 200 });
+    });
+
+    it('looks up each indicator\'s current CSV and draws the Stadtbezirke of the configured year', async () => {
+      vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+      const fetchSpy = mockCkan();
+
+      const cache = createCache();
+      await createSocialAtlasIngestion(cache)();
+
+      const ids = fetchSpy.mock.calls.map((c) => new URL(String(c[0])).searchParams.get('id')).filter(Boolean);
+      expect(new Set(ids)).toEqual(new Set(Object.keys(files)));
+      const geojson = cache.get<Collection>('muenchen:social-atlas:geojson')!;
+      expect(geojson.features.map((f) => f.properties.plrId)).toEqual(['01', '11', '19']);
+      expect(geojson.features[1]!.geometry.type).toMatch(/Polygon/);
+      expect(geojson.features[1]!.properties).toMatchObject({
+        plrName: 'Milbertshofen-Am Hart', bezId: '11', statusIndex: null,
+        unemployment: 4.3, singleParent: 3.8, welfare: 5.7, childPoverty: 12.4,
+      });
+    });
+
+    it('keeps what it had when one indicator\'s CSV fails', async () => {
+      vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+      mockCkan('indikatorenatlas-bevoelkerung-haushalte-alleinerziehend');
+
+      const cache = createCache();
+      cache.set('muenchen:social-atlas:geojson', { type: 'FeatureCollection', features: [{ id: 'old' }] }, 604800);
+      await createSocialAtlasIngestion(cache)();
+
+      expect(cache.get<{ features: unknown[] }>('muenchen:social-atlas:geojson')!.features).toEqual([{ id: 'old' }]);
+    });
   });
 });

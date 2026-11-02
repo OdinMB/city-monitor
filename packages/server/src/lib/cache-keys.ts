@@ -28,8 +28,10 @@ export const CK = {
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,
+  floodStatus: (cityId: string) => `${cityId}:flood-status`,
   wastewaterSummary: (cityId: string) => `${cityId}:wastewater:summary`,
   bathingSpots: (cityId: string) => `${cityId}:bathing:spots`,
+  liftOutages: (cityId: string) => `${cityId}:lift-outages`,
 
   // Political
   political: (cityId: string, level: string) => `${cityId}:political:${level}`,
@@ -72,6 +74,8 @@ export const CK = {
     CK.trafficIncidents(cityId),
     CK.constructionSites(cityId),
     CK.waterLevels(cityId),
+    CK.floodStatus(cityId),
+    CK.liftOutages(cityId),
     CK.budget(cityId),
     CK.appointments(cityId),
     CK.feuerwehr(cityId),

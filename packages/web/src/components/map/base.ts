@@ -13,7 +13,8 @@ import {
   WEATHER_LAYER,
   RENT_MAP_SOURCE,
   RENT_MAP_LAYER,
-  RENT_MAP_WMS_URL,
+  getRentMapWmsUrl,
+  getRentMapAttribution,
   NOISE_SOURCE,
   NOISE_LAYER,
   getNoiseWmsUrl,
@@ -197,28 +198,31 @@ export function setNoiseOverlay(map: maplibregl.Map, visible: boolean, cityId: s
   }
 }
 
-export function setRentMapOverlay(map: maplibregl.Map, visible: boolean) {
-  if (visible) {
-    if (!map.getSource(RENT_MAP_SOURCE)) {
-      map.addSource(RENT_MAP_SOURCE, {
-        type: 'raster',
-        tiles: [RENT_MAP_WMS_URL],
-        tileSize: 256,
-        attribution: '&copy; <a href="https://daten.berlin.de" target="_blank">Berlin Open Data</a>',
-      });
-    }
-    if (!map.getLayer(RENT_MAP_LAYER)) {
-      map.addLayer({
-        id: RENT_MAP_LAYER,
-        type: 'raster',
-        source: RENT_MAP_SOURCE,
-        paint: {
-          'raster-opacity': 0.6,
-        },
-      });
-    }
-  } else {
+export function setRentMapOverlay(map: maplibregl.Map, visible: boolean, cityId: string) {
+  const url = visible ? getRentMapWmsUrl(cityId) : null;
+  const source = map.getSource(RENT_MAP_SOURCE) as maplibregl.RasterTileSource | undefined;
+  // Keep a source that already shows this city's map; replace one of another city's.
+  if (source && (!url || source.tiles?.[0] !== url)) {
     if (map.getLayer(RENT_MAP_LAYER)) map.removeLayer(RENT_MAP_LAYER);
-    if (map.getSource(RENT_MAP_SOURCE)) map.removeSource(RENT_MAP_SOURCE);
+    map.removeSource(RENT_MAP_SOURCE);
+  }
+  if (!url) return;
+  if (!map.getSource(RENT_MAP_SOURCE)) {
+    map.addSource(RENT_MAP_SOURCE, {
+      type: 'raster',
+      tiles: [url],
+      tileSize: 256,
+      attribution: getRentMapAttribution(cityId),
+    });
+  }
+  if (!map.getLayer(RENT_MAP_LAYER)) {
+    map.addLayer({
+      id: RENT_MAP_LAYER,
+      type: 'raster',
+      source: RENT_MAP_SOURCE,
+      paint: {
+        'raster-opacity': 0.6,
+      },
+    });
   }
 }

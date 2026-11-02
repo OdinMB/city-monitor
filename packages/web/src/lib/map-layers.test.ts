@@ -3,6 +3,8 @@ import type { CityFeature } from '@city-monitor/shared';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from './map-layers.js';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
+import { koeln } from '../config/cities/koeln.js';
+import { muenchen } from '../config/cities/muenchen.js';
 
 const withFeatures = (...features: CityFeature[]) => cityLayers({ features });
 
@@ -37,13 +39,23 @@ describe('cityLayers', () => {
 
   it('leaves out what Hamburg has no source for', () => {
     const hh = cityLayers(hamburg);
-    expect(hh.layers.has('social')).toBe(false);
-    expect(hh.layers.has('population')).toBe(false);
-    expect(hh.traffic).toEqual(['incidents', 'roadworks']);
-    expect(hh.water).toEqual(['levels']);
+    // The Sozialmonitoring has all four indicators, and Hamburg has a rent map
+    expect(hh.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty', 'rent']);
+    expect(hh.layers.has('population')).toBe(true);
+    // Geofox transit: a marker where an announcement's first stop has a coordinate
+    expect(hh.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
+    expect(hh.water).toEqual(['levels', 'bathing']);
     expect(hh.noise).toEqual(['road', 'rail', 'air']);
     expect(hh.noiseLive).toBe(false);
     expect(hh.political).toEqual(['bundestag']);
+  });
+
+  it('leaves out the social-atlas indicators a city\'s source lacks', () => {
+    // Köln's Datenkatalog has no child-poverty figure
+    expect(cityLayers(koeln).social).toEqual(['unemployment', 'single-parent', 'welfare']);
+    // München's Indikatorenatlas has all four, and population; no rent map
+    expect(cityLayers(muenchen).social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty']);
+    expect(cityLayers(muenchen).layers.has('population')).toBe(true);
   });
 
   it('shows a parent layer when any one of its sub-layers is there', () => {
@@ -58,9 +70,21 @@ describe('cityLayers', () => {
   });
 
   it('shows the political layer only with political data, and the district-mayor and state views only with theirs', () => {
-    expect(withFeatures('districtMayors').layers.has('political')).toBe(false);
-    expect(withFeatures('political').political).toEqual(['bundestag']);
-    expect(withFeatures('political', 'stateByDistrict').political).toEqual(['bundestag', 'landesparlament']);
+    expect(withFeatures('districtMayors', 'politicalMap').layers.has('political')).toBe(false);
+    expect(withFeatures('political', 'bundestagByDistrict', 'politicalMap').political).toEqual(['bundestag']);
+    expect(withFeatures('political', 'bundestagByDistrict', 'stateByDistrict', 'politicalMap').political).toEqual(['bundestag', 'landesparlament']);
+  });
+
+  // Köln: outlines and district mayors, but constituencies ("Köln I") that are not Stadtbezirke.
+  it('leaves out the Bundestag view where constituencies are not named after Bezirke', () => {
+    expect(withFeatures('political', 'districtMayors', 'mayor', 'politicalMap').political).toEqual(['bezirke']);
+    expect(withFeatures('political', 'politicalMap').layers.has('political')).toBe(false);
+  });
+
+  it('shows no political layer without district outlines', () => {
+    const layers = withFeatures('political', 'districtMayors', 'mayor');
+    expect(layers.layers.has('political')).toBe(false);
+    expect(layers.political).toEqual([]);
   });
 });
 

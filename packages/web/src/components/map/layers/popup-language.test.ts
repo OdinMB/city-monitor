@@ -10,6 +10,7 @@ import { waterLevelPopupHtml, bathingPopupHtml } from './water';
 import { pharmacyPopupHtml, aedPopupHtml, formatPharmacyDuty } from './emergencies';
 import { noisePopupHtml } from './noise-sensors';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
+import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
 import { newsPopupHtml, safetyPopupHtml } from './news-safety';
 import { aqPopupHtml } from './air-quality';
@@ -137,7 +138,9 @@ describe('map popups in German', () => {
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Tel.: 030 123456', `3 ${GERMAN_MARCH} 09:00 – 4 ${GERMAN_MARCH} 09:00`, 'Route ↗']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Innen', 'Zugang: nur für Kunden', 'Route ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Lärmsensor #4711', '58.2 dB (Laut)', 'Min.: 40.1 dB · Max.: 75.3 dB']],
-    ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Alleinerziehende20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%']],
+    ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Kinder Alleinerziehender20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%', 'MSS-Statusindexmittel']],
+    ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Arbeitslosenquote5.2%', 'Alleinerziehenden-Haushalte20.1%', 'SGB-II-Leistungsberechtigte10.3%']],
+    ['Hamburg social atlas', () => socialAtlasPopupHtml(SOCIAL, SOCIAL_ATLAS.hamburg), ['SGB-II- und AsylbLG-Empfänger10.3%', 'Kinder in Mindestsicherung15.4%', 'Statusindex (Sozialmonitoring)mittel']],
     ['population', () => populationPopupHtml(POPULATION), ['Bevölkerung3.400', 'Dichte12.000/km²', 'Ausländische Staatsangehörigkeit30.5%', '65 Jahre und älter15.2%', 'Unter 1812.1%']],
     ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS), ['Profil →']],
     ['political, no data', () => buildPoliticalPopupHtml('Spandau', DISTRICTS), ['Keine Daten verfügbar']],
@@ -227,7 +230,7 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['bathing', () => bathingPopupHtml({ ...BATHING, algae: 'Blaualgen', advisory: 'Baden nicht empfohlen.' }), ['Strandbad Wannsee', 'Wannsee', 'Steglitz-Zehlendorf', 'Blaualgen', 'Baden nicht empfohlen.']],
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Apotheke am Markt', 'Marktstraße 1']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['Im Foyer', 'Bezirksamt Mitte', 'Mo-Fr 08:00-18:00']],
-    ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Stülerstraße']],
+    ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Stülerstraße', 'mittel']],
     ['population', () => populationPopupHtml(POPULATION), ['Stülerstraße']],
     ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS), ['Mitte', 'A. Person', 'SPD', 'Bezirksbürgermeisterin']],
     ['political, no data', () => buildPoliticalPopupHtml('Spandau', DISTRICTS), ['Spandau']],
@@ -325,7 +328,8 @@ describe('map popups in English', () => {
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Tel: 030 123456', 'Directions ↗']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Indoor', 'Access: customers only', 'Directions ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Noise Sensor #4711', '58.2 dB (Loud)', 'Min: 40.1 dB · Max: 75.3 dB']],
-    ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Single-parent HH20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%']],
+    ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Children of single parents20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%', 'MSS status indexmittel']],
+    ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Unemployment rate5.2%', 'Single-parent households20.1%', 'SGB II recipients10.3%']],
     ['population', () => populationPopupHtml(POPULATION), ['Population3,400', 'Density12,000/km²', 'Aged 65+15.2%', 'Under 1812.1%']],
     ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS), ['Profile →']],
     ['political, no data', () => buildPoliticalPopupHtml('Spandau', DISTRICTS), ['No data available']],
@@ -335,6 +339,13 @@ describe('map popups in English', () => {
   ] as const)('%s popup', (_name, build, expected) => {
     const text = textOf(build());
     for (const s of expected) expect(text).toContain(s);
+  });
+
+  it('names only the indicators a city\'s social atlas has', () => {
+    const koeln = textOf(socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln!));
+    expect(koeln).not.toMatch(/poverty|status/i);
+    // A missing value shows a dash rather than 0
+    expect(textOf(socialAtlasPopupHtml({ ...SOCIAL, welfare: null }))).toContain('Welfare recipients–');
   });
 
   it('keeps pharmacy duty times on the 24-hour clock', () => {

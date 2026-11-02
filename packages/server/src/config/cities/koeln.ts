@@ -3,8 +3,10 @@ import type { CityConfig } from '@city-monitor/shared';
 /**
  * Köln: the Germany-wide sources (DWD, Open-Meteo, NINA, PEGELONLINE) plus
  * news feeds, Polizei Köln, the city's roadworks WFS, its own events and its
- * council information system. Transit and district boundaries are not
- * configured yet, so their jobs fetch nothing for Köln.
+ * council information system, and KVB's lift and escalator outages. Transit
+ * disruptions are not configured (KVB publishes none as data), so the transit
+ * job fetches nothing for Köln. Its Stadtbezirk outlines ship with the web app
+ * (packages/web/src/data/districts).
  */
 export const koeln: CityConfig = {
   id: 'koeln',
@@ -98,6 +100,9 @@ export const koeln: CityConfig = {
       regionId: 40,         // Nordrhein-Westfalen
       partregionId: 41,     // Rhein.-Westfäl. Tiefland
     },
+    // The Kreis table of the kreisfreie Stadt, not the wider Agentur für Arbeit district
+    laborMarket: { provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' },
+    wastewater: { provider: 'amelag', sites: ['Köln'] }, // RKI AMELAG (CC BY 4.0), about 0.86 million people
     waterLevels: {
       provider: 'pegelonline',
       stations: [
@@ -115,6 +120,9 @@ export const koeln: CityConfig = {
         'brueckenarbeiten', 'gleisbau', 'tunnelarbeiten', 'markierungsarbeiten', 'sondierungsarbeiten',
       ],
     },
+    // KVB's lifts and escalators out of service (dl-de/zero-2.0 on open.nrw), every 15 min.
+    // KVB publishes no line disruptions as data, so this is Köln's only transit signal.
+    liftOutages: { provider: 'kvb', url: 'https://data.webservice-kvb.koeln/service/opendata' },
     // The city's own events (Stadt Köln open data, dl-de/zero-2.0)
     events: [
       { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },
@@ -127,6 +135,20 @@ export const koeln: CityConfig = {
         districtBody: 'Bezirksvertretung',
         webUrlPrefix: 'https://buergerinfo.stadt-koeln.de/si0057.asp?__ksinr=',
       },
+    },
+    // Statistischer Datenkatalog (dl-de/by-2.0), one yearly CSV for both layers, at the
+    // 570 Statistische Quartiere. The outlines (dl-de/zero-2.0) ship in packages/server/data.
+    // The social atlas pins the year its labels name; population takes the newest year.
+    socialAtlas: {
+      provider: 'koeln-datenkatalog',
+      csvUrl: 'https://www.offenedaten-koeln.de/sites/default/files/uploaded_resources/Stadt_K%C3%B6ln_Statistischer_Datenkatalog_0.csv',
+      year: 2025,
+      outlines: 'koeln-quartiere.geojson',
+    },
+    population: {
+      provider: 'koeln-datenkatalog',
+      csvUrl: 'https://www.offenedaten-koeln.de/sites/default/files/uploaded_resources/Stadt_K%C3%B6ln_Statistischer_Datenkatalog_0.csv',
+      outlines: 'koeln-quartiere.geojson',
     },
   },
 };

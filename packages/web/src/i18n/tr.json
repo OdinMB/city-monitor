@@ -147,7 +147,9 @@
       "mayBeOutdated": "Veriler güncel olmayabilir (son kontrol: {{time}})",
       "affectedStops": "Etkilenen duraklar",
       "more": "daha fazla",
-      "station": "Bildirildiği durak"
+      "station": "Bildirildiği durak",
+      "hvvSource": "Kaynak: hvv / Hamburger Hochbahn AG (hvv.de)",
+      "noGuarantee": "Tüm bilgiler garanti verilmeden sunulur (ohne Gewähr)"
     },
     "events": {
       "title": "Etkinlikler",
@@ -264,6 +266,7 @@
       "workingAge": "Çalışma yaşı",
       "ageBreakdown": "Yaş dağılımı",
       "change": "önceki yarıyıla göre",
+      "changeYear": "önceki yıla göre",
       "empty": "Veri mevcut değil",
       "source": "Berlin-Brandenburg İstatistik",
       "density": "km² başına",
@@ -322,6 +325,34 @@
       "tidal": "Gelgit",
       "vsNormal": "normal: {{diff}}",
       "empty": "Seviye verisi yok"
+    },
+    "floodStatus": {
+      "title": "Taşkın Durumu",
+      "class": {
+        "0": "Taşkın yok",
+        "1": "Küçük taşkın",
+        "2": "Orta taşkın",
+        "3": "Büyük taşkın",
+        "4": "Çok büyük taşkın",
+        "none": "Güncel veri yok"
+      },
+      "upstream": "Yukarı akış",
+      "warnings": "Taşkın uyarıları",
+      "noWarnings": "Yürürlükte taşkın uyarısı yok",
+      "asOf": "Durum:",
+      "empty": "Taşkın verisi yok"
+    },
+    "liftOutages": {
+      "title": "Asansörler ve Yürüyen Merdivenler",
+      "lifts": "Arızalı asansörler: {{n}}",
+      "escalators": "Arızalı yürüyen merdivenler: {{n}}",
+      "noLifts": "Tüm asansörler çalışıyor",
+      "noEscalators": "Tüm yürüyen merdivenler çalışıyor",
+      "allWorking": "Tüm asansörler ve yürüyen merdivenler çalışıyor",
+      "more": "+{{n}} daha",
+      "atStations": "Etkilenen duraklar: {{n}}",
+      "asOf": "Durum:",
+      "empty": "Arıza verisi yok"
     },
     "pollen": {
       "title": "Polen Tahmini",
@@ -409,12 +440,14 @@
     },
     "councilMeetings": {
       "title": "Meclis Toplantıları",
+      "title_hamburg": "Parlamento Toplantıları",
       "empty": "Yaklaşan toplantı yok",
       "filterLabel": "Organa göre filtrele",
       "bvv": "İlçe Meclisi",
       "parliament": "Eyalet Parlamentosu",
       "parliament_koeln": "Belediye Meclisi",
       "parliament_muenchen": "Belediye Meclisi",
+      "parliament_hamburg": "Hamburg Parlamentosu",
       "agendaItems": "{{count}} gündem maddesi",
       "openDetails": "Toplantı ayrıntılarını aç",
       "today": "Bugün",
@@ -508,11 +541,15 @@
       "bathing": "Yüzme Suyu"
     },
     "social": {
-      "unemployment": "İşsizlik (2023)",
-      "single-parent": "Tek Ebeveyn (2023)",
-      "welfare": "Sosyal Yardım (2023)",
-      "child-poverty": "Çocuk Yoksulluğu (2023)",
       "rent": "Kira"
+    },
+    "rentLegend": {
+      "title": "Kira endeksinin konut konumu sınıfları",
+      "simple": "Basit konum",
+      "medium": "Orta konum",
+      "good": "İyi konum",
+      "normal": "Normal konum",
+      "unrated": "Değerlendirilmedi"
     },
     "population": {
       "pop-density": "Nüfus Yoğunluğu",
@@ -521,6 +558,7 @@
     },
     "political": {
       "bezirke": "Bezirke",
+      "mayor": "Belediye",
       "bundestag": "Bundestag",
       "landesparlament": "Eyalet Parlamentosu"
     }
@@ -578,12 +616,28 @@
         "loud": "Gürültülü",
         "veryLoud": "Çok gürültülü"
       }
-    },
-    "socialAtlas": {
+    }
+  },
+  "socialAtlas": {
+    "indicator": {
       "unemployment": "İşsizlik",
-      "singleParent": "Tek ebeveynli hane",
+      "unemploymentRate": "İşsizlik oranı",
+      "singleParentChildren": "Tek ebeveynli ailelerin çocukları",
+      "singleParentHouseholds": "Tek ebeveynli haneler",
       "welfare": "Sosyal yardım alanlar",
-      "childPoverty": "Çocuk yoksulluğu"
+      "sgb2": "SGB II yardımı alanlar",
+      "sgb2Asylblg": "SGB II ve AsylbLG yardımı alanlar",
+      "childPoverty": "Çocuk yoksulluğu",
+      "childrenMinimumIncome": "Asgari gelir desteği alan çocuklar",
+      "sgb2Employable": "Çalışabilir SGB II yardımı alanlar",
+      "childrenSgb2": "SGB II yardımı alan 15 yaş altı çocuklar"
+    },
+    "status": {
+      "mss": "MSS durum endeksi",
+      "hhSozialmonitoring": "Sozialmonitoring durum endeksi"
+    },
+    "areas": {
+      "muenchenStadtbezirke": "yalnızca 25 ilçe"
     }
   },
   "nina": {

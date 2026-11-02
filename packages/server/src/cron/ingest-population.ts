@@ -1,18 +1,21 @@
-import ExcelJS from 'exceljs';
-import type { PopulationFeatureProps, PopulationSummary } from '@city-monitor/shared';
+import type { CityConfig, PopulationFeatureProps, PopulationSource, PopulationSummary } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { savePopulation } from '../db/writes.js';
 import { loadPopulationSummary } from '../db/reads.js';
-import { getCityConfig } from '../config/index.js';
+import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { loadAreaOutlines } from '../lib/area-outlines.js';
+import { loadWorkbook, sheetToAoa } from '../lib/xlsx.js';
+import {
+  extractEwrSnapshotDate, hamburgStadtteileUrl, parseEwrSchluessel, parseEwrT2Sheet, parseHamburgStadtteile,
+  parseKoelnPopulation, parseMuenchenPopulation, type PopulationData,
+} from '../lib/population-parsers.js';
+import { fetchIndikatorCsv } from '../lib/muenchen-indikatorenatlas.js';
 
 const log = createLogger('ingest-population');
 
-// Hardcoded URL for the latest verified XLSX (Dec 2025 data).
-// Must be updated manually each semester when a new file is published.
-const XLSX_URL = 'https://download.statistik-berlin-brandenburg.de/1df9da7ea6dbfa3a/f6ac408f14cd/SB_A01-16-00_2025h02_BE.xlsx';
 const FETCH_TIMEOUT_MS = 60_000;
 /**
  * 37.2 days: the longest gap between monthly runs (31 days) × 1.2, so an entry
@@ -21,34 +24,6 @@ const FETCH_TIMEOUT_MS = 60_000;
  * entry; without one the cache is the only copy.
  */
 export const POPULATION_TTL_SECONDS = 3214080;
-
-interface PlrData {
-  plrId: string;
-  total: number;
-  youth: number;   // under 18
-  elderly: number;  // 65+
-  foreign: number;
-}
-
-/** Parse a cell value that may have space thousands separators (e.g. " 3 469") */
-function parseSpaceNumber(val: unknown): number {
-  if (typeof val === 'number') return val;
-  if (typeof val !== 'string') return 0;
-  const cleaned = val.replace(/\s/g, '').replace(/,/g, '.');
-  const n = parseFloat(cleaned);
-  return isNaN(n) ? 0 : n;
-}
-
-/** Convert an ExcelJS worksheet to a 0-indexed array-of-arrays (same format as SheetJS sheet_to_json with header:1). */
-function sheetToAoa(ws: ExcelJS.Worksheet): unknown[][] {
-  const rows: unknown[][] = [];
-  ws.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-    // ExcelJS row.values is 1-indexed (index 0 is undefined)
-    const values = row.values as unknown[];
-    rows[rowNumber - 1] = values.slice(1);
-  });
-  return rows;
-}
 
 /** Compute geodetic polygon area in km² using the Shoelace formula with latitude correction.
  *  coordinates[0] is the exterior ring; coordinates[1..n] are holes (subtracted). */
@@ -71,271 +46,218 @@ export function polygonAreaKm2(coordinates: number[][][]): number {
   return outer - holes;
 }
 
-function parseT2Sheet(rows: unknown[][]): PlrData[] {
-  const results: PlrData[] = [];
-
-  // Find the header row containing 'Insgesamt' (may be hyphenated as 'Ins-\ngesamt')
-  let headerIdx = -1;
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    if (Array.isArray(row) && row.some((c) => typeof c === 'string' && c.replace(/[\s-]/g, '').includes('Insgesamt'))) {
-      headerIdx = i;
-      break;
-    }
+/** Area of a Polygon or MultiPolygon in km², 0 for anything else. */
+function geometryAreaKm2(geometry: unknown): number {
+  const geom = geometry as { type?: string; coordinates?: unknown };
+  if (!Array.isArray(geom?.coordinates)) return 0;
+  if (geom.type === 'Polygon') return polygonAreaKm2(geom.coordinates as number[][][]);
+  if (geom.type === 'MultiPolygon') {
+    return (geom.coordinates as number[][][][]).reduce((sum, poly) => sum + polygonAreaKm2(poly), 0);
   }
-  if (headerIdx < 0) return results;
-
-  // Column indices (0-based): BEZ=0, PGR=1, BZR=2, PLR=3, Insgesamt=4,
-  // unter6=5, 6-15=6, 15-18=7, 18-27=8, 27-45=9, 45-55=10, 55-65=11, 65+=12,
-  // weiblich=13, Ausländer=14
-  for (let i = headerIdx + 1; i < rows.length; i++) {
-    const row = rows[i];
-    if (!Array.isArray(row) || row.length < 15) continue;
-
-    const bez = row[0];
-    const pgr = row[1];
-    const bzr = row[2];
-    const plr = row[3];
-
-    // Only PLR-level rows: all 4 geo columns must be filled non-empty values
-    if (!bez || !pgr || !bzr || !plr) continue;
-    // Skip if PLR value is not a valid ID (8-digit or non-empty string)
-    const plrStr = String(plr).trim();
-    if (plrStr.length === 0) continue;
-
-    const total = parseSpaceNumber(row[4]);
-    if (total === 0) continue; // Skip empty rows
-
-    const under6 = parseSpaceNumber(row[5]);
-    const age6to15 = parseSpaceNumber(row[6]);
-    const age15to18 = parseSpaceNumber(row[7]);
-    const elderly = parseSpaceNumber(row[12]);
-    const foreign = parseSpaceNumber(row[14]);
-
-    // Build 8-digit composite PLR ID: BEZ(2) + PGR(2) + BZR(2) + PLR(2)
-    const compositeId = `${String(bez).trim().padStart(2, '0')}${String(pgr).trim().padStart(2, '0')}${String(bzr).trim().padStart(2, '0')}${plrStr.padStart(2, '0')}`;
-
-    results.push({
-      plrId: compositeId,
-      total,
-      youth: under6 + age6to15 + age15to18,
-      elderly,
-      foreign,
-    });
-  }
-
-  return results;
+  return 0;
 }
 
-function parseSchluessel(rows: unknown[][]): Map<string, string> {
-  const lookup = new Map<string, string>();
-
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-    if (!Array.isArray(row) || row.length < 5) continue;
-    const bez = String(row[0] ?? '').trim();
-    const pgr = String(row[1] ?? '').trim();
-    const bzr = String(row[2] ?? '').trim();
-    const plr = String(row[3] ?? '').trim();
-    const name = String(row[4] ?? '').trim();
-    // Only PLR-level rows: all 4 geo columns and name must be filled
-    if (!bez || !pgr || !bzr || !plr || !name) continue;
-    // Skip header rows (non-numeric values)
-    if (!/^\d+$/.test(bez)) continue;
-    const compositeId = `${bez.padStart(2, '0')}${pgr.padStart(2, '0')}${bzr.padStart(2, '0')}${plr.padStart(2, '0')}`;
-    lookup.set(compositeId, name);
-  }
-
-  return lookup;
+interface AreaShape {
+  geometry: unknown;
+  name?: string;
+  areaKm2?: number;
 }
 
-function extractGeometry(
-  geojson: { features?: Array<{ geometry: unknown; properties?: { plrId?: string } }> },
-): Map<string, unknown> {
-  const map = new Map<string, unknown>();
-  if (!geojson?.features) return map;
-  for (const f of geojson.features) {
+/** Berlin's planning areas: the polygons of the social atlas (the MSS WFS), which the job runs after. */
+function socialAtlasShapes(cache: Cache, cityId: string): Map<string, AreaShape> {
+  const geojson = cache.get<{ features?: Array<{ geometry: unknown; properties?: { plrId?: string } }> }>(
+    CK.socialAtlasGeojson(cityId),
+  );
+  const map = new Map<string, AreaShape>();
+  for (const f of geojson?.features ?? []) {
     const plrId = f.properties?.plrId;
-    if (plrId && f.geometry) {
-      map.set(plrId, f.geometry);
-    }
+    if (plrId && f.geometry) map.set(plrId, { geometry: f.geometry });
   }
   return map;
 }
 
-const GERMAN_MONTHS: Record<string, string> = {
-  'Januar': '01', 'Februar': '02', 'März': '03', 'April': '04',
-  'Mai': '05', 'Juni': '06', 'Juli': '07', 'August': '08',
-  'September': '09', 'Oktober': '10', 'November': '11', 'Dezember': '12',
-};
+async function fetchOk(cityId: string, url: string): Promise<Response | null> {
+  const res = await log.fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  if (!res.ok) {
+    log.warn(`${cityId}: population source returned ${res.status}`);
+    return null;
+  }
+  return res;
+}
 
-function extractSnapshotDate(rows: unknown[][]): string {
-  for (let i = 0; i < Math.min(5, rows.length); i++) {
-    const row = rows[i];
-    if (!Array.isArray(row)) continue;
-    for (const cell of row) {
-      if (typeof cell !== 'string') continue;
-      // Try "31.12.2025" format
-      const numMatch = cell.match(/(\d{1,2})\.(\d{2})\.(\d{4})/);
-      if (numMatch) {
-        return `${numMatch[3]}-${numMatch[2]}-${numMatch[1].padStart(2, '0')}`;
+/** The city's counts and the polygons to draw them on; null when the fetch failed (logged). */
+async function fetchPopulation(
+  city: CityConfig,
+  source: PopulationSource,
+  cache: Cache,
+): Promise<{ data: PopulationData; shapes: Map<string, AreaShape> } | null> {
+  switch (source.provider) {
+    case 'afstat-ewr-xlsx': {
+      const res = await fetchOk(city.id, source.xlsxUrl);
+      if (!res) return null;
+      const wb = await loadWorkbook(await res.arrayBuffer());
+      const t2Sheet = wb.getWorksheet('T2');
+      if (!t2Sheet) {
+        log.warn(`${city.id}: no T2 sheet in the EWR XLSX`);
+        return null;
       }
-      // Try "31. Dezember 2025" format
-      const deMatch = cell.match(/(\d{1,2})\.\s*(Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})/);
-      if (deMatch) {
-        const month = GERMAN_MONTHS[deMatch[2]];
-        return `${deMatch[3]}-${month}-${deMatch[1].padStart(2, '0')}`;
-      }
+      const t2Rows = sheetToAoa(t2Sheet);
+      const schluesselSheet = wb.getWorksheet('Schlüssel');
+      const names = schluesselSheet ? parseEwrSchluessel(sheetToAoa(schluesselSheet)) : new Map<string, string>();
+      const areas = parseEwrT2Sheet(t2Rows).map((a) => ({ ...a, name: names.get(a.id) }));
+      return { data: { areas, snapshotDate: extractEwrSnapshotDate(t2Rows) }, shapes: socialAtlasShapes(cache, city.id) };
+    }
+    case 'koeln-datenkatalog': {
+      const res = await fetchOk(city.id, source.csvUrl);
+      if (!res) return null;
+      return { data: parseKoelnPopulation(await res.text()), shapes: await loadAreaOutlines(source.outlines) };
+    }
+    case 'hh-stadtteile': {
+      const res = await fetchOk(city.id, hamburgStadtteileUrl(source.itemsUrl));
+      if (!res) return null;
+      return { data: parseHamburgStadtteile(await res.json()), shapes: await loadAreaOutlines(source.outlines) };
+    }
+    case 'muenchen-indikatorenatlas': {
+      const get = (url: string) => fetchOk(city.id, url);
+      const [ages, foreign] = await Promise.all([
+        fetchIndikatorCsv(source.ckanApi, source.datasets.ageGroups, get),
+        fetchIndikatorCsv(source.ckanApi, source.datasets.foreign, get),
+      ]);
+      if (ages === null || foreign === null) return null;
+      return { data: parseMuenchenPopulation(ages, foreign), shapes: await loadAreaOutlines(source.outlines) };
     }
   }
-  return new Date().toISOString().slice(0, 10);
 }
 
 export function createPopulationIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestPopulation(): Promise<void> {
-    // The EWR XLSX and the PLR geometry cover Berlin only: nothing to fetch unless Berlin is active.
-    if (!getCityConfig('berlin')) return;
-
-    try {
-      const res = await log.fetch(XLSX_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-      if (!res.ok) {
-        log.warn(`XLSX fetch returned ${res.status}`);
-        return;
+    for (const city of getActiveCities()) {
+      if (!city.dataSources.population) continue;
+      try {
+        await ingestCityPopulation(city, city.dataSources.population, cache, db);
+      } catch (err) {
+        log.error(`${city.id} population ingestion failed`, err);
       }
-
-      const buffer = await res.arrayBuffer();
-      const wb = new ExcelJS.Workbook();
-      // @ts-expect-error ExcelJS typings use old Buffer definition incompatible with Node 22+
-      await wb.xlsx.load(Buffer.from(new Uint8Array(buffer)));
-
-      const t2Sheet = wb.getWorksheet('T2');
-      const schluesselSheet = wb.getWorksheet('Schlüssel');
-
-      if (!t2Sheet) {
-        log.warn('No T2 sheet found in XLSX');
-        return;
-      }
-
-      const t2Rows = sheetToAoa(t2Sheet);
-      const plrDataList = parseT2Sheet(t2Rows);
-      if (plrDataList.length === 0) {
-        log.warn('No PLR data rows found in T2 sheet');
-        return;
-      }
-
-      const nameMap = schluesselSheet ? parseSchluessel(sheetToAoa(schluesselSheet)) : new Map<string, string>();
-      const snapshotDate = extractSnapshotDate(t2Rows);
-
-      // Get PLR geometry from social atlas cache
-      const socialAtlasGeojson = cache.get<{ features?: Array<{ geometry: unknown; properties?: { plrId?: string } }> }>(
-        CK.socialAtlasGeojson('berlin'),
-      );
-      const geometryMap = socialAtlasGeojson ? extractGeometry(socialAtlasGeojson) : new Map<string, unknown>();
-
-      // Build GeoJSON features and accumulate total area for city-wide density
-      const features: Array<{
-        type: 'Feature';
-        geometry: unknown;
-        properties: PopulationFeatureProps;
-      }> = [];
-      let totalAreaKm2 = 0;
-
-      for (const plr of plrDataList) {
-        const geometry = geometryMap.get(plr.plrId);
-        if (!geometry) continue; // Skip PLRs without geometry
-
-        // Compute area for density (handles both Polygon and MultiPolygon)
-        let areaKm2 = 1; // fallback
-        const geom = geometry as { type?: string; coordinates?: number[][][] | number[][][][] };
-        if (geom.type === 'Polygon' && Array.isArray(geom.coordinates)) {
-          const computed = polygonAreaKm2(geom.coordinates as number[][][]);
-          if (computed > 0) {
-            areaKm2 = computed;
-            totalAreaKm2 += computed;
-          }
-        } else if (geom.type === 'MultiPolygon' && Array.isArray(geom.coordinates)) {
-          let multi = 0;
-          for (const poly of geom.coordinates as number[][][][]) {
-            multi += polygonAreaKm2(poly);
-          }
-          if (multi > 0) {
-            areaKm2 = multi;
-            totalAreaKm2 += multi;
-          }
-        }
-
-        features.push({
-          type: 'Feature',
-          geometry,
-          properties: {
-            plrId: plr.plrId,
-            plrName: nameMap.get(plr.plrId) ?? plr.plrId,
-            population: plr.total,
-            density: Math.round(plr.total / areaKm2),
-            foreignPct: plr.total > 0 ? (plr.foreign / plr.total) * 100 : 0,
-            elderlyPct: plr.total > 0 ? (plr.elderly / plr.total) * 100 : 0,
-            youthPct: plr.total > 0 ? (plr.youth / plr.total) * 100 : 0,
-          },
-        });
-      }
-
-      // Aggregate city-wide summary (does not require geometry)
-      const totalPop = plrDataList.reduce((s, p) => s + p.total, 0);
-      const totalForeign = plrDataList.reduce((s, p) => s + p.foreign, 0);
-      const totalYouth = plrDataList.reduce((s, p) => s + p.youth, 0);
-      const totalElderly = plrDataList.reduce((s, p) => s + p.elderly, 0);
-      const totalWorkingAge = totalPop - totalYouth - totalElderly;
-
-      // Compare with previous snapshot for change calculation
-      let changeAbsolute = 0;
-      let changePct = 0;
-      if (db) {
-        try {
-          const prevResult = await loadPopulationSummary(db, 'berlin');
-          if (prevResult && prevResult.data.total > 0) {
-            changeAbsolute = totalPop - prevResult.data.total;
-            changePct = (changeAbsolute / prevResult.data.total) * 100;
-          }
-        } catch {
-          // Ignore — first run or DB unavailable
-        }
-      }
-
-      const summary: PopulationSummary = {
-        total: totalPop,
-        density: totalAreaKm2 > 0 ? Math.round(totalPop / totalAreaKm2) : 0,
-        foreignTotal: totalForeign,
-        foreignPct: totalPop > 0 ? (totalForeign / totalPop) * 100 : 0,
-        elderlyPct: totalPop > 0 ? (totalElderly / totalPop) * 100 : 0,
-        youthPct: totalPop > 0 ? (totalYouth / totalPop) * 100 : 0,
-        workingAgePct: totalPop > 0 ? (totalWorkingAge / totalPop) * 100 : 0,
-        changeAbsolute,
-        changePct,
-        snapshotDate,
-      };
-
-      // Always cache the summary (tile data) — it doesn't need geometry
-      cache.set(CK.populationSummary('berlin'), summary, POPULATION_TTL_SECONDS);
-
-      // Cache GeoJSON only if geometry was available (from social atlas)
-      const geojson = { type: 'FeatureCollection' as const, features };
-      if (features.length > 0) {
-        cache.set(CK.populationGeojson('berlin'), geojson, POPULATION_TTL_SECONDS);
-      } else {
-        log.warn('No PLR geometry available (social atlas not cached?) — summary cached, GeoJSON skipped');
-      }
-
-      if (db && features.length > 0) {
-        try {
-          await savePopulation(db, 'berlin', geojson, summary);
-        } catch (err) {
-          log.error('DB write failed', err);
-        }
-      }
-
-      log.info(`Berlin: ${features.length} PLR areas, ${totalPop} total population (${snapshotDate})`);
-    } catch (err) {
-      log.error('population ingestion failed', err);
     }
   };
+}
+
+async function ingestCityPopulation(city: CityConfig, source: PopulationSource, cache: Cache, db: Db | null): Promise<void> {
+  const cityId = city.id;
+  const fetched = await fetchPopulation(city, source, cache);
+  if (!fetched) return;
+  const { data, shapes } = fetched;
+  if (data.areas.length === 0) {
+    log.warn(`${cityId}: no population rows in the source`);
+    return;
+  }
+
+  // Build GeoJSON features and accumulate total area for city-wide density
+  const features: Array<{ type: 'Feature'; geometry: unknown; properties: PopulationFeatureProps }> = [];
+  let totalAreaKm2 = 0;
+  let mappedPop = 0;
+
+  for (const area of data.areas) {
+    const shape = shapes.get(area.id);
+    if (!shape) continue; // Skip areas without geometry
+
+    const areaKm2 = area.areaKm2 ?? shape.areaKm2 ?? geometryAreaKm2(shape.geometry);
+    if (areaKm2 > 0) {
+      totalAreaKm2 += areaKm2;
+      mappedPop += area.total;
+    }
+
+    features.push({
+      type: 'Feature',
+      geometry: shape.geometry,
+      properties: {
+        plrId: area.id,
+        plrName: area.name ?? shape.name ?? area.id,
+        population: area.total,
+        density: Math.round(area.total / (areaKm2 > 0 ? areaKm2 : 1)),
+        foreignPct: area.total > 0 ? (area.foreign / area.total) * 100 : 0,
+        elderlyPct: area.total > 0 ? (area.elderly / area.total) * 100 : 0,
+        youthPct: area.total > 0 ? (area.youth / area.total) * 100 : 0,
+      },
+    });
+  }
+
+  // Aggregate city-wide summary (does not require geometry)
+  const totalPop = data.areas.reduce((s, p) => s + p.total, 0);
+  const totalForeign = data.areas.reduce((s, p) => s + p.foreign, 0);
+  const totalYouth = data.areas.reduce((s, p) => s + p.youth, 0);
+  const totalElderly = data.areas.reduce((s, p) => s + p.elderly, 0);
+  const totalWorkingAge = totalPop - totalYouth - totalElderly;
+
+  const change = await changeSincePrevious(cityId, data, totalPop, db);
+
+  const summary: PopulationSummary = {
+    total: totalPop,
+    // Residents of the areas with a known size over that size, so an area
+    // without an outline doesn't inflate the density.
+    density: totalAreaKm2 > 0 ? Math.round(mappedPop / totalAreaKm2) : 0,
+    foreignTotal: totalForeign,
+    foreignPct: totalPop > 0 ? (totalForeign / totalPop) * 100 : 0,
+    elderlyPct: totalPop > 0 ? (totalElderly / totalPop) * 100 : 0,
+    youthPct: totalPop > 0 ? (totalYouth / totalPop) * 100 : 0,
+    workingAgePct: totalPop > 0 ? (totalWorkingAge / totalPop) * 100 : 0,
+    changeAbsolute: change.absolute,
+    changePct: change.pct,
+    snapshotDate: data.snapshotDate,
+    changePeriod: data.previousTotal !== undefined ? 'year' : 'half-year',
+  };
+
+  // Always cache the summary (tile data) — it doesn't need geometry
+  cache.set(CK.populationSummary(cityId), summary, POPULATION_TTL_SECONDS);
+
+  const geojson = { type: 'FeatureCollection' as const, features };
+  if (features.length > 0) {
+    cache.set(CK.populationGeojson(cityId), geojson, POPULATION_TTL_SECONDS);
+  } else {
+    log.warn(`${cityId}: no area geometry available (social atlas not cached?) — summary cached, GeoJSON skipped`);
+  }
+  if (features.length < data.areas.length) {
+    log.warn(`${cityId}: ${data.areas.length - features.length} of ${data.areas.length} areas have no outline`);
+  }
+
+  if (db && features.length > 0) {
+    try {
+      await savePopulation(db, cityId, geojson, summary);
+    } catch (err) {
+      log.error(`${cityId} DB write failed`, err);
+    }
+  }
+
+  log.info(`${cityId}: ${features.length} areas, ${totalPop} total population (${data.snapshotDate})`);
+}
+
+/**
+ * The change against the previous count: from the source where it carries the
+ * year before (Köln, Hamburg, München), else against the previous database snapshot
+ * (Berlin). A rerun on the same count keeps the change that snapshot recorded
+ * rather than comparing the count with itself.
+ */
+async function changeSincePrevious(
+  cityId: string,
+  data: PopulationData,
+  totalPop: number,
+  db: Db | null,
+): Promise<{ absolute: number; pct: number }> {
+  const pctOf = (absolute: number, base: number) => (base > 0 ? (absolute / base) * 100 : 0);
+  if (data.previousTotal !== undefined) {
+    const absolute = totalPop - data.previousTotal;
+    return { absolute, pct: pctOf(absolute, data.previousTotal) };
+  }
+  if (!db) return { absolute: 0, pct: 0 };
+  try {
+    const prev = await loadPopulationSummary(db, cityId);
+    if (!prev || prev.data.total <= 0) return { absolute: 0, pct: 0 };
+    if (prev.data.snapshotDate === data.snapshotDate) {
+      return { absolute: prev.data.changeAbsolute, pct: prev.data.changePct };
+    }
+    const absolute = totalPop - prev.data.total;
+    return { absolute, pct: pctOf(absolute, prev.data.total) };
+  } catch {
+    return { absolute: 0, pct: 0 }; // first run or DB unavailable
+  }
 }

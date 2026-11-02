@@ -23,7 +23,13 @@ const readGeo = (rel: string): GeoJSON.FeatureCollection =>
 const BOUNDARIES = {
   berlin: { geo: readGeo('../../../data/districts/berlin-bezirke.geojson'), nameField: DISTRICT_URLS.berlin.nameField },
   hamburg: { geo: readGeo('../../../data/districts/hamburg-bezirke.geojson'), nameField: DISTRICT_URLS.hamburg.nameField },
+  koeln: { geo: readGeo('../../../data/districts/koeln-bezirke.geojson'), nameField: DISTRICT_URLS.koeln.nameField },
 };
+
+/** Names the server stores for Köln's `bezirke` level (BEZIRKSBUERGERMEISTER.koeln in ingest-political.ts). */
+const KOELN_BEZIRK_NAMES = [
+  'Innenstadt', 'Rodenkirchen', 'Lindenthal', 'Ehrenfeld', 'Nippes', 'Chorweiler', 'Porz', 'Kalk', 'Mülheim',
+];
 
 /** Names the server stores for Berlin's `bezirke` and `state-bezirke` levels
  *  (BEZIRKSBUERGERMEISTER and BERLIN_BEZIRKE in ingest-political.ts). */
@@ -109,6 +115,13 @@ const CASES: Case[] = [
     subLayer: 'bundestag',
     districts: makeDistricts([...Object.values(HAMBURG_BUNDESTAG), 'Landesliste'], 'bundestag'),
     expected: HAMBURG_BUNDESTAG,
+  },
+  {
+    label: 'Köln bezirke',
+    boundary: 'koeln',
+    subLayer: 'bezirke',
+    districts: makeDistricts(KOELN_BEZIRK_NAMES, 'bezirk'),
+    expected: Object.fromEntries(KOELN_BEZIRK_NAMES.map((n) => [n, n])),
   },
 ];
 

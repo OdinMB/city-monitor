@@ -104,7 +104,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'abgeordnetenwatch.de',
         url: 'https://www.abgeordnetenwatch.de/',
-        description: 'Parliamentary representatives for Bundestag and state parliaments, mapped to city constituencies.',
+        description: 'Members of the Bundestag and the state parliament for the city\'s constituencies. Licensed CC0 1.0.',
         requires: 'political',
       },
     ],
@@ -160,6 +160,28 @@ function waqiGroup(cityId: string): SourceGroup {
   };
 }
 
+/**
+ * The BA's monthly figures for the area the city's config asks for (the Land
+ * of a city-state, the Kreis of a kreisfreie Stadt). The CSV's terms allow
+ * passing them on with the source named and a link to statistik.arbeitsagentur.de.
+ */
+function baSource(area: string): Source {
+  return {
+    name: 'Bundesagentur für Arbeit',
+    url: 'https://statistik.arbeitsagentur.de/',
+    description: `Monthly unemployment rates, SGB II recipients, and underemployment data for ${area}. © Statistik der Bundesagentur für Arbeit.`,
+  };
+}
+
+/** RKI AMELAG, for a city whose wastewater tile takes every pathogen from it. */
+function amelagSource(plants: string): Source {
+  return {
+    name: 'RKI AMELAG Wastewater Surveillance',
+    url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG',
+    description: `Influenza A and B, RSV and SARS-CoV-2 viral load, sampled several times a week at ${plants}. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the samples per week${plants.includes(' and ') ? ' and the plants, weighted by the population each serves,' : ''} and derives the trend and level; samples below the detection limit count as zero.`,
+  };
+}
+
 const BERLIN_SOURCES: SourceGroup[] = [
   {
     category: 'News',
@@ -193,7 +215,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time river water levels from Spree, Havel, and Dahme gauges.' },
       { name: 'LAGeSo Bathing Water', url: 'https://data.lageso.de/', description: 'Water quality measurements for Berlin bathing spots.' },
       { name: 'LAGeSo Wastewater Monitoring', url: 'https://data.lageso.de/', description: 'Weekly viral load measurements (Influenza A/B, RSV) in Berlin wastewater. Source: Lageso Berlin and Berliner Wasserbetriebe, dl-de/by-2-0. City Monitor averages the plants and derives the trend and level.' },
-      { name: 'RKI AMELAG Wastewater Surveillance', url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG', description: 'Weekly SARS-CoV-2 viral load at the Berlin treatment plants. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the plants and derives the trend and level.' },
+      { name: 'RKI AMELAG Wastewater Surveillance', url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG', description: 'SARS-CoV-2 viral load at the three Berlin treatment plants. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the samples per week and the plants, weighted by the population each serves, and derives the trend and level.' },
     ],
   },
   {
@@ -206,9 +228,9 @@ const BERLIN_SOURCES: SourceGroup[] = [
   {
     category: 'Social & Economic',
     sources: [
-      { name: 'Bundesagentur für Arbeit', url: 'https://statistik.arbeitsagentur.de/', description: 'Monthly unemployment rates, SGB II recipients, and underemployment data.' },
+      baSource('the Land Berlin'),
       { name: 'Amt für Statistik Berlin-Brandenburg', url: 'https://www.statistik-berlin-brandenburg.de/', description: 'Semi-annual population register statistics per planning area — population, age groups, foreign residents. Source: Amt für Statistik Berlin-Brandenburg, CC BY. City Monitor derives the shares and the population density.' },
-      { name: 'MSS 2023 (Social Atlas)', url: 'https://www.berlin.de/sen/sbw/stadtdaten/stadtwissen/monitoring-soziale-stadtentwicklung/', description: 'Biennial social indicators per planning area — unemployment, poverty, welfare rates.' },
+      { name: 'MSS 2025 (Social Atlas)', url: 'https://www.berlin.de/sen/sbw/stadtdaten/stadtwissen/monitoring-soziale-stadtentwicklung/', description: 'Biennial social indicators per planning area — unemployment, children of single parents, welfare, child poverty and the status index. Data as of 31 December 2024.' },
       { name: 'Berlin Budget (Doppelhaushalt)', url: 'https://www.berlin.de/sen/finanzen/', description: 'City budget 2026 — revenues and expenses by district and function category. Licensed CC BY.' },
     ],
   },
@@ -230,7 +252,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'Sensor.Community', url: 'https://sensor.community/', description: 'Citizen-run air quality sensors — PM2.5 and PM10 readings. © Sensor.Community contributors, ODbL.' },
       { name: 'Sensor.Community DNMS', url: 'https://sensor.community/en/sensors/dnms/', description: 'Citizen-run noise sensors — LAeq, LAmin, LAmax readings (Berlin only). © Sensor.Community contributors, ODbL.' },
-      { name: 'Berlin Open Data (Rent Map)', url: 'https://daten.berlin.de/', description: 'Residential rent zone map (Wohnlagenkarte 2024) as WMS overlay.' },
+      { name: 'Berlin Open Data (Rent Map)', url: 'https://daten.berlin.de/', description: 'Residential rent zone map (Wohnlagenkarte 2026) as WMS overlay.' },
       { name: 'Berlin Noise Map (SenMVKU)', url: 'https://gdi.berlin.de/services/wms/ua_stratlaerm_2022', description: 'EU strategic noise map 2022 — total, road, rail, and air noise as WMS overlay.' },
     ],
   },
@@ -238,9 +260,16 @@ const BERLIN_SOURCES: SourceGroup[] = [
 
 const HAMBURG_SOURCES: SourceGroup[] = [
   {
+    category: 'Council Meetings',
+    sources: [
+      { name: 'Hamburgische Bürgerschaft (Termine)', url: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine', description: 'Public committee and plenary sessions of the state parliament, read from its website calendar. Official public records; the site states no licence.' },
+    ],
+  },
+  {
     category: 'Maps',
     sources: [
       { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/zero-2-0.' },
+      { name: 'Hamburger Wohnlagenverzeichnis (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WMS_Wohnlagen?SERVICE=WMS&REQUEST=GetCapabilities', description: 'Residential location (normal or good Wohnlage) of each address, from the Mietenspiegel, as WMS overlay. Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.' },
     ],
   },
   {
@@ -262,6 +291,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Transit & Traffic',
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
+      { name: 'HVV / Hamburger Hochbahn, Geofox GTI', url: 'https://www.hvv.de/', description: 'Current disruption and service announcements for hvv lines, from the Geofox Thin Interface (GTI) of HOCHBAHN, used under its terms of access. City Monitor shows the announcements in force now, with their full text; a long one is shortened in the collapsed row. Source: hvv / Hamburger Hochbahn AG. Alle Angaben ohne Gewähr.' },
       { name: 'Baustellen Hamburg (Bauweiser)', url: 'https://api.hamburg.de/datasets/v1/baustellen', description: 'Construction sites on main roads and federal highways, with their traffic impact and construction period. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0. City Monitor shows the sites running now or starting within two weeks and shortens long descriptions.' },
     ],
   },
@@ -269,6 +299,16 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Water',
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time tidal water levels from Elbe gauges (St. Pauli, Bunthaus, Seemannshöft).' },
+      { name: 'Badegewässer Hamburg (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WFS_Badegewaesser?SERVICE=WFS&REQUEST=GetCapabilities', description: 'The 17 EU bathing spots with their latest sample: water temperature, visibility, algae and the health authority\'s remarks. City Monitor rates each spot from those remarks (a bathing ban as poor, a warning or heavy algae as a warning). Source: Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, dl-de/by-2-0.' },
+      amelagSource('Hamburg\'s two treatment plants (Hamburg 01 and Hamburg 02)'),
+    ],
+  },
+  {
+    category: 'Social & Economic',
+    sources: [
+      baSource('the Land Hamburg'),
+      { name: 'Sozialmonitoring Hamburg (Social Atlas)', url: 'https://suche.transparenz.hamburg.de/dataset/sozialmonitoring-integrierte-stadtteilentwicklung-bericht-2025-anhang', description: 'Sozialmonitoring Integrierte Stadtteilentwicklung, report 2025 (data as of 31 December 2024), for 857 Statistische Gebiete: unemployment, children of single parents, SGB II and AsylbLG recipients, children on minimum income and the status index, on the inhabited parts of each area. The report publishes the indicators as z-scores; City Monitor turns them back into shares with the report\'s own mean and standard deviation, and simplified the outlines. Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.' },
+      { name: 'Regionalstatistische Daten der Stadtteile Hamburg', url: 'https://api.hamburg.de/datasets/v1/regionalstatistische_daten_stadtteile', description: 'Yearly population of 99 Stadtteile (the four smallest merged into a neighbour) — residents, under 18, 65 and older, foreign nationals and area. City Monitor derives the shares and density, and simplified the outlines. Source: Statistisches Amt für Hamburg und Schleswig-Holstein, dl-de/by-2-0.' },
     ],
   },
 ];
@@ -295,12 +335,14 @@ const KOELN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'Baustellen Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/baustellen-koeln', description: 'Permitted roadworks on city streets — road, utility, sewer, traffic-light, bridge, track and emergency works. The dates are the permit period, which the works need not fill. Source: Stadt Köln, dl-de/zero-2-0.' },
+      { name: 'KVB Open Data (Aufzüge, Fahrtreppen)', url: 'https://www.kvb.koeln/service/open_data.html', description: 'Lifts and escalators out of service at KVB stations, updated about every 15 minutes. Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.' },
     ],
   },
   {
     category: 'Water',
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time Rhine water level from the Köln gauge.' },
+      amelagSource('the Köln treatment plant'),
     ],
   },
   {
@@ -315,9 +357,30 @@ const KOELN_SOURCES: SourceGroup[] = [
       { name: 'Stadt Köln SessionNet (OParl)', url: 'https://buergerinfo.stadt-koeln.de/', description: 'Meetings of the city council, its committees and the nine Bezirksvertretungen via the OParl 1.1 API. Official public records; the API states no licence.' },
     ],
   },
+  {
+    category: 'Politics',
+    sources: [
+      { name: 'Stadt Köln (Oberbürgermeister, Bezirksvertretungen)', url: 'https://www.stadt-koeln.de/politik-und-verwaltung/bezirksvertretungen/', description: 'The Oberbürgermeister and the nine Bezirksbürgermeister, copied by hand from the city\'s pages and checked twice a year.' },
+    ],
+  },
+  {
+    category: 'Maps',
+    sources: [
+      { name: 'Stadtbezirke Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/stadtbezirke-koeln', description: 'Outlines of the nine Stadtbezirke on the map, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
+      { name: 'Statistische Quartiere Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/statistische-quartiere-koeln', description: 'Outlines and areas of the 570 Statistische Quartiere for the social atlas and population layers, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
+    ],
+  },
+  {
+    category: 'Social & Economic',
+    sources: [
+      baSource('the kreisfreie Stadt Köln'),
+      { name: 'Statistischer Datenkatalog Köln', url: 'https://www.offenedaten-koeln.de/dataset/statistischer-datenkatalog-koeln', description: 'Yearly figures for the 570 Statistische Quartiere: the unemployment rate (SGB II and III, of the civilian labour force), single-parent households (of all households) and SGB II recipients (of residents below pension age) for the social atlas, data year 2025; residents by age band and nationality for population. No child poverty figure and no status index at this level. City Monitor derives the population shares and density. Source: Stadt Köln – Amt für Stadtentwicklung und Statistik, dl-de/by-2-0. The unemployment and SGB II figures come from the Statistik der Bundesagentur für Arbeit.' },
+    ],
+  },
 ];
 
-// No river gauge: the Isar through München is not a federal waterway.
+// No river level: the Isar through München is not a federal waterway, so not on
+// PEGELONLINE; its flood class comes from the LHP.
 const MUENCHEN_SOURCES: SourceGroup[] = [
   {
     category: 'News',
@@ -340,9 +403,35 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Water',
+    sources: [
+      { name: 'Länderübergreifendes Hochwasserportal (LHP)', url: 'https://www.hochwasserzentralen.de/', description: 'Flood class (Meldestufe) of the Isar gauges München and Puppling, set by the Bavarian flood warning service, and active flood warnings for München, via the LHP public API. Unchecked raw data; no water levels. Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.' },
+      amelagSource('the München treatment plant'),
+    ],
+  },
+  {
+    category: 'Social & Economic',
+    sources: [
+      baSource('the Landeshauptstadt München'),
+      { name: 'Indikatorenatlas München', url: 'https://opendata.muenchen.de/pages/indikatorenatlas', description: 'Yearly indicators for the 25 Stadtbezirke, the finest level the atlas keeps up to date — far coarser than the other cities\' areas. For the social atlas, data year 2024: unemployed (of residents aged 15–64), single-parent households (of all households), employable SGB II recipients (of residents aged 15–64) and children under 15 on SGB II (Sozialgeld, of residents under 15); no status index. For population, the newest year: residents by age group and non-German residents, as of 31 December. City Monitor derives the population shares and density. Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0. The labour-market figures come from the Bundesagentur für Arbeit through the city.' },
+    ],
+  },
+  {
     category: 'Council Meetings',
     sources: [
       { name: 'München RIS', url: 'https://risi.muenchen.de/', description: 'Stadtrat committee and Bezirksausschuss meetings from the council information system’s RSS feeds. Official public records; the feeds state no licence.' },
+    ],
+  },
+  {
+    category: 'Politics',
+    sources: [
+      { name: 'Landeshauptstadt München (Oberbürgermeister)', url: 'https://stadt.muenchen.de/infos/oberbuergermeister.html', description: 'The Oberbürgermeister, copied by hand from the city\'s page and checked twice a year.' },
+    ],
+  },
+  {
+    category: 'Maps',
+    sources: [
+      { name: 'Stadtbezirke München (GeodatenService)', url: 'https://opendata.muenchen.de/dataset/vablock_stadtbezirke_opendata', description: 'Outlines of the 25 Stadtbezirke on the map and in the social atlas and population layers, with each district\'s area for the density; the two parts of Untergiesing-Harlaching and of Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln merged and the lines simplified. Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.' },
     ],
   },
 ];

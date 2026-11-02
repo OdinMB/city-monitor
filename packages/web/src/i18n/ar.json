@@ -151,7 +151,9 @@
       "mayBeOutdated": "قد تكون البيانات قديمة (آخر تحقق: {{time}})",
       "affectedStops": "المحطات المتأثرة",
       "more": "المزيد",
-      "station": "أُبلغ عنه في المحطة"
+      "station": "أُبلغ عنه في المحطة",
+      "hvvSource": "المصدر: hvv / Hamburger Hochbahn AG (hvv.de)",
+      "noGuarantee": "جميع المعلومات دون ضمان (ohne Gewähr)"
     },
     "events": {
       "title": "الفعاليات",
@@ -288,6 +290,7 @@
       "workingAge": "سن العمل",
       "ageBreakdown": "التوزيع العمري",
       "change": "مقارنة بالنصف السابق",
+      "changeYear": "مقارنة بالعام السابق",
       "empty": "لا توجد بيانات متاحة",
       "source": "إحصائيات برلين-براندنبورغ",
       "density": "لكل كم²",
@@ -346,6 +349,34 @@
       "tidal": "مد وجزر",
       "vsNormal": "مقابل {{diff}} طبيعي",
       "empty": "لا توجد بيانات مناسيب"
+    },
+    "floodStatus": {
+      "title": "حالة الفيضانات",
+      "class": {
+        "0": "لا فيضان",
+        "1": "فيضان صغير",
+        "2": "فيضان متوسط",
+        "3": "فيضان كبير",
+        "4": "فيضان كبير جدًا",
+        "none": "لا توجد بيانات حالية"
+      },
+      "upstream": "أعلى المجرى",
+      "warnings": "تحذيرات الفيضانات",
+      "noWarnings": "لا توجد تحذيرات فيضانات سارية",
+      "asOf": "حتى:",
+      "empty": "لا توجد بيانات فيضانات"
+    },
+    "liftOutages": {
+      "title": "المصاعد والسلالم المتحركة",
+      "lifts": "مصاعد معطلة: {{n}}",
+      "escalators": "سلالم متحركة معطلة: {{n}}",
+      "noLifts": "جميع المصاعد تعمل",
+      "noEscalators": "جميع السلالم المتحركة تعمل",
+      "allWorking": "جميع المصاعد والسلالم المتحركة تعمل",
+      "more": "+{{n}} أخرى",
+      "atStations": "المحطات المتأثرة: {{n}}",
+      "asOf": "حتى:",
+      "empty": "لا توجد بيانات أعطال"
     },
     "pollen": {
       "title": "توقعات حبوب اللقاح",
@@ -433,12 +464,14 @@
     },
     "councilMeetings": {
       "title": "اجتماعات المجلس",
+      "title_hamburg": "جلسات البرلمان",
       "empty": "لا توجد اجتماعات قادمة",
       "filterLabel": "تصفية حسب الهيئة",
       "bvv": "مجلس المنطقة",
       "parliament": "برلمان الولاية",
       "parliament_koeln": "مجلس المدينة",
       "parliament_muenchen": "مجلس المدينة",
+      "parliament_hamburg": "برلمان هامبورغ",
       "agendaItems_zero": "{{count}} بند في جدول الأعمال",
       "agendaItems_one": "بند واحد في جدول الأعمال",
       "agendaItems_two": "بندان في جدول الأعمال",
@@ -552,11 +585,15 @@
       "bathing": "مياه السباحة"
     },
     "social": {
-      "unemployment": "البطالة (2023)",
-      "single-parent": "أسر الوالد الواحد (2023)",
-      "welfare": "المساعدة الاجتماعية (2023)",
-      "child-poverty": "فقر الأطفال (2023)",
       "rent": "إيجار"
+    },
+    "rentLegend": {
+      "title": "فئات الموقع السكني في مؤشر الإيجارات",
+      "simple": "موقع بسيط",
+      "medium": "موقع متوسط",
+      "good": "موقع جيد",
+      "normal": "موقع عادي",
+      "unrated": "غير مُقيَّم"
     },
     "population": {
       "pop-density": "الكثافة السكانية",
@@ -565,6 +602,7 @@
     },
     "political": {
       "bezirke": "الأحياء",
+      "mayor": "البلدية",
       "bundestag": "البوندستاغ",
       "landesparlament": "برلمان الولاية"
     }
@@ -627,12 +665,28 @@
         "loud": "صاخب",
         "veryLoud": "صاخب جداً"
       }
-    },
-    "socialAtlas": {
+    }
+  },
+  "socialAtlas": {
+    "indicator": {
       "unemployment": "البطالة",
-      "singleParent": "أسر الوالد الواحد",
+      "unemploymentRate": "معدل البطالة",
+      "singleParentChildren": "أطفال الأسر ذات الوالد الواحد",
+      "singleParentHouseholds": "أسر الوالد الواحد",
       "welfare": "متلقو المساعدة الاجتماعية",
-      "childPoverty": "فقر الأطفال"
+      "sgb2": "متلقو إعانة SGB II",
+      "sgb2Asylblg": "متلقو إعانات SGB II وAsylbLG",
+      "childPoverty": "فقر الأطفال",
+      "childrenMinimumIncome": "أطفال يتلقون الحد الأدنى من الدخل",
+      "sgb2Employable": "متلقو إعانة SGB II القادرون على العمل",
+      "childrenSgb2": "أطفال دون 15 عامًا يتلقون إعانة SGB II"
+    },
+    "status": {
+      "mss": "مؤشر الحالة MSS",
+      "hhSozialmonitoring": "مؤشر الحالة (Sozialmonitoring)"
+    },
+    "areas": {
+      "muenchenStadtbezirke": "25 دائرة فقط"
     }
   },
   "nina": {

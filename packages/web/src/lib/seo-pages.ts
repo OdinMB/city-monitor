@@ -37,7 +37,7 @@ export const CITY_META: Readonly<Record<string, { description: string; ogImage: 
     ogImage: 'og-koeln.png',
   },
   muenchen: {
-    description: 'Real-time München dashboard: weather, air quality, civil-protection alerts, pollen, emergency pharmacies, and more.',
+    description: 'Real-time München dashboard: weather, air quality, Isar flood status, civil-protection alerts, pollen, emergency pharmacies, and more.',
     ogImage: 'og-muenchen.png',
   },
 };

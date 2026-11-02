@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "result": {
+    "name": "indikatorenatlas-2014-arbeitsmarkt-arbeitslosendichte-83r65mct",
+    "license_id": "dl-by-de/2.0",
+    "resources": [
+      {
+        "format": "PDF",
+        "url": "https://opendata.muenchen.de/example.pdf"
+      },
+      {
+        "format": "CSV",
+        "name": "Arbeitslose - Anteil",
+        "url": "https://opendata.muenchen.de/dataset/0771b22f-b1e7-4480-8fe5-d641c2586f3e/resource/55a1adb0-6c06-403b-ab7f-7e6c41d18e32/download/indikat_2605arbeitsmarkt_arbeitslose_-_anteil_18_05_26.csv"
+      }
+    ]
+  }
+}

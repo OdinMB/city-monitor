@@ -12,6 +12,7 @@ import { CityProvider } from '../../hooks/CityProvider.js';
 import { CityContext } from '../../hooks/CityContext.js';
 import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
+import { muenchen } from '../../config/cities/muenchen.js';
 import { CommandLayout } from './CommandLayout.js';
 
 // Only where the warnings sit matters here, not the map itself.
@@ -191,6 +192,7 @@ const FEATURE_TILES: ReadonlyArray<[CityFeature, string]> = [
   ['councilMeetings', 'panel.councilMeetings.title'],
   ['political', 'sidebar.layers.political'],
   ['waterLevels', 'panel.waterLevels.title'],
+  ['floodStatus', 'panel.floodStatus.title'],
 ];
 
 describe('CommandLayout tiles', { timeout: 30_000 }, () => {
@@ -222,13 +224,15 @@ describe('CommandLayout tiles', { timeout: 30_000 }, () => {
   const cities: ReadonlyArray<[string, WebCityConfig]> = [
     ['Berlin', berlin],
     ['Hamburg', hamburg],
+    ['München', muenchen],
     ['a city with no features', { ...hamburg, features: [] }],
   ];
 
   it.each(cities)('shows a tile for each feature %s has, and none for the others', (_name, city) => {
     const titles = tileTitles(city);
     for (const [feature, key] of FEATURE_TILES) {
-      const shown = titles.some((title) => title.startsWith(i18n.t(key)));
+      // A city's own title where it has one (`title_hamburg`)
+      const shown = titles.some((title) => title.startsWith(i18n.t(key, { context: city.id })));
       expect(shown, `${feature}: ${key}`).toBe(city.features.includes(feature));
     }
     // Every city has weather and air quality.

@@ -111,6 +111,14 @@ describe('PopulationStrip rendered values', () => {
     expect(container.textContent).toContain(`${isolate('+120')} (${isolate('+0.0%')}) vs. previous half-year`);
   });
 
+  // Köln and Hamburg count once a year, Berlin every half-year
+  it('compares a yearly count with the previous year', () => {
+    summary = { ...SUMMARY, changeAbsolute: 2_557, changePct: 0.2, changePeriod: 'year' };
+    const { container } = render(<PopulationStrip />);
+    expect(container.textContent).toContain('vs. previous year');
+    expect(container.textContent).not.toContain('half-year');
+  });
+
   it('shows no change line when nothing changed', () => {
     summary = { ...SUMMARY, changeAbsolute: 0, changePct: 0 };
     const { container } = render(<PopulationStrip />);

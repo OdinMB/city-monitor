@@ -16,7 +16,8 @@ import SunCalc from 'suncalc';
 import type {
   AedLocation, AirQuality, AirQualityGridPoint, BathingSpot, BudgetSummary, BuergeramtData,
   CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, EmergencyPharmacy,
-  FeuerwehrMonthData, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, NinaWarning,
+  FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
+  LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
   TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
@@ -28,8 +29,13 @@ import { aggregateBudgetData, type ParsedBudgetRow } from '../cron/ingest-budget
 import { deriveStatus } from '../cron/ingest-appointments.js';
 import { berlinUtcOffset } from '../cron/ingest-council-meetings.js';
 import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
+import { hasTransitSource } from '../cron/ingest-transit.js';
+import {
+  PARLIAMENT_CONFIG, groupsStateMembersByBezirk, handKeptAreas, hasDistrictMayors, hasMayor, hasParliamentConfig,
+} from '../cron/ingest-political.js';
 import { computeLevel, computeTrend } from '../cron/ingest-wastewater.js';
 import { hashString } from '../lib/hash.js';
+import { SOCIAL_ATLAS_HAS_STATUS_INDEX, SOCIAL_ATLAS_METRICS } from '../lib/social-atlas-parsers.js';
 
 export interface SyntheticSnapshot {
   type: SnapshotType;
@@ -42,7 +48,7 @@ export interface PolygonFeatureCollection<P> {
   features: Array<{ type: 'Feature'; geometry: { type: 'Polygon'; coordinates: number[][][] }; properties: P }>;
 }
 
-export type PoliticalLevel = 'bezirke' | 'bundestag' | 'state' | 'state-bezirke';
+export type PoliticalLevel = 'bezirke' | 'mayor' | 'bundestag' | 'state' | 'state-bezirke';
 
 export interface SyntheticData {
   cityId: string;
@@ -72,7 +78,12 @@ export interface SyntheticData {
   pollen: PollenForecast;
   noiseSensors: NoiseSensor[];
   councilMeetings: CouncilMeeting[];
-  political: Record<PoliticalLevel, PoliticalDistrict[]>;
+  /** Berlin's full set has every level but `mayor`, which only a city inside a state has. */
+  political: Record<Exclude<PoliticalLevel, 'mayor'>, PoliticalDistrict[]> & { mayor?: PoliticalDistrict[] };
+  /** Not in Berlin's data set: Berlin has no LHP gauges configured (NOT_IN_BERLIN). */
+  floodStatus?: FloodStatus;
+  /** Not in Berlin's data set: only Köln's KVB publishes lift outages (NOT_IN_BERLIN). */
+  liftOutages?: LiftOutageData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -106,8 +117,8 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   weather: (c) => c.dataSources.weather.provider === 'brightsky',
   airQuality: () => true,
   airQualityGrid: () => true,
-  // ingest-transit skips a city with no stations to ask
-  transit: (c) => (c.dataSources.transit?.stations?.length ?? 0) > 0,
+  // ingest-transit skips a city with no stations to ask; Geofox runs where production has its credentials
+  transit: hasTransitSource,
   nina: (c) => c.country === 'DE' && c.dataSources.nina !== undefined,
   waterLevels: (c) => c.dataSources.waterLevels !== undefined,
   appointments: (c) => c.dataSources.appointments !== undefined,
@@ -117,16 +128,21 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   pharmacies: hasPharmacySearch,
   aeds: (c) => c.country === 'DE',
   socialAtlas: (c) => c.dataSources.socialAtlas !== undefined,
-  population: berlinOnly,
-  wastewater: berlinOnly,
-  bathing: berlinOnly,
-  laborMarket: berlinOnly,
+  population: (c) => c.dataSources.population !== undefined,
+  wastewater: (c) => c.dataSources.wastewater !== undefined,
+  bathing: (c) => c.dataSources.bathing !== undefined,
+  laborMarket: (c) => c.dataSources.laborMarket !== undefined,
   feuerwehr: berlinOnly,
   pollen: (c) => c.dataSources.pollen !== undefined,
   noiseSensors: (c) => c.dataSources.noiseSensors !== undefined,
   councilMeetings: (c) => c.dataSources.councilMeetings !== undefined,
-  political: (c) => c.country === 'DE' && politicalLevels(c.id).length > 0,
+  political: (c) => politicalLevels(c).length > 0,
+  floodStatus: (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0,
+  liftOutages: (c) => c.dataSources.liftOutages !== undefined,
 };
+
+/** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
+const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages'];
 
 /** The data sets the synthetic seed writes for `city`: those production would hold for it. */
 export function syntheticCoverage(city: CityConfig): SyntheticDataSet[] {
@@ -160,10 +176,11 @@ const EXAMPLE = 'https://example.com/synthetic';
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-/** Berlin's data set, which covers every data set. */
+/** Berlin's data set, which covers every data set but those of NOT_IN_BERLIN. */
 export function generateSyntheticData(options: { now: Date; seed?: number }): SyntheticData {
   const data = generateSyntheticCityData({ ...options, city: berlin });
-  const missing = (Object.keys(COVERED) as SyntheticDataSet[]).filter((set) => data[set] === undefined);
+  const missing = (Object.keys(COVERED) as SyntheticDataSet[])
+    .filter((set) => !NOT_IN_BERLIN.includes(set) && data[set] === undefined);
   if (missing.length > 0) throw new Error(`the synthetic Berlin data set lacks ${missing.join(', ')}`);
   return data as SyntheticData;
 }
@@ -222,14 +239,17 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('aeds')) sets.aeds = generateAeds(rng, place);
   if (areas && has.has('socialAtlas')) sets.socialAtlas = areas.socialAtlas;
   if (areas && has.has('population')) sets.population = areas.population;
-  if (has.has('wastewater')) sets.wastewater = generateWastewater(rng, now);
-  if (has.has('bathing')) sets.bathing = generateBathing(rng, now);
+  if (has.has('wastewater')) sets.wastewater = generateWastewater(rng, now, city.dataSources.wastewater!);
+  if (has.has('bathing')) sets.bathing = generateBathing(rng, now, place);
   if (has.has('laborMarket')) sets.laborMarket = laborMarketFor(rng, shiftMonth(thisMonth, -1), 0);
   if (has.has('feuerwehr')) sets.feuerwehr = generateFeuerwehr(rng, now);
   if (has.has('pollen')) sets.pollen = generatePollen(rng, now, place);
   if (has.has('noiseSensors')) sets.noiseSensors = generateNoiseSensors(rng, place);
   if (has.has('councilMeetings')) sets.councilMeetings = generateCouncilMeetings(rng, now, place);
   if (has.has('political')) sets.political = generatePolitical(rng, place);
+  // Drawn last, so adding it left the other data sets' values as they were
+  if (has.has('floodStatus')) sets.floodStatus = generateFloodStatus(rng, now, city);
+  if (has.has('liftOutages')) sets.liftOutages = generateLiftOutages(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -345,6 +365,48 @@ const HAMBURG_DISTRICTS: readonly District[] = [
   { name: 'Harburg', lat: 53.460, lon: 9.930, plz: '21073' },
 ];
 
+/** Köln's nine Stadtbezirke in official order, with points inside each. */
+const KOELN_DISTRICTS: readonly District[] = [
+  { name: 'Innenstadt', lat: 50.937, lon: 6.960, plz: '50667' },
+  { name: 'Rodenkirchen', lat: 50.877, lon: 6.964, plz: '50996' },
+  { name: 'Lindenthal', lat: 50.930, lon: 6.862, plz: '50931' },
+  { name: 'Ehrenfeld', lat: 50.970, lon: 6.891, plz: '50823' },
+  { name: 'Nippes', lat: 50.990, lon: 6.938, plz: '50733' },
+  { name: 'Chorweiler', lat: 51.031, lon: 6.876, plz: '50765' },
+  { name: 'Porz', lat: 50.873, lon: 7.086, plz: '51143' },
+  { name: 'Kalk', lat: 50.934, lon: 7.079, plz: '51103' },
+  { name: 'Mülheim', lat: 50.985, lon: 7.030, plz: '51063' },
+];
+
+/** München's 25 Stadtbezirke in official order, with points inside each. */
+const MUENCHEN_DISTRICTS: readonly District[] = [
+  { name: 'Altstadt-Lehel', lat: 48.139, lon: 11.581, plz: '80331' },
+  { name: 'Ludwigsvorstadt-Isarvorstadt', lat: 48.130, lon: 11.558, plz: '80469' },
+  { name: 'Maxvorstadt', lat: 48.148, lon: 11.565, plz: '80333' },
+  { name: 'Schwabing-West', lat: 48.166, lon: 11.570, plz: '80796' },
+  { name: 'Au-Haidhausen', lat: 48.130, lon: 11.595, plz: '81667' },
+  { name: 'Sendling', lat: 48.114, lon: 11.547, plz: '81371' },
+  { name: 'Sendling-Westpark', lat: 48.117, lon: 11.521, plz: '81373' },
+  { name: 'Schwanthalerhöhe', lat: 48.136, lon: 11.539, plz: '80339' },
+  { name: 'Neuhausen-Nymphenburg', lat: 48.156, lon: 11.519, plz: '80639' },
+  { name: 'Moosach', lat: 48.182, lon: 11.505, plz: '80992' },
+  { name: 'Milbertshofen-Am Hart', lat: 48.215, lon: 11.575, plz: '80807' },
+  { name: 'Schwabing-Freimann', lat: 48.194, lon: 11.611, plz: '80805' },
+  { name: 'Bogenhausen', lat: 48.155, lon: 11.643, plz: '81675' },
+  { name: 'Berg am Laim', lat: 48.127, lon: 11.632, plz: '81673' },
+  { name: 'Trudering-Riem', lat: 48.125, lon: 11.677, plz: '81825' },
+  { name: 'Ramersdorf-Perlach', lat: 48.100, lon: 11.638, plz: '81737' },
+  { name: 'Obergiesing-Fasangarten', lat: 48.103, lon: 11.592, plz: '81539' },
+  { name: 'Untergiesing-Harlaching', lat: 48.097, lon: 11.565, plz: '81545' },
+  { name: 'Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln', lat: 48.084, lon: 11.516, plz: '81475' },
+  { name: 'Hadern', lat: 48.115, lon: 11.485, plz: '81375' },
+  { name: 'Pasing-Obermenzing', lat: 48.157, lon: 11.467, plz: '81241' },
+  { name: 'Aubing-Lochhausen-Langwied', lat: 48.164, lon: 11.408, plz: '81243' },
+  { name: 'Allach-Untermenzing', lat: 48.193, lon: 11.458, plz: '80999' },
+  { name: 'Feldmoching-Hasenbergl', lat: 48.212, lon: 11.522, plz: '80933' },
+  { name: 'Laim', lat: 48.135, lon: 11.505, plz: '80686' },
+];
+
 /** What a city needs beyond its config: names and positions the generator would otherwise make up badly. */
 interface CityDetails {
   /** Its Bezirke, for a city whose Bezirk boundaries the web app ships (packages/web/src/data/districts). */
@@ -396,18 +458,19 @@ export function syntheticDistricts(cityId: string): ReadonlyArray<Point & { name
 }
 
 /**
- * The political levels production fills per city, and what its state
- * parliament's members are called (cron/ingest-political.ts): Bezirk mayors
- * (BEZIRKSBUERGERMEISTER) and state members by Bezirk (BERLIN_BEZIRKE) for
- * Berlin, Bundestag and state parliament for every city in PARLIAMENT_CONFIG.
+ * The political levels production fills for a city (cron/ingest-political.ts):
+ * Bundestag and state parliament for every city in PARLIAMENT_CONFIG, Bezirk
+ * mayors and the Oberbürgermeister where their hand-kept tables have the city,
+ * state members by Bezirk where STATE_CONSTITUENCY_BEZIRKE has it.
  */
-const POLITICAL: Readonly<Record<string, { levels: readonly PoliticalLevel[]; stateRole: string }>> = {
-  berlin: { levels: ['bezirke', 'bundestag', 'state', 'state-bezirke'], stateRole: 'MdA' },
-  hamburg: { levels: ['bundestag', 'state'], stateRole: 'MdHB' },
-};
-
-function politicalLevels(cityId: string): readonly PoliticalLevel[] {
-  return Object.hasOwn(POLITICAL, cityId) ? POLITICAL[cityId]!.levels : [];
+function politicalLevels(city: CityConfig): readonly PoliticalLevel[] {
+  if (!hasParliamentConfig(city)) return [];
+  const levels: PoliticalLevel[] = [];
+  if (hasDistrictMayors(city)) levels.push('bezirke');
+  if (hasMayor(city)) levels.push('mayor');
+  levels.push('bundestag', 'state');
+  if (groupsStateMembersByBezirk(city)) levels.push('state-bezirke');
+  return levels;
 }
 
 /** Placeholder street names, so no address is a real one. */
@@ -786,11 +849,30 @@ const TRANSIT_SCENARIOS: ReadonlyArray<Pick<TransitAlert, 'lines' | 'type' | 'se
   { lines: ['S7'], type: 'planned-work', severity: 'medium', message: 'Bauarbeiten am Wochenende' },
 ];
 
+/**
+ * VBB alerts carry the station they were reported at; Geofox announcements
+ * (Hamburg) have no configured stations, so theirs carry none, and no map point.
+ */
 function generateTransit(rng: Rng, city: CityConfig): TransitAlert[] {
-  const stations = (city.dataSources.transit?.stations ?? []).map((s) => s.name);
+  const transit = city.dataSources.transit;
+  const stations = (transit?.provider === 'hafas' ? transit.stations ?? [] : []).map((s) => s.name);
   return TRANSIT_SCENARIOS.map((s, i) => {
-    const station = stations[(i * 2) % stations.length]!;
     const message = `${MARK} ${s.message}`;
+    if (stations.length === 0) {
+      return {
+        id: hashString(`${message}:`),
+        line: s.lines.join(', '),
+        lines: [...s.lines],
+        type: s.type,
+        severity: s.severity,
+        message,
+        detail: `${message}. Synthetische Meldung für die lokale Entwicklung; der Verkehr läuft normal.`,
+        station: '',
+        location: null,
+        affectedStops: [],
+      };
+    }
+    const station = stations[(i * 2) % stations.length]!;
     return {
       id: hashString(`${message}:${station}`),
       line: s.lines.join(', '),
@@ -1069,6 +1151,10 @@ function generateAreas(rng: Rng, now: Date, place: Place): { socialAtlas: Synthe
   const { north, south, east, west } = place.city.boundingBox;
   const { anchors } = place;
   const { deprivationCentres } = place.details;
+  const source = place.city.dataSources.socialAtlas;
+  const metrics = new Set(source ? SOCIAL_ATLAS_METRICS[source.provider] : []);
+  const withStatus = source !== undefined && SOCIAL_ATLAS_HAS_STATUS_INDEX[source.provider];
+  const yearly = place.city.dataSources.population !== undefined && place.city.dataSources.population.provider !== 'afstat-ewr-xlsx';
   const rows = 12;
   const cols = 15;
   const dLat = (north - south) / rows;
@@ -1105,6 +1191,7 @@ function generateAreas(rng: Rng, now: Date, place: Place): { socialAtlas: Synthe
       );
       const population = Math.round((800 + 11000 * Math.exp(-((r / 0.45) ** 2))) * cellKm2 * rng.float(0.85, 1.15));
       const statusIndex = deprivation < 0.25 ? 1 : deprivation < 0.45 ? 2 : deprivation < 0.65 ? 3 : 4;
+      const singleParent = round(18 + 30 * deprivation + rng.float(-3, 3), 1);
 
       social.push({
         type: 'Feature',
@@ -1114,12 +1201,13 @@ function generateAreas(rng: Rng, now: Date, place: Place): { socialAtlas: Synthe
           plrName,
           bezId,
           population,
-          statusIndex,
-          statusLabel: STATUS_LABELS[statusIndex]!,
-          unemployment: round(2 + 14 * deprivation, 1),
-          singleParent: round(18 + 30 * deprivation + rng.float(-3, 3), 1),
-          welfare: round(3 + 30 * deprivation, 1),
-          childPoverty: round(5 + 45 * deprivation, 1),
+          // Only the indicators and status index the city's source has
+          statusIndex: withStatus ? statusIndex : null,
+          statusLabel: withStatus ? STATUS_LABELS[statusIndex]! : null,
+          unemployment: metrics.has('unemployment') ? round(2 + 14 * deprivation, 1) : null,
+          singleParent: metrics.has('singleParent') ? singleParent : null,
+          welfare: metrics.has('welfare') ? round(3 + 30 * deprivation, 1) : null,
+          childPoverty: metrics.has('childPoverty') ? round(5 + 45 * deprivation, 1) : null,
         },
       });
 
@@ -1157,16 +1245,24 @@ function generateAreas(rng: Rng, now: Date, place: Place): { socialAtlas: Synthe
         workingAgePct: round(100 - elderlyPct - youthPct, 1),
         changeAbsolute: Math.round((total * changePct) / 100),
         changePct,
-        snapshotDate: populationSnapshotDate(now),
+        snapshotDate: populationSnapshotDate(now, yearly),
+        changePeriod: yearly ? 'year' : 'half-year',
       },
     },
   };
 }
 
-/** The latest half-year snapshot (30 June / 31 December) that would be published by now, ~3 months on. */
-function populationSnapshotDate(now: Date): string {
-  const cutoff = new Date(now.getTime() - 90 * DAY).toISOString().slice(0, 10);
+/**
+ * The latest snapshot that would be published by now: Berlin's half-year one
+ * (30 June / 31 December, ~3 months on), or the yearly one (31 December, ~6 months on).
+ */
+function populationSnapshotDate(now: Date, yearly: boolean): string {
   const year = now.getUTCFullYear();
+  if (yearly) {
+    const cutoff = new Date(now.getTime() - 180 * DAY).toISOString().slice(0, 10);
+    return [`${year - 1}-12-31`, `${year - 2}-12-31`].find((d) => d <= cutoff)!;
+  }
+  const cutoff = new Date(now.getTime() - 90 * DAY).toISOString().slice(0, 10);
   return [`${year}-06-30`, `${year - 1}-12-31`, `${year - 1}-06-30`].find((d) => d <= cutoff)!;
 }
 
@@ -1181,11 +1277,16 @@ const PATHOGENS = [
   { name: 'SARS-CoV-2', peak: 250_000 },
 ];
 
-function generateWastewater(rng: Rng, now: Date): WastewaterSummary {
+/**
+ * Berlin (`lageso`): LAGeSo's sample date, with SARS-CoV-2 from AMELAG dated
+ * on its own. An AMELAG city: every pathogen from AMELAG, about 12 days old.
+ */
+function generateWastewater(rng: Rng, now: Date, source: NonNullable<CityConfig['dataSources']['wastewater']>): WastewaterSummary {
   const today = local(now).date;
+  const lageso = source.provider === 'lageso';
   return {
-    sampleDate: shiftDate(today, -4),
-    plantCount: 3,
+    sampleDate: shiftDate(today, lageso ? -4 : -12),
+    plantCount: lageso ? 3 : source.sites.length,
     pathogens: PATHOGENS.map((p) => {
       const phase = rng.float(0, 2 * Math.PI);
       const history = Array.from({ length: 12 }, (_, week) =>
@@ -1200,7 +1301,7 @@ function generateWastewater(rng: Rng, now: Date): WastewaterSummary {
         level: computeLevel(value, Math.max(...history)),
         history,
         // AMELAG publishes SARS-CoV-2 about a week after Lageso's sample date
-        ...(p.name === 'SARS-CoV-2' ? { sampleDate: shiftDate(today, -9) } : {}),
+        ...(lageso && p.name === 'SARS-CoV-2' ? { sampleDate: shiftDate(today, -9) } : {}),
       };
     }),
   };
@@ -1217,14 +1318,23 @@ const BATHING_SITES: ReadonlyArray<Point & { place: string; district: string; wa
   { place: 'Orankesee', district: 'Lichtenberg', waterBody: 'Orankesee', lat: 52.548, lon: 13.495 },
 ];
 
-function generateBathing(rng: Rng, now: Date): BathingSpot[] {
+/**
+ * Berlin's lakes, or for another city a made-up spot near each of its
+ * anchors, without a Bezirk or water body, as Hamburg's WFS gives none.
+ */
+function bathingSites(place: Place): ReadonlyArray<Point & { place: string; district: string; waterBody: string }> {
+  if (place.city.id === 'berlin') return BATHING_SITES;
+  return place.anchors.slice(0, 6).map((a) => ({ place: a.name, district: '', waterBody: '', lat: a.lat, lon: a.lon }));
+}
+
+function generateBathing(rng: Rng, now: Date, place: Place): BathingSpot[] {
   const today = local(now).date;
   const monthDay = today.slice(5);
   // The same season as ingest-bathing: 15 May to 15 September
   const inSeason = monthDay >= '05-15' && monthDay <= '09-15';
   const year = Number(today.slice(0, 4));
   const lastSample = inSeason ? today : `${monthDay > '09-15' ? year : year - 1}-09-10`;
-  return BATHING_SITES.map((s, i): BathingSpot => {
+  return bathingSites(place).map((s, i): BathingSpot => {
     const quality: BathingSpot['quality'] = i === 3 ? 'warning' : 'good';
     return {
       id: `bath-synthetic-${i + 1}`,
@@ -1239,7 +1349,8 @@ function generateBathing(rng: Rng, now: Date): BathingSpot[] {
       quality,
       algae: quality === 'warning' ? 'Blaualgen in geringer Menge (synthetisch)' : null,
       advisory: quality === 'warning' ? 'Synthetischer Hinweis: Baden nicht empfohlen.' : null,
-      classification: rng.pick(['ausgezeichnet', 'gut']),
+      // Hamburg's EU class codes are not documented, so production leaves its class out
+      classification: place.city.id === 'berlin' ? rng.pick(['ausgezeichnet', 'gut']) : null,
       detailUrl: `${EXAMPLE}/bathing/${i + 1}`,
       inSeason,
     };
@@ -1321,6 +1432,61 @@ function generatePollen(rng: Rng, now: Date, place: Place): PollenForecast {
   return { region: place.details.pollenRegion, updatedAt: `${today} 11:00 Uhr`, pollen };
 }
 
+/**
+ * The configured LHP gauges, mostly without flood; now and then the upstream
+ * gauge at Meldestufe 1 with a made-up pre-warning for the city.
+ */
+function generateFloodStatus(rng: Rng, now: Date, city: CityConfig): FloodStatus {
+  const stations = city.dataSources.floodStatus?.stations ?? [];
+  const rising = rng.chance(0.3);
+  const measured = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000);
+  const measuredAt = `${localIso(measured)}:00${berlinUtcOffset(`${local(measured).date} 12:00:00`)}`;
+  return {
+    gauges: stations.map((s) => {
+      const floodClass: FloodClass = rising && s.upstream ? 1 : 0;
+      return {
+        id: s.id,
+        name: s.name,
+        waterBody: s.waterBody,
+        upstream: s.upstream ?? false,
+        floodClass,
+        stateLabel: floodClass === 0 ? 'Keine Meldestufe' : `Meldestufe ${floodClass}`,
+        measuredAt,
+        url: `${EXAMPLE}/pegel/${s.id}`,
+      };
+    }),
+    alerts: rising
+      ? [{
+          id: 'SYN_1',
+          headline: `${MARK} Vorwarnung: steigende Wasserstände`,
+          area: city.name,
+          level: 2,
+          levelName: 'Vorwarnung',
+          url: `${EXAMPLE}/hochwasser`,
+        }]
+      : [],
+    updated: new Date(now.getTime() - 60_000).toISOString(),
+  };
+}
+
+/** A few lifts and more escalators out of service at made-up stations near the city's anchors. */
+function generateLiftOutages(rng: Rng, now: Date, place: Place): LiftOutageData {
+  const outages: LiftOutage[] = [];
+  const stations = place.anchors.slice(0, 8);
+  stations.forEach((a, i) => {
+    const station = `Haltestelle ${a.name} (synthetisch)`;
+    const at = near(rng, a, 0.004);
+    const nr = String(i + 1).padStart(3, '0');
+    if (i < 3) outages.push({ id: `${nr}-01`, kind: 'lift', station, unit: 'Aufzug 01', ...at, info: null });
+    const escalators = rng.int(0, 2);
+    for (let k = 1; k <= escalators; k++) {
+      outages.push({ id: `${nr}-5${k}`, kind: 'escalator', station, unit: `Fahrtreppe 5${k}`, ...at, info: null });
+    }
+  });
+  const updated = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000);
+  return { outages, updated: `${localIso(updated)}:00${berlinUtcOffset(`${local(updated).date} 12:00:00`)}` };
+}
+
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {
   const { anchors } = place;
   // Berlin's inner Bezirke, where most DNMS sensors are
@@ -1355,9 +1521,11 @@ function generateCouncilMeetings(rng: Rng, now: Date, place: Place): CouncilMeet
   // Berlin names one OParl server per district; Köln and München file a meeting
   // under a district by its name, so the anchors stand in for theirs
   const cfg = city.dataSources.councilMeetings;
+  // Hamburg's source lists the Bürgerschaft only, no district bodies
+  const hasDistrictSource = Boolean(cfg?.bvv || cfg?.oparlBody || cfg?.muenchenRis);
   const districtNames = cfg?.bvv
     ? cfg.bvv.map((b) => b.district)
-    : place.anchors.slice(0, 4).map((a) => a.name);
+    : hasDistrictSource ? place.anchors.slice(0, 4).map((a) => a.name) : [];
   const bvv = districtNames.map((district, i): CouncilMeeting => {
     const date = shiftDate(today, 1 + ((i * 3) % 13));
     const hour = rng.int(16, 18);
@@ -1391,13 +1559,16 @@ function generateCouncilMeetings(rng: Rng, now: Date, place: Place): CouncilMeet
 const PARTIES = ['CDU', 'SPD', 'Grüne', 'Die Linke', 'AfD', 'FDP', 'BSW'];
 
 /**
- * The levels production fills for the city (POLITICAL), all named by
- * the Bezirk names the map's district boundaries carry; Bundestag
- * constituencies put the city in front ("Berlin-Mitte", "Hamburg-Altona").
+ * The levels production fills for the city (politicalLevels). A city-state's
+ * are named by the Bezirk names the map's district boundaries carry; Bundestag
+ * constituencies put the city in front ("Berlin-Mitte", "Hamburg-Altona"). A
+ * city inside a state's are named by the constituencies PARLIAMENT_CONFIG
+ * lists for it and the areas of its hand-kept tables.
  */
 function generatePolitical(rng: Rng, place: Place): Partial<Record<PoliticalLevel, PoliticalDistrict[]>> {
-  const levels = new Set(politicalLevels(place.city.id));
   const { districts, city } = place;
+  const levels = new Set(politicalLevels(city));
+  const config = PARLIAMENT_CONFIG[city.id]!;
   let count = 0;
   const person = (party: string, role: string, constituency?: string): Representative => {
     count++;
@@ -1413,23 +1584,44 @@ function generatePolitical(rng: Rng, place: Place): Partial<Record<PoliticalLeve
 
   const political: Partial<Record<PoliticalLevel, PoliticalDistrict[]>> = {};
   if (levels.has('bezirke')) {
-    political.bezirke = districts.map((d): PoliticalDistrict => ({
-      id: `bm-${slug(d.name)}`,
-      name: d.name,
+    const areas = districts.length > 0 ? districts.map((d) => d.name) : handKeptAreas('bezirke', city.id);
+    political.bezirke = areas.map((name): PoliticalDistrict => ({
+      id: `bm-${slug(name)}`,
+      name,
       level: 'bezirk',
       representatives: [person(rng.pick(PARTIES.slice(0, 4)), 'Bezirksbürgermeister:in')],
     }));
   }
+  if (levels.has('mayor')) {
+    political.mayor = handKeptAreas('mayor', city.id).map((name): PoliticalDistrict => ({
+      id: `ob-${slug(name)}`,
+      name,
+      level: 'stadt',
+      representatives: [person(rng.pick(PARTIES.slice(0, 4)), 'Oberbürgermeister:in')],
+    }));
+  }
   if (levels.has('bundestag')) {
-    political.bundestag = districts.map((d): PoliticalDistrict => {
-      const name = d.name.startsWith(`${city.name}-`) ? d.name : `${city.name}-${d.name}`;
-      return { id: `bundestag-${slug(name)}`, name, level: 'bundestag', representatives: [person(rng.pick(PARTIES), 'MdB', name)] };
-    });
+    const names = config.constituencies?.bundestag
+      ?? districts.map((d) => (d.name.startsWith(`${city.name}-`) ? d.name : `${city.name}-${d.name}`));
+    political.bundestag = names.map((name): PoliticalDistrict => (
+      { id: `bundestag-${slug(name)}`, name, level: 'bundestag', representatives: [person(rng.pick(PARTIES), 'MdB', name)] }
+    ));
   }
   if (!levels.has('state') && !levels.has('state-bezirke')) return political;
-  const role = POLITICAL[city.id]!.stateRole;
-  const stateReps = districts.map((d) => [1, 2].map((n) => person(rng.pick(PARTIES), role, `${d.name} ${n}`)));
-  if (levels.has('state')) {
+  const role = config.state.role;
+  // A city inside a state: one member per constituency of the city and one list member
+  // who stood there; a city-state: two numbered constituencies per Bezirk.
+  const stateReps = config.constituencies
+    ? config.constituencies.state.map((c) => [person(rng.pick(PARTIES), role, c), person(rng.pick(PARTIES), role, c)])
+    : districts.map((d) => [1, 2].map((n) => person(rng.pick(PARTIES), role, `${d.name} ${n}`)));
+  if (config.constituencies && levels.has('state')) {
+    political.state = config.constituencies.state.map((name, i): PoliticalDistrict => ({
+      id: `state-${slug(name)}`,
+      name,
+      level: 'landesparlament',
+      representatives: stateReps[i]!,
+    }));
+  } else if (levels.has('state')) {
     political.state = stateReps.flat().map((rep): PoliticalDistrict => ({
       id: `state-${slug(rep.constituency!)}`,
       name: rep.constituency!,
@@ -1467,22 +1659,25 @@ const CITY_DETAILS: Readonly<Record<string, CityDetails>> = {
     roads: ['A1', 'A7', 'A24', 'A255', 'B4', 'B5', 'B75'],
     pollenRegion: 'Geest, Schleswig-Holstein und Hamburg',
     gauges: HAMBURG_GAUGE_SITES,
-    deprivationCentres: [],
+    // Made-up hot spots for the synthetic indices
+    deprivationCentres: [{ lat: 53.54, lon: 10.11 }, { lat: 53.5, lon: 10.0 }, { lat: 53.61, lon: 10.06 }],
   },
   koeln: {
-    districts: [],
+    districts: KOELN_DISTRICTS,
     phonePrefix: '0221',
     roads: ['A1', 'A3', 'A4', 'A57', 'A59', 'B9', 'B55'],
     pollenRegion: 'Rhein.-Westfäl. Tiefland',
     gauges: { 'Köln': { lat: 50.9369, lon: 6.9628, mw: 300 } },
-    deprivationCentres: [],
+    // Made-up hot spots for the synthetic indices
+    deprivationCentres: [{ lat: 51.03, lon: 6.9 }, { lat: 50.94, lon: 7.01 }, { lat: 50.86, lon: 7.06 }],
   },
   muenchen: {
-    districts: [],
+    districts: MUENCHEN_DISTRICTS,
     phonePrefix: '089',
     roads: ['A8', 'A9', 'A94', 'A95', 'A96', 'A99', 'B2R'],
     pollenRegion: 'Allgäu/Oberbayern/Bay. Wald',
     gauges: {},
-    deprivationCentres: [],
+    // Made-up hot spots for the synthetic indices
+    deprivationCentres: [{ lat: 48.215, lon: 11.54 }, { lat: 48.1, lon: 11.65 }, { lat: 48.19, lon: 11.57 }],
   },
 };

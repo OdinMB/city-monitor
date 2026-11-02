@@ -26,18 +26,20 @@ import { createAppointmentsRouter } from './routes/appointments.js';
 import { createWaterLevelsRouter } from './routes/water-levels.js';
 import { createBudgetRouter } from './routes/budget.js';
 import { createBathingRouter } from './routes/bathing.js';
+import { createLiftOutagesRouter } from './routes/lift-outages.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
 import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createPopulationRouter } from './routes/population.js';
 import { createFeuerwehrRouter } from './routes/feuerwehr.js';
 import { createPollenRouter } from './routes/pollen.js';
+import { createFloodStatusRouter } from './routes/flood-status.js';
 import { createNoiseSensorsRouter } from './routes/noise-sensors.js';
 import { createCouncilMeetingsRouter } from './routes/council-meetings.js';
 import { createBootstrapRouter } from './routes/bootstrap.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
-import { createTransitIngestion } from './cron/ingest-transit.js';
+import { createTransitIngestion, ingestsTransit } from './cron/ingest-transit.js';
 import { createEventsIngestion } from './cron/ingest-events.js';
 import { createSafetyIngestion } from './cron/ingest-safety.js';
 import { createNinaIngestion } from './cron/ingest-nina.js';
@@ -53,11 +55,13 @@ import { createWaterLevelIngestion } from './cron/ingest-water-levels.js';
 import { createBudgetIngestion } from './cron/ingest-budget.js';
 import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
+import { createLiftOutageIngestion } from './cron/ingest-lift-outages.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { createPopulationIngestion } from './cron/ingest-population.js';
 import { createFeuerwehrIngestion } from './cron/ingest-feuerwehr.js';
 import { createPollenIngestion } from './cron/ingest-pollen.js';
+import { createFloodStatusIngestion } from './cron/ingest-flood-status.js';
 import { createNoiseSensorIngestion } from './cron/ingest-noise-sensors.js';
 import { createCouncilMeetingIngestion } from './cron/ingest-council-meetings.js';
 import { initGeocodeDb } from './lib/geocode.js';
@@ -71,10 +75,6 @@ import type { CityConfig } from '@city-monitor/shared';
  * also get no freshness check and no startup run then.
  */
 export const BERLIN_ONLY_JOBS: ReadonlySet<string> = new Set([
-  'ingest-bathing',
-  'ingest-wastewater',
-  'ingest-labor-market',
-  'ingest-population',
   'ingest-feuerwehr',
 ]);
 
@@ -162,7 +162,7 @@ export async function createApp(options?: {
 
     // Unified snapshots table (with type filter — values are concrete data source names)
     { jobName: 'ingest-weather',      tableName: 'snapshots', maxAgeSeconds: 3600,    filter: { column: 'type', value: 'open-meteo' }, serves: (c) => c.dataSources.weather.provider === 'brightsky' },
-    { jobName: 'ingest-transit',      tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'vbb-disruptions' }, serves: (c) => !!c.dataSources.transit?.stations?.length },
+    { jobName: 'ingest-transit',      tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'vbb-disruptions' }, serves: (c) => ingestsTransit(c) },
     { jobName: 'ingest-nina',         tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'bbk-nina' }, serves: (c) => inGermany(c) && !!c.dataSources.nina },
     { jobName: 'ingest-pharmacies',   tableName: 'snapshots', maxAgeSeconds: 21600,   filter: { column: 'type', value: 'aponet' }, serves: inGermany },
     { jobName: 'ingest-traffic',      tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'tomtom-traffic' }, serves: () => true },
@@ -172,14 +172,17 @@ export async function createApp(options?: {
     { jobName: 'ingest-aeds',         tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'osm-aeds' }, serves: inGermany },
     { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' }, serves: (c) => !!c.dataSources.socialAtlas },
     { jobName: 'ingest-water-levels', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'pegelonline' }, serves: (c) => !!c.dataSources.waterLevels?.stations.length },
-    { jobName: 'ingest-budget',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'berlin-haushalt' }, serves: (c) => !!c.dataSources.budget },
+    { jobName: 'ingest-flood-status', tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'lhp-flood' }, serves: (c) => !!c.dataSources.floodStatus?.stations.length },
+    { jobName: 'ingest-budget',       tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'berlin-haushalt' }, serves: (c) => !!c.dataSources.budget },
     // No `serves`: table-wide, so a fresh row of any city skips the startup run.
     // Its Firecrawl calls are paid; a city added without rows must not add one.
     { jobName: 'ingest-appointments', tableName: 'snapshots', maxAgeSeconds: 43200,   filter: { column: 'type', value: 'service-berlin' } },
-    { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' }, serves: inBerlin },
-    { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' }, serves: inBerlin },
-    { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' }, serves: inBerlin },
-    { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: inBerlin },
+    // The type is lageso-bathing for every provider, as viz-roadworks is for every roadworks feed
+    { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' }, serves: (c) => !!c.dataSources.bathing },
+    { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => !!c.dataSources.liftOutages },
+    { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' }, serves: (c) => !!c.dataSources.wastewater },
+    { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' }, serves: (c) => !!c.dataSources.laborMarket },
+    { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: (c) => !!c.dataSources.population },
     { jobName: 'ingest-feuerwehr',    tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'bf-feuerwehr' }, serves: inBerlin },
     { jobName: 'ingest-pollen',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'dwd-pollen' }, serves: (c) => !!c.dataSources.pollen },
     { jobName: 'ingest-noise-sensors', tableName: 'snapshots', maxAgeSeconds: 1800,   filter: { column: 'type', value: 'sc-dnms' }, serves: (c) => !!c.dataSources.noiseSensors },
@@ -213,9 +216,11 @@ export async function createApp(options?: {
   const ingestAeds = createAedIngestion(cache, db);
   const ingestSocialAtlas = createSocialAtlasIngestion(cache, db);
   const ingestWaterLevels = createWaterLevelIngestion(cache, db);
+  const ingestFloodStatus = createFloodStatusIngestion(cache, db);
   const ingestBudget = createBudgetIngestion(cache, db);
   const ingestAppointments = createAppointmentIngestion(cache, db);
   const ingestBathing = createBathingIngestion(cache, db);
+  const ingestLiftOutages = createLiftOutageIngestion(cache, db);
   const ingestWastewater = createWastewaterIngestion(cache, db);
   const ingestLaborMarket = createLaborMarketIngestion(cache, db);
   const ingestPopulation = createPopulationIngestion(cache, db);
@@ -246,9 +251,13 @@ export async function createApp(options?: {
     { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: s('ingest-aeds') },
     { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },
     { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: s('ingest-water-levels') },
+    // LHP's terms ask for a refresh at least every 10 minutes
+    { name: 'ingest-flood-status', schedule: '*/5 * * * *', handler: ingestFloodStatus, runOnStart: s('ingest-flood-status') },
     { name: 'ingest-budget', schedule: '0 6 * * *', handler: ingestBudget, runOnStart: s('ingest-budget') },
     { name: 'ingest-appointments', schedule: '0 6,18 * * *', handler: ingestAppointments, runOnStart: s('ingest-appointments') },
     { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing, runOnStart: s('ingest-bathing') },
+    // KVB updates its outage lists about every 15 minutes
+    { name: 'ingest-lift-outages', schedule: '*/15 * * * *', handler: ingestLiftOutages, runOnStart: s('ingest-lift-outages') },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
     { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
@@ -302,10 +311,12 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(43200), createAedsRouter(cache, db));
   app.use('/api', cacheFor(43200), createSocialAtlasRouter(cache, db));
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
+  app.use('/api', cacheFor(120), createFloodStatusRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache, db));
   app.use('/api', cacheFor(3600), createBudgetRouter(cache, db));
   app.use('/api', cacheFor(3600), createAppointmentsRouter(cache, db));
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
+  app.use('/api', cacheFor(300), createLiftOutagesRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
   app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));

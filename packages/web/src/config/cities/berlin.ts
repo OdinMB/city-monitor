@@ -19,12 +19,13 @@ export const berlin: WebCityConfig = {
     ],
   },
   theme: { accent: '#E2001A' },
-  // Every feature there is: Berlin is the city with every source.
+  // Every feature there is but `mayor`, which only a city inside a state has:
+  // Berlin is the city with every source.
   features: [
     'news', 'police', 'nina', 'pollen', 'waterLevels', 'transit', 'events', 'appointments',
-    'budget', 'roadworks', 'socialAtlas', 'noiseSensors', 'councilMeetings', 'pharmacies', 'aeds',
+    'budget', 'roadworks', 'socialAtlas', 'laborMarket', 'wastewater', 'noiseSensors', 'councilMeetings', 'pharmacies', 'aeds',
     'political', 'districtMayors', 'stateByDistrict',
-    'bathing', 'wastewater', 'laborMarket', 'population', 'feuerwehr',
-    'crisis', 'rentMap', 'noiseMap', 'noiseTotal',
+    'bathing', 'population', 'feuerwehr',
+    'crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap', 'bundestagByDistrict',
   ],
 };
