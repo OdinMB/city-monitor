@@ -7,7 +7,7 @@ import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
-import { getRentMapLegend } from '../map/constants.js';
+import { getNoiseWmsMinZoom, getRentMapLegend } from '../map/constants.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -289,6 +289,9 @@ export function DataLayerToggles() {
                   isActive={(key) => noise === key}
                   onSelect={(key) => { if (available.noiseLive || noise !== key) setNoiseLayer(key); }}
                   label={(key) => t(`sidebar.noise.${key}`)} />
+                {noise !== null && getNoiseWmsMinZoom(city.id) !== undefined && (
+                  <p className="ps-9 pe-2 py-1 text-[12px] text-muted">{t('sidebar.noise.zoomIn')}</p>
+                )}
               </>
             );
           } else if (layer === 'social' && active) {

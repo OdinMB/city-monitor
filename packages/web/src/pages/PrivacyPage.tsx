@@ -41,9 +41,9 @@ const SERVICES: Service[] = [
   },
   {
     name: 'City geodata services',
-    hosts: ['gdi.berlin.de', 'geodienste.hamburg.de'],
+    hosts: ['gdi.berlin.de', 'geodienste.hamburg.de', 'www.wms.nrw.de'],
     purpose: 'Noise and rent map layers',
-    data: "Only while the noise map or the rent map layer is switched on, your browser loads those map images directly from the city's official geodata service, exposing your IP address to it.",
+    data: "Only while the noise map or the rent map layer is switched on, your browser loads those map images directly from the official geodata service of the city or its state, exposing your IP address to it.",
   },
 ];
 

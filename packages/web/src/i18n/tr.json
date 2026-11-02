@@ -534,7 +534,8 @@
       "road": "Karayolu Trafiği",
       "rail": "Demiryolu Trafiği",
       "air": "Hava Trafiği",
-      "live": "Canlı Sensörler"
+      "live": "Canlı Sensörler",
+      "zoomIn": "Gürültü haritasını görmek için sokak düzeyine yakınlaştırın."
     },
     "water": {
       "levels": "Su Seviyeleri",

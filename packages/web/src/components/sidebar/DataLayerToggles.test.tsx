@@ -206,4 +206,16 @@ describe('DataLayerToggles per city', () => {
     renderFor(hamburg);
     expect(buttonWith(i18n.t('sidebar.noise.road')).getAttribute('aria-pressed')).toBe('true');
   });
+
+  it('asks to zoom in where the noise map draws only at street level', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['noise']) });
+    // NRW's noise map, Köln's, is empty further out than zoom 13.
+    renderFor(koeln);
+    expect(['road', 'rail', 'air'].every((key) => shown(i18n.t(`sidebar.noise.${key}`)))).toBe(true);
+    expect(shown(i18n.t('sidebar.noise.zoomIn'))).toBe(true);
+    cleanup();
+
+    renderFor(hamburg);
+    expect(shown(i18n.t('sidebar.noise.zoomIn'))).toBe(false);
+  });
 });
