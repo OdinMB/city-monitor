@@ -59,6 +59,15 @@ describe('City config', () => {
     expect(config!.dataSources.transit).toBeUndefined();
   });
 
+  it('takes council meetings from the Bürgerschaft calendar alone, as no Bezirksversammlung source answers', () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+    expect(getCityConfig('hamburg')!.dataSources.councilMeetings).toEqual({
+      hamburgBuergerschaft: {
+        calendarUrl: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine/1042880!search',
+      },
+    });
+  });
+
   it('supports multiple active cities', () => {
     vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
     const cities = getActiveCities();

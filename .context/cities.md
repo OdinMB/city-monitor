@@ -17,7 +17,7 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
 
 ## Hamburg
 
-- **Has:** 3 news feeds (NDR, MOPO, Feuerwehr Hamburg) with AI briefing, police (Polizei Hamburg on presseportal), Elbe gauges, roadworks (Bauweiser OGC API), political data (Bundestag, Bürgerschaft), noise map, crisis tile.
+- **Has:** 3 news feeds (NDR, MOPO, Feuerwehr Hamburg) with AI briefing, police (Polizei Hamburg on presseportal), Elbe gauges, roadworks (Bauweiser OGC API), council meetings (Bürgerschaft committees and plenary, from its website calendar), political data (Bundestag, Bürgerschaft), noise map, crisis tile.
 - **Looked for, not found or ruled out:**
   - News: Hamburger Abendblatt (feed terms forbid passing items on; removed), hamburg.de (feed gone), WELT (AI-input ban), ZEIT, taz Nord, t-online (blanket automated-access bans).
   - Transit: HVV's only source is the Geofox GTI API, which needs a key and restricts third-party use; gtfs.de has no Hochbahn real-time yet.
@@ -26,7 +26,7 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
   - Appointments: possible only through Firecrawl's paid plan.
   - Two Elbe gauges (Bunthaus, Seemannshöft) have no characteristic values, so they show their level without a state. St. Pauli is tidal and reads "very high" often.
   - Crisis tile: the child-protection line is labelled generically.
-- **Not looked for yet:** council meetings (Bürgerschaft, Bezirksversammlungen).
+  - Council meetings: the Bürgerschaft has no OParl, RSS or iCal feed (only its website calendar, now wired); the Parlamentsdatenbank and Transparenzportal have no upcoming dates. The seven Bezirksversammlungen' ALLRIS (`sitzungsdienst-<bezirk>.hamburg.de`) is in no OParl list, and its hosts refused our test machine, so an OParl endpoint is unconfirmed either way; re-check from a German IP ([council-meetings.md](council-meetings.md)).
 
 ## Köln
 

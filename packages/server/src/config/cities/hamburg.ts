@@ -82,6 +82,14 @@ export const hamburg: CityConfig = {
       regionId: 10,         // Schleswig-Holstein und Hamburg
       partregionId: 12,     // Geest, Schleswig-Holstein und Hamburg
     },
+    // The Bürgerschaft's committee and plenary sessions from its website calendar
+    // (official public records, no licence stated). The Bezirksversammlungen' ALLRIS
+    // (sitzungsdienst-<bezirk>.hamburg.de) lists no OParl endpoint: .context/council-meetings.md.
+    councilMeetings: {
+      hamburgBuergerschaft: {
+        calendarUrl: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine/1042880!search',
+      },
+    },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

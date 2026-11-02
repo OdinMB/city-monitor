@@ -1448,9 +1448,11 @@ function generateCouncilMeetings(rng: Rng, now: Date, place: Place): CouncilMeet
   // Berlin names one OParl server per district; Köln and München file a meeting
   // under a district by its name, so the anchors stand in for theirs
   const cfg = city.dataSources.councilMeetings;
+  // Hamburg's source lists the Bürgerschaft only, no district bodies
+  const hasDistrictSource = Boolean(cfg?.bvv || cfg?.oparlBody || cfg?.muenchenRis);
   const districtNames = cfg?.bvv
     ? cfg.bvv.map((b) => b.district)
-    : place.anchors.slice(0, 4).map((a) => a.name);
+    : hasDistrictSource ? place.anchors.slice(0, 4).map((a) => a.name) : [];
   const bvv = districtNames.map((district, i): CouncilMeeting => {
     const date = shiftDate(today, 1 + ((i * 3) % 13));
     const hour = rng.int(16, 18);
