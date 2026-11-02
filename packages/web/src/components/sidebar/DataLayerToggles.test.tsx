@@ -133,9 +133,10 @@ describe('DataLayerToggles per city', () => {
   it('lists a layer\'s sub-layers only when the city has more than one', () => {
     useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic', 'water', 'noise', 'political', 'news']) });
     renderFor(hamburg);
-    // Hamburg has only the river gauges and the Bundestag view.
-    expect(shown(i18n.t('sidebar.water.levels'))).toBe(false);
+    // Hamburg has only the Bundestag view; its water layer has gauges and bathing spots.
     expect(shown(i18n.t('sidebar.political.bundestag'))).toBe(false);
+    expect(shown(i18n.t('sidebar.water.levels'))).toBe(true);
+    expect(shown(i18n.t('sidebar.water.bathing'))).toBe(true);
     // It has traffic incidents and roadworks, news and police, and three noise maps without
     // the all-sources one or live sensors.
     expect(shown(i18n.t('sidebar.traffic.incidents'))).toBe(true);
@@ -161,6 +162,15 @@ describe('DataLayerToggles per city', () => {
 
     renderFor({ ...hamburg, features: hamburg.features.filter((f) => f !== 'pharmacies' && f !== 'aeds') });
     expect(shown(i18n.t('sidebar.layers.emergencies'))).toBe(false);
+  });
+
+  it('shows each city\'s own rent-map legend under its only social map', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['social']) });
+    renderFor(hamburg);
+    expect(shown(i18n.t('sidebar.social.rent'))).toBe(false);
+    expect(shown(i18n.t('sidebar.rentLegend.normal'))).toBe(true);
+    expect(shown(i18n.t('sidebar.rentLegend.good'))).toBe(true);
+    expect(shown(i18n.t('sidebar.rentLegend.simple'))).toBe(false);
   });
 
   it('marks the noise map shown where the selected one is missing', () => {

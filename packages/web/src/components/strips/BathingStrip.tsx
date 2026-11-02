@@ -90,7 +90,7 @@ export function BathingStrip({ expanded = true }: { expanded?: boolean }) {
       warnCount: data.filter((s) => s.quality === 'warning').length,
       poorCount: data.filter((s) => s.quality === 'poor').length,
       latestMeasuredAt: latestDate,
-      offSeason: !data[0].inSeason,
+      offSeason: data.every((s) => !s.inSeason),
     };
   }, [data]);
 

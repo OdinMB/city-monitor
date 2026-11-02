@@ -241,6 +241,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Maps',
     sources: [
       { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/zero-2-0.' },
+      { name: 'Hamburger Wohnlagenverzeichnis (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WMS_Wohnlagen?SERVICE=WMS&REQUEST=GetCapabilities', description: 'Residential location (normal or good Wohnlage) of each address, from the Mietenspiegel, as WMS overlay. Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.' },
     ],
   },
   {
@@ -269,6 +270,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Water',
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time tidal water levels from Elbe gauges (St. Pauli, Bunthaus, Seemannshöft).' },
+      { name: 'Badegewässer Hamburg (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WFS_Badegewaesser?SERVICE=WFS&REQUEST=GetCapabilities', description: 'The 17 EU bathing spots with their latest sample: water temperature, visibility, algae and the health authority\'s remarks. City Monitor rates each spot from those remarks (a bathing ban as poor, a warning or heavy algae as a warning). Source: Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, dl-de/by-2-0.' },
     ],
   },
 ];
@@ -295,6 +297,7 @@ const KOELN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'Baustellen Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/baustellen-koeln', description: 'Permitted roadworks on city streets — road, utility, sewer, traffic-light, bridge, track and emergency works. The dates are the permit period, which the works need not fill. Source: Stadt Köln, dl-de/zero-2-0.' },
+      { name: 'KVB Open Data (Aufzüge, Fahrtreppen)', url: 'https://www.kvb.koeln/service/open_data.html', description: 'Lifts and escalators out of service at KVB stations, updated about every 15 minutes. Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.' },
     ],
   },
   {

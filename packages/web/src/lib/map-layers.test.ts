@@ -37,10 +37,10 @@ describe('cityLayers', () => {
 
   it('leaves out what Hamburg has no source for', () => {
     const hh = cityLayers(hamburg);
-    expect(hh.layers.has('social')).toBe(false);
+    expect(hh.social).toEqual(['rent']);
     expect(hh.layers.has('population')).toBe(false);
     expect(hh.traffic).toEqual(['incidents', 'roadworks']);
-    expect(hh.water).toEqual(['levels']);
+    expect(hh.water).toEqual(['levels', 'bathing']);
     expect(hh.noise).toEqual(['road', 'rail', 'air']);
     expect(hh.noiseLive).toBe(false);
     expect(hh.political).toEqual(['bundestag']);

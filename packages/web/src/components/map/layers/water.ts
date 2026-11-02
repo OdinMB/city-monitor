@@ -162,9 +162,21 @@ export function updateBathingMarkers(map: maplibregl.Map, spots: BathingSpot[], 
   });
 }
 
+/** Whose page a spot's detail link opens: Berlin's LAGeSo pages sit on berlin.de, Hamburg's on hamburg.de. */
+export function bathingDetailSource(url: string): string {
+  let host: string;
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return '';
+  }
+  if (host.endsWith('berlin.de') || host.endsWith('lageso.de')) return 'LAGeSo';
+  return host.replace(/^www\./, '');
+}
+
 /**
  * Popup markup for a bathing spot, from its feature properties. Names, algae
- * and advisory notes come from LAGeSo, in German (`sourceText`), and the words
+ * and advisory notes come from the health authority (LAGeSo, Hamburg), in German (`sourceText`), and the words
  * from the current UI language; all of it is escaped (see `escapeHtml`).
  */
 export function bathingPopupHtml(props: Record<string, unknown>): string {
@@ -185,8 +197,12 @@ export function bathingPopupHtml(props: Record<string, unknown>): string {
     ? `<div style="font-size:11px;opacity:0.7;margin-top:2px">${sourceText(props.advisory)}</div>` : '';
   const detailUrl = String(props.detailUrl ?? '');
   const detailLink = detailUrl.startsWith('https://')
-    ? `<a href="${escapeHtml(detailUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">${t('mapPopup.details')} (LAGeSo) ↗</a>`
+    ? `<a href="${escapeHtml(detailUrl)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">${t('mapPopup.details')} (${escapeHtml(bathingDetailSource(detailUrl))}) ↗</a>`
     : '';
+  const place = [props.waterBody, props.district]
+    .filter((v) => v != null && v !== '' && v !== 'null')
+    .map((v) => sourceText(v))
+    .join(' · ');
   const measuredDate = props.measuredAt && props.measuredAt !== 'null'
     ? `<div style="font-size:11px;opacity:0.5;margin-bottom:4px">${t('panel.bathing.measuredAt', { date: String(props.measuredAt) })}</div>` : '';
   const euClass = props.classification && props.classification !== 'null'
@@ -194,7 +210,7 @@ export function bathingPopupHtml(props: Record<string, unknown>): string {
   return `<div style="font-size:13px;max-width:300px">
       <div style="font-weight:600;margin-bottom:2px">${sourceText(props.name)}${seasonBadge}</div>
       ${measuredDate}
-      <div style="font-size:12px;opacity:0.7">${sourceText(props.waterBody)} · ${sourceText(props.district)}</div>
+      ${place ? `<div style="font-size:12px;opacity:0.7">${place}</div>` : ''}
       <div style="font-size:12px;margin-top:4px">${t('mapPopup.bathing.quality')}: <strong style="color:${qColor}">${escapeHtml(qLabel)}</strong>${euClass}</div>
       ${tempLine}${visLine}${algaeLine}${advisoryLine}
       ${detailLink}

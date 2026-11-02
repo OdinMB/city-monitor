@@ -377,7 +377,7 @@ export function CityMap() {
         updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
         setWeatherOverlay(map, weatherActiveRef.current);
         setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
-        setRentMapOverlay(map, rentMapActiveRef.current);
+        setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
 
         // Ensure district labels render below all marker icons
         ensureDistrictLabelsBelow(map);
@@ -465,7 +465,7 @@ export function CityMap() {
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
       setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
-      setRentMapOverlay(map, rentMapActiveRef.current);
+      setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
       ensureDistrictLabelsBelow(map);
     });
   }, [isDark, city.id]);
@@ -491,18 +491,18 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [weatherActive]);
 
-  // Show/hide Berlin Wohnlagenkarte (rent map) overlay when layer is toggled
+  // Show/hide the city's Wohnlagenkarte (rent map) overlay when layer is toggled
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => setRentMapOverlay(map, rentMapActive);
+    const apply = () => setRentMapOverlay(map, rentMapActive, city.id);
     if (map.isStyleLoaded()) {
       apply();
       return;
     }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [rentMapActive]);
+  }, [rentMapActive, city.id]);
 
   // Show/hide noise WMS overlay when layer or sub-layer changes
   useEffect(() => {

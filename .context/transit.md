@@ -59,3 +59,7 @@ Unified `snapshots` table, type `vbb-disruptions` — data JSONB stores the full
 ### Hamburg
 
 Hamburg transit is not yet supported. The HVV transport.rest API (`v6.hvv.transport.rest`) is deprecated and offline as of March 2026. No free alternative has been identified.
+
+### Köln
+
+Köln has no transit alerts: KVB's line disruptions exist only as an unlicensed web page, and gtfs.de carries no KVB alerts. KVB does publish lift and escalator outages as open data; they have their own Köln tile, not `TransitAlert`s ([lift-outages.md](lift-outages.md)).

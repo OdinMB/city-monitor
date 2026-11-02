@@ -34,6 +34,7 @@ export const FEED_TIMINGS = {
   transit:         { job: 15 * MIN,  refetch: 5 * MIN,  httpMaxAge: 2 * MIN },  // ingest-transit */15
   waterLevels:     { job: 15 * MIN,  refetch: 15 * MIN, httpMaxAge: 5 * MIN },  // ingest-water-levels */15
   floodStatus:     { job: 5 * MIN,   refetch: 3 * MIN,  httpMaxAge: 2 * MIN },  // ingest-flood-status */5
+  liftOutages:     { job: 15 * MIN,  refetch: 5 * MIN,  httpMaxAge: 5 * MIN },  // ingest-lift-outages */15
   events:          { job: 6 * HOUR,  refetch: 30 * MIN, httpMaxAge: 30 * MIN }, // ingest-events every 6 h
   appointments:    { job: 12 * HOUR, refetch: 30 * MIN, httpMaxAge: HOUR },     // ingest-appointments every 12 h
   pollen:          { job: 6 * HOUR,  refetch: HOUR,     httpMaxAge: 12 * HOUR }, // ingest-pollen every 6 h

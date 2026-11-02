@@ -1,0 +1,48 @@
+{
+  "features": [
+    {
+      "geometry": { "type": "Point", "coordinates": [6.96910237904765, 50.9709148222635] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "072-01",
+        "Bezeichnung": "Aufzug 01 - HÜ 072 (Amsterdamer Str./Gürtel)",
+        "Haltestellenbereich": "317",
+        "Info": null,
+        "timestamp": "2026-11-02T04:10:32"
+      }
+    },
+    {
+      "geometry": { "type": "Point", "coordinates": [6.95006821195387, 50.9320562655866] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "033-01",
+        "Bezeichnung": "Aufzug 01 - HÜ 033 (Poststr.)",
+        "Haltestellenbereich": "3",
+        "Info": null,
+        "timestamp": "2026-11-02T04:10:32"
+      }
+    },
+    {
+      "geometry": { "type": "Point", "coordinates": [6.95843902766933, 50.9421771213754] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "011-04",
+        "Bezeichnung": "Aufzug 04 - HÜ 011 (Dom/HBf.)",
+        "Haltestellenbereich": "752",
+        "Info": null,
+        "timestamp": "2026-11-02T04:10:32"
+      }
+    },
+    {
+      "geometry": { "type": "Point", "coordinates": [7.16140713878485, 50.9637675031249] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "100-01",
+        "Bezeichnung": "Aufzug 01 - HÜ 100 (Bensberg)",
+        "Haltestellenbereich": "665",
+        "Info": null,
+        "timestamp": "2026-11-02T04:10:32"
+      }
+    }
+  ]
+}

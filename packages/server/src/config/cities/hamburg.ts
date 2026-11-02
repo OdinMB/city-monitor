@@ -77,6 +77,8 @@ export const hamburg: CityConfig = {
     // Bauweiser construction sites on main roads (dl-de/by-2.0). The Transparenzportal's
     // baustellen-hamburg WFS is an archive frozen in 2020.
     roadworks: { provider: 'hamburg-ogc', url: 'https://api.hamburg.de/datasets/v1/baustellen/collections/baustelle/items?f=json&limit=1000' },
+    // The 17 EU bathing spots and their samples (Behörde für Umwelt und Energie, dl-de/by-2.0)
+    bathing: { provider: 'hamburg-wfs', url: 'https://geodienste.hamburg.de/HH_WFS_Badegewaesser' },
     pollen: {
       provider: 'dwd',
       regionId: 10,         // Schleswig-Holstein und Hamburg

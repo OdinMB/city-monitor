@@ -20,6 +20,7 @@ import { WeatherStrip } from '../strips/WeatherStrip.js';
 import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
 import { FloodStatusStrip } from '../strips/FloodStatusStrip.js';
+import { LiftOutagesStrip } from '../strips/LiftOutagesStrip.js';
 import { BathingStrip } from '../strips/BathingStrip.js';
 import { useBathingOffSeason } from '../../hooks/useBathingOffSeason.js';
 import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
@@ -159,6 +160,12 @@ export function CommandLayout() {
           {has('transit') && (
             <Tile title={t('panel.transit.title')} span={1} expandable defaultExpanded={isDesktop}>
               {(expanded, setExpanded) => <TransitStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+            </Tile>
+          )}
+          {/* Beside transit: where a city has no transit tile (Köln), the station information it has */}
+          {has('liftOutages') && (
+            <Tile title={t('panel.liftOutages.title')} span={1} expandable>
+              {(expanded) => <LiftOutagesStrip expanded={expanded} />}
             </Tile>
           )}
           <Tile title={t('support.title')} span={1}>

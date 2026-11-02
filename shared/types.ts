@@ -62,6 +62,8 @@ export type CityFeature =
   | 'socialAtlas'
   | 'noiseSensors'
   | 'councilMeetings'
+  | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
+  | 'liftOutages'     // dataSources.liftOutages: lift and escalator outages (KVB Köln)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -71,7 +73,6 @@ export type CityFeature =
   | 'mayor'           // OBERBUERGERMEISTER: a city inside a state's Oberbürgermeister
   | 'stateByDistrict' // state members grouped by Bezirk
   // Berlin's own sources, ingested for Berlin alone
-  | 'bathing'
   | 'wastewater'
   | 'laborMarket'
   | 'population'
@@ -135,6 +136,25 @@ export type RoadworksSource =
   /** München's GeoServer WFS GetFeature URL for `baustellen_opendata` (GeoJSON, EPSG:4326) */
   | { provider: 'muenchen-wfs'; url: string };
 
+/**
+ * A city's bathing-water feed, by the provider whose format it is in. Each
+ * provider has its own parser in packages/server/src/cron/ingest-bathing.ts
+ * (.context/water-levels.md, "Bathing Water Quality").
+ */
+export type BathingSource =
+  /** LAGeSo Berlin's semicolon CSV of the latest sample per spot */
+  | { provider: 'lageso'; url: string }
+  /** Hamburg's WFS `HH_WFS_Badegewaesser`: spots and samples, as GeoJSON */
+  | { provider: 'hamburg-wfs'; url: string };
+
+/**
+ * A city's lift and escalator outages, by provider. KVB Köln publishes the
+ * lifts and escalators out of service at its stations (.context/lift-outages.md).
+ */
+export type LiftOutageSource =
+  /** KVB's open-data service: `<url>/aufzugsstoerung/json` and `<url>/fahrtreppenstoerung/json` */
+  { provider: 'kvb'; url: string };
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -166,6 +186,8 @@ export interface CityDataSources {
    */
   aeds?: { adminLevel: number };
   roadworks?: RoadworksSource;
+  bathing?: BathingSource;
+  liftOutages?: LiftOutageSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -605,6 +627,28 @@ export interface PollenForecast {
   pollen: Record<PollenType, PollenTypeForecast>;
 }
 
+// Lift and escalator outages (KVB Köln)
+export interface LiftOutage {
+  /** The operator's id of the lift or escalator ("011-04": station 011, unit 04). */
+  id: string;
+  kind: 'lift' | 'escalator';
+  /** The station as the operator names it ("Dom/HBf."). */
+  station: string;
+  /** The unit within the station ("Aufzug 04", "Fahrtreppe 51"). */
+  unit: string;
+  lat: number | null;
+  lon: number | null;
+  /** The operator's note on the outage, when it gives one. */
+  info: string | null;
+}
+
+export interface LiftOutageData {
+  /** Out of service now, lifts first, each kind by station. */
+  outages: LiftOutage[];
+  /** When the operator last updated its lists (ISO 8601 with offset), null when it gave no time. */
+  updated: string | null;
+}
+
 // Flood status (LHP public API): flood classes at state gauges and regional flood warnings
 /**
  * LHP's nationwide flood class at a gauge: 0 no flood, 1 minor … 4 very severe flood.
@@ -743,6 +787,7 @@ export interface BootstrapData {
   construction: ApiResponse<ConstructionSite[]> | null;
   waterLevels: ApiResponse<WaterLevelData> | null;
   floodStatus: ApiResponse<FloodStatus | null> | null;
+  liftOutages: ApiResponse<LiftOutageData | null> | null;
   budget: ApiResponse<BudgetSummary | null> | null;
   appointments: ApiResponse<BuergeramtData> | null;
   laborMarket: ApiResponse<LaborMarketSummary | null> | null;

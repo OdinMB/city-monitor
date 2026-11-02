@@ -138,16 +138,18 @@ describe('Köln config', () => {
     expect(dataSources.councilMeetings?.oparlBody?.districtBody).toBe('Bezirksvertretung');
   });
 
-  it('has its licence-checked feeds, Polizei Köln and roadworks, and no other city-specific source', () => {
+  it('has its licence-checked feeds, Polizei Köln, roadworks and KVB lift outages, and no other city-specific source', () => {
     vi.stubEnv('ACTIVE_CITIES', 'koeln');
     const config = getCityConfig('koeln')!;
     expect(config.feeds.map((f) => f.name)).toEqual(['WDR Rheinland', 'Kölner Stadt-Anzeiger', 'EXPRESS', 'Stadt Köln']);
     // Polizei Köln (presseportal newsroom 12415), not another force's newsroom
     expect(config.dataSources.police?.url).toBe('https://www.presseportal.de/rss/dienststelle_12415.rss2');
     expect(config.dataSources.roadworks?.provider).toBe('koeln-wfs');
+    // KVB's lift and escalator outages, its only open transit data (dl-de/zero-2.0)
+    expect(config.dataSources.liftOutages).toEqual({ provider: 'kvb', url: 'https://data.webservice-kvb.koeln/service/opendata' });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
-      police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council, ...rest
+      police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council, liftOutages: _lifts, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });

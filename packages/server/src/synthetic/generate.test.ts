@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   AedLocationSchema, AirQualityGridSchema, BathingSpotSchema, BudgetSummarySchema, BuergeramtDataSchema,
   ConstructionSiteSchema, CouncilMeetingSchema, EmergencyPharmacySchema, FeuerwehrSummarySchema, FloodStatusSchema,
-  LaborMarketSummarySchema, NinaWarningSchema, NoiseSensorSchema, PoliticalDistrictSchema, PollenForecastSchema,
+  LaborMarketSummarySchema, LiftOutageDataSchema, NinaWarningSchema, NoiseSensorSchema, PoliticalDistrictSchema, PollenForecastSchema,
   PopulationSummarySchema, TrafficIncidentSchema, TransitAlertSchema, WastewaterSummarySchema,
   WaterLevelDataSchema, WeatherDataSchema,
 } from '@city-monitor/shared/schemas.js';
@@ -90,6 +90,7 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['noise', z.array(NoiseSensorSchema), d.noiseSensors],
     ['council', z.array(CouncilMeetingSchema), d.councilMeetings],
     ['flood status', FloodStatusSchema, d.floodStatus],
+    ['lift outages', LiftOutageDataSchema, d.liftOutages],
     ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
       [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
   ];
@@ -300,10 +301,10 @@ describe('generateSyntheticCityData', () => {
       const held = Object.keys(data).filter((key) => key !== 'cityId' && key !== 'history');
       expect(held).toEqual(syntheticCoverage(hamburg));
       // No transit (its HVV source is offline), events, budget, appointments,
-      // social atlas, noise or council config; population, wastewater, bathing, labour
-      // market and fire brigade are Berlin-only sources
+      // social atlas, noise or council config; population, wastewater, labour
+      // market and fire brigade are Berlin-only sources. Bathing water from its own WFS.
       expect([...held].sort()).toEqual([
-        'aeds', 'airQuality', 'airQualityGrid', 'construction', 'news', 'nina', 'pharmacies', 'political', 'pollen',
+        'aeds', 'airQuality', 'airQualityGrid', 'bathing', 'construction', 'news', 'nina', 'pharmacies', 'political', 'pollen',
         'safety', 'summary', 'traffic', 'waterLevels', 'weather',
       ]);
       // No Bezirk mayors or state members by Bezirk outside Berlin
@@ -321,7 +322,7 @@ describe('generateSyntheticCityData', () => {
     it('passes the Zod schemas the database reads validate with', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
-        'aeds', 'aq grid', 'construction', 'nina', 'pharmacies', 'political bundestag', 'political state', 'pollen',
+        'aeds', 'aq grid', 'bathing', 'construction', 'nina', 'pharmacies', 'political bundestag', 'political state', 'pollen',
         'traffic', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {
@@ -399,6 +400,7 @@ describe('generateSyntheticCityData', () => {
       for (const p of d.pharmacies!) expect(bezirke).toContain(p.district);
       expect(d.waterLevels === undefined).toBe(city.dataSources.waterLevels === undefined);
       expect(d.floodStatus === undefined).toBe(city.dataSources.floodStatus === undefined);
+      expect(d.liftOutages === undefined).toBe(city.dataSources.liftOutages === undefined);
       for (const [name, schema, value] of schemaChecks(d)) expect(schema.safeParse(value).error, name).toBeUndefined();
       expectInside(d, city, 20);
       expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);

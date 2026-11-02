@@ -21,8 +21,9 @@ export const hamburg: WebCityConfig = {
   theme: { accent: '#004B93' },
   // No transit (HVV has no free API), events, appointments, budget,
   // social atlas, noise sensors, council meetings, district mayors or Berlin's
-  // own sources. The Bürgerschaft's constituencies are not Bezirke, so its
-  // members are not grouped by Bezirk; its Bundestag constituencies are named
-  // after them, so the political map has a Bundestag view.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
+  // own sources. Bathing water from the city's WFS, the rent map from its
+  // Wohnlagenverzeichnis WMS. The Bürgerschaft's constituencies are not Bezirke,
+  // so its members are not grouped by Bezirk; its Bundestag constituencies are
+  // named after them, so the political map has a Bundestag view.
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'bathing', 'pharmacies', 'aeds', 'political', 'noiseMap', 'rentMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
 };

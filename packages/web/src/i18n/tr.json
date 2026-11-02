@@ -339,6 +339,18 @@
       "asOf": "Durum:",
       "empty": "Taşkın verisi yok"
     },
+    "liftOutages": {
+      "title": "Asansörler ve Yürüyen Merdivenler",
+      "lifts": "Arızalı asansörler: {{n}}",
+      "escalators": "Arızalı yürüyen merdivenler: {{n}}",
+      "noLifts": "Tüm asansörler çalışıyor",
+      "noEscalators": "Tüm yürüyen merdivenler çalışıyor",
+      "allWorking": "Tüm asansörler ve yürüyen merdivenler çalışıyor",
+      "more": "+{{n}} daha",
+      "atStations": "Etkilenen duraklar: {{n}}",
+      "asOf": "Durum:",
+      "empty": "Arıza verisi yok"
+    },
     "pollen": {
       "title": "Polen Tahmini",
       "empty": "Veri mevcut değil",
@@ -529,6 +541,14 @@
       "welfare": "Sosyal Yardım (2025)",
       "child-poverty": "Çocuk Yoksulluğu (2025)",
       "rent": "Kira"
+    },
+    "rentLegend": {
+      "title": "Kira endeksinin konut konumu sınıfları",
+      "simple": "Basit konum",
+      "medium": "Orta konum",
+      "good": "İyi konum",
+      "normal": "Normal konum",
+      "unrated": "Değerlendirilmedi"
     },
     "population": {
       "pop-density": "Nüfus Yoğunluğu",
