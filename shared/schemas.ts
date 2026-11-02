@@ -327,6 +327,21 @@ export const PollenForecastSchema = z.object({
   ),
 });
 
+// --- Lift and escalator outages (KVB) ---
+
+export const LiftOutageDataSchema = z.object({
+  outages: z.array(z.object({
+    id: z.string(),
+    kind: z.enum(['lift', 'escalator']),
+    station: z.string(),
+    unit: z.string(),
+    lat: z.number().nullable(),
+    lon: z.number().nullable(),
+    info: z.string().nullable(),
+  })),
+  updated: z.string().nullable(),
+});
+
 // --- Flood Status (LHP) ---
 
 export const FloodStatusSchema = z.object({

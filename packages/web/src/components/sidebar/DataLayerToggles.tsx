@@ -7,6 +7,7 @@ import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
+import { getRentMapLegend } from '../map/constants.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -112,6 +113,27 @@ function SubLayerItem({ icon, color, active, label, onClick, parentColor }: { ic
         {label}
       </span>
     </button>
+  );
+}
+
+/**
+ * The classes of the city's rent map with the colours its WMS draws them in.
+ * Each city has its own: Berlin's Mietspiegel knows simple, medium and good
+ * locations, Hamburg's only normal and good ones.
+ */
+export function RentMapLegend({ cityId }: { cityId: string }) {
+  const { t } = useTranslation();
+  const legend = getRentMapLegend(cityId);
+  if (legend.length === 0) return null;
+  return (
+    <ul aria-label={t('sidebar.rentLegend.title')} className="ps-9 pe-2 py-1 space-y-0.5">
+      {legend.map(({ key, color }) => (
+        <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+          <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
+          {t(`sidebar.rentLegend.${key}`)}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -270,8 +292,11 @@ export function DataLayerToggles() {
             );
           } else if (layer === 'social' && active) {
             subItems = (
-              <SubLayerList meta={SOCIAL_SUB_META} available={available.social} parentColor={color}
-                isActive={(key) => social === key} onSelect={setSocialLayer} label={socialLabel} />
+              <>
+                <SubLayerList meta={SOCIAL_SUB_META} available={available.social} parentColor={color}
+                  isActive={(key) => social === key} onSelect={setSocialLayer} label={socialLabel} />
+                {social === 'rent' && <RentMapLegend cityId={city.id} />}
+              </>
             );
           } else if (layer === 'population' && active) {
             subItems = (

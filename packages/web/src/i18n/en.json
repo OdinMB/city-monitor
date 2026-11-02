@@ -343,6 +343,18 @@
       "asOf": "As of",
       "empty": "No flood data"
     },
+    "liftOutages": {
+      "title": "Lifts & Escalators",
+      "lifts": "Lifts out of service: {{n}}",
+      "escalators": "Escalators out of service: {{n}}",
+      "noLifts": "All lifts in service",
+      "noEscalators": "All escalators in service",
+      "allWorking": "All lifts and escalators in service",
+      "more": "+{{n}} more",
+      "atStations": "Stations affected: {{n}}",
+      "asOf": "As of",
+      "empty": "No outage data"
+    },
     "pollen": {
       "title": "Pollen Forecast",
       "empty": "No data available",
@@ -429,12 +441,14 @@
     },
     "councilMeetings": {
       "title": "Council Meetings",
+      "title_hamburg": "Parliament Meetings",
       "empty": "No upcoming meetings",
       "filterLabel": "Filter by body",
       "bvv": "District Assembly",
       "parliament": "State Parliament",
       "parliament_koeln": "City Council",
       "parliament_muenchen": "City Council",
+      "parliament_hamburg": "Hamburg Parliament",
       "agendaItems_one": "{{count}} agenda item",
       "agendaItems_other": "{{count}} agenda items",
       "openDetails": "Open meeting details",
@@ -530,6 +544,14 @@
     },
     "social": {
       "rent": "Rent"
+    },
+    "rentLegend": {
+      "title": "Residential location classes of the rent index",
+      "simple": "Simple location",
+      "medium": "Medium location",
+      "good": "Good location",
+      "normal": "Normal location",
+      "unrated": "Not rated"
     },
     "population": {
       "pop-density": "Population Density",

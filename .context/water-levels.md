@@ -59,7 +59,18 @@ PEGELONLINE answers `stateMnwMhw: "unknown"` for tidal gauges, and the Elbe gaug
 
 # Bathing Water Quality
 
-## Data Source
+## Data Sources
+
+A city has bathing spots when its server config sets `dataSources.bathing`, a provider-tagged `BathingSource` (same pattern as `dataSources.roadworks`). Each provider has its own parser in `cron/ingest-bathing.ts` and writes the shared `BathingSpot`. The snapshot type stays `lageso-bathing` for every provider.
+
+| City | Provider | Source |
+|---|---|---|
+| Berlin | `lageso` | LAGeSo CSV |
+| Hamburg | `hamburg-wfs` | Geodienste `HH_WFS_Badegewaesser` (dl-de/by-2.0, credit "Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie") |
+
+Köln and München have none (see `cities.md`).
+
+### Berlin: LAGeSo
 
 **LAGeSo** (Berlin State Office for Health and Social Affairs) — public CSV with no auth required.
 
@@ -68,11 +79,22 @@ PEGELONLINE answers `stateMnwMhw: "unknown"` for tidal gauges, and the Elbe gaug
 - ~39 bathing spots in Berlin with coordinates, quality ratings, water temperature, visibility, algae warnings, EU classification
 - Quality mapping: `Farb_ID` column — 1/11→good, 3/13→warning, 5→poor (11/13 are forecast variants from early warning system)
 
+### Hamburg: Geodienste WFS
+
+Two GeoJSON requests to the WFS (`typeNames=badegewaesser` for the ~17 spots, `badegewaesser_proben` for every sample of the season, ~130), both `srsName=EPSG:4326`. Both must succeed, otherwise the previous data stays.
+
+- **Join:** each spot takes its newest sample with the same `name` (`datum` is `YYYYMMDD`); temperature and visibility come from the sample (`n.g.` → null).
+- **Quality** (Hamburg has no colour code, so it is derived): `poor` when the spot is closed (`badesaison` `gesperrt`, icon `baden_verboten`, or "Baden verboten" in the remark); `warning` when the remark says "Warnung" or the sample has `algen` `viel`; otherwise `good`. The newest sample's remark wins over the spot layer's, which sometimes lags.
+- **Advisory:** "Badestelle gesperrt" when closed, else the remark unless it is plain "keine Beanstandung". `algae` is "Algen: viel" or null.
+- **Not mapped:** `classification` stays null, as the `eg_einstufung` codes are undocumented; `district` is empty; `waterBody` is the name before its comma.
+- **Season:** each spot states its own season ("DD.MM.YYYY bis DD.MM.YYYY"); `inSeason` uses it, and falls back to the shared 15 May – 15 Sep window.
+- **Detail link:** the spot's `link`, upgraded to https.
+
 ## Server Pipeline
 
-1. **Cron** (`0 6 * * *`, daily at 6 AM): `createBathingIngestion(cache, db)` fetches CSV, parses to `BathingSpot[]`, writes to cache (key: `berlin:bathing:spots`, TTL: 86400s/24h) then DB via `saveBathingSpots` (unified `snapshots` table, type `lageso-bathing`, 2-day retention plus the 100-row cap). Does nothing when Berlin is not active (the CSV covers Berlin only)
+1. **Cron** (`0 6 * * *`, daily at 6 AM): `createBathingIngestion(cache, db)` runs every active city with `dataSources.bathing` through its provider's parser, writes to cache (key: `{city}:bathing:spots`, TTL: 86400s/24h) then DB via `saveBathingSpots` (unified `snapshots` table, type `lageso-bathing`, 2-day retention plus the 100-row cap). A failed city keeps its previous data and does not stop the others
 2. **Route** (`GET /api/:city/bathing`): Three-tier read (cache → DB → empty array). 12h Cache-Control
-3. **Season flag**: `inSeason` boolean computed server-side (May 15 – Sep 15). Data available year-round but UI shows off-season badge
+3. **Season flag**: `inSeason` boolean computed server-side. Data available year-round but UI shows off-season badge; the tile goes off-season when no spot is in season
 
 ## Shared Types (`shared/types.ts`)
 
@@ -81,13 +103,13 @@ PEGELONLINE answers `stateMnwMhw: "unknown"` for tidal gauges, and the Elbe gaug
 ## Frontend
 
 - **Hook**: `useBathing(cityId)` — 24h refetch, 12h stale
-- **Map markers**: Waves icon colored by quality (green=good, amber=warning, red=poor), popup with name, water body, district, quality badge, temp, visibility, algae warning, advisory, off-season badge, LAGeSo detail link. HTML-escaped popup content
+- **Map markers**: Waves icon colored by quality (green=good, amber=warning, red=poor), popup with name, water body, district, quality badge, temp, visibility, algae warning, advisory, off-season badge, detail link named after its source (LAGeSo, else the link's host). Empty water body or district is left out. HTML-escaped popup content
 - **Sidebar toggle**: `bathing` sub-layer under the `water` parent layer
 - **i18n**: Keys under `sidebar.water.bathing` in all 4 languages
 
 ## Tests
 
-- `ingest-bathing.test.ts` — 12 unit tests covering CSV parsing, field mapping, quality mapping, null handling, `<` prefix parsing, fetch failure, empty CSV, TTL, inSeason, coordinate filtering, German date parsing
+- `ingest-bathing.test.ts` — unit tests covering CSV parsing, field mapping, quality mapping, null handling, `<` prefix parsing, fetch failure, empty CSV, TTL, inSeason, coordinate filtering, German date parsing, the per-city providers, a failed Hamburg request, and `parseHamburgBathing` on recorded, trimmed WFS responses (`fixtures/hh-badegewaesser*.json`, 2026-11-02)
 - `bathing.test.ts` — 3 route tests covering empty cache, cached data, unknown city
 
 ---

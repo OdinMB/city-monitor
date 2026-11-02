@@ -23,7 +23,7 @@ Both root scripts build `shared` first, because the server imports its compiled 
 
 - `synthetic/generate.ts` — `generateSyntheticCityData({ now, seed, city })`, and `generateSyntheticData({ now, seed })` for Berlin with every data set present.
   - The same seed and `now` give the same data (mulberry32), and every timestamp is relative to `now`. Berlin's data does not depend on how other cities are generated.
-  - A city gets the data sets its ingestion would write, and no others: `COVERED` holds the condition for each, mirroring the cron jobs (a `dataSources` entry, transit stations to ask, a weather provider ingest-weather has an adapter for, the country, a pharmacy postcode, or Berlin only), and `syntheticCoverage(city)` lists them. Hamburg has no events, transit, appointments, budget, social atlas, population, wastewater, bathing, labour market, fire brigade, noise sensors, council meetings or district politics. Köln's synthetic events all come from its one source (`stadt-koeln`); Köln and München get council meetings, with their districts taken from the generator's anchors since their configs list none.
+  - A city gets the data sets its ingestion would write, and no others: `COVERED` holds the condition for each, mirroring the cron jobs (a `dataSources` entry, transit stations to ask, a weather provider ingest-weather has an adapter for, the country, a pharmacy postcode, or Berlin only), and `syntheticCoverage(city)` lists them. Hamburg has no events, transit, appointments, budget, social atlas, population, fire brigade, noise sensors or district politics; its council meetings are the Bürgerschaft's, and its bathing spots sit at the generator's anchors with no district or water body. Every city gets wastewater and labour market (and 23 months of labour-market history); an AMELAG city's wastewater has all four pathogens on one sample date and `plantCount` = its number of plants. Köln's synthetic events all come from its one source (`stadt-koeln`), and only Köln gets lift and escalator outages; Köln and München get council meetings, with their districts taken from the generator's anchors since their configs list none.
   - Places come from rough Bezirk centres inside the city's bounding box, for a city whose Bezirk outlines the web app has (all four; `generate.test.ts` checks each centre lies in its own outline, for every file in `packages/web/src/data/districts/`). Any other city gets places spread around its centre, named after the city, and no district fields.
   - Text is German and marked `[Synthetisch]`, people are `Testperson NNN` and links go to example.com. There is no real news or police text.
   - Shapes come from `shared/types.ts`. Budget, appointments, wastewater and council meetings reuse the ingestion helpers.
@@ -72,7 +72,7 @@ The data is dated when you seed it. Once the cache-warm TTLs expire, the routes 
 | Data | Refused after |
 |---|---|
 | Flood status (München) | 30 min |
-| Noise sensors | 2h |
+| Lift outages (Köln), noise sensors | 2h |
 | NINA warnings | 3h |
 | AQ grid | 6h |
 | Pollen, council meetings, events | 48h |
@@ -82,7 +82,7 @@ After that those tiles go empty. Run `npm run db:seed` again and restart `dev:sy
 ## Not covered
 
 - **Rain radar:** the RainViewer router is not mounted, so the map's rain layer gets 404 for each tile it asks `/api/weather-tiles/…` for.
-- **Browser-side layers:** the web app still loads the CARTO base map tiles and the gdi.berlin.de WMS overlays (noise, rent) from the internet.
+- **Browser-side layers:** the web app still loads the CARTO base map tiles and the gdi.berlin.de and geodienste.hamburg.de WMS overlays (noise, rent) from the internet.
 - **Another city in the web dev server:** `npm run dev --workspace=packages/web` shows only the cities `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` lists (Berlin). The guarded browser run below makes its seeded city the active one in its own build.
 - **Local times:** the generator works out local dates and hours (today's date, the weather's daily rhythm, event and meeting times) in Europe/Berlin, whatever the city's time zone. Every configured city uses that zone.
 

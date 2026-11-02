@@ -341,6 +341,18 @@
       "asOf": "Stand:",
       "empty": "Keine Hochwasserdaten"
     },
+    "liftOutages": {
+      "title": "Aufzüge & Fahrtreppen",
+      "lifts": "Aufzüge außer Betrieb: {{n}}",
+      "escalators": "Fahrtreppen außer Betrieb: {{n}}",
+      "noLifts": "Alle Aufzüge in Betrieb",
+      "noEscalators": "Alle Fahrtreppen in Betrieb",
+      "allWorking": "Alle Aufzüge und Fahrtreppen in Betrieb",
+      "more": "+{{n}} weitere",
+      "atStations": "Betroffene Haltestellen: {{n}}",
+      "asOf": "Stand:",
+      "empty": "Keine Störungsdaten"
+    },
     "pollen": {
       "title": "Pollenvorhersage",
       "empty": "Keine Daten verfügbar",
@@ -429,6 +441,7 @@
       "title": "BVV-Sitzungen",
       "title_koeln": "Ratssitzungen",
       "title_muenchen": "Ratssitzungen",
+      "title_hamburg": "Sitzungen der Bürgerschaft",
       "empty": "Keine anstehenden Sitzungen",
       "filterLabel": "Nach Gremium filtern",
       "bvv": "Bezirksverordnetenversammlung",
@@ -437,6 +450,7 @@
       "parliament": "Abgeordnetenhaus",
       "parliament_koeln": "Rat der Stadt",
       "parliament_muenchen": "Stadtrat",
+      "parliament_hamburg": "Bürgerschaft",
       "agendaItems_one": "{{count}} Tagesordnungspunkt",
       "agendaItems_other": "{{count}} Tagesordnungspunkte",
       "openDetails": "Sitzungsdetails öffnen",
@@ -532,6 +546,14 @@
     },
     "social": {
       "rent": "Mietspiegel"
+    },
+    "rentLegend": {
+      "title": "Wohnlagen des Mietspiegels",
+      "simple": "Einfache Wohnlage",
+      "medium": "Mittlere Wohnlage",
+      "good": "Gute Wohnlage",
+      "normal": "Normale Wohnlage",
+      "unrated": "Nicht bewertet"
     },
     "population": {
       "pop-density": "Bevölkerungsdichte",

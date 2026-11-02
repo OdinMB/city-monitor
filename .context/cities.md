@@ -6,18 +6,18 @@ The research behind the Köln, München and Hamburg rows (licence verdicts, URLs
 
 ## Every city
 
-Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, traffic incidents (TomTom), NINA alerts, DWD pollen, pharmacies (aponet), defibrillators (OSM), roadworks ([roadworks.md](roadworks.md)) and the crisis-line tile (hand-kept directory per city, re-check each November; [new-data-sources.md](new-data-sources.md)).
+Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, traffic incidents (TomTom), NINA alerts, DWD pollen, pharmacies (aponet), defibrillators (OSM), roadworks ([roadworks.md](roadworks.md)), the labour-market tile (BA Eckwertetabelle: the Land table for Berlin and Hamburg, the Kreis table for Köln and München; [social-atlas.md](social-atlas.md)), the wastewater tile (RKI AMELAG plants, plus LAGeSo for Berlin's flu and RSV; [wastewater.md](wastewater.md)) and the crisis-line tile (hand-kept directory per city, re-check each November; [new-data-sources.md](new-data-sources.md)).
 
 ## Berlin
 
-- **Has:** everything. On top of the shared sources: 6 news feeds with AI briefing, police (berlin.de), VBB transit, events (kulturdaten.berlin, Ticketmaster, go~mus), Spree/Havel/Dahme gauges and bathing water, council meetings (BVV OParl + Abgeordnetenhaus), political data (Bundestag, Abgeordnetenhaus, district mayors), budget, social atlas, population, labour market, wastewater, fire brigade, Bürgeramt appointments (Firecrawl), live noise sensors, noise map, rent map.
+- **Has:** everything. On top of the shared sources: 6 news feeds with AI briefing, police (berlin.de), VBB transit, events (kulturdaten.berlin, Ticketmaster, go~mus), Spree/Havel/Dahme gauges and bathing water, council meetings (BVV OParl + Abgeordnetenhaus), political data (Bundestag, Abgeordnetenhaus, district mayors), budget, social atlas, population, LAGeSo wastewater (flu and RSV; SARS-CoV-2 from AMELAG like the others), fire brigade, Bürgeramt appointments (Firecrawl), live noise sensors, noise map, rent map.
 - **Stale data to check:** the hand-kept district-mayor table (verified 2026-11-01) has only Reinickendorf's and Spandau's mayors elected for the new term; the other ten BVVs had not yet elected their Bezirksamt, so it lists the outgoing mayors. Re-check in December 2026. The pinned editions (MSS 2025, Wohnlagenkarte 2026, population 2026h01, noise maps 2022, Doppelhaushalt 2026/27) are in the freshness inventory in [new-data-sources.md](new-data-sources.md).
 - **Ruled out:** BZ Berlin (AI-input ban), taz Berlin (terms forbid automated access; removed 2026-11-01).
 - **Pending requests:** none.
 
 ## Hamburg
 
-- **Has:** 3 news feeds (NDR, MOPO, Feuerwehr Hamburg) with AI briefing, police (Polizei Hamburg on presseportal), Elbe gauges, roadworks (Bauweiser OGC API), political data (Bundestag, Bürgerschaft), noise map, crisis tile, social atlas (Sozialmonitoring Bericht 2025, 857 Statistische Gebiete: unemployment, children of single parents, SGB II/AsylbLG recipients, children on minimum income, with Hamburg's own Statusindex; shares back-calculated from the report's z-scores), population (Stadtteil statistics, 99 Stadtteile, yearly).
+- **Has:** 3 news feeds (NDR, MOPO, Feuerwehr Hamburg) with AI briefing, police (Polizei Hamburg on presseportal), Elbe gauges, bathing water (17 spots, Geodienste `HH_WFS_Badegewaesser`, dl-de/by-2.0; [water-levels.md](water-levels.md)), roadworks (Bauweiser OGC API), council meetings (Bürgerschaft committees and plenary, from its website calendar), political data (Bundestag, Bürgerschaft), noise map, rent map (Wohnlagenverzeichnis, `HH_WMS_Wohnlagen`, dl-de/by-2.0, normal and good locations), crisis tile. Labour market (BA Land table `Bundesland=Hamburg`) and wastewater (AMELAG plants `Hamburg 01` and `Hamburg 02`, combined per week weighted by the 0.58 and 1.46 million people they serve), since 2026-11-02. Social atlas (Sozialmonitoring Bericht 2025, 857 Statistische Gebiete: unemployment, children of single parents, SGB II/AsylbLG recipients, children on minimum income, with Hamburg's own Statusindex; shares back-calculated from the report's z-scores; [social-atlas.md](social-atlas.md)) and population (Stadtteil statistics, 99 Stadtteile, yearly; [population.md](population.md)), since 2026-11-02.
 - **Looked for, not found or ruled out:**
   - News: Hamburger Abendblatt (feed terms forbid passing items on; removed), hamburg.de (feed gone), WELT (AI-input ban), ZEIT, taz Nord, t-online (blanket automated-access bans).
   - Transit: HVV's only source is the Geofox GTI API, which needs a key and restricts third-party use; gtfs.de has no Hochbahn real-time yet.
@@ -26,21 +26,24 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
   - Appointments: possible only through Firecrawl's paid plan.
   - Two Elbe gauges (Bunthaus, Seemannshöft) have no characteristic values, so they show their level without a state. St. Pauli is tidal and reads "very high" often.
   - Crisis tile: the child-protection line is labelled generically.
-- **Not looked for yet:** council meetings (Bürgerschaft, Bezirksversammlungen).
+  - Bathing water: Hamburg publishes no colour rating, so quality is derived from the newest sample's remark and algae note; its EU classification codes (`eg_einstufung`) are undocumented and not shown. Samples stop in early September.
+  - Council meetings: the Bürgerschaft has no OParl, RSS or iCal feed (only its website calendar, now wired); the Parlamentsdatenbank and Transparenzportal have no upcoming dates. The seven Bezirksversammlungen' ALLRIS (`sitzungsdienst-<bezirk>.hamburg.de`) is in no OParl list, and its hosts refused our test machine, so an OParl endpoint is unconfirmed either way; re-check from a German IP ([council-meetings.md](council-meetings.md)).
 
 ## Köln
 
-- **Has:** 4 news feeds (WDR Rheinland, Kölner Stadt-Anzeiger, EXPRESS, Stadt Köln) with AI briefing, police (Polizei Köln on presseportal, also covers Leverkusen), Rhein gauge, roadworks (city WFS, permit periods), events (Stadt Köln open data), council meetings (SessionNet OParl 1.1), political data (Bundestag members for Köln I–III and Leverkusen – Köln IV, Landtag NRW members for Köln I–VII, by candidacy; the Oberbürgermeister and 9 Bezirksbürgermeister from a hand-kept table), crisis tile. The 9 Stadtbezirk outlines (Offene Daten Köln, dl-de/zero-2.0) on the map, and a political map layer that colours them by their Bezirksbürgermeister's party. Social atlas and population from the Statistischer Datenkatalog (data year 2025, 570 Statistische Quartiere): unemployment rate, single-parent households, SGB II recipients; residents, age and foreign share, yearly.
-  - Social atlas: no child-poverty figure in the Datenkatalog (sub-layer hidden), and no status index.
+- **Has:** 4 news feeds (WDR Rheinland, Kölner Stadt-Anzeiger, EXPRESS, Stadt Köln) with AI briefing, police (Polizei Köln on presseportal, also covers Leverkusen), Rhein gauge, roadworks (city WFS, permit periods), events (Stadt Köln open data), council meetings (SessionNet OParl 1.1), KVB lifts and escalators out of service (open data, dl-de/zero-2.0, own tile; [lift-outages.md](lift-outages.md)), political data (Bundestag members for Köln I–III and Leverkusen – Köln IV, Landtag NRW members for Köln I–VII, by candidacy; the Oberbürgermeister and 9 Bezirksbürgermeister from a hand-kept table), crisis tile, labour market (BA Kreis table `Köln, Stadt`) and wastewater (AMELAG plant `Köln`), the last two since 2026-11-02. The 9 Stadtbezirk outlines (Offene Daten Köln, dl-de/zero-2.0) on the map, and a political map layer that colours them by their Bezirksbürgermeister's party. Social atlas and population from the Statistischer Datenkatalog (data year 2025, 570 Statistische Quartiere, since 2026-11-02): unemployment rate, single-parent households, SGB II recipients; residents, age and foreign share, yearly.
 - **Looked for, not found or ruled out:**
   - News: Kölnische Rundschau left out because it repeats the Stadt-Anzeiger's newsroom; no WDR feed for Köln alone.
-  - Transit: KVB publishes lift and escalator outages only; line disruptions exist only as an unlicensed web page. gtfs.de carries no KVB alerts.
+  - Transit: KVB publishes lift and escalator outages only (shown in their own tile, which also lists KVB stations outside the city, such as Bensberg); line disruptions exist only as an unlicensed web page. gtfs.de carries no KVB alerts.
+  - Bathing water: NRW publishes only the yearly EU classification of its bathing waters, no live samples, so not built.
+  - Rent map: no open Wohnlagen dataset found.
+  - Social atlas: the Datenkatalog has no child-poverty figure (sub-layer hidden) and no status index.
   - DWD has no UV forecast for Köln.
   - Political map: only the Bezirksbürgermeister view. Its Bundestag and Landtag constituencies (Köln I …) are not Stadtbezirke, so they stay in the tile.
 
 ## München
 
-- **Has:** 2 news feeds (BR24 Oberbayern, Feuerwehr München) with AI briefing, roadworks (Geoportal WFS, filtered), council meetings (RIS RSS feeds, about 10 days ahead), Isar flood class and flood warnings for the München and Puppling gauges (LHP, [water-levels.md](water-levels.md)), political data (Bundestag members for München-Nord/-Ost/-Süd/-West-Mitte, Bayerischer Landtag members for Stimmkreise 101–109, by candidacy; München-Land left out; the Oberbürgermeister from a hand-kept table), crisis tile. The 25 Stadtbezirk outlines (GeodatenService München, dl-de/by-2.0) on the map.
+- **Has:** 2 news feeds (BR24 Oberbayern, Feuerwehr München) with AI briefing, roadworks (Geoportal WFS, filtered), council meetings (RIS RSS feeds, about 10 days ahead), Isar flood class and flood warnings for the München and Puppling gauges (LHP, [water-levels.md](water-levels.md)), political data (Bundestag members for München-Nord/-Ost/-Süd/-West-Mitte, Bayerischer Landtag members for Stimmkreise 101–109, by candidacy; München-Land left out; the Oberbürgermeister from a hand-kept table), crisis tile, labour market (BA Kreis table `München, Landeshauptstadt`, not the wider Agentur für Arbeit München) and wastewater (AMELAG plant `München`, serving about 1.24 million people), the last two since 2026-11-02. The 25 Stadtbezirk outlines (GeodatenService München, dl-de/by-2.0) on the map.
 - **Looked for, not found or ruled out:**
   - News: Süddeutsche and tz forbid automated access; Rathaus Umschau and muenchen.de are private use only; Abendzeitung unclear.
   - Police: Polizeipräsidium München is not on presseportal, has no feed, and its robots.txt disallows all crawling.
@@ -49,6 +52,8 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
   - Isar water levels in cm: the Isar is not on PEGELONLINE, and LHP gives flood classes only. Levels exist only on HND pages (private use) or GKD downloads (CC BY 4.0, no API); they need the LfU's permission or the HND API it has announced.
   - Political map: none, though the outlines ship. Its constituencies are not Stadtbezirke and it has no Bezirk-level office holders to colour them by.
   - The 25 Bezirksausschuss chairs: one web page each, no dataset; too many to keep by hand.
+  - Bathing water: Bavaria publishes no live samples as open data, so not built.
+  - Rent map: no open Wohnlagen dataset found.
 - **Not built yet:** social atlas and population from the Indikatorenatlas, which covers only the 25 Stadtbezirke (coarse next to the other cities' 99–857 areas).
 
 ## Requests to data owners, all sent 2026-11-01

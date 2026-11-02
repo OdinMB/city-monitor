@@ -1,0 +1,70 @@
+{
+  "features": [
+    {
+      "geometry": { "type": "Point", "coordinates": [6.96028205817917, 50.9356550240787] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "081-51",
+        "Bezeichnung": "Fahrtreppe 51 - HÜ 081 (Heumarkt/alt)",
+        "Haltestellenbereich": "1",
+        "Info": null,
+        "timestamp": "2026-11-02T04:12:28"
+      }
+    },
+    {
+      "geometry": { "type": "Point", "coordinates": [6.97733061705916, 50.939579712623] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "083-60",
+        "Bezeichnung": "Fahrtreppe 60 - HÜ 083 (Bf. Deutz/Messe)",
+        "Haltestellenbereich": "802",
+        "Info": null,
+        "timestamp": "2026-11-02T04:12:28"
+      }
+    },
+    {
+      "geometry": { "type": "Point", "coordinates": [6.95825250036074, 50.9422314254614] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "011-51",
+        "Bezeichnung": "Fahrtreppe 51 - HÜ 011 (Dom/HBf.)",
+        "Haltestellenbereich": "752",
+        "Info": null,
+        "timestamp": "2026-11-02T04:12:28"
+      }
+    },
+    {
+      "geometry": { "type": "Point", "coordinates": [6.93993570689882, 50.9404307944872] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "142-61",
+        "Bezeichnung": "Fahrtreppe 61 - HÜ 142 (Friesenpl.)",
+        "Haltestellenbereich": "30",
+        "Info": null,
+        "timestamp": "2026-11-02T04:12:28"
+      }
+    },
+    {
+      "geometry": { "type": "Point", "coordinates": [6.93993570689882, 50.9404307944872] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "142-61",
+        "Bezeichnung": "Fahrtreppe 61 - HÜ 142 (Friesenpl.)",
+        "Haltestellenbereich": "30",
+        "Info": null,
+        "timestamp": "2026-11-02T04:12:28"
+      }
+    },
+    {
+      "geometry": { "type": "Point", "coordinates": [7.16130463478531, 50.9638719334083] },
+      "geometry_name": "Koordinate",
+      "properties": {
+        "Kennung": "100-52",
+        "Bezeichnung": "Fahrtreppe 52 - Hü 100 (Bensberg)",
+        "Haltestellenbereich": "665",
+        "Info": null,
+        "timestamp": "2026-11-02T04:12:28"
+      }
+    }
+  ]
+}

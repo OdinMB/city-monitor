@@ -60,7 +60,7 @@ Area outlines that do not come with the data ship in `packages/server/data/*.geo
 - **API:** `GET /api/:city/social-atlas` - full GeoJSON FeatureCollection (for map layer)
 
 ### Frontend Map Layer
-- **DataLayer:** `'social'`, for cities with the `socialAtlas` feature (`cityLayers` in `lib/map-layers.ts`). Sub-layers (`SocialLayer`): `unemployment` (default), `single-parent`, `welfare`, `child-poverty` draw this choropleth, limited to the indicators the city's source has; `rent` (Berlin's `rentMap` feature) swaps it for the rent-map WMS overlay instead.
+- **DataLayer:** `'social'`, for cities with the `socialAtlas` feature (`cityLayers` in `lib/map-layers.ts`). Sub-layers (`SocialLayer`): `unemployment` (default), `single-parent`, `welfare`, `child-poverty` draw this choropleth, limited to the indicators the city's source has; `rent` (the `rentMap` feature: Berlin and Hamburg, `RENT_MAP_WMS` per city) swaps it for the rent-map WMS overlay and its legend instead. In Hamburg the indicators come first and the rent map last.
 - **Per-city labels:** `SOCIAL_ATLAS` in `packages/web/src/lib/social-atlas.ts`, keyed by city ID: provider, edition, status index (if any) and one entry per indicator with its label key (`socialAtlas.indicator.*`) and optional colour stops (Köln's single-parent households use 0–10 %). The sidebar reads "label (edition)".
 - **Lazy fetch:** GeoJSON only fetched while one of the indicator sub-layers is on (`useSocialAtlas` with `enabled` flag)
 - **Choropleth:** Fill layer colored by the selected indicator's percentage, each with its own 5-stop ramp (`SOCIAL_ATLAS_COLOR_RAMPS` in `map/constants.ts`, overridable per city) + thin line borders. Null values draw transparent. The status index is not drawn.
@@ -68,21 +68,30 @@ Area outlines that do not come with the data ship in `packages/server/data/*.geo
 
 ## Labor Market Dashboard Tile (BA Monthly)
 
-**Bundesagentur fur Arbeit (BA) Statistics API** - monthly unemployment key figures for Berlin.
+**Bundesagentur für Arbeit (BA) Statistics API** - monthly unemployment key figures (Eckwertetabelle) for all four cities.
 
-- **URL:** `https://statistik-dr.arbeitsagentur.de/bifrontend/bids-api/ct/v1/tableFetch/csv/EckwerteTabelleALOBL?Bundesland=Berlin`
+- **Config:** `dataSources.laborMarket: { provider: 'ba', scope: 'bundesland' | 'kreis', name }`. `baTableUrl` turns it into `…/tableFetch/csv/EckwerteTabelleALOBL?Bundesland=<name>` (Land table) or `…/EckwerteTabelleALOKr?Kreis=<name>` (Kreis table), with `name` URL-encoded:
+
+| City | Scope | `name` (the BA's spelling) | Encoded query |
+|---|---|---|---|
+| Berlin | `bundesland` | `Berlin` | `Bundesland=Berlin` |
+| Hamburg | `bundesland` | `Hamburg` | `Bundesland=Hamburg` |
+| Köln | `kreis` | `Köln, Stadt` | `Kreis=K%C3%B6ln%2C%20Stadt` |
+| München | `kreis` | `München, Landeshauptstadt` | `Kreis=M%C3%BCnchen%2C%20Landeshauptstadt` |
+
+- **Base URL:** `https://statistik-dr.arbeitsagentur.de/bifrontend/bids-api/ct/v1/tableFetch/csv/` (API documented at statistik.arbeitsagentur.de, "API-ALO"; the official area names are in `DR-LZR-persistListenfelderJSON.js`)
+- **Kreis vs Land table:** same header and the same eight rows; only the metadata line reads `Kreis:;` instead of `Land:;`, which the parser ignores (it starts at "Ausgewählte Merkmale"). Verified live 2026-11-02, all four answering with October 2026. Use the Kreis table of a kreisfreie Stadt, never its Agentur für Arbeit district (AA München covers more than the city)
 - **Auth:** None
 - **Format:** CSV (semicolons, German number formatting)
 - **Update:** Monthly
-- **License:** Government open data
+- **License:** the CSV footer allows storing and passing the data on with the source named, and asks web publications to link statistik.arbeitsagentur.de. The Sources page credits "© Statistik der Bundesagentur für Arbeit" with that link for each city (`baSource` in `SourcesPage.tsx`)
 
 ### Architecture
 
-Berlin-only (hardcoded, like wastewater). The cron job fetches nothing when Berlin is not active.
-
-- **Cron:** `ingest-labor-market` runs daily (7AM), conditional `runOnStart` based on DB freshness
-- **DB:** Unified `snapshots` table, type `ba-labor-market` (one JSONB row per run), kept 730 days (`HISTORY_RETENTION` in `cron/data-retention.ts`) for the history endpoint
-- **Cache key:** `berlin:labor-market`
+- **Cron:** `ingest-labor-market` runs daily (7AM), one request per active city with `dataSources.laborMarket`; a failing city is logged and skipped. Conditional `runOnStart` based on DB freshness (`serves`: cities with the source)
+- **DB:** Unified `snapshots` table, type `ba-labor-market` (one JSONB row per city and run), kept 730 days (`HISTORY_RETENTION` in `cron/data-retention.ts`) for the history endpoint
+- **Cache key:** `${cityId}:labor-market`
+- **Tests:** `cron/fixtures/ba-eckwerte-koeln.csv` and `ba-eckwerte-muenchen.csv`, the Kreis tables recorded 2026-11-02
 - **TTL:** 86400 seconds (1 day)
 - **API:** `GET /api/:city/labor-market` - `LaborMarketSummary`; `GET /api/:city/labor-market/history?range=Nd` - `HistoryPoint[]` (default 365d, max 730d, cached 86400s; the web `useLaborMarketHistory` hook exists but no component calls it)
 
@@ -93,7 +102,7 @@ Berlin-only (hardcoded, like wastewater). The cron job fetches nothing when Berl
 
 ### Dashboard Tile
 - `LaborMarketStrip` - 3 headline percentages: overall unemployment rate, SGB II rate, and underemployment rate, each with count + YoY trend, plus report month
-- Berlin-only: tile gated in `CommandLayout.tsx` (`cityId === 'berlin'`)
+- Shown for a city whose web config lists the `laborMarket` feature (`CommandLayout.tsx`); all four do
 - Data pre-populated from bootstrap for instant display
 
 ### i18n

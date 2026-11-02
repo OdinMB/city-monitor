@@ -85,6 +85,8 @@ export const berlin: CityConfig = {
     },
     nina: { ars: '110000000000' },
     roadworks: { provider: 'viz-berlin', url: 'https://api.viz.berlin.de/daten/baustellen_sperrungen.json' },
+    // LAGeSo's latest sample per bathing spot (seasonal; the URL is stable)
+    bathing: { provider: 'lageso', url: 'https://data.lageso.de/baden/0_letzte/letzte.csv' },
     waterLevels: {
       provider: 'pegelonline',
       stations: [
@@ -112,6 +114,13 @@ export const berlin: CityConfig = {
       provider: 'afstat-ewr-xlsx',
       // 30 June 2026
       xlsxUrl: 'https://download.statistik-berlin-brandenburg.de/fca0a030166493d0/1289b0921aa2/SB_A01-16-00_2026h01_BE.xlsx',
+    },
+    laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Berlin' },
+    // Influenza A/B and RSV from LAGeSo (dl-de/by-2.0); SARS-CoV-2 from the same three plants in AMELAG
+    wastewater: {
+      provider: 'lageso',
+      csvUrl: 'https://data.lageso.de/infektionsschutz/opendata/abwassermonitoring/BEWAC_abwassermonitoring_berlin.csv',
+      sites: ['Berlin Ruhleben', 'Berlin Schönerlinde', 'Berlin Waßmannsdorf'],
     },
     pollen: {
       provider: 'dwd',

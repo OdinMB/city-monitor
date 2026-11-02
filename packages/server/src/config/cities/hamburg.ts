@@ -77,11 +77,24 @@ export const hamburg: CityConfig = {
     // Bauweiser construction sites on main roads (dl-de/by-2.0). The Transparenzportal's
     // baustellen-hamburg WFS is an archive frozen in 2020.
     roadworks: { provider: 'hamburg-ogc', url: 'https://api.hamburg.de/datasets/v1/baustellen/collections/baustelle/items?f=json&limit=1000' },
+    // The 17 EU bathing spots and their samples (Behörde für Umwelt und Energie, dl-de/by-2.0)
+    bathing: { provider: 'hamburg-wfs', url: 'https://geodienste.hamburg.de/HH_WFS_Badegewaesser' },
     pollen: {
       provider: 'dwd',
       regionId: 10,         // Schleswig-Holstein und Hamburg
       partregionId: 12,     // Geest, Schleswig-Holstein und Hamburg
     },
+    // The Bürgerschaft's committee and plenary sessions from its website calendar
+    // (official public records, no licence stated). The Bezirksversammlungen' ALLRIS
+    // (sitzungsdienst-<bezirk>.hamburg.de) lists no OParl endpoint: .context/council-meetings.md.
+    councilMeetings: {
+      hamburgBuergerschaft: {
+        calendarUrl: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine/1042880!search',
+      },
+    },
+    laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Hamburg' },
+    // RKI AMELAG (CC BY 4.0): Hamburg's two plants, serving about 0.58 and 1.46 million people
+    wastewater: { provider: 'amelag', sites: ['Hamburg 01', 'Hamburg 02'] },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

@@ -1,0 +1,74 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_8",
+      "geometry": { "type": "Point", "coordinates": [10.182971799160324, 53.662124499438875] },
+      "properties": {
+        "name": "Sommerbad Volksdorf",
+        "badesaison": "01.06.2026 bis 31.08.2026",
+        "hinweis": "NNNN",
+        "eg_einstufung": 3,
+        "link_zu_details": "http://www.hamburg.de/go/sommerbad-volksdorf",
+        "bemerkung_bsu": "Warnung Blaualgen (Stand 27.07.26)"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_9",
+      "geometry": { "type": "Point", "coordinates": [10.101703387034236, 53.48687492104021] },
+      "properties": {
+        "name": "Eichbaumsee, Badestelle Nord",
+        "badesaison": "gesperrt",
+        "hinweis": "NNNN",
+        "eg_einstufung": -1,
+        "link_zu_details": "http://www.hamburg.de/go/eichbaumsee-nord"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_10",
+      "geometry": { "type": "Point", "coordinates": [10.110688971267237, 53.48481486729789] },
+      "properties": {
+        "name": "Eichbaumsee, Badestelle Ost",
+        "badesaison": "08.05.2026 bis 14.09.2026",
+        "hinweis": "NNNN",
+        "eg_einstufung": 3,
+        "link_zu_details": "http://www.hamburg.de/go/eichbaumsee-ost",
+        "bemerkung_bsu": "keine Beanstandung, Baden erlaubt"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_13",
+      "geometry": { "type": "Point", "coordinates": [10.028194475425444, 53.593109466089665] },
+      "properties": {
+        "name": "Naturbad Stadtparksee",
+        "badesaison": "30.04.2026 bis 14.09.2026",
+        "hinweis": "NNNN",
+        "eg_einstufung": 3,
+        "link_zu_details": "http://www.hamburg.de/go/naturbad-stadtparksee",
+        "bemerkung_bsu": "keine Beanstandung"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_14",
+      "geometry": { "type": "Point", "coordinates": [10.144324034868795, 53.55898784820688] },
+      "properties": {
+        "name": "Öjendorfer See, Badestelle Nord",
+        "badesaison": "08.05.2026 bis 31.08.2026",
+        "hinweis": "NNNN",
+        "eg_einstufung": 2,
+        "link_zu_details": "http://www.hamburg.de/go/oejendorfersee-nord",
+        "bemerkung_bsu": "keine Beanstandung"
+      },
+      "srsName": "EPSG:4326"
+    }
+  ]
+}

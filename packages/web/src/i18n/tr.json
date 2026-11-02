@@ -340,6 +340,18 @@
       "asOf": "Durum:",
       "empty": "Taşkın verisi yok"
     },
+    "liftOutages": {
+      "title": "Asansörler ve Yürüyen Merdivenler",
+      "lifts": "Arızalı asansörler: {{n}}",
+      "escalators": "Arızalı yürüyen merdivenler: {{n}}",
+      "noLifts": "Tüm asansörler çalışıyor",
+      "noEscalators": "Tüm yürüyen merdivenler çalışıyor",
+      "allWorking": "Tüm asansörler ve yürüyen merdivenler çalışıyor",
+      "more": "+{{n}} daha",
+      "atStations": "Etkilenen duraklar: {{n}}",
+      "asOf": "Durum:",
+      "empty": "Arıza verisi yok"
+    },
     "pollen": {
       "title": "Polen Tahmini",
       "empty": "Veri mevcut değil",
@@ -426,12 +438,14 @@
     },
     "councilMeetings": {
       "title": "Meclis Toplantıları",
+      "title_hamburg": "Parlamento Toplantıları",
       "empty": "Yaklaşan toplantı yok",
       "filterLabel": "Organa göre filtrele",
       "bvv": "İlçe Meclisi",
       "parliament": "Eyalet Parlamentosu",
       "parliament_koeln": "Belediye Meclisi",
       "parliament_muenchen": "Belediye Meclisi",
+      "parliament_hamburg": "Hamburg Parlamentosu",
       "agendaItems": "{{count}} gündem maddesi",
       "openDetails": "Toplantı ayrıntılarını aç",
       "today": "Bugün",
@@ -526,6 +540,14 @@
     },
     "social": {
       "rent": "Kira"
+    },
+    "rentLegend": {
+      "title": "Kira endeksinin konut konumu sınıfları",
+      "simple": "Basit konum",
+      "medium": "Orta konum",
+      "good": "İyi konum",
+      "normal": "Normal konum",
+      "unrated": "Değerlendirilmedi"
     },
     "population": {
       "pop-density": "Nüfus Yoğunluğu",

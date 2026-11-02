@@ -37,6 +37,7 @@ Applied via middleware per route tier:
 | `/api/:city/construction` | 900s (15 min) | Construction updates every 30 min |
 | `/api/:city/water-levels` | 300s (5 min) | Water levels update every 15 min |
 | `/api/:city/flood-status` | 120s (2 min) | LHP flood status updates every 5 min (its terms: refresh at least every 10) |
+| `/api/:city/lift-outages` | 300s (5 min) | KVB lift and escalator outages update every 15 min |
 | `/api/:city/aeds` | 43200s (12h) | AEDs update daily |
 | `/api/:city/social-atlas` | 43200s (12h) | Social atlas updates weekly |
 | `/api/:city/budget` | 3600s (1h) | Budget updates daily |
@@ -61,7 +62,7 @@ Applied via middleware per route tier:
 
 Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: string[]` for startup ordering — jobs with unmet dependencies wait; all others run in parallel.
 
-### Jobs (27, defined in app.ts)
+### Jobs (28, defined in app.ts)
 
 | Job | Schedule | Description |
 |---|---|---|
@@ -80,22 +81,23 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-flood-status` | `*/5 * * * *` | LHP flood class of state gauges and flood warnings, for cities with `dataSources.floodStatus` (München's Isar; [water-levels.md](water-levels.md#flood-status-lhp)). Two requests per state per run |
 | `ingest-appointments` | `0 6,18 * * *` | Firecrawl-scraped Bürgeramt appointment availability. One scrape per service per run (~600 a month for Berlin's 10); twice a day to keep Firecrawl usage down, the morning run after offices release new slots |
 | `ingest-aeds` | `0 0 * * *` | OpenStreetMap AED locations (daily) |
-| `ingest-social-atlas` | `0 5 * * 0` | MSS WFS social atlas GeoJSON (weekly) |
+| `ingest-social-atlas` | `0 5 * * 0` | Social atlas GeoJSON by provider, for cities with `dataSources.socialAtlas`: MSS WFS (Berlin), Sozialmonitoring XLSX (Hamburg), Datenkatalog CSV (Köln) (weekly; [social-atlas.md](social-atlas.md)) |
 | `ingest-budget` | `0 6 * * *` | Berlin Haushalt budget data (daily) |
-| `ingest-bathing` | `0 6 * * *` | LAGeSo bathing water quality (daily, Berlin-only) |
-| `ingest-wastewater` | `0 6 * * *` | LAGeSo wastewater viral loads (daily, Berlin-only) |
-| `ingest-labor-market` | `0 7 * * *` | BA unemployment statistics (daily, Berlin-only) |
+| `ingest-bathing` | `0 6 * * *` | Bathing water quality by provider, for cities with `dataSources.bathing`: LAGeSo CSV (Berlin), Geodienste WFS (Hamburg) ([water-levels.md](water-levels.md#bathing-water-quality)) |
+| `ingest-lift-outages` | `*/15 * * * *` | KVB lifts and escalators out of service, for cities with `dataSources.liftOutages` (Köln; [lift-outages.md](lift-outages.md)). Two requests per run |
+| `ingest-wastewater` | `0 6 * * *` | Wastewater viral loads: RKI AMELAG for every city with `dataSources.wastewater` (one download), plus LAGeSo for Berlin (daily) |
+| `ingest-labor-market` | `0 7 * * *` | BA unemployment statistics, the Land or Kreis table in `dataSources.laborMarket` (daily) |
 | `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly; skips the API only when the stored data is under 6 days old, so every weekly run refreshes) |
-| `ingest-population` | `0 6 1 * *` | Amt für Statistik population demographics (monthly, Berlin-only) |
+| `ingest-population` | `0 6 1 * *` | Population per small area by provider, for cities with `dataSources.population`: EWR XLSX (Berlin), Stadtteil OGC API (Hamburg), Datenkatalog CSV (Köln) (monthly; [population.md](population.md)) |
 | `ingest-feuerwehr` | `0 8 * * *` | Berliner Feuerwehr operations (daily, Berlin-only) |
 | `ingest-pollen` | `0 */6 * * *` | DWD pollen forecast |
 | `ingest-noise-sensors` | `*/10 * * * *` | Sensor.Community DNMS noise sensors |
-| `ingest-council-meetings` | `0 */6 * * *` | BVV OParl + Abgeordnetenhaus PARDOK (Berlin), SessionNet OParl 1.1 (Köln), RIS RSS (München) |
+| `ingest-council-meetings` | `0 */6 * * *` | BVV OParl + Abgeordnetenhaus PARDOK (Berlin), Bürgerschaft website calendar (Hamburg), SessionNet OParl 1.1 (Köln), RIS RSS (München) |
 | `data-retention` | `0 3 * * *` | Prune old data (nightly) |
 
 Ingestion jobs use conditional `runOnStart` based on DB freshness checks — only stale/missing domains trigger startup API calls. `ingest-aq-grid` always runs on start, and `data-retention` never does. `summarize-news` has `dependsOn: ['ingest-feeds']`, `ingest-population` has `dependsOn: ['ingest-social-atlas']`.
 
-**Which cities a job serves.** Most jobs loop over `getActiveCities()` and skip a city without the matching `dataSources` entry (budget, appointments, social atlas, council meetings, noise sensors, roadworks, transit, events…), so they fetch nothing for a city that lacks the source. Each job's `FRESHNESS_SPECS` entry in `app.ts` repeats that filter as its `serves` predicate, so the startup check looks only at the cities the job writes rows for; change the two together. `ingest-appointments` (paid Firecrawl calls) is the one job without it, and keeps the table-wide check ([data-layer.md](data-layer.md#freshness-checks-warm-cachets)). Five jobs have no config entry because their source covers Berlin only, with a hardcoded URL and rows written under `'berlin'`: `ingest-bathing`, `ingest-wastewater`, `ingest-labor-market`, `ingest-population` and `ingest-feuerwehr`. Each handler returns before any request when `getCityConfig('berlin')` is undefined, and `app.ts` lists them in `BERLIN_ONLY_JOBS` so that, without Berlin, they are left out of the freshness check and get no startup run. They stay scheduled (the health endpoint lists all 27 jobs) and their ticks do nothing. With Berlin active, alone or with other cities, they make the same requests and writes as before. A new Berlin-only source without a config entry follows the same two steps ([new-data-sources.md](new-data-sources.md)).
+**Which cities a job serves.** Most jobs loop over `getActiveCities()` and skip a city without the matching `dataSources` entry (budget, appointments, social atlas, population, labour market, wastewater, bathing, lift outages, council meetings, noise sensors, roadworks, transit, events…), so they fetch nothing for a city that lacks the source. Each job's `FRESHNESS_SPECS` entry in `app.ts` repeats that filter as its `serves` predicate, so the startup check looks only at the cities the job writes rows for; change the two together. `ingest-appointments` (paid Firecrawl calls) is the one job without it, and keeps the table-wide check ([data-layer.md](data-layer.md#freshness-checks-warm-cachets)). One job has no config entry because its source covers Berlin only, with a hardcoded URL and rows written under `'berlin'`: `ingest-feuerwehr` (wastewater, labour market, bathing and population moved to config on 2026-11-02). Its handler returns before any request when `getCityConfig('berlin')` is undefined, and `app.ts` lists it in `BERLIN_ONLY_JOBS` so that, without Berlin, it is left out of the freshness check and gets no startup run. It stays scheduled (the health endpoint lists all 28 jobs) and its ticks do nothing. With Berlin active, alone or with other cities, it makes the same requests and writes as before. A new Berlin-only source without a config entry follows the same two steps ([new-data-sources.md](new-data-sources.md)).
 
 **Political data** (`ingest-political.ts`, served at `/api/:city/political/:level`). abgeordnetenwatch.de API v2 (CC0 1.0) for the current Bundestag and state legislature, one city at a time, for each city in `PARLIAMENT_CONFIG`. Levels: `bundestag` and `state` (members grouped by constituency), `state-bezirke` (state members by Bezirk, Berlin only, `STATE_CONSTITUENCY_BEZIRKE`), and two hand-kept levels with a source page and `lastVerified` date each (the server warns 180 days after it): `bezirke` (`BEZIRKSBUERGERMEISTER`, Berlin and Köln) and `mayor` (`OBERBUERGERMEISTER`, Köln and München). Whose mandates count:
 - A city-state (Berlin, Hamburg; no `constituencies`): every member of the state parliament, and the Bundestag members whose constituency or Landesliste label names the city.
@@ -137,7 +139,7 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 
 ## Bootstrap Endpoint
 
-`GET /api/:city/bootstrap` (in `routes/bootstrap.ts`) returns 22 data slots in one response for fast initial page load: news, weather, transit, events, safety, nina, airQuality, pharmacies, aeds, traffic, construction, waterLevels, floodStatus, budget, appointments, laborMarket, wastewater, populationSummary, feuerwehr, pollen, noiseSensors, councilMeetings. It is cache-only (`cache.getBatchWithMeta(CK.bootstrapKeys(cityId))`, no DB fallback), so a cold slot is `null`.
+`GET /api/:city/bootstrap` (in `routes/bootstrap.ts`) returns 23 data slots in one response for fast initial page load: news, weather, transit, events, safety, nina, airQuality, pharmacies, aeds, traffic, construction, waterLevels, floodStatus, liftOutages, budget, appointments, laborMarket, wastewater, populationSummary, feuerwehr, pollen, noiseSensors, councilMeetings. It is cache-only (`cache.getBatchWithMeta(CK.bootstrapKeys(cityId))`, no DB fallback), so a cold slot is `null`.
 
 ## City Configuration (`packages/server/src/config/`)
 
@@ -145,7 +147,7 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 - `lib/city-features.ts` — `cityFeatures(city)` lists the features the server ingests for a city, from the same conditions the jobs check; the web configs' `features` must match (`.context/frontend.md`, "City Context").
 - News and police map pins: a geocoded place outside the city's `boundingBox` gets no coordinates (`insideCity` in `lib/openai.ts`), since the classifier's location examples are Berlin's and the geocoder searches all of Germany.
 - `cities/berlin.ts` — Berlin config with 6 RSS feeds, weather (BrightSky), transit (VBB via `v6.vbb.transport.rest`, 12 stations), events (kulturdaten.berlin, Ticketmaster, gomus), police (berlin.de press-release RSS of Polizei Berlin), roadworks (VIZ Berlin).
-- `cities/hamburg.ts` — Hamburg config with 3 RSS feeds (NDR, MOPO, Feuerwehr Hamburg on presseportal.de; licence verdicts in `news.md`), weather (BrightSky), police (Polizei Hamburg's presseportal.de RSS), roadworks (the Bauweiser OGC API, [roadworks.md](roadworks.md)). No transit config, so Hamburg has no transit alerts.
+- `cities/hamburg.ts` — Hamburg config with 3 RSS feeds (NDR, MOPO, Feuerwehr Hamburg on presseportal.de; licence verdicts in `news.md`), weather (BrightSky), police (Polizei Hamburg's presseportal.de RSS), roadworks (the Bauweiser OGC API, [roadworks.md](roadworks.md)), council meetings from the Bürgerschaft's website calendar (`councilMeetings.hamburgBuergerschaft`, [council-meetings.md](council-meetings.md); no Bezirksversammlung source). No transit config, so Hamburg has no transit alerts.
 - `cities/koeln.ts` — Köln config with the Germany-wide sources: weather (BrightSky, DWD warnings by the warn region `Stadt Köln`), NINA (ARS `053150000000`), defibrillators from the OSM boundary at admin level 6, DWD pollen (region 40/41) and the PEGELONLINE Rhein gauge Köln; roadworks (the city's WFS, 10 layers, permit periods); plus 4 feeds (WDR Rheinland, Kölner Stadt-Anzeiger, EXPRESS, Stadt Köln; licence verdicts in `news.md`) and police (Polizei Köln's presseportal.de RSS, which also covers Leverkusen), both since 2026-11-01, so Köln makes LLM calls (classification, briefing in de/en, police places); the city's own events (`stadt-koeln` open data, [events-safety.md](events-safety.md#events)) and council meetings from its SessionNet OParl 1.1 body (`councilMeetings.oparlBody`, [council-meetings.md](council-meetings.md)). No transit. Active in the web build; served when `ACTIVE_CITIES` names `koeln`.
 - `cities/muenchen.ts` — München config with 2 feeds since 2026-11-01 (BR24 Oberbayern, an RSS 1.0/RDF feed, and Feuerwehr München on presseportal.de), so it makes LLM calls for classification and the de/en briefing; no police feed (`events-safety.md`). Roadworks from the Geoportal WFS, filtered server-side; council meetings from the RIS RSS feeds (`councilMeetings.muenchenRis`, [council-meetings.md](council-meetings.md)); no transit or events (no open events feed exists). Otherwise the Germany-wide sources, like Köln: weather (BrightSky, DWD UV matched by the name `München`, DWD warnings by the warn region `Kreis und Stadt München`, which DWD uses for city and Landkreis together), NINA (ARS `091620000000`), defibrillators from the OSM boundary at admin level 6, DWD pollen (region 120/121). No river level: the Isar through München is a Bavarian water, not on PEGELONLINE; the flood class of the Isar gauges München and Puppling comes from the LHP instead (`floodStatus`, [water-levels.md](water-levels.md#flood-status-lhp)). Active in the web build; served when `ACTIVE_CITIES` names `muenchen`.
 

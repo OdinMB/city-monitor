@@ -39,11 +39,11 @@ describe('cityLayers', () => {
 
   it('leaves out what Hamburg has no source for', () => {
     const hh = cityLayers(hamburg);
-    // The Sozialmonitoring has all four indicators; no rent map outside Berlin
-    expect(hh.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty']);
+    // The Sozialmonitoring has all four indicators, and Hamburg has a rent map
+    expect(hh.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty', 'rent']);
     expect(hh.layers.has('population')).toBe(true);
     expect(hh.traffic).toEqual(['incidents', 'roadworks']);
-    expect(hh.water).toEqual(['levels']);
+    expect(hh.water).toEqual(['levels', 'bathing']);
     expect(hh.noise).toEqual(['road', 'rail', 'air']);
     expect(hh.noiseLive).toBe(false);
     expect(hh.political).toEqual(['bundestag']);
