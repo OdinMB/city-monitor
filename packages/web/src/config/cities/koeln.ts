@@ -22,8 +22,9 @@ export const koeln: WebCityConfig = {
   // The Germany-wide sources, news feeds, Polizei Köln, the city's roadworks,
   // events and council meetings, the members of the Bundestag and Landtag for
   // its constituencies, its Oberbürgermeister and Bezirksbürgermeister, and the
-  // crisis-services directory. Its nine Stadtbezirke ship as outlines, so the
-  // political map layer has the Bezirksbürgermeister view alone: its
-  // constituencies ("Köln I") are not Stadtbezirke.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'events', 'roadworks', 'laborMarket', 'wastewater', 'councilMeetings', 'pharmacies', 'aeds', 'political', 'districtMayors', 'mayor', 'crisis', 'politicalMap'],
+  // crisis-services directory, and KVB's lift and escalator outages (no
+  // transit disruptions: KVB publishes none as data). Its nine Stadtbezirke
+  // ship as outlines, so the political map layer has the Bezirksbürgermeister
+  // view alone: its constituencies ("Köln I") are not Stadtbezirke.
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'events', 'roadworks', 'laborMarket', 'wastewater', 'councilMeetings', 'liftOutages', 'pharmacies', 'aeds', 'political', 'districtMayors', 'mayor', 'crisis', 'politicalMap'],
 };

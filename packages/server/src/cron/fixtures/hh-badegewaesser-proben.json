@@ -1,0 +1,89 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_PROBEN_34834",
+      "geometry": null,
+      "properties": {
+        "tagebuchnummer": "2026HW01876", "messstellennummer": "EbsO", "name": "Eichbaumsee, Badestelle Ost",
+        "badesaison": "08.05.2026 bis 14.09.2026", "hinweis": "NNNN", "badestellen_typ": "Badegewaesser",
+        "temperatur": "22,3", "datum": "20260810", "sichttiefe": ">1,0", "ph_wert": "9,7", "enterokokken": "15", "mpn": "<15",
+        "farbe": "schwach grün", "geruch": "nicht gemessen", "algen": "nein", "bemerkung_bsu": "keine Beanstandung", "icon": "NNNN"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_PROBEN_34840",
+      "geometry": null,
+      "properties": {
+        "tagebuchnummer": "2026HW01901", "messstellennummer": "Volk", "name": "Sommerbad Volksdorf",
+        "badesaison": "01.06.2026 bis 31.08.2026", "hinweis": "NNNN", "badestellen_typ": "Badegewaesser",
+        "temperatur": "22,0", "datum": "20260817", "sichttiefe": "1,3", "ph_wert": "8,8", "enterokokken": "< 15", "mpn": "< 15",
+        "farbe": "farblos", "geruch": "geruchlos", "algen": "wenig", "bemerkung_bsu": "keine Beanstandung, ggf. Blaualgen (Stand 17.08.)", "icon": "NNNN"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_PROBEN_34843",
+      "geometry": null,
+      "properties": {
+        "tagebuchnummer": "2026HW01939", "messstellennummer": "OecN", "name": "Öjendorfer See, Badestelle Nord",
+        "badesaison": "08.05.2026 bis 31.08.2026", "hinweis": "NNNN", "badestellen_typ": "Badegewaesser",
+        "temperatur": "18,3", "datum": "20260825", "sichttiefe": "<1,0", "ph_wert": "9,3", "enterokokken": "30", "mpn": "15",
+        "farbe": "stark grün", "geruch": "stark modrig", "algen": "viel", "bemerkung_bsu": "Baden verboten, Blaualgen (Stand 25.08.2026)", "icon": "baden_verboten"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_PROBEN_34846",
+      "geometry": null,
+      "properties": {
+        "tagebuchnummer": "2026HW01937", "messstellennummer": "Stps", "name": "Naturbad Stadtparksee",
+        "badesaison": "30.04.2026 bis 14.09.2026", "hinweis": "NNNN", "badestellen_typ": "Badegewaesser",
+        "temperatur": "19", "datum": "20260825", "sichttiefe": ">2,0", "ph_wert": "7,9", "enterokokken": "<15", "mpn": "<15",
+        "farbe": "farblos", "geruch": "geruchlos", "algen": "n.g.", "bemerkung_bsu": "keine Beanstandung", "icon": "NNNN"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_PROBEN_34847",
+      "geometry": null,
+      "properties": {
+        "tagebuchnummer": "2026HW01907", "messstellennummer": "OecN", "name": "Öjendorfer See, Badestelle Nord",
+        "badesaison": "08.05.2026 bis 31.08.2026", "hinweis": "NNNN", "badestellen_typ": "Badegewaesser",
+        "temperatur": "25", "datum": "20260818", "sichttiefe": "<1,0", "ph_wert": "9,7", "enterokokken": "n.g.", "mpn": "n.g.",
+        "farbe": "grün", "geruch": "schwach modrig", "algen": "viel", "bemerkung_bsu": "Baden verboten. Blaualgen (Stand 18.08.26)", "icon": "baden_verboten"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_PROBEN_34901",
+      "geometry": null,
+      "properties": {
+        "tagebuchnummer": "2026HW01378", "messstellennummer": "EbsO", "name": "Eichbaumsee, Badestelle Ost",
+        "badesaison": "08.05.2026 bis 14.09.2026", "hinweis": "NNNN", "badestellen_typ": "Badegewaesser",
+        "temperatur": "18,3", "datum": "20260907", "sichttiefe": ">1,0", "ph_wert": "9,5", "enterokokken": "n.g.", "mpn": "n.g.",
+        "farbe": "farblos", "geruch": "geruchlos", "algen": "viel", "bemerkung_bsu": "Baden verboten. Blaualgen (Stand 07.09.26)", "icon": "baden_verboten"
+      },
+      "srsName": "EPSG:4326"
+    },
+    {
+      "type": "Feature",
+      "id": "APP_BADEGEWAESSER_PROBEN_34905",
+      "geometry": null,
+      "properties": {
+        "tagebuchnummer": "2026HW01976", "messstellennummer": "EbsO", "name": "Eichbaumsee, Badestelle Ost",
+        "badesaison": "08.05.2026 bis 14.09.2026", "hinweis": "NNNN", "badestellen_typ": "Badegewaesser",
+        "temperatur": "19,4", "datum": "20260831", "sichttiefe": ">1,0", "ph_wert": "9,6", "enterokokken": "<15", "mpn": "<15",
+        "farbe": "schwach grün", "geruch": "geruchlos", "algen": "viel", "bemerkung_bsu": "Baden verboten. Blaualgen (Stand 02.09.26)", "icon": "baden_verboten"
+      },
+      "srsName": "EPSG:4326"
+    }
+  ]
+}

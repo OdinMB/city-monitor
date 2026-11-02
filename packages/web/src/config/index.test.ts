@@ -8,7 +8,9 @@ import { berlin } from './cities/berlin.js';
 import { hamburg } from './cities/hamburg.js';
 import { koeln } from './cities/koeln.js';
 import { muenchen } from './cities/muenchen.js';
-import { DISTRICT_URLS, getNoiseWmsAttribution, getNoiseWmsUrl } from '../components/map/constants.js';
+import {
+  DISTRICT_URLS, getNoiseWmsAttribution, getNoiseWmsUrl, getRentMapAttribution, getRentMapLegend, getRentMapWmsUrl,
+} from '../components/map/constants.js';
 import { getCrisisDirectory } from '../components/strips/crisis-services.js';
 
 /** Features the web app holds itself, which the server knows nothing about. */
@@ -147,10 +149,15 @@ describe('the web app\'s own features', () => {
     },
   );
 
-  it('keeps the rent map, which shows Berlin\'s rent zones, to Berlin', () => {
-    for (const city of ALL_CONFIGURED.filter((c) => c.id !== 'berlin')) {
-      expect(city.features, city.id).not.toContain('rentMap');
-    }
+  // The rent maps are WMS layers too, each with its own classes and credit.
+  it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists a rent map exactly when it has one, with a legend', (id, city) => {
+    const url = getRentMapWmsUrl(id);
+    expect(city.features.includes('rentMap'), id).toBe(url !== null);
+    if (url === null) return;
+    expect(getRentMapLegend(id).length, id).toBeGreaterThan(0);
+    const wmsHost = new URL(url).hostname;
+    const credited = [...getRentMapAttribution(id)!.matchAll(/href="([^"]+)"/g)].map((m) => new URL(m[1]!).hostname);
+    expect(credited.some((host) => host.split('.').slice(-2).join('.') === wmsHost.split('.').slice(-2).join('.')), id).toBe(true);
   });
 
   // The crisis tile shows the city's own directory (crisis-services.ts), so a

@@ -94,7 +94,9 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Stadt Köln SessionNet (OParl)', (c) => c.dataSources.councilMeetings?.oparlBody !== undefined],
   ['München RIS', (c) => c.dataSources.councilMeetings?.muenchenRis !== undefined],
   ['Hamburgische Bürgerschaft (Termine)', (c) => c.dataSources.councilMeetings?.hamburgBuergerschaft !== undefined],
-  ['LAGeSo Bathing Water', berlinOnly],
+  ['LAGeSo Bathing Water', (c) => c.dataSources.bathing?.provider === 'lageso'],
+  ['Badegewässer Hamburg (Geodienste)', (c) => c.dataSources.bathing?.provider === 'hamburg-wfs'],
+  ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
   ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
   // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
@@ -191,6 +193,9 @@ describe('SourcesPage licence credits', () => {
     'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/zero-2-0.',
     'Stadt Köln Open Data (Events)': 'Licensed dl-de/zero-2-0.',
     'Länderübergreifendes Hochwasserportal (LHP)': 'Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.',
+    'Hamburger Wohnlagenverzeichnis (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.',
+    'Badegewässer Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, dl-de/by-2-0.',
+    'KVB Open Data (Aufzüge, Fahrtreppen)': 'Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.',
   };
 
   it('finds every listed source on some city page', () => {

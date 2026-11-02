@@ -85,6 +85,8 @@ export const berlin: CityConfig = {
     },
     nina: { ars: '110000000000' },
     roadworks: { provider: 'viz-berlin', url: 'https://api.viz.berlin.de/daten/baustellen_sperrungen.json' },
+    // LAGeSo's latest sample per bathing spot (seasonal; the URL is stable)
+    bathing: { provider: 'lageso', url: 'https://data.lageso.de/baden/0_letzte/letzte.csv' },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

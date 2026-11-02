@@ -340,6 +340,18 @@
       "asOf": "Stand:",
       "empty": "Keine Hochwasserdaten"
     },
+    "liftOutages": {
+      "title": "Aufzüge & Fahrtreppen",
+      "lifts": "Aufzüge außer Betrieb: {{n}}",
+      "escalators": "Fahrtreppen außer Betrieb: {{n}}",
+      "noLifts": "Alle Aufzüge in Betrieb",
+      "noEscalators": "Alle Fahrtreppen in Betrieb",
+      "allWorking": "Alle Aufzüge und Fahrtreppen in Betrieb",
+      "more": "+{{n}} weitere",
+      "atStations": "Betroffene Haltestellen: {{n}}",
+      "asOf": "Stand:",
+      "empty": "Keine Störungsdaten"
+    },
     "pollen": {
       "title": "Pollenvorhersage",
       "empty": "Keine Daten verfügbar",
@@ -537,6 +549,14 @@
       "welfare": "Transferbezug (2025)",
       "child-poverty": "Kinderarmut (2025)",
       "rent": "Mietspiegel"
+    },
+    "rentLegend": {
+      "title": "Wohnlagen des Mietspiegels",
+      "simple": "Einfache Wohnlage",
+      "medium": "Mittlere Wohnlage",
+      "good": "Gute Wohnlage",
+      "normal": "Normale Wohnlage",
+      "unrated": "Nicht bewertet"
     },
     "population": {
       "pop-density": "Bevölkerungsdichte",

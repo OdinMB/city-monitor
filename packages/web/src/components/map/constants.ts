@@ -72,11 +72,74 @@ export const WEATHER_LAYER = 'weather-precip-layer';
 
 export const RENT_MAP_SOURCE = 'rent-map-wms';
 export const RENT_MAP_LAYER = 'rent-map-layer';
-/** Wohnlagenkarte zum Berliner Mietspiegel 2026; a new Mietspiegel (every two years) brings a new service name. */
-export const RENT_MAP_WMS_URL =
-  'https://gdi.berlin.de/services/wms/wohnlagenadr2026?service=WMS&version=1.1.1&request=GetMap' +
-  '&layers=wohnlagenadr2026&styles=&format=image/png&transparent=true' +
-  '&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}';
+
+/** One class of a city's rent map, as its WMS draws it: the i18n key under `sidebar.rentLegend` and the colour. */
+export interface RentMapClass {
+  key: 'simple' | 'medium' | 'good' | 'normal' | 'unrated';
+  color: string;
+}
+
+interface RentMapWms {
+  /** The WMS endpoint, without query. */
+  base: string;
+  layer: string;
+  /** The map credit, as the provider and licence ask. */
+  attribution: string;
+  /** The classes the WMS draws, in the order of its own legend (GetLegendGraphic). */
+  legend: readonly RentMapClass[];
+}
+
+/**
+ * Each city's address-level residential-location map (Wohnlagenkarte), the
+ * `rent` sub-layer of the social layer. A city lists the `rentMap` feature
+ * exactly when it has an entry (config/index.test.ts checks).
+ */
+const RENT_MAP_WMS: Record<string, RentMapWms> = {
+  // Wohnlagenkarte zum Berliner Mietspiegel 2026; a new Mietspiegel (every two years) brings a new service name.
+  berlin: {
+    base: 'https://gdi.berlin.de/services/wms/wohnlagenadr2026',
+    layer: 'wohnlagenadr2026',
+    attribution: '&copy; <a href="https://daten.berlin.de" target="_blank">Berlin Open Data</a>',
+    legend: [
+      { key: 'simple', color: '#ffff7f' },
+      { key: 'medium', color: '#ffd37f' },
+      { key: 'good', color: '#ff7f7f' },
+    ],
+  },
+  // Hamburger Wohnlagenverzeichnis, updated with each Mietenspiegel (two-yearly).
+  // GetCapabilities <Fees>: dl-de/by-2.0 with this credit line (checked 2026-11-02).
+  // Two classes only: Hamburg's Mietenspiegel knows no "einfache Wohnlage".
+  hamburg: {
+    base: 'https://geodienste.hamburg.de/HH_WMS_Wohnlagen',
+    layer: 'wohnlagen',
+    attribution:
+      '<a href="https://geodienste.hamburg.de/HH_WMS_Wohnlagen?SERVICE=WMS&amp;REQUEST=GetCapabilities" target="_blank">Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen</a>, ' +
+      '<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank">dl-de/by-2-0</a>',
+    legend: [
+      { key: 'normal', color: '#fc2222' },
+      { key: 'good', color: '#3c80fc' },
+      { key: 'unrated', color: '#ffffff' },
+    ],
+  },
+};
+
+/** The city's rent map tile URL template, or null when it has none. */
+export function getRentMapWmsUrl(cityId: string): string | null {
+  const wms = RENT_MAP_WMS[cityId];
+  if (!wms) return null;
+  return `${wms.base}?service=WMS&version=1.1.1&request=GetMap` +
+    `&layers=${wms.layer}&styles=&format=image/png&transparent=true` +
+    `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}`;
+}
+
+export function getRentMapAttribution(cityId: string): string | undefined {
+  return RENT_MAP_WMS[cityId]?.attribution;
+}
+
+/** The classes of the city's rent map, for the sidebar legend (empty without one). */
+export function getRentMapLegend(cityId: string): readonly RentMapClass[] {
+  return RENT_MAP_WMS[cityId]?.legend ?? [];
+}
 
 export const NOISE_SOURCE = 'noise-wms';
 export const NOISE_LAYER = 'noise-wms-layer';

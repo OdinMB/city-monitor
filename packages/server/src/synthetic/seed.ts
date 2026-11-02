@@ -13,7 +13,7 @@ import type { Db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import {
   saveAeds, saveAirQualityGrid, saveAppointments, saveBathingSpots, saveBudget, saveConstructionSites,
-  saveCouncilMeetings, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveNewsItems, saveNinaWarnings,
+  saveCouncilMeetings, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
   saveNoiseSensors, savePharmacies, savePoliticalDistricts, savePollen, savePopulation, saveSafetyReports,
   saveSocialAtlas, saveSummary, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
   saveWeather,
@@ -115,6 +115,7 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.noiseSensors) await saveNoiseSensors(db, cityId, data.noiseSensors);
   if (data.councilMeetings) await saveCouncilMeetings(db, cityId, data.councilMeetings);
   if (data.floodStatus) await saveFloodStatus(db, cityId, data.floodStatus);
+  if (data.liftOutages) await saveLiftOutages(db, cityId, data.liftOutages);
   for (const [level, districts] of Object.entries(data.political ?? {})) {
     await savePoliticalDistricts(db, cityId, level, districts);
   }

@@ -2,7 +2,7 @@ import { sql, type SQL } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
@@ -138,6 +138,16 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
     })().catch((err) => log.error(`${cityId} flood status failed`, err)),
 
     (async () => {
+      const r = await loadBathingSpots(db, cityId);
+      if (r) cache.set(CK.bathingSpots(cityId), r.data, 86400, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} bathing failed`, err)),
+
+    (async () => {
+      const r = await loadLiftOutages(db, cityId);
+      if (r) cache.set(CK.liftOutages(cityId), r.data, 1200, r.fetchedAt); // LIFT_OUTAGES_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} lift outages failed`, err)),
+
+    (async () => {
       const r = await loadWastewater(db, cityId);
       if (r) cache.set(CK.wastewaterSummary(cityId), r.data, 604800, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} wastewater failed`, err)),
@@ -147,13 +157,8 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       if (r) cache.set(CK.laborMarket(cityId), r.data, 86400, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} labor-market failed`, err)),
 
-    // Bathing, population and Feuerwehr are Berlin-only data sources
+    // Population and Feuerwehr are Berlin-only data sources; noise sensors only Berlin has
     ...(cityId === 'berlin' ? [
-      (async () => {
-        const r = await loadBathingSpots(db, cityId);
-        if (r) cache.set(CK.bathingSpots(cityId), r.data, 86400, r.fetchedAt);
-      })().catch((err) => log.error(`${cityId} bathing failed`, err)),
-
       (async () => {
         const r = await loadPopulationGeojson(db, cityId);
         if (r) cache.set(CK.populationGeojson(cityId), r.data, POPULATION_TTL_SECONDS, r.fetchedAt);

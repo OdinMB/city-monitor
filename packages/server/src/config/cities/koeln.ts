@@ -3,8 +3,9 @@ import type { CityConfig } from '@city-monitor/shared';
 /**
  * Köln: the Germany-wide sources (DWD, Open-Meteo, NINA, PEGELONLINE) plus
  * news feeds, Polizei Köln, the city's roadworks WFS, its own events and its
- * council information system. Transit is not configured yet, so its job
- * fetches nothing for Köln. Its Stadtbezirk outlines ship with the web app
+ * council information system, and KVB's lift and escalator outages. Transit
+ * disruptions are not configured (KVB publishes none as data), so the transit
+ * job fetches nothing for Köln. Its Stadtbezirk outlines ship with the web app
  * (packages/web/src/data/districts).
  */
 export const koeln: CityConfig = {
@@ -119,6 +120,9 @@ export const koeln: CityConfig = {
         'brueckenarbeiten', 'gleisbau', 'tunnelarbeiten', 'markierungsarbeiten', 'sondierungsarbeiten',
       ],
     },
+    // KVB's lifts and escalators out of service (dl-de/zero-2.0 on open.nrw), every 15 min.
+    // KVB publishes no line disruptions as data, so this is Köln's only transit signal.
+    liftOutages: { provider: 'kvb', url: 'https://data.webservice-kvb.koeln/service/opendata' },
     // The city's own events (Stadt Köln open data, dl-de/zero-2.0)
     events: [
       { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },

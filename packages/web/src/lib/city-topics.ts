@@ -15,6 +15,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   floodStatus: 'panel.floodStatus.title',
   appointments: 'panel.appointments.title',
   bathing: 'panel.bathing.title',
+  liftOutages: 'panel.liftOutages.title',
   pollen: 'panel.pollen.title',
   nina: 'sidebar.layers.warnings',
   wastewater: 'panel.wastewater.title',

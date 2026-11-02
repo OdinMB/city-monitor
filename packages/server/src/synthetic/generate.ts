@@ -16,7 +16,8 @@ import SunCalc from 'suncalc';
 import type {
   AedLocation, AirQuality, AirQualityGridPoint, BathingSpot, BudgetSummary, BuergeramtData,
   CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, EmergencyPharmacy,
-  FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, NinaWarning,
+  FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
+  LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
   TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
@@ -79,6 +80,8 @@ export interface SyntheticData {
   political: Record<Exclude<PoliticalLevel, 'mayor'>, PoliticalDistrict[]> & { mayor?: PoliticalDistrict[] };
   /** Not in Berlin's data set: Berlin has no LHP gauges configured (NOT_IN_BERLIN). */
   floodStatus?: FloodStatus;
+  /** Not in Berlin's data set: only Köln's KVB publishes lift outages (NOT_IN_BERLIN). */
+  liftOutages?: LiftOutageData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -125,7 +128,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   socialAtlas: (c) => c.dataSources.socialAtlas !== undefined,
   population: berlinOnly,
   wastewater: (c) => c.dataSources.wastewater !== undefined,
-  bathing: berlinOnly,
+  bathing: (c) => c.dataSources.bathing !== undefined,
   laborMarket: (c) => c.dataSources.laborMarket !== undefined,
   feuerwehr: berlinOnly,
   pollen: (c) => c.dataSources.pollen !== undefined,
@@ -133,10 +136,11 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   councilMeetings: (c) => c.dataSources.councilMeetings !== undefined,
   political: (c) => politicalLevels(c).length > 0,
   floodStatus: (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0,
+  liftOutages: (c) => c.dataSources.liftOutages !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
-const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus'];
+const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages'];
 
 /** The data sets the synthetic seed writes for `city`: those production would hold for it. */
 export function syntheticCoverage(city: CityConfig): SyntheticDataSet[] {
@@ -234,7 +238,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (areas && has.has('socialAtlas')) sets.socialAtlas = areas.socialAtlas;
   if (areas && has.has('population')) sets.population = areas.population;
   if (has.has('wastewater')) sets.wastewater = generateWastewater(rng, now, city.dataSources.wastewater!);
-  if (has.has('bathing')) sets.bathing = generateBathing(rng, now);
+  if (has.has('bathing')) sets.bathing = generateBathing(rng, now, place);
   if (has.has('laborMarket')) sets.laborMarket = laborMarketFor(rng, shiftMonth(thisMonth, -1), 0);
   if (has.has('feuerwehr')) sets.feuerwehr = generateFeuerwehr(rng, now);
   if (has.has('pollen')) sets.pollen = generatePollen(rng, now, place);
@@ -243,6 +247,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('political')) sets.political = generatePolitical(rng, place);
   // Drawn last, so adding it left the other data sets' values as they were
   if (has.has('floodStatus')) sets.floodStatus = generateFloodStatus(rng, now, city);
+  if (has.has('liftOutages')) sets.liftOutages = generateLiftOutages(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1278,14 +1283,23 @@ const BATHING_SITES: ReadonlyArray<Point & { place: string; district: string; wa
   { place: 'Orankesee', district: 'Lichtenberg', waterBody: 'Orankesee', lat: 52.548, lon: 13.495 },
 ];
 
-function generateBathing(rng: Rng, now: Date): BathingSpot[] {
+/**
+ * Berlin's lakes, or for another city a made-up spot near each of its
+ * anchors, without a Bezirk or water body, as Hamburg's WFS gives none.
+ */
+function bathingSites(place: Place): ReadonlyArray<Point & { place: string; district: string; waterBody: string }> {
+  if (place.city.id === 'berlin') return BATHING_SITES;
+  return place.anchors.slice(0, 6).map((a) => ({ place: a.name, district: '', waterBody: '', lat: a.lat, lon: a.lon }));
+}
+
+function generateBathing(rng: Rng, now: Date, place: Place): BathingSpot[] {
   const today = local(now).date;
   const monthDay = today.slice(5);
   // The same season as ingest-bathing: 15 May to 15 September
   const inSeason = monthDay >= '05-15' && monthDay <= '09-15';
   const year = Number(today.slice(0, 4));
   const lastSample = inSeason ? today : `${monthDay > '09-15' ? year : year - 1}-09-10`;
-  return BATHING_SITES.map((s, i): BathingSpot => {
+  return bathingSites(place).map((s, i): BathingSpot => {
     const quality: BathingSpot['quality'] = i === 3 ? 'warning' : 'good';
     return {
       id: `bath-synthetic-${i + 1}`,
@@ -1300,7 +1314,8 @@ function generateBathing(rng: Rng, now: Date): BathingSpot[] {
       quality,
       algae: quality === 'warning' ? 'Blaualgen in geringer Menge (synthetisch)' : null,
       advisory: quality === 'warning' ? 'Synthetischer Hinweis: Baden nicht empfohlen.' : null,
-      classification: rng.pick(['ausgezeichnet', 'gut']),
+      // Hamburg's EU class codes are not documented, so production leaves its class out
+      classification: place.city.id === 'berlin' ? rng.pick(['ausgezeichnet', 'gut']) : null,
       detailUrl: `${EXAMPLE}/bathing/${i + 1}`,
       inSeason,
     };
@@ -1417,6 +1432,24 @@ function generateFloodStatus(rng: Rng, now: Date, city: CityConfig): FloodStatus
       : [],
     updated: new Date(now.getTime() - 60_000).toISOString(),
   };
+}
+
+/** A few lifts and more escalators out of service at made-up stations near the city's anchors. */
+function generateLiftOutages(rng: Rng, now: Date, place: Place): LiftOutageData {
+  const outages: LiftOutage[] = [];
+  const stations = place.anchors.slice(0, 8);
+  stations.forEach((a, i) => {
+    const station = `Haltestelle ${a.name} (synthetisch)`;
+    const at = near(rng, a, 0.004);
+    const nr = String(i + 1).padStart(3, '0');
+    if (i < 3) outages.push({ id: `${nr}-01`, kind: 'lift', station, unit: 'Aufzug 01', ...at, info: null });
+    const escalators = rng.int(0, 2);
+    for (let k = 1; k <= escalators; k++) {
+      outages.push({ id: `${nr}-5${k}`, kind: 'escalator', station, unit: `Fahrtreppe 5${k}`, ...at, info: null });
+    }
+  });
+  const updated = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000);
+  return { outages, updated: `${localIso(updated)}:00${berlinUtcOffset(`${local(updated).date} 12:00:00`)}` };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {
