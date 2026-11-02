@@ -145,9 +145,13 @@ describe('Köln config', () => {
     // Polizei Köln (presseportal newsroom 12415), not another force's newsroom
     expect(config.dataSources.police?.url).toBe('https://www.presseportal.de/rss/dienststelle_12415.rss2');
     expect(config.dataSources.roadworks?.provider).toBe('koeln-wfs');
+    // The kreisfreie Stadt's own BA table and AMELAG plant
+    expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' });
+    expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['Köln'] });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
-      police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council, ...rest
+      police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council,
+      laborMarket: _labor, wastewater: _wastewater, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });
@@ -227,9 +231,12 @@ describe('München config', () => {
     expect(config.dataSources.roadworks?.provider).toBe('muenchen-wfs');
     // The Isar is not on PEGELONLINE: flood class from the LHP instead, the city's gauge first
     expect(config.dataSources.floodStatus?.stations.map((s) => s.id)).toEqual(['BY_16005701', 'BY_16004403']);
+    // The city's Kreis table, not the wider Agentur für Arbeit München
+    expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' });
+    expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['München'] });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
-      floodStatus: _flood, ...rest
+      floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });

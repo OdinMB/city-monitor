@@ -160,6 +160,28 @@ function waqiGroup(cityId: string): SourceGroup {
   };
 }
 
+/**
+ * The BA's monthly figures for the area the city's config asks for (the Land
+ * of a city-state, the Kreis of a kreisfreie Stadt). The CSV's terms allow
+ * passing them on with the source named and a link to statistik.arbeitsagentur.de.
+ */
+function baSource(area: string): Source {
+  return {
+    name: 'Bundesagentur für Arbeit',
+    url: 'https://statistik.arbeitsagentur.de/',
+    description: `Monthly unemployment rates, SGB II recipients, and underemployment data for ${area}. © Statistik der Bundesagentur für Arbeit.`,
+  };
+}
+
+/** RKI AMELAG, for a city whose wastewater tile takes every pathogen from it. */
+function amelagSource(plants: string): Source {
+  return {
+    name: 'RKI AMELAG Wastewater Surveillance',
+    url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG',
+    description: `Influenza A and B, RSV and SARS-CoV-2 viral load, sampled several times a week at ${plants}. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the samples per week${plants.includes(' and ') ? ' and the plants, weighted by the population each serves,' : ''} and derives the trend and level; samples below the detection limit count as zero.`,
+  };
+}
+
 const BERLIN_SOURCES: SourceGroup[] = [
   {
     category: 'News',
@@ -193,7 +215,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time river water levels from Spree, Havel, and Dahme gauges.' },
       { name: 'LAGeSo Bathing Water', url: 'https://data.lageso.de/', description: 'Water quality measurements for Berlin bathing spots.' },
       { name: 'LAGeSo Wastewater Monitoring', url: 'https://data.lageso.de/', description: 'Weekly viral load measurements (Influenza A/B, RSV) in Berlin wastewater. Source: Lageso Berlin and Berliner Wasserbetriebe, dl-de/by-2-0. City Monitor averages the plants and derives the trend and level.' },
-      { name: 'RKI AMELAG Wastewater Surveillance', url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG', description: 'Weekly SARS-CoV-2 viral load at the Berlin treatment plants. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the plants and derives the trend and level.' },
+      { name: 'RKI AMELAG Wastewater Surveillance', url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG', description: 'SARS-CoV-2 viral load at the three Berlin treatment plants. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the samples per week and the plants, weighted by the population each serves, and derives the trend and level.' },
     ],
   },
   {
@@ -206,7 +228,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
   {
     category: 'Social & Economic',
     sources: [
-      { name: 'Bundesagentur für Arbeit', url: 'https://statistik.arbeitsagentur.de/', description: 'Monthly unemployment rates, SGB II recipients, and underemployment data.' },
+      baSource('the Land Berlin'),
       { name: 'Amt für Statistik Berlin-Brandenburg', url: 'https://www.statistik-berlin-brandenburg.de/', description: 'Semi-annual population register statistics per planning area — population, age groups, foreign residents. Source: Amt für Statistik Berlin-Brandenburg, CC BY. City Monitor derives the shares and the population density.' },
       { name: 'MSS 2025 (Social Atlas)', url: 'https://www.berlin.de/sen/sbw/stadtdaten/stadtwissen/monitoring-soziale-stadtentwicklung/', description: 'Biennial social indicators per planning area — unemployment, poverty, welfare rates.' },
       { name: 'Berlin Budget (Doppelhaushalt)', url: 'https://www.berlin.de/sen/finanzen/', description: 'City budget 2026 — revenues and expenses by district and function category. Licensed CC BY.' },
@@ -269,7 +291,12 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Water',
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time tidal water levels from Elbe gauges (St. Pauli, Bunthaus, Seemannshöft).' },
+      amelagSource('Hamburg\'s two treatment plants (Hamburg 01 and Hamburg 02)'),
     ],
+  },
+  {
+    category: 'Social & Economic',
+    sources: [baSource('the Land Hamburg')],
   },
 ];
 
@@ -301,7 +328,12 @@ const KOELN_SOURCES: SourceGroup[] = [
     category: 'Water',
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time Rhine water level from the Köln gauge.' },
+      amelagSource('the Köln treatment plant'),
     ],
+  },
+  {
+    category: 'Social & Economic',
+    sources: [baSource('the kreisfreie Stadt Köln')],
   },
   {
     category: 'Events',
@@ -356,7 +388,12 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     category: 'Water',
     sources: [
       { name: 'Länderübergreifendes Hochwasserportal (LHP)', url: 'https://www.hochwasserzentralen.de/', description: 'Flood class (Meldestufe) of the Isar gauges München and Puppling, set by the Bavarian flood warning service, and active flood warnings for München, via the LHP public API. Unchecked raw data; no water levels. Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.' },
+      amelagSource('the München treatment plant'),
     ],
+  },
+  {
+    category: 'Social & Economic',
+    sources: [baSource('the Landeshauptstadt München')],
   },
   {
     category: 'Council Meetings',

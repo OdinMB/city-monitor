@@ -145,9 +145,9 @@ describe('seedDatabase', () => {
     // One row per snapshot type it holds; none for transit, events, budget or the Berlin-only sources
     expect(new Set(current.map((r) => r.type))).toEqual(new Set([
       'open-meteo', 'aqi-grid', 'bbk-nina', 'pegelonline', 'tomtom-traffic', 'viz-roadworks', 'aponet', 'osm-aeds',
-      'dwd-pollen', 'abgwatch-bundestag', 'abgwatch-state',
+      'lageso-wastewater', 'ba-labor-market', 'dwd-pollen', 'abgwatch-bundestag', 'abgwatch-state',
     ]));
-    expect(current).toHaveLength(11);
+    expect(current).toHaveLength(13);
     expect(snapshots.length - current.length).toBe(data.history.length);
     expect(rows.events).toBeUndefined();
     expect(rows.news_items).toHaveLength(data.news!.length);

@@ -45,9 +45,9 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:pharmacies:emergency` | 21600s (6h) | ingest-pharmacies |
 | `{cityId}:aed:locations` | 86400s (24h) | ingest-aeds |
 | `{cityId}:social-atlas:geojson` | 604800s (7 days) | ingest-social-atlas |
-| `{cityId}:wastewater:summary` | 604800s (7 days) | ingest-wastewater (Berlin-only) |
+| `{cityId}:wastewater:summary` | 604800s (7 days) | ingest-wastewater |
 | `{cityId}:bathing:spots` | 86400s (24h) | ingest-bathing (Berlin-only) |
-| `{cityId}:labor-market` | 86400s (24h) | ingest-labor-market (Berlin-only) |
+| `{cityId}:labor-market` | 86400s (24h) | ingest-labor-market |
 | `{cityId}:appointments` | 43200s (12h) | ingest-appointments |
 | `{cityId}:nina:warnings` | 600s (10 min) | ingest-nina |
 | `{cityId}:population:geojson` | 3214080s (37.2 days) | ingest-population (Berlin-only) |
@@ -136,7 +136,7 @@ The synthetic dev seed (`synthetic/seed.ts`, see [dev-database.md](dev-database.
 
 ### Cache Warming (`warm-cache.ts`)
 
-Runs on server start if DB is connected. First loads every geocode lookup into the geocoder's in-process map, then all data types for all active cities from Postgres into cache. Frequently refreshed domains get their cron interval plus 20% as TTL (weather 4320s, transit and water levels 1080s, news and safety 720s, NINA and traffic 360s, AQ grid and construction 2160s, events and pharmacies 25920s, appointments 51840s); the rest get the cron job's own TTL. Berlin-only domains (wastewater, bathing, labor market, population GeoJSON and summary, Feuerwehr, noise sensors, council meetings) are guarded with `cityId === 'berlin'`. The warmed AQ grid, like the air-quality route's DB fallback, has Sensor.Community points only; the WAQI stations come back with the `ingest-aq-grid` run that every start triggers. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
+Runs on server start if DB is connected. First loads every geocode lookup into the geocoder's in-process map, then all data types for all active cities from Postgres into cache. Frequently refreshed domains get their cron interval plus 20% as TTL (weather 4320s, transit and water levels 1080s, news and safety 720s, NINA and traffic 360s, AQ grid and construction 2160s, events and pharmacies 25920s, appointments 51840s); the rest get the cron job's own TTL. Berlin-only domains (bathing, population GeoJSON and summary, Feuerwehr, noise sensors, council meetings) are guarded with `cityId === 'berlin'`; wastewater and labour market are loaded for every city. The warmed AQ grid, like the air-quality route's DB fallback, has Sensor.Community points only; the WAQI stations come back with the `ingest-aq-grid` run that every start triggers. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
 
 ### Freshness Checks (`warm-cache.ts`)
 
@@ -170,4 +170,4 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 - **Append-only writes:** DB writes INSERT new rows without deleting old ones. Historical data is cleaned by the nightly retention cron. Hash-keyed tables (news, events, safety) use UPSERT to avoid duplicates; NINA warnings are a JSONB snapshot like the other snapshot types.
 - **Optional DB:** Everything works without `DATABASE_URL` — cache-only mode with no persistence across restarts.
 - **City isolation:** All cache keys and DB queries are prefixed/filtered by `cityId`. No cross-city data leaks.
-- **Berlin-only domains:** Wastewater, bathing, labor market, population and Feuerwehr ingestion hardcode `'berlin'` as cityId. Each job returns before fetching when Berlin is not active, and gets no freshness check or startup run then ([server.md](server.md#jobs-27-defined-in-appts)). Noise sensors and council meetings are Berlin-only through config (only `berlin.ts` has `dataSources.noiseSensors` / `councilMeetings`). Warm-cache guards all of these with `cityId === 'berlin'`.
+- **Berlin-only domains:** Bathing, population and Feuerwehr ingestion hardcode `'berlin'` as cityId (wastewater and labour market are config-driven for all four cities since 2026-11-02; their snapshot types `lageso-wastewater` and `ba-labor-market` kept their names). Each job returns before fetching when Berlin is not active, and gets no freshness check or startup run then ([server.md](server.md#jobs-27-defined-in-appts)). Noise sensors and council meetings are Berlin-only through config (only `berlin.ts` has `dataSources.noiseSensors` / `councilMeetings`). Warm-cache guards all of these with `cityId === 'berlin'`.

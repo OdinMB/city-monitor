@@ -124,9 +124,9 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   aeds: (c) => c.country === 'DE',
   socialAtlas: (c) => c.dataSources.socialAtlas !== undefined,
   population: berlinOnly,
-  wastewater: berlinOnly,
+  wastewater: (c) => c.dataSources.wastewater !== undefined,
   bathing: berlinOnly,
-  laborMarket: berlinOnly,
+  laborMarket: (c) => c.dataSources.laborMarket !== undefined,
   feuerwehr: berlinOnly,
   pollen: (c) => c.dataSources.pollen !== undefined,
   noiseSensors: (c) => c.dataSources.noiseSensors !== undefined,
@@ -233,7 +233,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('aeds')) sets.aeds = generateAeds(rng, place);
   if (areas && has.has('socialAtlas')) sets.socialAtlas = areas.socialAtlas;
   if (areas && has.has('population')) sets.population = areas.population;
-  if (has.has('wastewater')) sets.wastewater = generateWastewater(rng, now);
+  if (has.has('wastewater')) sets.wastewater = generateWastewater(rng, now, city.dataSources.wastewater!);
   if (has.has('bathing')) sets.bathing = generateBathing(rng, now);
   if (has.has('laborMarket')) sets.laborMarket = laborMarketFor(rng, shiftMonth(thisMonth, -1), 0);
   if (has.has('feuerwehr')) sets.feuerwehr = generateFeuerwehr(rng, now);
@@ -1237,11 +1237,16 @@ const PATHOGENS = [
   { name: 'SARS-CoV-2', peak: 250_000 },
 ];
 
-function generateWastewater(rng: Rng, now: Date): WastewaterSummary {
+/**
+ * Berlin (`lageso`): LAGeSo's sample date, with SARS-CoV-2 from AMELAG dated
+ * on its own. An AMELAG city: every pathogen from AMELAG, about 12 days old.
+ */
+function generateWastewater(rng: Rng, now: Date, source: NonNullable<CityConfig['dataSources']['wastewater']>): WastewaterSummary {
   const today = local(now).date;
+  const lageso = source.provider === 'lageso';
   return {
-    sampleDate: shiftDate(today, -4),
-    plantCount: 3,
+    sampleDate: shiftDate(today, lageso ? -4 : -12),
+    plantCount: lageso ? 3 : source.sites.length,
     pathogens: PATHOGENS.map((p) => {
       const phase = rng.float(0, 2 * Math.PI);
       const history = Array.from({ length: 12 }, (_, week) =>
@@ -1256,7 +1261,7 @@ function generateWastewater(rng: Rng, now: Date): WastewaterSummary {
         level: computeLevel(value, Math.max(...history)),
         history,
         // AMELAG publishes SARS-CoV-2 about a week after Lageso's sample date
-        ...(p.name === 'SARS-CoV-2' ? { sampleDate: shiftDate(today, -9) } : {}),
+        ...(lageso && p.name === 'SARS-CoV-2' ? { sampleDate: shiftDate(today, -9) } : {}),
       };
     }),
   };
