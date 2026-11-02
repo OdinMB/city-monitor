@@ -156,12 +156,35 @@ const NOISE_WMS_LAYERS: Record<string, Record<string, string>> = {
     rail: 'schiene_tag',
     air: 'flug_tag',
   },
+  // LANUV's statewide map of the 2022 round (Runde 4). Rail is both the
+  // Stadtbahn ("Schiene sonstige") and Deutsche Bahn ("Schiene Bund").
+  koeln: {
+    road: 'STR_DEN',
+    rail: 'SCS_DEN,SCB_DEN',
+    air: 'FLG_DEN',
+  },
 };
 
 const NOISE_WMS_BASE: Record<string, string> = {
   berlin: 'https://gdi.berlin.de/services/wms/ua_stratlaerm_2022',
   hamburg: 'https://geodienste.hamburg.de/wms_strategische_laermkarten',
+  koeln: 'https://www.wms.nrw.de/umwelt/laerm',
 };
+
+/**
+ * The zoom from which a city's noise map draws anything. NRW's service renders
+ * only at 1:75,500 or closer (GetCapabilities MaxScaleDenominator), which a
+ * 256px tile in web mercator reaches at zoom 13; further out it returns empty
+ * tiles, so none are requested and the sidebar asks to zoom in.
+ */
+const NOISE_WMS_MIN_ZOOM: Record<string, number> = {
+  koeln: 13,
+};
+
+/** The zoom from which the city's noise map shows, or undefined when it shows at every zoom. */
+export function getNoiseWmsMinZoom(cityId: string): number | undefined {
+  return NOISE_WMS_MIN_ZOOM[cityId];
+}
 
 /** The map credit for each city's noise map, as its provider and licence ask. */
 const NOISE_WMS_ATTRIBUTION: Record<string, string> = {
@@ -171,6 +194,10 @@ const NOISE_WMS_ATTRIBUTION: Record<string, string> = {
     // GetCapabilities <Fees>: Datenlizenz Deutschland – Zero – Version 2.0 (checked 2026-11-01).
     // Zero asks for no credit; it is kept as a courtesy.
     '<a href="https://www.govdata.de/dl-de/zero-2-0" target="_blank">dl-de/zero-2-0</a>',
+  // GetCapabilities <AccessConstraints>: dl-de/by-2.0, credit "Land NRW" (checked 2026-11-02).
+  koeln:
+    '<a href="https://www.wms.nrw.de/umwelt/laerm?REQUEST=GetCapabilities&amp;SERVICE=WMS" target="_blank">Land NRW</a>, ' +
+    '<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank">dl-de/by-2-0</a>',
 };
 
 export function getNoiseWmsAttribution(cityId: string): string | undefined {

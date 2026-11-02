@@ -19,6 +19,7 @@ import {
   NOISE_LAYER,
   getNoiseWmsUrl,
   getNoiseWmsAttribution,
+  getNoiseWmsMinZoom,
 } from './constants.js';
 import { API_BASE } from '../../lib/api.js';
 
@@ -179,11 +180,13 @@ export function setNoiseOverlay(map: maplibregl.Map, visible: boolean, cityId: s
   if (visible) {
     const url = getNoiseWmsUrl(cityId, noiseLayer);
     if (!url) return;
+    const minzoom = getNoiseWmsMinZoom(cityId);
     map.addSource(NOISE_SOURCE, {
       type: 'raster',
       tiles: [url],
       tileSize: 256,
       attribution: getNoiseWmsAttribution(cityId),
+      ...(minzoom !== undefined && { minzoom }),
     });
     // Insert below noise sensor markers so live data stays in foreground
     const beforeId = map.getLayer('noise-sensor-icon') ? 'noise-sensor-icon' : undefined;

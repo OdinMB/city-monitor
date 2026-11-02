@@ -367,6 +367,7 @@ const KOELN_SOURCES: SourceGroup[] = [
     category: 'Maps',
     sources: [
       { name: 'Stadtbezirke Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/stadtbezirke-koeln', description: 'Outlines of the nine Stadtbezirke on the map, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
+      { name: 'Umgebungslärmkartierung NRW (LANUV)', url: 'https://www.wms.nrw.de/umwelt/laerm?REQUEST=GetCapabilities&SERVICE=WMS', description: 'EU strategic noise map, 2022 round — road, rail (Stadtbahn and Deutsche Bahn) and air noise (24-hour level Lden) as WMS overlay, drawn at street level only. Source: Land NRW, dl-de/by-2-0.' },
       { name: 'Statistische Quartiere Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/statistische-quartiere-koeln', description: 'Outlines and areas of the 570 Statistische Quartiere for the social atlas and population layers, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
     ],
   },

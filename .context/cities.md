@@ -26,7 +26,8 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
   - Two Elbe gauges (Bunthaus, Seemannshöft) have no characteristic values, so they show their level without a state. St. Pauli is tidal and reads "very high" often.
   - Crisis tile: the child-protection line is labelled generically.
   - Bathing water: Hamburg publishes no colour rating, so quality is derived from the newest sample's remark and algae note; its EU classification codes (`eg_einstufung`) are undocumented and not shown. Samples stop in early September.
-  - Council meetings: the Bürgerschaft has no OParl, RSS or iCal feed (only its website calendar, now wired); the Parlamentsdatenbank and Transparenzportal have no upcoming dates. The seven Bezirksversammlungen' ALLRIS (`sitzungsdienst-<bezirk>.hamburg.de`) is in no OParl list, and its hosts refused our test machine, so an OParl endpoint is unconfirmed either way; re-check from a German IP ([council-meetings.md](council-meetings.md)).
+  - Council meetings: the Bürgerschaft has no OParl, RSS or iCal feed (only its website calendar, now wired); the Parlamentsdatenbank and Transparenzportal have no upcoming dates. The seven Bezirksversammlungen' ALLRIS (`sitzungsdienst-<bezirk>.hamburg.de`) is in no OParl list, and its hosts refused our test machine, so an OParl endpoint is unconfirmed either way; re-check from a German IP ([council-meetings.md](council-meetings.md)). Still refused (connection reset) on 2026-11-02.
+  - Political map, Bezirk view: Hamburg's seven Bezirke are led by Bezirksamtsleitungen, administrative heads, not elected mayors, and the Bezirksamt pages name them without a party (Eimsbüttel's checked 2026-11-02), so there is nothing official to colour the outlines by. Only the Bundestag view is shown.
 
 ## Köln
 
@@ -36,6 +37,7 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
   - Transit: KVB publishes lift and escalator outages only (shown in their own tile, which also lists KVB stations outside the city, such as Bensberg); line disruptions exist only as an unlicensed web page. gtfs.de carries no KVB alerts.
   - Bathing water: NRW publishes only the yearly EU classification of its bathing waters, no live samples, so not built.
   - Rent map: no open Wohnlagen dataset found.
+  - Noise map: NRW's statewide strategic noise map (LANUV, 2022 round, dl-de/by-2.0) is on the map since 2026-11-02, road, rail and air with no combined layer; it draws only from zoom 13 ([noise.md](noise.md)).
   - Social atlas: the Datenkatalog has no child-poverty figure (sub-layer hidden) and no status index.
   - DWD has no UV forecast for Köln.
   - Political map: only the Bezirksbürgermeister view. Its Bundestag and Landtag constituencies (Köln I …) are not Stadtbezirke, so they stay in the tile.
@@ -53,6 +55,7 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
   - The 25 Bezirksausschuss chairs: one web page each, no dataset; too many to keep by hand.
   - Bathing water: Bavaria publishes no live samples as open data, so not built.
   - Rent map: no open Wohnlagen dataset found.
+  - Noise map: the LfU's agglomeration noise map (CC BY 4.0) covers München, but on 2026-11-02 its server returned empty tiles for about half of identical requests, so not built; re-test ([noise.md](noise.md)).
   - Social atlas and population at a finer level: the Indikatorenatlas keeps only the 25 Stadtbezirke current (coarse next to the other cities' 99–857 areas); "Bevölkerung Stadtbezirksteile" (108 areas) stops at December 2017. No composite status index.
 
 ## Requests to data owners, all sent 2026-11-01

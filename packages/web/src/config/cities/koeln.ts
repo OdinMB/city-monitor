@@ -26,6 +26,8 @@ export const koeln: WebCityConfig = {
   // crisis-services directory, and KVB's lift and escalator outages (no
   // transit disruptions: KVB publishes none as data). Its nine Stadtbezirke
   // ship as outlines, so the political map layer has the Bezirksbürgermeister
-  // view alone: its constituencies ("Köln I") are not Stadtbezirke.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'events', 'roadworks', 'socialAtlas', 'population', 'laborMarket', 'wastewater', 'councilMeetings', 'liftOutages', 'pharmacies', 'aeds', 'political', 'districtMayors', 'mayor', 'crisis', 'politicalMap'],
+  // view alone: its constituencies ("Köln I") are not Stadtbezirke. The noise
+  // map is NRW's statewide one (road, rail, air; no combined layer), which
+  // draws only from zoom 13.
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'events', 'roadworks', 'socialAtlas', 'population', 'laborMarket', 'wastewater', 'councilMeetings', 'liftOutages', 'pharmacies', 'aeds', 'political', 'districtMayors', 'mayor', 'crisis', 'politicalMap', 'noiseMap'],
 };

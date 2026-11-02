@@ -538,7 +538,8 @@
       "road": "Road Traffic",
       "rail": "Rail Traffic",
       "air": "Air Traffic",
-      "live": "Live Sensors"
+      "live": "Live Sensors",
+      "zoomIn": "Zoom in to street level to see the noise map."
     },
     "water": {
       "levels": "Water Levels",
