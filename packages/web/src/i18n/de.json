@@ -147,7 +147,9 @@
       "mayBeOutdated": "Daten möglicherweise veraltet (zuletzt geprüft: {{time}})",
       "affectedStops": "Betroffene Haltestellen",
       "more": "weitere",
-      "station": "Gemeldet an der Haltestelle"
+      "station": "Gemeldet an der Haltestelle",
+      "hvvSource": "Quelle: hvv / Hamburger Hochbahn AG (hvv.de)",
+      "noGuarantee": "Alle Angaben ohne Gewähr"
     },
     "events": {
       "title": "Veranstaltungen",

@@ -147,7 +147,9 @@
       "mayBeOutdated": "Data may be outdated (last checked {{time}})",
       "affectedStops": "Affected stops",
       "more": "more",
-      "station": "Reported at"
+      "station": "Reported at",
+      "hvvSource": "Source: hvv / Hamburger Hochbahn AG (hvv.de)",
+      "noGuarantee": "All information without guarantee (ohne Gewähr)"
     },
     "events": {
       "title": "Events",

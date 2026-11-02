@@ -55,8 +55,8 @@ describe('City config', () => {
     const config = getCityConfig('hamburg');
     expect(config!.feeds.length).toBeGreaterThan(0);
     expect(config!.dataSources.weather.provider).toBe('brightsky');
-    // Hamburg transit not supported — HVV transport.rest API is offline
-    expect(config!.dataSources.transit).toBeUndefined();
+    // HVV announcements from Geofox GTI (credentials from the environment, never the config)
+    expect(config!.dataSources.transit).toEqual({ provider: 'geofox', endpoint: 'https://gti.geofox.de' });
   });
 
   it('takes council meetings from the Bürgerschaft calendar alone, as no Bezirksversammlung source answers', () => {

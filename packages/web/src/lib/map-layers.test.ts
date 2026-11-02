@@ -42,7 +42,8 @@ describe('cityLayers', () => {
     // The Sozialmonitoring has all four indicators, and Hamburg has a rent map
     expect(hh.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty', 'rent']);
     expect(hh.layers.has('population')).toBe(true);
-    expect(hh.traffic).toEqual(['incidents', 'roadworks']);
+    // Geofox transit: a marker where an announcement's first stop has a coordinate
+    expect(hh.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
     expect(hh.water).toEqual(['levels', 'bathing']);
     expect(hh.noise).toEqual(['road', 'rail', 'air']);
     expect(hh.noiseLive).toBe(false);

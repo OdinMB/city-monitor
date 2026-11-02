@@ -75,7 +75,9 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['NINA (BBK)', (c) => c.country === 'DE' && c.dataSources.nina !== undefined],
   ['OpenStreetMap', (c) => c.country === 'DE'],
   ['TomTom Traffic', () => true],
-  ['VBB transport.rest', (c) => (c.dataSources.transit?.stations?.length ?? 0) > 0],
+  ['VBB transport.rest', (c) => c.dataSources.transit?.provider === 'hafas' && (c.dataSources.transit.stations?.length ?? 0) > 0],
+  // ingest-transit: Geofox when its credentials are set; credited wherever the config names it
+  ['HVV / Hamburger Hochbahn, Geofox GTI', (c) => c.dataSources.transit?.provider === 'geofox'],
   ['VIZ Berlin', (c) => c.dataSources.roadworks?.provider === 'viz-berlin'],
   ['Baustellen Hamburg (Bauweiser)', (c) => c.dataSources.roadworks?.provider === 'hamburg-ogc'],
   ['Baustellen Köln (Offene Daten Köln)', (c) => c.dataSources.roadworks?.provider === 'koeln-wfs'],

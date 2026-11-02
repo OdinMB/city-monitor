@@ -291,6 +291,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Transit & Traffic',
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
+      { name: 'HVV / Hamburger Hochbahn, Geofox GTI', url: 'https://www.hvv.de/', description: 'Current disruption and service announcements for hvv lines, from the Geofox Thin Interface (GTI) of HOCHBAHN, used under its terms of access. City Monitor shows the announcements in force now, with their full text; a long one is shortened in the collapsed row. Source: hvv / Hamburger Hochbahn AG. Alle Angaben ohne Gewähr.' },
       { name: 'Baustellen Hamburg (Bauweiser)', url: 'https://api.hamburg.de/datasets/v1/baustellen', description: 'Construction sites on main roads and federal highways, with their traffic impact and construction period. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0. City Monitor shows the sites running now or starting within two weeks and shortens long descriptions.' },
     ],
   },

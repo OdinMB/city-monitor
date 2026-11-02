@@ -7,6 +7,11 @@ import { getActiveCities } from '../config/index.js';
 import { hashString } from '../lib/hash.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { classifyDisruption, classifySeverity, extractStops } from '../lib/transit-classify.js';
+import {
+  DEFAULT_GEOFOX_ENDPOINT, announcementRequestBody, geofoxCredentials, geofoxHeaders, parseGeofoxAnnouncements,
+  type GtiAnnouncementResponse,
+} from '../lib/geofox.js';
 
 const log = createLogger('ingest-transit');
 
@@ -25,19 +30,56 @@ interface VbbResponse {
 }
 
 type TransitConfig = NonNullable<CityConfig['dataSources']['transit']>;
+type HafasConfig = Extract<TransitConfig, { provider: 'hafas' }>;
+type GeofoxConfig = Extract<TransitConfig, { provider: 'geofox' }>;
+
+/**
+ * Whether the city's config names a transit source the job can ask: VBB
+ * stations, or Geofox. Geofox also needs credentials at run time
+ * (ingestsTransit); the city's `transit` feature follows this config check
+ * alone, as appointments follows its config without FIRECRAWL_API_KEY.
+ */
+export function hasTransitSource(city: CityConfig): boolean {
+  const transit = city.dataSources.transit;
+  if (!transit) return false;
+  if (transit.provider === 'geofox') return true;
+  return (transit.stations?.length ?? 0) > 0;
+}
+
+/** Whether the job fetches for the city now: a transit source, and for Geofox both credentials. */
+export function ingestsTransit(city: CityConfig, env: NodeJS.ProcessEnv = process.env): boolean {
+  if (!hasTransitSource(city)) return false;
+  return city.dataSources.transit?.provider !== 'geofox' || geofoxCredentials(env) !== null;
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function createTransitIngestion(cache: Cache, db: Db | null = null) {
+  // Cities already told that their Geofox credentials are missing: said once per process
+  const missingCredentialsLogged = new Set<string>();
+
   return async function ingestTransit(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       const transit = city.dataSources.transit;
-      if (!transit?.stations?.length) continue;
+      if (!transit || !hasTransitSource(city)) continue;
       try {
-        await ingestCityTransit(city.id, transit, cache, db);
+        let alerts: TransitAlert[] | null;
+        if (transit.provider === 'geofox') {
+          if (!ingestsTransit(city)) {
+            if (!missingCredentialsLogged.has(city.id)) {
+              log.info(`${city.id}: GEOFOX_USER or GEOFOX_PASSWORD not set, skipping Geofox transit`);
+              missingCredentialsLogged.add(city.id);
+            }
+            continue;
+          }
+          alerts = await fetchGeofoxAlerts(city.id, transit);
+        } else {
+          alerts = await fetchHafasAlerts(city.id, transit);
+        }
+        if (alerts) await storeAlerts(city.id, alerts, cache, db);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -45,15 +87,50 @@ export function createTransitIngestion(cache: Cache, db: Db | null = null) {
   };
 }
 
-async function ingestCityTransit(
-  cityId: string,
-  transit: TransitConfig,
-  cache: Cache,
-  db: Db | null,
-): Promise<void> {
+async function storeAlerts(cityId: string, alerts: TransitAlert[], cache: Cache, db: Db | null): Promise<void> {
+  cache.set(CK.transitAlerts(cityId), alerts, 1200);
+
+  if (db) {
+    try {
+      await saveTransitAlerts(db, cityId, alerts);
+    } catch (err) {
+      log.error(`${cityId} DB write failed`, err);
+    }
+  }
+
+  log.info(`${cityId}: ${alerts.length} alerts`);
+}
+
+/**
+ * Hamburg: one signed getAnnouncements call. Null (no cache write) on any
+ * failure, so the last good alerts stay until they go stale.
+ */
+async function fetchGeofoxAlerts(cityId: string, transit: GeofoxConfig): Promise<TransitAlert[] | null> {
+  const credentials = geofoxCredentials();
+  if (!credentials) return null;
+  const endpoint = transit.endpoint ?? DEFAULT_GEOFOX_ENDPOINT;
+  // The signature covers these exact bytes, so the same string is signed and sent
+  const body = announcementRequestBody();
+  const response = await log.fetch(`${endpoint}/gti/public/getAnnouncements`, {
+    method: 'POST',
+    body,
+    headers: geofoxHeaders(body, credentials),
+    signal: AbortSignal.timeout(TRANSIT_TIMEOUT_MS),
+  });
+
+  const data = (await response.json().catch(() => null)) as GtiAnnouncementResponse | null;
+  if (!response.ok || data?.returnCode !== 'OK') {
+    // errorDevInfo is GTI's own text ("Authentication failed!"); it never echoes the credentials
+    log.warn(`${cityId}: Geofox HTTP ${response.status} ${data?.returnCode ?? ''} ${data?.errorDevInfo ?? ''}`.trim());
+    return null;
+  }
+  return parseGeofoxAnnouncements(data, new Date());
+}
+
+async function fetchHafasAlerts(cityId: string, transit: HafasConfig): Promise<TransitAlert[] | null> {
   const endpoint = transit.endpoint ?? DEFAULT_ENDPOINT;
   const stations = transit.stations ?? [];
-  if (stations.length === 0) return;
+  if (stations.length === 0) return null;
 
   // Group alerts by message+station so the same disruption affecting multiple
   // lines (e.g. S41 + S42) becomes a single card with a combined line list.
@@ -122,52 +199,10 @@ async function ingestCityTransit(
     }
   }
 
-  const allAlerts = [...alertMap.values()];
-
   if (!anySuccess) {
     log.warn(`${cityId}: all stations failed, skipping cache update`);
-    return;
+    return null;
   }
 
-  cache.set(CK.transitAlerts(cityId), allAlerts, 1200);
-
-  if (db) {
-    try {
-      await saveTransitAlerts(db, cityId, allAlerts);
-    } catch (err) {
-      log.error(`${cityId} DB write failed`, err);
-    }
-  }
-
-  log.info(`${cityId}: ${allAlerts.length} alerts`);
-}
-
-function classifyDisruption(summary: string): TransitAlert['type'] {
-  const lower = summary.toLowerCase();
-  if (lower.includes('ausfall') || lower.includes('cancel')) return 'cancellation';
-  if (lower.includes('bauarbeit') || lower.includes('planned') || lower.includes('sperrung')) return 'planned-work';
-  if (lower.includes('verspätung') || lower.includes('delay')) return 'delay';
-  return 'disruption';
-}
-
-function classifySeverity(summary: string): TransitAlert['severity'] {
-  const lower = summary.toLowerCase();
-  if (lower.includes('ausfall') || lower.includes('cancel') || lower.includes('sperrung')) return 'high';
-  if (lower.includes('störung') || lower.includes('disruption')) return 'high';
-  if (lower.includes('verspätung') || lower.includes('delay')) return 'medium';
-  return 'low';
-}
-
-function extractStops(summary: string): string[] {
-  // Pattern 1: "zwischen X und Y"
-  const zwischen = summary.match(/zwischen\s+(.+?)\s+und\s+(.+?)(?:\.|$)/i);
-  if (zwischen) {
-    return [zwischen[1].trim(), zwischen[2].trim()].filter(Boolean);
-  }
-  // Pattern 2: "X – Y" or "X - Y" (em-dash or hyphen range)
-  const dash = summary.match(/:\s*(.+?)\s+[–-]\s+(.+?)(?:\.|,|$)/);
-  if (dash) {
-    return [dash[1].trim(), dash[2].trim()].filter(Boolean);
-  }
-  return [];
+  return [...alertMap.values()];
 }

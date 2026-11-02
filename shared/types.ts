@@ -211,12 +211,23 @@ export interface CityDataSources {
   airQuality?: {
     sensorCommunityStations?: Array<{ sensorId: number; name: string; fallbackIds?: number[] }>;
   };
-  transit?: {
-    provider: 'hafas';
-    operatorId: string;
-    endpoint?: string;
-    stations?: Array<{ id: string; name: string }>;
-  };
+  transit?:
+    | {
+      /** transport.rest departures with disruption remarks, polled per station (VBB, Berlin). */
+      provider: 'hafas';
+      operatorId: string;
+      endpoint?: string;
+      stations?: Array<{ id: string; name: string }>;
+    }
+    | {
+      /**
+       * HVV's Geofox GTI `getAnnouncements` (Hamburg). Needs the GEOFOX_USER and
+       * GEOFOX_PASSWORD credentials Hochbahn issues per operator; without them the
+       * job skips the city. Default endpoint https://gti.geofox.de.
+       */
+      provider: 'geofox';
+      endpoint?: string;
+    };
   events?: EventSourceConfig[];
   police?: { provider: 'rss'; url: string; districts?: string[] };
   nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings

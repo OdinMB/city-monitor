@@ -151,7 +151,9 @@
       "mayBeOutdated": "قد تكون البيانات قديمة (آخر تحقق: {{time}})",
       "affectedStops": "المحطات المتأثرة",
       "more": "المزيد",
-      "station": "أُبلغ عنه في المحطة"
+      "station": "أُبلغ عنه في المحطة",
+      "hvvSource": "المصدر: hvv / Hamburger Hochbahn AG (hvv.de)",
+      "noGuarantee": "جميع المعلومات دون ضمان (ohne Gewähr)"
     },
     "events": {
       "title": "الفعاليات",

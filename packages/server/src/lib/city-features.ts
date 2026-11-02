@@ -1,6 +1,7 @@
 import type { CityConfig, CityFeature } from '@city-monitor/shared';
 import { groupsStateMembersByBezirk, hasDistrictMayors, hasMayor, hasParliamentConfig } from '../cron/ingest-political.js';
 import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
+import { hasTransitSource } from '../cron/ingest-transit.js';
 
 /**
  * Berlin's own sources. Each of their jobs fetches for Berlin alone and stores
@@ -20,7 +21,10 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['pollen', (c) => c.dataSources.pollen !== undefined],
   ['waterLevels', (c) => (c.dataSources.waterLevels?.stations.length ?? 0) > 0],
   ['floodStatus', (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0],
-  ['transit', (c) => (c.dataSources.transit?.stations?.length ?? 0) > 0],
+  // Config alone, like appointments without FIRECRAWL_API_KEY: Geofox (Hamburg) also needs
+  // GEOFOX_USER and GEOFOX_PASSWORD at run time, and without them the job skips the city and
+  // the tile says "No transit data available" (ingestsTransit).
+  ['transit', hasTransitSource],
   ['events', (c) => (c.dataSources.events?.length ?? 0) > 0],
   ['appointments', (c) => c.dataSources.appointments !== undefined],
   ['budget', (c) => c.dataSources.budget !== undefined],

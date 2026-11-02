@@ -9,6 +9,7 @@ import { StripErrorFallback } from '../ErrorFallback.js';
 import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
+import { hvvLineStyle, type LineStyle } from '../../lib/hvv-lines.js';
 import type { TransitAlert } from '../../lib/api.js';
 
 const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
@@ -35,7 +36,7 @@ function getSeverityDot(severity: TransitAlert['severity']): string {
  * is a button that expands in place to the full summary, the full remark text
  * (when it differs from the summary) and the station the remark was reported at.
  */
-const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
+const AlertRow = memo(function AlertRow({ alert, lineStyle }: { alert: TransitAlert; lineStyle?: (line: string) => LineStyle | null }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const detailId = useId();
@@ -53,11 +54,18 @@ const AlertRow = memo(function AlertRow({ alert }: { alert: TransitAlert }) {
       >
         <span aria-hidden="true" className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${getSeverityDot(alert.severity)}`} />
         <span className="flex items-center gap-1 shrink-0 flex-wrap">
-          {(alert.lines ?? [alert.line]).map((ln) => (
-            <span key={ln} className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold leading-none ${getLineBadgeColor(ln)}`}>
-              {ln}
-            </span>
-          ))}
+          {(alert.lines ?? [alert.line]).map((ln) => {
+            const own = lineStyle?.(ln);
+            return (
+              <span
+                key={ln}
+                className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold leading-none ${own ? '' : getLineBadgeColor(ln)}`}
+                style={own ? { backgroundColor: own.background, color: own.color, boxShadow: own.border ? `inset 0 0 0 1px ${own.border}` : undefined } : undefined}
+              >
+                {ln}
+              </span>
+            );
+          })}
         </span>
         {/* The operator's German text keeps its own direction in Arabic, so
             the clamped line is cut at its end. The text is only as wide as it
@@ -116,11 +124,23 @@ function EmptyState({ hasData, outdatedNote, checkedTime }: { hasData: boolean; 
 // Past this age the footer says "outdated" and the tile no longer says "all clear".
 const FRESH_MAX_AGE = staleAfter('transit');
 
+/**
+ * What a city's transit source requires on the tile itself, keyed by city ID
+ * because the web config does not know the provider. Hamburg's Geofox terms
+ * (hvv.de, "Datenabruf"): name the origin of the content, add "ohne Gewähr",
+ * link visibly to hvv.de, and draw lines as hvv does. The credit texts are
+ * translation keys; each language keeps the words "ohne Gewähr".
+ */
+const CITY_SOURCE: Readonly<Record<string, { creditKey: string; noteKey: string; url: string; lineStyle: (line: string) => LineStyle | null }>> = {
+  hamburg: { creditKey: 'panel.transit.hvvSource', noteKey: 'panel.transit.noGuarantee', url: 'https://www.hvv.de/', lineStyle: hvvLineStyle },
+};
+
 export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolean; onExpand?: () => void }) {
   const { id: cityId, timezone } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useTransit(cityId);
   const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
+  const source = CITY_SOURCE[cityId];
 
   const alerts = data ?? [];
   const sorted = [...alerts].sort(
@@ -146,7 +166,7 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
         <div>
           {outdatedNote && <p className="text-xs text-warning pb-1.5">{outdatedNote}</p>}
           {visible.map((alert) => (
-            <AlertRow key={alert.id} alert={alert} />
+            <AlertRow key={alert.id} alert={alert} lineStyle={source?.lineStyle} />
           ))}
           {/* pb-0.5 -mb-0.5: a 24px target (WCAG 2.5.8) without moving the text
               or the footer; the extra 2px sits below, clear of the rows. */}
@@ -161,7 +181,21 @@ export function TransitStrip({ expanded = false, onExpand }: { expanded?: boolea
           )}
         </div>
       )}
-      {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
+      {agoText && (
+        <TileFooter stale={isStale}>
+          <span className="text-center">
+            {source && (
+              <>
+                <a href={source.url} target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">{t(source.creditKey)}</a>
+                {' · '}
+                {t(source.noteKey)}
+                {' · '}
+              </>
+            )}
+            {t('stale.updated', { time: agoText })}
+          </span>
+        </TileFooter>
+      )}
     </>
   );
 }

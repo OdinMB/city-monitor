@@ -300,14 +300,17 @@ describe('generateSyntheticCityData', () => {
       expect(data.cityId).toBe('hamburg');
       const held = Object.keys(data).filter((key) => key !== 'cityId' && key !== 'history');
       expect(held).toEqual(syntheticCoverage(hamburg));
-      // No transit (its HVV source is offline), events, budget, appointments,
-      // or noise config; fire brigade is a Berlin-only source. Bathing water
-      // from its own WFS, social atlas from the Sozialmonitoring.
+      // No events, budget, appointments, or noise config; fire brigade is a
+      // Berlin-only source. Transit from Geofox (production has its
+      // credentials), bathing water from its own WFS, social atlas from the
+      // Sozialmonitoring.
       expect([...held].sort()).toEqual([
         'aeds', 'airQuality', 'airQualityGrid', 'bathing', 'construction', 'councilMeetings', 'laborMarket', 'news', 'nina',
-        'pharmacies', 'political', 'pollen', 'population', 'safety', 'socialAtlas', 'summary', 'traffic', 'wastewater',
-        'waterLevels', 'weather',
+        'pharmacies', 'political', 'pollen', 'population', 'safety', 'socialAtlas', 'summary', 'traffic', 'transit',
+        'wastewater', 'waterLevels', 'weather',
       ]);
+      // Geofox announcements have no reporting station or map point
+      expect(data.transit!.every((t) => t.station === '' && t.location === null)).toBe(true);
       // The Bürgerschaft only: no district meetings
       expect(data.councilMeetings!.length).toBeGreaterThan(0);
       expect(data.councilMeetings!.every((m) => m.source === 'parliament')).toBe(true);
@@ -331,7 +334,7 @@ describe('generateSyntheticCityData', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
         'aeds', 'aq grid', 'bathing', 'construction', 'council', 'labor market', 'nina', 'pharmacies', 'political bundestag',
-        'political state', 'pollen', 'population', 'traffic', 'wastewater', 'water levels', 'weather',
+        'political state', 'pollen', 'population', 'traffic', 'transit', 'wastewater', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {
         expect(schema.safeParse(value).error, name).toBeUndefined();

@@ -147,7 +147,9 @@
       "mayBeOutdated": "Veriler güncel olmayabilir (son kontrol: {{time}})",
       "affectedStops": "Etkilenen duraklar",
       "more": "daha fazla",
-      "station": "Bildirildiği durak"
+      "station": "Bildirildiği durak",
+      "hvvSource": "Kaynak: hvv / Hamburger Hochbahn AG (hvv.de)",
+      "noGuarantee": "Tüm bilgiler garanti verilmeden sunulur (ohne Gewähr)"
     },
     "events": {
       "title": "Etkinlikler",

@@ -39,7 +39,7 @@ import { createBootstrapRouter } from './routes/bootstrap.js';
 import { createFeedIngestion } from './cron/ingest-feeds.js';
 import { createWeatherIngestion } from './cron/ingest-weather.js';
 import { createSummarization } from './cron/summarize.js';
-import { createTransitIngestion } from './cron/ingest-transit.js';
+import { createTransitIngestion, ingestsTransit } from './cron/ingest-transit.js';
 import { createEventsIngestion } from './cron/ingest-events.js';
 import { createSafetyIngestion } from './cron/ingest-safety.js';
 import { createNinaIngestion } from './cron/ingest-nina.js';
@@ -162,7 +162,7 @@ export async function createApp(options?: {
 
     // Unified snapshots table (with type filter — values are concrete data source names)
     { jobName: 'ingest-weather',      tableName: 'snapshots', maxAgeSeconds: 3600,    filter: { column: 'type', value: 'open-meteo' }, serves: (c) => c.dataSources.weather.provider === 'brightsky' },
-    { jobName: 'ingest-transit',      tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'vbb-disruptions' }, serves: (c) => !!c.dataSources.transit?.stations?.length },
+    { jobName: 'ingest-transit',      tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'vbb-disruptions' }, serves: (c) => ingestsTransit(c) },
     { jobName: 'ingest-nina',         tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'bbk-nina' }, serves: (c) => inGermany(c) && !!c.dataSources.nina },
     { jobName: 'ingest-pharmacies',   tableName: 'snapshots', maxAgeSeconds: 21600,   filter: { column: 'type', value: 'aponet' }, serves: inGermany },
     { jobName: 'ingest-traffic',      tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'tomtom-traffic' }, serves: () => true },

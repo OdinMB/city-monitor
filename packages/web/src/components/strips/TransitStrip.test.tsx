@@ -28,16 +28,16 @@ const ALERT: TransitAlert = {
  */
 function createWrapper(
   alerts: TransitAlert[],
-  { fetchedAt = new Date().toISOString() }: { fetchedAt?: string | null } = {},
+  { fetchedAt = new Date().toISOString(), cityId = 'berlin' }: { fetchedAt?: string | null; cityId?: string } = {},
 ) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const response: ApiResponse<TransitAlert[]> = { data: alerts, fetchedAt };
-  queryClient.setQueryData(['transit', 'berlin'], response);
+  queryClient.setQueryData(['transit', cityId], response);
 
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <CityProvider cityId="berlin">{children}</CityProvider>
+        <CityProvider cityId={cityId}>{children}</CityProvider>
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -194,6 +194,39 @@ describe('TransitStrip all-clear and freshness', () => {
     expect(screen.getByText('All clear — no disruptions')).toBeTruthy();
     expect(screen.getByText('Checked 07:12')).toBeTruthy();
     expect(screen.queryByText(/may be outdated/)).toBeNull();
+  });
+
+  it('credits hvv / Hochbahn with a link to hvv.de and "ohne Gewähr" on Hamburg, and nothing on Berlin', () => {
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: FRESH, cityId: 'hamburg' }) });
+    const credit = screen.getByRole('link', { name: 'Source: hvv / Hamburger Hochbahn AG (hvv.de)' });
+    expect(credit.getAttribute('href')).toBe('https://www.hvv.de/');
+    expect(screen.getByText(/All information without guarantee \(ohne Gewähr\)/)).toBeTruthy();
+    cleanup();
+
+    render(<TransitStrip />, { wrapper: createWrapper([], { fetchedAt: FRESH }) });
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(document.body.textContent).not.toContain('Gewähr');
+  });
+
+  it('keeps "ohne Gewähr" and hvv.de in every language', () => {
+    for (const lang of ['de', 'en', 'tr', 'ar']) {
+      expect(i18n.getResource(lang, 'translation', 'panel.transit.noGuarantee'), lang).toContain('ohne Gewähr');
+      expect(i18n.getResource(lang, 'translation', 'panel.transit.hvvSource'), lang).toContain('hvv.de');
+      expect(i18n.getResource(lang, 'translation', 'panel.transit.hvvSource'), lang).toContain('Hamburger Hochbahn');
+    }
+  });
+
+  it('draws Hamburg lines in hvv colours and Berlin lines with the generic tags', () => {
+    const u3: TransitAlert = { ...ALERT, id: 'hh', line: 'U3', lines: ['U3'], station: '', location: null };
+    render(<TransitStrip />, { wrapper: createWrapper([u3], { fetchedAt: FRESH, cityId: 'hamburg' }) });
+    const badge = screen.getByText('U3');
+    expect(badge.style.backgroundColor).toBe('rgb(255, 221, 0)');
+    expect(badge.className).not.toContain('tag-line-u');
+    cleanup();
+
+    render(<TransitStrip />, { wrapper: createWrapper([{ ...u3, id: 'be' }], { fetchedAt: FRESH }) });
+    expect(screen.getByText('U3').className).toContain('tag-line-u');
+    expect(screen.getByText('U3').style.backgroundColor).toBe('');
   });
 
   it('says there is no transit data, not all clear, before any data has arrived', () => {

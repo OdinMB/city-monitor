@@ -28,7 +28,9 @@ export const hamburg: CityConfig = {
   ],
   dataSources: {
     weather: { provider: 'brightsky', lat: 53.5511, lon: 9.9937 },
-    // HVV transport.rest API is deprecated and offline (March 2026) — no free alternative
+    // HVV's Geofox GTI announcements; runs only with GEOFOX_USER and GEOFOX_PASSWORD set
+    // (Hochbahn issues them per operator; a fork requests its own). .context/transit.md#hamburg
+    transit: { provider: 'geofox', endpoint: 'https://gti.geofox.de' },
     police: {
       provider: 'rss',
       // Polizei Hamburg's presseportal newsroom (6013, used until 2026-11-01, is Polizeipräsidium Mittelfranken)

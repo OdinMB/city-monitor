@@ -29,6 +29,7 @@ import { aggregateBudgetData, type ParsedBudgetRow } from '../cron/ingest-budget
 import { deriveStatus } from '../cron/ingest-appointments.js';
 import { berlinUtcOffset } from '../cron/ingest-council-meetings.js';
 import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
+import { hasTransitSource } from '../cron/ingest-transit.js';
 import {
   PARLIAMENT_CONFIG, groupsStateMembersByBezirk, handKeptAreas, hasDistrictMayors, hasMayor, hasParliamentConfig,
 } from '../cron/ingest-political.js';
@@ -116,8 +117,8 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   weather: (c) => c.dataSources.weather.provider === 'brightsky',
   airQuality: () => true,
   airQualityGrid: () => true,
-  // ingest-transit skips a city with no stations to ask
-  transit: (c) => (c.dataSources.transit?.stations?.length ?? 0) > 0,
+  // ingest-transit skips a city with no stations to ask; Geofox runs where production has its credentials
+  transit: hasTransitSource,
   nina: (c) => c.country === 'DE' && c.dataSources.nina !== undefined,
   waterLevels: (c) => c.dataSources.waterLevels !== undefined,
   appointments: (c) => c.dataSources.appointments !== undefined,
@@ -848,11 +849,30 @@ const TRANSIT_SCENARIOS: ReadonlyArray<Pick<TransitAlert, 'lines' | 'type' | 'se
   { lines: ['S7'], type: 'planned-work', severity: 'medium', message: 'Bauarbeiten am Wochenende' },
 ];
 
+/**
+ * VBB alerts carry the station they were reported at; Geofox announcements
+ * (Hamburg) have no configured stations, so theirs carry none, and no map point.
+ */
 function generateTransit(rng: Rng, city: CityConfig): TransitAlert[] {
-  const stations = (city.dataSources.transit?.stations ?? []).map((s) => s.name);
+  const transit = city.dataSources.transit;
+  const stations = (transit?.provider === 'hafas' ? transit.stations ?? [] : []).map((s) => s.name);
   return TRANSIT_SCENARIOS.map((s, i) => {
-    const station = stations[(i * 2) % stations.length]!;
     const message = `${MARK} ${s.message}`;
+    if (stations.length === 0) {
+      return {
+        id: hashString(`${message}:`),
+        line: s.lines.join(', '),
+        lines: [...s.lines],
+        type: s.type,
+        severity: s.severity,
+        message,
+        detail: `${message}. Synthetische Meldung für die lokale Entwicklung; der Verkehr läuft normal.`,
+        station: '',
+        location: null,
+        affectedStops: [],
+      };
+    }
+    const station = stations[(i * 2) % stations.length]!;
     return {
       id: hashString(`${message}:${station}`),
       line: s.lines.join(', '),

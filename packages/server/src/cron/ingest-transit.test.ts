@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import type { TransitAlert } from '@city-monitor/shared';
-import { createTransitIngestion } from './ingest-transit.js';
+import { createTransitIngestion, hasTransitSource, ingestsTransit } from './ingest-transit.js';
+import { geofoxSignature } from '../lib/geofox.js';
+import { berlin } from '../config/cities/berlin.js';
+import { hamburg } from '../config/cities/hamburg.js';
+import { koeln } from '../config/cities/koeln.js';
 
 const mockDeparturesResponse = {
   departures: [
@@ -213,5 +217,89 @@ describe('ingest-transit', () => {
     expect(alerts).toHaveLength(1);
     expect(alerts[0].affectedStops).toHaveLength(2);
     expect(alerts[0].affectedStops[1]).toBe('Birkenwerder');
+  });
+});
+
+describe('ingest-transit for Hamburg (Geofox)', () => {
+  const inForce = {
+    summary: 'U3: Störung zwischen Barmbek und Kellinghusenstraße',
+    description: 'Wegen einer Weichenstörung fahren die Züge unregelmäßig.',
+    validities: [{ begin: '2020-01-01T00:00:00.000+0100' }],
+    locations: [{ type: 'SINGLE_LINE', line: { name: 'U3' }, begin: { name: 'Barmbek' }, end: { name: 'Kellinghusenstraße' } }],
+  };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('skips Hamburg without both credentials, making no request and logging once', async () => {
+    vi.stubEnv('GEOFOX_USER', 'example-user');
+    vi.stubEnv('GEOFOX_PASSWORD', '');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const info = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const cache = createCache();
+    const ingest = createTransitIngestion(cache);
+    await ingest();
+    await ingest();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(cache.get('hamburg:transit:alerts')).toBeNull();
+    expect(info.mock.calls.filter((c) => String(c[0]).includes('GEOFOX_USER'))).toHaveLength(1);
+  });
+
+  it('posts one signed getAnnouncements request and caches the alerts in force', async () => {
+    vi.stubEnv('GEOFOX_USER', 'example-user');
+    vi.stubEnv('GEOFOX_PASSWORD', 'test-password');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ returnCode: 'OK', announcements: [inForce], lastUpdate: '2026-11-02T10:00:00.000+0100' }), { status: 200 }),
+    );
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const cache = createCache();
+    await createTransitIngestion(cache)();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchSpy.mock.calls[0]!;
+    expect(url).toBe('https://gti.geofox.de/gti/public/getAnnouncements');
+    expect(init?.method).toBe('POST');
+    const headers = init?.headers as Record<string, string>;
+    expect(headers['geofox-auth-user']).toBe('example-user');
+    expect(headers['geofox-auth-signature']).toBe(geofoxSignature(String(init?.body), 'test-password'));
+
+    const alerts = cache.get<TransitAlert[]>('hamburg:transit:alerts')!;
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({ lines: ['U3'], severity: 'high', station: 'Barmbek – Kellinghusenstraße' });
+  });
+
+  it('keeps the cache untouched on an authentication error', async () => {
+    vi.stubEnv('GEOFOX_USER', 'example-user');
+    vi.stubEnv('GEOFOX_PASSWORD', 'wrong');
+    // The body GTI sends for a bad signature (seen on an unauthenticated call, 2026-11-02)
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      JSON.stringify({ returnCode: 'ERROR_TEXT', errorText: 'A technical problem occured while processing your request.', errorDevInfo: 'Authentication failed!' }),
+      { status: 401 },
+    ));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const cache = createCache();
+    await createTransitIngestion(cache)();
+    expect(cache.get('hamburg:transit:alerts')).toBeNull();
+  });
+});
+
+describe('hasTransitSource and ingestsTransit', () => {
+  it('names Hamburg a transit city by config, ingesting only with credentials', () => {
+    expect(hasTransitSource(hamburg)).toBe(true);
+    expect(ingestsTransit(hamburg, {})).toBe(false);
+    expect(ingestsTransit(hamburg, { GEOFOX_USER: 'u', GEOFOX_PASSWORD: 'p' })).toBe(true);
+    expect(ingestsTransit(berlin, {})).toBe(true);
+    expect(hasTransitSource(koeln)).toBe(false);
   });
 });
