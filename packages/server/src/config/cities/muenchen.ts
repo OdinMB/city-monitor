@@ -51,6 +51,9 @@ export const muenchen: CityConfig = {
       regionId: 120,        // Bayern
       partregionId: 121,    // Allgäu/Oberbayern/Bay. Wald
     },
+    // The Kreis table of the kreisfreie Stadt; AA München's district is wider than the city
+    laborMarket: { provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' },
+    wastewater: { provider: 'amelag', sites: ['München'] }, // RKI AMELAG (CC BY 4.0), about 1.24 million people
     // The Isar's flood class (Meldestufe) from the LHP public API (CC BY 4.0): the HND gauge
     // München (16005701, Meldestufen at 240/300/380 cm and a 4th) and Puppling, the last
     // gauge upstream, about 25 km south. LHP gives no water levels (checked 2026-11-01).

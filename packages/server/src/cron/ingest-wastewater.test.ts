@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
-import { createWastewaterIngestion, parseAmelagBerlinCovid, buildCovidPathogen, computeTrend, computeLevel } from './ingest-wastewater.js';
+import { createWastewaterIngestion, parseAmelagSites, buildAmelagPathogen, buildAmelagSummary, computeTrend, computeLevel } from './ingest-wastewater.js';
+import type { AmelagRow } from './ingest-wastewater.js';
 import type { WastewaterSummary } from '@city-monitor/shared';
 import type { Db } from '../db/index.js';
 
@@ -34,6 +36,14 @@ function amelagRow(plant: string, bundesland: string, date: string, viruslast: s
 function buildTsv(...rows: string[]): string {
   return [TSV_HEADER, ...rows].join('\n');
 }
+
+/**
+ * amelag_einzelstandorte.tsv as recorded on 2026-11-02, trimmed to samples
+ * from 2026-09-28 of Hamburg 01/02, Köln and München (the tile's pathogens
+ * plus Köln's RSV A), Berlin Ruhleben's SARS-CoV-2 and one unsampled day
+ * (NA); the unparsed model columns 5-8 blanked to NA.
+ */
+const AMELAG_FIXTURE = readFileSync(new URL('./fixtures/amelag-einzelstandorte-trimmed.tsv', import.meta.url), 'utf8');
 
 /**
  * Mock fetch to return different responses for Lageso and AMELAG URLs.
@@ -103,40 +113,137 @@ describe('ingest-wastewater (active cities)', () => {
     vi.unstubAllEnvs();
   });
 
-  it('makes no request and writes nothing when Berlin is not active', async () => {
-    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+  const LAGESO_URL = 'https://data.lageso.de/infektionsschutz/opendata/abwassermonitoring/BEWAC_abwassermonitoring_berlin.csv';
+  const AMELAG_URL = 'https://raw.githubusercontent.com/robert-koch-institut/Abwassersurveillance_AMELAG/main/amelag_einzelstandorte.tsv';
+
+  it('fetches AMELAG then LAGeSo and writes Berlin rows when Berlin is active alone', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
     mockFetch(mockCsvFull);
+
+    const cache = createCache();
+    const setSpy = vi.spyOn(cache, 'set');
+    const db = {} as Db;
+    await createWastewaterIngestion(cache, db)();
+
+    expect(vi.mocked(globalThis.fetch).mock.calls.map((c) => c[0])).toEqual([AMELAG_URL, LAGESO_URL]);
+    expect(setSpy).toHaveBeenCalledTimes(1);
+    expect(setSpy).toHaveBeenCalledWith('berlin:wastewater:summary', expect.any(Object), 604800);
+    expect(mockSaveWastewater).toHaveBeenCalledTimes(1);
+    expect(mockSaveWastewater).toHaveBeenCalledWith(db, 'berlin', setSpy.mock.calls[0]![1]);
+  });
+
+  it('downloads the nationwide AMELAG file once for every city and writes each city under its id', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg,berlin,koeln,muenchen');
+    mockFetch(mockCsvFull, AMELAG_FIXTURE);
 
     const cache = createCache();
     const setSpy = vi.spyOn(cache, 'set');
     await createWastewaterIngestion(cache, {} as Db)();
 
-    expect(globalThis.fetch).not.toHaveBeenCalled();
-    expect(setSpy).not.toHaveBeenCalled();
-    expect(mockSaveWastewater).not.toHaveBeenCalled();
+    expect(vi.mocked(globalThis.fetch).mock.calls.map((c) => c[0])).toEqual([AMELAG_URL, LAGESO_URL]);
+    expect(setSpy.mock.calls.map((c) => c[0])).toEqual([
+      'hamburg:wastewater:summary', 'berlin:wastewater:summary', 'koeln:wastewater:summary', 'muenchen:wastewater:summary',
+    ]);
+    expect(mockSaveWastewater.mock.calls.map((c) => c[1])).toEqual(['hamburg', 'berlin', 'koeln', 'muenchen']);
   });
 
-  it.each(['berlin', 'berlin,hamburg', 'hamburg,berlin'])(
-    'fetches Lageso then AMELAG and writes Berlin rows when ACTIVE_CITIES=%s',
-    async (activeCities) => {
-      vi.stubEnv('ACTIVE_CITIES', activeCities);
-      mockFetch(mockCsvFull);
+  it('leaves an AMELAG city unwritten when AMELAG fails, and still writes Berlin from LAGeSo', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin,koeln');
+    mockFetch(mockCsvFull); // AMELAG answers 500
 
-      const cache = createCache();
-      const setSpy = vi.spyOn(cache, 'set');
-      const db = {} as Db;
-      await createWastewaterIngestion(cache, db)();
+    const cache = createCache();
+    await createWastewaterIngestion(cache, {} as Db)();
 
-      expect(vi.mocked(globalThis.fetch).mock.calls.map((c) => c[0])).toEqual([
-        'https://data.lageso.de/infektionsschutz/opendata/abwassermonitoring/BEWAC_abwassermonitoring_berlin.csv',
-        'https://raw.githubusercontent.com/robert-koch-institut/Abwassersurveillance_AMELAG/main/amelag_einzelstandorte.tsv',
-      ]);
-      expect(setSpy).toHaveBeenCalledTimes(1);
-      expect(setSpy).toHaveBeenCalledWith('berlin:wastewater:summary', expect.any(Object), 604800);
-      expect(mockSaveWastewater).toHaveBeenCalledTimes(1);
-      expect(mockSaveWastewater).toHaveBeenCalledWith(db, 'berlin', setSpy.mock.calls[0]![1]);
-    },
-  );
+    expect(cache.get('koeln:wastewater:summary')).toBeNull();
+    expect(cache.get<WastewaterSummary>('berlin:wastewater:summary')!.pathogens.map((p) => p.name))
+      .toEqual(['Influenza A', 'Influenza B', 'RSV']);
+  });
+});
+
+describe('ingest-wastewater (AMELAG cities, recorded file)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  async function ingestFor(cityId: string): Promise<WastewaterSummary> {
+    vi.stubEnv('ACTIVE_CITIES', cityId);
+    mockFetch(mockCsvFull, AMELAG_FIXTURE);
+    const cache = createCache();
+    await createWastewaterIngestion(cache)();
+    return cache.get<WastewaterSummary>(`${cityId}:wastewater:summary`)!;
+  }
+
+  const weighted = (pairs: Array<[value: number, population: number]>) =>
+    pairs.reduce((s, [v, p]) => s + v * p, 0) / pairs.reduce((s, [, p]) => s + p, 0);
+
+  it('combines Hamburg\'s two plants per week, weighted by the people each serves', async () => {
+    const summary = await ingestFor('hamburg');
+
+    expect(summary.sampleDate).toBe('2026-10-21');
+    expect(summary.plantCount).toBe(2);
+    expect(summary.pathogens.map((p) => p.name)).toEqual(['Influenza A', 'Influenza B', 'RSV', 'SARS-CoV-2']);
+
+    const covid = summary.pathogens[3]!;
+    // Week of 2026-10-19: Hamburg 01 sampled 244,000 and 315,000; Hamburg 02 206,000 and 293,000
+    expect(covid.value).toBeCloseTo(weighted([[279500, 581423], [249500, 1464784]]), 6);
+    expect(covid.previousValue).toBeCloseTo(weighted([[144700, 581423], [191500, 1464784]]), 6);
+    expect(covid.trend).toBe('stable'); // 1.45x
+    expect(covid.level).toBe('high'); // the highest week of the four
+    expect(covid.history).toHaveLength(4); // one value per week, 2026-09-28 to 2026-10-19
+    expect(covid.sampleDate).toBeUndefined();
+  });
+
+  it('counts samples below the detection limit as zero, so an absent pathogen shows as none', async () => {
+    const summary = await ingestFor('hamburg');
+    // Every flu and RSV sample is flagged unter_bg (10,000 and 35,000 gc/L are the lab's limits)
+    for (const p of summary.pathogens.slice(0, 3)) {
+      expect(p, p.name).toMatchObject({ value: 0, previousValue: 0, level: 'none', trend: 'stable', history: [0, 0, 0, 0] });
+    }
+  });
+
+  it('reads Köln\'s plant, taking the combined RSV A+B and leaving out RSV A', async () => {
+    const summary = await ingestFor('koeln');
+
+    expect(summary.sampleDate).toBe('2026-10-21');
+    expect(summary.plantCount).toBe(1);
+    const [fluA, , rsv, covid] = summary.pathogens;
+    // Week of 2026-09-28: 2,411.25 and a sample below the limit (counted as 0)
+    const expectedFluA = [(2411.25 + 0) / 2, (5866.58 + 3038.54) / 2, (4834.93 + 5731.85) / 2, (9699.2 + 3957.29) / 2];
+    expect(fluA!.history).toHaveLength(4);
+    fluA!.history.forEach((v, i) => expect(v).toBeCloseTo(expectedFluA[i]!, 6));
+    expect(fluA!.level).toBe('high');
+    // RSV A+B measured once (2026-09-28); every later sample is below the limit
+    expect(rsv!.name).toBe('RSV');
+    expect(rsv!.history).toEqual([10044.36 / 2, 0, 0, 0]);
+    expect(rsv!.trend).toBe('stable');
+    expect(covid!.value).toBe((45300 + 65700) / 2);
+    expect(covid!.trend).toBe('falling'); // 55,500 after 91,800
+  });
+
+  it('reads München\'s plant, mapping RSV A/B to RSV', async () => {
+    const summary = await ingestFor('muenchen');
+
+    expect(summary.sampleDate).toBe('2026-10-14');
+    expect(summary.pathogens.map((p) => p.name)).toEqual(['Influenza A', 'Influenza B', 'RSV', 'SARS-CoV-2']);
+    const [fluA, , , covid] = summary.pathogens;
+    expect(fluA!.trend).toBe('gone'); // 1,885 the week before, below the limit since
+    expect(covid!.value).toBe((25400 + 24200) / 2);
+    expect(covid!.previousValue).toBe((41300 + 51500) / 2);
+    expect(covid!.trend).toBe('falling');
+  });
+
+  it('gives Berlin SARS-CoV-2 from its own plants only, with AMELAG\'s sample date', async () => {
+    const summary = await ingestFor('berlin');
+    const covid = summary.pathogens.find((p) => p.name === 'SARS-CoV-2')!;
+    // Only Berlin Ruhleben is in the recorded file: the week of 2026-10-05 sampled 72,700 and 90,800
+    expect(covid.value).toBe((72700 + 90800) / 2);
+    expect(covid.previousValue).toBe(70500);
+    expect(covid.sampleDate).toBe('2026-10-11');
+  });
 });
 
 describe('ingest-wastewater (Lageso)', () => {
@@ -437,10 +544,10 @@ describe('ingest-wastewater (AMELAG SARS-CoV-2)', () => {
 
   it('merges SARS-CoV-2 from AMELAG into Lageso summary', async () => {
     const amelagTsv = buildTsv(
-      amelagRow('Ruhleben', 'BE', '2025-12-10', '5000', 'SARS-CoV-2'),
-      amelagRow('Schoenerlinde', 'BE', '2025-12-10', '3000', 'SARS-CoV-2'),
-      amelagRow('Ruhleben', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
-      amelagRow('Schoenerlinde', 'BE', '2025-12-03', '1000', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-10', '5000', 'SARS-CoV-2'),
+      amelagRow('Berlin Schönerlinde', 'BE', '2025-12-10', '3000', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
+      amelagRow('Berlin Schönerlinde', 'BE', '2025-12-03', '1000', 'SARS-CoV-2'),
     );
     mockFetch(mockCsvFull, amelagTsv);
 
@@ -458,8 +565,8 @@ describe('ingest-wastewater (AMELAG SARS-CoV-2)', () => {
 
   it('sets per-pathogen sampleDate when AMELAG date differs from Lageso', async () => {
     const amelagTsv = buildTsv(
-      amelagRow('Ruhleben', 'BE', '2025-12-10', '5000', 'SARS-CoV-2'),
-      amelagRow('Ruhleben', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-10', '5000', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
     );
     mockFetch(mockCsvFull, amelagTsv);
 
@@ -475,8 +582,8 @@ describe('ingest-wastewater (AMELAG SARS-CoV-2)', () => {
 
   it('omits per-pathogen sampleDate when dates match', async () => {
     const amelagTsv = buildTsv(
-      amelagRow('Ruhleben', 'BE', '2025-12-14', '5000', 'SARS-CoV-2'),
-      amelagRow('Ruhleben', 'BE', '2025-12-07', '2000', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-14', '5000', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-07', '2000', 'SARS-CoV-2'),
     );
     mockFetch(mockCsvFull, amelagTsv);
 
@@ -491,10 +598,10 @@ describe('ingest-wastewater (AMELAG SARS-CoV-2)', () => {
 
   it('filters out non-Berlin and non-SARS-CoV-2 rows from AMELAG', async () => {
     const amelagTsv = buildTsv(
-      amelagRow('Ruhleben', 'BE', '2025-12-10', '5000', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-10', '5000', 'SARS-CoV-2'),
       amelagRow('Hamburg-Dradenau', 'HH', '2025-12-10', '9999', 'SARS-CoV-2'),
-      amelagRow('Ruhleben', 'BE', '2025-12-10', '8888', 'Influenza A'),
-      amelagRow('Ruhleben', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-10', '8888', 'Influenza A'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
     );
     mockFetch(mockCsvFull, amelagTsv);
 
@@ -536,61 +643,102 @@ describe('ingest-wastewater (AMELAG SARS-CoV-2)', () => {
   });
 });
 
-describe('parseAmelagBerlinCovid', () => {
-  it('stream-parses TSV and returns only Berlin SARS-CoV-2 rows', async () => {
+describe('parseAmelagSites', () => {
+  it('stream-parses the TSV, keeping the measured samples of the given plants and the tile\'s pathogens', async () => {
     const tsv = buildTsv(
-      amelagRow('Ruhleben', 'BE', '2025-12-10', '5000.5', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-10', '5000.5', 'SARS-CoV-2'),
       amelagRow('Hamburg-Dradenau', 'HH', '2025-12-10', '9999', 'SARS-CoV-2'),
-      amelagRow('Ruhleben', 'BE', '2025-12-10', '8888', 'Influenza A'),
-      amelagRow('Schoenerlinde', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-10', '8888', 'Influenza A'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-10', '7777', 'Influenza A+B'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-10', '6666', 'RSV A/B'),
+      amelagRow('Berlin Ruhleben', 'BE', '2025-12-11', 'NA', 'SARS-CoV-2'),
+      amelagRow('Berlin Schönerlinde', 'BE', '2025-12-03', '2000', 'SARS-CoV-2'),
     );
-    const response = new Response(tsv, { status: 200 });
-    const rows = await parseAmelagBerlinCovid(response);
+    const rows = await parseAmelagSites(new Response(tsv, { status: 200 }), new Set(['Berlin Ruhleben', 'Berlin Schönerlinde']));
 
-    expect(rows).toHaveLength(2);
-    expect(rows[0]).toEqual({ date: '2025-12-10', plant: 'Ruhleben', value: 5000.5 });
-    expect(rows[1]).toEqual({ date: '2025-12-03', plant: 'Schoenerlinde', value: 2000 });
+    expect(rows).toEqual([
+      { site: 'Berlin Ruhleben', date: '2025-12-10', pathogen: 'SARS-CoV-2', value: 5000.5, population: 1000000 },
+      { site: 'Berlin Ruhleben', date: '2025-12-10', pathogen: 'Influenza A', value: 8888, population: 1000000 },
+      { site: 'Berlin Ruhleben', date: '2025-12-10', pathogen: 'RSV', value: 6666, population: 1000000 },
+      { site: 'Berlin Schönerlinde', date: '2025-12-03', pathogen: 'SARS-CoV-2', value: 2000, population: 1000000 },
+    ]);
+  });
+
+  it('reads the recorded file, whose last line has no newline after it', async () => {
+    const rows = await parseAmelagSites(new Response(AMELAG_FIXTURE.trimEnd(), { status: 200 }), new Set(['München']));
+    expect(rows).toHaveLength(20); // five samples each of Influenza A, Influenza B, RSV A/B and SARS-CoV-2
+    expect(rows.at(-1)).toEqual({ site: 'München', date: '2026-10-14', pathogen: 'SARS-CoV-2', value: 24200, population: 1240000 });
   });
 
   it('returns empty array for empty TSV', async () => {
-    const response = new Response(TSV_HEADER + '\n', { status: 200 });
-    const rows = await parseAmelagBerlinCovid(response);
+    const rows = await parseAmelagSites(new Response(TSV_HEADER + '\n', { status: 200 }), new Set(['Berlin Ruhleben']));
     expect(rows).toEqual([]);
   });
 });
 
-describe('buildCovidPathogen', () => {
+describe('buildAmelagPathogen', () => {
+  const sample = (site: string, date: string, value: number, population = 1000): AmelagRow =>
+    ({ site, date, pathogen: 'SARS-CoV-2', value, population });
+
   it('builds pathogen with trend and level from AMELAG rows', () => {
     const rows = [
-      { date: '2025-12-10', plant: 'Ruhleben', value: 6000 },
-      { date: '2025-12-10', plant: 'Schoenerlinde', value: 4000 },
-      { date: '2025-12-03', plant: 'Ruhleben', value: 2000 },
-      { date: '2025-12-03', plant: 'Schoenerlinde', value: 1000 },
+      sample('Ruhleben', '2025-12-10', 6000),
+      sample('Schoenerlinde', '2025-12-10', 4000),
+      sample('Ruhleben', '2025-12-03', 2000),
+      sample('Schoenerlinde', '2025-12-03', 1000),
     ];
-    const pathogen = buildCovidPathogen(rows)!;
+    const pathogen = buildAmelagPathogen(rows, 'SARS-CoV-2')!;
 
     expect(pathogen.name).toBe('SARS-CoV-2');
     expect(pathogen.value).toBe(5000); // avg(6000, 4000)
     expect(pathogen.previousValue).toBe(1500); // avg(2000, 1000)
     expect(pathogen.trend).toBe('rising'); // 5000 / 1500 = 3.33 > 1.5
     expect(pathogen.sampleDate).toBe('2025-12-10');
+    expect(pathogen.plantCount).toBe(2);
+  });
+
+  it('averages a plant\'s samples within a calendar week before weighting the plants by population', () => {
+    const rows = [
+      // Mon 2025-12-08 and Wed 2025-12-10 are one week; Sun 2025-12-14 too
+      sample('A', '2025-12-08', 1000, 3000),
+      sample('A', '2025-12-10', 3000, 3000),
+      sample('B', '2025-12-14', 6000, 1000),
+    ];
+    const pathogen = buildAmelagPathogen(rows, 'SARS-CoV-2')!;
+    expect(pathogen.history).toEqual([(2000 * 3000 + 6000 * 1000) / 4000]);
+    expect(pathogen.sampleDate).toBe('2025-12-14');
   });
 
   it('returns null for empty rows', () => {
-    expect(buildCovidPathogen([])).toBeNull();
+    expect(buildAmelagPathogen([], 'SARS-CoV-2')).toBeNull();
   });
 
   it('builds history oldest-first, capped at 12', () => {
-    const rows = [];
+    const rows: AmelagRow[] = [];
     for (let i = 0; i < 14; i++) {
-      const d = new Date(2025, 11, 28 - i * 7);
-      rows.push({ date: d.toISOString().split('T')[0], plant: 'Ruhleben', value: (i + 1) * 100 });
+      const d = new Date(Date.UTC(2025, 11, 28 - i * 7));
+      rows.push(sample('Ruhleben', d.toISOString().split('T')[0]!, (i + 1) * 100));
     }
-    const pathogen = buildCovidPathogen(rows)!;
+    const pathogen = buildAmelagPathogen(rows, 'SARS-CoV-2')!;
     expect(pathogen.history).toHaveLength(12);
     // Oldest first: dates[11] value=1200, ..., dates[0] value=100
     expect(pathogen.history[0]).toBe(1200);
     expect(pathogen.history[11]).toBe(100);
+  });
+});
+
+describe('buildAmelagSummary', () => {
+  it('dates the tile by the newest sample and keeps an older pathogen\'s own date', () => {
+    const summary = buildAmelagSummary([
+      { site: 'X', date: '2025-12-10', pathogen: 'SARS-CoV-2', value: 100, population: 1 },
+      { site: 'X', date: '2025-12-03', pathogen: 'Influenza A', value: 50, population: 1 },
+    ])!;
+    expect(summary.sampleDate).toBe('2025-12-10');
+    expect(summary.pathogens.map((p) => [p.name, p.sampleDate])).toEqual([['Influenza A', '2025-12-03'], ['SARS-CoV-2', undefined]]);
+  });
+
+  it('returns null without samples', () => {
+    expect(buildAmelagSummary([])).toBeNull();
   });
 });
 

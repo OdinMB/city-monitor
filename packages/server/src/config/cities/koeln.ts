@@ -99,6 +99,9 @@ export const koeln: CityConfig = {
       regionId: 40,         // Nordrhein-Westfalen
       partregionId: 41,     // Rhein.-Westfäl. Tiefland
     },
+    // The Kreis table of the kreisfreie Stadt, not the wider Agentur für Arbeit district
+    laborMarket: { provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' },
+    wastewater: { provider: 'amelag', sites: ['Köln'] }, // RKI AMELAG (CC BY 4.0), about 0.86 million people
     waterLevels: {
       provider: 'pegelonline',
       stations: [

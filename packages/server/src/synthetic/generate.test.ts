@@ -300,18 +300,22 @@ describe('generateSyntheticCityData', () => {
       const held = Object.keys(data).filter((key) => key !== 'cityId' && key !== 'history');
       expect(held).toEqual(syntheticCoverage(hamburg));
       // No transit (its HVV source is offline), events, budget, appointments,
-      // social atlas or noise config; population, wastewater, bathing, labour
-      // market and fire brigade are Berlin-only sources
+      // social atlas or noise config; population, bathing and fire brigade are
+      // Berlin-only sources
       expect([...held].sort()).toEqual([
-        'aeds', 'airQuality', 'airQualityGrid', 'construction', 'councilMeetings', 'news', 'nina', 'pharmacies',
-        'political', 'pollen', 'safety', 'summary', 'traffic', 'waterLevels', 'weather',
+        'aeds', 'airQuality', 'airQualityGrid', 'construction', 'councilMeetings', 'laborMarket', 'news', 'nina', 'pharmacies',
+        'political', 'pollen', 'safety', 'summary', 'traffic', 'wastewater', 'waterLevels', 'weather',
       ]);
       // The Bürgerschaft only: no district meetings
       expect(data.councilMeetings!.length).toBeGreaterThan(0);
       expect(data.councilMeetings!.every((m) => m.source === 'parliament')).toBe(true);
       // No Bezirk mayors or state members by Bezirk outside Berlin
       expect(Object.keys(data.political!).sort()).toEqual(['bundestag', 'state']);
-      expect(new Set(data.history.map((h) => h.type))).toEqual(new Set(['open-meteo', 'pegelonline']));
+      expect(new Set(data.history.map((h) => h.type))).toEqual(new Set(['open-meteo', 'pegelonline', 'ba-labor-market']));
+      // All four pathogens from AMELAG's two Hamburg plants, dated together
+      expect(data.wastewater!.plantCount).toBe(2);
+      expect(data.wastewater!.pathogens.map((p) => p.name)).toEqual(['Influenza A', 'Influenza B', 'RSV', 'SARS-CoV-2']);
+      expect(data.wastewater!.pathogens.every((p) => p.sampleDate === undefined)).toBe(true);
       expect(Object.keys(data.summary!.briefings).sort()).toEqual([...hamburg.languages].sort());
     });
 
@@ -324,8 +328,8 @@ describe('generateSyntheticCityData', () => {
     it('passes the Zod schemas the database reads validate with', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
-        'aeds', 'aq grid', 'construction', 'council', 'nina', 'pharmacies', 'political bundestag', 'political state',
-        'pollen', 'traffic', 'water levels', 'weather',
+        'aeds', 'aq grid', 'construction', 'council', 'labor market', 'nina', 'pharmacies', 'political bundestag',
+        'political state', 'pollen', 'traffic', 'wastewater', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {
         expect(schema.safeParse(value).error, name).toBeUndefined();

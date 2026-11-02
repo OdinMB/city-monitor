@@ -90,6 +90,9 @@ export const hamburg: CityConfig = {
         calendarUrl: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine/1042880!search',
       },
     },
+    laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Hamburg' },
+    // RKI AMELAG (CC BY 4.0): Hamburg's two plants, serving about 0.58 and 1.46 million people
+    wastewater: { provider: 'amelag', sites: ['Hamburg 01', 'Hamburg 02'] },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

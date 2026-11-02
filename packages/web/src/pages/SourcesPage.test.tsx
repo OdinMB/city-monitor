@@ -95,9 +95,10 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['München RIS', (c) => c.dataSources.councilMeetings?.muenchenRis !== undefined],
   ['Hamburgische Bürgerschaft (Termine)', (c) => c.dataSources.councilMeetings?.hamburgBuergerschaft !== undefined],
   ['LAGeSo Bathing Water', berlinOnly],
-  ['LAGeSo Wastewater Monitoring', berlinOnly],
-  ['RKI AMELAG Wastewater Surveillance', berlinOnly],
-  ['Bundesagentur für Arbeit', berlinOnly],
+  ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
+  // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
+  ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
+  ['Bundesagentur für Arbeit', (c) => c.dataSources.laborMarket !== undefined],
   ['Amt für Statistik Berlin-Brandenburg', berlinOnly],
   ['Berliner Feuerwehr Open Data', berlinOnly],
   // ingest-feeds classifies news items and ingest-safety places police reports with the LLM
@@ -178,6 +179,8 @@ describe('SourcesPage licence credits', () => {
     'Sensor.Community DNMS': '© Sensor.Community contributors, ODbL.',
     'RKI AMELAG Wastewater Surveillance': 'Source: Robert Koch-Institut, CC BY 4.0.',
     'LAGeSo Wastewater Monitoring': 'Source: Lageso Berlin and Berliner Wasserbetriebe, dl-de/by-2-0.',
+    // The BA CSV footer: pass on with the source named and a link to statistik.arbeitsagentur.de
+    'Bundesagentur für Arbeit': '© Statistik der Bundesagentur für Arbeit.',
     'Amt für Statistik Berlin-Brandenburg': 'Source: Amt für Statistik Berlin-Brandenburg, CC BY.',
     'VIZ Berlin': 'Source: Digitale Plattform Stadtverkehr Berlin, dl-de/by-2-0.',
     'Baustellen Hamburg (Bauweiser)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',

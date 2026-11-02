@@ -137,22 +137,22 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       if (r) cache.set(CK.floodStatus(cityId), r.data, 600, r.fetchedAt); // FLOOD_STATUS_TTL_SECONDS
     })().catch((err) => log.error(`${cityId} flood status failed`, err)),
 
-    // Wastewater, bathing, and labor market are Berlin-only data sources
-    ...(cityId === 'berlin' ? [
-      (async () => {
-        const r = await loadWastewater(db, cityId);
-        if (r) cache.set(CK.wastewaterSummary(cityId), r.data, 604800, r.fetchedAt);
-      })().catch((err) => log.error(`${cityId} wastewater failed`, err)),
+    (async () => {
+      const r = await loadWastewater(db, cityId);
+      if (r) cache.set(CK.wastewaterSummary(cityId), r.data, 604800, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} wastewater failed`, err)),
 
+    (async () => {
+      const r = await loadLaborMarket(db, cityId);
+      if (r) cache.set(CK.laborMarket(cityId), r.data, 86400, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} labor-market failed`, err)),
+
+    // Bathing, population and Feuerwehr are Berlin-only data sources
+    ...(cityId === 'berlin' ? [
       (async () => {
         const r = await loadBathingSpots(db, cityId);
         if (r) cache.set(CK.bathingSpots(cityId), r.data, 86400, r.fetchedAt);
       })().catch((err) => log.error(`${cityId} bathing failed`, err)),
-
-      (async () => {
-        const r = await loadLaborMarket(db, cityId);
-        if (r) cache.set(CK.laborMarket(cityId), r.data, 86400, r.fetchedAt);
-      })().catch((err) => log.error(`${cityId} labor-market failed`, err)),
 
       (async () => {
         const r = await loadPopulationGeojson(db, cityId);

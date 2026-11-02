@@ -48,13 +48,13 @@ App (HelmetProvider)
                     Tile(expandable) → TransitStrip (6 rows collapsed / 12 expanded; each row expands to its full text)
                     Tile → support tile (Ko-fi link)
                     Tile(expandable) → PollenStrip
-                    Tile(expandable) → WastewaterStrip †
+                    Tile(expandable) → WastewaterStrip
                     Tile(expandable) → FeuerwehrStrip †
                     Tile(expandable) → BathingStrip (off-season badge in the heading)
                     Tile(span=2, ≥ sm only) → NewsStrip (category tabs + headlines)
                     Tile(span=2) → EventsStrip
                     Tile(expandable) → AppointmentsStrip
-                    Tile(expandable) → LaborMarketStrip †
+                    Tile(expandable) → LaborMarketStrip
                     Tile → PopulationStrip †
                     Tile(expandable) → CrisisStrip (per-city directory; Local tab Berlin only)
                     Tile(span=2) → BudgetStrip

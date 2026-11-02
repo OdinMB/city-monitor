@@ -25,5 +25,5 @@ export const hamburg: WebCityConfig = {
   // The Bürgerschaft's constituencies are not Bezirke, so its members are not
   // grouped by Bezirk; its Bundestag constituencies are named after them, so
   // the political map has a Bundestag view.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'councilMeetings', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'councilMeetings', 'laborMarket', 'wastewater', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
 };
