@@ -5,6 +5,7 @@ import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
+import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
@@ -182,6 +183,14 @@ export function DataLayerToggles() {
   const noise = effectiveNoiseLayer(noiseLayer, available);
   const social = effectiveChoice(socialLayer, available.social);
   const political = effectiveChoice(politicalLayer, available.political);
+  // Each city names its social-atlas indicators its own way, with the edition they come from.
+  const socialAtlas = socialAtlasOf(city.id);
+  const socialLabel = (key: SocialLayer) => {
+    const indicator = indicatorOf(socialAtlas, key);
+    return indicator
+      ? `${t(`socialAtlas.indicator.${indicator.label}`)} (${socialAtlas!.edition})`
+      : t(`sidebar.social.${key}`);
+  };
 
   return (
     <div>
@@ -262,7 +271,7 @@ export function DataLayerToggles() {
           } else if (layer === 'social' && active) {
             subItems = (
               <SubLayerList meta={SOCIAL_SUB_META} available={available.social} parentColor={color}
-                isActive={(key) => social === key} onSelect={setSocialLayer} label={(key) => t(`sidebar.social.${key}`)} />
+                isActive={(key) => social === key} onSelect={setSocialLayer} label={socialLabel} />
             );
           } else if (layer === 'population' && active) {
             subItems = (

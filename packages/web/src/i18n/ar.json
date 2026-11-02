@@ -288,6 +288,7 @@
       "workingAge": "سن العمل",
       "ageBreakdown": "التوزيع العمري",
       "change": "مقارنة بالنصف السابق",
+      "changeYear": "مقارنة بالعام السابق",
       "empty": "لا توجد بيانات متاحة",
       "source": "إحصائيات برلين-براندنبورغ",
       "density": "لكل كم²",
@@ -568,10 +569,6 @@
       "bathing": "مياه السباحة"
     },
     "social": {
-      "unemployment": "البطالة (2025)",
-      "single-parent": "أسر الوالد الواحد (2025)",
-      "welfare": "المساعدة الاجتماعية (2025)",
-      "child-poverty": "فقر الأطفال (2025)",
       "rent": "إيجار"
     },
     "population": {
@@ -644,12 +641,23 @@
         "loud": "صاخب",
         "veryLoud": "صاخب جداً"
       }
-    },
-    "socialAtlas": {
+    }
+  },
+  "socialAtlas": {
+    "indicator": {
       "unemployment": "البطالة",
-      "singleParent": "أسر الوالد الواحد",
+      "unemploymentRate": "معدل البطالة",
+      "singleParentChildren": "أطفال الأسر ذات الوالد الواحد",
+      "singleParentHouseholds": "أسر الوالد الواحد",
       "welfare": "متلقو المساعدة الاجتماعية",
-      "childPoverty": "فقر الأطفال"
+      "sgb2": "متلقو إعانة SGB II",
+      "sgb2Asylblg": "متلقو إعانات SGB II وAsylbLG",
+      "childPoverty": "فقر الأطفال",
+      "childrenMinimumIncome": "أطفال يتلقون الحد الأدنى من الدخل"
+    },
+    "status": {
+      "mss": "مؤشر الحالة MSS",
+      "hhSozialmonitoring": "مؤشر الحالة (Sozialmonitoring)"
     }
   },
   "nina": {

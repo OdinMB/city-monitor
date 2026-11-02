@@ -1,0 +1,87 @@
+{
+  "type": "FeatureCollection",
+  "numberMatched": 5,
+  "numberReturned": 5,
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "jahr": "2013",
+        "jahr_date": "2013-12-31",
+        "stadtteil_nr": "101",
+        "stadtteil": "Hamburg-Altstadt",
+        "bezirk": "Hamburg-Mitte",
+        "bev_insgesamt": 1675,
+        "bev_ab65": 219,
+        "bev_u18": 162,
+        "bev_auslaender_anz": 341,
+        "flaeche_brutto_ha": 128.8
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "jahr": "2024",
+        "jahr_date": "2024-12-31",
+        "stadtteil_nr": "101",
+        "stadtteil": "Hamburg-Altstadt",
+        "bezirk": "Hamburg-Mitte",
+        "bev_insgesamt": 2549,
+        "bev_ab65": 270,
+        "bev_u18": 301,
+        "bev_auslaender_anz": 588,
+        "flaeche_brutto_ha": 130.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "jahr": "2024",
+        "jahr_date": "2024-12-31",
+        "stadtteil_nr": "104",
+        "stadtteil": "St. Pauli",
+        "bezirk": "Hamburg-Mitte",
+        "bev_insgesamt": 22377,
+        "bev_ab65": 2400,
+        "bev_u18": 2883,
+        "bev_auslaender_anz": 5404,
+        "flaeche_brutto_ha": 224.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "jahr": "2025",
+        "jahr_date": "2025-12-31",
+        "stadtteil_nr": "101",
+        "stadtteil": "Hamburg-Altstadt",
+        "bezirk": "Hamburg-Mitte",
+        "bev_insgesamt": 2567,
+        "bev_ab65": 281,
+        "bev_u18": 307,
+        "bev_auslaender_anz": 618,
+        "flaeche_brutto_ha": 130.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "jahr": "2025",
+        "jahr_date": "2025-12-31",
+        "stadtteil_nr": "104",
+        "stadtteil": "St. Pauli",
+        "bezirk": "Hamburg-Mitte",
+        "bev_insgesamt": 22028,
+        "bev_ab65": 2463,
+        "bev_u18": 2720,
+        "bev_auslaender_anz": 5010,
+        "flaeche_brutto_ha": 224.0
+      }
+    }
+  ]
+}

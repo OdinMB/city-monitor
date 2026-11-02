@@ -48,6 +48,7 @@ import { updateTrafficLayers, updateConstructionLayers } from './layers/traffic.
 import { updateAqGridLayer } from './layers/air-quality.js';
 import { updateWaterLevelMarkers, updateBathingMarkers } from './layers/water.js';
 import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/choropleth.js';
+import { socialAtlasOf } from '../../lib/social-atlas.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
@@ -189,6 +190,8 @@ export function CityMap() {
     : socialLayer === 'welfare' ? 'welfare'
     : socialLayer === 'child-poverty' ? 'childPoverty'
     : 'unemployment';
+  // The city's own indicator labels and colour ramps
+  const socialAtlas = socialAtlasOf(city.id);
   const populationLayerSel = useCommandCenter((s) => s.populationLayer);
   const populationActive = activeLayers.has('population');
   const populationMetric: PopulationMetric =
@@ -298,6 +301,8 @@ export function CityMap() {
   socialAtlasGeoJsonRef.current = socialAtlasGeoJson;
   const socialAtlasMetricRef = useRef(socialAtlasMetric);
   socialAtlasMetricRef.current = socialAtlasMetric;
+  const socialAtlasRef = useRef(socialAtlas);
+  socialAtlasRef.current = socialAtlas;
   const populationGeoJsonRef = useRef(populationGeoJson);
   populationGeoJsonRef.current = populationGeoJson;
   const populationMetricRef = useRef(populationMetric);
@@ -373,7 +378,7 @@ export function CityMap() {
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
-        updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current);
+        updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
         updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
         setWeatherOverlay(map, weatherActiveRef.current);
         setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
@@ -461,7 +466,7 @@ export function CityMap() {
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
-      updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark);
+      updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
       setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
@@ -675,12 +680,12 @@ export function CityMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => updateSocialAtlasLayer(map, socialAtlasGeoJson, socialAtlasMetric, isDarkRef.current);
+    const apply = () => updateSocialAtlasLayer(map, socialAtlasGeoJson, socialAtlasMetric, isDarkRef.current, socialAtlas);
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
 
-  }, [socialAtlasGeoJson, socialAtlasMetric]);
+  }, [socialAtlasGeoJson, socialAtlasMetric, socialAtlas]);
 
   // Update population choropleth (lazy — geojson only available when a pop-* sub-layer is active)
   useEffect(() => {

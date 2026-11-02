@@ -264,6 +264,7 @@
       "workingAge": "Çalışma yaşı",
       "ageBreakdown": "Yaş dağılımı",
       "change": "önceki yarıyıla göre",
+      "changeYear": "önceki yıla göre",
       "empty": "Veri mevcut değil",
       "source": "Berlin-Brandenburg İstatistik",
       "density": "km² başına",
@@ -524,10 +525,6 @@
       "bathing": "Yüzme Suyu"
     },
     "social": {
-      "unemployment": "İşsizlik (2025)",
-      "single-parent": "Tek Ebeveyn (2025)",
-      "welfare": "Sosyal Yardım (2025)",
-      "child-poverty": "Çocuk Yoksulluğu (2025)",
       "rent": "Kira"
     },
     "population": {
@@ -595,12 +592,23 @@
         "loud": "Gürültülü",
         "veryLoud": "Çok gürültülü"
       }
-    },
-    "socialAtlas": {
+    }
+  },
+  "socialAtlas": {
+    "indicator": {
       "unemployment": "İşsizlik",
-      "singleParent": "Tek ebeveynli hane",
+      "unemploymentRate": "İşsizlik oranı",
+      "singleParentChildren": "Tek ebeveynli ailelerin çocukları",
+      "singleParentHouseholds": "Tek ebeveynli haneler",
       "welfare": "Sosyal yardım alanlar",
-      "childPoverty": "Çocuk yoksulluğu"
+      "sgb2": "SGB II yardımı alanlar",
+      "sgb2Asylblg": "SGB II ve AsylbLG yardımı alanlar",
+      "childPoverty": "Çocuk yoksulluğu",
+      "childrenMinimumIncome": "Asgari gelir desteği alan çocuklar"
+    },
+    "status": {
+      "mss": "MSS durum endeksi",
+      "hhSozialmonitoring": "Sozialmonitoring durum endeksi"
     }
   },
   "nina": {

@@ -19,10 +19,11 @@ export const hamburg: WebCityConfig = {
     ],
   },
   theme: { accent: '#004B93' },
-  // No transit (HVV has no free API), events, appointments, budget,
-  // social atlas, noise sensors, council meetings, district mayors or Berlin's
-  // own sources. The Bürgerschaft's constituencies are not Bezirke, so its
-  // members are not grouped by Bezirk; its Bundestag constituencies are named
-  // after them, so the political map has a Bundestag view.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
+  // No transit (HVV has no free API), events, appointments, budget, noise
+  // sensors, council meetings, district mayors or Berlin's own sources. The
+  // social atlas is the Sozialmonitoring (857 Statistische Gebiete), population
+  // the Stadtteil statistics (99 Stadtteile). The Bürgerschaft's constituencies
+  // are not Bezirke, so its members are not grouped by Bezirk; its Bundestag
+  // constituencies are named after them, so the political map has a Bundestag view.
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'socialAtlas', 'population', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
 };

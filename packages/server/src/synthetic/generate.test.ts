@@ -300,11 +300,11 @@ describe('generateSyntheticCityData', () => {
       const held = Object.keys(data).filter((key) => key !== 'cityId' && key !== 'history');
       expect(held).toEqual(syntheticCoverage(hamburg));
       // No transit (its HVV source is offline), events, budget, appointments,
-      // social atlas, noise or council config; population, wastewater, bathing, labour
-      // market and fire brigade are Berlin-only sources
+      // noise or council config; wastewater, bathing, labour market and fire
+      // brigade are Berlin-only sources
       expect([...held].sort()).toEqual([
         'aeds', 'airQuality', 'airQualityGrid', 'construction', 'news', 'nina', 'pharmacies', 'political', 'pollen',
-        'safety', 'summary', 'traffic', 'waterLevels', 'weather',
+        'population', 'safety', 'socialAtlas', 'summary', 'traffic', 'waterLevels', 'weather',
       ]);
       // No Bezirk mayors or state members by Bezirk outside Berlin
       expect(Object.keys(data.political!).sort()).toEqual(['bundestag', 'state']);
@@ -322,7 +322,7 @@ describe('generateSyntheticCityData', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
         'aeds', 'aq grid', 'construction', 'nina', 'pharmacies', 'political bundestag', 'political state', 'pollen',
-        'traffic', 'water levels', 'weather',
+        'population', 'traffic', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {
         expect(schema.safeParse(value).error, name).toBeUndefined();
@@ -417,6 +417,20 @@ describe('generateSyntheticCityData', () => {
     expect(Object.keys(m).sort()).toEqual(['bundestag', 'mayor', 'state']);
     expect(m.state).toHaveLength(9);
     for (const d of [...m.bundestag!, ...m.state!]) expect(d.name).toMatch(/^München-/);
+  });
+
+  it('fills only the social-atlas indicators each city\'s source has, and counts yearly outside Berlin', () => {
+    const k = generateSyntheticCityData({ now: NOW, city: koeln });
+    const kProps = k.socialAtlas!.features.map((f) => f.properties);
+    // Köln's Datenkatalog has no child poverty and no status index
+    expect(kProps.every((p) => p.childPoverty === null && p.statusIndex === null && p.statusLabel === null)).toBe(true);
+    expect(kProps.every((p) => typeof p.unemployment === 'number' && typeof p.welfare === 'number')).toBe(true);
+    expect(k.population!.summary.changePeriod).toBe('year');
+    expect(k.population!.summary.snapshotDate).toMatch(/-12-31$/);
+
+    const hProps = generateSyntheticCityData({ now: NOW, city: hamburg }).socialAtlas!.features.map((f) => f.properties);
+    expect(hProps.every((p) => typeof p.childPoverty === 'number' && typeof p.statusIndex === 'number')).toBe(true);
+    expect(generateSyntheticCityData({ now: NOW, city: berlin }).population!.summary.changePeriod).toBe('half-year');
   });
 
   it('holds weather and transit only where their ingestion would fetch them', () => {

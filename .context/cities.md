@@ -17,7 +17,7 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
 
 ## Hamburg
 
-- **Has:** 3 news feeds (NDR, MOPO, Feuerwehr Hamburg) with AI briefing, police (Polizei Hamburg on presseportal), Elbe gauges, roadworks (Bauweiser OGC API), political data (Bundestag, Bürgerschaft), noise map, crisis tile.
+- **Has:** 3 news feeds (NDR, MOPO, Feuerwehr Hamburg) with AI briefing, police (Polizei Hamburg on presseportal), Elbe gauges, roadworks (Bauweiser OGC API), political data (Bundestag, Bürgerschaft), noise map, crisis tile, social atlas (Sozialmonitoring Bericht 2025, 857 Statistische Gebiete: unemployment, children of single parents, SGB II/AsylbLG recipients, children on minimum income, with Hamburg's own Statusindex; shares back-calculated from the report's z-scores), population (Stadtteil statistics, 99 Stadtteile, yearly).
 - **Looked for, not found or ruled out:**
   - News: Hamburger Abendblatt (feed terms forbid passing items on; removed), hamburg.de (feed gone), WELT (AI-input ban), ZEIT, taz Nord, t-online (blanket automated-access bans).
   - Transit: HVV's only source is the Geofox GTI API, which needs a key and restricts third-party use; gtfs.de has no Hochbahn real-time yet.
@@ -30,7 +30,8 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
 
 ## Köln
 
-- **Has:** 4 news feeds (WDR Rheinland, Kölner Stadt-Anzeiger, EXPRESS, Stadt Köln) with AI briefing, police (Polizei Köln on presseportal, also covers Leverkusen), Rhein gauge, roadworks (city WFS, permit periods), events (Stadt Köln open data), council meetings (SessionNet OParl 1.1), political data (Bundestag members for Köln I–III and Leverkusen – Köln IV, Landtag NRW members for Köln I–VII, by candidacy; the Oberbürgermeister and 9 Bezirksbürgermeister from a hand-kept table), crisis tile. The 9 Stadtbezirk outlines (Offene Daten Köln, dl-de/zero-2.0) on the map, and a political map layer that colours them by their Bezirksbürgermeister's party.
+- **Has:** 4 news feeds (WDR Rheinland, Kölner Stadt-Anzeiger, EXPRESS, Stadt Köln) with AI briefing, police (Polizei Köln on presseportal, also covers Leverkusen), Rhein gauge, roadworks (city WFS, permit periods), events (Stadt Köln open data), council meetings (SessionNet OParl 1.1), political data (Bundestag members for Köln I–III and Leverkusen – Köln IV, Landtag NRW members for Köln I–VII, by candidacy; the Oberbürgermeister and 9 Bezirksbürgermeister from a hand-kept table), crisis tile. The 9 Stadtbezirk outlines (Offene Daten Köln, dl-de/zero-2.0) on the map, and a political map layer that colours them by their Bezirksbürgermeister's party. Social atlas and population from the Statistischer Datenkatalog (data year 2025, 570 Statistische Quartiere): unemployment rate, single-parent households, SGB II recipients; residents, age and foreign share, yearly.
+  - Social atlas: no child-poverty figure in the Datenkatalog (sub-layer hidden), and no status index.
 - **Looked for, not found or ruled out:**
   - News: Kölnische Rundschau left out because it repeats the Stadt-Anzeiger's newsroom; no WDR feed for Köln alone.
   - Transit: KVB publishes lift and escalator outages only; line disruptions exist only as an unlicensed web page. gtfs.de carries no KVB alerts.
@@ -48,6 +49,7 @@ Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, tr
   - Isar water levels in cm: the Isar is not on PEGELONLINE, and LHP gives flood classes only. Levels exist only on HND pages (private use) or GKD downloads (CC BY 4.0, no API); they need the LfU's permission or the HND API it has announced.
   - Political map: none, though the outlines ship. Its constituencies are not Stadtbezirke and it has no Bezirk-level office holders to colour them by.
   - The 25 Bezirksausschuss chairs: one web page each, no dataset; too many to keep by hand.
+- **Not built yet:** social atlas and population from the Indikatorenatlas, which covers only the 25 Stadtbezirke (coarse next to the other cities' 99–857 areas).
 
 ## Requests to data owners, all sent 2026-11-01
 

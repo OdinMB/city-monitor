@@ -3,6 +3,8 @@ import type { CityFeature } from '@city-monitor/shared';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from './map-layers.js';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
+import { koeln } from '../config/cities/koeln.js';
+import { muenchen } from '../config/cities/muenchen.js';
 
 const withFeatures = (...features: CityFeature[]) => cityLayers({ features });
 
@@ -37,13 +39,20 @@ describe('cityLayers', () => {
 
   it('leaves out what Hamburg has no source for', () => {
     const hh = cityLayers(hamburg);
-    expect(hh.layers.has('social')).toBe(false);
-    expect(hh.layers.has('population')).toBe(false);
+    // The Sozialmonitoring has all four indicators; no rent map outside Berlin
+    expect(hh.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty']);
+    expect(hh.layers.has('population')).toBe(true);
     expect(hh.traffic).toEqual(['incidents', 'roadworks']);
     expect(hh.water).toEqual(['levels']);
     expect(hh.noise).toEqual(['road', 'rail', 'air']);
     expect(hh.noiseLive).toBe(false);
     expect(hh.political).toEqual(['bundestag']);
+  });
+
+  it('leaves out the social-atlas indicators a city\'s source lacks', () => {
+    // Köln's Datenkatalog has no child-poverty figure
+    expect(cityLayers(koeln).social).toEqual(['unemployment', 'single-parent', 'welfare']);
+    expect(cityLayers(muenchen).layers.has('social')).toBe(false);
   });
 
   it('shows a parent layer when any one of its sub-layers is there', () => {

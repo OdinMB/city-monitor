@@ -267,6 +267,7 @@
       "workingAge": "Working age",
       "ageBreakdown": "Age breakdown",
       "change": "vs. previous half-year",
+      "changeYear": "vs. previous year",
       "empty": "No data available",
       "source": "Statistik Berlin-Brandenburg",
       "density": "per km²",
@@ -528,10 +529,6 @@
       "bathing": "Bathing Water"
     },
     "social": {
-      "unemployment": "Unemployment (2025)",
-      "single-parent": "Single-Parent HH (2025)",
-      "welfare": "Welfare Recipients (2025)",
-      "child-poverty": "Child Poverty (2025)",
       "rent": "Rent"
     },
     "population": {
@@ -599,12 +596,23 @@
         "loud": "Loud",
         "veryLoud": "Very Loud"
       }
-    },
-    "socialAtlas": {
+    }
+  },
+  "socialAtlas": {
+    "indicator": {
       "unemployment": "Unemployment",
-      "singleParent": "Single-parent HH",
+      "unemploymentRate": "Unemployment rate",
+      "singleParentChildren": "Children of single parents",
+      "singleParentHouseholds": "Single-parent households",
       "welfare": "Welfare recipients",
-      "childPoverty": "Child poverty"
+      "sgb2": "SGB II recipients",
+      "sgb2Asylblg": "SGB II and AsylbLG recipients",
+      "childPoverty": "Child poverty",
+      "childrenMinimumIncome": "Children on minimum income"
+    },
+    "status": {
+      "mss": "MSS status index",
+      "hhSozialmonitoring": "Sozialmonitoring status"
     }
   },
   "nina": {

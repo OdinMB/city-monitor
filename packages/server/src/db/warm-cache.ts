@@ -128,6 +128,16 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
     })().catch((err) => log.error(`${cityId} social-atlas failed`, err)),
 
     (async () => {
+      const r = await loadPopulationGeojson(db, cityId);
+      if (r) cache.set(CK.populationGeojson(cityId), r.data, POPULATION_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} population geojson failed`, err)),
+
+    (async () => {
+      const r = await loadPopulationSummary(db, cityId);
+      if (r) cache.set(CK.populationSummary(cityId), r.data, POPULATION_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} population summary failed`, err)),
+
+    (async () => {
       const r = await loadPollen(db, cityId);
       if (r) cache.set(CK.pollen(cityId), r.data, 86400, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} pollen failed`, err)),
@@ -153,16 +163,6 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
         const r = await loadLaborMarket(db, cityId);
         if (r) cache.set(CK.laborMarket(cityId), r.data, 86400, r.fetchedAt);
       })().catch((err) => log.error(`${cityId} labor-market failed`, err)),
-
-      (async () => {
-        const r = await loadPopulationGeojson(db, cityId);
-        if (r) cache.set(CK.populationGeojson(cityId), r.data, POPULATION_TTL_SECONDS, r.fetchedAt);
-      })().catch((err) => log.error(`${cityId} population geojson failed`, err)),
-
-      (async () => {
-        const r = await loadPopulationSummary(db, cityId);
-        if (r) cache.set(CK.populationSummary(cityId), r.data, POPULATION_TTL_SECONDS, r.fetchedAt);
-      })().catch((err) => log.error(`${cityId} population summary failed`, err)),
 
       (async () => {
         const r = await loadFeuerwehr(db, cityId);

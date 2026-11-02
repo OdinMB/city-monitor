@@ -364,6 +364,7 @@ export const PopulationSummarySchema = z.object({
   changeAbsolute: z.number(),
   changePct: z.number(),
   snapshotDate: z.string(),
+  changePeriod: z.enum(['half-year', 'year']).optional(),
 });
 
 // --- Council Meetings ---

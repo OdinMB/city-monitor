@@ -5,6 +5,7 @@ import type { WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
 import { CityContext } from '../../hooks/CityContext.js';
 import { hamburg } from '../../config/cities/hamburg.js';
+import { koeln } from '../../config/cities/koeln.js';
 import { cityLayers } from '../../lib/map-layers.js';
 import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
@@ -128,6 +129,22 @@ describe('DataLayerToggles per city', () => {
     for (const layer of ['warnings', 'news', 'traffic', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political']) {
       expect(shown(i18n.t(`sidebar.layers.${layer}`)), layer).toBe(expected.has(layer as DataLayer));
     }
+  });
+
+  it('names each social-atlas indicator the way the city\'s source defines it, with its edition', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['social']) });
+    renderFor(koeln);
+    expect(shown('Unemployment rate (2025)')).toBe(true);
+    expect(shown('Single-parent households (2025)')).toBe(true);
+    expect(shown('SGB II recipients (2025)')).toBe(true);
+    // No child-poverty figure in Köln's source, and no rent map
+    expect(shown('Child poverty (2025)')).toBe(false);
+    expect(shown(i18n.t('sidebar.social.rent'))).toBe(false);
+    cleanup();
+
+    renderFor(hamburg);
+    expect(shown('Children on minimum income (2025)')).toBe(true);
+    expect(shown('Unemployment (2025)')).toBe(true);
   });
 
   it('lists a layer\'s sub-layers only when the city has more than one', () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
 import ExcelJS from 'exceljs';
 import { createCache } from '../lib/cache.js';
 import type { PopulationSummary } from '@city-monitor/shared';
@@ -146,8 +147,8 @@ describe('ingest-population', () => {
     vi.unstubAllEnvs();
   });
 
-  it('makes no request, reads nothing and writes nothing when Berlin is not active', async () => {
-    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+  it('makes no request, reads nothing and writes nothing when no active city has a population source', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'muenchen');
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(xlsxBuf, { status: 200 }),
     );
@@ -162,7 +163,7 @@ describe('ingest-population', () => {
     expect(mockSavePopulation).not.toHaveBeenCalled();
   });
 
-  it.each(['berlin', 'berlin,hamburg', 'hamburg,berlin'])(
+  it.each(['berlin', 'berlin,muenchen', 'muenchen,berlin'])(
     'fetches the EWR XLSX and writes Berlin rows when ACTIVE_CITIES=%s',
     async (activeCities) => {
       vi.stubEnv('ACTIVE_CITIES', activeCities);
@@ -345,5 +346,98 @@ describe('ingest-population', () => {
     const summary = cache.get<PopulationSummary>('berlin:population:summary');
     expect(summary!.changeAbsolute).toBe(0);
     expect(summary!.changePct).toBe(0);
+    expect(summary!.changePeriod).toBe('half-year');
+  });
+
+  it('compares with the previous snapshot of an earlier count', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(xlsxBuf, { status: 200 }));
+    mockLoadPopulationSummary.mockResolvedValueOnce({
+      data: { total: 9000, changeAbsolute: 5, changePct: 0.1, snapshotDate: '2025-06-30' },
+      fetchedAt: new Date(),
+    });
+
+    const cache = createCache();
+    cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
+    await createPopulationIngestion(cache, {} as Db)();
+
+    const summary = cache.get<PopulationSummary>('berlin:population:summary')!;
+    expect(summary.changeAbsolute).toBe(1000);
+    expect(summary.changePct).toBeCloseTo(11.11, 2);
+  });
+
+  // The job runs monthly and the XLSX changes half-yearly: a rerun on the same
+  // count once compared the count with itself and showed no change.
+  it('keeps the recorded change on a rerun over the same count', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(xlsxBuf, { status: 200 }));
+    mockLoadPopulationSummary.mockResolvedValueOnce({
+      data: { total: 10000, changeAbsolute: 1000, changePct: 11.11, snapshotDate: '2025-12-31' },
+      fetchedAt: new Date(),
+    });
+
+    const cache = createCache();
+    cache.set('berlin:social-atlas:geojson', buildMockSocialAtlasGeojson(), 86400);
+    await createPopulationIngestion(cache, {} as Db)();
+
+    const summary = cache.get<PopulationSummary>('berlin:population:summary')!;
+    expect(summary.snapshotDate).toBe('2025-12-31');
+    expect(summary.changeAbsolute).toBe(1000);
+    expect(summary.changePct).toBe(11.11);
+  });
+});
+
+describe('ingest-population for Köln and Hamburg', () => {
+  const fixture = (name: string) => readFileSync(new URL(`../lib/social-atlas-fixtures/${name}`, import.meta.url), 'utf8');
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockSavePopulation.mockClear();
+    mockLoadPopulationSummary.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('draws Köln\'s Quartiere on the shipped outlines, with density from their area and the change since the year before', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'koeln');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixture('koeln-datenkatalog.csv'), { status: 200 }));
+
+    const cache = createCache();
+    await createPopulationIngestion(cache, {} as Db)();
+
+    expect(String(fetchSpy.mock.calls[0]![0])).toContain('Statistischer_Datenkatalog');
+    const geojson = cache.get<{ features: Array<{ geometry: { type: string }; properties: Record<string, number | string> }> }>('koeln:population:geojson')!;
+    expect(geojson.features.map((f) => f.properties.plrId)).toEqual(['101010001', '101020001', '309050002']);
+    const kapitol = geojson.features[0]!;
+    expect(kapitol.geometry.type).toMatch(/Polygon/);
+    expect(kapitol.properties.plrName).toBe('Kapitol-Viertel');
+    // 1,755 residents on 0.129 km²
+    expect(kapitol.properties.density).toBe(Math.round(1755 / 0.129));
+
+    const summary = cache.get<PopulationSummary>('koeln:population:summary')!;
+    expect(summary.snapshotDate).toBe('2025-12-31');
+    expect(summary.changePeriod).toBe('year');
+    expect(summary.changeAbsolute).not.toBe(0);
+    // The year before comes from the CSV, not the database
+    expect(mockLoadPopulationSummary).not.toHaveBeenCalled();
+    expect(mockSavePopulation).toHaveBeenCalledWith(expect.anything(), 'koeln', geojson, summary);
+  });
+
+  it('draws Hamburg\'s Stadtteile on the shipped outlines, asking the API for no geometry', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixture('hh-stadtteile.json'), { status: 200 }));
+
+    const cache = createCache();
+    await createPopulationIngestion(cache)();
+
+    expect(String(fetchSpy.mock.calls[0]![0])).toContain('skipGeometry=true');
+    const geojson = cache.get<{ features: Array<{ properties: Record<string, number | string> }> }>('hamburg:population:geojson')!;
+    expect(geojson.features.map((f) => [f.properties.plrId, f.properties.plrName])).toEqual([['101', 'Hamburg-Altstadt'], ['104', 'St. Pauli']]);
+    // 22,028 residents on 224 ha
+    expect(geojson.features[1]!.properties.density).toBe(Math.round(22028 / 2.24));
+    const summary = cache.get<PopulationSummary>('hamburg:population:summary')!;
+    expect(summary.total).toBe(2567 + 22028);
+    expect(summary.changeAbsolute).toBe(2567 + 22028 - 2549 - 22377);
+    expect(summary.changePeriod).toBe('year');
   });
 });

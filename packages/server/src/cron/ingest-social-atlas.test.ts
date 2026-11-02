@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import type { SocialAtlasFeatureProps } from '@city-monitor/shared';
 import { createCache } from '../lib/cache.js';
 import { createSocialAtlasIngestion, mssLayerNames } from './ingest-social-atlas.js';
 
@@ -93,6 +95,7 @@ function mockFetchResponses() {
 describe('mssLayerNames', () => {
   it('derives both layer names from the edition in the WFS URL', () => {
     expect(mssLayerNames('https://gdi.berlin.de/services/wfs/mss_2025')).toEqual({
+      year: '2025',
       indicators: 'mss_2025:mss2025_indexind_542',
       indices: 'mss_2025:mss2025_indizes_542',
     });
@@ -107,6 +110,11 @@ describe('mssLayerNames', () => {
 describe('ingest-social-atlas', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('requests the layers of the configured edition', async () => {
@@ -203,17 +211,58 @@ describe('ingest-social-atlas', () => {
     expect(geojsonCall![2]).toBe(604800);
   });
 
-  it('handles empty WFS response', async () => {
+  // An empty answer replaced the cached areas once; the population layer, which
+  // takes Berlin's polygons from this entry, then lost its map too.
+  it('keeps what it had when the WFS answers with no areas', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
       new Response(JSON.stringify({ type: 'FeatureCollection', features: [] }), { status: 200 }),
     );
 
     const cache = createCache();
-    const ingest = createSocialAtlasIngestion(cache);
-    await ingest();
+    cache.set('berlin:social-atlas:geojson', { type: 'FeatureCollection', features: [{ id: 'old' }] }, 604800);
+    await createSocialAtlasIngestion(cache)();
 
-    const geojson = cache.get<{ type: string; features: Array<{ type: string; geometry: unknown; properties: Record<string, unknown> }> }>('berlin:social-atlas:geojson');
-    expect(geojson).toBeTruthy();
-    expect(geojson!.features).toHaveLength(0);
+    expect(cache.get<{ features: unknown[] }>('berlin:social-atlas:geojson')!.features).toEqual([{ id: 'old' }]);
+  });
+});
+
+describe('ingest-social-atlas for Köln and Hamburg', () => {
+  const fixture = (name: string) => readFileSync(new URL(`../lib/social-atlas-fixtures/${name}`, import.meta.url));
+  type Collection = { features: Array<{ geometry: { type: string }; properties: SocialAtlasFeatureProps }> };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('joins Köln\'s Quartiere of the configured year with the shipped outlines and their Stadtbezirk', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'koeln');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixture('koeln-datenkatalog.csv'), { status: 200 }));
+
+    const cache = createCache();
+    await createSocialAtlasIngestion(cache)();
+
+    const geojson = cache.get<Collection>('koeln:social-atlas:geojson')!;
+    expect(geojson.features.map((f) => f.properties.plrId)).toEqual(['101010001', '101020001', '309050002']);
+    const kapitol = geojson.features[0]!;
+    expect(kapitol.geometry.type).toMatch(/Polygon/);
+    expect(kapitol.properties).toMatchObject({ plrName: 'Kapitol-Viertel', bezId: 'Innenstadt', childPoverty: null, statusIndex: null });
+    expect(kapitol.properties.unemployment).toBeCloseTo(6.34, 2);
+  });
+
+  it('reads Hamburg\'s Sozialmonitoring annex onto the shipped Statistische Gebiete', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'hamburg');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(fixture('hh-sozialmonitoring.xlsx'), { status: 200 }));
+
+    const cache = createCache();
+    await createSocialAtlasIngestion(cache)();
+
+    expect(String(fetchSpy.mock.calls[0]![0])).toMatch(/Sozialmonitoring-Bericht_2025_Ergebnistabellen\.XLSX$/);
+    const geojson = cache.get<Collection>('hamburg:social-atlas:geojson')!;
+    expect(geojson.features.map((f) => f.properties.plrId)).toEqual(['4001', '102001', '104001']);
+    expect(geojson.features[1]!.properties).toMatchObject({ bezId: 'Harburg', statusLabel: 'mittel', childPoverty: 6.8 });
   });
 });

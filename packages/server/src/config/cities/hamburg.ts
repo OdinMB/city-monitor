@@ -90,5 +90,22 @@ export const hamburg: CityConfig = {
         { uuid: '816affba-0118-4668-887f-fb882ed573b2', name: 'Seemannshöft', waterBody: 'Elbe', tidal: true },
       ],
     },
+    // Sozialmonitoring Integrierte Stadtteilentwicklung, report annex (dl-de/by-2.0): 857
+    // Statistische Gebiete, data as of 31 Dec of the year before the report. A new GUID
+    // each year: find it on the Transparenzportal ("Sozialmonitoring Bericht Anhang").
+    // The outlines, from the dataset's OGC API, ship in packages/server/data.
+    socialAtlas: {
+      provider: 'hh-sozialmonitoring',
+      xlsxUrl: 'https://daten.transparenz.hamburg.de/Dataport.HmbTG.ZS.Webservice.GetRessource100/GetRessource100.svc/ee0ecec9-c569-43ca-bc90-fc3f560ff1a9/Upload__Sozialmonitoring-Bericht_2025_Ergebnistabellen.XLSX',
+      reportYear: 2025,
+      outlines: 'hamburg-statistische-gebiete.geojson',
+    },
+    // Regionalstatistische Daten der Stadtteile (Statistikamt Nord, dl-de/by-2.0): 99
+    // Stadtteile, yearly. Fetched without geometry; the outlines ship in packages/server/data.
+    population: {
+      provider: 'hh-stadtteile',
+      itemsUrl: 'https://api.hamburg.de/datasets/v1/regionalstatistische_daten_stadtteile/collections/regionalstatistische_daten_stadtteile/items',
+      outlines: 'hamburg-stadtteile.geojson',
+    },
   },
 };

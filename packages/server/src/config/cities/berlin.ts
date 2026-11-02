@@ -104,6 +104,15 @@ export const berlin: CityConfig = {
       // MSS 2025 (data as of 2024-12-31); the next edition, MSS 2027, is due in 2027
       wfsUrl: 'https://gdi.berlin.de/services/wfs/mss_2025',
     },
+    // Einwohnerregisterstatistik per Planungsraum (CC BY), half-yearly. The URL's hash
+    // segments change with each edition: copy it from
+    // https://www.statistik-berlin-brandenburg.de/a-i-16-hj. The polygons come from the
+    // social atlas, so this job runs after it.
+    population: {
+      provider: 'afstat-ewr-xlsx',
+      // 30 June 2026
+      xlsxUrl: 'https://download.statistik-berlin-brandenburg.de/fca0a030166493d0/1289b0921aa2/SB_A01-16-00_2026h01_BE.xlsx',
+    },
     pollen: {
       provider: 'dwd',
       regionId: 50,         // Brandenburg und Berlin

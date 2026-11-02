@@ -265,6 +265,7 @@
       "workingAge": "Erwerbsfähiges Alter",
       "ageBreakdown": "Altersstruktur",
       "change": "ggü. Vorhalbjahr",
+      "changeYear": "ggü. Vorjahr",
       "empty": "Keine Daten verfügbar",
       "source": "Statistik Berlin-Brandenburg",
       "density": "pro km²",
@@ -530,10 +531,6 @@
       "bathing": "Badegewässer"
     },
     "social": {
-      "unemployment": "Arbeitslosigkeit (2025)",
-      "single-parent": "Alleinerziehende (2025)",
-      "welfare": "Transferbezug (2025)",
-      "child-poverty": "Kinderarmut (2025)",
       "rent": "Mietspiegel"
     },
     "population": {
@@ -605,12 +602,23 @@
         "loud": "Laut",
         "veryLoud": "Sehr laut"
       }
-    },
-    "socialAtlas": {
+    }
+  },
+  "socialAtlas": {
+    "indicator": {
       "unemployment": "Arbeitslosigkeit",
-      "singleParent": "Alleinerziehende",
+      "unemploymentRate": "Arbeitslosenquote",
+      "singleParentChildren": "Kinder Alleinerziehender",
+      "singleParentHouseholds": "Alleinerziehenden-Haushalte",
       "welfare": "Transferbezug",
-      "childPoverty": "Kinderarmut"
+      "sgb2": "SGB-II-Leistungsberechtigte",
+      "sgb2Asylblg": "SGB-II- und AsylbLG-Empfänger",
+      "childPoverty": "Kinderarmut",
+      "childrenMinimumIncome": "Kinder in Mindestsicherung"
+    },
+    "status": {
+      "mss": "MSS-Statusindex",
+      "hhSozialmonitoring": "Statusindex (Sozialmonitoring)"
     }
   },
   "nina": {

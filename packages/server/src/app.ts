@@ -76,7 +76,6 @@ export const BERLIN_ONLY_JOBS: ReadonlySet<string> = new Set([
   'ingest-bathing',
   'ingest-wastewater',
   'ingest-labor-market',
-  'ingest-population',
   'ingest-feuerwehr',
 ]);
 
@@ -182,7 +181,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' }, serves: inBerlin },
     { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' }, serves: inBerlin },
     { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' }, serves: inBerlin },
-    { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: inBerlin },
+    { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: (c) => !!c.dataSources.population },
     { jobName: 'ingest-feuerwehr',    tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'bf-feuerwehr' }, serves: inBerlin },
     { jobName: 'ingest-pollen',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'dwd-pollen' }, serves: (c) => !!c.dataSources.pollen },
     { jobName: 'ingest-noise-sensors', tableName: 'snapshots', maxAgeSeconds: 1800,   filter: { column: 'type', value: 'sc-dnms' }, serves: (c) => !!c.dataSources.noiseSensors },

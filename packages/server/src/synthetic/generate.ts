@@ -33,6 +33,7 @@ import {
 } from '../cron/ingest-political.js';
 import { computeLevel, computeTrend } from '../cron/ingest-wastewater.js';
 import { hashString } from '../lib/hash.js';
+import { SOCIAL_ATLAS_HAS_STATUS_INDEX, SOCIAL_ATLAS_METRICS } from '../lib/social-atlas-parsers.js';
 
 export interface SyntheticSnapshot {
   type: SnapshotType;
@@ -123,7 +124,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   pharmacies: hasPharmacySearch,
   aeds: (c) => c.country === 'DE',
   socialAtlas: (c) => c.dataSources.socialAtlas !== undefined,
-  population: berlinOnly,
+  population: (c) => c.dataSources.population !== undefined,
   wastewater: berlinOnly,
   bathing: berlinOnly,
   laborMarket: berlinOnly,
@@ -1125,6 +1126,10 @@ function generateAreas(rng: Rng, now: Date, place: Place): { socialAtlas: Synthe
   const { north, south, east, west } = place.city.boundingBox;
   const { anchors } = place;
   const { deprivationCentres } = place.details;
+  const source = place.city.dataSources.socialAtlas;
+  const metrics = new Set(source ? SOCIAL_ATLAS_METRICS[source.provider] : []);
+  const withStatus = source !== undefined && SOCIAL_ATLAS_HAS_STATUS_INDEX[source.provider];
+  const yearly = place.city.dataSources.population !== undefined && place.city.dataSources.population.provider !== 'afstat-ewr-xlsx';
   const rows = 12;
   const cols = 15;
   const dLat = (north - south) / rows;
@@ -1161,6 +1166,7 @@ function generateAreas(rng: Rng, now: Date, place: Place): { socialAtlas: Synthe
       );
       const population = Math.round((800 + 11000 * Math.exp(-((r / 0.45) ** 2))) * cellKm2 * rng.float(0.85, 1.15));
       const statusIndex = deprivation < 0.25 ? 1 : deprivation < 0.45 ? 2 : deprivation < 0.65 ? 3 : 4;
+      const singleParent = round(18 + 30 * deprivation + rng.float(-3, 3), 1);
 
       social.push({
         type: 'Feature',
@@ -1170,12 +1176,13 @@ function generateAreas(rng: Rng, now: Date, place: Place): { socialAtlas: Synthe
           plrName,
           bezId,
           population,
-          statusIndex,
-          statusLabel: STATUS_LABELS[statusIndex]!,
-          unemployment: round(2 + 14 * deprivation, 1),
-          singleParent: round(18 + 30 * deprivation + rng.float(-3, 3), 1),
-          welfare: round(3 + 30 * deprivation, 1),
-          childPoverty: round(5 + 45 * deprivation, 1),
+          // Only the indicators and status index the city's source has
+          statusIndex: withStatus ? statusIndex : null,
+          statusLabel: withStatus ? STATUS_LABELS[statusIndex]! : null,
+          unemployment: metrics.has('unemployment') ? round(2 + 14 * deprivation, 1) : null,
+          singleParent: metrics.has('singleParent') ? singleParent : null,
+          welfare: metrics.has('welfare') ? round(3 + 30 * deprivation, 1) : null,
+          childPoverty: metrics.has('childPoverty') ? round(5 + 45 * deprivation, 1) : null,
         },
       });
 
@@ -1213,16 +1220,24 @@ function generateAreas(rng: Rng, now: Date, place: Place): { socialAtlas: Synthe
         workingAgePct: round(100 - elderlyPct - youthPct, 1),
         changeAbsolute: Math.round((total * changePct) / 100),
         changePct,
-        snapshotDate: populationSnapshotDate(now),
+        snapshotDate: populationSnapshotDate(now, yearly),
+        changePeriod: yearly ? 'year' : 'half-year',
       },
     },
   };
 }
 
-/** The latest half-year snapshot (30 June / 31 December) that would be published by now, ~3 months on. */
-function populationSnapshotDate(now: Date): string {
-  const cutoff = new Date(now.getTime() - 90 * DAY).toISOString().slice(0, 10);
+/**
+ * The latest snapshot that would be published by now: Berlin's half-year one
+ * (30 June / 31 December, ~3 months on), or the yearly one (31 December, ~6 months on).
+ */
+function populationSnapshotDate(now: Date, yearly: boolean): string {
   const year = now.getUTCFullYear();
+  if (yearly) {
+    const cutoff = new Date(now.getTime() - 180 * DAY).toISOString().slice(0, 10);
+    return [`${year - 1}-12-31`, `${year - 2}-12-31`].find((d) => d <= cutoff)!;
+  }
+  const cutoff = new Date(now.getTime() - 90 * DAY).toISOString().slice(0, 10);
   return [`${year}-06-30`, `${year - 1}-12-31`, `${year - 1}-06-30`].find((d) => d <= cutoff)!;
 }
 
@@ -1584,7 +1599,8 @@ const CITY_DETAILS: Readonly<Record<string, CityDetails>> = {
     roads: ['A1', 'A7', 'A24', 'A255', 'B4', 'B5', 'B75'],
     pollenRegion: 'Geest, Schleswig-Holstein und Hamburg',
     gauges: HAMBURG_GAUGE_SITES,
-    deprivationCentres: [],
+    // Made-up hot spots for the synthetic indices
+    deprivationCentres: [{ lat: 53.54, lon: 10.11 }, { lat: 53.5, lon: 10.0 }, { lat: 53.61, lon: 10.06 }],
   },
   koeln: {
     districts: KOELN_DISTRICTS,
@@ -1592,7 +1608,8 @@ const CITY_DETAILS: Readonly<Record<string, CityDetails>> = {
     roads: ['A1', 'A3', 'A4', 'A57', 'A59', 'B9', 'B55'],
     pollenRegion: 'Rhein.-Westfäl. Tiefland',
     gauges: { 'Köln': { lat: 50.9369, lon: 6.9628, mw: 300 } },
-    deprivationCentres: [],
+    // Made-up hot spots for the synthetic indices
+    deprivationCentres: [{ lat: 51.03, lon: 6.9 }, { lat: 50.94, lon: 7.01 }, { lat: 50.86, lon: 7.06 }],
   },
   muenchen: {
     districts: MUENCHEN_DISTRICTS,

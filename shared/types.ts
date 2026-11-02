@@ -59,7 +59,8 @@ export type CityFeature =
   | 'appointments'
   | 'budget'
   | 'roadworks'
-  | 'socialAtlas'
+  | 'socialAtlas'     // dataSources.socialAtlas: the social map layer's indicator sub-layers
+  | 'population'      // dataSources.population: population map layer and tile
   | 'noiseSensors'
   | 'councilMeetings'
   // The emergencies map layer's sub-layers, which German cities have
@@ -74,7 +75,6 @@ export type CityFeature =
   | 'bathing'
   | 'wastewater'
   | 'laborMarket'
-  | 'population'
   | 'feuerwehr'
   // The web app's own
   | 'crisis'          // the crisis-service directory
@@ -135,6 +135,33 @@ export type RoadworksSource =
   /** München's GeoServer WFS GetFeature URL for `baustellen_opendata` (GeoJSON, EPSG:4326) */
   | { provider: 'muenchen-wfs'; url: string };
 
+/**
+ * A city's social-atlas source, by the provider whose format it is in. Each
+ * provider has its own parser in packages/server/src/lib/social-atlas-parsers.ts,
+ * which also says which of the four indicators it has. `outlines` names a
+ * GeoJSON file in packages/server/data/ that holds the areas' polygons, for a
+ * source that ships none.
+ */
+export type SocialAtlasSource =
+  /** Berlin's Monitoring Soziale Stadtentwicklung WFS; the edition is the URL's last segment (`…/mss_2025`) */
+  | { provider: 'mss-wfs'; wfsUrl: string }
+  /** Stadt Köln's Statistischer Datenkatalog CSV, the rows of one year at the Statistische Quartier level */
+  | { provider: 'koeln-datenkatalog'; csvUrl: string; year: number; outlines: string }
+  /** Hamburg's Sozialmonitoring report annex (XLSX), one per report year */
+  | { provider: 'hh-sozialmonitoring'; xlsxUrl: string; reportYear: number; outlines: string };
+
+/**
+ * A city's population source, by provider; parsers in
+ * packages/server/src/lib/population-parsers.ts.
+ */
+export type PopulationSource =
+  /** Amt für Statistik Berlin-Brandenburg's half-yearly EWR XLSX; the polygons come from the social atlas */
+  | { provider: 'afstat-ewr-xlsx'; xlsxUrl: string }
+  /** The same Köln CSV as the social atlas: its newest year, compared with the year before */
+  | { provider: 'koeln-datenkatalog'; csvUrl: string; outlines: string }
+  /** Hamburg's "Regionalstatistische Daten der Stadtteile" (OGC API Features, no geometry fetched) */
+  | { provider: 'hh-stadtteile'; itemsUrl: string; outlines: string };
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -191,10 +218,9 @@ export interface CityDataSources {
     provider: 'service-berlin';
     services: Array<{ id: string; name: string }>;
   };
-  socialAtlas?: {
-    provider: 'mss-wfs';
-    wfsUrl: string;
-  };
+  socialAtlas?: SocialAtlasSource;
+  /** Residents per small area, for the population map layer and tile. */
+  population?: PopulationSource;
   pollen?: {
     provider: 'dwd';
     regionId: number;
@@ -489,18 +515,24 @@ export interface BuergeramtData {
   bookingUrl: string;
 }
 
-// Social Atlas (MSS, edition set by the city's socialAtlas.wfsUrl)
+// Social Atlas (dataSources.socialAtlas: Berlin MSS, Köln Datenkatalog, Hamburg Sozialmonitoring)
+/**
+ * One area of the social atlas. Each indicator is a percentage, or null where
+ * the city's source lacks it (Köln has no child poverty) or leaves the area
+ * out. What each indicator measures differs by city; the web app labels them
+ * per city (packages/web/src/lib/social-atlas.ts).
+ */
 export interface SocialAtlasFeatureProps {
-  plrId: string;
+  plrId: string;             // the area's ID: Berlin Planungsraum, Köln Statistisches Quartier, Hamburg Statistisches Gebiet
   plrName: string;
-  bezId: string;
+  bezId: string;             // the district it lies in (Berlin: Bezirk number; Köln: Stadtbezirk; Hamburg: Bezirk)
   population: number;
-  statusIndex: number;       // si_n: 1–4
-  statusLabel: string;       // si_v: "hoch" | "mittel" | "niedrig" | "sehr niedrig"
-  unemployment: number;      // s1: %
-  singleParent: number;      // s2: %
-  welfare: number;           // s3: %
-  childPoverty: number;      // s4: %
+  statusIndex: number | null;   // 1 (hoch) – 4 (sehr niedrig), where the source has a status index (Berlin MSS, Hamburg)
+  statusLabel: string | null;   // "hoch" | "mittel" | "niedrig" | "sehr niedrig"
+  unemployment: number | null;
+  singleParent: number | null;
+  welfare: number | null;
+  childPoverty: number | null;
 }
 
 // Labor market (Bundesagentur für Arbeit monthly)
@@ -554,10 +586,10 @@ export interface FeuerwehrSummary {
   previous: FeuerwehrMonthData | null;      // month before current, for MoM delta
 }
 
-// Population demographics (Amt für Statistik Berlin-Brandenburg, semi-annual)
+// Population demographics (dataSources.population: Berlin half-yearly, Köln and Hamburg yearly)
 export interface PopulationFeatureProps {
-  plrId: string;         // 8-digit Planungsraum ID (e.g. "01100101")
-  plrName: string;       // Planungsraum name (e.g. "Stülerstraße")
+  plrId: string;         // the area's ID: Berlin 8-digit Planungsraum ("01100101"), Köln Statistisches Quartier, Hamburg Stadtteil
+  plrName: string;       // its name (e.g. "Stülerstraße")
   population: number;    // total residents
   density: number;       // people per km²
   foreignPct: number;    // % non-German nationality
@@ -576,6 +608,8 @@ export interface PopulationSummary {
   changeAbsolute: number;   // vs previous snapshot (0 if first)
   changePct: number;
   snapshotDate: string;     // "2025-12-31"
+  /** What the change compares with: the previous half-year (Berlin, the default) or the previous year (Köln, Hamburg). */
+  changePeriod?: 'half-year' | 'year';
 }
 
 // Noise sensors (Sensor.Community DNMS)

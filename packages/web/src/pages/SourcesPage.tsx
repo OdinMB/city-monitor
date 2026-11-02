@@ -208,7 +208,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'Bundesagentur für Arbeit', url: 'https://statistik.arbeitsagentur.de/', description: 'Monthly unemployment rates, SGB II recipients, and underemployment data.' },
       { name: 'Amt für Statistik Berlin-Brandenburg', url: 'https://www.statistik-berlin-brandenburg.de/', description: 'Semi-annual population register statistics per planning area — population, age groups, foreign residents. Source: Amt für Statistik Berlin-Brandenburg, CC BY. City Monitor derives the shares and the population density.' },
-      { name: 'MSS 2025 (Social Atlas)', url: 'https://www.berlin.de/sen/sbw/stadtdaten/stadtwissen/monitoring-soziale-stadtentwicklung/', description: 'Biennial social indicators per planning area — unemployment, poverty, welfare rates.' },
+      { name: 'MSS 2025 (Social Atlas)', url: 'https://www.berlin.de/sen/sbw/stadtdaten/stadtwissen/monitoring-soziale-stadtentwicklung/', description: 'Biennial social indicators per planning area — unemployment, children of single parents, welfare, child poverty and the status index. Data as of 31 December 2024.' },
       { name: 'Berlin Budget (Doppelhaushalt)', url: 'https://www.berlin.de/sen/finanzen/', description: 'City budget 2026 — revenues and expenses by district and function category. Licensed CC BY.' },
     ],
   },
@@ -271,6 +271,13 @@ const HAMBURG_SOURCES: SourceGroup[] = [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time tidal water levels from Elbe gauges (St. Pauli, Bunthaus, Seemannshöft).' },
     ],
   },
+  {
+    category: 'Social & Economic',
+    sources: [
+      { name: 'Sozialmonitoring Hamburg (Social Atlas)', url: 'https://suche.transparenz.hamburg.de/dataset/sozialmonitoring-integrierte-stadtteilentwicklung-bericht-2025-anhang', description: 'Sozialmonitoring Integrierte Stadtteilentwicklung, report 2025 (data as of 31 December 2024), for 857 Statistische Gebiete: unemployment, children of single parents, SGB II and AsylbLG recipients, children on minimum income and the status index, on the inhabited parts of each area. The report publishes the indicators as z-scores; City Monitor turns them back into shares with the report\'s own mean and standard deviation, and simplified the outlines. Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.' },
+      { name: 'Regionalstatistische Daten der Stadtteile Hamburg', url: 'https://api.hamburg.de/datasets/v1/regionalstatistische_daten_stadtteile', description: 'Yearly population of 99 Stadtteile (the four smallest merged into a neighbour) — residents, under 18, 65 and older, foreign nationals and area. City Monitor derives the shares and density, and simplified the outlines. Source: Statistisches Amt für Hamburg und Schleswig-Holstein, dl-de/by-2-0.' },
+    ],
+  },
 ];
 
 const KOELN_SOURCES: SourceGroup[] = [
@@ -325,6 +332,13 @@ const KOELN_SOURCES: SourceGroup[] = [
     category: 'Maps',
     sources: [
       { name: 'Stadtbezirke Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/stadtbezirke-koeln', description: 'Outlines of the nine Stadtbezirke on the map, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
+      { name: 'Statistische Quartiere Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/statistische-quartiere-koeln', description: 'Outlines and areas of the 570 Statistische Quartiere for the social atlas and population layers, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
+    ],
+  },
+  {
+    category: 'Social & Economic',
+    sources: [
+      { name: 'Statistischer Datenkatalog Köln', url: 'https://www.offenedaten-koeln.de/dataset/statistischer-datenkatalog-koeln', description: 'Yearly figures for the 570 Statistische Quartiere: the unemployment rate (SGB II and III, of the civilian labour force), single-parent households (of all households) and SGB II recipients (of residents below pension age) for the social atlas, data year 2025; residents by age band and nationality for population. No child poverty figure and no status index at this level. City Monitor derives the population shares and density. Source: Stadt Köln – Amt für Stadtentwicklung und Statistik, dl-de/by-2-0. The unemployment and SGB II figures come from the Statistik der Bundesagentur für Arbeit.' },
     ],
   },
 ];

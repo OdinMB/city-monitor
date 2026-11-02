@@ -87,7 +87,11 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['go~mus (State Museums)', (c) => usesEvents(c, 'gomus')],
   ['service.berlin.de', (c) => c.dataSources.appointments !== undefined],
   ['Berlin Budget (Doppelhaushalt)', (c) => c.dataSources.budget !== undefined],
-  ['MSS 2025 (Social Atlas)', (c) => c.dataSources.socialAtlas !== undefined],
+  ['MSS 2025 (Social Atlas)', (c) => c.dataSources.socialAtlas?.provider === 'mss-wfs'],
+  ['Sozialmonitoring Hamburg (Social Atlas)', (c) => c.dataSources.socialAtlas?.provider === 'hh-sozialmonitoring'],
+  ['Statistischer Datenkatalog Köln', (c) => c.dataSources.socialAtlas?.provider === 'koeln-datenkatalog' || c.dataSources.population?.provider === 'koeln-datenkatalog'],
+  ['Statistische Quartiere Köln (Offene Daten Köln)', (c) => c.dataSources.socialAtlas?.provider === 'koeln-datenkatalog' || c.dataSources.population?.provider === 'koeln-datenkatalog'],
+  ['Regionalstatistische Daten der Stadtteile Hamburg', (c) => c.dataSources.population?.provider === 'hh-stadtteile'],
   ['Stadt Köln Open Data (Events)', (c) => usesEvents(c, 'stadt-koeln')],
   ['ALLRIS OParl (BVV)', (c) => (c.dataSources.councilMeetings?.bvv?.length ?? 0) > 0],
   ['PARDOK (Abgeordnetenhaus)', (c) => c.dataSources.councilMeetings?.parliament !== undefined],
@@ -97,7 +101,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['LAGeSo Wastewater Monitoring', berlinOnly],
   ['RKI AMELAG Wastewater Surveillance', berlinOnly],
   ['Bundesagentur für Arbeit', berlinOnly],
-  ['Amt für Statistik Berlin-Brandenburg', berlinOnly],
+  ['Amt für Statistik Berlin-Brandenburg', (c) => c.dataSources.population?.provider === 'afstat-ewr-xlsx'],
   ['Berliner Feuerwehr Open Data', berlinOnly],
   // ingest-feeds classifies news items and ingest-safety places police reports with the LLM
   ['OpenAI', (c) => c.feeds.length > 0 || c.dataSources.police !== undefined],
@@ -187,6 +191,10 @@ describe('SourcesPage licence credits', () => {
     'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/zero-2-0.',
     'Stadt Köln Open Data (Events)': 'Licensed dl-de/zero-2-0.',
     'Länderübergreifendes Hochwasserportal (LHP)': 'Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.',
+    'Sozialmonitoring Hamburg (Social Atlas)': 'Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.',
+    'Statistischer Datenkatalog Köln': 'Source: Stadt Köln – Amt für Stadtentwicklung und Statistik, dl-de/by-2-0.',
+    'Statistische Quartiere Köln (Offene Daten Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
+    'Regionalstatistische Daten der Stadtteile Hamburg': 'Source: Statistisches Amt für Hamburg und Schleswig-Holstein, dl-de/by-2-0.',
   };
 
   it('finds every listed source on some city page', () => {

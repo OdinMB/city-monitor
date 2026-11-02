@@ -10,6 +10,7 @@ import { koeln } from './cities/koeln.js';
 import { muenchen } from './cities/muenchen.js';
 import { DISTRICT_URLS, getNoiseWmsAttribution, getNoiseWmsUrl } from '../components/map/constants.js';
 import { getCrisisDirectory } from '../components/strips/crisis-services.js';
+import { SOCIAL_ATLAS } from '../lib/social-atlas.js';
 
 /** Features the web app holds itself, which the server knows nothing about. */
 const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap', 'bundestagByDistrict'];
@@ -124,6 +125,31 @@ describe('web and server city configs', () => {
       const server = await load<CityConfig>(SERVER_DIR, file);
       const webIngested = web.features.filter((f) => !WEB_ONLY_FEATURES.includes(f));
       expect([...webIngested].sort(), file).toEqual(cityFeatures(server).sort());
+    }
+  });
+
+  // The sidebar and popup name each city's social-atlas indicators from
+  // lib/social-atlas.ts: a label for an indicator the source lacks would draw
+  // an empty map, and an edition other than the server's would misdate it.
+  it('label exactly the social-atlas indicators, status index and edition of each city\'s source', async () => {
+    const parsers = (await import(/* @vite-ignore */ resolve(here, '../../../server/src/lib/social-atlas-parsers.ts'))) as {
+      SOCIAL_ATLAS_METRICS: Record<string, readonly string[]>;
+      SOCIAL_ATLAS_HAS_STATUS_INDEX: Record<string, boolean>;
+      socialAtlasEdition: (source: NonNullable<CityConfig['dataSources']['socialAtlas']>) => string;
+    };
+    for (const file of cityFiles(SERVER_DIR)) {
+      const server = await load<CityConfig>(SERVER_DIR, file);
+      const source = server.dataSources.socialAtlas;
+      const atlas = SOCIAL_ATLAS[server.id];
+      if (!source) {
+        expect(atlas, file).toBeUndefined();
+        continue;
+      }
+      expect(atlas, file).toBeDefined();
+      expect(atlas!.provider, file).toBe(source.provider);
+      expect(atlas!.edition, file).toBe(parsers.socialAtlasEdition(source));
+      expect(atlas!.indicators.map((i) => i.metric), file).toEqual(parsers.SOCIAL_ATLAS_METRICS[source.provider]);
+      expect(atlas!.status !== undefined, file).toBe(parsers.SOCIAL_ATLAS_HAS_STATUS_INDEX[source.provider]);
     }
   });
 });

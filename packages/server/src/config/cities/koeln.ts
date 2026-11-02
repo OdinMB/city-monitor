@@ -129,5 +129,19 @@ export const koeln: CityConfig = {
         webUrlPrefix: 'https://buergerinfo.stadt-koeln.de/si0057.asp?__ksinr=',
       },
     },
+    // Statistischer Datenkatalog (dl-de/by-2.0), one yearly CSV for both layers, at the
+    // 570 Statistische Quartiere. The outlines (dl-de/zero-2.0) ship in packages/server/data.
+    // The social atlas pins the year its labels name; population takes the newest year.
+    socialAtlas: {
+      provider: 'koeln-datenkatalog',
+      csvUrl: 'https://www.offenedaten-koeln.de/sites/default/files/uploaded_resources/Stadt_K%C3%B6ln_Statistischer_Datenkatalog_0.csv',
+      year: 2025,
+      outlines: 'koeln-quartiere.geojson',
+    },
+    population: {
+      provider: 'koeln-datenkatalog',
+      csvUrl: 'https://www.offenedaten-koeln.de/sites/default/files/uploaded_resources/Stadt_K%C3%B6ln_Statistischer_Datenkatalog_0.csv',
+      outlines: 'koeln-quartiere.geojson',
+    },
   },
 };
