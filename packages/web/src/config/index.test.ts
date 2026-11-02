@@ -12,7 +12,7 @@ import { DISTRICT_URLS, getNoiseWmsAttribution, getNoiseWmsUrl } from '../compon
 import { getCrisisDirectory } from '../components/strips/crisis-services.js';
 
 /** Features the web app holds itself, which the server knows nothing about. */
-const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap'];
+const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap', 'bundestagByDistrict'];
 
 const ALL_CONFIGURED = [berlin, hamburg, koeln, muenchen];
 
@@ -161,10 +161,16 @@ describe('the web app\'s own features', () => {
   });
 
   // The political map layer colours district outlines the web app ships
-  // (DISTRICT_URLS); without them it would draw nothing. A city inside a state
-  // has none, as its Stadtbezirke are not its constituencies.
-  it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists the political map exactly when it has district outlines', (id, city) => {
-    expect(city.features.includes('politicalMap'), id).toBe(Object.hasOwn(DISTRICT_URLS, id));
+  // (DISTRICT_URLS); without them it would draw nothing. With them it still
+  // needs a view whose members map onto Bezirke (map-layers.ts), so München,
+  // with outlines but no such view, lists none.
+  it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists the political map only with district outlines and a view by Bezirk', (id, city) => {
+    const byBezirk = (['districtMayors', 'bundestagByDistrict', 'stateByDistrict'] as const).some((f) => city.features.includes(f));
+    expect(city.features.includes('politicalMap'), id).toBe(Object.hasOwn(DISTRICT_URLS, id) && city.features.includes('political') && byBezirk);
+  });
+
+  it('ships district outlines for every configured city', () => {
+    expect(Object.keys(DISTRICT_URLS).sort()).toEqual(ALL_CONFIGURED.map((c) => c.id).sort());
   });
 
   it('has a crisis directory for no city it does not configure', () => {

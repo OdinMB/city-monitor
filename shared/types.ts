@@ -81,7 +81,8 @@ export type CityFeature =
   | 'rentMap'         // the rent map WMS
   | 'noiseMap'        // a strategic noise map WMS (road, rail, air)
   | 'noiseTotal'      // its all-sources layer
-  | 'politicalMap';   // district outlines for the political map layer (DISTRICT_URLS)
+  | 'politicalMap'    // the political map layer, on the city's district outlines (DISTRICT_URLS)
+  | 'bundestagByDistrict'; // its Bundestag view: constituencies named after Bezirke (Berlin, Hamburg)
 
 /**
  * A city as the web app holds it: the shared identity and map, without the

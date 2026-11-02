@@ -3,8 +3,9 @@ import type { CityConfig } from '@city-monitor/shared';
 /**
  * Köln: the Germany-wide sources (DWD, Open-Meteo, NINA, PEGELONLINE) plus
  * news feeds, Polizei Köln, the city's roadworks WFS, its own events and its
- * council information system. Transit and district boundaries are not
- * configured yet, so their jobs fetch nothing for Köln.
+ * council information system. Transit is not configured yet, so its job
+ * fetches nothing for Köln. Its Stadtbezirk outlines ship with the web app
+ * (packages/web/src/data/districts).
  */
 export const koeln: CityConfig = {
   id: 'koeln',

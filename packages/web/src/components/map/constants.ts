@@ -53,6 +53,18 @@ export const DISTRICT_URLS: Record<string, { url: string; nameField: string }> =
     url: new URL('../../data/districts/hamburg-bezirke.geojson', import.meta.url).href,
     nameField: 'bezirk_name',
   },
+  // Stadtbezirke Köln, Offene Daten Köln (dl-de/zero-2.0): the city's Shapefile,
+  // converted once to WGS84 and simplified.
+  koeln: {
+    url: new URL('../../data/districts/koeln-bezirke.geojson', import.meta.url).href,
+    nameField: 'name',
+  },
+  // vablock_stadtbezirke_opendata, GeodatenService München (dl-de/by-2.0): the
+  // WFS layer, its two-part districts 18 and 19 merged, simplified.
+  muenchen: {
+    url: new URL('../../data/districts/muenchen-bezirke.geojson', import.meta.url).href,
+    nameField: 'name',
+  },
 };
 
 export const WEATHER_SOURCE = 'weather-precip';

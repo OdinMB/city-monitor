@@ -321,6 +321,12 @@ const KOELN_SOURCES: SourceGroup[] = [
       { name: 'Stadt Köln (Oberbürgermeister, Bezirksvertretungen)', url: 'https://www.stadt-koeln.de/politik-und-verwaltung/bezirksvertretungen/', description: 'The Oberbürgermeister and the nine Bezirksbürgermeister, copied by hand from the city\'s pages and checked twice a year.' },
     ],
   },
+  {
+    category: 'Maps',
+    sources: [
+      { name: 'Stadtbezirke Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/stadtbezirke-koeln', description: 'Outlines of the nine Stadtbezirke on the map, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
+    ],
+  },
 ];
 
 // No river level: the Isar through München is not a federal waterway, so not on
@@ -362,6 +368,12 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     category: 'Politics',
     sources: [
       { name: 'Landeshauptstadt München (Oberbürgermeister)', url: 'https://stadt.muenchen.de/infos/oberbuergermeister.html', description: 'The Oberbürgermeister, copied by hand from the city\'s page and checked twice a year.' },
+    ],
+  },
+  {
+    category: 'Maps',
+    sources: [
+      { name: 'Stadtbezirke München (GeodatenService)', url: 'https://opendata.muenchen.de/dataset/vablock_stadtbezirke_opendata', description: 'Outlines of the 25 Stadtbezirke on the map; the two parts of Untergiesing-Harlaching and of Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln merged and the lines simplified. Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.' },
     ],
   },
 ];

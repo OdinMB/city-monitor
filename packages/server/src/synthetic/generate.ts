@@ -358,6 +358,48 @@ const HAMBURG_DISTRICTS: readonly District[] = [
   { name: 'Harburg', lat: 53.460, lon: 9.930, plz: '21073' },
 ];
 
+/** Köln's nine Stadtbezirke in official order, with points inside each. */
+const KOELN_DISTRICTS: readonly District[] = [
+  { name: 'Innenstadt', lat: 50.937, lon: 6.960, plz: '50667' },
+  { name: 'Rodenkirchen', lat: 50.877, lon: 6.964, plz: '50996' },
+  { name: 'Lindenthal', lat: 50.930, lon: 6.862, plz: '50931' },
+  { name: 'Ehrenfeld', lat: 50.970, lon: 6.891, plz: '50823' },
+  { name: 'Nippes', lat: 50.990, lon: 6.938, plz: '50733' },
+  { name: 'Chorweiler', lat: 51.031, lon: 6.876, plz: '50765' },
+  { name: 'Porz', lat: 50.873, lon: 7.086, plz: '51143' },
+  { name: 'Kalk', lat: 50.934, lon: 7.079, plz: '51103' },
+  { name: 'Mülheim', lat: 50.985, lon: 7.030, plz: '51063' },
+];
+
+/** München's 25 Stadtbezirke in official order, with points inside each. */
+const MUENCHEN_DISTRICTS: readonly District[] = [
+  { name: 'Altstadt-Lehel', lat: 48.139, lon: 11.581, plz: '80331' },
+  { name: 'Ludwigsvorstadt-Isarvorstadt', lat: 48.130, lon: 11.558, plz: '80469' },
+  { name: 'Maxvorstadt', lat: 48.148, lon: 11.565, plz: '80333' },
+  { name: 'Schwabing-West', lat: 48.166, lon: 11.570, plz: '80796' },
+  { name: 'Au-Haidhausen', lat: 48.130, lon: 11.595, plz: '81667' },
+  { name: 'Sendling', lat: 48.114, lon: 11.547, plz: '81371' },
+  { name: 'Sendling-Westpark', lat: 48.117, lon: 11.521, plz: '81373' },
+  { name: 'Schwanthalerhöhe', lat: 48.136, lon: 11.539, plz: '80339' },
+  { name: 'Neuhausen-Nymphenburg', lat: 48.156, lon: 11.519, plz: '80639' },
+  { name: 'Moosach', lat: 48.182, lon: 11.505, plz: '80992' },
+  { name: 'Milbertshofen-Am Hart', lat: 48.215, lon: 11.575, plz: '80807' },
+  { name: 'Schwabing-Freimann', lat: 48.194, lon: 11.611, plz: '80805' },
+  { name: 'Bogenhausen', lat: 48.155, lon: 11.643, plz: '81675' },
+  { name: 'Berg am Laim', lat: 48.127, lon: 11.632, plz: '81673' },
+  { name: 'Trudering-Riem', lat: 48.125, lon: 11.677, plz: '81825' },
+  { name: 'Ramersdorf-Perlach', lat: 48.100, lon: 11.638, plz: '81737' },
+  { name: 'Obergiesing-Fasangarten', lat: 48.103, lon: 11.592, plz: '81539' },
+  { name: 'Untergiesing-Harlaching', lat: 48.097, lon: 11.565, plz: '81545' },
+  { name: 'Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln', lat: 48.084, lon: 11.516, plz: '81475' },
+  { name: 'Hadern', lat: 48.115, lon: 11.485, plz: '81375' },
+  { name: 'Pasing-Obermenzing', lat: 48.157, lon: 11.467, plz: '81241' },
+  { name: 'Aubing-Lochhausen-Langwied', lat: 48.164, lon: 11.408, plz: '81243' },
+  { name: 'Allach-Untermenzing', lat: 48.193, lon: 11.458, plz: '80999' },
+  { name: 'Feldmoching-Hasenbergl', lat: 48.212, lon: 11.522, plz: '80933' },
+  { name: 'Laim', lat: 48.135, lon: 11.505, plz: '80686' },
+];
+
 /** What a city needs beyond its config: names and positions the generator would otherwise make up badly. */
 interface CityDetails {
   /** Its Bezirke, for a city whose Bezirk boundaries the web app ships (packages/web/src/data/districts). */
@@ -1545,7 +1587,7 @@ const CITY_DETAILS: Readonly<Record<string, CityDetails>> = {
     deprivationCentres: [],
   },
   koeln: {
-    districts: [],
+    districts: KOELN_DISTRICTS,
     phonePrefix: '0221',
     roads: ['A1', 'A3', 'A4', 'A57', 'A59', 'B9', 'B55'],
     pollenRegion: 'Rhein.-Westfäl. Tiefland',
@@ -1553,7 +1595,7 @@ const CITY_DETAILS: Readonly<Record<string, CityDetails>> = {
     deprivationCentres: [],
   },
   muenchen: {
-    districts: [],
+    districts: MUENCHEN_DISTRICTS,
     phonePrefix: '089',
     roads: ['A8', 'A9', 'A94', 'A95', 'A96', 'A99', 'B2R'],
     pollenRegion: 'Allgäu/Oberbayern/Bay. Wald',

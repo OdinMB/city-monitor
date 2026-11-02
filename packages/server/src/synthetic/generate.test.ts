@@ -390,12 +390,13 @@ describe('generateSyntheticCityData', () => {
   });
 
   it.each([koeln, muenchen].map((c) => [c.name, c] as const))(
-    'gives %s, which has no Bezirk boundaries, what production holds for it, its pharmacies without a district',
+    'gives %s what production holds for it, its pharmacies in its Stadtbezirke',
     (_name, city) => {
       const d = generateSyntheticCityData({ now: NOW, city });
       expect(Object.keys(d).filter((key) => key !== 'cityId' && key !== 'history')).toEqual(syntheticCoverage(city));
       expect(d.pharmacies!.length).toBeGreaterThan(0);
-      for (const p of d.pharmacies!) expect(p.district).toBeUndefined();
+      const bezirke = syntheticDistricts(city.id).map((b) => b.name);
+      for (const p of d.pharmacies!) expect(bezirke).toContain(p.district);
       expect(d.waterLevels === undefined).toBe(city.dataSources.waterLevels === undefined);
       expect(d.floodStatus === undefined).toBe(city.dataSources.floodStatus === undefined);
       for (const [name, schema, value] of schemaChecks(d)) expect(schema.safeParse(value).error, name).toBeUndefined();

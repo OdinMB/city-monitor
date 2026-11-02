@@ -7,8 +7,9 @@ import type { CityConfig } from '@city-monitor/shared';
  * levels; its flood class comes from the LHP instead (floodStatus). News feeds, roadworks and council meetings (RIS RSS feeds) are
  * configured; police has no usable source (polizei.bayern.de's robots.txt
  * disallows all, and the Polizeipräsidium is not on presseportal). The other
- * city-specific sources (transit, events, district boundaries) are not
- * configured yet, so their jobs fetch nothing for München.
+ * city-specific sources (transit, events) are not configured yet, so their
+ * jobs fetch nothing for München. Its Stadtbezirk outlines ship with the web
+ * app (packages/web/src/data/districts).
  */
 export const muenchen: CityConfig = {
   id: 'muenchen',

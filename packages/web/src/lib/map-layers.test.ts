@@ -59,11 +59,16 @@ describe('cityLayers', () => {
 
   it('shows the political layer only with political data, and the district-mayor and state views only with theirs', () => {
     expect(withFeatures('districtMayors', 'politicalMap').layers.has('political')).toBe(false);
-    expect(withFeatures('political', 'politicalMap').political).toEqual(['bundestag']);
-    expect(withFeatures('political', 'stateByDistrict', 'politicalMap').political).toEqual(['bundestag', 'landesparlament']);
+    expect(withFeatures('political', 'bundestagByDistrict', 'politicalMap').political).toEqual(['bundestag']);
+    expect(withFeatures('political', 'bundestagByDistrict', 'stateByDistrict', 'politicalMap').political).toEqual(['bundestag', 'landesparlament']);
   });
 
-  // Köln and München: political data, but no district outlines to colour.
+  // Köln: outlines and district mayors, but constituencies ("Köln I") that are not Stadtbezirke.
+  it('leaves out the Bundestag view where constituencies are not named after Bezirke', () => {
+    expect(withFeatures('political', 'districtMayors', 'mayor', 'politicalMap').political).toEqual(['bezirke']);
+    expect(withFeatures('political', 'politicalMap').layers.has('political')).toBe(false);
+  });
+
   it('shows no political layer without district outlines', () => {
     const layers = withFeatures('political', 'districtMayors', 'mayor');
     expect(layers.layers.has('political')).toBe(false);

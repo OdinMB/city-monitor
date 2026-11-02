@@ -40,6 +40,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   mayor: null,
   stateByDistrict: null,
   politicalMap: null,
+  bundestagByDistrict: null,
 };
 
 /** Topics every city's dashboard has, whatever its features. */

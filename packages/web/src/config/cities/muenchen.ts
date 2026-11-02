@@ -23,6 +23,8 @@ export const muenchen: WebCityConfig = {
   // (LHP), news feeds (no police source), the city's roadworks, council
   // meetings, the members of the Bundestag and Landtag for its constituencies,
   // its Oberbürgermeister (no Bezirksausschuss chairs) and the crisis-services
-  // directory. No political map layer: no district outlines ship for it.
+  // directory. Its 25 Stadtbezirke ship as outlines, but there is no political
+  // map layer: no Bezirksausschuss chairs, and its constituencies are not
+  // Stadtbezirke.
   features: ['news', 'nina', 'pollen', 'floodStatus', 'roadworks', 'councilMeetings', 'pharmacies', 'aeds', 'political', 'mayor', 'crisis'],
 };

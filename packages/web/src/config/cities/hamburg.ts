@@ -22,6 +22,7 @@ export const hamburg: WebCityConfig = {
   // No transit (HVV has no free API), events, appointments, budget,
   // social atlas, noise sensors, council meetings, district mayors or Berlin's
   // own sources. The Bürgerschaft's constituencies are not Bezirke, so its
-  // members are not grouped by Bezirk.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap'],
+  // members are not grouped by Bezirk; its Bundestag constituencies are named
+  // after them, so the political map has a Bundestag view.
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'roadworks', 'pharmacies', 'aeds', 'political', 'noiseMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
 };
