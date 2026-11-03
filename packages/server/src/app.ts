@@ -65,7 +65,7 @@ import { createWaterLevelIngestion } from './cron/ingest-water-levels.js';
 import { createBudgetIngestion } from './cron/ingest-budget.js';
 import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
-import { createLiftOutageIngestion } from './cron/ingest-lift-outages.js';
+import { createLiftOutageIngestion, ingestsLiftOutages } from './cron/ingest-lift-outages.js';
 import { createBikeSharingIngestion } from './cron/ingest-bike-sharing.js';
 import { createElectricityIngestion } from './cron/ingest-electricity.js';
 import { createCitizenReportIngestion } from './cron/ingest-citizen-reports.js';
@@ -199,7 +199,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-appointments', tableName: 'snapshots', maxAgeSeconds: 43200,   filter: { column: 'type', value: 'service-berlin' } },
     // The type is lageso-bathing for every provider, as viz-roadworks is for every roadworks feed
     { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' }, serves: (c) => !!c.dataSources.bathing },
-    { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => !!c.dataSources.liftOutages },
+    { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => ingestsLiftOutages(c) },
     // 30 min: the job stores a row that often (BIKE_SHARING_DB_INTERVAL_MS), though it runs every 5
     { jobName: 'ingest-bike-sharing', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'bike-sharing' }, serves: (c) => !!c.dataSources.bikeSharing },
     { jobName: 'ingest-electricity',  tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'smard-electricity' }, serves: (c) => !!c.dataSources.electricity },

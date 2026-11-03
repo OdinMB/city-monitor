@@ -37,7 +37,7 @@ Applied via middleware per route tier:
 | `/api/:city/construction` | 900s (15 min) | Construction updates every 30 min |
 | `/api/:city/water-levels` | 300s (5 min) | Water levels update every 15 min |
 | `/api/:city/flood-status` | 120s (2 min) | LHP flood status updates every 5 min (its terms: refresh at least every 10) |
-| `/api/:city/lift-outages` | 300s (5 min) | KVB lift and escalator outages update every 15 min |
+| `/api/:city/lift-outages` | 300s (5 min) | KVB and DB lift and escalator outages update every 15 min |
 | `/api/:city/bike-sharing` | 120s (2 min) | Bike-sharing stations update every 5 min; not in bootstrap (Berlin ~150 KB), heavy-payload rate limit |
 | `/api/:city/electricity` | 300s (5 min) | SMARD and Energy-Charts quarter-hours, ingested every 15 min |
 | `/api/:city/soil-moisture` | 3600s (1h) | DWD daily soil moisture (and Gieß den Kiez), ingested twice a day |
@@ -95,7 +95,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-social-atlas` | `0 5 * * 0` | Social atlas GeoJSON by provider, for cities with `dataSources.socialAtlas`: MSS WFS (Berlin), Sozialmonitoring XLSX (Hamburg), Datenkatalog CSV (Köln), Indikatorenatlas CSVs via CKAN (München, 25 Stadtbezirke) (weekly; [social-atlas.md](social-atlas.md)) |
 | `ingest-budget` | `0 6 * * *` | Berlin Haushalt budget data (daily) |
 | `ingest-bathing` | `0 6 * * *` | Bathing water quality by provider, for cities with `dataSources.bathing`: LAGeSo CSV (Berlin), Geodienste WFS (Hamburg) ([water-levels.md](water-levels.md#bathing-water-quality)) |
-| `ingest-lift-outages` | `*/15 * * * *` | KVB lifts and escalators out of service, for cities with `dataSources.liftOutages` (Köln; [lift-outages.md](lift-outages.md)). Two requests per run |
+| `ingest-lift-outages` | `*/15 * * * *` | Lifts and escalators out of service: KVB's two lists for cities with `dataSources.liftOutages` (Köln), and DB stations from FaSta for cities with `dataSources.stationLifts` (all four), only with `DB_API_CLIENT_ID` and `DB_API_KEY` ([lift-outages.md](lift-outages.md)) |
 | `ingest-bike-sharing` | `*/5 * * * *` | Bike-sharing stations by provider, for cities with `dataSources.bikeSharing`: nextbike GBFS (Berlin, Köln, München), StadtRAD SensorThings (Hamburg) ([bike-sharing.md](bike-sharing.md)). Caches every run, stores a row at most every 30 min per city |
 | `ingest-electricity` | `2,17,32,47 * * * *` | Generation mix of each city's control area (SMARD) and Germany's grid signal and CO₂ (Energy-Charts), for cities with `dataSources.electricity` ([electricity.md](electricity.md)). Two Energy-Charts requests per run, 12 SMARD requests per control area |
 | `ingest-citizen-reports` | `7,22,37,52 * * * *` | Open311 citizen reports of the last 14 days, for cities with `dataSources.citizenReports` (Köln, München; [citizen-reports.md](citizen-reports.md)). Pages of 200, 500 ms apart; Postgres at most hourly |

@@ -117,6 +117,18 @@ const SHARED_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Transit & Traffic',
+    sources: [
+      {
+        // Credited wherever the config names it, as Geofox: the job also needs DB_API_CLIENT_ID and DB_API_KEY
+        name: 'DB FaSta (Deutsche Bahn)',
+        url: 'https://developers.deutschebahn.com/db-api-marketplace/apis/product/fasta',
+        description: 'Lifts and escalators out of service at DB stations (S-Bahn and regional trains), with the planned return date where DB gives one. Source: Deutsche Bahn AG, CC BY 4.0.',
+        requires: 'stationLifts',
+      },
+    ],
+  },
+  {
     category: 'Events',
     sources: [
       {

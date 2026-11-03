@@ -453,6 +453,8 @@
       "allWorking": "All lifts and escalators in service",
       "more": "+{{n}} more",
       "atStations": "Stations affected: {{n}}",
+      "db": "DB",
+      "until": "back {{date}}",
       "asOf": "As of",
       "empty": "No outage data"
     },

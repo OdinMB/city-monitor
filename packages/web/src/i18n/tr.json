@@ -450,6 +450,8 @@
       "allWorking": "Tüm asansörler ve yürüyen merdivenler çalışıyor",
       "more": "+{{n}} daha",
       "atStations": "Etkilenen duraklar: {{n}}",
+      "db": "DB",
+      "until": "{{date}} itibarıyla tekrar",
       "asOf": "Durum:",
       "empty": "Arıza verisi yok"
     },

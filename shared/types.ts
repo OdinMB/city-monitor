@@ -67,6 +67,7 @@ export type CityFeature =
   | 'councilMeetings'
   | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
   | 'liftOutages'     // dataSources.liftOutages: lift and escalator outages (KVB Köln)
+  | 'stationLifts'    // dataSources.stationLifts: lifts and escalators out of service at DB stations (FaSta; needs DB_API_CLIENT_ID and DB_API_KEY)
   | 'bikeSharing'     // dataSources.bikeSharing: bike-sharing stations on the map (nextbike GBFS, StadtRAD)
   | 'electricity'     // dataSources.electricity: generation mix of the grid control area, grid CO₂ and signal
   | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
@@ -212,6 +213,14 @@ export type BathingSource =
 export type LiftOutageSource =
   /** KVB's open-data service: `<url>/aufzugsstoerung/json` and `<url>/fahrtreppenstoerung/json` */
   { provider: 'kvb'; url: string };
+
+/**
+ * Lifts and escalators at the city's DB stations (S-Bahn and regional), from
+ * Deutsche Bahn's FaSta API on the DB API Marketplace, asked for by the city's
+ * bounding box. The job needs DB_API_CLIENT_ID and DB_API_KEY and skips without
+ * them (.context/lift-outages.md, "DB stations").
+ */
+export type StationLiftSource = { provider: 'db-fasta' };
 
 /**
  * A city's bike-sharing system, by the provider whose format it is in. Each
@@ -405,6 +414,7 @@ export interface CityDataSources {
   roadworks?: RoadworksSource;
   bathing?: BathingSource;
   liftOutages?: LiftOutageSource;
+  stationLifts?: StationLiftSource;
   bikeSharing?: BikeSharingSource;
   electricity?: ElectricitySource;
   citizenReports?: CitizenReportSource;
@@ -943,6 +953,10 @@ export interface LiftOutage {
   lon: number | null;
   /** The operator's note on the outage, when it gives one. */
   info: string | null;
+  /** Who runs the unit: 'db' for a DB station (FaSta); absent for the city's transit operator (KVB). */
+  operator?: 'db';
+  /** When DB plans the unit back in service (YYYY-MM-DD), when it gives a date. */
+  resumeDate?: string | null;
 }
 
 export interface LiftOutageData {

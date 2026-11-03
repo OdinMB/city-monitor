@@ -36,6 +36,10 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['roadworks', (c) => c.dataSources.roadworks !== undefined],
   ['bathing', (c) => c.dataSources.bathing !== undefined],
   ['liftOutages', (c) => c.dataSources.liftOutages !== undefined],
+  // Config alone, like Geofox: the job also needs DB_API_CLIENT_ID and DB_API_KEY, and
+  // without them stores nothing for a city with no other lift source, whose tile then
+  // hides itself (ingestsLiftOutages; LiftOutagesTile in CommandLayout).
+  ['stationLifts', (c) => c.dataSources.stationLifts !== undefined],
   ['bikeSharing', (c) => c.dataSources.bikeSharing !== undefined],
   ['electricity', (c) => c.dataSources.electricity !== undefined],
   ['airQualityStations', (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0],

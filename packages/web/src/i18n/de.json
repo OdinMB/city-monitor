@@ -451,6 +451,8 @@
       "allWorking": "Alle Aufzüge und Fahrtreppen in Betrieb",
       "more": "+{{n}} weitere",
       "atStations": "Betroffene Haltestellen: {{n}}",
+      "db": "DB",
+      "until": "ab {{date}} wieder",
       "asOf": "Stand:",
       "empty": "Keine Störungsdaten"
     },

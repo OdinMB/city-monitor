@@ -37,6 +37,11 @@ services:
         sync: false
       - key: GEOFOX_PASSWORD
         sync: false
+      # Lifts and escalators at DB stations (FaSta): a DB API Marketplace application's client id and API key
+      - key: DB_API_CLIENT_ID
+        sync: false
+      - key: DB_API_KEY
+        sync: false
       - key: SENTRY_DSN
         sync: false
 

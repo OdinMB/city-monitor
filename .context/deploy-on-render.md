@@ -40,6 +40,7 @@ The repo includes a `render.yaml` blueprint that creates all three services auto
 5. Fill in the prompted environment variables:
    - `OPENAI_API_KEY` — paste your key, or leave blank (the news tile then stays empty and there is no briefing)
    - `GEOFOX_USER`, `GEOFOX_PASSWORD` — the Geofox GTI credentials Hochbahn issued to you, or leave blank (Hamburg's transit tile then has no data). A fork requests its own; never reuse another operator's
+   - `DB_API_CLIENT_ID`, `DB_API_KEY` — a DB API Marketplace application's client id and API key, subscribed to FaSta's free plan, or leave blank (no DB station lifts; [lift-outages.md](lift-outages.md#switching-db-stations-on))
    - `SENTRY_DSN` — leave blank: `render.yaml` declares it, but no code reads it
 6. Click **Apply**
 7. Wait for the database to spin up first (~2 min), then the API and static site will build
@@ -99,6 +100,7 @@ After the blueprint deploys, skip to [Post-Deploy Verification](#post-deploy-ver
 | `OPENAI_API_KEY` | *(your key)* | Optional, but news needs it — without it the news tile stays empty and there is no briefing |
 | `FIRECRAWL_API_KEY` | *(your key)* | Optional — enables Berlin appointment scraping |
 | `GEOFOX_USER`, `GEOFOX_PASSWORD` | *(your Geofox credentials)* | Optional — enables Hamburg transit; request your own from Hochbahn |
+| `DB_API_CLIENT_ID`, `DB_API_KEY` | *(your DB API Marketplace credentials)* | Optional — enables lifts and escalators at DB stations (FaSta) |
 | `LOCATIONIQ_TOKEN` | *(your token)* | Optional — geocoding fallback |
 
 The other optional keys (TomTom traffic, WAQI air quality, Ticketmaster events) and what each one gates are listed in [deployment.md](deployment.md#environment-variables).

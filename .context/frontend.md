@@ -46,7 +46,7 @@ App (HelmetProvider)
                     Tile(expandable) → WeatherStrip
                     Tile(expandable) → AirQualityStrip
                     Tile(expandable) → TransitStrip (6 rows collapsed / 12 expanded; each row expands to its full text)
-                    Tile(expandable) → LiftOutagesStrip (KVB lifts and escalators out of service; Köln)
+                    Tile(expandable) → LiftOutagesStrip (KVB lifts and escalators out of service in Köln, DB stations in every city once the DB key is set; LiftOutagesTile hides it in a city with no data and no KVB)
                     Tile → support tile (Ko-fi link)
                     Tile(expandable) → PollenStrip
                     Tile(expandable) → WastewaterStrip
