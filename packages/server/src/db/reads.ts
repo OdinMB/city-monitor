@@ -9,14 +9,14 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficAccidentData, ElectricityData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
-  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema,
+  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -214,6 +214,11 @@ export async function loadCitizenReports(db: Db, cityId: string): Promise<DbResu
 /** No age limit: the accidents are a year's record, whose newest row retention keeps. */
 export async function loadTrafficAccidents(db: Db, cityId: string): Promise<DbResult<TrafficAccidentData>> {
   return loadSnapshot(db, cityId, 'unfallatlas-accidents', { schema: TrafficAccidentDataSchema });
+}
+
+/** At most 3 hours old: the counts are hourly and a row is stored when a new hour comes in. */
+export async function loadTrafficCounts(db: Db, cityId: string): Promise<DbResult<TrafficCountData>> {
+  return loadSnapshot(db, cityId, 'traffic-counts', { schema: TrafficCountDataSchema, maxAgeMs: 3 * 3600_000 });
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {

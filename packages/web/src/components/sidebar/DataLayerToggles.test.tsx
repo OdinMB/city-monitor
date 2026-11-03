@@ -5,6 +5,7 @@ import i18n from 'i18next';
 import type { WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
 import { CityContext } from '../../hooks/CityContext.js';
+import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
 import { koeln } from '../../config/cities/koeln.js';
 import { muenchen } from '../../config/cities/muenchen.js';
@@ -189,6 +190,28 @@ describe('DataLayerToggles per city', () => {
 
     renderFor({ ...hamburg, features: hamburg.features.filter((f) => f !== 'pharmacies' && f !== 'aeds') });
     expect(shown(i18n.t('sidebar.layers.emergencies'))).toBe(false);
+  });
+
+  it('offers Hamburg\'s congestion map and counters as traffic sub-layers, each with its legend once on', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic']), trafficSubLayers: new Set(['incidents']) });
+    renderFor(hamburg);
+    expect(shown(i18n.t('sidebar.traffic.congestion'))).toBe(true);
+    expect(shown(i18n.t('sidebar.traffic.car-counts'))).toBe(true);
+    expect(shown(i18n.t('sidebar.traffic.bike-counts'))).toBe(true);
+    expect(shown(i18n.t('sidebar.trafficFlowLegend.jammed'))).toBe(false);
+    expect(shown(i18n.t('sidebar.trafficCountLegend.usual'))).toBe(false);
+
+    fireEvent.click(buttonWith(i18n.t('sidebar.traffic.congestion')));
+    expect(shown(i18n.t('sidebar.trafficFlowLegend.jammed'))).toBe(true);
+    // The Verkehrslage draws nothing at the zoom Hamburg opens with
+    expect(shown(i18n.t('sidebar.traffic.zoomIn'))).toBe(true);
+    fireEvent.click(buttonWith(i18n.t('sidebar.traffic.bike-counts')));
+    expect(shown(i18n.t('sidebar.trafficCountLegend.usual'))).toBe(true);
+    cleanup();
+
+    renderFor(berlin);
+    expect(shown(i18n.t('sidebar.traffic.congestion'))).toBe(false);
+    expect(shown(i18n.t('sidebar.traffic.car-counts'))).toBe(false);
   });
 
   it('shows each city\'s own rent-map legend under its rent map', () => {

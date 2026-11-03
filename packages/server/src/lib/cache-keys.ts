@@ -30,6 +30,8 @@ export const CK = {
   bikeSharing: (cityId: string) => `${cityId}:bike-sharing`,
   /** Not bootstrapped: Berlin's ~13,000 accidents a year are about 450 KB, fetched when the map layer is on. */
   trafficAccidents: (cityId: string) => `${cityId}:traffic-accidents`,
+  /** Not bootstrapped: ~260 Hamburg sites are about 50 KB, fetched when a counts sub-layer is on. */
+  trafficCounts: (cityId: string) => `${cityId}:traffic-counts`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

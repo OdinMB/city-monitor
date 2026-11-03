@@ -21,7 +21,7 @@ import type {
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
-  TrafficAccident, TrafficAccidentData, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
+  TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
@@ -93,6 +93,8 @@ export interface SyntheticData {
   /** Not in Berlin's data set: only Köln and München have an Open311 server (NOT_IN_BERLIN). */
   citizenReports?: CitizenReportData;
   trafficAccidents: TrafficAccidentData;
+  /** Not in Berlin's data set: only Hamburg's counters are configured (NOT_IN_BERLIN). */
+  trafficCounts?: TrafficCountData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -153,10 +155,11 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   airQualityStations: (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0,
   citizenReports: (c) => c.dataSources.citizenReports !== undefined,
   trafficAccidents: (c) => c.dataSources.trafficAccidents !== undefined,
+  trafficCounts: (c) => (c.dataSources.trafficCounts?.modes.length ?? 0) > 0,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
-const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages', 'citizenReports'];
+const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages', 'citizenReports', 'trafficCounts'];
 
 /** The data sets the synthetic seed writes for `city`: those production would hold for it. */
 export function syntheticCoverage(city: CityConfig): SyntheticDataSet[] {
@@ -269,6 +272,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('airQualityStations')) sets.airQualityStations = generateAirQualityStations(rng, now, place);
   if (has.has('citizenReports')) sets.citizenReports = generateCitizenReports(rng, now, place);
   if (has.has('trafficAccidents')) sets.trafficAccidents = generateTrafficAccidents(rng, now, place);
+  if (has.has('trafficCounts')) sets.trafficCounts = generateTrafficCounts(rng, now, city, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1664,6 +1668,36 @@ function generateTrafficAccidents(rng: Rng, now: Date, place: Place): TrafficAcc
     }
   });
   return { year, accidents, published: `${year + 1}-07-07T07:47:16` };
+}
+
+/**
+ * Two counting sites per anchor and mode, counting the hour that ended over an
+ * hour ago, some above and some below their usual count, one without a usual
+ * count.
+ */
+function generateTrafficCounts(rng: Rng, now: Date, city: CityConfig, place: Place): TrafficCountData {
+  const hour = new Date(Math.floor(now.getTime() / HOUR) * HOUR - 2 * HOUR).toISOString();
+  const sites: TrafficCountSite[] = [];
+  for (const mode of city.dataSources.trafficCounts!.modes) {
+    place.anchors.forEach((a, i) => {
+      for (let k = 1; k <= 2; k++) {
+        const site = `${mode === 'car' ? 9 : 8}${String(i * 2 + k).padStart(3, '0')}`;
+        const typical = mode === 'car' ? rng.int(300, 2500) : rng.int(20, 400);
+        sites.push({
+          id: `${mode}-${site}`,
+          mode,
+          site,
+          name: `${MARK} ${a.name} ${k}`,
+          ...near(rng, a, 0.01),
+          hour,
+          count: Math.round(typical * rng.float(0.5, 1.6)),
+          typical: i === 0 && k === 1 ? null : typical,
+          counters: rng.int(2, 8),
+        });
+      }
+    });
+  }
+  return { sites, updated: now.toISOString() };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

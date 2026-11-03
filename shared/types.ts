@@ -72,6 +72,8 @@ export type CityFeature =
   | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
   | 'citizenReports'  // dataSources.citizenReports: citizen issue reports (Open311), the reports map layer
   | 'trafficAccidents' // dataSources.trafficAccidents: last year's injury accidents on the map (Unfallatlas)
+  | 'carCounts'       // dataSources.trafficCounts with mode 'car': car counters on the traffic layer
+  | 'bikeCounts'      // dataSources.trafficCounts with mode 'bike': bicycle counters on the traffic layer
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -87,6 +89,7 @@ export type CityFeature =
   | 'rentMap'         // the rent map WMS
   | 'noiseMap'        // a strategic noise map WMS (road, rail, air)
   | 'noiseTotal'      // its all-sources layer
+  | 'trafficFlowMap'  // a live congestion map WMS, the traffic layer's congestion sub-layer
   | 'politicalMap'    // the political map layer, on the city's district outlines (DISTRICT_URLS)
   | 'bundestagByDistrict'; // its Bundestag view: constituencies named after Bezirke (Berlin, Hamburg)
 
@@ -261,6 +264,23 @@ export type TrafficAccidentSource = {
   ags: string;
 };
 
+/** What a traffic counter counts: motor vehicles or bicycles. */
+export type TrafficCountMode = 'car' | 'bike';
+
+/**
+ * A city's live traffic counters, by the provider whose format they are in
+ * (packages/server/src/lib/traffic-count-parsers.ts, .context/traffic-counts.md).
+ * `modes` names what the city's counters count; each mode is a sub-layer of
+ * the traffic map layer.
+ */
+export type TrafficCountSource =
+  /**
+   * Hamburg's infrared counters on the Urban Data Platform's SensorThings API
+   * (`url`, `…/v1.1`), hourly; the counting sites' names from the
+   * Verkehrszählstellen WFS (`sitesWfsUrl`).
+   */
+  { provider: 'hamburg-sta'; url: string; sitesWfsUrl: string; modes: readonly TrafficCountMode[] };
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -315,6 +335,7 @@ export interface CityDataSources {
   electricity?: ElectricitySource;
   citizenReports?: CitizenReportSource;
   trafficAccidents?: TrafficAccidentSource;
+  trafficCounts?: TrafficCountSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -980,6 +1001,42 @@ export interface TrafficAccidentData {
   accidents: TrafficAccident[];
   /** When the statistical offices published the file (ISO 8601), null when the index gave no time. */
   published: string | null;
+}
+
+// Traffic counts (Hamburg infrared counters)
+/**
+ * One counting site (a junction or road section with several directional
+ * counters) for one mode: the vehicles or bikes its counters counted in the
+ * hour, and what they usually count in that hour of that weekday.
+ */
+export interface TrafficCountSite {
+  /** `<mode>-<site>`: unique across both modes. */
+  id: string;
+  mode: TrafficCountMode;
+  /** The operator's site number ("0248"). */
+  site: string;
+  /** The junction or road ("Poppenbütteler Chaussee / Specksaalredder"), null when the site list lacks it. */
+  name: string | null;
+  lat: number;
+  lon: number;
+  /** Start of the hour counted (ISO 8601, UTC). */
+  hour: string;
+  /** Vehicles or bikes counted in that hour, summed over the counters compared. */
+  count: number;
+  /**
+   * The same counters' usual count: the median of the same local hour on the
+   * same weekday in the four weeks before, summed. Null when no counter has two
+   * such weeks.
+   */
+  typical: number | null;
+  /** How many directional counters the numbers sum. */
+  counters: number;
+}
+
+export interface TrafficCountData {
+  sites: TrafficCountSite[];
+  /** When the job read the counts (ISO 8601). */
+  updated: string;
 }
 
 // Flood status (LHP public API): flood classes at state gauges and regional flood warnings

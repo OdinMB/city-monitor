@@ -30,6 +30,7 @@ export type {
   AirQualityStation, UbaAirIndex,
   CitizenReport, CitizenReportData, CitizenReportGroup, CitizenReportStatus,
   TrafficAccident, TrafficAccidentData, AccidentSeverity,
+  TrafficCountMode, TrafficCountSite, TrafficCountData,
 } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
@@ -41,7 +42,7 @@ import type {
   PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor,
   CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy,
   PoliticalDistrict, TransitAlert, AirQuality, BootstrapData,
-  NewsSummaryData, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficAccidentData, ElectricityData,
+  NewsSummaryData, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficAccidentData, TrafficCountData, ElectricityData,
 } from '@city-monitor/shared';
 
 /** The levels `GET /api/:city/political/:level` serves (packages/server/src/routes/political.ts). */
@@ -71,6 +72,7 @@ export const api = {
   getElectricity: (city: string) => fetchJson<ApiResponse<ElectricityData | null>>(`${API_BASE}/${city}/electricity`),
   getCitizenReports: (city: string) => fetchJson<ApiResponse<CitizenReportData | null>>(`${API_BASE}/${city}/citizen-reports`),
   getTrafficAccidents: (city: string) => fetchJson<ApiResponse<TrafficAccidentData | null>>(`${API_BASE}/${city}/traffic-accidents`),
+  getTrafficCounts: (city: string) => fetchJson<ApiResponse<TrafficCountData | null>>(`${API_BASE}/${city}/traffic-counts`),
   getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),

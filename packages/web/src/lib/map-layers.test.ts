@@ -42,8 +42,9 @@ describe('cityLayers', () => {
     // The Sozialmonitoring has all four indicators, and Hamburg has a rent map
     expect(hh.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty', 'rent']);
     expect(hh.layers.has('population')).toBe(true);
-    // Geofox transit: a marker where an announcement's first stop has a coordinate
-    expect(hh.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
+    // Geofox transit: a marker where an announcement's first stop has a coordinate; the
+    // Verkehrslage congestion map and the car and bicycle counters
+    expect(hh.traffic).toEqual(['public-transport', 'incidents', 'congestion', 'roadworks', 'car-counts', 'bike-counts']);
     expect(hh.water).toEqual(['levels', 'bathing']);
     expect(hh.noise).toEqual(['road', 'rail', 'air']);
     expect(hh.noiseLive).toBe(false);
@@ -74,6 +75,15 @@ describe('cityLayers', () => {
     expect(withFeatures('aeds').layers.has('emergencies')).toBe(true);
     expect(withFeatures('aeds').emergencies).toEqual(['aeds']);
     expect(withFeatures('pharmacies').emergencies).toEqual(['pharmacies']);
+  });
+
+  it('gives the traffic layer a congestion map and counters only where the city has them', () => {
+    expect(withFeatures('trafficFlowMap').traffic).toEqual(['incidents', 'congestion']);
+    expect(withFeatures('bikeCounts').traffic).toEqual(['incidents', 'bike-counts']);
+    expect(withFeatures('carCounts', 'bikeCounts').traffic).toEqual(['incidents', 'car-counts', 'bike-counts']);
+    for (const city of [berlin, koeln, muenchen]) {
+      expect(cityLayers(city).traffic.filter((s) => ['congestion', 'car-counts', 'bike-counts'].includes(s)), city.id).toEqual([]);
+    }
   });
 
   it('shows the bike-sharing layer in every city that has a system, and not without one', () => {

@@ -16,7 +16,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficAccidentData, ElectricityData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -133,6 +133,10 @@ export async function saveCitizenReports(db: Db, cityId: string, data: CitizenRe
 
 export async function saveTrafficAccidents(db: Db, cityId: string, data: TrafficAccidentData): Promise<void> {
   await saveSnapshot(db, cityId, 'unfallatlas-accidents', data);
+}
+
+export async function saveTrafficCounts(db: Db, cityId: string, data: TrafficCountData): Promise<void> {
+  await saveSnapshot(db, cityId, 'traffic-counts', data);
 }
 
 export async function saveFloodStatus(db: Db, cityId: string, data: FloodStatus): Promise<void> {

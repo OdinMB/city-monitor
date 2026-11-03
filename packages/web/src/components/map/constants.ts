@@ -238,6 +238,117 @@ export function getNoiseWmsUrl(cityId: string, noiseLayer: string): string | nul
     `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}`;
 }
 
+export const TRAFFIC_FLOW_SOURCE = 'traffic-flow-wms';
+export const TRAFFIC_FLOW_LAYER = 'traffic-flow-layer';
+
+/** One class of a city's congestion map: the i18n key under `sidebar.trafficFlowLegend` and the colour its WMS draws. */
+export interface TrafficFlowClass {
+  key: 'flowing' | 'dense' | 'slow' | 'jammed';
+  color: string;
+}
+
+interface TrafficFlowWms {
+  /** The WMS endpoint, without query. */
+  base: string;
+  layer: string;
+  /** The map credit, as the provider and licence ask. */
+  attribution: string;
+  /** The classes the WMS draws, from free-flowing to jammed. */
+  legend: readonly TrafficFlowClass[];
+  /** The zoom from which the WMS draws anything (it renders empty tiles further out). */
+  minZoom?: number;
+}
+
+/**
+ * How often the congestion map is asked for new tiles. Hamburg's Verkehrslage
+ * is recomputed every 5 minutes; the service sends no-cache.
+ */
+export const TRAFFIC_FLOW_REFRESH_MS = 5 * 60_000;
+
+/**
+ * Each city's live congestion map, the `congestion` sub-layer of the traffic
+ * layer. A city lists the `trafficFlowMap` feature exactly when it has an
+ * entry (config/index.test.ts checks).
+ */
+const TRAFFIC_FLOW_WMS: Record<string, TrafficFlowWms> = {
+  // Verkehrslage Hamburg: the road network's state every 5 minutes, out to the
+  // motorways towards Lüneburg, Bremen, Flensburg and Lübeck. GetCapabilities
+  // <Fees>: dl-de/by-2.0 with this credit line (checked 2026-11-03). It draws
+  // nothing at 1:270,000 (zoom 11) and starts at zoom 12. Colours sampled from
+  // its GetLegendGraphic.
+  hamburg: {
+    base: 'https://geodienste.hamburg.de/wms_hh_verkehrslage',
+    layer: 'verkehrslage',
+    attribution:
+      '<a href="https://geodienste.hamburg.de/wms_hh_verkehrslage?SERVICE=WMS&amp;REQUEST=GetCapabilities" target="_blank">Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende</a>, ' +
+      '<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank">dl-de/by-2-0</a>',
+    legend: [
+      { key: 'flowing', color: '#2ca62c' },
+      { key: 'dense', color: '#e88528' },
+      { key: 'slow', color: '#e70104' },
+      { key: 'jammed', color: '#971718' },
+    ],
+    minZoom: 12,
+  },
+};
+
+/**
+ * The city's congestion map tile URL template, or null when it has none.
+ * `refresh` changes the URL (and so the tiles) every refresh period.
+ */
+export function getTrafficFlowWmsUrl(cityId: string, refresh = 0): string | null {
+  const wms = TRAFFIC_FLOW_WMS[cityId];
+  if (!wms) return null;
+  return `${wms.base}?service=WMS&version=1.1.1&request=GetMap` +
+    `&layers=${wms.layer}&styles=&format=image/png&transparent=true` +
+    `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}&t=${refresh}`;
+}
+
+export function getTrafficFlowAttribution(cityId: string): string | undefined {
+  return TRAFFIC_FLOW_WMS[cityId]?.attribution;
+}
+
+/** The classes of the city's congestion map, for the sidebar legend (empty without one). */
+export function getTrafficFlowLegend(cityId: string): readonly TrafficFlowClass[] {
+  return TRAFFIC_FLOW_WMS[cityId]?.legend ?? [];
+}
+
+/** The zoom from which the city's congestion map shows, or undefined when it shows at every zoom. */
+export function getTrafficFlowMinZoom(cityId: string): number | undefined {
+  return TRAFFIC_FLOW_WMS[cityId]?.minZoom;
+}
+
+/**
+ * Bands of a counting site's count against its usual count for that hour, for
+ * the site circles and the sidebar legend; `key` names the
+ * `sidebar.trafficCountLegend` label. `below` is the upper bound of the
+ * count / usual ratio. Blue for less traffic than usual, orange to red for
+ * more; grey where there is nothing to compare.
+ */
+export const TRAFFIC_COUNT_LEVELS: ReadonlyArray<{ key: 'wellBelow' | 'below' | 'usual' | 'above' | 'wellAbove'; below: number; color: string }> = [
+  { key: 'wellBelow', below: 0.6, color: '#1d4ed8' },
+  { key: 'below', below: 0.85, color: '#60a5fa' },
+  { key: 'usual', below: 1.15, color: '#a8a29e' },
+  { key: 'above', below: 1.4, color: '#fb923c' },
+  { key: 'wellAbove', below: Infinity, color: '#dc2626' },
+];
+export const TRAFFIC_COUNT_NONE_COLOR = '#e5e7eb';
+
+/**
+ * Below this usual count per hour a site is not compared: at night a few
+ * vehicles more or less double or halve the count.
+ */
+export const TRAFFIC_COUNT_MIN_TYPICAL: Record<'car' | 'bike', number> = { car: 50, bike: 10 };
+
+export type TrafficCountLevel = (typeof TRAFFIC_COUNT_LEVELS)[number]['key'] | 'none';
+
+/** A site's band, or 'none' without a usual count or with too little traffic to compare. */
+export function trafficCountLevel(count: number, typical: number | null, mode: 'car' | 'bike'): TrafficCountLevel {
+  if (typical === null || typical < TRAFFIC_COUNT_MIN_TYPICAL[mode]) return 'none';
+  const ratio = count / typical;
+  return TRAFFIC_COUNT_LEVELS.find((l) => ratio < l.below)!.key;
+}
+
 export const POLITICAL_MARKER_LAYER = 'political-marker-icon';
 export const POLITICAL_MARKER_SOURCE = 'political-markers';
 

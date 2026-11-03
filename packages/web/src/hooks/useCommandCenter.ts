@@ -11,7 +11,7 @@ export type NoiseWmsLayer = NoiseLayer | null;
 export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
-export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks';
+export type TrafficSubLayer = 'public-transport' | 'incidents' | 'congestion' | 'roadworks' | 'car-counts' | 'bike-counts';
 
 interface CommandCenterState {
   singleView: boolean;
@@ -67,7 +67,12 @@ export function defaultLayersFor(cityId: string): Set<DataLayer> {
 const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['news']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies']);
 const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
-const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
+/**
+ * The traffic sub-layers shown when the layer is switched on. The congestion
+ * map and the counting sites are opt-in: they would crowd the incidents, and
+ * the counts are fetched only once asked for.
+ */
+const DEFAULT_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: false,
@@ -80,7 +85,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   newsSubLayers: new Set(ALL_NEWS_SUBS),
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
   waterSubLayers: new Set(ALL_WATER_SUBS),
-  trafficSubLayers: new Set(ALL_TRAFFIC_SUBS),
+  trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS),
   accidentFilter: 'all',
   toggleSingleView: () =>
     set((state) => {
@@ -98,7 +103,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
           return { activeLayers: new Set<DataLayer>() };
         }
         const extra: Partial<CommandCenterState> = {};
-        if (layer === 'traffic') extra.trafficSubLayers = new Set(ALL_TRAFFIC_SUBS);
+        if (layer === 'traffic') extra.trafficSubLayers = new Set(DEFAULT_TRAFFIC_SUBS);
         return { activeLayers: new Set<DataLayer>([layer]), ...extra };
       }
       const next = new Set(state.activeLayers);
@@ -106,8 +111,8 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
         next.delete(layer);
       } else {
         next.add(layer);
-        // Re-activate all sub-layers when turning the traffic category back on
-        if (layer === 'traffic') return { activeLayers: next, trafficSubLayers: new Set(ALL_TRAFFIC_SUBS) };
+        // Back to the default sub-layers when turning the traffic category back on
+        if (layer === 'traffic') return { activeLayers: next, trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS) };
       }
       return { activeLayers: next };
     }),

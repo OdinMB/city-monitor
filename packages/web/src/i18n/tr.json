@@ -583,7 +583,11 @@
     "traffic": {
       "public-transport": "Toplu Taşıma",
       "incidents": "Trafik Olayları",
-      "roadworks": "Yol Çalışmaları"
+      "congestion": "Trafik Yoğunluğu (canlı)",
+      "roadworks": "Yol Çalışmaları",
+      "car-counts": "Araç Sayımları",
+      "bike-counts": "Bisiklet Sayımları",
+      "zoomIn": "Trafik yoğunluğu haritası için yakınlaştırın"
     },
     "emergencies": {
       "pharmacies": "Eczaneler",
@@ -629,6 +633,22 @@
       "killed": "Ölümlü",
       "serious": "Ağır yaralı",
       "slight": "Hafif yaralı"
+    },
+    "trafficFlowLegend": {
+      "title": "Trafik akışı",
+      "flowing": "Akıcı",
+      "dense": "Yoğun",
+      "slow": "Ağır ilerliyor",
+      "jammed": "Sıkışık"
+    },
+    "trafficCountLegend": {
+      "title": "Son saat, o saatin olağan değeriyle karşılaştırmalı",
+      "wellBelow": "Olağandan çok daha az",
+      "below": "Olağandan az",
+      "usual": "Olağan düzeyde",
+      "above": "Olağandan fazla",
+      "wellAbove": "Olağandan çok daha fazla",
+      "none": "Karşılaştırma yapılamıyor"
     },
     "population": {
       "pop-density": "Nüfus Yoğunluğu",
@@ -748,6 +768,17 @@
       },
       "involved": "Karışanlar",
       "source": "Unfallatlas {{year}}"
+    },
+    "trafficCount": {
+      "car": "Motorlu taşıtlar",
+      "bike": "Bisikletler",
+      "site": "Sayım noktası {{site}}",
+      "count": "Bu saatte sayılan",
+      "typical": "Bu saat için olağan",
+      "noTypical": "Bu saat için henüz olağan değer yok",
+      "tooFew": "Karşılaştırma için trafik çok az",
+      "counters_one": "{{count}} sayaç",
+      "counters_other": "{{count}} sayaç"
     }
   },
   "socialAtlas": {

@@ -436,6 +436,24 @@ export const TrafficAccidentDataSchema = z.object({
   published: z.string().nullable(),
 });
 
+// --- Traffic Counts ---
+
+export const TrafficCountDataSchema = z.object({
+  sites: z.array(z.object({
+    id: z.string(),
+    mode: z.enum(['car', 'bike']),
+    site: z.string(),
+    name: z.string().nullable(),
+    lat: z.number(),
+    lon: z.number(),
+    hour: z.string(),
+    count: z.number(),
+    typical: z.number().nullable(),
+    counters: z.number(),
+  })),
+  updated: z.string(),
+});
+
 // --- Flood Status (LHP) ---
 
 export const FloodStatusSchema = z.object({

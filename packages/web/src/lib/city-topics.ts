@@ -38,6 +38,10 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   // the rest parts of the political tile.
   airQualityStations: null,
   roadworks: null,
+  // The congestion map and the counters refine the traffic layer every city has
+  trafficFlowMap: null,
+  carCounts: null,
+  bikeCounts: null,
   pharmacies: null,
   aeds: null,
   noiseSensors: null,

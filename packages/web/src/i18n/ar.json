@@ -627,7 +627,11 @@
     "traffic": {
       "public-transport": "النقل العام",
       "incidents": "حوادث المرور",
-      "roadworks": "أعمال الطرق"
+      "congestion": "الازدحام (مباشر)",
+      "roadworks": "أعمال الطرق",
+      "car-counts": "عدّادات السيارات",
+      "bike-counts": "عدّادات الدراجات",
+      "zoomIn": "قرّب الخريطة لرؤية خريطة الازدحام"
     },
     "emergencies": {
       "pharmacies": "صيدليات",
@@ -673,6 +677,22 @@
       "killed": "بوفيات",
       "serious": "بإصابات خطيرة",
       "slight": "بإصابات طفيفة"
+    },
+    "trafficFlowLegend": {
+      "title": "حركة المرور",
+      "flowing": "سلسة",
+      "dense": "كثيفة",
+      "slow": "بطيئة",
+      "jammed": "متوقفة"
+    },
+    "trafficCountLegend": {
+      "title": "الساعة الأخيرة مقارنةً بالمعتاد في هذه الساعة",
+      "wellBelow": "أقل بكثير من المعتاد",
+      "below": "أقل من المعتاد",
+      "usual": "كالمعتاد",
+      "above": "أكثر من المعتاد",
+      "wellAbove": "أكثر بكثير من المعتاد",
+      "none": "لا تتوفر مقارنة"
     },
     "population": {
       "pop-density": "الكثافة السكانية",
@@ -797,6 +817,21 @@
       },
       "involved": "الأطراف",
       "source": "Unfallatlas {{year}}"
+    },
+    "trafficCount": {
+      "car": "مركبات آلية",
+      "bike": "دراجات هوائية",
+      "site": "نقطة العدّ {{site}}",
+      "count": "العدد خلال الساعة",
+      "typical": "المعتاد في هذه الساعة",
+      "noTypical": "لا يوجد بعد عدد معتاد لهذه الساعة",
+      "tooFew": "حركة المرور قليلة جدًا للمقارنة",
+      "counters_zero": "{{count}} عدّاد",
+      "counters_one": "عدّاد واحد",
+      "counters_two": "عدّادان",
+      "counters_few": "{{count}} عدّادات",
+      "counters_many": "{{count}} عدّادًا",
+      "counters_other": "{{count}} عدّاد"
     }
   },
   "socialAtlas": {

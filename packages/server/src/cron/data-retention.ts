@@ -75,6 +75,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'smard-electricity',  retentionMs: 2 * DAY_MS },
   { type: 'uba-airquality',     retentionMs: 2 * DAY_MS },
   { type: 'open311-reports',    retentionMs: 1 * DAY_MS }, // ~250 KB a row, written hourly; reads take 2 h at most
+  { type: 'traffic-counts',     retentionMs: 2 * DAY_MS },
 
   // Infrequent (7 days). keepLatest where the job runs weekly or monthly; the
   // daily jobs write a fresh row each run.

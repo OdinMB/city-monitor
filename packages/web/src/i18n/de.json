@@ -589,7 +589,11 @@
     "traffic": {
       "public-transport": "Nahverkehr",
       "incidents": "Verkehrslage",
-      "roadworks": "Baustellen"
+      "congestion": "Verkehrsfluss (live)",
+      "roadworks": "Baustellen",
+      "car-counts": "Kfz-Zählstellen",
+      "bike-counts": "Rad-Zählstellen",
+      "zoomIn": "Zum Anzeigen des Verkehrsflusses hineinzoomen"
     },
     "emergencies": {
       "pharmacies": "Apotheken",
@@ -635,6 +639,22 @@
       "killed": "Mit Getöteten",
       "serious": "Mit Schwerverletzten",
       "slight": "Mit Leichtverletzten"
+    },
+    "trafficFlowLegend": {
+      "title": "Verkehrsfluss",
+      "flowing": "Fließend",
+      "dense": "Dicht",
+      "slow": "Zäh",
+      "jammed": "Gestaut"
+    },
+    "trafficCountLegend": {
+      "title": "Letzte Stunde im Vergleich zum Üblichen für diese Stunde",
+      "wellBelow": "Viel weniger als üblich",
+      "below": "Weniger als üblich",
+      "usual": "Wie üblich",
+      "above": "Mehr als üblich",
+      "wellAbove": "Viel mehr als üblich",
+      "none": "Kein Vergleich möglich"
     },
     "population": {
       "pop-density": "Bevölkerungsdichte",
@@ -758,6 +778,17 @@
       },
       "involved": "Beteiligt",
       "source": "Unfallatlas {{year}}"
+    },
+    "trafficCount": {
+      "car": "Kraftfahrzeuge",
+      "bike": "Fahrräder",
+      "site": "Zählstelle {{site}}",
+      "count": "Gezählt in der Stunde",
+      "typical": "Üblich zu dieser Stunde",
+      "noTypical": "Noch kein üblicher Wert für diese Stunde",
+      "tooFew": "Zu wenig Verkehr für einen Vergleich",
+      "counters_one": "{{count}} Zähler",
+      "counters_other": "{{count}} Zähler"
     }
   },
   "socialAtlas": {

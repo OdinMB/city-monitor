@@ -2,7 +2,7 @@ import { sql, type SQL } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficAccidents, loadElectricity } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficCounts, loadTrafficAccidents, loadElectricity } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
@@ -182,6 +182,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadTrafficAccidents(db, cityId);
       if (r) cache.set(CK.trafficAccidents(cityId), r.data, TRAFFIC_ACCIDENTS_TTL_SECONDS, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} traffic accidents failed`, err)),
+
+    (async () => {
+      const r = await loadTrafficCounts(db, cityId);
+      if (r) cache.set(CK.trafficCounts(cityId), r.data, 1800, r.fetchedAt); // TRAFFIC_COUNTS_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} traffic counts failed`, err)),
 
     (async () => {
       const r = await loadWastewater(db, cityId);
