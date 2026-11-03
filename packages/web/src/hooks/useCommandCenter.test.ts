@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useCommandCenter, type DataLayer } from './useCommandCenter.js';
+import { isCategoryOn, useCommandCenter, type DataLayer } from './useCommandCenter.js';
 
 const initial = useCommandCenter.getState();
 
@@ -78,6 +78,42 @@ describe('useCommandCenter categories', () => {
     useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic', 'parking', 'weather']) });
     useCommandCenter.getState().toggleSingleView();
     expect(active()).toEqual(['parking', 'traffic']);
+  });
+
+  it('keeps a group on with its backdrop when its last layer goes, until its own switch turns it off', () => {
+    const on = (c: Parameters<typeof isCategoryOn>[0]) => isCategoryOn(c, useCommandCenter.getState().activeLayers, useCommandCenter.getState().openEmpty);
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic', 'weather']), trafficSubLayers: new Set(['public-transport', 'incidents']) });
+    useCommandCenter.getState().toggleTrafficSubLayer('public-transport');
+    useCommandCenter.getState().toggleTrafficSubLayer('incidents');
+    expect(active()).toEqual(['weather']);
+    expect(on('traffic')).toBe(true);
+    // A marker layer of the category brings it back to an ordinary category
+    useCommandCenter.getState().toggleLayer('parking');
+    expect([...useCommandCenter.getState().openEmpty]).toEqual([]);
+    useCommandCenter.getState().toggleLayer('parking');
+    expect(on('traffic')).toBe(true);
+    useCommandCenter.getState().toggleCategory('traffic', ['traffic']);
+    expect(on('traffic')).toBe(false);
+    expect(active()).toEqual(['weather']);
+    // Environment the same, through its layers
+    useCommandCenter.getState().toggleCategory('environment', ['air-quality']);
+    useCommandCenter.getState().toggleLayer('air-quality');
+    expect(on('environment')).toBe(true);
+    // A single-layer category just goes
+    useCommandCenter.getState().toggleLayer('weather');
+    expect(on('weather')).toBe(false);
+  });
+
+  it('keeps only one category, with or without layers, in single view', () => {
+    const open = () => [...useCommandCenter.getState().openEmpty];
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['air-quality']) });
+    useCommandCenter.getState().toggleLayer('air-quality');
+    expect(open()).toEqual(['environment']);
+    useCommandCenter.getState().toggleSingleView();
+    expect(open()).toEqual(['environment']);
+    useCommandCenter.getState().toggleCategory('traffic', ['traffic']);
+    expect(open()).toEqual([]);
+    expect(active()).toEqual(['traffic']);
   });
 
   it('treats the traffic sub-layers as entries of the category: the last one off switches traffic off', () => {
