@@ -35,9 +35,31 @@ interface CommandCenterState {
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
   toggleTrafficSubLayer: (sub: TrafficSubLayer) => void;
   setActiveLayers: (layers: Set<DataLayer>) => void;
+  /** The city whose dashboard the layer choice was last made for. */
+  layersCityId: string | null;
+  /**
+   * Opens a city's dashboard: a different city than last time starts from that
+   * city's default layers; the same city (back from its Sources page) keeps
+   * the visitor's choice.
+   */
+  enterCity: (cityId: string) => void;
 }
 
 const DEFAULT_LAYERS: Set<DataLayer> = new Set(['traffic', 'weather', 'warnings']);
+/** Layers a city's map shows on opening on top of DEFAULT_LAYERS. */
+const CITY_EXTRA_DEFAULT_LAYERS: Partial<Record<string, readonly DataLayer[]>> = {
+  hamburg: ['water'],
+};
+
+/** Water sub-layers a city's map opens with, where not all of them. */
+const CITY_DEFAULT_WATER_SUBS: Partial<Record<string, readonly WaterSubLayer[]>> = {
+  hamburg: ['levels'],
+};
+
+/** The layers a city's map opens with. */
+export function defaultLayersFor(cityId: string): Set<DataLayer> {
+  return new Set([...DEFAULT_LAYERS, ...(CITY_EXTRA_DEFAULT_LAYERS[cityId] ?? [])]);
+}
 const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['news']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies']);
 const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
@@ -131,4 +153,16 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       return { trafficSubLayers: next };
     }),
   setActiveLayers: (layers) => set({ activeLayers: layers }),
+  layersCityId: null,
+  enterCity: (cityId) =>
+    set((state) => {
+      if (state.layersCityId === cityId) return {};
+      const layers = defaultLayersFor(cityId);
+      const waterSubLayers = new Set<WaterSubLayer>(CITY_DEFAULT_WATER_SUBS[cityId] ?? ALL_WATER_SUBS);
+      if (state.singleView) {
+        const first = layers.values().next().value as DataLayer;
+        return { layersCityId: cityId, activeLayers: new Set<DataLayer>([first]), waterSubLayers };
+      }
+      return { layersCityId: cityId, activeLayers: layers, waterSubLayers };
+    }),
 }));
