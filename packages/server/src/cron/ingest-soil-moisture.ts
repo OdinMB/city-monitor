@@ -14,6 +14,7 @@ import { saveSoilMoisture } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { responseLines } from '../lib/stream-lines.js';
 
 const log = createLogger('ingest-soil-moisture');
 
@@ -101,25 +102,45 @@ interface Watering { tree: string; district: string; date: string; litres: numbe
  * `bewaesserungsmenge_in_liter`). Rows without a date or a positive amount are skipped.
  */
 export function parseWateringCsv(text: string): Watering[] {
-  const lines = (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text).split(/\r?\n/);
-  const header = lines[0]?.split(';').map((s) => s.trim());
-  if (!header) return [];
-  const iTree = header.indexOf('id');
-  const iDistrict = header.indexOf('bezirk');
-  const iTime = header.indexOf('timestamp');
-  const iLitres = header.indexOf('bewaesserungsmenge_in_liter');
-  if (iTree < 0 || iTime < 0 || iLitres < 0) throw new Error('Gieß den Kiez CSV lacks id, timestamp or bewaesserungsmenge_in_liter');
+  const parser = createWateringParser();
+  for (const line of (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text).split(/\r?\n/)) parser.line(line);
+  return parser.rows;
+}
 
+/**
+ * The same parse line by line, for the ~8 MB download streamed in
+ * (`streamLines`): the whole text and its array of lines are never held.
+ */
+export async function parseWateringLines(lines: AsyncIterable<string>): Promise<Watering[]> {
+  const parser = createWateringParser();
+  for await (const line of lines) parser.line(line);
+  return parser.rows;
+}
+
+function createWateringParser() {
+  let header: string[] | null = null;
+  let iTree = -1, iDistrict = -1, iTime = -1, iLitres = -1;
   const rows: Watering[] = [];
-  for (const line of lines.slice(1)) {
-    const cols = line.split(';');
-    if (cols.length !== header.length) continue;
-    const date = /^\d{4}-\d{2}-\d{2}/.exec(cols[iTime]!.trim())?.[0];
-    const litres = Number(cols[iLitres]);
-    if (!date || !Number.isFinite(litres) || litres <= 0) continue;
-    rows.push({ tree: cols[iTree]!.trim(), district: iDistrict >= 0 ? cols[iDistrict]!.trim() : '', date, litres });
-  }
-  return rows;
+  return {
+    rows,
+    line(line: string): void {
+      if (!header) {
+        header = line.split(';').map((s) => s.trim());
+        iTree = header.indexOf('id');
+        iDistrict = header.indexOf('bezirk');
+        iTime = header.indexOf('timestamp');
+        iLitres = header.indexOf('bewaesserungsmenge_in_liter');
+        if (iTree < 0 || iTime < 0 || iLitres < 0) throw new Error('Gieß den Kiez CSV lacks id, timestamp or bewaesserungsmenge_in_liter');
+        return;
+      }
+      const cols = line.split(';');
+      if (cols.length !== header.length) return;
+      const date = /^\d{4}-\d{2}-\d{2}/.exec(cols[iTime]!.trim())?.[0];
+      const litres = Number(cols[iLitres]);
+      if (!date || !Number.isFinite(litres) || litres <= 0) return;
+      rows.push({ tree: cols[iTree]!.trim(), district: iDistrict >= 0 ? cols[iDistrict]!.trim() : '', date, litres });
+    },
+  };
 }
 
 function period(rows: Watering[]): TreeWateringPeriod {
@@ -173,7 +194,7 @@ async function fetchStation(id: string): Promise<SoilMoistureDay[]> {
 async function fetchWatering(csvUrl: string, now: Date): Promise<TreeWateringSummary | null> {
   const res = await log.fetch(csvUrl, { signal: AbortSignal.timeout(WATERING_TIMEOUT_MS), headers: HEADERS });
   if (!res.ok) throw new Error(`Gieß den Kiez CSV returned ${res.status}`);
-  return summarizeWatering(parseWateringCsv(await res.text()), now);
+  return summarizeWatering(await parseWateringLines(responseLines(res)), now);
 }
 
 export function createSoilMoistureIngestion(cache: Cache, db: Db | null = null) {

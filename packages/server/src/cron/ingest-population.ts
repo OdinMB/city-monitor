@@ -7,7 +7,7 @@ import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { loadAreaOutlines } from '../lib/area-outlines.js';
-import { loadWorkbook, sheetToAoa } from '../lib/xlsx.js';
+import { readSheets } from '../lib/xlsx.js';
 import {
   extractEwrSnapshotDate, hamburgStadtteileUrl, parseEwrSchluessel, parseEwrT2Sheet, parseHamburgStadtteile,
   parseKoelnPopulation, parseMuenchenPopulation, type PopulationData,
@@ -95,15 +95,14 @@ async function fetchPopulation(
     case 'afstat-ewr-xlsx': {
       const res = await fetchOk(city.id, source.xlsxUrl);
       if (!res) return null;
-      const wb = await loadWorkbook(await res.arrayBuffer());
-      const t2Sheet = wb.getWorksheet('T2');
-      if (!t2Sheet) {
+      const { sheets } = await readSheets(await res.arrayBuffer(), (name) => name === 'T2' || name === 'Schlüssel');
+      const t2Rows = sheets.get('T2');
+      if (!t2Rows) {
         log.warn(`${city.id}: no T2 sheet in the EWR XLSX`);
         return null;
       }
-      const t2Rows = sheetToAoa(t2Sheet);
-      const schluesselSheet = wb.getWorksheet('Schlüssel');
-      const names = schluesselSheet ? parseEwrSchluessel(sheetToAoa(schluesselSheet)) : new Map<string, string>();
+      const schluesselRows = sheets.get('Schlüssel');
+      const names = schluesselRows ? parseEwrSchluessel(schluesselRows) : new Map<string, string>();
       const areas = parseEwrT2Sheet(t2Rows).map((a) => ({ ...a, name: names.get(a.id) }));
       return { data: { areas, snapshotDate: extractEwrSnapshotDate(t2Rows) }, shapes: socialAtlasShapes(cache, city.id) };
     }

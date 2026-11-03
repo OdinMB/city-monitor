@@ -5,8 +5,6 @@
  * index and filters the national file to each city by its municipality key.
  * See .context/traffic-accidents.md; field codes in DSB_Unfallatlas.pdf.
  */
-import type { Readable } from 'node:stream';
-import { StringDecoder } from 'node:string_decoder';
 import type { AccidentSeverity, TrafficAccident } from '@city-monitor/shared';
 
 export const UNFALLATLAS_BASE_URL = 'https://www.opengeodata.nrw.de/produkte/transport_verkehr/unfallatlas/';
@@ -68,24 +66,7 @@ export function agsPrefix(ags: string): string {
   return ags;
 }
 
-/** The text lines of a byte stream (UTF-8, LF or CRLF), without a leading BOM. */
-export async function* streamLines(stream: Readable): AsyncGenerator<string> {
-  const decoder = new StringDecoder('utf8');
-  let rest = '';
-  let first = true;
-  for await (const chunk of stream) {
-    rest += decoder.write(chunk as Buffer);
-    if (first && rest.length > 0) {
-      if (rest.charCodeAt(0) === 0xfeff) rest = rest.slice(1);
-      first = false;
-    }
-    const parts = rest.split('\n');
-    rest = parts.pop()!;
-    for (const part of parts) yield part.replace(/\r$/, '');
-  }
-  rest += decoder.end();
-  if (rest.length > 0) yield rest.replace(/\r$/, '');
-}
+export { streamLines } from './stream-lines.js';
 
 const REQUIRED = [
   'ULAND', 'UREGBEZ', 'UKREIS', 'UGEMEINDE', 'UMONAT', 'USTUNDE', 'UWOCHENTAG', 'UKATEGORIE', 'UART', 'UTYP1',

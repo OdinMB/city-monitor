@@ -17,7 +17,7 @@ City-wide check values (2026-11-03): Berlin turnout 74.23 %, Die Linke 25.66, CD
 
 ## Server
 
-- `lib/election-parsers.ts`: one parser per provider, then `buildElectionResults`.
+- `lib/election-parsers.ts`: one parser per provider, then `buildElectionResults`. The XLSX files are read with `readSheets`/`readSheet` (`lib/xlsx.ts`), which streams the workbook and keeps only the sheet it needs: loading Berlin's whole 2.5 MB file took 200 MB of heap and crashed the production instance on a fresh start (2026-11; [server.md](server.md#memory-at-startup)). The job is `heavy`, so it never runs beside another heavy job.
   - Berlin: sums the `AGH_W2` rows (urn and postal Wahlbezirke; postal rows carry their Wahlkreis) per Bezirk and Wahlkreis. The area id is the two-digit Bezirk plus the two-digit Wahlkreis ("0101"), as in the outlines' `awk`; the name is "Mitte 1".
   - Hamburg: the sheet gives percentages only, per Stadtteil, with Bezirk rows and a "Hamburg" total row. `stadtteilOutlineIds` matches a row to the Stadtteil outlines by name; a joined row ("Billbrook/Rothenburgsort", "Kleiner Grasbrook/Steinwerder") is split at "/", with "Kleiner" written "kl.", and its id is the outline ids joined with "+". The city total is the source's own row, not a sum. Unmatched rows are returned and logged.
   - München: `Stimmbezirksart` 1 (urn and postal together) and `Gebietsnummer` 1–25, named from the outlines.

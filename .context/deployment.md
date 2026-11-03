@@ -19,6 +19,7 @@ Infrastructure defined in `render.yaml` (Blueprint spec).
 - **Health check:** `GET /api/health`
 - **Auto-deploy:** On push to `main`
 - Migrations run automatically on each deploy (in start command)
+- **Heap size: no `--max-old-space-size` on purpose.** On the 512 MB starter plan V8 sizes the heap to about 256 MB, and the process's RSS runs about 110–220 MB above its heap (measured 2026-11 under tsx: 379 MB RSS at a 135 MB heap peak during a full cold start). A 384 MB heap could push RSS past 512 MB, and Render would then kill the container without V8's heap report. The cold-start fix (heavy jobs one at a time, streamed XLSX and CSV parsing, at most 4 startup runs: [server.md](server.md#memory-at-startup)) keeps the heap peak near half the limit; re-measure there before adding a heavy source rather than raising the limit
 
 ### Client address and `trust proxy`
 

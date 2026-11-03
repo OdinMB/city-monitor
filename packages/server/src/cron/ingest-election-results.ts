@@ -14,7 +14,7 @@ import { saveElectionResults } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
-import { loadWorkbook, sheetToAoa } from '../lib/xlsx.js';
+import { readSheet, readSheets } from '../lib/xlsx.js';
 import { listZipEntries, openZipEntry } from '../lib/zip.js';
 import { loadAreaOutlines, type AreaOutline } from '../lib/area-outlines.js';
 import {
@@ -57,14 +57,14 @@ export async function parseElectionFile(
 ): Promise<RawElection> {
   switch (source.provider) {
     case 'berlin-agh-xlsx': {
-      const sheet = (await loadWorkbook(bytes)).getWorksheet(BERLIN_AGH_SHEET);
+      const sheet = await readSheet(bytes, BERLIN_AGH_SHEET);
       if (!sheet) throw new Error(`no sheet ${BERLIN_AGH_SHEET}`);
-      return parseBerlinAghSheet(sheetToAoa(sheet));
+      return parseBerlinAghSheet(sheet);
     }
     case 'hamburg-stadtteile-xlsx': {
-      const sheet = (await loadWorkbook(bytes)).worksheets[0];
+      const sheet = [...(await readSheets(bytes, (_name, index) => index === 0)).sheets.values()][0];
       if (!sheet) throw new Error('empty workbook');
-      const parsed = parseHamburgStadtteilSheet(sheetToAoa(sheet), outlines);
+      const parsed = parseHamburgStadtteilSheet(sheet, outlines);
       if (parsed.unmatched.length > 0) log.warn(`hamburg: no outline for ${parsed.unmatched.join(', ')}`);
       return parsed;
     }

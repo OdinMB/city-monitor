@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { loadWorkbook, sheetToAoa } from './xlsx.js';
+import { readSheets } from './xlsx.js';
 import {
   mssLayerNames, parseHamburgSozialmonitoring, parseKoelnSocialAtlas, parseMss, parseMuenchenSocialAtlas, socialAtlasEdition,
   statusIndexOf, SOCIAL_ATLAS_HAS_STATUS_INDEX, SOCIAL_ATLAS_METRICS, type MuenchenSocialCsvs,
@@ -99,8 +99,8 @@ describe('parseKoelnSocialAtlas', () => {
 describe('parseHamburgSozialmonitoring', () => {
   async function sheets() {
     const bytes = readFileSync(fixture('hh-sozialmonitoring.xlsx'));
-    const wb = await loadWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
-    return [sheetToAoa(wb.getWorksheet('I_Indizes')!), sheetToAoa(wb.getWorksheet('II_Indikatoren')!)] as const;
+    const { sheets: s } = await readSheets(bytes, () => true);
+    return [s.get('I_Indizes')!, s.get('II_Indikatoren')!] as const;
   }
 
   it('reads every area of the index sheet with its Bezirk, population and status class', async () => {

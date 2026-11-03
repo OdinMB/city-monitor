@@ -30,7 +30,7 @@ The rates are per resident and counted where the offence happened, so areas with
 
 ## Pipeline
 
-- **Cron**: `ingest-crime-atlas`, `0 5 3 * *` (monthly). Fetch (60 s), find the newest year with both sheets, parse both by LOR key, join the Bezirksregionen to the outlines. A missing header or column throws and keeps the previous data; areas without an outline are logged.
+- **Cron**: `ingest-crime-atlas`, `0 5 3 * *` (monthly). Fetch (60 s), stream the workbook keeping only the `Fallzahlen_<year>` and `HZ_<year>` sheets (`readSheets` in `lib/xlsx.ts`; a heavy job, see [server.md](server.md#memory-at-startup)), find the newest year with both sheets, parse both by LOR key, join the Bezirksregionen to the outlines. A missing header or column throws and keeps the previous data; areas without an outline are logged.
 - **Data** (`CrimeAtlasData`): `year`, `city` (Berlin's rates and counts, the averages) and a GeoJSON FeatureCollection with flat `CrimeAreaProps` per area: `areaId`, `name`, `district`, each indicator's rate and `<indicator>Count`. ~206 KB, ~60 KB gzipped.
 - **DB**: snapshot type `kriminalitaetsatlas`, 7-day retention with `keepLatest`; read without a schema like the population GeoJSON.
 - **Cache**: `${cityId}:crime-atlas`, TTL 37.2 days (`CRIME_ATLAS_TTL_SECONDS`), warmed on start. Not in bootstrap.
