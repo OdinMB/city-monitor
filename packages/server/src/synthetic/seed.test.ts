@@ -19,7 +19,7 @@ type Row = Record<string, unknown>;
 
 /** Snapshot types of sources Berlin's config lacks: München's seed writes them instead. */
 // Berlin has no LHP gauges, and no Oberbürgermeister: only a city inside a state has one.
-const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood', 'abgwatch-mayor', 'kvb-lift-outages'];
+const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood', 'abgwatch-mayor', 'kvb-lift-outages', 'open311-reports'];
 
 /** Records what the write functions insert, per table name. */
 function fakeDb() {

@@ -27,6 +27,7 @@ import { createWaterLevelsRouter } from './routes/water-levels.js';
 import { createBudgetRouter } from './routes/budget.js';
 import { createBathingRouter } from './routes/bathing.js';
 import { createLiftOutagesRouter } from './routes/lift-outages.js';
+import { createCitizenReportsRouter } from './routes/citizen-reports.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
 import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createPopulationRouter } from './routes/population.js';
@@ -56,6 +57,7 @@ import { createBudgetIngestion } from './cron/ingest-budget.js';
 import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
 import { createLiftOutageIngestion } from './cron/ingest-lift-outages.js';
+import { createCitizenReportIngestion } from './cron/ingest-citizen-reports.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { createPopulationIngestion } from './cron/ingest-population.js';
@@ -180,6 +182,7 @@ export async function createApp(options?: {
     // The type is lageso-bathing for every provider, as viz-roadworks is for every roadworks feed
     { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' }, serves: (c) => !!c.dataSources.bathing },
     { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => !!c.dataSources.liftOutages },
+    { jobName: 'ingest-citizen-reports', tableName: 'snapshots', maxAgeSeconds: 900, filter: { column: 'type', value: 'open311-reports' }, serves: (c) => !!c.dataSources.citizenReports },
     { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' }, serves: (c) => !!c.dataSources.wastewater },
     { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' }, serves: (c) => !!c.dataSources.laborMarket },
     { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: (c) => !!c.dataSources.population },
@@ -221,6 +224,7 @@ export async function createApp(options?: {
   const ingestAppointments = createAppointmentIngestion(cache, db);
   const ingestBathing = createBathingIngestion(cache, db);
   const ingestLiftOutages = createLiftOutageIngestion(cache, db);
+  const ingestCitizenReports = createCitizenReportIngestion(cache, db);
   const ingestWastewater = createWastewaterIngestion(cache, db);
   const ingestLaborMarket = createLaborMarketIngestion(cache, db);
   const ingestPopulation = createPopulationIngestion(cache, db);
@@ -258,6 +262,8 @@ export async function createApp(options?: {
     { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing, runOnStart: s('ingest-bathing') },
     // KVB updates its outage lists about every 15 minutes
     { name: 'ingest-lift-outages', schedule: '*/15 * * * *', handler: ingestLiftOutages, runOnStart: s('ingest-lift-outages') },
+    // Citizen reports: the last fortnight every 15 min, off the quarter hour, paged gently
+    { name: 'ingest-citizen-reports', schedule: '7,22,37,52 * * * *', handler: ingestCitizenReports, runOnStart: s('ingest-citizen-reports') },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
     { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
@@ -317,6 +323,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(3600), createAppointmentsRouter(cache, db));
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
   app.use('/api', cacheFor(300), createLiftOutagesRouter(cache, db));
+  app.use('/api', cacheFor(300), createCitizenReportsRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
   app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));

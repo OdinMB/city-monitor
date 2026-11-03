@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from 'i18next';
 import type { WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
@@ -199,6 +200,31 @@ describe('DataLayerToggles per city', () => {
     expect(shown(i18n.t('sidebar.rentLegend.normal'))).toBe(true);
     expect(shown(i18n.t('sidebar.rentLegend.good'))).toBe(true);
     expect(shown(i18n.t('sidebar.rentLegend.simple'))).toBe(false);
+  });
+
+  it('lists citizen reports for Köln only, with the status legend and counts once the layer is on', async () => {
+    renderFor(hamburg);
+    expect(shown(i18n.t('sidebar.layers.reports'))).toBe(false);
+    cleanup();
+
+    const data = {
+      reports: [], windowDays: 14, total: 9, counts: { open: 4, in_progress: 2, closed: 3 },
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ data, fetchedAt: '2026-11-03T12:00:00Z' })));
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['reports']) });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <CityContext.Provider value={koeln}>
+          <DataLayerToggles />
+        </CityContext.Provider>
+      </QueryClientProvider>,
+    );
+    expect(layerButton('reports').getAttribute('aria-pressed')).toBe('true');
+    expect(shown(i18n.t('mapPopup.reports.status.in_progress'))).toBe(true);
+    expect(await screen.findByText(i18n.t('sidebar.reports.window', { days: 14 }))).toBeTruthy();
+    expect(shown('4') && shown('2') && shown('3')).toBe(true);
+    expect(String(fetchSpy.mock.calls[0]![0])).toContain('/koeln/citizen-reports');
+    fetchSpy.mockRestore();
   });
 
   it('marks the noise map shown where the selected one is missing', () => {

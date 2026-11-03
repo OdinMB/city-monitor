@@ -518,7 +518,12 @@
       "water": "Water",
       "social": "Social",
       "population": "Population",
-      "political": "Representation"
+      "political": "Representation",
+      "reports": "Citizen Reports"
+    },
+    "reports": {
+      "legend": "Status of citizen reports",
+      "window": "Reports of the last {{days}} days"
     },
     "news": {
       "news": "News",
@@ -610,6 +615,16 @@
         "permissive": "permitted",
         "no": "not public"
       }
+    },
+    "reports": {
+      "status": {
+        "open": "Open",
+        "in_progress": "In progress",
+        "closed": "Closed"
+      },
+      "reported": "Reported",
+      "updated": "Updated",
+      "viewOnPortal": "View on the city's portal"
     },
     "noise": {
       "sensor": "Noise Sensor #{{id}}",

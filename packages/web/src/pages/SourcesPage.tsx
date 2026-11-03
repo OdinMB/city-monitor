@@ -339,6 +339,12 @@ const KOELN_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Citizen Reports',
+    sources: [
+      { name: 'Sag’s uns (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/sags-uns-anliegenmanagement-koeln', description: 'Issues residents report to the city — illegal dumping, broken street lights and traffic lights, damaged roads — of the last 14 days, with category, status and date, via the portal’s Open311 API every 15 minutes. City Monitor leaves out the reports’ text, address and photos, which may name or show people. Source: Stadt Köln, dl-de/zero-2-0.' },
+    ],
+  },
+  {
     category: 'Water',
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time Rhine water level from the Köln gauge.' },
@@ -401,6 +407,12 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'Baustellen München (Geoportal)', url: 'https://opendata.muenchen.de/dataset/baustellen_4_weeks_opendata', description: 'Construction works that narrow or close the carriageway, from the city\'s roadworks service map. Source: Landeshauptstadt München – opendata.muenchen.de, dl-de/by-2-0. City Monitor shows each site as a point at the middle of its area.' },
+    ],
+  },
+  {
+    category: 'Citizen Reports',
+    sources: [
+      { name: 'Mach München besser', url: 'https://opendata.muenchen.de/dataset/meldungen-der-plattform-machmuenchenbesser-de', description: 'Issues residents report to the city — street lights out, littered parks, damaged playgrounds and traffic lights — of the last 14 days, with category, status and date, via the platform’s Open311 API every 15 minutes. City Monitor leaves out the reports’ text, address and photos, which may name or show people. Source: Landeshauptstadt München, IT-Referat, CC0 1.0.' },
     ],
   },
   {

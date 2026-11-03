@@ -67,6 +67,13 @@ export const muenchen: CityConfig = {
         { id: 'BY_16004403', name: 'Puppling', waterBody: 'Isar', upstream: true },
       ],
     },
+    // "Mach München besser" citizen reports, Open311 on Mark-a-Spot (CC0 1.0, IT-Referat).
+    // The CKAN dataset's URLs without /api answer 404; the /api prefix works (2026-11-03).
+    citizenReports: {
+      provider: 'open311',
+      baseUrl: 'https://machmuenchenbesser.de/api/georeport/v2',
+      requestUrl: 'https://machmuenchenbesser.de/requests/{id}',
+    },
     // Roadworks and no-parking zones of the coming four weeks (dl-de/by-2.0); the job adds a
     // CQL filter for works on the carriageway (lib/roadworks-parsers.ts).
     roadworks: {

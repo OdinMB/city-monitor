@@ -514,7 +514,12 @@
       "water": "Su",
       "social": "Sosyal",
       "population": "Nüfus",
-      "political": "Temsil"
+      "political": "Temsil",
+      "reports": "Vatandaş Bildirimleri"
+    },
+    "reports": {
+      "legend": "Vatandaş bildirimlerinin durumu",
+      "window": "Son {{days}} günün bildirimleri"
     },
     "news": {
       "news": "Haberler",
@@ -606,6 +611,16 @@
         "permissive": "izinli",
         "no": "herkese kapalı"
       }
+    },
+    "reports": {
+      "status": {
+        "open": "Açık",
+        "in_progress": "İşlemde",
+        "closed": "Kapatıldı"
+      },
+      "reported": "Bildirildi",
+      "updated": "Güncellendi",
+      "viewOnPortal": "Belediyenin portalında görüntüle"
     },
     "noise": {
       "sensor": "Gürültü sensörü #{{id}}",

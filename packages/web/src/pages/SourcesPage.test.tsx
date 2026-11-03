@@ -103,6 +103,9 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['LAGeSo Bathing Water', (c) => c.dataSources.bathing?.provider === 'lageso'],
   ['Badegewässer Hamburg (Geodienste)', (c) => c.dataSources.bathing?.provider === 'hamburg-wfs'],
   ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
+  // ingest-citizen-reports: each city's Open311 server, credited by its host
+  ['Sag’s uns (Offene Daten Köln)', (c) => c.dataSources.citizenReports?.baseUrl.startsWith('https://sags-uns.stadt-koeln.de/') === true],
+  ['Mach München besser', (c) => c.dataSources.citizenReports?.baseUrl.startsWith('https://machmuenchenbesser.de/') === true],
   ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
   // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
@@ -207,6 +210,8 @@ describe('SourcesPage licence credits', () => {
     'Hamburger Wohnlagenverzeichnis (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.',
     'Badegewässer Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, dl-de/by-2-0.',
     'KVB Open Data (Aufzüge, Fahrtreppen)': 'Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.',
+    'Sag’s uns (Offene Daten Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
+    'Mach München besser': 'Source: Landeshauptstadt München, IT-Referat, CC0 1.0.',
     'Indikatorenatlas München': 'Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0.',
     'Stadtbezirke München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
   };

@@ -14,6 +14,7 @@ import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
 import { newsPopupHtml, safetyPopupHtml } from './news-safety';
 import { aqPopupHtml } from './air-quality';
+import { citizenReportPopupHtml } from './citizen-reports';
 
 /**
  * Map popups are HTML strings built outside React, so they look their words
@@ -76,6 +77,10 @@ const DISTRICTS: PoliticalDistrict[] = [{
 const NEWS = { title: 'Tram M10 eingestellt', sourceName: 'rbb24', categoryLabel: 'Verkehr', url: 'https://www.rbb24.de/a/1', locationLabel: '', importance: 0.5 };
 const SAFETY = { title: 'Einbruch in Wohnung', district: 'Mitte', url: 'https://www.berlin.de/polizei/1', locationLabel: '' };
 const AQ_STATION = { aqi: 85, station: 'Berlin Mitte', url: 'https://aqicn.org/station/@6132/' };
+const REPORT = {
+  category: 'Wilder Müll', status: 'in_progress', statusLabel: 'In Bearbeitung', requestedAt: '2026-11-02T12:26:50+01:00',
+  updatedAt: '2026-11-02T17:01:17+01:00', url: 'https://sags-uns.stadt-koeln.de/node/95349',
+};
 
 /** Every popup builder, rendered from its fixture. */
 const POPUPS: Array<[string, () => string]> = [
@@ -95,6 +100,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['news', () => newsPopupHtml(NEWS)],
   ['police', () => safetyPopupHtml(SAFETY)],
   ['air quality station', () => aqPopupHtml(AQ_STATION)],
+  ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)')],
 ];
 
 /**
@@ -108,7 +114,7 @@ const ENGLISH_ONLY = [
   'Quality', 'Water temp', 'Visibility', 'Measured', 'Off-season', 'Indoor', 'Outdoor', 'Access',
   'Noise Sensor', 'Quiet', 'Moderate', 'Loud', 'Min:', 'Max:', 'Unemployment', 'Single-parent', 'Welfare',
   'Child poverty', 'Population', 'Density', 'Foreign', 'Aged 65', 'Under 18', 'Traffic jam', 'Road closure',
-  'Roadworks', 'planned work', 'Severe',
+  'Roadworks', 'planned work', 'Severe', 'Reported', 'In progress', "city's portal",
 ];
 
 afterEach(async () => {
@@ -147,6 +153,7 @@ describe('map popups in German', () => {
     ['news', () => newsPopupHtml(NEWS), ['Weiterlesen →']],
     ['police', () => safetyPopupHtml(SAFETY), ['Details →']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['US AQI: 85 (Mäßig)']],
+    ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)'), ['Wilder Müll', 'In Bearbeitung', 'Gemeldet: ', 'Aktualisiert: ', 'Im Portal der Stadt ansehen ↗']],
   ] as const)('%s popup', async (_name, build, expected) => {
     await i18n.changeLanguage('de');
     const text = textOf(build());

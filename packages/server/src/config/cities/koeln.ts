@@ -123,6 +123,13 @@ export const koeln: CityConfig = {
     // KVB's lifts and escalators out of service (dl-de/zero-2.0 on open.nrw), every 15 min.
     // KVB publishes no line disruptions as data, so this is Köln's only transit signal.
     liftOutages: { provider: 'kvb', url: 'https://data.webservice-kvb.koeln/service/opendata' },
+    // "Sag's uns" citizen reports, Open311 on Mark-a-Spot (dl-de/zero-2.0). A request's page
+    // is its Drupal node, which only the extensions name.
+    citizenReports: {
+      provider: 'open311',
+      baseUrl: 'https://sags-uns.stadt-koeln.de/georeport/v2',
+      requestUrl: 'https://sags-uns.stadt-koeln.de/node/{nid}',
+    },
     // The city's own events (Stadt Köln open data, dl-de/zero-2.0)
     events: [
       { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },

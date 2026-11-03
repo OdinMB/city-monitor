@@ -33,6 +33,9 @@ export const CK = {
   bathingSpots: (cityId: string) => `${cityId}:bathing:spots`,
   liftOutages: (cityId: string) => `${cityId}:lift-outages`,
 
+  // Citizen reports (lazy: too large for bootstrap)
+  citizenReports: (cityId: string) => `${cityId}:citizen-reports`,
+
   // Political
   political: (cityId: string, level: string) => `${cityId}:political:${level}`,
 

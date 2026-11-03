@@ -38,6 +38,7 @@ Applied via middleware per route tier:
 | `/api/:city/water-levels` | 300s (5 min) | Water levels update every 15 min |
 | `/api/:city/flood-status` | 120s (2 min) | LHP flood status updates every 5 min (its terms: refresh at least every 10) |
 | `/api/:city/lift-outages` | 300s (5 min) | KVB lift and escalator outages update every 15 min |
+| `/api/:city/citizen-reports` | 300s (5 min) | Open311 citizen reports update every 15 min; not in bootstrap |
 | `/api/:city/aeds` | 43200s (12h) | AEDs update daily |
 | `/api/:city/social-atlas` | 43200s (12h) | Social atlas updates weekly |
 | `/api/:city/budget` | 3600s (1h) | Budget updates daily |
@@ -62,7 +63,7 @@ Applied via middleware per route tier:
 
 Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: string[]` for startup ordering — jobs with unmet dependencies wait; all others run in parallel.
 
-### Jobs (28, defined in app.ts)
+### Jobs (29, defined in app.ts)
 
 | Job | Schedule | Description |
 |---|---|---|
@@ -85,6 +86,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-budget` | `0 6 * * *` | Berlin Haushalt budget data (daily) |
 | `ingest-bathing` | `0 6 * * *` | Bathing water quality by provider, for cities with `dataSources.bathing`: LAGeSo CSV (Berlin), Geodienste WFS (Hamburg) ([water-levels.md](water-levels.md#bathing-water-quality)) |
 | `ingest-lift-outages` | `*/15 * * * *` | KVB lifts and escalators out of service, for cities with `dataSources.liftOutages` (Köln; [lift-outages.md](lift-outages.md)). Two requests per run |
+| `ingest-citizen-reports` | `7,22,37,52 * * * *` | Open311 citizen reports of the last 14 days, for cities with `dataSources.citizenReports` (Köln, München; [citizen-reports.md](citizen-reports.md)). Pages of 200, 500 ms apart; Postgres at most hourly |
 | `ingest-wastewater` | `0 6 * * *` | Wastewater viral loads: RKI AMELAG for every city with `dataSources.wastewater` (one download), plus LAGeSo for Berlin (daily) |
 | `ingest-labor-market` | `0 7 * * *` | BA unemployment statistics, the Land or Kreis table in `dataSources.laborMarket` (daily) |
 | `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly; skips the API only when the stored data is under 6 days old, so every weekly run refreshes) |
@@ -97,7 +99,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 
 Ingestion jobs use conditional `runOnStart` based on DB freshness checks — only stale/missing domains trigger startup API calls. `ingest-aq-grid` always runs on start, and `data-retention` never does. `summarize-news` has `dependsOn: ['ingest-feeds']`, `ingest-population` has `dependsOn: ['ingest-social-atlas']`.
 
-**Which cities a job serves.** Most jobs loop over `getActiveCities()` and skip a city without the matching `dataSources` entry (budget, appointments, social atlas, population, labour market, wastewater, bathing, lift outages, council meetings, noise sensors, roadworks, transit, events…), so they fetch nothing for a city that lacks the source. Each job's `FRESHNESS_SPECS` entry in `app.ts` repeats that filter as its `serves` predicate, so the startup check looks only at the cities the job writes rows for; change the two together. `ingest-appointments` (paid Firecrawl calls) is the one job without it, and keeps the table-wide check ([data-layer.md](data-layer.md#freshness-checks-warm-cachets)). One job has no config entry because its source covers Berlin only, with a hardcoded URL and rows written under `'berlin'`: `ingest-feuerwehr` (wastewater, labour market, bathing and population moved to config on 2026-11-02). Its handler returns before any request when `getCityConfig('berlin')` is undefined, and `app.ts` lists it in `BERLIN_ONLY_JOBS` so that, without Berlin, it is left out of the freshness check and gets no startup run. It stays scheduled (the health endpoint lists all 28 jobs) and its ticks do nothing. With Berlin active, alone or with other cities, it makes the same requests and writes as before. A new Berlin-only source without a config entry follows the same two steps ([new-data-sources.md](new-data-sources.md)).
+**Which cities a job serves.** Most jobs loop over `getActiveCities()` and skip a city without the matching `dataSources` entry (budget, appointments, social atlas, population, labour market, wastewater, bathing, lift outages, council meetings, noise sensors, roadworks, transit, events…), so they fetch nothing for a city that lacks the source. Each job's `FRESHNESS_SPECS` entry in `app.ts` repeats that filter as its `serves` predicate, so the startup check looks only at the cities the job writes rows for; change the two together. `ingest-appointments` (paid Firecrawl calls) is the one job without it, and keeps the table-wide check ([data-layer.md](data-layer.md#freshness-checks-warm-cachets)). One job has no config entry because its source covers Berlin only, with a hardcoded URL and rows written under `'berlin'`: `ingest-feuerwehr` (wastewater, labour market, bathing and population moved to config on 2026-11-02). Its handler returns before any request when `getCityConfig('berlin')` is undefined, and `app.ts` lists it in `BERLIN_ONLY_JOBS` so that, without Berlin, it is left out of the freshness check and gets no startup run. It stays scheduled (the health endpoint lists all 29 jobs) and its ticks do nothing. With Berlin active, alone or with other cities, it makes the same requests and writes as before. A new Berlin-only source without a config entry follows the same two steps ([new-data-sources.md](new-data-sources.md)).
 
 **Political data** (`ingest-political.ts`, served at `/api/:city/political/:level`). abgeordnetenwatch.de API v2 (CC0 1.0) for the current Bundestag and state legislature, one city at a time, for each city in `PARLIAMENT_CONFIG`. Levels: `bundestag` and `state` (members grouped by constituency), `state-bezirke` (state members by Bezirk, Berlin only, `STATE_CONSTITUENCY_BEZIRKE`), and two hand-kept levels with a source page and `lastVerified` date each (the server warns 180 days after it): `bezirke` (`BEZIRKSBUERGERMEISTER`, Berlin and Köln) and `mayor` (`OBERBUERGERMEISTER`, Köln and München). Whose mandates count:
 - A city-state (Berlin, Hamburg; no `constituencies`): every member of the state parliament, and the Bundestag members whose constituency or Landesliste label names the city.

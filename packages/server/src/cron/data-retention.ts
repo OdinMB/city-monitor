@@ -71,6 +71,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'oparl-meetings',     retentionMs: 2 * DAY_MS },
   { type: 'lhp-flood',          retentionMs: 2 * DAY_MS },
   { type: 'kvb-lift-outages',   retentionMs: 2 * DAY_MS },
+  { type: 'open311-reports',    retentionMs: 1 * DAY_MS }, // ~250 KB a row, written hourly; reads take 2 h at most
 
   // Infrequent (7 days). keepLatest where the job runs weekly or monthly; the
   // daily jobs write a fresh row each run.
