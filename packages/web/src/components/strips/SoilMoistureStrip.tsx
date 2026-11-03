@@ -6,7 +6,7 @@ import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { formatCount, formatPercent } from '../../lib/format-value.js';
 import { isolate } from '../../lib/bidi.js';
-import { changeOver, LEVEL_STROKE, LEVEL_TEXT, soilMoistureLevel } from '../../lib/soil-moisture.js';
+import { changeOver, LEVEL_STROKE, LEVEL_TEXT, SCALE, scalePosition, soilMoistureLevel } from '../../lib/soil-moisture.js';
 import type { SoilMoistureDay, TreeWateringSummary } from '../../lib/api.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
@@ -60,6 +60,37 @@ const HistorySparkline = memo(function HistorySparkline({ history, color, label,
     </div>
   );
 });
+
+/** The five levels as one bar, driest at the start, with a marker at the stations' mean. */
+function MoistureScale({ value, label }: { value: number; label: string }) {
+  const { t } = useTranslation();
+  const level = soilMoistureLevel(value);
+  return (
+    <div className="space-y-1" role="img" aria-label={`${formatPercent(Math.round(value))} — ${label}`}>
+      <div className="relative">
+        <div className="flex h-2 rounded-full overflow-hidden" aria-hidden="true">
+          {SCALE.map((s) => (
+            <div key={s.level} className="flex-1" style={{ backgroundColor: LEVEL_STROKE[s.level], opacity: s.level === level ? 1 : 0.45 }} />
+          ))}
+        </div>
+        {/* Placed from the scale's start, which mirrors with the segments in Arabic */}
+        <div className="absolute -top-0.5 w-0 h-0" style={{ insetInlineStart: `${scalePosition(value)}%` }}>
+          <div
+            className="w-3 h-3 -ms-1.5 rounded-full border-2 border-white dark:border-gray-900 shadow"
+            style={{ backgroundColor: LEVEL_STROKE[level] }}
+          />
+        </div>
+      </div>
+      <div className="flex" aria-hidden="true">
+        {SCALE.map((s) => (
+          <span key={s.level} className={`flex-1 text-center text-[9px] leading-tight ${s.level === level ? 'font-semibold text-gray-700 dark:text-gray-200' : 'text-muted'}`}>
+            {t(`panel.soilMoisture.level.${s.level}`)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /** Gieß den Kiez: what residents watered in the last 30 days of the data and this year. */
 function WateringSection({ watering, lang }: { watering: TreeWateringSummary; lang: string }) {
@@ -131,29 +162,38 @@ export function SoilMoistureStrip({ expanded = false }: { expanded?: boolean }) 
 
   return (
     <>
-      <div className="flex flex-col gap-3 py-1">
-        <div>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-3xl font-extrabold tabular-nums leading-none ${LEVEL_TEXT[level]}`}>
-              {formatPercent(Math.round(latest.sandy))}
-            </span>
-            <span className="text-xs text-muted leading-tight">
-              {t('panel.soilMoisture.headline', { date: formatDay(latest.date, lang) })}
-            </span>
+      <div className={`flex flex-col gap-4 py-1 ${expanded ? '' : 'flex-1 justify-center'}`}>
+        <div className="text-center">
+          <div className={`text-4xl font-extrabold tabular-nums leading-none ${LEVEL_TEXT[level]}`}>
+            {formatPercent(Math.round(latest.sandy))}
           </div>
-          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-            <span className={`text-sm font-bold ${LEVEL_TEXT[level]}`}>{t(`panel.soilMoisture.level.${level}`)}</span>
-            {changes.map(({ days, change }) => (
-              <span key={days} className="text-xs text-gray-700 dark:text-gray-300 tabular-nums">
-                {trendArrow(change)} {t('panel.soilMoisture.change', { change: isolate(`${change > 0 ? '+' : ''}${change}`), days })}
-              </span>
-            ))}
+          <div className={`mt-1 text-sm font-bold ${LEVEL_TEXT[level]}`}>{t(`panel.soilMoisture.level.${level}`)}</div>
+          <div className="mt-0.5 text-[11px] text-muted">
+            {t('panel.soilMoisture.caption', { date: formatDay(latest.date, lang) })}
           </div>
-          <p className="text-[11px] text-muted mt-0.5">{t(`panel.soilMoisture.hint.${level}`)}</p>
+        </div>
+
+        <MoistureScale value={latest.sandy} label={t(`panel.soilMoisture.level.${level}`)} />
+
+        <div className="text-center">
+          {changes.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {changes.map(({ days, change }) => (
+                <span
+                  key={days}
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums ${change < 0 ? 'badge-moderate' : change > 0 ? 'badge-info' : 'badge-neutral'}`}
+                >
+                  <span aria-hidden="true">{trendArrow(change)}</span>
+                  {t('panel.soilMoisture.change', { change: isolate(String(Math.abs(change))), days })}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-gray-700 dark:text-gray-300 mt-2">{t(`panel.soilMoisture.hint.${level}`)}</p>
         </div>
 
         {!expanded && watering && watering.last30Days.waterings > 0 && (
-          <p className="text-xs text-gray-700 dark:text-gray-300">
+          <p className="text-xs text-center text-muted border-t border-border-subtle pt-3">
             {t('panel.soilMoisture.watering.teaser', {
               litres: t('panel.soilMoisture.watering.litresValue', { n: formatCount(watering.last30Days.litres, lang) }),
               date: formatDay(watering.dataThrough, lang),

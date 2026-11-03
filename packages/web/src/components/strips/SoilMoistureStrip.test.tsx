@@ -51,11 +51,12 @@ describe('SoilMoistureStrip', () => {
     const { container } = render(<SoilMoistureStrip />);
     const text = plain(container.textContent);
     expect(text).toContain('41%');
-    expect(text).toContain('under grass on sandy soil, Nov 1');
+    expect(text).toContain('sandy soil under grass · Nov 1');
+    expect(screen.getByRole('img', { name: /41%⁩? — Dry/ })).toBeTruthy();
     expect(text).toContain('Dry');
     expect(text).toContain('Plants are starting to run short of water');
-    expect(text).toMatch(/↓ -\d+ pts in 7 days/);
-    expect(text).toContain('↓ -15 pts in 30 days');
+    expect(text).toMatch(/↓\d+ pts in 7 days/);
+    expect(text).toContain('↓15 pts in 30 days');
     expect(text).toContain('4,238 litres in the 30 days to Oct 31');
     expect(screen.getByRole('link', { name: 'Datenbasis: Deutscher Wetterdienst, Einzelwerte gemittelt' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'CC BY 4.0' })).toBeTruthy();

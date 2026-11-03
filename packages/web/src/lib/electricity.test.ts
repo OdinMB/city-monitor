@@ -78,8 +78,8 @@ describe('groupMix', () => {
       mw: { windOnshore: 300, windOffshore: 100, solar: 0, hydro: 40, otherRenewable: 10, lignite: 400, hardCoal: 100, gas: 50 },
       renewableShare: 45,
     });
-    expect(groups.map((g) => [g.group, g.mw, g.share])).toEqual([
-      ['wind', 400, 40], ['hydro', 50, 5], ['gas', 50, 5], ['coal', 500, 50],
+    expect(groups.map((g) => [g.group, g.mw, g.share, g.renewable])).toEqual([
+      ['wind', 400, 40, true], ['hydro', 50, 5, true], ['gas', 50, 5, false], ['coal', 500, 50, false],
     ]);
   });
 });

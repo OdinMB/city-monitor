@@ -410,7 +410,9 @@
     },
     "electricity": {
       "title": "Electricity",
-      "renewableShare": "renewable share of generation in the {{area}} grid area at {{time}}",
+      "renewableCaption": "renewable share of generation · {{area}} grid area · {{time}}",
+      "renewables": "Renewable",
+      "conventional": "Fossil & other",
       "mixLabel": "Generation mix in the {{area}} grid area",
       "kind": {
         "wind": "Wind",
@@ -421,7 +423,6 @@
         "coal": "Coal",
         "other": "Other"
       },
-      "co2": "CO₂ intensity, Germany",
       "forecast": "forecast",
       "signal": "Grid signal, Germany",
       "signalLevel": {
@@ -441,7 +442,7 @@
     },
     "soilMoisture": {
       "title": "Soil Moisture",
-      "headline": "of the water the soil can hold for plants, under grass on sandy soil, {{date}}",
+      "caption": "Water available to plants, sandy soil under grass · {{date}}",
       "level": {
         "very-dry": "Very dry",
         "dry": "Dry",
