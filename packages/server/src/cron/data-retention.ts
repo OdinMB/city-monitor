@@ -86,6 +86,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'dwd-soil-moisture',  retentionMs: 7 * DAY_MS },                   // twice a day
   { type: 'afstat-population',  retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
   { type: 'unfallatlas-accidents', retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
+  { type: 'kriminalitaetsatlas', retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
   { type: 'bnetza-charging',    retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'heat-relief',        retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-bezirke',       retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly

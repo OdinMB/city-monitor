@@ -21,6 +21,7 @@ import type {
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
+  CrimeAreaProps, CrimeAtlasData, CrimeIndicator,
   TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
 import type { HeatReliefData, HeatReliefPlace } from '@city-monitor/shared';
@@ -95,6 +96,7 @@ export interface SyntheticData {
   /** Not in Berlin's data set: only Köln and München have an Open311 server (NOT_IN_BERLIN). */
   citizenReports?: CitizenReportData;
   trafficAccidents: TrafficAccidentData;
+  crimeAtlas: CrimeAtlasData;
   /** Not in Berlin's data set: only Hamburg's counters are configured (NOT_IN_BERLIN). */
   trafficCounts?: TrafficCountData;
   /** The register only: the live status (Hamburg) is never stored, so the seed has none. */
@@ -162,6 +164,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   airQualityStations: (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0,
   citizenReports: (c) => c.dataSources.citizenReports !== undefined,
   trafficAccidents: (c) => c.dataSources.trafficAccidents !== undefined,
+  crimeAtlas: (c) => c.dataSources.crimeAtlas !== undefined,
   trafficCounts: (c) => (c.dataSources.trafficCounts?.modes.length ?? 0) > 0,
   evCharging: (c) => c.dataSources.evCharging !== undefined,
   heatRelief: (c) => (c.dataSources.heatRelief?.length ?? 0) > 0,
@@ -286,6 +289,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('evCharging')) sets.evCharging = generateEvCharging(rng, place);
   if (has.has('heatRelief')) sets.heatRelief = generateHeatRelief(rng, city, place);
   if (has.has('soilMoisture')) sets.soilMoisture = generateSoilMoisture(rng, now, city, place);
+  if (has.has('crimeAtlas')) sets.crimeAtlas = generateCrimeAtlas(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1660,6 +1664,64 @@ function generateCitizenReports(rng: Rng, now: Date, place: Place): CitizenRepor
     });
   }
   return buildCitizenReportData(reports);
+}
+
+/** Each indicator's synthetic city-wide rate per 100,000 residents, near Berlin's 2025 figures. */
+const SYNTHETIC_CRIME_RATES: ReadonlyArray<[CrimeIndicator, number]> = [
+  ['total', 12900], ['assault', 1280], ['robbery', 124], ['burglary', 272], ['bikeTheft', 580], ['kiez', 3170],
+];
+
+/**
+ * Stand-ins for the Bezirksregionen: the city's ellipse tiled into ~6×8
+ * rectangles, rates highest in the centre and falling off outwards, each
+ * area named after its nearest anchor.
+ */
+function generateCrimeAtlas(rng: Rng, now: Date, place: Place): CrimeAtlasData {
+  const { north, south, east, west } = place.city.boundingBox;
+  const rows = 6;
+  const cols = 8;
+  const dLat = (north - south) / rows;
+  const dLon = (east - west) / cols;
+  const features: CrimeAtlasData['geojson']['features'] = [];
+  const residents = 25000;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const lat0 = south + row * dLat;
+      const lon0 = west + col * dLon;
+      const centre = { lat: lat0 + dLat / 2, lon: lon0 + dLon / 2 };
+      const r = Math.hypot((centre.lat - (north + south) / 2) / ((north - south) / 2), (centre.lon - (east + west) / 2) / ((east - west) / 2));
+      if (r > 1) continue;
+      const anchor = place.anchors[nearestDistrict(centre, place.anchors)]!;
+      const factor = (0.4 + 1.8 * Math.exp(-((r / 0.4) ** 2))) * rng.float(0.8, 1.2);
+      const props: Record<string, number | string | null> = {
+        areaId: `${pad(nearestDistrict(centre, place.anchors) + 1)}99${pad(features.length + 1)}`,
+        name: `Synthetische Region ${features.length + 1}`,
+        district: anchor.name,
+      };
+      for (const [indicator, rate] of SYNTHETIC_CRIME_RATES) {
+        const value = round(rate * factor * rng.float(0.85, 1.15), 1);
+        props[indicator] = value;
+        props[`${indicator}Count`] = Math.round((value * residents) / 100000);
+      }
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[lon0, lat0], [lon0 + dLon, lat0], [lon0 + dLon, lat0 + dLat], [lon0, lat0 + dLat], [lon0, lat0]]
+            .map(([lon, lat]) => [round(lon!, 5), round(lat!, 5)])],
+        },
+        properties: props as unknown as CrimeAreaProps,
+      });
+    }
+  }
+  const city: Record<string, number> = {};
+  for (const [indicator, rate] of SYNTHETIC_CRIME_RATES) {
+    city[indicator] = rate;
+    city[`${indicator}Count`] = Math.round((rate * residents * features.length) / 100000);
+  }
+  // The atlas for a year comes out the following September
+  const year = now.getUTCFullYear() - (now.getUTCMonth() >= 9 ? 1 : 2);
+  return { year, city: city as unknown as CrimeAtlasData['city'], geojson: { type: 'FeatureCollection', features } };
 }
 
 /**

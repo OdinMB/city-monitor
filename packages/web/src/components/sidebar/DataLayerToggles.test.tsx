@@ -129,7 +129,7 @@ describe('DataLayerToggles per city', () => {
   it('lists only the layers the city has', () => {
     renderFor(hamburg);
     const expected = cityLayers(hamburg).layers;
-    for (const layer of ['warnings', 'news', 'traffic', 'bike-sharing', 'ev-charging', 'heat-relief', 'accidents', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political']) {
+    for (const layer of ['warnings', 'news', 'traffic', 'bike-sharing', 'ev-charging', 'heat-relief', 'accidents', 'crime', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political']) {
       expect(shown(i18n.t(`sidebar.layers.${layer}`)), layer).toBe(expected.has(layer as DataLayer));
     }
   });

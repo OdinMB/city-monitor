@@ -95,6 +95,7 @@ describe('data-retention: snapshots', () => {
     'mss-social-atlas',        // weekly, 7 days
     'afstat-population',       // monthly, 7 days
     'unfallatlas-accidents',   // monthly, 7 days
+    'kriminalitaetsatlas',     // monthly, 7 days
     'bnetza-charging',         // weekly, 7 days
     'heat-relief',             // weekly, 7 days
     'abgwatch-bezirke',        // weekly, 7 days

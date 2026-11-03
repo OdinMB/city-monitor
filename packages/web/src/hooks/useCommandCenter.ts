@@ -1,9 +1,12 @@
 import { create } from 'zustand';
+import type { CrimeIndicator } from '../lib/api.js';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'ev-charging' | 'heat-relief' | 'accidents' | 'water' | 'social' | 'population' | 'political' | 'reports' | 'trees';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'ev-charging' | 'heat-relief' | 'accidents' | 'crime' | 'water' | 'social' | 'population' | 'political' | 'reports' | 'trees';
 /** Which accidents the accident layer shows: all, or those with a bicycle or a pedestrian involved. */
 export type AccidentFilter = 'all' | 'bike' | 'pedestrian';
-export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
+/** The offence group the crime map colours its areas by. */
+export type CrimeLayer = CrimeIndicator;
+export type PoliticalLayer ='bezirke' | 'bundestag' | 'landesparlament';
 export type SocialLayer = 'unemployment' | 'single-parent' | 'welfare' | 'child-poverty' | 'rent';
 export type PopulationLayer = 'pop-density' | 'pop-elderly' | 'pop-foreign';
 export type NoiseLayer = 'total' | 'road' | 'rail' | 'air';
@@ -27,6 +30,7 @@ interface CommandCenterState {
   waterSubLayers: Set<WaterSubLayer>;
   trafficSubLayers: Set<TrafficSubLayer>;
   accidentFilter: AccidentFilter;
+  crimeLayer: CrimeLayer;
   heatReliefSubLayers: Set<HeatReliefSubLayer>;
   toggleSingleView: () => void;
   toggleLayer: (layer: DataLayer) => void;
@@ -40,6 +44,7 @@ interface CommandCenterState {
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
   toggleTrafficSubLayer: (sub: TrafficSubLayer) => void;
   setAccidentFilter: (filter: AccidentFilter) => void;
+  setCrimeLayer: (layer: CrimeLayer) => void;
   toggleHeatReliefSubLayer: (sub: HeatReliefSubLayer) => void;
   /** Turns the heat-relief layer on with all its sub-layers (the weather tile's heat hint); in single view it replaces the shown layer. */
   showHeatRelief: () => void;
@@ -93,6 +98,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   waterSubLayers: new Set(ALL_WATER_SUBS),
   trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS),
   accidentFilter: 'all',
+  crimeLayer: 'total',
   heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS),
   toggleSingleView: () =>
     set((state) => {
@@ -170,6 +176,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       return { trafficSubLayers: next };
     }),
   setAccidentFilter: (filter) => set({ accidentFilter: filter }),
+  setCrimeLayer: (layer) => set({ crimeLayer: layer }),
   toggleHeatReliefSubLayer: (sub) =>
     set((state) => {
       const next = new Set(state.heatReliefSubLayers);

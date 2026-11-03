@@ -167,6 +167,14 @@ export const berlin: CityConfig = {
     bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bn/gbfs.json', system: 'nextbike Berlin', operator: 'nextbike' },
     // Unfallatlas (dl-de/by-2.0): the whole Land, ~13,300 injury accidents in 2025
     trafficAccidents: { provider: 'unfallatlas', ags: '11000000' },
+    // Kriminalitätsatlas Berlin (Polizei Berlin, CC BY-SA): cases and rates per Bezirksregion,
+    // 2016–2025 in one file. The name carries the year range: copy the new link from
+    // daten.berlin.de "Kriminalitätsatlas Berlin" when the next year appears (checked 2026-11-03).
+    crimeAtlas: {
+      provider: 'polizei-berlin',
+      xlsxUrl: 'https://www.berlin.de/polizei/_assets/dienststellen/lka/fallzahlen_hz-2016-2025.xlsx',
+      outlines: 'berlin-bezirksregionen.geojson',
+    },
     appointments: {
       provider: 'service-berlin',
       // Ids are service.berlin.de/dienstleistung/{id}/: open that page to check

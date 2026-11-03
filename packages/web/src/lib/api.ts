@@ -31,6 +31,7 @@ export type {
   AirQualityStation, UbaAirIndex,
   CitizenReport, CitizenReportData, CitizenReportGroup, CitizenReportStatus,
   TrafficAccident, TrafficAccidentData, AccidentSeverity,
+  CrimeAtlasData, CrimeAreaProps, CrimeIndicator,
   TrafficCountMode, TrafficCountSite, TrafficCountData,
   EvChargingData, EvChargingStation, EvLivePoint, EvPlug, EvPointStatus,
 } from '@city-monitor/shared';
@@ -47,6 +48,7 @@ import type {
   NewsSummaryData, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficAccidentData, TrafficCountData, ElectricityData, SoilMoistureData,
 } from '@city-monitor/shared';
 import type { EvChargingData } from '@city-monitor/shared';
+import type { CrimeAtlasData } from '@city-monitor/shared';
 export type { HeatReliefData, HeatReliefPlace, HeatReliefKind, DwdHeatTrend } from '@city-monitor/shared';
 import type { HeatReliefData } from '@city-monitor/shared';
 
@@ -78,6 +80,7 @@ export const api = {
   getSoilMoisture: (city: string) => fetchJson<ApiResponse<SoilMoistureData | null>>(`${API_BASE}/${city}/soil-moisture`),
   getCitizenReports: (city: string) => fetchJson<ApiResponse<CitizenReportData | null>>(`${API_BASE}/${city}/citizen-reports`),
   getTrafficAccidents: (city: string) => fetchJson<ApiResponse<TrafficAccidentData | null>>(`${API_BASE}/${city}/traffic-accidents`),
+  getCrimeAtlas: (city: string) => fetchJson<ApiResponse<CrimeAtlasData | null>>(`${API_BASE}/${city}/crime-atlas`),
   getTrafficCounts: (city: string) => fetchJson<ApiResponse<TrafficCountData | null>>(`${API_BASE}/${city}/traffic-counts`),
   getEvCharging: (city: string) => fetchJson<ApiResponse<EvChargingData | null>>(`${API_BASE}/${city}/ev-charging`),
   getHeatRelief: (city: string) => fetchJson<ApiResponse<HeatReliefData | null>>(`${API_BASE}/${city}/heat-relief`),

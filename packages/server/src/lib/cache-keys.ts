@@ -32,6 +32,8 @@ export const CK = {
   bikeSharing: (cityId: string) => `${cityId}:bike-sharing`,
   /** Not bootstrapped: Berlin's ~13,000 accidents a year are about 450 KB, fetched when the map layer is on. */
   trafficAccidents: (cityId: string) => `${cityId}:traffic-accidents`,
+  /** Not bootstrapped: Berlin's 143 Bezirksregionen with outlines are about 200 KB, fetched when the crime layer is on. */
+  crimeAtlas: (cityId: string) => `${cityId}:crime-atlas`,
   /** Not bootstrapped: ~260 Hamburg sites are about 50 KB, fetched when a counts sub-layer is on. */
   trafficCounts: (cityId: string) => `${cityId}:traffic-counts`,
   /** The city's stations from the BNetzA register (with EVSE ids where a live feed merges on them). Not bootstrapped: Berlin's ~3,500 stations are several hundred KB. */

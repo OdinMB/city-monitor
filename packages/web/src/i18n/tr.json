@@ -612,6 +612,7 @@
       "traffic": "Trafik",
       "bike-sharing": "Bisiklet Paylaşımı",
       "accidents": "Kazalar",
+      "crime": "Suç",
       "ev-charging": "Elektrikli Araç Şarjı",
       "heat-relief": "Sıcaktan Korunma",
       "water": "Su",
@@ -684,6 +685,25 @@
       "all": "Tüm kazalar",
       "bike": "Bisikletli",
       "pedestrian": "Yayalı"
+    },
+    "crime": {
+      "total": "Tüm suçlar",
+      "assault": "Yaralama",
+      "robbery": "Gasp",
+      "burglary": "Konut hırsızlığı",
+      "bikeTheft": "Bisiklet hırsızlığı",
+      "kiez": "Mahalle suçları (Kieztaten)"
+    },
+    "crimeLegend": {
+      "title": "Şehir ortalamasına göre 100.000 kişi başına oran",
+      "year": "{{year}} yılında kaydedilen (polis suç istatistiği)",
+      "cityRate": "Şehir ortalaması: 100.000 kişi başına {{rate}}",
+      "muchLower": "Şehir ortalamasının yarısından az",
+      "lower": "Ortalamanın altında (0,5–0,8×)",
+      "average": "Ortalama civarında (0,8–1,25×)",
+      "higher": "Ortalamanın üstünde (1,25–2×)",
+      "muchHigher": "Ortalamanın iki katı veya fazlası",
+      "note": "Suçlar işlendikleri yerde ve sakin başına sayılır: şehir merkezi gibi az sakini ve çok ziyaretçisi olan bölgelerde oranlar yüksek çıkar."
     },
     "accidentLegend": {
       "title": "{{year}} yılındaki yaralanmalı kazalar, en ağır sonuca göre",
@@ -818,6 +838,14 @@
       "bikes": "Kullanılabilir bisiklet",
       "docks": "Boş park yeri",
       "updated": "Güncelleme"
+    },
+    "crime": {
+      "year": "Polis suç istatistiği {{year}}",
+      "area": "Bölge",
+      "city": "Şehir",
+      "ratio": "Şehre göre",
+      "per100k": "100.000 kişi başına vaka",
+      "cases": "Kaydedilen vakalar"
     },
     "accident": {
       "severity": {

@@ -616,6 +616,7 @@
       "traffic": "Traffic",
       "bike-sharing": "Bike Sharing",
       "accidents": "Accidents",
+      "crime": "Crime",
       "ev-charging": "EV Charging",
       "heat-relief": "Heat Relief",
       "water": "Water",
@@ -688,6 +689,25 @@
       "all": "All accidents",
       "bike": "With bicycles",
       "pedestrian": "With pedestrians"
+    },
+    "crime": {
+      "total": "All offences",
+      "assault": "Assault",
+      "robbery": "Robbery",
+      "burglary": "Domestic burglary",
+      "bikeTheft": "Bicycle theft",
+      "kiez": "Neighbourhood crime (Kieztaten)"
+    },
+    "crimeLegend": {
+      "title": "Rate per 100,000 residents compared with the city average",
+      "year": "Recorded in {{year}} (police crime statistics)",
+      "cityRate": "City average: {{rate}} per 100,000",
+      "muchLower": "Under half the city average",
+      "lower": "Below average (0.5–0.8×)",
+      "average": "Around average (0.8–1.25×)",
+      "higher": "Above average (1.25–2×)",
+      "muchHigher": "Twice the average or more",
+      "note": "Offences are counted where they happened, per resident: areas with few residents and many visitors, such as the city centre, show high rates."
     },
     "accidentLegend": {
       "title": "Accidents with personal injury in {{year}}, by the worst injury",
@@ -822,6 +842,14 @@
       "bikes": "Bikes available",
       "docks": "Free docks",
       "updated": "Updated"
+    },
+    "crime": {
+      "year": "Police crime statistics {{year}}",
+      "area": "Area",
+      "city": "City",
+      "ratio": "vs city",
+      "per100k": "Cases per 100,000 residents",
+      "cases": "Cases recorded"
     },
     "accident": {
       "severity": {

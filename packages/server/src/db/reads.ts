@@ -9,7 +9,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData, CrimeAtlasData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
@@ -223,6 +223,11 @@ export async function loadCitizenReports(db: Db, cityId: string): Promise<DbResu
 /** No age limit: the accidents are a year's record, whose newest row retention keeps. */
 export async function loadTrafficAccidents(db: Db, cityId: string): Promise<DbResult<TrafficAccidentData>> {
   return loadSnapshot(db, cityId, 'unfallatlas-accidents', { schema: TrafficAccidentDataSchema });
+}
+
+/** No age limit and no schema (GeoJSON, like the population layer's): a year's record, whose newest row retention keeps. */
+export async function loadCrimeAtlas(db: Db, cityId: string): Promise<DbResult<CrimeAtlasData>> {
+  return loadSnapshot<CrimeAtlasData>(db, cityId, 'kriminalitaetsatlas');
 }
 
 /** At most 3 hours old: the counts are hourly and a row is stored when a new hour comes in. */

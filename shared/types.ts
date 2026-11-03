@@ -72,6 +72,7 @@ export type CityFeature =
   | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
   | 'citizenReports'  // dataSources.citizenReports: citizen issue reports (Open311), the reports map layer
   | 'trafficAccidents' // dataSources.trafficAccidents: last year's injury accidents on the map (Unfallatlas)
+  | 'crimeAtlas'      // dataSources.crimeAtlas: recorded crime per area, the crime map layer (Kriminalitätsatlas Berlin)
   | 'carCounts'       // dataSources.trafficCounts with mode 'car': car counters on the traffic layer
   | 'bikeCounts'      // dataSources.trafficCounts with mode 'bike': bicycle counters on the traffic layer
   | 'evCharging'      // dataSources.evCharging: public charging stations on the map (BNetzA Ladesäulenregister)
@@ -307,6 +308,15 @@ export interface EvChargingSource {
   liveStatus?: { provider: 'hamburg-sta'; url: string; operator: string };
 }
 
+/**
+ * A city's recorded crime per small area (.context/crime-atlas.md).
+ * `polizei-berlin`: the Kriminalitätsatlas XLSX of Polizei Berlin (CC BY-SA),
+ * case counts and cases per 100,000 residents per Bezirksregion, the newest
+ * year of the file; `outlines` names the Bezirksregion outline file in
+ * packages/server/data/.
+ */
+export type CrimeAtlasSource = { provider: 'polizei-berlin'; xlsxUrl: string; outlines: string };
+
 /** What a heat-relief place is: a cool place, a drinking fountain or a public toilet. */
 export type HeatReliefKind = 'cool' | 'fountain' | 'toilet';
 
@@ -409,6 +419,7 @@ export interface CityDataSources {
   electricity?: ElectricitySource;
   citizenReports?: CitizenReportSource;
   trafficAccidents?: TrafficAccidentSource;
+  crimeAtlas?: CrimeAtlasSource;
   trafficCounts?: TrafficCountSource;
   evCharging?: EvChargingSource;
   /** The heat-relief layer's lists, at most one per kind. */
@@ -1143,6 +1154,42 @@ export interface TrafficAccidentData {
   accidents: TrafficAccident[];
   /** When the statistical offices published the file (ISO 8601), null when the index gave no time. */
   published: string | null;
+}
+
+// Crime atlas (Kriminalitätsatlas Berlin, Polizei Berlin, CC BY-SA)
+/**
+ * The offence groups the crime map shows, each a column of the
+ * Kriminalitätsatlas: all offences, assault (Körperverletzungen insgesamt),
+ * robbery (Raub, street robbery included), domestic burglary
+ * (Wohnraumeinbruch), bicycle theft and the police's "Kieztaten", offences
+ * residents notice in their neighbourhood. The server's parser
+ * (`CRIME_COLUMNS` in lib/crime-atlas.ts) and the web layer list them in this order.
+ */
+export type CrimeIndicator = 'total' | 'assault' | 'robbery' | 'burglary' | 'bikeTheft' | 'kiez';
+
+/** Cases per 100,000 residents of each offence group (the atlas's Häufigkeitszahl), null where the atlas gives none. */
+export type CrimeRates = Record<CrimeIndicator, number | null>;
+/** Recorded cases of each offence group, null where the atlas gives none. */
+export type CrimeCounts = { [K in CrimeIndicator as `${K}Count`]: number | null };
+
+/** One Bezirksregion on the crime map: flat, so the map's expressions can read each rate. */
+export type CrimeAreaProps = CrimeRates & CrimeCounts & {
+  /** The 6-digit LOR key of the Bezirksregion ("011001") */
+  areaId: string;
+  name: string;
+  /** Its Bezirk */
+  district: string;
+};
+
+export interface CrimeAtlasData {
+  /** The year the offences were recorded in (PKS year). */
+  year: number;
+  /** The city as a whole: its rates are the averages the map compares each area with. */
+  city: CrimeRates & CrimeCounts;
+  geojson: {
+    type: 'FeatureCollection';
+    features: Array<{ type: 'Feature'; geometry: unknown; properties: CrimeAreaProps }>;
+  };
 }
 
 // Traffic counts (Hamburg infrared counters)

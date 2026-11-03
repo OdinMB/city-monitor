@@ -4,11 +4,12 @@ import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
 import { loadEvChargingRegister } from './reads.js';
 import { EV_CHARGING_REGISTER_TTL_SECONDS } from '../cron/ingest-ev-charging.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficCounts, loadTrafficAccidents, loadElectricity, loadSoilMoisture } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficCounts, loadTrafficAccidents, loadCrimeAtlas, loadElectricity, loadSoilMoisture } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
 import { TRAFFIC_ACCIDENTS_TTL_SECONDS } from '../cron/ingest-traffic-accidents.js';
+import { CRIME_ATLAS_TTL_SECONDS } from '../cron/ingest-crime-atlas.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
 import { loadHeatRelief } from './reads.js';
 import { HEAT_RELIEF_TTL_SECONDS } from '../cron/ingest-heat-relief.js';
@@ -197,6 +198,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadTrafficAccidents(db, cityId);
       if (r) cache.set(CK.trafficAccidents(cityId), r.data, TRAFFIC_ACCIDENTS_TTL_SECONDS, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} traffic accidents failed`, err)),
+
+    (async () => {
+      const r = await loadCrimeAtlas(db, cityId);
+      if (r) cache.set(CK.crimeAtlas(cityId), r.data, CRIME_ATLAS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} crime atlas failed`, err)),
 
     (async () => {
       const r = await loadTrafficCounts(db, cityId);

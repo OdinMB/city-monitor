@@ -618,6 +618,7 @@
       "traffic": "Verkehr",
       "bike-sharing": "Leihräder",
       "accidents": "Unfälle",
+      "crime": "Kriminalität",
       "ev-charging": "E-Ladesäulen",
       "heat-relief": "Hitzeschutz",
       "water": "Wasser",
@@ -690,6 +691,25 @@
       "all": "Alle Unfälle",
       "bike": "Mit Fahrrad",
       "pedestrian": "Mit Fußgängern"
+    },
+    "crime": {
+      "total": "Straftaten insgesamt",
+      "assault": "Körperverletzung",
+      "robbery": "Raub",
+      "burglary": "Wohnungseinbruch",
+      "bikeTheft": "Fahrraddiebstahl",
+      "kiez": "Kieztaten"
+    },
+    "crimeLegend": {
+      "title": "Häufigkeit je 100.000 Einwohner im Vergleich zum Stadtdurchschnitt",
+      "year": "Erfasst {{year}} (Polizeiliche Kriminalstatistik)",
+      "cityRate": "Stadtdurchschnitt: {{rate}} je 100.000",
+      "muchLower": "Weniger als die Hälfte des Durchschnitts",
+      "lower": "Unter dem Durchschnitt (0,5–0,8×)",
+      "average": "Etwa im Durchschnitt (0,8–1,25×)",
+      "higher": "Über dem Durchschnitt (1,25–2×)",
+      "muchHigher": "Doppelter Durchschnitt oder mehr",
+      "note": "Straftaten zählen am Tatort und je Einwohner: Gebiete mit wenigen Bewohnern und vielen Besuchern wie die Innenstadt haben hohe Werte."
     },
     "accidentLegend": {
       "title": "Unfälle mit Personenschaden {{year}} nach der schwersten Unfallfolge",
@@ -828,6 +848,14 @@
       "bikes": "Verfügbare Räder",
       "docks": "Freie Stellplätze",
       "updated": "Stand"
+    },
+    "crime": {
+      "year": "Polizeiliche Kriminalstatistik {{year}}",
+      "area": "Gebiet",
+      "city": "Stadt",
+      "ratio": "ggü. Stadt",
+      "per100k": "Fälle je 100.000 Einwohner",
+      "cases": "Erfasste Fälle"
     },
     "accident": {
       "severity": {

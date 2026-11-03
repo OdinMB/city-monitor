@@ -13,7 +13,7 @@ import type { Db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import {
   saveAeds, saveAirQualityGrid, saveAirQualityStations, saveAppointments, saveBathingSpots, saveBudget, saveCitizenReports, saveConstructionSites,
-  saveBikeSharing, saveTrafficAccidents, saveCouncilMeetings, saveElectricity, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
+  saveBikeSharing, saveTrafficAccidents, saveCrimeAtlas, saveCouncilMeetings, saveElectricity, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
   saveNoiseSensors, savePharmacies, savePoliticalDistricts, savePollen, savePopulation, saveSafetyReports,
   saveSocialAtlas, saveSoilMoisture, saveSummary, saveTrafficCounts, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
   saveWeather,
@@ -123,6 +123,7 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.airQualityStations) await saveAirQualityStations(db, cityId, data.airQualityStations);
   if (data.citizenReports) await saveCitizenReports(db, cityId, data.citizenReports);
   if (data.trafficAccidents) await saveTrafficAccidents(db, cityId, data.trafficAccidents);
+  if (data.crimeAtlas) await saveCrimeAtlas(db, cityId, data.crimeAtlas);
   if (data.trafficCounts) await saveTrafficCounts(db, cityId, data.trafficCounts);
   if (data.evCharging) await saveEvChargingRegister(db, cityId, data.evCharging);
   if (data.heatRelief) await saveHeatRelief(db, cityId, data.heatRelief);
