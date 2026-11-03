@@ -9,6 +9,9 @@ import {
   ROAD_LAYER_IDS,
   WATER_LAYER_IDS,
   TRAFFIC_ROAD_LAYERS,
+  TRAFFIC_RAIL_LAYER,
+  TRAFFIC_RAIL_MIN_ZOOM,
+  GREEN_LAYER_IDS,
   WEATHER_SOURCE,
   WEATHER_LAYER,
   RENT_MAP_SOURCE,
@@ -142,6 +145,7 @@ export function simplifyMap(map: maplibregl.Map) {
   }
 }
 
+/** The traffic category's backdrop: the major streets and the railway lines. */
 export function setTrafficRoadVisibility(map: maplibregl.Map, visible: boolean, isDark: boolean) {
   const color = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)';
   for (const { id, width } of TRAFFIC_ROAD_LAYERS) {
@@ -153,6 +157,31 @@ export function setTrafficRoadVisibility(map: maplibregl.Map, visible: boolean, 
     } else {
       map.setPaintProperty(id, 'line-opacity', 0);
     }
+  }
+  if (map.getLayer(TRAFFIC_RAIL_LAYER)) {
+    if (visible) {
+      map.setLayerZoomRange(TRAFFIC_RAIL_LAYER, TRAFFIC_RAIL_MIN_ZOOM, 24);
+      map.setPaintProperty(TRAFFIC_RAIL_LAYER, 'line-color', isDark ? 'rgba(251,191,36,0.35)' : 'rgba(180,83,9,0.3)');
+      map.setPaintProperty(TRAFFIC_RAIL_LAYER, 'line-opacity', 1);
+    } else {
+      map.setPaintProperty(TRAFFIC_RAIL_LAYER, 'line-opacity', 0);
+    }
+  }
+}
+
+/** The style's own green-space colours, read once per theme before they are tinted. */
+const greenOriginals = new Map<string, unknown>();
+
+/** The environment category's green spaces: tinted while it is on, back to the style's faint colour otherwise. */
+export function setGreenSpaceVisibility(map: maplibregl.Map, visible: boolean, isDark: boolean) {
+  for (const id of GREEN_LAYER_IDS) {
+    if (!map.getLayer(id)) continue;
+    const key = `${isDark ? 'dark' : 'light'}:${id}`;
+    if (!greenOriginals.has(key)) greenOriginals.set(key, map.getPaintProperty(id, 'fill-color'));
+    const color = visible
+      ? (isDark ? 'rgba(74,222,128,0.14)' : 'rgba(74,163,80,0.2)')
+      : greenOriginals.get(key);
+    map.setPaintProperty(id, 'fill-color', color as maplibregl.ExpressionSpecification);
   }
 }
 

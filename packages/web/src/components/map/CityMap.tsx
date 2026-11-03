@@ -41,14 +41,14 @@ import { useCrimeAtlas } from '../../hooks/useCrimeAtlas.js';
 import { useTrafficCounts } from '../../hooks/useTrafficCounts.js';
 import { useHeatRelief } from '../../hooks/useHeatRelief.js';
 import { useTelraamCounts } from '../../hooks/useTelraamCounts.js';
-import { useCommandCenter } from '../../hooks/useCommandCenter.js';
+import { isCategoryOn, useCommandCenter } from '../../hooks/useCommandCenter.js';
 import type { TrafficCountMode } from '../../lib/api.js';
 import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
 import { effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_UBA, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, TRAFFIC_FLOW_REFRESH_MS, STREET_TREES_MIN_ZOOM, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
-import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, setTrafficFlowOverlay, setStreetTreesOverlay, loadStyle, zoomedInBounds } from './base.js';
+import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setGreenSpaceVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, setTrafficFlowOverlay, setStreetTreesOverlay, loadStyle, zoomedInBounds } from './base.js';
 import { fetchStreetTree } from '../../lib/street-trees.js';
 import { streetTreePopupHtml, STREET_TREE_REGISTERS } from './layers/street-trees.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
@@ -217,7 +217,10 @@ export function CityMap() {
   const trafficSubLayers = useMemo(() => effectiveSubLayers(selectedTraffic, available.traffic), [selectedTraffic, available]);
   const trafficActive = activeLayers.has('traffic') && trafficSubLayers.has('incidents');
   const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
-  const roadsActive = trafficActive || constructionActive;
+  // Group categories left on without layers still draw their backdrop
+  const openEmpty = useCommandCenter((s) => s.openEmpty);
+  const roadsActive = isCategoryOn('traffic', activeLayers, openEmpty);
+  const environmentOn = isCategoryOn('environment', activeLayers, openEmpty);
   const trafficFlowActive = activeLayers.has('traffic') && trafficSubLayers.has('congestion');
   // A new value every few minutes while the congestion map is shown, so its tiles are asked for again
   const [trafficFlowRefresh, setTrafficFlowRefresh] = useState(() => Math.floor(Date.now() / TRAFFIC_FLOW_REFRESH_MS));
@@ -263,6 +266,7 @@ export function CityMap() {
     : populationLayerSel === 'pop-foreign' ? 'foreignPct'
     : 'density';
   const waterActive = activeLayers.has('water');
+  const waterAreasActive = waterActive || environmentOn;
   const selectedWater = useCommandCenter((s) => s.waterSubLayers);
   const waterSubLayers = useMemo(() => effectiveSubLayers(selectedWater, available.water), [selectedWater, available]);
   const { data: waterTemperatureData } = useWaterTemperature(city.id, activeLayers.has('water') && waterSubLayers.has('temperature'));
@@ -494,8 +498,10 @@ export function CityMap() {
   const treesActiveRef = useRef(treesActive);
   treesActiveRef.current = treesActive;
   const treeQueryRef = useRef<AbortController | null>(null);
-  const waterActiveRef = useRef(waterActive);
-  waterActiveRef.current = waterActive;
+  const waterAreasActiveRef = useRef(waterAreasActive);
+  waterAreasActiveRef.current = waterAreasActive;
+  const environmentOnRef = useRef(environmentOn);
+  environmentOnRef.current = environmentOn;
   const politicalActiveRef = useRef(politicalActive);
   politicalActiveRef.current = politicalActive;
   const politicalLayerRef = useRef(politicalLayer);
@@ -536,7 +542,8 @@ export function CityMap() {
       map.on('load', () => {
         simplifyMap(map);
         setTrafficRoadVisibility(map, roadsActiveRef.current, isDarkRef.current);
-        setWaterAreaVisibility(map, waterActiveRef.current, isDarkRef.current);
+        setWaterAreaVisibility(map, waterAreasActiveRef.current, isDarkRef.current);
+        setGreenSpaceVisibility(map, environmentOnRef.current, isDarkRef.current);
         registerAllMapIcons(map, isDarkRef.current);
         addDistrictLayer(map, cityIdRef.current, isDarkRef.current);
         setupDistrictHover(map);
@@ -642,7 +649,8 @@ export function CityMap() {
     map.once('style.load', () => {
       simplifyMap(map);
       setTrafficRoadVisibility(map, roadsActiveRef.current, isDark);
-      setWaterAreaVisibility(map, waterActiveRef.current, isDark);
+      setWaterAreaVisibility(map, waterAreasActiveRef.current, isDark);
+      setGreenSpaceVisibility(map, environmentOnRef.current, isDark);
       registerAllMapIcons(map, isDark);
 
       // Restore the correct political/district GeoJSON after style swap
@@ -877,7 +885,7 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [constructionItems]);
 
-  // Show/hide major road layers when traffic or construction data layer is toggled
+  // The traffic category's backdrop: major streets and railway lines while it is on
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -891,18 +899,22 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [roadsActive]);
 
-  // Show/hide water area layers when water-levels data layer is toggled
+  // The environment category's backdrop: water areas (also under the water
+  // layer's markers) and green spaces while it is on
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => setWaterAreaVisibility(map, waterActive, isDarkRef.current);
+    const apply = () => {
+      setWaterAreaVisibility(map, waterAreasActive, isDarkRef.current);
+      setGreenSpaceVisibility(map, environmentOn, isDarkRef.current);
+    };
     if (map.isStyleLoaded()) {
       apply();
       return;
     }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [waterActive]);
+  }, [waterAreasActive, environmentOn]);
 
   // Update air quality grid circles
   useEffect(() => {

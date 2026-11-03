@@ -2,7 +2,7 @@ import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints, Gauge, ThermometerSun, TreeDeciduous, Hospital } from 'lucide';
 import { ArrowUpDown, Leaf } from 'lucide';
-import { CATEGORY_ORDER, GROUP_CATEGORIES, useCommandCenter, type MapCategory, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer, type HeatReliefSubLayer } from '../../hooks/useCommandCenter.js';
+import { CATEGORY_ORDER, GROUP_CATEGORIES, isCategoryOn, useCommandCenter, type MapCategory, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer, type HeatReliefSubLayer } from '../../hooks/useCommandCenter.js';
 import { HEAT_RELIEF_KINDS } from '../../lib/heat-relief.js';
 import { SquareParking, Thermometer, Vote } from 'lucide';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
@@ -558,6 +558,7 @@ export function DataLayerToggles() {
   const singleView = useCommandCenter((s) => s.singleView);
   const toggleSingleView = useCommandCenter((s) => s.toggleSingleView);
   const activeLayers = useCommandCenter((s) => s.activeLayers);
+  const openEmpty = useCommandCenter((s) => s.openEmpty);
   const toggleLayer = useCommandCenter((s) => s.toggleLayer);
   const newsSubLayers = useCommandCenter((s) => s.newsSubLayers);
   const toggleNewsSubLayer = useCommandCenter((s) => s.toggleNewsSubLayer);
@@ -640,7 +641,7 @@ export function DataLayerToggles() {
           if (members.length === 0) return null;
           const { icon, color } = CATEGORY_META[category];
           const isGroup = GROUP_CATEGORIES.has(category);
-          const active = members.some((l) => activeLayers.has(l));
+          const active = isCategoryOn(category, activeLayers, openEmpty);
           const content = !active ? null : isGroup ? groupItems(category, members, color) : layerOptions(members[0], color);
           const shortcut = shortcutsOn && index < 9 ? index + 1 : undefined;
           return (
@@ -678,21 +679,19 @@ export function DataLayerToggles() {
 
   /**
    * A category's layers, each a switch with its own options below it once on.
-   * Traffic lists its own sub-layers in the same list (TRAFFIC_ITEMS). The
-   * last entry on can't be switched off here: the category's button does that.
+   * Traffic lists its own sub-layers in the same list (TRAFFIC_ITEMS). With
+   * the last entry switched off the category stays on, showing its backdrop
+   * only; the category's button switches it off.
    */
   function groupItems(category: MapCategory, members: readonly DataLayer[], parentColor: string): ReactNode {
     const trafficOn = activeLayers.has('traffic');
-    // Traffic counts each of its sub-layers shown as an entry of its own
-    const activeCount = members.filter((l) => activeLayers.has(l) && l !== 'traffic').length
-      + (category === 'traffic' && trafficOn ? traffic.size : 0);
     const nested = (node: ReactNode) => (node ? <div className="ps-6">{node}</div> : null);
     const layerItem = (layer: DataLayer) => {
       const on = activeLayers.has(layer);
       return (
         <div key={layer}>
           <SubLayerItem icon={LAYER_META[layer].icon} color={LAYER_META[layer].color} active={on} label={t(`sidebar.layers.${layer}`)}
-            parentColor={parentColor} onClick={() => { if (!on || activeCount > 1) toggleLayer(layer); }} />
+            parentColor={parentColor} onClick={() => toggleLayer(layer)} />
           {on && nested(layerOptions(layer, LAYER_META[layer].color))}
         </div>
       );
@@ -712,7 +711,7 @@ export function DataLayerToggles() {
           return (
             <div key={sub}>
               <SubLayerItem icon={meta.icon} color={meta.color} active={on} label={t(`sidebar.traffic.${sub}`)}
-                parentColor={parentColor} onClick={() => { if (!on || activeCount > 1) toggleTrafficSubLayer(sub); }} />
+                parentColor={parentColor} onClick={() => toggleTrafficSubLayer(sub)} />
               {on && sub === 'congestion' && nested(
                 <>
                   <TrafficFlowLegend cityId={city.id} />

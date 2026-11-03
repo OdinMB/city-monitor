@@ -31,6 +31,14 @@ export const GROUP_CATEGORIES: ReadonlySet<MapCategory> = new Set(['traffic', 'e
 export function categoryOf(layer: DataLayer): MapCategory {
   return CATEGORY_ORDER.find((c) => CATEGORY_LAYERS[c].includes(layer))!;
 }
+
+/**
+ * Whether a category is on: one of its layers is, or it is a group left on
+ * with none of them (`openEmpty`), which still draws its backdrop.
+ */
+export function isCategoryOn(category: MapCategory, activeLayers: ReadonlySet<DataLayer>, openEmpty: ReadonlySet<MapCategory>): boolean {
+  return openEmpty.has(category) || CATEGORY_LAYERS[category].some((l) => activeLayers.has(l));
+}
 /** Which accidents the accident layer shows: all, or those with a bicycle or a pedestrian involved. */
 export type AccidentFilter = 'all' | 'bike' | 'pedestrian';
 /** The offence group the crime map colours its areas by. */
@@ -51,6 +59,12 @@ export type HeatReliefSubLayer = 'cool' | 'fountains' | 'toilets';
 interface CommandCenterState {
   singleView: boolean;
   activeLayers: Set<DataLayer>;
+  /**
+   * Group categories (GROUP_CATEGORIES) left on after their last layer was
+   * switched off: the map still draws their backdrop (streets for traffic,
+   * water and green spaces for environment) without any markers.
+   */
+  openEmpty: Set<MapCategory>;
   politicalLayer: PoliticalLayer;
   socialLayer: SocialLayer;
   populationLayer: PopulationLayer;
@@ -69,9 +83,9 @@ interface CommandCenterState {
   /** Switches a layer inside its category; in single view, layers of another category go. */
   toggleLayer: (layer: DataLayer) => void;
   /**
-   * Switches a category: off when any of its layers is on, otherwise on with
-   * `layers` (the category's defaults the city has). In single view it
-   * replaces what is shown.
+   * Switches a category: off when it is on (isCategoryOn), with all its
+   * layers, otherwise on with `layers` (the category's defaults the city
+   * has). In single view it replaces what is shown.
    */
   toggleCategory: (category: MapCategory, layers: readonly DataLayer[]) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
@@ -135,9 +149,24 @@ function sameCategory(layers: Iterable<DataLayer>, layer: DataLayer): DataLayer[
   return [...layers].filter((l) => members.includes(l));
 }
 
+/**
+ * The groups left on without layers once `activeLayers` is what is shown:
+ * `category` joins them when it is a group none of whose layers is left
+ * (its last one just went), and leaves them when one of its layers is on.
+ * In single view no other category stays.
+ */
+function openEmptyAfter(state: Pick<CommandCenterState, 'openEmpty' | 'singleView'>, activeLayers: ReadonlySet<DataLayer>, category: MapCategory): Set<MapCategory> {
+  const next = new Set<MapCategory>(state.singleView ? [] : state.openEmpty);
+  const empty = !CATEGORY_LAYERS[category].some((l) => activeLayers.has(l));
+  if (empty && GROUP_CATEGORIES.has(category)) next.add(category);
+  else next.delete(category);
+  return next;
+}
+
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: false,
   activeLayers: new Set(DEFAULT_LAYERS),
+  openEmpty: new Set(),
   politicalLayer: 'bezirke',
   socialLayer: 'unemployment',
   populationLayer: 'pop-density',
@@ -154,12 +183,14 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   toggleSingleView: () =>
     set((state) => {
       const singleView = !state.singleView;
-      if (singleView && state.activeLayers.size > 1) {
-        // Single view shows one category: the first one shown keeps its layers.
-        const first = state.activeLayers.values().next().value as DataLayer;
-        return { singleView, activeLayers: new Set<DataLayer>(sameCategory(state.activeLayers, first)) };
+      if (!singleView) return { singleView };
+      // Single view shows one category: the first one shown keeps its layers,
+      // or the first group left on without any keeps its backdrop.
+      const first = state.activeLayers.values().next().value;
+      if (first !== undefined) {
+        return { singleView, activeLayers: new Set<DataLayer>(sameCategory(state.activeLayers, first)), openEmpty: new Set<MapCategory>() };
       }
-      return { singleView };
+      return { singleView, openEmpty: new Set<MapCategory>([...state.openEmpty].slice(0, 1)) };
     }),
   toggleLayer: (layer) =>
     set((state) => {
@@ -167,23 +198,27 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       const next = new Set<DataLayer>(base);
       if (state.activeLayers.has(layer)) {
         next.delete(layer);
-        return { activeLayers: next };
+        // A group stays on without its last layer, showing only its backdrop
+        return { activeLayers: next, openEmpty: openEmptyAfter(state, next, categoryOf(layer)) };
       }
       next.add(layer);
+      const openEmpty = openEmptyAfter(state, next, categoryOf(layer));
       // Back to the default sub-layers when turning traffic back on
-      if (layer === 'traffic') return { activeLayers: next, trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS) };
-      return { activeLayers: next };
+      if (layer === 'traffic') return { activeLayers: next, openEmpty, trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS) };
+      return { activeLayers: next, openEmpty };
     }),
   toggleCategory: (category, layers) =>
     set((state) => {
       const members = CATEGORY_LAYERS[category];
-      const isOn = [...state.activeLayers].some((l) => members.includes(l));
-      if (isOn) {
-        return { activeLayers: new Set([...state.activeLayers].filter((l) => !members.includes(l))) };
+      if (isCategoryOn(category, state.activeLayers, state.openEmpty)) {
+        const openEmpty = new Set(state.openEmpty);
+        openEmpty.delete(category);
+        return { activeLayers: new Set([...state.activeLayers].filter((l) => !members.includes(l))), openEmpty };
       }
       const next = new Set<DataLayer>(state.singleView ? layers : [...state.activeLayers, ...layers]);
-      if (layers.includes('traffic')) return { activeLayers: next, trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS) };
-      return { activeLayers: next };
+      const openEmpty = openEmptyAfter(state, next, category);
+      if (layers.includes('traffic')) return { activeLayers: next, openEmpty, trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS) };
+      return { activeLayers: next, openEmpty };
     }),
   setPoliticalLayer: (layer) => set({ politicalLayer: layer }),
   setSocialLayer: (layer) => set({ socialLayer: layer }),
@@ -225,17 +260,19 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
     set((state) => {
       // The traffic sub-layers sit beside the category's other layers, so
       // choosing one while traffic itself is off shows that one alone, and
-      // switching off the last one switches traffic off.
+      // switching off the last one switches traffic off (the category stays
+      // on with its streets if nothing else of it is).
       if (!state.activeLayers.has('traffic')) {
         const base = state.singleView ? sameCategory(state.activeLayers, 'traffic') : [...state.activeLayers];
-        return { activeLayers: new Set<DataLayer>([...base, 'traffic']), trafficSubLayers: new Set([sub]) };
+        const activeLayers = new Set<DataLayer>([...base, 'traffic']);
+        return { activeLayers, openEmpty: openEmptyAfter(state, activeLayers, 'traffic'), trafficSubLayers: new Set([sub]) };
       }
       const next = new Set(state.trafficSubLayers);
       if (next.has(sub)) {
         if (next.size === 1) {
           const activeLayers = new Set(state.activeLayers);
           activeLayers.delete('traffic');
-          return { activeLayers };
+          return { activeLayers, openEmpty: openEmptyAfter(state, activeLayers, 'traffic') };
         }
         next.delete(sub);
       } else {
@@ -268,9 +305,9 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   showHeatRelief: () =>
     set((state) => {
       const activeLayers = state.singleView ? new Set<DataLayer>(['heat-relief']) : new Set([...state.activeLayers, 'heat-relief' as const]);
-      return { activeLayers, heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS) };
+      return { activeLayers, openEmpty: openEmptyAfter(state, activeLayers, 'environment'), heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS) };
     }),
-  setActiveLayers: (layers) => set({ activeLayers: layers }),
+  setActiveLayers: (layers) => set({ activeLayers: layers, openEmpty: new Set() }),
   layersCityId: null,
   enterCity: (cityId) =>
     set((state) => {
@@ -279,8 +316,8 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       const waterSubLayers = new Set<WaterSubLayer>(CITY_DEFAULT_WATER_SUBS[cityId] ?? ALL_WATER_SUBS);
       if (state.singleView) {
         const first = layers.values().next().value as DataLayer;
-        return { layersCityId: cityId, activeLayers: new Set<DataLayer>(sameCategory(layers, first)), waterSubLayers };
+        return { layersCityId: cityId, activeLayers: new Set<DataLayer>(sameCategory(layers, first)), openEmpty: new Set<MapCategory>(), waterSubLayers };
       }
-      return { layersCityId: cityId, activeLayers: layers, waterSubLayers };
+      return { layersCityId: cityId, activeLayers: layers, openEmpty: new Set<MapCategory>(), waterSubLayers };
     }),
 }));

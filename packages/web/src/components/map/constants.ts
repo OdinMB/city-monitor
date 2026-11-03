@@ -40,10 +40,23 @@ export const TRAFFIC_ROAD_LAYERS: { id: string; width: number }[] = [
   { id: 'road_sec_case_noramp', width: 1 },
   { id: 'bridge_sec_case', width: 1 },
 ];
-export const ROAD_LAYER_IDS = new Set(TRAFFIC_ROAD_LAYERS.map((l) => l.id));
+/**
+ * The CARTO style's railway lines (not those in tunnels), drawn with the
+ * streets while the traffic category is on. The style starts them at zoom 13;
+ * the backdrop shows them from TRAFFIC_RAIL_MIN_ZOOM, where the city is in view.
+ */
+export const TRAFFIC_RAIL_LAYER = 'rail';
+export const TRAFFIC_RAIL_MIN_ZOOM = 9;
+export const ROAD_LAYER_IDS = new Set([...TRAFFIC_ROAD_LAYERS.map((l) => l.id), TRAFFIC_RAIL_LAYER]);
 
-/** Water body layers from CARTO style — shown when the water-levels data layer is active. */
+/** Water body layers from CARTO style — shown while the environment category or the water layer is on. */
 export const WATER_LAYER_IDS = new Set(['water', 'water_shadow', 'waterway']);
+
+/**
+ * Green-space layers from CARTO style (woods, parks, meadows, gardens, nature
+ * reserves). Always drawn faintly; tinted green while the environment category is on.
+ */
+export const GREEN_LAYER_IDS = ['landcover', 'park_national_park', 'park_nature_reserve'] as const;
 
 export const DISTRICT_URLS: Record<string, { url: string; nameField: string }> = {
   berlin: {

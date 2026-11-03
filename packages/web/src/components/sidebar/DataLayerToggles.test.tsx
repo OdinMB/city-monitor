@@ -79,14 +79,17 @@ describe('DataLayerToggles state', () => {
     expect(buttonWith(i18n.t('sidebar.water.bathing')).getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('keeps the last entry of a category on: the category\'s button switches it off', () => {
+  it('lets the last entry of a category go and keeps the category on: its button switches it off', () => {
     renderToggles();
     fireEvent.click(categoryButton('social'));
-    fireEvent.click(layerButton('social'));
-    expect(useCommandCenter.getState().activeLayers.has('social')).toBe(true);
     fireEvent.click(layerButton('crime'));
     fireEvent.click(layerButton('social'));
     expect([...useCommandCenter.getState().activeLayers].filter((l) => ['social', 'crime'].includes(l))).toEqual(['crime']);
+    fireEvent.click(layerButton('crime'));
+    expect(useCommandCenter.getState().activeLayers.has('crime')).toBe(false);
+    expect(categoryButton('social').getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(categoryButton('social'));
+    expect(categoryButton('social').getAttribute('aria-pressed')).toBe('false');
   });
 
   it('lists bike sharing, accidents and EV charging among the traffic entries', () => {
@@ -95,14 +98,19 @@ describe('DataLayerToggles state', () => {
     expect(layerButton('accidents').getAttribute('aria-pressed')).toBe('false');
     expect(layerButton('ev-charging').getAttribute('aria-pressed')).toBe('false');
     expect(buttonWith(i18n.t('sidebar.traffic.incidents')).getAttribute('aria-pressed')).toBe('true');
-    // Only traffic's own sub-layers on: one of them can go, the others stay
     fireEvent.click(layerButton('bike-sharing'));
     for (const sub of ['public-transport', 'incidents', 'roadworks']) fireEvent.click(buttonWith(i18n.t(`sidebar.traffic.${sub}`)));
     expect(useCommandCenter.getState().activeLayers.has('traffic')).toBe(false);
-    expect(categoryButton('traffic').getAttribute('aria-pressed')).toBe('true');
-    // The last one stays: the bike stations alone are not switched off
     expect(useCommandCenter.getState().activeLayers.has('bike-sharing')).toBe(true);
     expect(screen.getByLabelText(i18n.t('sidebar.bikeLegend.title'))).toBeTruthy();
+    // The last entry can go too: the category stays on, with its streets and no markers
+    fireEvent.click(layerButton('bike-sharing'));
+    expect(useCommandCenter.getState().activeLayers.has('bike-sharing')).toBe(false);
+    expect(categoryButton('traffic').getAttribute('aria-pressed')).toBe('true');
+    expect(layerButton('accidents').getAttribute('aria-pressed')).toBe('false');
+    // Its own switch turns it off
+    fireEvent.click(categoryButton('traffic'));
+    expect(categoryButton('traffic').getAttribute('aria-pressed')).toBe('false');
   });
 
   it('says which sub-layers are on, for those that combine', () => {
