@@ -23,7 +23,7 @@ Each accident is a tuple `[lon, lat, severity, month, weekday, hour, kind, type,
 
 ## Frontend
 
-- Top-level `DataLayer` `'accidents'` (off by default, no number key), gated on the `trafficAccidents` city feature. The sidebar lists the filter (`accidentFilter` in `useCommandCenter`: `all`, `bike`, `pedestrian`) and `AccidentLegend`, which shares the map's query.
+- `DataLayer` `'accidents'` in the Traffic category (off by default), gated on the `trafficAccidents` city feature. The sidebar lists the filter (`accidentFilter` in `useCommandCenter`: `all`, `bike`, `pedestrian`) and `AccidentLegend`, which shares the map's query.
 - `hooks/useTrafficAccidents.ts` fetches only while the layer is on, and never refetches (`staleTime: Infinity`).
 - `components/map/layers/traffic-accidents.ts`: one GeoJSON source rebuilt for the filter, a `heatmap` layer (`accident-heat`, up to zoom 13, fading out from 12), a `circle` layer (`accident-circle`, from zoom 12, sorted by severity) and the killed-only `accident-fatal` circles below zoom 12. Popup handlers are registered once per map. Colours in `ACCIDENT_SEVERITY` (`components/map/constants.ts`). Month and weekday names come from Intl in the UI language (`popup-language.test.ts`).
 - Synthetic data: twelve accidents per anchor for the year before, one killed per city (`synthetic/generate.ts`).

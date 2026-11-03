@@ -72,6 +72,8 @@ import { updateTrafficAccidentLayer } from './layers/traffic-accidents.js';
 import { updateCrimeAtlasLayer } from './layers/crime-atlas.js';
 import { updateTrafficCountMarkers } from './layers/traffic-counts.js';
 import { updateEvChargingMarkers } from './layers/ev-charging.js';
+import { updateLiftOutageMarkers } from './layers/lift-outages.js';
+import { useLiftOutages } from '../../hooks/useLiftOutages.js';
 import { useEvCharging } from '../../hooks/useEvCharging.js';
 import { updateHeatReliefMarkers } from './layers/heat-relief.js';
 import { updateTelraamMarkers } from './layers/telraam-counts.js';
@@ -283,6 +285,10 @@ export function CityMap() {
   // Lazy as well: Berlin's ~3,500 charging stations are about 600 KB
   const evChargingActive = activeLayers.has('ev-charging');
   const { data: evChargingData } = useEvCharging(city.id, evChargingActive, city.features.includes('evChargingLive'));
+  // The lift tile's data (bootstrap-seeded), so the layer fetches nothing of its own
+  const liftsActive = activeLayers.has('lifts');
+  const { data: liftData } = useLiftOutages(city.id, available.layers.has('lifts'));
+  const liftItems = liftsActive ? (liftData ?? null) : null;
   // Lazy as well: Berlin's three lists are about 165 KB
   const heatReliefActive = activeLayers.has('heat-relief');
   const { data: heatReliefData } = useHeatRelief(city.id, heatReliefActive);
@@ -363,9 +369,11 @@ export function CityMap() {
     () => (waterActive && waterSubLayers.has('temperature')) ? (waterTemperatureData?.data?.stations ?? []) : [],
     [waterActive, waterSubLayers, waterTemperatureData?.data?.stations],
   );
+  // Open and in-progress reports unless closed ones are asked for too
+  const reportStatuses = useCommandCenter((s) => s.reportStatuses);
   const citizenReportItems = useMemo(
-    () => reportsActive ? (citizenReportData?.data?.reports ?? []) : [],
-    [reportsActive, citizenReportData?.data?.reports],
+    () => reportsActive ? (citizenReportData?.data?.reports ?? []).filter((r) => reportStatuses.has(r.status)) : [],
+    [reportsActive, citizenReportData?.data?.reports, reportStatuses],
   );
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
@@ -439,6 +447,8 @@ export function CityMap() {
   trafficCountModesRef.current = trafficCountModes;
   const evChargingItemsRef = useRef(evChargingItems);
   evChargingItemsRef.current = evChargingItems;
+  const liftItemsRef = useRef(liftItems);
+  liftItemsRef.current = liftItems;
   const heatReliefItemsRef = useRef(heatReliefItems);
   heatReliefItemsRef.current = heatReliefItems;
   const heatReliefSubLayersRef = useRef(heatReliefSubLayers);
@@ -550,6 +560,7 @@ export function CityMap() {
         updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDarkRef.current);
         updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDarkRef.current);
         updateEvChargingMarkers(map, evChargingItemsRef.current, isDarkRef.current);
+        updateLiftOutageMarkers(map, liftItemsRef.current, isDarkRef.current);
         updateHeatReliefMarkers(map, heatReliefItemsRef.current, heatReliefSubLayersRef.current, isDarkRef.current);
         updateTelraamMarkers(map, telraamItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
@@ -673,6 +684,7 @@ export function CityMap() {
       updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDark);
       updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDark);
       updateEvChargingMarkers(map, evChargingItemsRef.current, isDark);
+      updateLiftOutageMarkers(map, liftItemsRef.current, isDark);
       updateHeatReliefMarkers(map, heatReliefItemsRef.current, heatReliefSubLayersRef.current, isDark);
       updateTelraamMarkers(map, telraamItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
@@ -787,7 +799,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, hospitalItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, parkingItems, accidentItems, trafficCountItems, evChargingItems, heatReliefItems, heatReliefSubLayers, telraamItems, waterLevelItems, bathingItems, waterTemperatureItems, citizenReportItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, hospitalItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, parkingItems, accidentItems, trafficCountItems, evChargingItems, liftItems, heatReliefItems, heatReliefSubLayers, telraamItems, waterLevelItems, bathingItems, waterTemperatureItems, citizenReportItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -962,6 +974,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [evChargingItems]);
+
+  // Update lift and escalator outages (the tile's data, drawn while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateLiftOutageMarkers(map, liftItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [liftItems]);
 
   // Update heat-relief places (lazy: data only while the layer is on)
   useEffect(() => {

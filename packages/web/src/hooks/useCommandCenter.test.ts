@@ -48,3 +48,54 @@ describe('useCommandCenter enterCity', () => {
     expect(useCommandCenter.getState().activeLayers.size).toBe(1);
   });
 });
+
+describe('useCommandCenter categories', () => {
+  beforeEach(() => {
+    useCommandCenter.setState(initial, true);
+  });
+  const active = () => [...useCommandCenter.getState().activeLayers].sort();
+
+  it('switches a category on with the layers given and off with all of its layers', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['weather']) });
+    useCommandCenter.getState().toggleCategory('environment', ['air-quality']);
+    expect(active()).toEqual(['air-quality', 'weather']);
+    useCommandCenter.getState().toggleLayer('noise');
+    expect(active()).toEqual(['air-quality', 'noise', 'weather']);
+    useCommandCenter.getState().toggleCategory('environment', ['air-quality']);
+    expect(active()).toEqual(['weather']);
+  });
+
+  it('shows one category in single view, with as many of its layers as chosen', () => {
+    useCommandCenter.setState({ singleView: true, activeLayers: new Set<DataLayer>(['weather']) });
+    useCommandCenter.getState().toggleCategory('social', ['social']);
+    useCommandCenter.getState().toggleLayer('crime');
+    expect(active()).toEqual(['crime', 'social']);
+    useCommandCenter.getState().toggleCategory('traffic', ['traffic']);
+    expect(active()).toEqual(['traffic']);
+  });
+
+  it('keeps the first category shown when single view is switched on', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic', 'parking', 'weather']) });
+    useCommandCenter.getState().toggleSingleView();
+    expect(active()).toEqual(['parking', 'traffic']);
+  });
+
+  it('treats the traffic sub-layers as entries of the category: the last one off switches traffic off', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic', 'parking']), trafficSubLayers: new Set(['incidents']) });
+    useCommandCenter.getState().toggleTrafficSubLayer('incidents');
+    expect(active()).toEqual(['parking']);
+    useCommandCenter.getState().toggleTrafficSubLayer('roadworks');
+    expect(active()).toEqual(['parking', 'traffic']);
+    expect([...useCommandCenter.getState().trafficSubLayers]).toEqual(['roadworks']);
+  });
+
+  it('shows open and in-progress citizen reports until closed ones are asked for, and keeps one status', () => {
+    expect([...useCommandCenter.getState().reportStatuses].sort()).toEqual(['in_progress', 'open']);
+    useCommandCenter.getState().toggleReportStatus('closed');
+    expect(useCommandCenter.getState().reportStatuses.has('closed')).toBe(true);
+    useCommandCenter.getState().toggleReportStatus('open');
+    useCommandCenter.getState().toggleReportStatus('in_progress');
+    useCommandCenter.getState().toggleReportStatus('closed');
+    expect([...useCommandCenter.getState().reportStatuses]).toEqual(['closed']);
+  });
+});

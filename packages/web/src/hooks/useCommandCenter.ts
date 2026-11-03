@@ -1,7 +1,36 @@
 import { create } from 'zustand';
-import type { CrimeIndicator } from '../lib/api.js';
+import type { CitizenReportStatus, CrimeIndicator } from '../lib/api.js';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'parking' | 'ev-charging' | 'heat-relief' | 'accidents' | 'crime' | 'water' | 'social' | 'population' | 'political' | 'reports' | 'trees';
+/** A map layer the map draws. The sidebar groups them into categories (MapCategory). */
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'parking' | 'ev-charging' | 'heat-relief' | 'accidents' | 'lifts' | 'crime' | 'water' | 'social' | 'population' | 'political' | 'reports' | 'trees';
+
+/**
+ * The sidebar's top-level entries. Most are one layer; traffic, environment
+ * and social group several, listed inside them once the category is on.
+ */
+export type MapCategory = 'warnings' | 'news' | 'traffic' | 'weather' | 'environment' | 'emergencies' | 'social' | 'reports';
+
+/** Each category's layers, in the order the sidebar lists them. */
+export const CATEGORY_LAYERS: Record<MapCategory, readonly DataLayer[]> = {
+  warnings: ['warnings'],
+  news: ['news'],
+  traffic: ['traffic', 'lifts', 'accidents', 'parking', 'ev-charging', 'bike-sharing'],
+  weather: ['weather'],
+  environment: ['air-quality', 'noise', 'water', 'heat-relief', 'trees'],
+  emergencies: ['emergencies'],
+  social: ['social', 'population', 'crime', 'political'],
+  reports: ['reports'],
+};
+
+/** The categories in sidebar order; the first nine have number keys 1-9. */
+export const CATEGORY_ORDER: readonly MapCategory[] = ['warnings', 'news', 'traffic', 'weather', 'environment', 'emergencies', 'social', 'reports'];
+
+/** The categories that group several layers. */
+export const GROUP_CATEGORIES: ReadonlySet<MapCategory> = new Set(['traffic', 'environment', 'social']);
+
+export function categoryOf(layer: DataLayer): MapCategory {
+  return CATEGORY_ORDER.find((c) => CATEGORY_LAYERS[c].includes(layer))!;
+}
 /** Which accidents the accident layer shows: all, or those with a bicycle or a pedestrian involved. */
 export type AccidentFilter = 'all' | 'bike' | 'pedestrian';
 /** The offence group the crime map colours its areas by. */
@@ -34,8 +63,17 @@ interface CommandCenterState {
   accidentFilter: AccidentFilter;
   crimeLayer: CrimeLayer;
   heatReliefSubLayers: Set<HeatReliefSubLayer>;
+  /** The citizen reports drawn, by status: open and in progress unless closed ones are asked for too. */
+  reportStatuses: Set<CitizenReportStatus>;
   toggleSingleView: () => void;
+  /** Switches a layer inside its category; in single view, layers of another category go. */
   toggleLayer: (layer: DataLayer) => void;
+  /**
+   * Switches a category: off when any of its layers is on, otherwise on with
+   * `layers` (the category's defaults the city has). In single view it
+   * replaces what is shown.
+   */
+  toggleCategory: (category: MapCategory, layers: readonly DataLayer[]) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
   setSocialLayer: (layer: SocialLayer) => void;
   setPopulationLayer: (layer: PopulationLayer) => void;
@@ -48,6 +86,8 @@ interface CommandCenterState {
   setAccidentFilter: (filter: AccidentFilter) => void;
   setCrimeLayer: (layer: CrimeLayer) => void;
   toggleHeatReliefSubLayer: (sub: HeatReliefSubLayer) => void;
+  /** Adds or removes a status from the citizen reports drawn; the last one stays. */
+  toggleReportStatus: (status: CitizenReportStatus) => void;
   /** Turns the heat-relief layer on with all its sub-layers (the weather tile's heat hint); in single view it replaces the shown layer. */
   showHeatRelief: () => void;
   setActiveLayers: (layers: Set<DataLayer>) => void;
@@ -86,6 +126,14 @@ const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing', 'temper
  */
 const DEFAULT_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
 const ALL_HEAT_RELIEF_SUBS: Set<HeatReliefSubLayer> = new Set(['cool', 'fountains', 'toilets']);
+/** Closed reports are opt-in: what is still broken is what the layer is for. */
+const DEFAULT_REPORT_STATUSES: Set<CitizenReportStatus> = new Set(['open', 'in_progress']);
+
+/** The layers of `layers` in the same category as `layer`. */
+function sameCategory(layers: Iterable<DataLayer>, layer: DataLayer): DataLayer[] {
+  const members = CATEGORY_LAYERS[categoryOf(layer)];
+  return [...layers].filter((l) => members.includes(l));
+}
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: false,
@@ -102,33 +150,39 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   accidentFilter: 'all',
   crimeLayer: 'total',
   heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS),
+  reportStatuses: new Set(DEFAULT_REPORT_STATUSES),
   toggleSingleView: () =>
     set((state) => {
       const singleView = !state.singleView;
       if (singleView && state.activeLayers.size > 1) {
+        // Single view shows one category: the first one shown keeps its layers.
         const first = state.activeLayers.values().next().value as DataLayer;
-        return { singleView, activeLayers: new Set<DataLayer>([first]) };
+        return { singleView, activeLayers: new Set<DataLayer>(sameCategory(state.activeLayers, first)) };
       }
       return { singleView };
     }),
   toggleLayer: (layer) =>
     set((state) => {
-      if (state.singleView) {
-        if (state.activeLayers.has(layer) && state.activeLayers.size === 1) {
-          return { activeLayers: new Set<DataLayer>() };
-        }
-        const extra: Partial<CommandCenterState> = {};
-        if (layer === 'traffic') extra.trafficSubLayers = new Set(DEFAULT_TRAFFIC_SUBS);
-        return { activeLayers: new Set<DataLayer>([layer]), ...extra };
-      }
-      const next = new Set(state.activeLayers);
-      if (next.has(layer)) {
+      const base = state.singleView ? sameCategory(state.activeLayers, layer) : [...state.activeLayers];
+      const next = new Set<DataLayer>(base);
+      if (state.activeLayers.has(layer)) {
         next.delete(layer);
-      } else {
-        next.add(layer);
-        // Back to the default sub-layers when turning the traffic category back on
-        if (layer === 'traffic') return { activeLayers: next, trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS) };
+        return { activeLayers: next };
       }
+      next.add(layer);
+      // Back to the default sub-layers when turning traffic back on
+      if (layer === 'traffic') return { activeLayers: next, trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS) };
+      return { activeLayers: next };
+    }),
+  toggleCategory: (category, layers) =>
+    set((state) => {
+      const members = CATEGORY_LAYERS[category];
+      const isOn = [...state.activeLayers].some((l) => members.includes(l));
+      if (isOn) {
+        return { activeLayers: new Set([...state.activeLayers].filter((l) => !members.includes(l))) };
+      }
+      const next = new Set<DataLayer>(state.singleView ? layers : [...state.activeLayers, ...layers]);
+      if (layers.includes('traffic')) return { activeLayers: next, trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS) };
       return { activeLayers: next };
     }),
   setPoliticalLayer: (layer) => set({ politicalLayer: layer }),
@@ -169,9 +223,21 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
     }),
   toggleTrafficSubLayer: (sub) =>
     set((state) => {
+      // The traffic sub-layers sit beside the category's other layers, so
+      // choosing one while traffic itself is off shows that one alone, and
+      // switching off the last one switches traffic off.
+      if (!state.activeLayers.has('traffic')) {
+        const base = state.singleView ? sameCategory(state.activeLayers, 'traffic') : [...state.activeLayers];
+        return { activeLayers: new Set<DataLayer>([...base, 'traffic']), trafficSubLayers: new Set([sub]) };
+      }
       const next = new Set(state.trafficSubLayers);
       if (next.has(sub)) {
-        if (next.size > 1) next.delete(sub);
+        if (next.size === 1) {
+          const activeLayers = new Set(state.activeLayers);
+          activeLayers.delete('traffic');
+          return { activeLayers };
+        }
+        next.delete(sub);
       } else {
         next.add(sub);
       }
@@ -189,6 +255,16 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       }
       return { heatReliefSubLayers: next };
     }),
+  toggleReportStatus: (status) =>
+    set((state) => {
+      const next = new Set(state.reportStatuses);
+      if (next.has(status)) {
+        if (next.size > 1) next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return { reportStatuses: next };
+    }),
   showHeatRelief: () =>
     set((state) => {
       const activeLayers = state.singleView ? new Set<DataLayer>(['heat-relief']) : new Set([...state.activeLayers, 'heat-relief' as const]);
@@ -203,7 +279,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       const waterSubLayers = new Set<WaterSubLayer>(CITY_DEFAULT_WATER_SUBS[cityId] ?? ALL_WATER_SUBS);
       if (state.singleView) {
         const first = layers.values().next().value as DataLayer;
-        return { layersCityId: cityId, activeLayers: new Set<DataLayer>([first]), waterSubLayers };
+        return { layersCityId: cityId, activeLayers: new Set<DataLayer>(sameCategory(layers, first)), waterSubLayers };
       }
       return { layersCityId: cityId, activeLayers: layers, waterSubLayers };
     }),

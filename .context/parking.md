@@ -25,7 +25,7 @@ The feed has no trend field. `parkingTrend` keeps the job's own readings per cit
 
 ## Frontend
 
-- Top-level `DataLayer` `'parking'` (off by default, no number key), gated on the `parking` city feature, apart from the traffic layer. The sidebar shows a four-colour legend under it (`PARKING_OCCUPANCY` in `components/map/constants.ts`).
+- `DataLayer` `'parking'` in the Traffic category (off by default), gated on the `parking` city feature; a layer of its own beside the traffic layer's sub-layers. The sidebar shows a four-colour legend under it (`PARKING_OCCUPANCY` in `components/map/constants.ts`).
 - `hooks/useParking.ts` fetches only while the layer is on, refetching every 5 minutes.
 - `components/map/layers/parking.ts`: `parking-circle` and a count `symbol` layer `parking-count`; `parkingPopupHtml` follows the UI language (`popup-language.test.ts`).
 - Synthetic data: eight car parks for Hamburg, one nearly full and one closed (`synthetic/generate.ts`).

@@ -1,6 +1,7 @@
 import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
+import { CATEGORY_LAYERS } from '../hooks/useCommandCenter.js';
 import type {
-  DataLayer, EmergencySubLayer, HeatReliefSubLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
+  DataLayer, MapCategory, EmergencySubLayer, HeatReliefSubLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
 } from '../hooks/useCommandCenter.js';
 import { METRIC_LAYER, socialAtlasOf } from './social-atlas.js';
 
@@ -77,6 +78,8 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
     ['bike-sharing', has('bikeSharing')],
     ['parking', has('parking')],
     ['accidents', has('trafficAccidents')],
+    // DB stations need the server's DB key: useCityLayers drops this while no data comes.
+    ['lifts', has('liftOutages') || has('stationLifts')],
     ['crime', has('crimeAtlas')],
     ['ev-charging', has('evCharging')],
     ['heat-relief', heatRelief.length > 0],
@@ -106,6 +109,37 @@ export function withoutEmptyHospitals(layers: CityLayers, hasHospitals: boolean)
   const kept = new Set(layers.layers);
   if (emergencies.length === 0) kept.delete('emergencies');
   return { ...layers, emergencies, layers: kept };
+}
+
+/**
+ * The layers without lift outages while the server has none for a city whose
+ * only source is DB's (FaSta stays empty until the DB key is set), as the
+ * dashboard tile hides then too. KVB's Köln keeps it.
+ */
+export function withoutEmptyLifts(layers: CityLayers, features: readonly CityFeature[], hasLiftData: boolean): CityLayers {
+  if (hasLiftData || features.includes('liftOutages') || !layers.layers.has('lifts')) return layers;
+  const kept = new Set(layers.layers);
+  kept.delete('lifts');
+  return { ...layers, layers: kept };
+}
+
+/** The category's layers the city has, in sidebar order. */
+export function categoryLayers(category: MapCategory, layers: ReadonlySet<DataLayer>): DataLayer[] {
+  return CATEGORY_LAYERS[category].filter((l) => layers.has(l));
+}
+
+/** What a category opens with: traffic, air quality, the social atlas; otherwise its first layer the city has. */
+const CATEGORY_DEFAULTS: Partial<Record<MapCategory, readonly DataLayer[]>> = {
+  traffic: ['traffic'],
+  environment: ['air-quality'],
+  social: ['social'],
+};
+
+/** The layers a category is switched on with in this city. */
+export function categoryDefaults(category: MapCategory, layers: ReadonlySet<DataLayer>): DataLayer[] {
+  const members = categoryLayers(category, layers);
+  const defaults = members.filter((l) => CATEGORY_DEFAULTS[category]?.includes(l) ?? true);
+  return defaults.length > 0 ? defaults : members.slice(0, 1);
 }
 
 /** The selected sub-layers the city has, or every one it has when none of the selected ones is there. */

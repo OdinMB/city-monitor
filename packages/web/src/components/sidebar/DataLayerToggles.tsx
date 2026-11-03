@@ -1,13 +1,15 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints, Gauge, ThermometerSun, TreeDeciduous, Hospital } from 'lucide';
-import { useCommandCenter, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer, type HeatReliefSubLayer } from '../../hooks/useCommandCenter.js';
+import { ArrowUpDown, Leaf } from 'lucide';
+import { CATEGORY_ORDER, GROUP_CATEGORIES, useCommandCenter, type MapCategory, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer, type HeatReliefSubLayer } from '../../hooks/useCommandCenter.js';
 import { HEAT_RELIEF_KINDS } from '../../lib/heat-relief.js';
 import { SquareParking, Thermometer, Vote } from 'lucide';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
-import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers, withoutEmptyHospitals, type CityLayers } from '../../lib/map-layers.js';
-import { useHospitals } from '../../hooks/useHospitals.js';
+import { categoryDefaults, categoryLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers, withoutEmptyHospitals, type CityLayers } from '../../lib/map-layers.js';
+import { useCityLayers, useHospitals } from '../../hooks/useHospitals.js';
+import { LIFT_KIND_COLORS } from '../map/constants.js';
 import { HOSPITAL_TIER_COLORS, HOSPITAL_TIERS } from '../../lib/hospitals.js';
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
@@ -34,36 +36,56 @@ import { getPartyColor } from '../../lib/party-colors.js';
 import { SourceText } from '../SourceText.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
-const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
-  { layer: 'warnings', icon: TriangleAlert as IconNode, color: '#ef4444' },
-  { layer: 'news', icon: Newspaper as IconNode, color: '#6366f1' },
-  { layer: 'traffic', icon: Car as IconNode, color: '#8b5cf6' },
-  { layer: 'weather', icon: CloudRain as IconNode, color: '#0ea5e9' },
-  { layer: 'air-quality', icon: Wind as IconNode, color: '#50C878' },
-  { layer: 'noise', icon: Volume2 as IconNode, color: '#f97316' },
-  { layer: 'water', icon: Droplets as IconNode, color: '#3b82f6' },
-  { layer: 'emergencies', icon: HeartPulse as IconNode, color: '#ef4444' },
-  { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6' },
-  // After the nine layers with a number key, so the badges stay in order
-  { layer: 'bike-sharing', icon: Bike as IconNode, color: '#16a34a' },
-  { layer: 'parking', icon: SquareParking as IconNode, color: '#2563eb' },
-  { layer: 'accidents', icon: CarFront as IconNode, color: '#dc2626' },
-  { layer: 'crime', icon: ShieldAlert as IconNode, color: '#b91c1c' },
-  { layer: 'ev-charging', icon: EvCharger as IconNode, color: '#0ea5e9' },
-  { layer: 'heat-relief', icon: ThermometerSun as IconNode, color: '#f97316' },
-  { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
-  { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
-  { layer: 'reports', icon: Megaphone as IconNode, color: '#e11d48' },
-  { layer: 'trees', icon: TreeDeciduous as IconNode, color: '#15803d' },
-];
+const LAYER_META: Record<DataLayer, { icon: IconNode; color: string }> = {
+  warnings: { icon: TriangleAlert as IconNode, color: '#ef4444' },
+  news: { icon: Newspaper as IconNode, color: '#6366f1' },
+  traffic: { icon: Car as IconNode, color: '#8b5cf6' },
+  weather: { icon: CloudRain as IconNode, color: '#0ea5e9' },
+  'air-quality': { icon: Wind as IconNode, color: '#50C878' },
+  noise: { icon: Volume2 as IconNode, color: '#f97316' },
+  water: { icon: Droplets as IconNode, color: '#3b82f6' },
+  emergencies: { icon: HeartPulse as IconNode, color: '#ef4444' },
+  social: { icon: BarChart3 as IconNode, color: '#8b5cf6' },
+  'bike-sharing': { icon: Bike as IconNode, color: '#16a34a' },
+  parking: { icon: SquareParking as IconNode, color: '#2563eb' },
+  accidents: { icon: CarFront as IconNode, color: '#dc2626' },
+  lifts: { icon: ArrowUpDown as IconNode, color: '#dc2626' },
+  crime: { icon: ShieldAlert as IconNode, color: '#b91c1c' },
+  'ev-charging': { icon: EvCharger as IconNode, color: '#0ea5e9' },
+  'heat-relief': { icon: ThermometerSun as IconNode, color: '#f97316' },
+  population: { icon: Users as IconNode, color: '#3b82f6' },
+  political: { icon: Landmark as IconNode, color: '#64748b' },
+  reports: { icon: Megaphone as IconNode, color: '#e11d48' },
+  trees: { icon: TreeDeciduous as IconNode, color: '#15803d' },
+};
+
+/** The badge of a category: its layer's, or its own for one that groups several. */
+const CATEGORY_META: Record<MapCategory, { icon: IconNode; color: string }> = {
+  warnings: LAYER_META.warnings,
+  news: LAYER_META.news,
+  traffic: LAYER_META.traffic,
+  weather: LAYER_META.weather,
+  environment: { icon: Leaf as IconNode, color: '#16a34a' },
+  emergencies: LAYER_META.emergencies,
+  social: { icon: Users as IconNode, color: '#8b5cf6' },
+  reports: LAYER_META.reports,
+};
 
 const INACTIVE_COLOR = '#9ca3af';
 
-/** Maps each layer to its keyboard shortcut number (1-9), matching useKeyboardShortcuts.ts LAYER_ORDER */
-const LAYER_SHORTCUT: Partial<Record<DataLayer, number>> = {
-  warnings: 1, news: 2, traffic: 3, weather: 4, 'air-quality': 5,
-  noise: 6, water: 7, emergencies: 8, social: 9,
-};
+/** A traffic entry: one of the traffic layer's own sub-layers, or another layer of the category. */
+type TrafficItem = { sub: TrafficSubLayer } | { layer: DataLayer };
+/**
+ * The traffic category's entries in one list, grouped by theme: public
+ * transport, roads, parking and charging, bikes, counters.
+ */
+const TRAFFIC_ITEMS: readonly TrafficItem[] = [
+  { sub: 'public-transport' }, { layer: 'lifts' },
+  { sub: 'incidents' }, { sub: 'congestion' }, { sub: 'roadworks' }, { layer: 'accidents' },
+  { layer: 'parking' }, { layer: 'ev-charging' },
+  { layer: 'bike-sharing' },
+  { sub: 'car-counts' }, { sub: 'bike-counts' }, { sub: 'telraam' },
+];
 
 const NEWS_SUB_META: { key: NewsSubLayer; icon: IconNode; color: string }[] = [
   { key: 'news', icon: Newspaper as IconNode, color: '#6366f1' },
@@ -212,6 +234,17 @@ export function ParkingLegend() {
   );
 }
 
+/** What the lift-outage circles' colours mean, and that only units with a position are drawn. */
+export function LiftLegend() {
+  const { t } = useTranslation();
+  return (
+    <DotLegend
+      title={t('sidebar.liftLegend.title')}
+      items={(['lift', 'escalator'] as const).map((key) => ({ key, color: LIFT_KIND_COLORS[key], label: t(`sidebar.liftLegend.${key}`) }))}
+    />
+  );
+}
+
 /** What the bike-sharing circles' colours mean: the bikes available at a station. */
 export function BikeSharingLegend() {
   const { t } = useTranslation();
@@ -329,23 +362,39 @@ export function TelraamLegend({ cityId }: { cityId: string }) {
 }
 
 /**
- * The reports layer's status colours, with how many of the city's reports of
- * the last days have each (the same query as the map, so no extra request).
+ * The reports layer's statuses as switches, in their map colours, with how
+ * many of the city's reports of the last days have each (the same query as
+ * the map, so no extra request). Closed ones start switched off; the last
+ * status shown can't be switched off.
  */
 export function CitizenReportLegend({ cityId }: { cityId: string }) {
   const { t } = useTranslation();
   const { data } = useCitizenReports(cityId);
+  const selected = useCommandCenter((s) => s.reportStatuses);
+  const toggle = useCommandCenter((s) => s.toggleReportStatus);
   const reports = data?.data;
   return (
-    <div className="ps-9 pe-2 py-1">
-      <ul aria-label={t('sidebar.reports.legend')} className="space-y-0.5">
-        {(Object.keys(REPORT_STATUS_COLORS) as CitizenReportStatus[]).map((status) => (
-          <li key={status} className="flex items-center gap-2 text-[12px] text-muted">
-            <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: REPORT_STATUS_COLORS[status] }} />
-            <span>{t(`mapPopup.reports.status.${status}`)}</span>
-            {reports && <span className="ms-auto tabular-nums">{reports.counts[status]}</span>}
-          </li>
-        ))}
+    <div className="ps-7 pe-2 py-1">
+      <ul aria-label={t('sidebar.reports.legend')}>
+        {(Object.keys(REPORT_STATUS_COLORS) as CitizenReportStatus[]).map((status) => {
+          const on = selected.has(status);
+          const color = REPORT_STATUS_COLORS[status];
+          return (
+            <li key={status}>
+              {/* py-1: a 24px tap target (WCAG 2.5.8) */}
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggle(status)}
+                className={`flex items-center gap-2 w-full px-2 py-1 rounded text-[12px] text-start cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${on ? 'text-gray-700 dark:text-gray-300' : 'text-muted'}`}
+              >
+                <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border-2 shrink-0" style={{ borderColor: color, backgroundColor: on ? color : 'transparent' }} />
+                <span>{t(`mapPopup.reports.status.${status}`)}</span>
+                {reports && <span className="ms-auto tabular-nums">{reports.counts[status]}</span>}
+              </button>
+            </li>
+          );
+        })}
       </ul>
       {reports && (
         <p className="mt-1 text-[11px] text-muted">{t('sidebar.reports.window', { days: reports.windowDays })}</p>
@@ -537,8 +586,10 @@ export function DataLayerToggles() {
   // With the single-key shortcuts switched off, the number badges would point to keys that do nothing.
   const shortcutsOn = useShortcutSettings((s) => s.enabled);
   const setHintsOpen = useShortcutSettings((s) => s.setHintsOpen);
-  const available = useMemo(() => cityLayers(city), [city]);
-  const news = effectiveSubLayers(newsSubLayers, available.news);
+  const toggleCategory = useCommandCenter((s) => s.toggleCategory);
+  // Less hospitals and lifts while the server has none for the city
+  const available = useCityLayers(city);
+  const news =effectiveSubLayers(newsSubLayers, available.news);
   const traffic = effectiveSubLayers(trafficSubLayers, available.traffic);
   const water = effectiveSubLayers(waterSubLayers, available.water);
   const heatRelief = effectiveSubLayers(heatReliefSubLayers, available.heatRelief);
@@ -584,38 +635,116 @@ export function DataLayerToggles() {
         </button>
       </div>
       <div className="space-y-0.5">
-        {LAYER_META.filter(({ layer }) => available.layers.has(layer)).map(({ layer, icon, color }) => {
-          const active = activeLayers.has(layer);
+        {CATEGORY_ORDER.map((category, index) => {
+          const members = categoryLayers(category, available.layers);
+          if (members.length === 0) return null;
+          const { icon, color } = CATEGORY_META[category];
+          const isGroup = GROUP_CATEGORIES.has(category);
+          const active = members.some((l) => activeLayers.has(l));
+          const content = !active ? null : isGroup ? groupItems(category, members, color) : layerOptions(members[0], color);
+          const shortcut = shortcutsOn && index < 9 ? index + 1 : undefined;
+          return (
+            <div key={category}>
+              <button
+                type="button"
+                onClick={() => toggleCategory(category, categoryDefaults(category, available.layers))}
+                aria-pressed={active}
+                aria-keyshortcuts={shortcut != null ? String(shortcut) : undefined}
+                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-start ${
+                  active ? '' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+                style={active ? { backgroundColor: `${color}18` } : undefined}
+              >
+                <span className="relative">
+                  <LayerBadge icon={icon} color={color} active={active} />
+                  {/* Shown, but not read out as part of the name: aria-keyshortcuts says it. */}
+                  {shortcut != null && (
+                    <span aria-hidden="true" className="hidden sm:flex absolute -top-1.5 -inset-e-1.5 w-4 h-4 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-[9px] font-bold text-muted leading-none">
+                      {shortcut}
+                    </span>
+                  )}
+                </span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {isGroup ? t(`sidebar.categories.${category}`) : t(`sidebar.layers.${members[0]}`)}
+                </span>
+              </button>
+              {content}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
-          let subItems: ReactNode = null;
-          if (layer === 'news' && active) {
+  /**
+   * A category's layers, each a switch with its own options below it once on.
+   * Traffic lists its own sub-layers in the same list (TRAFFIC_ITEMS). The
+   * last entry on can't be switched off here: the category's button does that.
+   */
+  function groupItems(category: MapCategory, members: readonly DataLayer[], parentColor: string): ReactNode {
+    const trafficOn = activeLayers.has('traffic');
+    // Traffic counts each of its sub-layers shown as an entry of its own
+    const activeCount = members.filter((l) => activeLayers.has(l) && l !== 'traffic').length
+      + (category === 'traffic' && trafficOn ? traffic.size : 0);
+    const nested = (node: ReactNode) => (node ? <div className="ps-6">{node}</div> : null);
+    const layerItem = (layer: DataLayer) => {
+      const on = activeLayers.has(layer);
+      return (
+        <div key={layer}>
+          <SubLayerItem icon={LAYER_META[layer].icon} color={LAYER_META[layer].color} active={on} label={t(`sidebar.layers.${layer}`)}
+            parentColor={parentColor} onClick={() => { if (!on || activeCount > 1) toggleLayer(layer); }} />
+          {on && nested(layerOptions(layer, LAYER_META[layer].color))}
+        </div>
+      );
+    };
+    if (category !== 'traffic') return <>{members.map(layerItem)}</>;
+
+    const countSubs = available.traffic.filter((s) => s === 'car-counts' || s === 'bike-counts');
+    const showsCounts = trafficOn && (traffic.has('car-counts') || traffic.has('bike-counts'));
+    return (
+      <>
+        {TRAFFIC_ITEMS.map((item) => {
+          if ('layer' in item) return members.includes(item.layer) ? layerItem(item.layer) : null;
+          const { sub } = item;
+          if (!available.traffic.includes(sub)) return null;
+          const on = trafficOn && traffic.has(sub);
+          const meta = TRAFFIC_SUB_META.find((m) => m.key === sub)!;
+          return (
+            <div key={sub}>
+              <SubLayerItem icon={meta.icon} color={meta.color} active={on} label={t(`sidebar.traffic.${sub}`)}
+                parentColor={parentColor} onClick={() => { if (!on || activeCount > 1) toggleTrafficSubLayer(sub); }} />
+              {on && sub === 'congestion' && nested(
+                <>
+                  <TrafficFlowLegend cityId={city.id} />
+                  {getTrafficFlowMinZoom(city.id) !== undefined && (
+                    <p className="ps-9 pe-2 py-1 text-[12px] text-muted">{t('sidebar.traffic.zoomIn')}</p>
+                  )}
+                </>,
+              )}
+              {showsCounts && sub === countSubs.at(-1) && nested(<TrafficCountLegend />)}
+              {on && sub === 'telraam' && nested(<TelraamLegend cityId={city.id} />)}
+            </div>
+          );
+        })}
+      </>
+    );
+  }
+
+  /** What a switched-on layer shows below its switch: its sub-layers, choices, legend or hints. */
+  function layerOptions(layer: DataLayer, color: string): ReactNode {
+    let subItems: ReactNode = null;
+    if (layer === 'news') {
             subItems = (
               <SubLayerList meta={NEWS_SUB_META} available={available.news} parentColor={color}
                 isActive={(key) => news.has(key)} onSelect={toggleNewsSubLayer} label={(key) => t(`sidebar.news.${key}`)} />
             );
-          } else if (layer === 'traffic' && active) {
-            const showsCounts = traffic.has('car-counts') || traffic.has('bike-counts');
-            subItems = (
-              <>
-                <SubLayerList meta={TRAFFIC_SUB_META} available={available.traffic} parentColor={color}
-                  isActive={(key) => traffic.has(key)} onSelect={toggleTrafficSubLayer} label={(key) => t(`sidebar.traffic.${key}`)} />
-                {traffic.has('congestion') && (
-                  <>
-                    <TrafficFlowLegend cityId={city.id} />
-                    {getTrafficFlowMinZoom(city.id) !== undefined && (
-                      <p className="ps-9 pe-2 py-1 text-[12px] text-muted">{t('sidebar.traffic.zoomIn')}</p>
-                    )}
-                  </>
-                )}
-                {showsCounts && <TrafficCountLegend />}
-                {traffic.has('telraam') && <TelraamLegend cityId={city.id} />}
-              </>
-            );
-          } else if (layer === 'bike-sharing' && active) {
+          } else if (layer === 'lifts') {
+            subItems = <LiftLegend />;
+          } else if (layer === 'bike-sharing') {
             subItems = <BikeSharingLegend />;
-          } else if (layer === 'parking' && active) {
+          } else if (layer === 'parking') {
             subItems = <ParkingLegend />;
-          } else if (layer === 'accidents' && active) {
+          } else if (layer === 'accidents') {
             subItems = (
               <>
                 <SubLayerList meta={ACCIDENT_FILTER_META} available={ACCIDENT_FILTER_META.map((m) => m.key)} parentColor={color}
@@ -623,7 +752,7 @@ export function DataLayerToggles() {
                 <AccidentLegend cityId={city.id} filter={accidentFilter} />
               </>
             );
-          } else if (layer === 'crime' && active) {
+          } else if (layer === 'crime') {
             subItems = (
               <>
                 <SubLayerList meta={CRIME_SUB_META} available={CRIME_INDICATORS} parentColor={color}
@@ -631,23 +760,23 @@ export function DataLayerToggles() {
                 <CrimeLegend cityId={city.id} indicator={crimeLayer} />
               </>
             );
-          } else if (layer === 'ev-charging' && active) {
+          } else if (layer === 'ev-charging') {
             subItems = <EvChargingLegend live={city.features.includes('evChargingLive')} />;
-          } else if (layer === 'heat-relief' && active) {
+          } else if (layer === 'heat-relief') {
             subItems = (
               <SubLayerList meta={HEAT_RELIEF_SUB_META} available={available.heatRelief} parentColor={color}
                 isActive={(key) => heatRelief.has(key)} onSelect={toggleHeatReliefSubLayer} label={(key) => t(`sidebar.heatRelief.${key}`)} />
             );
-          } else if (layer === 'emergencies' && active) {
+          } else if (layer === 'emergencies') {
             subItems = (
               <EmergencySubLayers cityId={city.id} layers={available} parentColor={color} selected={emergencySubLayers} onSelect={toggleEmergencySubLayer} />
             );
-          } else if (layer === 'water' && active) {
+          } else if (layer === 'water') {
             subItems = (
               <SubLayerList meta={WATER_SUB_META} available={available.water} parentColor={color}
                 isActive={(key) => water.has(key)} onSelect={toggleWaterSubLayer} label={(key) => t(`sidebar.water.${key}`)} />
             );
-          } else if (layer === 'noise' && active) {
+          } else if (layer === 'noise') {
             // Without live sensors the last noise map can't be switched off: nothing would be visible.
             const liveItem = available.noiseLive && (available.noise.length > 0) ? (
               <SubLayerItem
@@ -673,7 +802,7 @@ export function DataLayerToggles() {
                 )}
               </>
             );
-          } else if (layer === 'social' && active) {
+          } else if (layer === 'social') {
             subItems = (
               <>
                 <SubLayerList meta={SOCIAL_SUB_META} available={available.social} parentColor={color}
@@ -681,14 +810,14 @@ export function DataLayerToggles() {
                 {social === 'rent' && <RentMapLegend cityId={city.id} />}
               </>
             );
-          } else if (layer === 'population' && active) {
+          } else if (layer === 'population') {
             subItems = (
               <SubLayerList meta={POPULATION_SUB_META} available={POPULATION_SUB_META.map((m) => m.key)} parentColor={color}
                 isActive={(key) => populationLayer === key} onSelect={setPopulationLayer} label={(key) => t(`sidebar.population.${key}`)} />
             );
-          } else if (layer === 'reports' && active) {
+          } else if (layer === 'reports') {
             subItems = <CitizenReportLegend cityId={city.id} />;
-          } else if (layer === 'trees' && active) {
+          } else if (layer === 'trees') {
             // The registers draw from street zoom only (STREET_TREES_MIN_ZOOM)
             subItems = (
               <div className="ps-9 pe-2 py-1 space-y-0.5 text-[12px] text-muted">
@@ -696,7 +825,7 @@ export function DataLayerToggles() {
                 <p>{t('sidebar.trees.hint')}</p>
               </div>
             );
-          } else if (layer === 'political' && active) {
+          } else if (layer === 'political') {
             // The state parliament has its own name per city (the `_<city id>` keys).
             subItems = (
               <>
@@ -708,37 +837,6 @@ export function DataLayerToggles() {
             );
           }
 
-          const shortcut = shortcutsOn ? LAYER_SHORTCUT[layer] : undefined;
-          return (
-            <div key={layer}>
-              <button
-                type="button"
-                onClick={() => toggleLayer(layer)}
-                aria-pressed={active}
-                aria-keyshortcuts={shortcut != null ? String(shortcut) : undefined}
-                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-start ${
-                  active ? '' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-                style={active ? { backgroundColor: `${color}18` } : undefined}
-              >
-                <span className="relative">
-                  <LayerBadge icon={icon} color={color} active={active} />
-                  {/* Shown, but not read out as part of the name: aria-keyshortcuts says it. */}
-                  {shortcut != null && (
-                    <span aria-hidden="true" className="hidden sm:flex absolute -top-1.5 -inset-e-1.5 w-4 h-4 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-[9px] font-bold text-muted leading-none">
-                      {shortcut}
-                    </span>
-                  )}
-                </span>
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {t(`sidebar.layers.${layer}`)}
-                </span>
-              </button>
-              {subItems}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+    return subItems;
+  }
 }

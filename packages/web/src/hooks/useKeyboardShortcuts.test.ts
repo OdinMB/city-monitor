@@ -13,12 +13,13 @@ vi.mock('./useTheme.js', () => ({
   useTheme: () => ({ theme: 'light', toggle: mockToggleTheme }),
 }));
 
-const mockToggleLayer = vi.fn();
+const mockToggleCategory = vi.fn();
 const mockSetActiveLayers = vi.fn();
-vi.mock('./useCommandCenter.js', () => ({
+vi.mock('./useCommandCenter.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./useCommandCenter.js')>()),
   useCommandCenter: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
-      toggleLayer: mockToggleLayer,
+      toggleCategory: mockToggleCategory,
       setActiveLayers: mockSetActiveLayers,
     }),
 }));
@@ -26,7 +27,7 @@ vi.mock('./useCommandCenter.js', () => ({
 // --- Helpers ---
 
 const ALL_LAYERS: ReadonlySet<DataLayer> = new Set<DataLayer>([
-  'warnings', 'news', 'traffic', 'bike-sharing', 'ev-charging', 'heat-relief', 'accidents', 'crime', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political',
+  'warnings', 'news', 'traffic', 'bike-sharing', 'ev-charging', 'heat-relief', 'accidents', 'crime', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political', 'reports',
 ]);
 
 function fireKey(key: string, opts: Partial<KeyboardEventInit> = {}) {
@@ -77,28 +78,31 @@ describe('useKeyboardShortcuts', () => {
 
   // --- Number keys: toggle layers ---
 
-  it('toggles layer for keys 1-9', () => {
-    const layerOrder = [
-      'warnings', 'news', 'traffic', 'weather', 'air-quality',
-      'noise', 'water', 'emergencies', 'social',
-    ];
+  it('toggles a category with its default layers for keys 1-8', () => {
     renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
 
-    for (let i = 1; i <= 9; i++) {
-      act(() => fireKey(String(i)));
-      expect(mockToggleLayer).toHaveBeenCalledWith(layerOrder[i - 1]);
-    }
-    expect(mockToggleLayer).toHaveBeenCalledTimes(9);
+    for (let i = 1; i <= 9; i++) act(() => fireKey(String(i)));
+    // Eight categories; 9 does nothing
+    expect(mockToggleCategory.mock.calls).toEqual([
+      ['warnings', ['warnings']],
+      ['news', ['news']],
+      ['traffic', ['traffic']],
+      ['weather', ['weather']],
+      ['environment', ['air-quality']],
+      ['emergencies', ['emergencies']],
+      ['social', ['social']],
+      ['reports', ['reports']],
+    ]);
   });
 
-  it('leaves a layer the city does not have alone, keeping the other numbers', () => {
-    const withoutSocial = new Set([...ALL_LAYERS].filter((layer) => layer !== 'social'));
-    renderHook(() => useKeyboardShortcuts(withoutSocial));
+  it('leaves a category the city does not have alone, and opens one with another layer where its default is missing', () => {
+    const layers = new Set([...ALL_LAYERS].filter((layer) => layer !== 'reports' && layer !== 'social'));
+    renderHook(() => useKeyboardShortcuts(layers));
 
-    act(() => fireKey('9'));
-    expect(mockToggleLayer).not.toHaveBeenCalled();
+    act(() => fireKey('8'));
+    expect(mockToggleCategory).not.toHaveBeenCalled();
     act(() => fireKey('7'));
-    expect(mockToggleLayer).toHaveBeenCalledWith('water');
+    expect(mockToggleCategory).toHaveBeenCalledWith('social', ['population']);
   });
 
   // --- 0 key: clear all layers ---
@@ -145,7 +149,7 @@ describe('useKeyboardShortcuts', () => {
     expect(result.current.hintsOpen).toBe(false);
     // No errors, no side effects
     expect(mockToggleTheme).not.toHaveBeenCalled();
-    expect(mockToggleLayer).not.toHaveBeenCalled();
+    expect(mockToggleCategory).not.toHaveBeenCalled();
   });
 
   // --- openHints / closeHints callbacks ---
@@ -244,7 +248,7 @@ describe('useKeyboardShortcuts', () => {
     const { result } = renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     for (const key of ['d', 'D', '0', '1', '5', '9', '?']) act(() => fireKey(key));
     expect(mockToggleTheme).not.toHaveBeenCalled();
-    expect(mockToggleLayer).not.toHaveBeenCalled();
+    expect(mockToggleCategory).not.toHaveBeenCalled();
     expect(mockSetActiveLayers).not.toHaveBeenCalled();
     expect(result.current.hintsOpen).toBe(false);
   });
@@ -254,7 +258,7 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts(ALL_LAYERS));
     act(() => useShortcutSettings.getState().setEnabled(true));
     act(() => fireKey('2'));
-    expect(mockToggleLayer).toHaveBeenCalledWith('news');
+    expect(mockToggleCategory).toHaveBeenCalledWith('news', ['news']);
   });
 
   it('still closes the dialog on Escape while they are off', () => {

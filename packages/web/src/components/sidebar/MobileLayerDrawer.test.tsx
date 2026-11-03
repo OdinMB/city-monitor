@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import i18n from 'i18next';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CityProvider } from '../../hooks/CityProvider.js';
 import { MobileLayerDrawer } from './MobileLayerDrawer.js';
 
@@ -11,11 +12,13 @@ import { MobileLayerDrawer } from './MobileLayerDrawer.js';
 async function renderDrawer(lang: 'en' | 'ar') {
   await i18n.changeLanguage(lang);
   render(
-    <div dir={i18n.dir(lang)}>
-      <CityProvider cityId="berlin">
-        <MobileLayerDrawer />
-      </CityProvider>
-    </div>,
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <div dir={i18n.dir(lang)}>
+        <CityProvider cityId="berlin">
+          <MobileLayerDrawer />
+        </CityProvider>
+      </div>
+    </QueryClientProvider>,
   );
   const handle = screen.getByRole('button', { name: i18n.t('sidebar.toggleLayers') });
   const slider = handle.parentElement!;
