@@ -29,6 +29,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:weather` | 3600s (1 hr) | ingest-weather |
 | `{cityId}:air-quality` | 3600s (1 hr) | ingest-weather (current AQI from Open-Meteo) |
 | `{cityId}:transit:alerts` | 1200s (20 min) | ingest-transit |
+| `{cityId}:transit:geofox-stations` | 86400s (24h), 3600s after a failure | ingest-transit (Hamburg: Geofox station list as an id/name index for map markers, via `cache.fetch`; never stored, [transit.md](transit.md#hamburg)) |
 | `{cityId}:events:upcoming` | 21600s (6h) | ingest-events |
 | `{cityId}:safety:recent` | 900s (15 min) | ingest-safety |
 | `{cityId}:news:digest` | 900s (15 min) | ingest-feeds |

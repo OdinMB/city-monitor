@@ -9,13 +9,20 @@ import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { classifyDisruption, classifySeverity, extractStops } from '../lib/transit-classify.js';
 import {
-  DEFAULT_GEOFOX_ENDPOINT, announcementRequestBody, geofoxCredentials, geofoxHeaders, parseGeofoxAnnouncements,
-  type GtiAnnouncementResponse,
+  DEFAULT_GEOFOX_ENDPOINT, announcementRequestBody, buildStationIndex, geofoxCredentials, geofoxHeaders,
+  parseGeofoxAnnouncements, stationListRequestBody, type GeofoxCredentials, type GtiAnnouncementResponse,
+  type GtiStationListResponse, type StationIndex,
 } from '../lib/geofox.js';
 
 const log = createLogger('ingest-transit');
 
 const TRANSIT_TIMEOUT_MS = 15_000;
+/** The whole hvv station list is one large response */
+const STATION_LIST_TIMEOUT_MS = 60_000;
+/** The station list is fetched at most once a day... */
+const STATION_LIST_TTL_S = 86_400;
+/** ...and after a failure retried an hour later; meanwhile alerts ingest without locations */
+const STATION_LIST_RETRY_S = 3_600;
 const DEFAULT_ENDPOINT = 'https://v6.vbb.transport.rest';
 const STATION_DELAY_MS = 1_500;
 
@@ -75,7 +82,7 @@ export function createTransitIngestion(cache: Cache, db: Db | null = null) {
             }
             continue;
           }
-          alerts = await fetchGeofoxAlerts(city.id, transit);
+          alerts = await fetchGeofoxAlerts(city, transit, cache);
         } else {
           alerts = await fetchHafasAlerts(city.id, transit);
         }
@@ -103,9 +110,12 @@ async function storeAlerts(cityId: string, alerts: TransitAlert[], cache: Cache,
 
 /**
  * Hamburg: one signed getAnnouncements call. Null (no cache write) on any
- * failure, so the last good alerts stay until they go stale.
+ * failure, so the last good alerts stay until they go stale. The station list
+ * that places the alerts on the map comes from the cache, refetched once a
+ * day; without it the alerts still ingest, with no locations.
  */
-async function fetchGeofoxAlerts(cityId: string, transit: GeofoxConfig): Promise<TransitAlert[] | null> {
+async function fetchGeofoxAlerts(city: CityConfig, transit: GeofoxConfig, cache: Cache): Promise<TransitAlert[] | null> {
+  const cityId = city.id;
   const credentials = geofoxCredentials();
   if (!credentials) return null;
   const endpoint = transit.endpoint ?? DEFAULT_GEOFOX_ENDPOINT;
@@ -124,7 +134,37 @@ async function fetchGeofoxAlerts(cityId: string, transit: GeofoxConfig): Promise
     log.warn(`${cityId}: Geofox HTTP ${response.status} ${data?.returnCode ?? ''} ${data?.errorDevInfo ?? ''}`.trim());
     return null;
   }
-  return parseGeofoxAnnouncements(data, new Date());
+  const stations = await cache.fetch(
+    CK.geofoxStations(cityId), STATION_LIST_TTL_S,
+    () => fetchGeofoxStations(cityId, endpoint, credentials), STATION_LIST_RETRY_S,
+  );
+  return parseGeofoxAnnouncements(data, new Date(), { stations, bounds: city.map.bounds });
+}
+
+/** GTI's station list with WGS84 coordinates, indexed; null (retried later) on any failure. */
+async function fetchGeofoxStations(
+  cityId: string, endpoint: string, credentials: GeofoxCredentials,
+): Promise<StationIndex | null> {
+  try {
+    const body = stationListRequestBody();
+    const response = await log.fetch(`${endpoint}/gti/public/listStations`, {
+      method: 'POST',
+      body,
+      headers: geofoxHeaders(body, credentials),
+      signal: AbortSignal.timeout(STATION_LIST_TIMEOUT_MS),
+    });
+    const data = (await response.json().catch(() => null)) as GtiStationListResponse | null;
+    if (!response.ok || data?.returnCode !== 'OK') {
+      log.warn(`${cityId}: Geofox station list HTTP ${response.status} ${data?.returnCode ?? ''} ${data?.errorDevInfo ?? ''}`.trim());
+      return null;
+    }
+    const index = buildStationIndex(data);
+    log.info(`${cityId}: Geofox station list ${data.dataReleaseID ?? ''}, ${index.byId.size} stations with coordinates`);
+    return index;
+  } catch (err) {
+    log.warn(`${cityId}: Geofox station list failed: ${err instanceof Error ? err.message : String(err)}`);
+    return null;
+  }
 }
 
 async function fetchHafasAlerts(cityId: string, transit: HafasConfig): Promise<TransitAlert[] | null> {

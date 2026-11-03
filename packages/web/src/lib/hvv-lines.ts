@@ -42,7 +42,11 @@ const BUS: LineStyle = { background: '#E2001A', color: WHITE };
 const XPRESS_BUS: LineStyle = { background: '#1A9628', color: WHITE };
 const NIGHT_BUS: LineStyle = { background: '#000000', color: WHITE };
 
-/** HADAG harbour ferries, whose numbers would otherwise read as buses. */
+/**
+ * HADAG harbour ferries, whose numbers would otherwise read as buses. The
+ * server keeps the same set (HVV_FERRIES in packages/server/src/lib/geofox.ts,
+ * for the map scope); change both together.
+ */
 const FERRIES = new Set(['61', '62', '64', '65', '68', '72', '73', '75']);
 
 /** Whether a Hamburg line name is a HADAG ferry rather than a bus. */
