@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'water' | 'social' | 'population' | 'political';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'heat-relief' | 'water' | 'social' | 'population' | 'political';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
 export type SocialLayer = 'unemployment' | 'single-parent' | 'welfare' | 'child-poverty' | 'rent';
 export type PopulationLayer = 'pop-density' | 'pop-elderly' | 'pop-foreign';
@@ -10,6 +10,7 @@ export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
 export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks';
+export type HeatReliefSubLayer = 'cool' | 'fountains' | 'toilets';
 
 interface CommandCenterState {
   singleView: boolean;
@@ -23,6 +24,7 @@ interface CommandCenterState {
   emergencySubLayers: Set<EmergencySubLayer>;
   waterSubLayers: Set<WaterSubLayer>;
   trafficSubLayers: Set<TrafficSubLayer>;
+  heatReliefSubLayers: Set<HeatReliefSubLayer>;
   toggleSingleView: () => void;
   toggleLayer: (layer: DataLayer) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
@@ -34,6 +36,9 @@ interface CommandCenterState {
   toggleEmergencySubLayer: (sub: EmergencySubLayer) => void;
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
   toggleTrafficSubLayer: (sub: TrafficSubLayer) => void;
+  toggleHeatReliefSubLayer: (sub: HeatReliefSubLayer) => void;
+  /** Turns the heat-relief layer on with all its sub-layers (the weather tile's heat hint); in single view it replaces the shown layer. */
+  showHeatRelief: () => void;
   setActiveLayers: (layers: Set<DataLayer>) => void;
   /** The city whose dashboard the layer choice was last made for. */
   layersCityId: string | null;
@@ -64,6 +69,7 @@ const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['news']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies']);
 const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
 const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
+const ALL_HEAT_RELIEF_SUBS: Set<HeatReliefSubLayer> = new Set(['cool', 'fountains', 'toilets']);
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: false,
@@ -77,6 +83,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
   waterSubLayers: new Set(ALL_WATER_SUBS),
   trafficSubLayers: new Set(ALL_TRAFFIC_SUBS),
+  heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS),
   toggleSingleView: () =>
     set((state) => {
       const singleView = !state.singleView;
@@ -151,6 +158,21 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
         next.add(sub);
       }
       return { trafficSubLayers: next };
+    }),
+  toggleHeatReliefSubLayer: (sub) =>
+    set((state) => {
+      const next = new Set(state.heatReliefSubLayers);
+      if (next.has(sub)) {
+        if (next.size > 1) next.delete(sub);
+      } else {
+        next.add(sub);
+      }
+      return { heatReliefSubLayers: next };
+    }),
+  showHeatRelief: () =>
+    set((state) => {
+      const activeLayers = state.singleView ? new Set<DataLayer>(['heat-relief']) : new Set([...state.activeLayers, 'heat-relief' as const]);
+      return { activeLayers, heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS) };
     }),
   setActiveLayers: (layers) => set({ activeLayers: layers }),
   layersCityId: null,

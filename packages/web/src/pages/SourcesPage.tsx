@@ -61,7 +61,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'DWD (Deutscher Wetterdienst)',
         url: 'https://www.dwd.de/',
-        description: 'Weather observations and forecast (via Bright Sky), official severe weather warnings, pollen forecast (Pollenflug-Gefahrenindex), and UV index forecast. Source: Deutscher Wetterdienst. City Monitor derives the daily summaries and feels-like temperature from this data.',
+        description: 'Weather observations and forecast (via Bright Sky), official severe weather warnings, the heat-wave trend (Hitzetrend) that turns on the heat-relief hint, pollen forecast (Pollenflug-Gefahrenindex), and UV index forecast. Source: Deutscher Wetterdienst. City Monitor derives the daily summaries and feels-like temperature from this data.',
       },
     ],
   },
@@ -229,6 +229,14 @@ const BERLIN_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Heat Relief',
+    sources: [
+      { name: 'Kühle Räume Berlin (Geoportal)', url: 'https://gdi.berlin.de/services/wfs/kuehle_raeume?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Cool rooms open to the public in hot weather, with opening hours and wheelchair access, for the heat-relief map layer; refreshed weekly. Source: Senatsverwaltung für Wissenschaft, Gesundheit und Pflege, dl-de/zero-2-0.' },
+      { name: 'Trinkbrunnen Berlin (Geoportal)', url: 'https://gdi.berlin.de/services/wfs/trinkwasserbrunnen?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Public drinking fountains with their season and whether one is out of order; refreshed weekly. Source: Berliner Wasserbetriebe, dl-de/zero-2-0.' },
+      { name: 'Öffentliche Toiletten Berlin (Geoportal)', url: 'https://gdi.berlin.de/services/wfs/toiletten?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Public toilets with opening hours, fee, accessibility and changing table; refreshed weekly. Source: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt, dl-de/zero-2-0.' },
+    ],
+  },
+  {
     category: 'Events',
     sources: [
       { name: 'kulturdaten.berlin', url: 'https://kulturdaten.berlin/', description: 'Cultural events database — concerts, theater, exhibitions.' },
@@ -315,6 +323,12 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Heat Relief',
+    sources: [
+      { name: 'Trinkwasserbrunnen Hamburg (Geodienste)', url: 'https://geodienste.hamburg.de/wfs_trinkwasserbrunnen?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Public drinking fountains for the heat-relief map layer; refreshed weekly. Source: Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft, dl-de/by-2-0.' },
+    ],
+  },
+  {
     category: 'Social & Economic',
     sources: [
       baSource('the Land Hamburg'),
@@ -355,6 +369,14 @@ const KOELN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time Rhine water level from the Köln gauge.' },
       amelagSource('the Köln treatment plant'),
+    ],
+  },
+  {
+    category: 'Heat Relief',
+    sources: [
+      { name: 'Kühle Orte Köln (Geoportal)', url: 'https://geoportal.stadt-koeln.de/wss/service/kuehle_orte_wfs/guest?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Cool places in three lists — indoor spaces, air-conditioned places and places by the water — for the heat-relief map layer; refreshed weekly. Source: Stadt Köln, dl-de/zero-2-0.' },
+      { name: 'Trinkwasserbrunnen Köln (Geoportal)', url: 'https://geoportal.stadt-koeln.de/wss/service/trinkwasserbrunnen_wfs/guest?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Public drinking fountains, converted to WGS84; refreshed weekly. Source: Stadt Köln – Amt für Landschaftspflege und Grünflächen, dl-de/zero-2-0.' },
+      { name: 'Öffentliche Toiletten Köln (AWB)', url: 'https://www.awbkoeln.de/geodaten/toiletten/', description: 'Public toilets with opening hours and fee; refreshed weekly. Source: Abfallwirtschaftsbetriebe Köln, dl-de/zero-2-0.' },
     ],
   },
   {
@@ -421,6 +443,13 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'Länderübergreifendes Hochwasserportal (LHP)', url: 'https://www.hochwasserzentralen.de/', description: 'Flood class (Meldestufe) of the Isar gauges München and Puppling, set by the Bavarian flood warning service, and active flood warnings for München, via the LHP public API. Unchecked raw data; no water levels. Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.' },
       amelagSource('the München treatment plant'),
+    ],
+  },
+  {
+    category: 'Heat Relief',
+    sources: [
+      { name: 'Trinkbrunnen München (Geoportal)', url: 'https://opendata.muenchen.de/dataset/opendata_trinkwasserbrunnen', description: 'Public drinking fountains for the heat-relief map layer; refreshed weekly. Source: Landeshauptstadt München – Baureferat, dl-de/by-2-0.' },
+      { name: 'Öffentliche Toiletten München (GeodatenService)', url: 'https://opendata.muenchen.de/dataset/wc_finder', description: 'Public toilets with fee, accessibility and changing table; the rooms at one address are shown as one place. Refreshed weekly. Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.' },
     ],
   },
   {

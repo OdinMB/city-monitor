@@ -81,7 +81,7 @@ const MARKER_LAYER_IDS = [
   'noise-sensor-icon', 'pharmacy-marker-icon', 'aed-marker-icon',
   'construction-points', 'political-markers',
   'traffic-incidents-circle', 'traffic-incidents-label',
-  'bike-station-circle',
+  'bike-station-circle', 'heat-relief-icon',
 ];
 
 /** Move district-label below the first existing marker layer so labels render behind markers. */

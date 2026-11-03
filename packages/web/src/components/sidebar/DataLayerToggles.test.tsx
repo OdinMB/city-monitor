@@ -127,9 +127,23 @@ describe('DataLayerToggles per city', () => {
   it('lists only the layers the city has', () => {
     renderFor(hamburg);
     const expected = cityLayers(hamburg).layers;
-    for (const layer of ['warnings', 'news', 'traffic', 'bike-sharing', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political']) {
+    for (const layer of ['warnings', 'news', 'traffic', 'bike-sharing', 'heat-relief', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political']) {
       expect(shown(i18n.t(`sidebar.layers.${layer}`)), layer).toBe(expected.has(layer as DataLayer));
     }
+  });
+
+  it('lists the heat-relief lists a city has, and none for a city with one list', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['heat-relief']) });
+    renderFor(muenchen);
+    expect(shown(i18n.t('sidebar.heatRelief.fountains'))).toBe(true);
+    expect(shown(i18n.t('sidebar.heatRelief.toilets'))).toBe(true);
+    expect(shown(i18n.t('sidebar.heatRelief.cool'))).toBe(false);
+    cleanup();
+    // Hamburg has fountains alone: the layer is that list
+    renderFor(hamburg);
+    expect(shown(i18n.t('sidebar.layers.heat-relief'))).toBe(true);
+    expect(shown(i18n.t('sidebar.heatRelief.fountains'))).toBe(false);
+    cleanup();
   });
 
   it('names each social-atlas indicator the way the city\'s source defines it, with its edition', () => {

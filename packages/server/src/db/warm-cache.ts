@@ -7,6 +7,8 @@ import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
+import { loadHeatRelief } from './reads.js';
+import { HEAT_RELIEF_TTL_SECONDS } from '../cron/ingest-heat-relief.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -161,6 +163,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadBikeSharing(db, cityId);
       if (r) cache.set(CK.bikeSharing(cityId), r.data, 600, r.fetchedAt); // BIKE_SHARING_TTL_SECONDS
     })().catch((err) => log.error(`${cityId} bike sharing failed`, err)),
+
+    (async () => {
+      const r = await loadHeatRelief(db, cityId);
+      if (r) cache.set(CK.heatRelief(cityId), r.data, HEAT_RELIEF_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} heat relief failed`, err)),
 
     (async () => {
       const r = await loadWastewater(db, cityId);

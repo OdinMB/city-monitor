@@ -10,6 +10,7 @@ import { waterLevelPopupHtml, bathingPopupHtml } from './water';
 import { pharmacyPopupHtml, aedPopupHtml, formatPharmacyDuty } from './emergencies';
 import { noisePopupHtml } from './noise-sensors';
 import { bikeStationPopupHtml } from './bike-sharing';
+import { heatReliefPopupHtml } from './heat-relief';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
@@ -67,6 +68,12 @@ const AED = { indoor: true, description: 'Im Foyer', operator: 'Bezirksamt Mitte
 const NOISE = { id: 4711, laeq: 58.2, laMin: 40.1, laMax: 75.3 };
 // A Unix time on an earlier day, so the popup shows the date with the time
 const BIKE = { name: 'S Halensee (Kurfürstendamm)', bikes: 3, docks: 5, reportedAt: Date.UTC(2026, 2, 3, 8, 0) / 1000, system: 'nextbike Berlin', operator: 'nextbike' };
+// Heat-relief places as their map features carry them; a summer and a winter day for the fountain's season
+const FOUNTAIN = { kind: 'fountain', name: 'Trinkbrunnen Alexanderplatz', address: 'Alexanderplatz', seasonFrom: 4, seasonTo: 10, outOfOrder: false, lat: 52.52, lon: 13.41 };
+const TOILET = { kind: 'toilet', name: 'City-Toilette Hackescher Markt', hours: 'Mo-So 0-24 Uhr', note: 'Münzeinwurf', fee: 0.5, accessible: 'yes', changingTable: true, lat: 52.52, lon: 13.4 };
+const COOL = { kind: 'cool', name: '', setting: 'air-conditioned', address: 'Rathaus Köln', lat: 50.94, lon: 6.96 };
+const JULY = new Date(2026, 6, 15);
+const NOVEMBER = new Date(2026, 10, 3);
 const SOCIAL: SocialAtlasFeatureProps = {
   plrId: '01100101', plrName: 'Stülerstraße', bezId: '01', population: 3400, statusIndex: 2, statusLabel: 'mittel',
   unemployment: 5.2, singleParent: 20.1, welfare: 10.3, childPoverty: 15.4,
@@ -92,6 +99,9 @@ const POPUPS: Array<[string, () => string]> = [
   ['AED', () => aedPopupHtml(AED, COORDS)],
   ['noise sensor', () => noisePopupHtml(NOISE, false)],
   ['bike station', () => bikeStationPopupHtml(BIKE, false)],
+  ['fountain', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER)],
+  ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER)],
+  ['cool place', () => heatReliefPopupHtml(COOL, NOVEMBER)],
   ['social atlas', () => socialAtlasPopupHtml(SOCIAL)],
   ['population', () => populationPopupHtml(POPULATION)],
   ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS)],
@@ -113,6 +123,8 @@ const ENGLISH_ONLY = [
   'Noise Sensor', 'Quiet', 'Moderate', 'Loud', 'Min:', 'Max:', 'Unemployment', 'Single-parent', 'Welfare',
   'Child poverty', 'Population', 'Density', 'Foreign', 'Aged 65', 'Under 18', 'Traffic jam', 'Road closure',
   'Roadworks', 'planned work', 'Severe', 'Bikes available', 'Free docks', 'Updated',
+  'Drinking fountain', 'Public toilet', 'Cool place', 'Air-conditioned', 'Off season', 'Runs from', 'Hours',
+  'Wheelchair', 'changing table', 'Free of charge',
 ];
 
 afterEach(async () => {
@@ -143,6 +155,10 @@ describe('map popups in German', () => {
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Innen', 'Zugang: nur für Kunden', 'Route ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Lärmsensor #4711', '58.2 dB (Laut)', 'Min.: 40.1 dB · Max.: 75.3 dB']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Verfügbare Räder: 3', 'Freie Stellplätze: 5', `Stand: 3. ${GERMAN_MARCH}`, 'nextbike Berlin · nextbike']],
+    ['fountain in season', () => heatReliefPopupHtml(FOUNTAIN, JULY), ['Trinkbrunnen Alexanderplatz', 'In Betrieb von April bis Oktober', 'Route ↗']],
+    ['fountain off season', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER), ['Außerhalb der Saison']],
+    ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER), ['Öffentliche Toilette', 'Öffnungszeiten: Mo-So 0-24 Uhr', 'Gebühr: 0,50', 'Rollstuhlgerecht', 'Wickeltisch']],
+    ['cool place', () => heatReliefPopupHtml(COOL, NOVEMBER), ['Klimatisiert', 'Kühler Ort', 'Rathaus Köln']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Kinder Alleinerziehender20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%', 'MSS-Statusindexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Arbeitslosenquote5.2%', 'Alleinerziehenden-Haushalte20.1%', 'SGB-II-Leistungsberechtigte10.3%']],
     ['Hamburg social atlas', () => socialAtlasPopupHtml(SOCIAL, SOCIAL_ATLAS.hamburg), ['SGB-II- und AsylbLG-Empfänger10.3%', 'Kinder in Mindestsicherung15.4%', 'Statusindex (Sozialmonitoring)mittel']],
@@ -243,6 +259,8 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['police', () => safetyPopupHtml(SAFETY), ['Einbruch in Wohnung', 'Mitte']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['Berlin Mitte']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['S Halensee (Kurfürstendamm)', 'nextbike Berlin', 'nextbike']],
+    ['fountain', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER), ['Trinkbrunnen Alexanderplatz', 'Alexanderplatz']],
+    ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER), ['City-Toilette Hackescher Markt', 'Mo-So 0-24 Uhr', 'Münzeinwurf']],
   ] as const)('%s popup isolates its feed text', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     expect(sourceTexts(build())).toEqual(values);
@@ -336,6 +354,10 @@ describe('map popups in English', () => {
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Noise Sensor #4711', '58.2 dB (Loud)', 'Min: 40.1 dB · Max: 75.3 dB']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Bikes available: 3', 'Free docks: 5']],
     ['bike station without docks', () => bikeStationPopupHtml({ ...BIKE, docks: null }, false), ['Bikes available: 3']],
+    ['fountain', () => heatReliefPopupHtml(FOUNTAIN, JULY), ['Drinking fountain', 'Runs from April to October', 'Directions ↗']],
+    ['out-of-order fountain', () => heatReliefPopupHtml({ ...FOUNTAIN, outOfOrder: true }, JULY), ['Out of order']],
+    ['toilet', () => heatReliefPopupHtml(TOILET, JULY), ['Hours: Mo-So 0-24 Uhr', 'Fee: €0.50', 'Wheelchair accessible', 'Baby changing table']],
+    ['free toilet', () => heatReliefPopupHtml({ ...TOILET, fee: 0 }, JULY), ['Free of charge']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Children of single parents20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%', 'MSS status indexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Unemployment rate5.2%', 'Single-parent households20.1%', 'SGB II recipients10.3%']],
     ['population', () => populationPopupHtml(POPULATION), ['Population3,400', 'Density12,000/km²', 'Aged 65+15.2%', 'Under 1812.1%']],
@@ -347,6 +369,17 @@ describe('map popups in English', () => {
   ] as const)('%s popup', (_name, build, expected) => {
     const text = textOf(build());
     for (const s of expected) expect(text).toContain(s);
+  });
+
+  it('marks a seasonal fountain off season only outside its months', () => {
+    expect(textOf(heatReliefPopupHtml(FOUNTAIN, JULY))).not.toContain('Off season');
+    expect(textOf(heatReliefPopupHtml(FOUNTAIN, NOVEMBER))).toContain('Off season');
+  });
+
+  it('names a nameless cool place by its setting', () => {
+    const text = textOf(heatReliefPopupHtml(COOL, JULY));
+    expect(text).toContain('Air-conditioned');
+    expect(text).toContain('Cool place');
   });
 
   it('names only the indicators a city\'s social atlas has', () => {

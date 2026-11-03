@@ -1,7 +1,8 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Bike } from 'lucide';
-import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Bike, ThermometerSun } from 'lucide';
+import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer, type HeatReliefSubLayer } from '../../hooks/useCommandCenter.js';
+import { HEAT_RELIEF_KINDS } from '../../lib/heat-relief.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
@@ -22,6 +23,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6' },
   // After the nine layers with a number key, so the badges stay in order
   { layer: 'bike-sharing', icon: Bike as IconNode, color: '#16a34a' },
+  { layer: 'heat-relief', icon: ThermometerSun as IconNode, color: '#f97316' },
   { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
 ];
@@ -55,6 +57,9 @@ const WATER_SUB_META: { key: WaterSubLayer; icon: IconNode; color: string }[] = 
   { key: 'levels', icon: Droplets as IconNode, color: '#3b82f6' },
   { key: 'bathing', icon: Waves as IconNode, color: '#06b6d4' },
 ];
+
+const HEAT_RELIEF_SUB_META: { key: HeatReliefSubLayer; icon: IconNode; color: string }[] =
+  HEAT_RELIEF_KINDS.map(({ sub, icon, color }) => ({ key: sub, icon, color }));
 
 const TRAFFIC_SUB_META: { key: TrafficSubLayer; icon: IconNode; color: string }[] = [
   { key: 'public-transport', icon: TrainFront as IconNode, color: '#f59e0b' },
@@ -201,6 +206,8 @@ export function DataLayerToggles() {
   const toggleEmergencySubLayer = useCommandCenter((s) => s.toggleEmergencySubLayer);
   const waterSubLayers = useCommandCenter((s) => s.waterSubLayers);
   const toggleWaterSubLayer = useCommandCenter((s) => s.toggleWaterSubLayer);
+  const heatReliefSubLayers = useCommandCenter((s) => s.heatReliefSubLayers);
+  const toggleHeatReliefSubLayer = useCommandCenter((s) => s.toggleHeatReliefSubLayer);
   const trafficSubLayers = useCommandCenter((s) => s.trafficSubLayers);
   const toggleTrafficSubLayer = useCommandCenter((s) => s.toggleTrafficSubLayer);
   const noiseLayer = useCommandCenter((s) => s.noiseLayer);
@@ -219,6 +226,7 @@ export function DataLayerToggles() {
   const emergencies = effectiveSubLayers(emergencySubLayers, available.emergencies);
   const traffic = effectiveSubLayers(trafficSubLayers, available.traffic);
   const water = effectiveSubLayers(waterSubLayers, available.water);
+  const heatRelief = effectiveSubLayers(heatReliefSubLayers, available.heatRelief);
   const noise = effectiveNoiseLayer(noiseLayer, available);
   const social = effectiveChoice(socialLayer, available.social);
   const political = effectiveChoice(politicalLayer, available.political);
@@ -277,6 +285,11 @@ export function DataLayerToggles() {
             );
           } else if (layer === 'bike-sharing' && active) {
             subItems = <BikeSharingLegend />;
+          } else if (layer === 'heat-relief' && active) {
+            subItems = (
+              <SubLayerList meta={HEAT_RELIEF_SUB_META} available={available.heatRelief} parentColor={color}
+                isActive={(key) => heatRelief.has(key)} onSelect={toggleHeatReliefSubLayer} label={(key) => t(`sidebar.heatRelief.${key}`)} />
+            );
           } else if (layer === 'emergencies' && active) {
             subItems = (
               <SubLayerList meta={EMERGENCY_SUB_META} available={available.emergencies} parentColor={color}

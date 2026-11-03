@@ -127,6 +127,13 @@ export const berlin: CityConfig = {
       regionId: 50,         // Brandenburg und Berlin
       partregionId: -1,     // no sub-regions
     },
+    // Heat relief from GDI Berlin's WFS, all dl-de/zero-2.0 (daten.berlin.de, checked 2026-11-03):
+    // 126 cool rooms of the Hitzeschutz plan, 242 BWB fountains (May–October), 525 toilets
+    heatRelief: [
+      { kind: 'cool', provider: 'berlin-cool-rooms', url: 'https://gdi.berlin.de/services/wfs/kuehle_raeume' },
+      { kind: 'fountain', provider: 'berlin-fountains', url: 'https://gdi.berlin.de/services/wfs/trinkwasserbrunnen' },
+      { kind: 'toilet', provider: 'berlin-toilets', url: 'https://gdi.berlin.de/services/wfs/toiletten' },
+    ],
     noiseSensors: {
       provider: 'sensor-community',
       lat: 52.52,

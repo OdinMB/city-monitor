@@ -7,6 +7,8 @@ import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { fetchBrightSkyForecast } from '../lib/brightsky.js';
 import { DWD_WARNINGS_URL, cityWarnRegions, parseDwdWarnings, parseDwdWarningsJsonp } from '../lib/dwd-warnings.js';
+import type { DwdHeatTrend } from '@city-monitor/shared';
+import { heatTrendDays, heatTrendUrl, parseDwdHeatTrend } from '../lib/dwd-heat-trend.js';
 
 const log = createLogger('ingest-weather');
 
@@ -57,6 +59,12 @@ async function ingestCityWeather(city: CityConfig, cache: Cache, db: Db | null):
       if (dwdUv) data.dwdUv = dwdUv;
     } catch {
       log.warn(`${city.id}: DWD UV failed`);
+    }
+    try {
+      const trend = await fetchDwdHeatTrend(city);
+      if (trend) data.dwdHeatTrend = trend;
+    } catch {
+      log.warn(`${city.id}: DWD heat trend failed`);
     }
   }
 
@@ -211,4 +219,23 @@ async function fetchDwdUv(city: CityConfig): Promise<DwdUvForecast | null> {
   const forecast = parseDwdUv(await response.json(), city.name);
   if (!forecast) log.warn(`${city.id}: no usable UV forecast in DWD uvi.json`);
   return forecast;
+}
+
+/**
+ * The city's 8-day heat outlook from today's hwtrend file, or yesterday's when
+ * today's is not out yet (it appears around 01:35 German time).
+ */
+async function fetchDwdHeatTrend(city: CityConfig): Promise<DwdHeatTrend | null> {
+  for (const day of heatTrendDays(new Date())) {
+    const response = await log.fetch(heatTrendUrl(day), {
+      signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
+      headers: { 'User-Agent': 'CityMonitor/1.0' },
+    });
+    if (response.status === 404) continue;
+    if (!response.ok) return null;
+    const trend = parseDwdHeatTrend(await response.json(), cityWarnRegions(city), day);
+    if (!trend) log.warn(`${city.id}: no heat trend for the city's warn region in DWD hwtrend`);
+    return trend;
+  }
+  return null;
 }

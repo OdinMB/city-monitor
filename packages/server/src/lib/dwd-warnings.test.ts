@@ -143,6 +143,13 @@ describe('parseDwdWarnings', () => {
     expect(parseDwdWarnings(payload(warning(level)), BERLIN)?.[0]?.severity).toBe(severity);
   });
 
+  it('marks heat warnings (levels 10 and 11) with kind heat', () => {
+    const hitze = (level: number) => ({ ...berlinCell('Berlin'), type: 8, level, start: T0, end: T0 + 9 * HOUR, event: 'HITZE', headline: `Amtliche WARNUNG vor HITZE ${level}`, description: '' });
+    const alerts = parseDwdWarnings({ warnings: { '111000000': [hitze(10), hitze(11), { ...berlinCell('Berlin'), ...sturmboeen }] } }, BERLIN)!;
+    expect(alerts.map((a) => [a.severity, a.kind])).toEqual([['moderate', 'heat'], ['severe', 'heat'], ['moderate', undefined]]);
+    expect(alerts[2]).not.toHaveProperty('kind');
+  });
+
   it('keeps warnings with the same headline at different times', () => {
     const later = warning(3, { start: T0 + 10 * HOUR, end: T0 + 14 * HOUR });
     expect(parseDwdWarnings(payload(warning(3), later), BERLIN)?.map((a) => a.validUntil)).toEqual([

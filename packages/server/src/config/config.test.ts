@@ -162,7 +162,7 @@ describe('Köln config', () => {
     expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' });
     expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['Köln'] });
     const {
-      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
+      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, heatRelief: _heat, waterLevels: _water,
       police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council,
       liftOutages: _lifts, laborMarket: _labor, wastewater: _wastewater,
       socialAtlas: _socialAtlas, population: _population, bikeSharing: _bikes, ...rest
@@ -255,7 +255,7 @@ describe('München config', () => {
     expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' });
     expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['München'] });
     const {
-      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
+      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, heatRelief: _heat, roadworks: _roadworks, councilMeetings: _council,
       floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population,
       bikeSharing: _bikes, ...rest
     } = config.dataSources;

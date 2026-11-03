@@ -18,6 +18,8 @@ import {
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
   TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, BikeSharingDataSchema,
 } from '@city-monitor/shared/schemas.js';
+import type { HeatReliefData } from '@city-monitor/shared';
+import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -194,6 +196,11 @@ export async function loadLiftOutages(db: Db, cityId: string): Promise<DbResult<
 /** At most 2 hours old: older counts say nothing about bikes there now (the job runs every 5 min, stores every 30). */
 export async function loadBikeSharing(db: Db, cityId: string): Promise<DbResult<BikeSharingData>> {
   return loadSnapshot(db, cityId, 'bike-sharing', { schema: BikeSharingDataSchema, maxAgeMs: 2 * 3600_000 });
+}
+
+/** No age limit: the lists are static, and last month's fountains beat none (the job runs weekly). */
+export async function loadHeatRelief(db: Db, cityId: string): Promise<DbResult<HeatReliefData>> {
+  return loadSnapshot(db, cityId, 'heat-relief', { schema: HeatReliefDataSchema });
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {

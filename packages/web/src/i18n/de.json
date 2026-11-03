@@ -68,6 +68,12 @@
       "humidity": "Luftfeuchtigkeit",
       "wind": "Wind",
       "feelsLike": "Gefühlt",
+      "heatRelief": {
+        "warning": "Hitzewarnung in Kraft",
+        "outlook": "Hitze in den nächsten Tagen erwartet",
+        "onMap": "Auf der Karte: {{places}}",
+        "show": "Auf der Karte zeigen"
+      },
       "hourly": "Stündlich",
       "daily": "Täglich",
       "high": "H",
@@ -518,6 +524,7 @@
       "emergencies": "Notfall",
       "traffic": "Verkehr",
       "bike-sharing": "Leihräder",
+      "heat-relief": "Hitzeschutz",
       "water": "Wasser",
       "social": "Soziales",
       "population": "Bevölkerung",
@@ -559,6 +566,11 @@
       "normal": "Normale Wohnlage",
       "unrated": "Nicht bewertet"
     },
+    "heatRelief": {
+      "cool": "Kühle Orte",
+      "fountains": "Trinkbrunnen",
+      "toilets": "Öffentliche Toiletten"
+    },
     "bikeLegend": {
       "title": "Verfügbare Räder an der Station",
       "none": "Keine Räder",
@@ -585,6 +597,18 @@
     "readMore": "Weiterlesen",
     "details": "Details",
     "directions": "Route",
+    "heatRelief": {
+      "kind": { "cool": "Kühler Ort", "fountain": "Trinkbrunnen", "toilet": "Öffentliche Toilette" },
+      "setting": { "indoor": "Kühler Innenraum", "air-conditioned": "Klimatisiert", "water": "Am Wasser" },
+      "outOfOrder": "Außer Betrieb",
+      "offSeason": "Außerhalb der Saison",
+      "hours": "Öffnungszeiten",
+      "season": "In Betrieb von {{from}} bis {{to}}",
+      "free": "Kostenlos",
+      "fee": "Gebühr",
+      "accessible": { "yes": "Rollstuhlgerecht", "partly": "Eingeschränkt rollstuhlgerecht", "no": "Nicht rollstuhlgerecht" },
+      "changingTable": "Wickeltisch"
+    },
     "profile": "Profil",
     "phone": "Tel.",
     "today": "Heute",

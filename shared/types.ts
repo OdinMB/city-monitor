@@ -68,6 +68,10 @@ export type CityFeature =
   | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
   | 'liftOutages'     // dataSources.liftOutages: lift and escalator outages (KVB Köln)
   | 'bikeSharing'     // dataSources.bikeSharing: bike-sharing stations on the map (nextbike GBFS, StadtRAD)
+  // The heat-relief map layer's sub-layers (dataSources.heatRelief, one list per kind)
+  | 'coolPlaces'      // cool places of the city's heat-action plan (Kühle Orte)
+  | 'drinkingFountains'
+  | 'publicToilets'
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -208,6 +212,38 @@ export type BikeSharingSource =
   /** Hamburg's StadtRAD on the Urban Data Platform's SensorThings API (`…/v1.1`) */
   | { provider: 'hamburg-sta'; url: string; system: string; operator: string };
 
+/** What a heat-relief place is: a cool place, a drinking fountain or a public toilet. */
+export type HeatReliefKind = 'cool' | 'fountain' | 'toilet';
+
+/**
+ * One list of the heat-relief map layer, by the provider whose format it is in;
+ * each provider has its own parser in packages/server/src/lib/heat-relief-parsers.ts
+ * (.context/heat-relief.md) and gives one kind of place. `url` is the service
+ * without query (the parser adds it).
+ */
+export type HeatReliefSource =
+  /** Berlin's GDI WFS `kuehle_raeume` (Senatsverwaltung für Wissenschaft, Gesundheit und Pflege) */
+  | { kind: 'cool'; provider: 'berlin-cool-rooms'; url: string }
+  /** Berlin's GDI WFS `trinkwasserbrunnen` (Berliner Wasserbetriebe) */
+  | { kind: 'fountain'; provider: 'berlin-fountains'; url: string }
+  /** Berlin's GDI WFS `toiletten` */
+  | { kind: 'toilet'; provider: 'berlin-toilets'; url: string }
+  /** Hamburg's Geodienste WFS `de.hh.up:trinkwasserbrunnen` */
+  | { kind: 'fountain'; provider: 'hamburg-fountains'; url: string }
+  /** Köln's geoportal WFS `kuehle_orte_wfs`, one feature type per kind of cool place */
+  | { kind: 'cool'; provider: 'koeln-cool-places'; url: string; layers: KoelnCoolLayer[] }
+  /** Köln's geoportal WFS `trinkwasserbrunnen_wfs` (EPSG:25832 only) */
+  | { kind: 'fountain'; provider: 'koeln-fountains'; url: string }
+  /** AWB Köln's toilet list (XML) */
+  | { kind: 'toilet'; provider: 'koeln-toilets'; url: string }
+  /** München's GeodatenService WFS `baug_wfs:trinkwasserbrunnen` (Baureferat) */
+  | { kind: 'fountain'; provider: 'muenchen-fountains'; url: string }
+  /** München's GeodatenService WFS `gsm_wfs:wc_finder_opendata` (one row per toilet room) */
+  | { kind: 'toilet'; provider: 'muenchen-toilets'; url: string };
+
+/** The feature types of Köln's cool-places WFS: indoors, air-conditioned, by the water. */
+export type KoelnCoolLayer = 'im_innenraum' | 'klimatisierter_ort' | 'am_wasser';
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -253,6 +289,8 @@ export interface CityDataSources {
   bathing?: BathingSource;
   liftOutages?: LiftOutageSource;
   bikeSharing?: BikeSharingSource;
+  /** The heat-relief layer's lists, at most one per kind. */
+  heatRelief?: HeatReliefSource[];
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -394,6 +432,20 @@ export interface WeatherAlert {
   severity: string;
   description: string;
   validUntil: string;
+  /** 'heat' for DWD's heat warnings (levels 10 and 11); absent for the others and in data stored before 2026-11. */
+  kind?: 'heat';
+}
+
+/**
+ * DWD's heat outlook for the city's warn region (hwtrend_YYYYMMDD.json): one
+ * status per day for 8 days from `issued`. 0 none, 1 warning of strong heat
+ * stress, 2 warning of extreme heat stress (days 1–2 from the warnings), 3 heat
+ * trend active, a warning possible (from day 3).
+ */
+export interface DwdHeatTrend {
+  /** The file's day ("YYYY-MM-DD"), the first of `days`. */
+  issued: string;
+  days: number[];
 }
 
 /** DWD UV index forecast: the expected daily maximum for three days. */
@@ -415,6 +467,7 @@ export interface WeatherData {
   daily: DailyForecast[];
   alerts: WeatherAlert[];
   dwdUv?: DwdUvForecast;
+  dwdHeatTrend?: DwdHeatTrend;
 }
 
 // Political data
@@ -773,6 +826,39 @@ export interface BikeSharingData {
   stations: BikeStation[];
   /** When the feed was last updated (ISO 8601), null when it gave no time. */
   updated: string | null;
+}
+
+// Heat relief (cool places, drinking fountains, public toilets)
+/**
+ * One place of the heat-relief layer. Text fields are the source's German, as
+ * given (trimmed, notes clipped); a field the source lacks is left out, to keep
+ * Berlin's ~900 places compact.
+ */
+export interface HeatReliefPlace {
+  kind: HeatReliefKind;
+  lat: number;
+  lon: number;
+  /** Name or location; '' where the source has none (Köln's cool places: the popup names the kind). */
+  name: string;
+  address?: string;
+  /** Opening hours as free text. */
+  hours?: string;
+  /** The source's remark: restrictions, a description, the toilet type. */
+  note?: string;
+  /** Köln's cool places: indoors, air-conditioned or by the water. */
+  setting?: 'indoor' | 'air-conditioned' | 'water';
+  /** Months the place runs, 1–12, where the source states them (Berlin's fountains: May to October). */
+  season?: { from: number; to: number };
+  /** The source says it is out of order now. */
+  outOfOrder?: boolean;
+  accessible?: 'yes' | 'partly' | 'no';
+  /** Fee in euros, 0 when free. */
+  fee?: number;
+  changingTable?: boolean;
+}
+
+export interface HeatReliefData {
+  places: HeatReliefPlace[];
 }
 
 // Flood status (LHP public API): flood classes at state gauges and regional flood warnings

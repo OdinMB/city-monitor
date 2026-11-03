@@ -22,6 +22,7 @@ import type {
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
   TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
+import type { HeatReliefData, HeatReliefPlace } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
 import type { PersistedNewsItem } from '../db/writes.js';
@@ -85,6 +86,7 @@ export interface SyntheticData {
   /** Not in Berlin's data set: only Köln's KVB publishes lift outages (NOT_IN_BERLIN). */
   liftOutages?: LiftOutageData;
   bikeSharing: BikeSharingData;
+  heatRelief: HeatReliefData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -141,6 +143,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   floodStatus: (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0,
   liftOutages: (c) => c.dataSources.liftOutages !== undefined,
   bikeSharing: (c) => c.dataSources.bikeSharing !== undefined,
+  heatRelief: (c) => (c.dataSources.heatRelief?.length ?? 0) > 0,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -253,6 +256,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('floodStatus')) sets.floodStatus = generateFloodStatus(rng, now, city);
   if (has.has('liftOutages')) sets.liftOutages = generateLiftOutages(rng, now, place);
   if (has.has('bikeSharing')) sets.bikeSharing = generateBikeSharing(rng, now, city, place);
+  if (has.has('heatRelief')) sets.heatRelief = generateHeatRelief(rng, city, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1511,6 +1515,28 @@ function generateBikeSharing(rng: Rng, now: Date, city: CityConfig, place: Place
     }
   });
   return { system: source.system, operator: source.operator, stations, updated: new Date(reportedAt * 1000).toISOString() };
+}
+
+/**
+ * One place per anchor for each kind of heat-relief list the city has: cool
+ * places with hours, fountains with Berlin's May–October season (one out of
+ * order), toilets with a fee and accessibility.
+ */
+function generateHeatRelief(rng: Rng, city: CityConfig, place: Place): HeatReliefData {
+  const kinds = new Set((city.dataSources.heatRelief ?? []).map((s) => s.kind));
+  const places: HeatReliefPlace[] = [];
+  place.anchors.forEach((a, i) => {
+    if (kinds.has('cool')) {
+      places.push({ kind: 'cool', ...near(rng, a, 0.008), name: `${MARK} Kühler Raum ${a.name}`, address: `${STREETS[i % STREETS.length]} ${i + 1}`, hours: 'Mo - Fr: 10:00 - 18:00 Uhr', accessible: rng.int(0, 1) === 0 ? 'yes' : 'partly' });
+    }
+    if (kinds.has('fountain')) {
+      places.push({ kind: 'fountain', ...near(rng, a, 0.008), name: `${MARK} Trinkbrunnen ${a.name}`, season: { from: 5, to: 10 }, ...(i === 0 ? { outOfOrder: true, note: 'zur Zeit außer Betrieb' } : {}) });
+    }
+    if (kinds.has('toilet')) {
+      places.push({ kind: 'toilet', ...near(rng, a, 0.008), name: `${MARK} Toilette ${a.name}`, hours: '24h', fee: rng.int(0, 1) === 0 ? 0 : 0.5, accessible: rng.int(0, 1) === 0 ? 'yes' : 'no', changingTable: rng.int(0, 1) === 0 });
+    }
+  });
+  return { places };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

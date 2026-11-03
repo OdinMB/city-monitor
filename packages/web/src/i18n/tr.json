@@ -68,6 +68,12 @@
       "humidity": "Nem",
       "wind": "Rüzgar",
       "feelsLike": "Hissedilen",
+      "heatRelief": {
+        "warning": "Sıcak hava uyarısı yürürlükte",
+        "outlook": "Önümüzdeki günlerde sıcak hava bekleniyor",
+        "onMap": "Haritada: {{places}}",
+        "show": "Haritada göster"
+      },
       "hourly": "Saatlik",
       "daily": "Günlük",
       "high": "Y",
@@ -512,6 +518,7 @@
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
       "bike-sharing": "Bisiklet Paylaşımı",
+      "heat-relief": "Sıcaktan Korunma",
       "water": "Su",
       "social": "Sosyal",
       "population": "Nüfus",
@@ -553,6 +560,11 @@
       "normal": "Normal konum",
       "unrated": "Değerlendirilmedi"
     },
+    "heatRelief": {
+      "cool": "Serin Yerler",
+      "fountains": "İçme Çeşmeleri",
+      "toilets": "Umumi Tuvaletler"
+    },
     "bikeLegend": {
       "title": "İstasyondaki kullanılabilir bisikletler",
       "none": "Bisiklet yok",
@@ -575,6 +587,18 @@
     "readMore": "Devamını oku",
     "details": "Ayrıntılar",
     "directions": "Yol tarifi",
+    "heatRelief": {
+      "kind": { "cool": "Serin yer", "fountain": "İçme çeşmesi", "toilet": "Umumi tuvalet" },
+      "setting": { "indoor": "Serin kapalı alan", "air-conditioned": "Klimalı", "water": "Su kenarında" },
+      "outOfOrder": "Arızalı",
+      "offSeason": "Sezon dışı",
+      "hours": "Açılış saatleri",
+      "season": "{{from}} ile {{to}} arasında çalışır",
+      "free": "Ücretsiz",
+      "fee": "Ücret",
+      "accessible": { "yes": "Tekerlekli sandalyeye uygun", "partly": "Tekerlekli sandalyeye kısmen uygun", "no": "Tekerlekli sandalyeye uygun değil" },
+      "changingTable": "Bebek bakım masası"
+    },
     "profile": "Profil",
     "phone": "Tel",
     "today": "Bugün",

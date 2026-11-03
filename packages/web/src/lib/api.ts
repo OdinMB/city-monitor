@@ -39,6 +39,8 @@ import type {
   PoliticalDistrict, TransitAlert, AirQuality, BootstrapData,
   NewsSummaryData, FloodStatus, LiftOutageData, BikeSharingData,
 } from '@city-monitor/shared';
+export type { HeatReliefData, HeatReliefPlace, HeatReliefKind, DwdHeatTrend } from '@city-monitor/shared';
+import type { HeatReliefData } from '@city-monitor/shared';
 
 /** The levels `GET /api/:city/political/:level` serves (packages/server/src/routes/political.ts). */
 export type PoliticalLevel = 'bundestag' | 'state' | 'bezirke' | 'mayor' | 'state-bezirke';
@@ -63,6 +65,7 @@ export const api = {
   getFloodStatus: (city: string) => fetchJson<ApiResponse<FloodStatus | null>>(`${API_BASE}/${city}/flood-status`),
   getLiftOutages: (city: string) => fetchJson<ApiResponse<LiftOutageData | null>>(`${API_BASE}/${city}/lift-outages`),
   getBikeSharing: (city: string) => fetchJson<ApiResponse<BikeSharingData | null>>(`${API_BASE}/${city}/bike-sharing`),
+  getHeatRelief: (city: string) => fetchJson<ApiResponse<HeatReliefData | null>>(`${API_BASE}/${city}/heat-relief`),
   getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),

@@ -31,6 +31,7 @@ import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { usePopulation } from '../../hooks/usePopulation.js';
 import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
 import { useBikeSharing } from '../../hooks/useBikeSharing.js';
+import { useHeatRelief } from '../../hooks/useHeatRelief.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
@@ -52,6 +53,7 @@ import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/chorople
 import { socialAtlasOf } from '../../lib/social-atlas.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 import { updateBikeSharingMarkers } from './layers/bike-sharing.js';
+import { updateHeatReliefMarkers } from './layers/heat-relief.js';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -215,6 +217,11 @@ export function CityMap() {
   // Lazy: Berlin's stations are about 150 KB, fetched only while the layer is on
   const bikeSharingActive = activeLayers.has('bike-sharing');
   const { data: bikeSharingData } = useBikeSharing(city.id, bikeSharingActive);
+  // Lazy as well: Berlin's three lists are about 165 KB
+  const heatReliefActive = activeLayers.has('heat-relief');
+  const { data: heatReliefData } = useHeatRelief(city.id, heatReliefActive);
+  const selectedHeatRelief = useCommandCenter((s) => s.heatReliefSubLayers);
+  const heatReliefSubLayers = useMemo(() => effectiveSubLayers(selectedHeatRelief, available.heatRelief), [selectedHeatRelief, available]);
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke', available.political.includes('bezirke'));
   const { data: bundestagData } = usePolitical(city.id, 'bundestag', available.political.includes('bundestag'));
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke', available.political.includes('landesparlament'));
@@ -272,6 +279,7 @@ export function CityMap() {
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
   const bikeSharingItems = bikeSharingActive ? (bikeSharingData?.data ?? null) : null;
+  const heatReliefItems = heatReliefActive ? (heatReliefData?.data ?? null) : null;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -308,6 +316,10 @@ export function CityMap() {
   noiseSensorItemsRef.current = noiseSensorItems;
   const bikeSharingItemsRef = useRef(bikeSharingItems);
   bikeSharingItemsRef.current = bikeSharingItems;
+  const heatReliefItemsRef = useRef(heatReliefItems);
+  heatReliefItemsRef.current = heatReliefItems;
+  const heatReliefSubLayersRef = useRef(heatReliefSubLayers);
+  heatReliefSubLayersRef.current = heatReliefSubLayers;
   const waterLevelItemsRef = useRef(waterLevelItems);
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
@@ -392,6 +404,7 @@ export function CityMap() {
         updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDarkRef.current);
+        updateHeatReliefMarkers(map, heatReliefItemsRef.current, heatReliefSubLayersRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
@@ -481,6 +494,7 @@ export function CityMap() {
       updateAqGridLayer(map, aqGridItemsRef.current, isDark, cityIdRef.current);
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDark);
+      updateHeatReliefMarkers(map, heatReliefItemsRef.current, heatReliefSubLayersRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
@@ -547,7 +561,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, waterLevelItems, bathingItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, heatReliefItems, heatReliefSubLayers, waterLevelItems, bathingItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -681,6 +695,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [bikeSharingItems]);
+
+  // Update heat-relief places (lazy: data only while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateHeatReliefMarkers(map, heatReliefItems, heatReliefSubLayers, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [heatReliefItems, heatReliefSubLayers]);
 
   // Update water level markers
   useEffect(() => {

@@ -17,7 +17,7 @@ afterAll(() => {
 });
 
 vi.mock('../../hooks/useCityConfig.js', () => ({
-  useCityConfig: () => ({ id: 'berlin', name: 'Berlin', timezone: 'Europe/Berlin' }),
+  useCityConfig: () => ({ id: 'berlin', name: 'Berlin', timezone: 'Europe/Berlin', features: [] }),
 }));
 
 let weather: WeatherData;

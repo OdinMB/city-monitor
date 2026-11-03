@@ -29,9 +29,15 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   socialAtlas: 'sidebar.layers.social',
   noiseMap: 'sidebar.layers.noise',
   bikeSharing: 'sidebar.layers.bike-sharing',
+  // Every city with a heat-relief layer has fountains; cool places and toilets
+  // are its other sub-layers, so the layer counts once.
+  drinkingFountains: 'sidebar.layers.heat-relief',
   // Refinements: road works and noise sensors are layers of traffic and noise,
   // pharmacies and defibrillators of the emergencies layer, the rent map a
-  // social layer, the rest parts of the political tile.
+  // social layer, cool places and toilets heat-relief sub-layers, the rest
+  // parts of the political tile.
+  coolPlaces: null,
+  publicToilets: null,
   roadworks: null,
   pharmacies: null,
   aeds: null,

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addresses>
+ <address>
+  <uid>1004118</uid>
+  <type><![CDATA[City-Toilette]]></type>
+  <name><![CDATA[Richartzstraße SHS-Toilette]]></name>
+  <street><![CDATA[Richartzstraße]]></street>
+  <area>Innenstadt</area>
+  <zipcode>50667</zipcode>
+  <city>Köln</city>
+  <coordinates>50.939855,6.955390</coordinates>
+  <phone></phone>
+  <cardname><![CDATA[Richartzstraße SHS-Toilette]]></cardname>
+  <cardnamegb><![CDATA[Richartzstraße SHS-Toilette]]></cardnamegb>
+  <district>Altstadt-Nord</district>
+  <description><![CDATA[]]></description>
+  <descriptiongb><![CDATA[]]></descriptiongb>
+  <www><![CDATA[]]></www>
+  <opening><![CDATA[rund um die Uhr]]></opening>
+  <openinggb><![CDATA[around the clock]]></openinggb>
+  <start></start>
+  <stop></stop>
+  <image></image>
+  <infrastructure>2,5,11</infrastructure>
+ </address>
+ <address>
+  <uid>1004315</uid>
+  <type><![CDATA[Toilette in Grünanlagen]]></type>
+  <name><![CDATA[Holy Shit (Mobile Toilette)]]></name>
+  <street><![CDATA[Bruno-Kisch-Weg]]></street>
+  <area>Lindenthal</area>
+  <zipcode>50937</zipcode>
+  <city>Köln</city>
+  <coordinates>50.927030,6.930861</coordinates>
+  <phone></phone>
+  <cardname><![CDATA[Holy Shit Handicap // Uniwiese]]></cardname>
+  <cardnamegb><![CDATA[Holy Shit Handicap // Uniwiese]]></cardnamegb>
+  <district>Lindenthal</district>
+  <description><![CDATA[Nutzungsgebühr: Kostenlos, kein Winterdienst.;]]></description>
+  <descriptiongb><![CDATA[Usage Fee: free of charge, no winter service.;]]></descriptiongb>
+  <www><![CDATA[]]></www>
+  <opening><![CDATA[Mo - So: durchgehend geöffnet]]></opening>
+  <openinggb><![CDATA[Mon - Sun: 24 hours
+]]></openinggb>
+  <start></start>
+  <stop></stop>
+  <image></image>
+  <infrastructure>1,2,4,8,11</infrastructure>
+ </address>
+ <address>
+  <uid>1003974</uid>
+  <type><![CDATA[City-Toilette]]></type>
+  <name><![CDATA[City-Toilette Wilhelmplatz]]></name>
+  <street><![CDATA[Viersener Straße]]></street>
+  <area>Nippes</area>
+  <zipcode>50733</zipcode>
+  <city>Köln</city>
+  <coordinates>50.963394,6.952108</coordinates>
+  <phone></phone>
+  <cardname><![CDATA[City-Toilette Wilhelmplatz]]></cardname>
+  <cardnamegb><![CDATA[City-Toilette Wilhelmplatz]]></cardnamegb>
+  <district>Nippes</district>
+  <description><![CDATA[Nutzungsgebühr: 0,50 €;]]></description>
+  <descriptiongb><![CDATA[Usage Fee: €0.50;]]></descriptiongb>
+  <www><![CDATA[]]></www>
+  <opening><![CDATA[Mo, Mi, Fr: 7.30 - 12.00 Uhr<br>Di: 9.30 - 18.00 Uhr]]></opening>
+  <openinggb><![CDATA[Mon - Sun: 24 hours]]></openinggb>
+  <start></start>
+  <stop></stop>
+  <image></image>
+  <infrastructure>1,2,3,4,5,9,10,11</infrastructure>
+ </address>
+</addresses>

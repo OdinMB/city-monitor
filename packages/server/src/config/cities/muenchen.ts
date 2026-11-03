@@ -53,6 +53,12 @@ export const muenchen: CityConfig = {
       regionId: 120,        // Bayern
       partregionId: 121,    // Allgäu/Oberbayern/Bay. Wald
     },
+    // Heat relief from the GeodatenService, dl-de/by-2.0 (opendata.muenchen.de, checked
+    // 2026-11-03): the Baureferat's 115 fountains and ~210 toilets (323 rooms). No cool-places list.
+    heatRelief: [
+      { kind: 'fountain', provider: 'muenchen-fountains', url: 'https://geoportal.muenchen.de/geoserver/baug_wfs/ows' },
+      { kind: 'toilet', provider: 'muenchen-toilets', url: 'https://geoportal.muenchen.de/geoserver/gsm_wfs/ows' },
+    ],
     // The Kreis table of the kreisfreie Stadt; AA München's district is wider than the city
     laborMarket: { provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' },
     wastewater: { provider: 'amelag', sites: ['München'] }, // RKI AMELAG (CC BY 4.0), about 1.24 million people

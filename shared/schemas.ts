@@ -47,6 +47,12 @@ export const WeatherAlertSchema = z.object({
   severity: z.string(),
   description: z.string(),
   validUntil: z.string(),
+  kind: z.literal('heat').optional(),
+});
+
+export const DwdHeatTrendSchema = z.object({
+  issued: z.string(),
+  days: z.array(z.number()),
 });
 
 export const DwdUvForecastSchema = z.object({
@@ -63,6 +69,7 @@ export const WeatherDataSchema = z.object({
   alerts: z.array(WeatherAlertSchema),
   // A malformed UV forecast is dropped rather than failing the whole weather read.
   dwdUv: DwdUvForecastSchema.optional().catch(undefined),
+  dwdHeatTrend: DwdHeatTrendSchema.optional().catch(undefined),
 });
 
 // --- Water Levels ---
@@ -357,6 +364,26 @@ export const BikeSharingDataSchema = z.object({
     reportedAt: z.number().nullable(),
   })),
   updated: z.string().nullable(),
+});
+
+// --- Heat Relief ---
+
+export const HeatReliefDataSchema = z.object({
+  places: z.array(z.object({
+    kind: z.enum(['cool', 'fountain', 'toilet']),
+    lat: z.number(),
+    lon: z.number(),
+    name: z.string(),
+    address: z.string().optional(),
+    hours: z.string().optional(),
+    note: z.string().optional(),
+    setting: z.enum(['indoor', 'air-conditioned', 'water']).optional(),
+    season: z.object({ from: z.number(), to: z.number() }).optional(),
+    outOfOrder: z.boolean().optional(),
+    accessible: z.enum(['yes', 'partly', 'no']).optional(),
+    fee: z.number().optional(),
+    changingTable: z.boolean().optional(),
+  })),
 });
 
 // --- Flood Status (LHP) ---
