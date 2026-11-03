@@ -120,7 +120,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
       vi.stubEnv('ACTIVE_CITIES', activeCities);
       await createApp();
 
-      expect(scheduled.jobs).toHaveLength(36);
+      expect(scheduled.jobs).toHaveLength(37);
       for (const name of BERLIN_ONLY) expect(names(scheduled.jobs)).toContain(name);
       expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
         .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention')));
@@ -131,7 +131,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
     vi.stubEnv('ACTIVE_CITIES', 'hamburg');
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(36);
+    expect(scheduled.jobs).toHaveLength(37);
     expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
       .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention' && !BERLIN_ONLY.includes(j.name))));
   });
@@ -168,7 +168,7 @@ describe('createApp startup runs with fresh stored data', () => {
   it('still runs the air-quality grid and live charging-status jobs on start, since neither is stored in full', async () => {
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(36);
+    expect(scheduled.jobs).toHaveLength(37);
     const startup = scheduled.jobs.filter((j) => j.runOnStart).map((j) => j.name);
     expect(startup).toEqual(ALWAYS_ON_START);
   });
@@ -249,7 +249,7 @@ describe('createApp startup runs per active city', () => {
     expect(startupRuns()).toEqual([
       'ingest-feeds', 'summarize-news', 'ingest-weather', 'ingest-safety', 'ingest-nina',
       'ingest-pharmacies', 'ingest-traffic', 'ingest-political', 'ingest-aq-grid', 'ingest-uba-air-quality', 'ingest-construction', 'ingest-aeds',
-      'ingest-social-atlas', 'ingest-water-levels', 'ingest-bathing', 'ingest-bike-sharing', 'ingest-electricity', 'ingest-traffic-counts', 'ingest-ev-charging', 'ingest-ev-charging-status', 'ingest-wastewater', 'ingest-labor-market',
+      'ingest-social-atlas', 'ingest-heat-relief', 'ingest-water-levels', 'ingest-bathing', 'ingest-bike-sharing', 'ingest-electricity', 'ingest-traffic-counts', 'ingest-ev-charging', 'ingest-ev-charging-status', 'ingest-wastewater', 'ingest-labor-market',
       'ingest-population', 'ingest-traffic-accidents', 'ingest-pollen', 'ingest-council-meetings',
     ]);
   });

@@ -25,8 +25,9 @@ describe('cityLayers', () => {
   it('gives Berlin, which has every feature, every layer and sub-layer', () => {
     const all = cityLayers(berlin);
     expect([...all.layers].sort()).toEqual([
-      'accidents', 'air-quality', 'bike-sharing', 'emergencies', 'ev-charging', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'warnings', 'water', 'weather',
+      'accidents', 'air-quality', 'bike-sharing', 'emergencies', 'ev-charging', 'heat-relief', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'warnings', 'water', 'weather',
     ]);
+    expect(all.heatRelief).toEqual(['cool', 'fountains', 'toilets']);
     expect(all.news).toEqual(['news', 'police']);
     expect(all.emergencies).toEqual(['pharmacies', 'aeds']);
     expect(all.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
@@ -102,6 +103,15 @@ describe('cityLayers', () => {
     for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('ev-charging'), city.id).toBe(true);
     expect(withFeatures('evCharging').layers.has('ev-charging')).toBe(true);
     expect(withFeatures().layers.has('ev-charging')).toBe(false);
+  });
+
+  it('gives each city the heat-relief lists it has, and no layer without one', () => {
+    expect(cityLayers(koeln).heatRelief).toEqual(['cool', 'fountains', 'toilets']);
+    expect(cityLayers(muenchen).heatRelief).toEqual(['fountains', 'toilets']);
+    expect(cityLayers(hamburg).heatRelief).toEqual(['fountains']);
+    expect(withFeatures('publicToilets').layers.has('heat-relief')).toBe(true);
+    expect(withFeatures().layers.has('heat-relief')).toBe(false);
+    expect(withFeatures().heatRelief).toEqual([]);
   });
 
   it('shows the political layer only with political data, and the district-mayor and state views only with theirs', () => {

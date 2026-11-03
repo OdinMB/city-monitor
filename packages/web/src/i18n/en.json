@@ -68,6 +68,12 @@
       "humidity": "Humidity",
       "wind": "Wind",
       "feelsLike": "Feels like",
+      "heatRelief": {
+        "warning": "Heat warning in force",
+        "outlook": "Heat expected in the coming days",
+        "onMap": "On the map: {{places}}",
+        "show": "Show on the map"
+      },
       "hourly": "Hourly",
       "daily": "Daily",
       "high": "H",
@@ -571,6 +577,7 @@
       "bike-sharing": "Bike Sharing",
       "accidents": "Accidents",
       "ev-charging": "EV Charging",
+      "heat-relief": "Heat Relief",
       "water": "Water",
       "social": "Social",
       "population": "Population",
@@ -620,6 +627,11 @@
       "good": "Good location",
       "normal": "Normal location",
       "unrated": "Not rated"
+    },
+    "heatRelief": {
+      "cool": "Cool Places",
+      "fountains": "Drinking Fountains",
+      "toilets": "Public Toilets"
     },
     "bikeLegend": {
       "title": "Bikes available at a station",
@@ -681,6 +693,18 @@
     "readMore": "Read more",
     "details": "Details",
     "directions": "Directions",
+    "heatRelief": {
+      "kind": { "cool": "Cool place", "fountain": "Drinking fountain", "toilet": "Public toilet" },
+      "setting": { "indoor": "Cool indoor space", "air-conditioned": "Air-conditioned", "water": "By the water" },
+      "outOfOrder": "Out of order",
+      "offSeason": "Off season",
+      "hours": "Hours",
+      "season": "Runs from {{from}} to {{to}}",
+      "free": "Free of charge",
+      "fee": "Fee",
+      "accessible": { "yes": "Wheelchair accessible", "partly": "Partly wheelchair accessible", "no": "Not wheelchair accessible" },
+      "changingTable": "Baby changing table"
+    },
     "profile": "Profile",
     "phone": "Tel",
     "today": "Today",

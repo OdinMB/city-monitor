@@ -54,6 +54,7 @@ function creditedCards(): Array<{ name: string; host: string; text: string; sect
 }
 
 const usesEvents = (c: CityConfig, source: string) => c.dataSources.events?.some((e) => e.source === source) ?? false;
+const usesHeatRelief = (c: CityConfig, provider: string) => c.dataSources.heatRelief?.some((s) => s.provider === provider) ?? false;
 const berlinOnly = (c: CityConfig) => c.id === 'berlin';
 
 /**
@@ -117,6 +118,16 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Verkehrsdaten Hamburg (Infrarotdetektoren)', (c) => c.dataSources.trafficCounts?.provider === 'hamburg-sta'],
   ['Ladesäulenregister (Bundesnetzagentur)', (c) => c.dataSources.evCharging?.provider === 'bnetza'],
   ['E-Ladestationen Hamburg (Urban Data Platform)', (c) => c.dataSources.evCharging?.liveStatus?.provider === 'hamburg-sta'],
+  // ingest-heat-relief: one credit per list a city's config names
+  ['Kühle Räume Berlin (Geoportal)', (c) => usesHeatRelief(c, 'berlin-cool-rooms')],
+  ['Trinkbrunnen Berlin (Geoportal)', (c) => usesHeatRelief(c, 'berlin-fountains')],
+  ['Öffentliche Toiletten Berlin (Geoportal)', (c) => usesHeatRelief(c, 'berlin-toilets')],
+  ['Trinkwasserbrunnen Hamburg (Geodienste)', (c) => usesHeatRelief(c, 'hamburg-fountains')],
+  ['Kühle Orte Köln (Geoportal)', (c) => usesHeatRelief(c, 'koeln-cool-places')],
+  ['Trinkwasserbrunnen Köln (Geoportal)', (c) => usesHeatRelief(c, 'koeln-fountains')],
+  ['Öffentliche Toiletten Köln (AWB)', (c) => usesHeatRelief(c, 'koeln-toilets')],
+  ['Trinkbrunnen München (Geoportal)', (c) => usesHeatRelief(c, 'muenchen-fountains')],
+  ['Öffentliche Toiletten München (GeodatenService)', (c) => usesHeatRelief(c, 'muenchen-toilets')],
   ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
   // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
@@ -241,6 +252,16 @@ describe('SourcesPage licence credits', () => {
     'Ladesäulenregister (Bundesnetzagentur)': 'Source: Bundesnetzagentur.de, CC BY 4.0.',
     // Transparenzportal "Elektro Ladestandorte Hamburg": dl-de-by-2.0, author BWAI
     'E-Ladestationen Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Wirtschaft, Arbeit und Innovation, dl-de/by-2-0.',
+    'Trinkwasserbrunnen Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft, dl-de/by-2-0.',
+    'Trinkbrunnen München (Geoportal)': 'Source: Landeshauptstadt München – Baureferat, dl-de/by-2-0.',
+    'Öffentliche Toiletten München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
+    // dl-de/zero asks for no credit; the publisher is named anyway
+    'Kühle Räume Berlin (Geoportal)': 'Source: Senatsverwaltung für Wissenschaft, Gesundheit und Pflege, dl-de/zero-2-0.',
+    'Trinkbrunnen Berlin (Geoportal)': 'Source: Berliner Wasserbetriebe, dl-de/zero-2-0.',
+    'Öffentliche Toiletten Berlin (Geoportal)': 'Source: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt, dl-de/zero-2-0.',
+    'Kühle Orte Köln (Geoportal)': 'Source: Stadt Köln, dl-de/zero-2-0.',
+    'Trinkwasserbrunnen Köln (Geoportal)': 'Source: Stadt Köln – Amt für Landschaftspflege und Grünflächen, dl-de/zero-2-0.',
+    'Öffentliche Toiletten Köln (AWB)': 'Source: Abfallwirtschaftsbetriebe Köln, dl-de/zero-2-0.',
     'Indikatorenatlas München': 'Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0.',
     'Stadtbezirke München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
   };

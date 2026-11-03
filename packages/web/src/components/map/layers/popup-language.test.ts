@@ -14,6 +14,7 @@ import { accidentPopupHtml } from './traffic-accidents';
 import { trafficCountPopupHtml } from './traffic-counts';
 import { evStationPopupHtml } from './ev-charging';
 import type { EvChargingStation } from '../../../lib/api.js';
+import { heatReliefPopupHtml } from './heat-relief';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
@@ -86,6 +87,12 @@ const EV: EvChargingStation = {
   ],
 };
 const EV_NORMAL: EvChargingStation = { ...EV, maxKw: 22, fast: false, plugs: ['type2'], live: undefined };
+// Heat-relief places as their map features carry them; a summer and a winter day for the fountain's season
+const FOUNTAIN = { kind: 'fountain', name: 'Trinkbrunnen Alexanderplatz', address: 'Alexanderplatz', seasonFrom: 4, seasonTo: 10, outOfOrder: false, lat: 52.52, lon: 13.41 };
+const TOILET = { kind: 'toilet', name: 'City-Toilette Hackescher Markt', hours: 'Mo-So 0-24 Uhr', note: 'Münzeinwurf', fee: 0.5, accessible: 'yes', changingTable: true, lat: 52.52, lon: 13.4 };
+const COOL = { kind: 'cool', name: '', setting: 'air-conditioned', address: 'Rathaus Köln', lat: 50.94, lon: 6.96 };
+const JULY = new Date(2026, 6, 15);
+const NOVEMBER = new Date(2026, 10, 3);
 const SOCIAL: SocialAtlasFeatureProps = {
   plrId: '01100101', plrName: 'Stülerstraße', bezId: '01', population: 3400, statusIndex: 2, statusLabel: 'mittel',
   unemployment: 5.2, singleParent: 20.1, welfare: 10.3, childPoverty: 15.4,
@@ -119,6 +126,9 @@ const POPUPS: Array<[string, () => string]> = [
   ['traffic count', () => trafficCountPopupHtml(COUNT, false)],
   ['traffic count without a usual count', () => trafficCountPopupHtml({ ...COUNT, name: null, typical: null }, false)],
   ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false)],
+  ['fountain', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER)],
+  ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER)],
+  ['cool place', () => heatReliefPopupHtml(COOL, NOVEMBER)],
   ['social atlas', () => socialAtlasPopupHtml(SOCIAL)],
   ['population', () => populationPopupHtml(POPULATION)],
   ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS)],
@@ -145,6 +155,8 @@ const ENGLISH_ONLY = [
   'Accident with', 'Turning accident', 'Collision', 'Involved', 'bicycle', 'Friday',
   'Motor vehicles', 'Counted', 'Usual', 'counter', 'Counting site', 'No usual',
   'Charge points', 'Plugs', 'up to', 'In use', 'Available', 'Fast (', 'charging register',
+  'Drinking fountain', 'Public toilet', 'Cool place', 'Air-conditioned', 'Off season', 'Runs from', 'Hours',
+  'Wheelchair', 'changing table', 'Free of charge',
 ];
 
 afterEach(async () => {
@@ -182,6 +194,10 @@ describe('map popups in German', () => {
       'Ultraschnell (ab 150 kW) · bis 150 kW', 'Ladepunkte: 2', 'Stecker: CCS, Typ 2', 'Live: 1 von 2 frei', '01: Frei', `02: Belegt seit 3. ${GERMAN_MARCH}`,
       'Ladesäulenregister der BNetzA vom',
     ]],
+    ['fountain in season', () => heatReliefPopupHtml(FOUNTAIN, JULY), ['Trinkbrunnen Alexanderplatz', 'In Betrieb von April bis Oktober', 'Route ↗']],
+    ['fountain off season', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER), ['Außerhalb der Saison']],
+    ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER), ['Öffentliche Toilette', 'Öffnungszeiten: Mo-So 0-24 Uhr', 'Gebühr: 0,50', 'Rollstuhlgerecht', 'Wickeltisch']],
+    ['cool place', () => heatReliefPopupHtml(COOL, NOVEMBER), ['Klimatisiert', 'Kühler Ort', 'Rathaus Köln']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Kinder Alleinerziehender20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%', 'MSS-Statusindexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Arbeitslosenquote5.2%', 'Alleinerziehenden-Haushalte20.1%', 'SGB-II-Leistungsberechtigte10.3%']],
     ['Hamburg social atlas', () => socialAtlasPopupHtml(SOCIAL, SOCIAL_ATLAS.hamburg), ['SGB-II- und AsylbLG-Empfänger10.3%', 'Kinder in Mindestsicherung15.4%', 'Statusindex (Sozialmonitoring)mittel']],
@@ -286,6 +302,8 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['S Halensee (Kurfürstendamm)', 'nextbike Berlin', 'nextbike']],
     ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Shanghaiallee / Überseeallee']],
     ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), ['HEnW-Mobil', 'Altstädter Str. 2']],
+    ['fountain', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER), ['Trinkbrunnen Alexanderplatz', 'Alexanderplatz']],
+    ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER), ['City-Toilette Hackescher Markt', 'Mo-So 0-24 Uhr', 'Münzeinwurf']],
   ] as const)('%s popup isolates its feed text', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     expect(sourceTexts(build())).toEqual(values);
@@ -386,6 +404,10 @@ describe('map popups in English', () => {
     ['traffic count at night', () => trafficCountPopupHtml({ ...COUNT, count: 12, typical: 20 }, false), ['Usual for this hour: 20', 'Too little traffic to compare']],
     ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), ['High power (150 kW and up) · up to 150 kW', 'Charge points: 2', 'Plugs: CCS, Type 2', 'Live: 1 of 2 free', '01: Available', '02: In use since']],
     ['EV charging station without live status', () => evStationPopupHtml(EV_NORMAL, null, false), ['Normal (up to 22 kW) · up to 22 kW', 'Plugs: Type 2']],
+    ['fountain', () => heatReliefPopupHtml(FOUNTAIN, JULY), ['Drinking fountain', 'Runs from April to October', 'Directions ↗']],
+    ['out-of-order fountain', () => heatReliefPopupHtml({ ...FOUNTAIN, outOfOrder: true }, JULY), ['Out of order']],
+    ['toilet', () => heatReliefPopupHtml(TOILET, JULY), ['Hours: Mo-So 0-24 Uhr', 'Fee: €0.50', 'Wheelchair accessible', 'Baby changing table']],
+    ['free toilet', () => heatReliefPopupHtml({ ...TOILET, fee: 0 }, JULY), ['Free of charge']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Children of single parents20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%', 'MSS status indexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Unemployment rate5.2%', 'Single-parent households20.1%', 'SGB II recipients10.3%']],
     ['population', () => populationPopupHtml(POPULATION), ['Population3,400', 'Density12,000/km²', 'Aged 65+15.2%', 'Under 1812.1%']],
@@ -397,6 +419,17 @@ describe('map popups in English', () => {
   ] as const)('%s popup', (_name, build, expected) => {
     const text = textOf(build());
     for (const s of expected) expect(text).toContain(s);
+  });
+
+  it('marks a seasonal fountain off season only outside its months', () => {
+    expect(textOf(heatReliefPopupHtml(FOUNTAIN, JULY))).not.toContain('Off season');
+    expect(textOf(heatReliefPopupHtml(FOUNTAIN, NOVEMBER))).toContain('Off season');
+  });
+
+  it('names a nameless cool place by its setting', () => {
+    const text = textOf(heatReliefPopupHtml(COOL, JULY));
+    expect(text).toContain('Air-conditioned');
+    expect(text).toContain('Cool place');
   });
 
   it('names only the indicators a city\'s social atlas has', () => {

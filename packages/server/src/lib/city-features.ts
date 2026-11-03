@@ -1,4 +1,4 @@
-import type { CityConfig, CityFeature } from '@city-monitor/shared';
+import type { CityConfig, CityFeature, HeatReliefKind } from '@city-monitor/shared';
 import { groupsStateMembersByBezirk, hasDistrictMayors, hasMayor, hasParliamentConfig } from '../cron/ingest-political.js';
 import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
 import { hasTransitSource } from '../cron/ingest-transit.js';
@@ -9,6 +9,11 @@ import { hasTransitSource } from '../cron/ingest-transit.js';
  * check in each job).
  */
 export const BERLIN_OWN_SOURCES: readonly CityFeature[] = ['feuerwehr'];
+
+/** Whether the city has a heat-relief list of this kind (ingest-heat-relief.ts reads every listed one). */
+function hasHeatRelief(city: CityConfig, kind: HeatReliefKind): boolean {
+  return city.dataSources.heatRelief?.some((s) => s.kind === kind) ?? false;
+}
 
 /**
  * Each feature the server ingests, with the condition its job checks before
@@ -40,6 +45,9 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['bikeCounts', (c) => c.dataSources.trafficCounts?.modes.includes('bike') === true],
   ['evCharging', (c) => c.dataSources.evCharging !== undefined],
   ['evChargingLive', (c) => c.dataSources.evCharging?.liveStatus !== undefined],
+  ['coolPlaces', (c) => hasHeatRelief(c, 'cool')],
+  ['drinkingFountains', (c) => hasHeatRelief(c, 'fountain')],
+  ['publicToilets', (c) => hasHeatRelief(c, 'toilet')],
   ['socialAtlas', (c) => c.dataSources.socialAtlas !== undefined],
   ['population', (c) => c.dataSources.population !== undefined],
   ['laborMarket', (c) => c.dataSources.laborMarket !== undefined],

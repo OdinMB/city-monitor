@@ -36,6 +36,7 @@ import { useBikeSharing } from '../../hooks/useBikeSharing.js';
 import { useCitizenReports } from '../../hooks/useCitizenReports.js';
 import { useTrafficAccidents } from '../../hooks/useTrafficAccidents.js';
 import { useTrafficCounts } from '../../hooks/useTrafficCounts.js';
+import { useHeatRelief } from '../../hooks/useHeatRelief.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import type { TrafficCountMode } from '../../lib/api.js';
 import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
@@ -63,6 +64,7 @@ import { updateTrafficAccidentLayer } from './layers/traffic-accidents.js';
 import { updateTrafficCountMarkers } from './layers/traffic-counts.js';
 import { updateEvChargingMarkers } from './layers/ev-charging.js';
 import { useEvCharging } from '../../hooks/useEvCharging.js';
+import { updateHeatReliefMarkers } from './layers/heat-relief.js';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -256,6 +258,11 @@ export function CityMap() {
   // Lazy as well: Berlin's ~3,500 charging stations are about 600 KB
   const evChargingActive = activeLayers.has('ev-charging');
   const { data: evChargingData } = useEvCharging(city.id, evChargingActive, city.features.includes('evChargingLive'));
+  // Lazy as well: Berlin's three lists are about 165 KB
+  const heatReliefActive = activeLayers.has('heat-relief');
+  const { data: heatReliefData } = useHeatRelief(city.id, heatReliefActive);
+  const selectedHeatRelief = useCommandCenter((s) => s.heatReliefSubLayers);
+  const heatReliefSubLayers = useMemo(() => effectiveSubLayers(selectedHeatRelief, available.heatRelief), [selectedHeatRelief, available]);
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke', available.political.includes('bezirke'));
   const { data: bundestagData } = usePolitical(city.id, 'bundestag', available.political.includes('bundestag'));
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke', available.political.includes('landesparlament'));
@@ -327,6 +334,7 @@ export function CityMap() {
   const accidentItems = accidentsActive ? (accidentData?.data ?? null) : null;
   const trafficCountItems = trafficCountModes.size > 0 ? (trafficCountData?.data ?? null) : null;
   const evChargingItems = evChargingActive ? (evChargingData?.data ?? null) : null;
+  const heatReliefItems = heatReliefActive ? (heatReliefData?.data ?? null) : null;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -379,6 +387,10 @@ export function CityMap() {
   trafficCountModesRef.current = trafficCountModes;
   const evChargingItemsRef = useRef(evChargingItems);
   evChargingItemsRef.current = evChargingItems;
+  const heatReliefItemsRef = useRef(heatReliefItems);
+  heatReliefItemsRef.current = heatReliefItems;
+  const heatReliefSubLayersRef = useRef(heatReliefSubLayers);
+  heatReliefSubLayersRef.current = heatReliefSubLayers;
   const waterLevelItemsRef = useRef(waterLevelItems);
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
@@ -473,6 +485,7 @@ export function CityMap() {
         updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDarkRef.current);
         updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDarkRef.current);
         updateEvChargingMarkers(map, evChargingItemsRef.current, isDarkRef.current);
+        updateHeatReliefMarkers(map, heatReliefItemsRef.current, heatReliefSubLayersRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
         updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDarkRef.current, cityIdRef.current);
@@ -568,6 +581,7 @@ export function CityMap() {
       updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDark);
       updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDark);
       updateEvChargingMarkers(map, evChargingItemsRef.current, isDark);
+      updateHeatReliefMarkers(map, heatReliefItemsRef.current, heatReliefSubLayersRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
       updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDark, cityIdRef.current);
@@ -659,7 +673,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, accidentItems, trafficCountItems, evChargingItems, waterLevelItems, bathingItems, citizenReportItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, accidentItems, trafficCountItems, evChargingItems, heatReliefItems, heatReliefSubLayers, waterLevelItems, bathingItems, citizenReportItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -823,6 +837,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [evChargingItems]);
+
+  // Update heat-relief places (lazy: data only while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateHeatReliefMarkers(map, heatReliefItems, heatReliefSubLayers, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [heatReliefItems, heatReliefSubLayers]);
 
   // Update water level markers
   useEffect(() => {

@@ -18,6 +18,8 @@ import {
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
   TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema,
 } from '@city-monitor/shared/schemas.js';
+import type { HeatReliefData } from '@city-monitor/shared';
+import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import { EvChargingRegisterSchema } from '@city-monitor/shared/schemas.js';
 import type { EvChargingRegister } from '../lib/ev-charging.js';
@@ -230,6 +232,11 @@ export async function loadTrafficCounts(db: Db, cityId: string): Promise<DbResul
  */
 export async function loadEvChargingRegister(db: Db, cityId: string): Promise<DbResult<EvChargingRegister>> {
   return loadSnapshot(db, cityId, 'bnetza-charging', { schema: EvChargingRegisterSchema, maxAgeMs: 90 * 86_400_000 });
+}
+
+/** No age limit: the lists are static, and last month's fountains beat none (the job runs weekly). */
+export async function loadHeatRelief(db: Db, cityId: string): Promise<DbResult<HeatReliefData>> {
+  return loadSnapshot(db, cityId, 'heat-relief', { schema: HeatReliefDataSchema });
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {

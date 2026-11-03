@@ -96,6 +96,7 @@ describe('data-retention: snapshots', () => {
     'afstat-population',       // monthly, 7 days
     'unfallatlas-accidents',   // monthly, 7 days
     'bnetza-charging',         // weekly, 7 days
+    'heat-relief',             // weekly, 7 days
     'abgwatch-bezirke',        // weekly, 7 days
     'abgwatch-mayor',          // weekly, 7 days
     'abgwatch-bundestag',      // weekly, 7 days

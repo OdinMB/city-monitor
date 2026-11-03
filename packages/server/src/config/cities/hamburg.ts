@@ -103,6 +103,11 @@ export const hamburg: CityConfig = {
       regionId: 10,         // Schleswig-Holstein und Hamburg
       partregionId: 12,     // Geest, Schleswig-Holstein und Hamburg
     },
+    // Heat relief: BUKEA's 10 drinking fountains (dl-de/by-2.0, Transparenzportal, checked
+    // 2026-11-03). No open list of cool places or public toilets was found.
+    heatRelief: [
+      { kind: 'fountain', provider: 'hamburg-fountains', url: 'https://geodienste.hamburg.de/wfs_trinkwasserbrunnen' },
+    ],
     // The Bürgerschaft's committee and plenary sessions from its website calendar
     // (official public records, no licence stated). The Bezirksversammlungen' ALLRIS
     // (sitzungsdienst-<bezirk>.hamburg.de) lists no OParl endpoint: .context/council-meetings.md.

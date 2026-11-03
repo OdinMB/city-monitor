@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'ev-charging' | 'accidents' | 'water' | 'social' | 'population' | 'political' | 'reports';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'ev-charging' | 'heat-relief' | 'accidents' | 'water' | 'social' | 'population' | 'political' | 'reports';
 /** Which accidents the accident layer shows: all, or those with a bicycle or a pedestrian involved. */
 export type AccidentFilter = 'all' | 'bike' | 'pedestrian';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
@@ -12,6 +12,7 @@ export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
 export type TrafficSubLayer = 'public-transport' | 'incidents' | 'congestion' | 'roadworks' | 'car-counts' | 'bike-counts';
+export type HeatReliefSubLayer = 'cool' | 'fountains' | 'toilets';
 
 interface CommandCenterState {
   singleView: boolean;
@@ -26,6 +27,7 @@ interface CommandCenterState {
   waterSubLayers: Set<WaterSubLayer>;
   trafficSubLayers: Set<TrafficSubLayer>;
   accidentFilter: AccidentFilter;
+  heatReliefSubLayers: Set<HeatReliefSubLayer>;
   toggleSingleView: () => void;
   toggleLayer: (layer: DataLayer) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
@@ -38,6 +40,9 @@ interface CommandCenterState {
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
   toggleTrafficSubLayer: (sub: TrafficSubLayer) => void;
   setAccidentFilter: (filter: AccidentFilter) => void;
+  toggleHeatReliefSubLayer: (sub: HeatReliefSubLayer) => void;
+  /** Turns the heat-relief layer on with all its sub-layers (the weather tile's heat hint); in single view it replaces the shown layer. */
+  showHeatRelief: () => void;
   setActiveLayers: (layers: Set<DataLayer>) => void;
   /** The city whose dashboard the layer choice was last made for. */
   layersCityId: string | null;
@@ -73,6 +78,7 @@ const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
  * the counts are fetched only once asked for.
  */
 const DEFAULT_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
+const ALL_HEAT_RELIEF_SUBS: Set<HeatReliefSubLayer> = new Set(['cool', 'fountains', 'toilets']);
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: false,
@@ -87,6 +93,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   waterSubLayers: new Set(ALL_WATER_SUBS),
   trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS),
   accidentFilter: 'all',
+  heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS),
   toggleSingleView: () =>
     set((state) => {
       const singleView = !state.singleView;
@@ -163,6 +170,21 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       return { trafficSubLayers: next };
     }),
   setAccidentFilter: (filter) => set({ accidentFilter: filter }),
+  toggleHeatReliefSubLayer: (sub) =>
+    set((state) => {
+      const next = new Set(state.heatReliefSubLayers);
+      if (next.has(sub)) {
+        if (next.size > 1) next.delete(sub);
+      } else {
+        next.add(sub);
+      }
+      return { heatReliefSubLayers: next };
+    }),
+  showHeatRelief: () =>
+    set((state) => {
+      const activeLayers = state.singleView ? new Set<DataLayer>(['heat-relief']) : new Set([...state.activeLayers, 'heat-relief' as const]);
+      return { activeLayers, heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS) };
+    }),
   setActiveLayers: (layers) => set({ activeLayers: layers }),
   layersCityId: null,
   enterCity: (cityId) =>

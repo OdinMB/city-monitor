@@ -26,6 +26,9 @@ const SEVERITY_BY_LEVEL = new Map<number, string>([
   [11, 'severe'],
 ]);
 
+/** DWD's heat-warning levels; their alerts carry `kind: 'heat'`, which turns on the heat-relief hint. */
+const HEAT_LEVELS = new Set([10, 11]);
+
 /** One entry of a warncell, with the fields every reader relies on checked. */
 export interface DwdWarningEntry {
   level: number;
@@ -116,6 +119,7 @@ export function parseDwdWarnings(json: unknown, isCityRegion: WarnRegionMatch): 
         severity,
         description: typeof w.description === 'string' ? w.description : '',
         validUntil: isoOrEmpty(w.end),
+        ...(HEAT_LEVELS.has(w.level) ? { kind: 'heat' as const } : {}),
       });
     }
   }

@@ -36,6 +36,8 @@ export const CK = {
   evChargingRegister: (cityId: string) => `${cityId}:ev-charging:register`,
   /** Live charge-point status (Hamburg), cache only; the route merges it onto the register. */
   evChargingStatus: (cityId: string) => `${cityId}:ev-charging:status`,
+  /** Not bootstrapped: Berlin's ~900 cool places, fountains and toilets are about 165 KB, fetched when the layer is on. */
+  heatRelief: (cityId: string) => `${cityId}:heat-relief`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

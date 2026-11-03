@@ -1,6 +1,6 @@
 import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
 import type {
-  DataLayer, EmergencySubLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
+  DataLayer, EmergencySubLayer, HeatReliefSubLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
 } from '../hooks/useCommandCenter.js';
 import { METRIC_LAYER, socialAtlasOf } from './social-atlas.js';
 
@@ -15,6 +15,8 @@ export interface CityLayers {
   emergencies: readonly EmergencySubLayer[];
   traffic: readonly TrafficSubLayer[];
   water: readonly WaterSubLayer[];
+  /** Cool places, drinking fountains, public toilets: the lists the city has. */
+  heatRelief: readonly HeatReliefSubLayer[];
   /** The noise maps (WMS). */
   noise: readonly NoiseLayer[];
   /** Live noise sensors. */
@@ -50,6 +52,9 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
     ['car-counts', has('carCounts')], ['bike-counts', has('bikeCounts')],
   ]);
   const water = present<WaterSubLayer>([['levels', has('waterLevels')], ['bathing', has('bathing')]]);
+  const heatRelief = present<HeatReliefSubLayer>([
+    ['cool', has('coolPlaces')], ['fountains', has('drinkingFountains')], ['toilets', has('publicToilets')],
+  ]);
   const noise = present<NoiseLayer>([
     ['total', has('noiseTotal')], ['road', has('noiseMap')], ['rail', has('noiseMap')], ['air', has('noiseMap')],
   ]);
@@ -72,6 +77,7 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
     ['bike-sharing', has('bikeSharing')],
     ['accidents', has('trafficAccidents')],
     ['ev-charging', has('evCharging')],
+    ['heat-relief', heatRelief.length > 0],
     ['weather', true],
     ['air-quality', true],
     ['noise', noise.length > 0 || noiseLive],
@@ -83,7 +89,7 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
     ['reports', has('citizenReports')],
   ]));
 
-  return { layers, news, emergencies, traffic, water, noise, noiseLive, social, political };
+  return { layers, news, emergencies, traffic, water, heatRelief, noise, noiseLive, social, political };
 }
 
 /** The selected sub-layers the city has, or every one it has when none of the selected ones is there. */

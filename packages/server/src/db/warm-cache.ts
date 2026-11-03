@@ -10,6 +10,8 @@ import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-f
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
 import { TRAFFIC_ACCIDENTS_TTL_SECONDS } from '../cron/ingest-traffic-accidents.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
+import { loadHeatRelief } from './reads.js';
+import { HEAT_RELIEF_TTL_SECONDS } from '../cron/ingest-heat-relief.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -195,6 +197,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadTrafficCounts(db, cityId);
       if (r) cache.set(CK.trafficCounts(cityId), r.data, 1800, r.fetchedAt); // TRAFFIC_COUNTS_TTL_SECONDS
     })().catch((err) => log.error(`${cityId} traffic counts failed`, err)),
+
+    (async () => {
+      const r = await loadHeatRelief(db, cityId);
+      if (r) cache.set(CK.heatRelief(cityId), r.data, HEAT_RELIEF_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} heat relief failed`, err)),
 
     (async () => {
       const r = await loadWastewater(db, cityId);

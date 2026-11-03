@@ -104,6 +104,16 @@ export const koeln: CityConfig = {
       regionId: 40,         // Nordrhein-Westfalen
       partregionId: 41,     // Rhein.-Westfäl. Tiefland
     },
+    // Heat relief, all dl-de/zero-2.0 (GovData, checked 2026-11-03): the city's cool places
+    // (73 indoors, 24 air-conditioned, 45 by the water), 16 fountains, AWB's 180 toilets
+    heatRelief: [
+      {
+        kind: 'cool', provider: 'koeln-cool-places', url: 'https://geoportal.stadt-koeln.de/wss/service/kuehle_orte_wfs/guest',
+        layers: ['im_innenraum', 'klimatisierter_ort', 'am_wasser'],
+      },
+      { kind: 'fountain', provider: 'koeln-fountains', url: 'https://geoportal.stadt-koeln.de/wss/service/trinkwasserbrunnen_wfs/guest' },
+      { kind: 'toilet', provider: 'koeln-toilets', url: 'https://www.awbkoeln.de/geodaten/toiletten/' },
+    ],
     // The Kreis table of the kreisfreie Stadt, not the wider Agentur für Arbeit district
     laborMarket: { provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' },
     electricity: { provider: 'smard', controlArea: 'Amprion' },

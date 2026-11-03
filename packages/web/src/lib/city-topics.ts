@@ -33,12 +33,18 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   citizenReports: 'sidebar.layers.reports',
   trafficAccidents: 'sidebar.layers.accidents',
   evCharging: 'sidebar.layers.ev-charging',
+  // Every city with a heat-relief layer has fountains; cool places and toilets
+  // are its other sub-layers, so the layer counts once.
+  drinkingFountains: 'sidebar.layers.heat-relief',
   // Refinements: live charging status is part of the charging layer;
   // road works and noise sensors are layers of traffic and noise,
   // pharmacies and defibrillators of the emergencies layer, the rent map a
   // social layer, official air stations part of air quality (every city's topic),
-  // the rest parts of the political tile.
+  // cool places and toilets heat-relief sub-layers, the rest parts of the
+  // political tile.
   airQualityStations: null,
+  coolPlaces: null,
+  publicToilets: null,
   roadworks: null,
   // The congestion map and the counters refine the traffic layer every city has
   trafficFlowMap: null,

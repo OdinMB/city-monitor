@@ -22,6 +22,7 @@ import { createWeatherTilesRouter } from './routes/weather-tiles.js';
 import { createConstructionRouter } from './routes/construction.js';
 import { createAedsRouter } from './routes/aeds.js';
 import { createSocialAtlasRouter } from './routes/social-atlas.js';
+import { createHeatReliefRouter } from './routes/heat-relief.js';
 import { createAppointmentsRouter } from './routes/appointments.js';
 import { createWaterLevelsRouter } from './routes/water-levels.js';
 import { createBudgetRouter } from './routes/budget.js';
@@ -58,6 +59,7 @@ import { createAirQualityGridIngestion } from './cron/ingest-air-quality-grid.js
 import { createConstructionIngestion } from './cron/ingest-construction.js';
 import { createAedIngestion } from './cron/ingest-aeds.js';
 import { createSocialAtlasIngestion } from './cron/ingest-social-atlas.js';
+import { createHeatReliefIngestion } from './cron/ingest-heat-relief.js';
 import { createWaterLevelIngestion } from './cron/ingest-water-levels.js';
 import { createBudgetIngestion } from './cron/ingest-budget.js';
 import { createAppointmentIngestion } from './cron/ingest-appointments.js';
@@ -186,6 +188,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-construction', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'viz-roadworks' }, serves: (c) => !!c.dataSources.roadworks },
     { jobName: 'ingest-aeds',         tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'osm-aeds' }, serves: inGermany },
     { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' }, serves: (c) => !!c.dataSources.socialAtlas },
+    { jobName: 'ingest-heat-relief',  tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'heat-relief' }, serves: (c) => !!c.dataSources.heatRelief?.length },
     { jobName: 'ingest-water-levels', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'pegelonline' }, serves: (c) => !!c.dataSources.waterLevels?.stations.length },
     { jobName: 'ingest-flood-status', tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'lhp-flood' }, serves: (c) => !!c.dataSources.floodStatus?.stations.length },
     { jobName: 'ingest-budget',       tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'berlin-haushalt' }, serves: (c) => !!c.dataSources.budget },
@@ -240,6 +243,7 @@ export async function createApp(options?: {
   const ingestConstruction = createConstructionIngestion(cache, db);
   const ingestAeds = createAedIngestion(cache, db);
   const ingestSocialAtlas = createSocialAtlasIngestion(cache, db);
+  const ingestHeatRelief = createHeatReliefIngestion(cache, db);
   const ingestWaterLevels = createWaterLevelIngestion(cache, db);
   const ingestFloodStatus = createFloodStatusIngestion(cache, db);
   const ingestBudget = createBudgetIngestion(cache, db);
@@ -284,6 +288,8 @@ export async function createApp(options?: {
     { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction, runOnStart: s('ingest-construction') },
     { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: s('ingest-aeds') },
     { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },
+    // Static lists (cool places, fountains, toilets) that change a few times a year
+    { name: 'ingest-heat-relief', schedule: '30 5 * * 1', handler: ingestHeatRelief, runOnStart: s('ingest-heat-relief') },
     { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: s('ingest-water-levels') },
     // LHP's terms ask for a refresh at least every 10 minutes
     { name: 'ingest-flood-status', schedule: '*/5 * * * *', handler: ingestFloodStatus, runOnStart: s('ingest-flood-status') },
@@ -341,6 +347,7 @@ export async function createApp(options?: {
     // Stricter rate limit for heavy payloads (GeoJSON, large data objects)
     const heavyPayloadLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
     app.use('/api/:city/social-atlas', heavyPayloadLimit);
+    app.use('/api/:city/heat-relief', heavyPayloadLimit);
     app.use('/api/:city/population', heavyPayloadLimit);
     app.use('/api/:city/aeds', heavyPayloadLimit);
     app.use('/api/:city/bike-sharing', heavyPayloadLimit);
@@ -364,6 +371,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(900), createConstructionRouter(cache, db));
   app.use('/api', cacheFor(43200), createAedsRouter(cache, db));
   app.use('/api', cacheFor(43200), createSocialAtlasRouter(cache, db));
+  app.use('/api', cacheFor(43200), createHeatReliefRouter(cache, db));
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
   app.use('/api', cacheFor(120), createFloodStatusRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache, db));
