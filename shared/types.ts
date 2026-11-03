@@ -71,6 +71,8 @@ export type CityFeature =
   | 'electricity'     // dataSources.electricity: generation mix of the grid control area, grid CO₂ and signal
   | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
   | 'citizenReports'  // dataSources.citizenReports: citizen issue reports (Open311), the reports map layer
+  | 'soilMoisture'    // dataSources.soilMoisture: DWD soil moisture at the city's stations (drought tile)
+  | 'treeWatering'    // dataSources.soilMoisture.treeWatering: street-tree waterings logged by residents (Gieß den Kiez)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -245,6 +247,22 @@ export type CitizenReportSource = {
   requestUrl: string;
 };
 
+/**
+ * The drought tile's sources (.context/soil-moisture.md): the DWD's daily soil
+ * moisture per climate station (AMBAV model output, CC BY 4.0), and for Berlin
+ * the street-tree waterings residents log on Gieß den Kiez (CC0).
+ */
+export interface SoilMoistureSource {
+  provider: 'dwd';
+  /**
+   * DWD stations by their Stationsindex (as in the file name, without leading
+   * zeros) and name. The tile shows their daily mean and each one's latest day.
+   */
+  stations: Array<{ id: string; name: string }>;
+  /** Gieß den Kiez's open-data CSV of every logged watering (Technologiestiftung Berlin). */
+  treeWatering?: { provider: 'giessdenkiez'; csvUrl: string };
+}
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -298,6 +316,7 @@ export interface CityDataSources {
   bikeSharing?: BikeSharingSource;
   electricity?: ElectricitySource;
   citizenReports?: CitizenReportSource;
+  soilMoisture?: SoilMoistureSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -891,6 +910,55 @@ export interface ElectricityData {
   grid: GridPoint[];
 }
 
+// Soil moisture (DWD, per station) and street-tree watering (Gieß den Kiez)
+/**
+ * One day's soil moisture under grass, 0–60 cm, in % of usable field capacity
+ * (% nFK, "plant-available water"; above 100 the soil holds more than it can
+ * keep). `sandy` is DWD's BFGS_AG (loamy sand), `loamy` its BFGL_AG (loamy silt).
+ */
+export interface SoilMoistureDay {
+  /** The day (YYYY-MM-DD). */
+  date: string;
+  sandy: number;
+  loamy: number;
+}
+
+/** One station's newest day. */
+export interface SoilMoistureStation extends SoilMoistureDay {
+  /** DWD Stationsindex. */
+  id: string;
+  name: string;
+}
+
+/** Street-tree waterings in a period: total litres, logged waterings and distinct trees watered. */
+export interface TreeWateringPeriod {
+  litres: number;
+  waterings: number;
+  trees: number;
+}
+
+export interface TreeWateringSummary {
+  /** The newest day with a logged watering (YYYY-MM-DD); the file is regenerated about monthly. */
+  dataThrough: string;
+  /** The 30 days up to and including `dataThrough`. */
+  last30Days: TreeWateringPeriod;
+  /** The calendar year of `dataThrough` so far. */
+  season: TreeWateringPeriod & { year: number };
+  /** The whole calendar year before, for comparison. */
+  previousSeason: TreeWateringPeriod & { year: number };
+  /** The Bezirke with the most litres this season, most first (at most 3). */
+  topDistricts: Array<{ district: string; litres: number }>;
+}
+
+export interface SoilMoistureData {
+  /** Each configured station's newest day; a station whose file failed is left out. */
+  stations: SoilMoistureStation[];
+  /** The stations' daily mean over the last 90 days, oldest first (one decimal). */
+  history: SoilMoistureDay[];
+  /** Gieß den Kiez waterings (Berlin); null for a city without them or when the CSV failed. */
+  watering: TreeWateringSummary | null;
+}
+
 // Citizen issue reports (Open311 GeoReport v2)
 export type CitizenReportStatus = 'open' | 'in_progress' | 'closed';
 
@@ -1072,6 +1140,7 @@ export interface BootstrapData {
   floodStatus: ApiResponse<FloodStatus | null> | null;
   liftOutages: ApiResponse<LiftOutageData | null> | null;
   electricity: ApiResponse<ElectricityData | null> | null;
+  soilMoisture: ApiResponse<SoilMoistureData | null> | null;
   budget: ApiResponse<BudgetSummary | null> | null;
   appointments: ApiResponse<BuergeramtData> | null;
   laborMarket: ApiResponse<LaborMarketSummary | null> | null;

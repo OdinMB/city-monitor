@@ -41,6 +41,8 @@ export const FEED_TIMINGS = {
   pollen:          { job: 6 * HOUR,  refetch: HOUR,     httpMaxAge: 12 * HOUR }, // ingest-pollen every 6 h
   councilMeetings: { job: 6 * HOUR,  refetch: HOUR,     httpMaxAge: HOUR },     // ingest-council-meetings every 6 h
   bathing:         { job: DAY,       refetch: DAY,      httpMaxAge: 12 * HOUR }, // ingest-bathing daily
+  // The longer of its two daily runs' gaps (16:30 to 10:30 UTC)
+  soilMoisture:    { job: 18 * HOUR, refetch: HOUR,     httpMaxAge: HOUR },     // ingest-soil-moisture 30 10,16 * * *
   laborMarket:     { job: DAY,       refetch: HOUR,     httpMaxAge: HOUR },     // ingest-labor-market daily
   budget:          { job: DAY,       refetch: HOUR,     httpMaxAge: HOUR },     // ingest-budget daily
   feuerwehr:       { job: DAY,       refetch: DAY,      httpMaxAge: 12 * HOUR }, // ingest-feuerwehr daily

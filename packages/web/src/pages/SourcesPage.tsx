@@ -69,6 +69,12 @@ const SHARED_SOURCES: SourceGroup[] = [
         url: 'https://www.dwd.de/',
         description: 'Weather observations and forecast (via Bright Sky), official severe weather warnings, pollen forecast (Pollenflug-Gefahrenindex), and UV index forecast. Source: Deutscher Wetterdienst. City Monitor derives the daily summaries and feels-like temperature from this data.',
       },
+      {
+        name: 'DWD Soil Moisture (Climate Data Center)',
+        url: 'https://opendata.dwd.de/climate_environment/CDC/derived_germany/soil/daily/recent/',
+        description: 'Daily soil moisture under grass (0–60 cm) at the city\'s DWD climate stations, in % of usable field capacity, computed by the DWD\'s agrometeorological model AMBAV. City Monitor averages the stations and derives the level and trend. Source: Deutscher Wetterdienst, CC BY 4.0.',
+        requires: 'soilMoisture',
+      },
     ],
   },
   {
@@ -249,6 +255,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'LAGeSo Bathing Water', url: 'https://data.lageso.de/', description: 'Water quality measurements for Berlin bathing spots.' },
       { name: 'LAGeSo Wastewater Monitoring', url: 'https://data.lageso.de/', description: 'Weekly viral load measurements (Influenza A/B, RSV) in Berlin wastewater. Source: Lageso Berlin and Berliner Wasserbetriebe, dl-de/by-2-0. City Monitor averages the plants and derives the trend and level.' },
       { name: 'RKI AMELAG Wastewater Surveillance', url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG', description: 'SARS-CoV-2 viral load at the three Berlin treatment plants. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the samples per week and the plants, weighted by the population each serves, and derives the trend and level.' },
+      { name: 'Gieß den Kiez (Open Data)', url: 'https://github.com/technologiestiftung/giessdenkiez-de-opendata', description: 'Street-tree waterings residents log on giessdenkiez.de, a CityLAB Berlin project of the Technologiestiftung Berlin; the file is regenerated about monthly. City Monitor sums the litres, waterings and trees for the last 30 days of data and the year. Data: Technologiestiftung Berlin, CC0 1.0.' },
     ],
   },
   {

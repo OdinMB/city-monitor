@@ -27,6 +27,7 @@ export type {
   FloodStatus, FloodGauge, FloodAlert, FloodClass, LiftOutage, LiftOutageData,
   BikeStation, BikeSharingData,
   ElectricityData, ElectricityMix, GenerationKind, GridPoint, GridSignal, ControlArea,
+  SoilMoistureData, SoilMoistureDay, SoilMoistureStation, TreeWateringPeriod, TreeWateringSummary,
   AirQualityStation, UbaAirIndex,
   CitizenReport, CitizenReportData, CitizenReportGroup, CitizenReportStatus,
 } from '@city-monitor/shared';
@@ -40,7 +41,7 @@ import type {
   PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor,
   CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy,
   PoliticalDistrict, TransitAlert, AirQuality, BootstrapData,
-  NewsSummaryData, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, ElectricityData,
+  NewsSummaryData, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, ElectricityData, SoilMoistureData,
 } from '@city-monitor/shared';
 
 /** The levels `GET /api/:city/political/:level` serves (packages/server/src/routes/political.ts). */
@@ -68,6 +69,7 @@ export const api = {
   getLiftOutages: (city: string) => fetchJson<ApiResponse<LiftOutageData | null>>(`${API_BASE}/${city}/lift-outages`),
   getBikeSharing: (city: string) => fetchJson<ApiResponse<BikeSharingData | null>>(`${API_BASE}/${city}/bike-sharing`),
   getElectricity: (city: string) => fetchJson<ApiResponse<ElectricityData | null>>(`${API_BASE}/${city}/electricity`),
+  getSoilMoisture: (city: string) => fetchJson<ApiResponse<SoilMoistureData | null>>(`${API_BASE}/${city}/soil-moisture`),
   getCitizenReports: (city: string) => fetchJson<ApiResponse<CitizenReportData | null>>(`${API_BASE}/${city}/citizen-reports`),
   getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),

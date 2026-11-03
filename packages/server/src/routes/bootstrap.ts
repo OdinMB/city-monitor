@@ -39,6 +39,7 @@ export function createBootstrapRouter(cache: Cache) {
       floodStatus: data[CK.floodStatus(city.id)] ?? null,
       liftOutages: data[CK.liftOutages(city.id)] ?? null,
       electricity: data[CK.electricity(city.id)] ?? null,
+      soilMoisture: data[CK.soilMoisture(city.id)] ?? null,
       budget: data[CK.budget(city.id)] ?? null,
       appointments: data[CK.appointments(city.id)] ?? null,
       laborMarket: data[CK.laborMarket(city.id)] ?? null,

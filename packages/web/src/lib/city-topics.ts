@@ -20,6 +20,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   nina: 'sidebar.layers.warnings',
   wastewater: 'panel.wastewater.title',
   electricity: 'panel.electricity.title',
+  soilMoisture: 'panel.soilMoisture.title',
   councilMeetings: 'panel.councilMeetings.title',
   budget: 'panel.budget.title',
   laborMarket: 'panel.laborMarket.title',
@@ -34,8 +35,9 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   // Refinements: road works and noise sensors are layers of traffic and noise,
   // pharmacies and defibrillators of the emergencies layer, the rent map a
   // social layer, official air stations part of air quality (every city's topic),
-  // the rest parts of the political tile.
+  // the rest parts of the political tile. Tree watering is a section of the soil-moisture tile.
   airQualityStations: null,
+  treeWatering: null,
   roadworks: null,
   pharmacies: null,
   aeds: null,

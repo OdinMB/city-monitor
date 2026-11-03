@@ -58,6 +58,8 @@ export const muenchen: CityConfig = {
     // The Kreis table of the kreisfreie Stadt; AA München's district is wider than the city
     laborMarket: { provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' },
     electricity: { provider: 'smard', controlArea: 'TenneT' },
+    // DWD soil moisture (CC BY 4.0); the airport station (1262) lies outside the city
+    soilMoisture: { provider: 'dwd', stations: [{ id: '3379', name: 'München-Stadt' }] },
     wastewater: { provider: 'amelag', sites: ['München'] }, // RKI AMELAG (CC BY 4.0), about 1.24 million people
     // nextbike's MyRadl system (GBFS, CC0-1.0) covers the city and its Landkreis: ~800
     // virtual stations, ~630 of them inside the bounding box, which the job keeps
