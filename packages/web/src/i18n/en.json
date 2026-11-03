@@ -603,7 +603,8 @@
     },
     "water": {
       "levels": "Water Levels",
-      "bathing": "Bathing Water"
+      "bathing": "Bathing Water",
+      "temperature": "Water Temperature"
     },
     "social": {
       "rent": "Rent"
@@ -714,6 +715,11 @@
       "bikes": "Bikes available",
       "docks": "Free docks",
       "updated": "Updated"
+    },
+    "waterTemperature": {
+      "temperature": "Water temperature",
+      "measured": "Measured",
+      "source": "Wasserportal Berlin"
     },
     "accident": {
       "severity": {

@@ -30,7 +30,7 @@ describe('cityLayers', () => {
     expect(all.news).toEqual(['news', 'police']);
     expect(all.emergencies).toEqual(['pharmacies', 'aeds']);
     expect(all.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
-    expect(all.water).toEqual(['levels', 'bathing']);
+    expect(all.water).toEqual(['levels', 'bathing', 'temperature']);
     expect(all.noise).toEqual(['total', 'road', 'rail', 'air']);
     expect(all.noiseLive).toBe(true);
     expect(all.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty', 'rent']);
@@ -69,6 +69,7 @@ describe('cityLayers', () => {
     expect(withFeatures('police').layers.has('news')).toBe(true);
     expect(withFeatures('police').news).toEqual(['police']);
     expect(withFeatures('bathing').layers.has('water')).toBe(true);
+    expect(withFeatures('waterTemperature').water).toEqual(['temperature']);
     expect(withFeatures('noiseSensors').layers.has('noise')).toBe(true);
     expect(withFeatures('rentMap').social).toEqual(['rent']);
     expect(withFeatures('aeds').layers.has('emergencies')).toBe(true);

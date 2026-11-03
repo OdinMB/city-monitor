@@ -34,6 +34,8 @@ export const CK = {
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,
   floodStatus: (cityId: string) => `${cityId}:flood-status`,
+  /** Not bootstrapped: the map fetches it when the water layer's temperature sub-layer is on. */
+  waterTemperature: (cityId: string) => `${cityId}:water-temperature`,
   wastewaterSummary: (cityId: string) => `${cityId}:wastewater:summary`,
   bathingSpots: (cityId: string) => `${cityId}:bathing:spots`,
   liftOutages: (cityId: string) => `${cityId}:lift-outages`,

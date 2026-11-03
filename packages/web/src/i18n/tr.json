@@ -599,7 +599,8 @@
     },
     "water": {
       "levels": "Su Seviyeleri",
-      "bathing": "Yüzme Suyu"
+      "bathing": "Yüzme Suyu",
+      "temperature": "Su Sıcaklığı"
     },
     "social": {
       "rent": "Kira"
@@ -710,6 +711,11 @@
       "bikes": "Kullanılabilir bisiklet",
       "docks": "Boş park yeri",
       "updated": "Güncelleme"
+    },
+    "waterTemperature": {
+      "temperature": "Su sıcaklığı",
+      "measured": "Ölçüm",
+      "source": "Wasserportal Berlin"
     },
     "accident": {
       "severity": {

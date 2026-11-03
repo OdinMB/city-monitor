@@ -18,6 +18,7 @@ import {
   saveSocialAtlas, saveSummary, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
   saveWeather,
 } from '../db/writes.js';
+import { saveWaterTemperature } from '../db/writes.js';
 import type { CitySyntheticData } from './generate.js';
 import { assertLocalDatabaseUrl } from './local-guard.js';
 
@@ -121,6 +122,7 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.airQualityStations) await saveAirQualityStations(db, cityId, data.airQualityStations);
   if (data.citizenReports) await saveCitizenReports(db, cityId, data.citizenReports);
   if (data.trafficAccidents) await saveTrafficAccidents(db, cityId, data.trafficAccidents);
+  if (data.waterTemperature) await saveWaterTemperature(db, cityId, data.waterTemperature);
   for (const [level, districts] of Object.entries(data.political ?? {})) {
     await savePoliticalDistricts(db, cityId, level, districts);
   }

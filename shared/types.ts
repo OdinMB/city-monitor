@@ -72,6 +72,7 @@ export type CityFeature =
   | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
   | 'citizenReports'  // dataSources.citizenReports: citizen issue reports (Open311), the reports map layer
   | 'trafficAccidents' // dataSources.trafficAccidents: last year's injury accidents on the map (Unfallatlas)
+  | 'waterTemperature' // dataSources.waterTemperature: the water layer's temperature sub-layer (Wasserportal Berlin)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -319,6 +320,16 @@ export interface CityDataSources {
   waterLevels?: {
     provider: 'pegelonline';
     stations: Array<{ uuid: string; name: string; waterBody: string; tidal?: boolean }>;
+  };
+  /**
+   * Water temperature at measuring points of a state's hydrological service, for the
+   * water layer's temperature sub-layer (.context/water-levels.md, "Water Temperature").
+   * `wasserportal`: Berlin's Wasserportal CSV export, one request per station. The
+   * portal's CSV gives no coordinates, so each station carries its own (WGS 84).
+   */
+  waterTemperature?: {
+    provider: 'wasserportal';
+    stations: Array<{ id: string; name: string; waterBody: string; lat: number; lon: number }>;
   };
   /**
    * Flood class (Meldestufe or the state's equivalent) of state flood gauges from the
@@ -637,6 +648,27 @@ export interface WaterLevelStation {
 export interface WaterLevelData {
   stations: WaterLevelStation[];
   fetchedAt: string;
+}
+
+// Water temperature (Berlin Wasserportal)
+export interface WaterTemperatureStation {
+  /** The provider's station number ("139"). */
+  id: string;
+  name: string;
+  waterBody: string;
+  lat: number;
+  lon: number;
+  /** The newest valid reading, °C. */
+  temperature: number;
+  /** When it was measured (ISO 8601 with offset). */
+  measuredAt: string;
+  /** The station's page on the provider's portal. */
+  url: string;
+}
+
+export interface WaterTemperatureData {
+  /** The configured stations with a reading of the last few days, in config order. */
+  stations: WaterTemperatureStation[];
 }
 
 // Budget data (Berlin Doppelhaushalt)

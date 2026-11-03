@@ -290,6 +290,18 @@ describe('every configured city', () => {
     }
   });
 
+  it('places its water-temperature stations inside its bounding box, each id once', () => {
+    for (const city of getActiveCities()) {
+      const stations = city.dataSources.waterTemperature?.stations ?? [];
+      expect(new Set(stations.map((s) => s.id)).size, city.id).toBe(stations.length);
+      for (const s of stations) {
+        const box = city.boundingBox;
+        expect(box.south < s.lat && s.lat < box.north && box.west < s.lon && s.lon < box.east, `${city.id} ${s.id}`).toBe(true);
+      }
+    }
+    expect(getCityConfig('berlin')?.dataSources.waterTemperature?.stations.length).toBeGreaterThan(0);
+  });
+
   it('has its centre inside its bounding box and its weather at its centre', () => {
     for (const city of getActiveCities()) {
       const { coordinates: { lat, lon }, boundingBox: box } = city;

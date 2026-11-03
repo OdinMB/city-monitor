@@ -6,7 +6,7 @@ import { isolate } from '../../../lib/bidi.js';
 import { trafficPopupHtml, constructionPopupHtml } from './traffic';
 import { transitPopupHtml } from './transit';
 import { warningPopupHtml } from './warnings';
-import { waterLevelPopupHtml, bathingPopupHtml } from './water';
+import { waterLevelPopupHtml, bathingPopupHtml, waterTemperaturePopupHtml } from './water';
 import { pharmacyPopupHtml, aedPopupHtml, formatPharmacyDuty } from './emergencies';
 import { noisePopupHtml } from './noise-sensors';
 import { bikeStationPopupHtml } from './bike-sharing';
@@ -64,6 +64,11 @@ const BATHING = {
   waterTemp: 21, visibility: 1.5, quality: 'good', algae: null, advisory: null, classification: 'ausgezeichnet',
   detailUrl: 'https://www.berlin.de/lageso/gesundheit/gesundheitsschutz/badegewaesser/', inSeason: false,
 };
+// Measured on an earlier day, so the popup shows the date with the time
+const WATER_TEMP = {
+  name: 'Fischerinsel', waterBody: 'Spree', temperature: 9.3, measuredAt: '2026-03-03T02:45:00+01:00',
+  url: 'https://wasserportal.berlin.de/station.php?anzeige=g&thema=owt&station=139',
+};
 const PHARMACY = { name: 'Apotheke am Markt', address: 'Marktstraße 1', phone: '030 123456', validFrom: '2026-03-03T09:00:00', validUntil: '2026-03-04T09:00:00' };
 const AED = { indoor: true, description: 'Im Foyer', operator: 'Bezirksamt Mitte', openingHours: 'Mo-Fr 08:00-18:00', access: 'customers' };
 const NOISE = { id: 4711, laeq: 58.2, laMin: 40.1, laMax: 75.3 };
@@ -96,6 +101,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['warning', () => warningPopupHtml(WARNING)],
   ['water level', () => waterLevelPopupHtml(GAUGE)],
   ['bathing', () => bathingPopupHtml(BATHING)],
+  ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP)],
   ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS)],
   ['AED', () => aedPopupHtml(AED, COORDS)],
   ['noise sensor', () => noisePopupHtml(NOISE, false)],
@@ -151,6 +157,7 @@ describe('map popups in German', () => {
     ['warning', () => warningPopupHtml(WARNING), ['Unwetterwarnung', 'Schwer']],
     ['water level', () => waterLevelPopupHtml(GAUGE), ['Spree (Tide)', 'Pegel: 412 cm', 'Sehr hoch']],
     ['bathing', () => bathingPopupHtml(BATHING), ['Außerhalb der Saison', 'Gemessen: 2026-08-20', 'Qualität: Gut (EU: ausgezeichnet)', 'Wassertemperatur: 21°C', 'Sichttiefe: 1.5m', 'Details (LAGeSo) ↗']],
+    ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP), ['Fischerinsel', 'Spree', 'Wassertemperatur: 9,3 °C', 'Gemessen: 3. M', ', 02:45', 'Wasserportal Berlin ↗']],
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Tel.: 030 123456', `3 ${GERMAN_MARCH} 09:00 – 4 ${GERMAN_MARCH} 09:00`, 'Route ↗']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Innen', 'Zugang: nur für Kunden', 'Route ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Lärmsensor #4711', '58.2 dB (Laut)', 'Min.: 40.1 dB · Max.: 75.3 dB']],
@@ -218,6 +225,7 @@ describe('numbers that stay left-to-right in Arabic (right-to-left)', () => {
     ['roadworks start date alone', () => constructionPopupHtml({ ...CONSTRUCTION, validUntil: '' }), ['01.10.2026']],
     ['water level', () => waterLevelPopupHtml(GAUGE), ['412 cm']],
     ['bathing temperature and visibility', () => bathingPopupHtml(BATHING), ['21°C', '1.5m']],
+    ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP), [`${(9.3).toLocaleString('ar', { minimumFractionDigits: 1 })} °C`]],
     ['noise readings', () => noisePopupHtml(NOISE, false), ['58.2 dB', '40.1 dB', '75.3 dB']],
     ['social atlas values', () => socialAtlasPopupHtml(SOCIAL), ['5.2%', '20.1%', '10.3%', '15.4%']],
     ['population density', () => populationPopupHtml(POPULATION), [`${(12000).toLocaleString('ar')}/km²`]],
@@ -247,6 +255,7 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['transit', () => transitPopupHtml(TRANSIT), ['S Ostkreuz', 'S3', 'Ersatzverkehr mit Bussen', 'M10', 'Unregelmäßige Abfahrten']],
     ['warning', () => warningPopupHtml(WARNING), ['Unwetterwarnung']],
     ['water level', () => waterLevelPopupHtml(GAUGE), ['Mühlendamm', 'Spree']],
+    ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP), ['Fischerinsel', 'Spree']],
     ['bathing', () => bathingPopupHtml({ ...BATHING, algae: 'Blaualgen', advisory: 'Baden nicht empfohlen.' }), ['Strandbad Wannsee', 'Wannsee', 'Steglitz-Zehlendorf', 'Blaualgen', 'Baden nicht empfohlen.']],
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Apotheke am Markt', 'Marktstraße 1']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['Im Foyer', 'Bezirksamt Mitte', 'Mo-Fr 08:00-18:00']],
@@ -346,6 +355,9 @@ describe('map popups in English', () => {
     ['transit', () => transitPopupHtml(TRANSIT), ['S3 planned work', 'M10 delay']],
     ['water level', () => waterLevelPopupHtml(GAUGE), ['Spree (Tidal)', 'Level: 412 cm', 'Very High']],
     ['bathing', () => bathingPopupHtml(BATHING), ['Off-season', 'Measured: 2026-08-20', 'Quality: Good (EU: ausgezeichnet)', 'Water temp: 21°C', 'Visibility: 1.5m', 'Details (LAGeSo) ↗']],
+    ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP), ['Water temperature: 9.3 °C', 'Measured: Mar 3, 02:45', 'Wasserportal Berlin ↗']],
+    ['water temperature today, as a time', () => waterTemperaturePopupHtml(WATER_TEMP, new Date('2026-03-03T12:00:00Z')), ['Measured: 02:45']],
+    ['water temperature with an unsafe link', () => waterTemperaturePopupHtml({ ...WATER_TEMP, url: 'javascript:alert(1)' }), ['Water temperature: 9.3 °C']],
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Tel: 030 123456', 'Directions ↗']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Indoor', 'Access: customers only', 'Directions ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Noise Sensor #4711', '58.2 dB (Loud)', 'Min: 40.1 dB · Max: 75.3 dB']],

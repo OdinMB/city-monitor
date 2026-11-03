@@ -605,7 +605,8 @@
     },
     "water": {
       "levels": "Pegelstände",
-      "bathing": "Badegewässer"
+      "bathing": "Badegewässer",
+      "temperature": "Wassertemperatur"
     },
     "social": {
       "rent": "Mietspiegel"
@@ -720,6 +721,11 @@
       "bikes": "Verfügbare Räder",
       "docks": "Freie Stellplätze",
       "updated": "Stand"
+    },
+    "waterTemperature": {
+      "temperature": "Wassertemperatur",
+      "measured": "Gemessen",
+      "source": "Wasserportal Berlin"
     },
     "accident": {
       "severity": {

@@ -103,6 +103,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['München RIS', (c) => c.dataSources.councilMeetings?.muenchenRis !== undefined],
   ['Hamburgische Bürgerschaft (Termine)', (c) => c.dataSources.councilMeetings?.hamburgBuergerschaft !== undefined],
   ['LAGeSo Bathing Water', (c) => c.dataSources.bathing?.provider === 'lageso'],
+  ['Wasserportal Berlin', (c) => c.dataSources.waterTemperature?.provider === 'wasserportal'],
   ['Badegewässer Hamburg (Geodienste)', (c) => c.dataSources.bathing?.provider === 'hamburg-wfs'],
   ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
   ['nextbike (GBFS)', (c) => c.dataSources.bikeSharing?.provider === 'gbfs'],
@@ -200,6 +201,7 @@ describe('SourcesPage licence credits', () => {
     // The source line the UBA Air Data API's OpenAPI spec asks for, dl-de/by-2-0
     'Umweltbundesamt Air Data API': 'Source: Umweltbundesamt mit Daten der Messnetze der Länder und des Bundes, dl-de/by-2-0.',
     'RKI AMELAG Wastewater Surveillance': 'Source: Robert Koch-Institut, CC BY 4.0.',
+    'Wasserportal Berlin': 'Source: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt Berlin – Wasserportal Berlin, dl-de/by-2-0.',
     // smard.de/home/datennutzung names the credit "Bundesnetzagentur | SMARD.de"
     'SMARD (Bundesnetzagentur)': 'Source: Bundesnetzagentur | SMARD.de, CC BY 4.0.',
     // The Energy-Charts API description: "Proper attribution to Energy-Charts.info as the source is required."

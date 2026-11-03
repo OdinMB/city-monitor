@@ -23,6 +23,7 @@ import type {
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
   TrafficAccident, TrafficAccidentData, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
+import type { WaterTemperatureData } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
 import type { PersistedNewsItem } from '../db/writes.js';
@@ -93,6 +94,7 @@ export interface SyntheticData {
   /** Not in Berlin's data set: only Köln and München have an Open311 server (NOT_IN_BERLIN). */
   citizenReports?: CitizenReportData;
   trafficAccidents: TrafficAccidentData;
+  waterTemperature: WaterTemperatureData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -153,6 +155,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   airQualityStations: (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0,
   citizenReports: (c) => c.dataSources.citizenReports !== undefined,
   trafficAccidents: (c) => c.dataSources.trafficAccidents !== undefined,
+  waterTemperature: (c) => (c.dataSources.waterTemperature?.stations.length ?? 0) > 0,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -269,6 +272,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('airQualityStations')) sets.airQualityStations = generateAirQualityStations(rng, now, place);
   if (has.has('citizenReports')) sets.citizenReports = generateCitizenReports(rng, now, place);
   if (has.has('trafficAccidents')) sets.trafficAccidents = generateTrafficAccidents(rng, now, place);
+  if (has.has('waterTemperature')) sets.waterTemperature = generateWaterTemperature(rng, now, city);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1504,6 +1508,29 @@ function generateLiftOutages(rng: Rng, now: Date, place: Place): LiftOutageData 
   });
   const updated = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000);
   return { outages, updated: `${localIso(updated)}:00${berlinUtcOffset(`${local(updated).date} 12:00:00`)}` };
+}
+
+/**
+ * Made-up temperatures at the configured stations: around a seasonal curve
+ * (about 2 °C in early February, 22 °C in early August), the lakes a little
+ * warmer, each reading from the last quarter-hour in MEZ, as the portal keeps them.
+ */
+function generateWaterTemperature(rng: Rng, now: Date, city: CityConfig): WaterTemperatureData {
+  const dayOfYear = (now.getTime() - Date.UTC(now.getUTCFullYear(), 0, 1)) / DAY;
+  const seasonal = 12 - 10 * Math.cos(((dayOfYear - 30) / 365) * 2 * Math.PI);
+  const quarter = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000 + HOUR);
+  const measuredAt = `${quarter.toISOString().slice(0, 16)}:00+01:00`;
+  const stations = city.dataSources.waterTemperature!.stations.map((s) => ({
+    id: s.id,
+    name: s.name,
+    waterBody: s.waterBody,
+    lat: s.lat,
+    lon: s.lon,
+    temperature: round(seasonal + rng.float(-1.5, 1.5) + (s.name === s.waterBody ? 0.8 : 0), 1),
+    measuredAt,
+    url: `${EXAMPLE}/water-temperature/${s.id}`,
+  }));
+  return { stations };
 }
 
 /** Bike-sharing stations around the city's anchors, some empty; docks only where the real system has them. */

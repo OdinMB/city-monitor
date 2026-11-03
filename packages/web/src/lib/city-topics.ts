@@ -37,6 +37,8 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   // social layer, official air stations part of air quality (every city's topic),
   // the rest parts of the political tile.
   airQualityStations: null,
+  // A sub-layer of the water layer, whose topic is the water levels
+  waterTemperature: null,
   roadworks: null,
   pharmacies: null,
   aeds: null,

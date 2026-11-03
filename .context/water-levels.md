@@ -47,7 +47,7 @@ PEGELONLINE answers `stateMnwMhw: "unknown"` for tidal gauges, and the Elbe gaug
 - **Dashboard tile**: `WaterLevelStrip` — gauge bars showing current level within MNW-MHW range, color-coded by state (blue=low, green=normal, amber=high, red=very_high; an unknown state gets no badge), tidal badge. Not expandable, no trend chart (last tile of the grid)
 - **History endpoint**: `GET /api/:city/water-levels/history?range=Nd` — returns `HistoryPoint[]` (avg level across stations), cached 900s. Default 7d, max 30d. The `useWaterLevelHistory` hook exists but no component calls it
 - **Map markers**: Droplets icon colored by state, label showing current level in cm, popup with name/waterBody/level/state
-- **Sidebar toggle**: `water` parent layer with sub-layers `levels` and `bathing` (same pattern as emergencies with pharmacies/AEDs)
+- **Sidebar toggle**: `water` parent layer with sub-layers `levels`, `bathing` and `temperature` (same pattern as emergencies with pharmacies/AEDs; [Water Temperature](#water-temperature-wasserportal-berlin) below)
 - **i18n**: Keys under `panel.waterLevels.*`, `sidebar.layers.water`, and `sidebar.water.*` in all 4 languages
 
 ## Tests
@@ -111,6 +111,46 @@ Two GeoJSON requests to the WFS (`typeNames=badegewaesser` for the ~17 spots, `b
 
 - `ingest-bathing.test.ts` — unit tests covering CSV parsing, field mapping, quality mapping, null handling, `<` prefix parsing, fetch failure, empty CSV, TTL, inSeason, coordinate filtering, German date parsing, the per-city providers, a failed Hamburg request, and `parseHamburgBathing` on recorded, trimmed WFS responses (`fixtures/hh-badegewaesser*.json`, 2026-11-02)
 - `bathing.test.ts` — 3 route tests covering empty cache, cached data, unknown city
+
+---
+
+# Water Temperature (Wasserportal Berlin)
+
+The water layer's third sub-layer, `temperature`: a thermometer badge per measuring point with the newest reading ("9,3 °C" in the UI language), coloured by band (below 5, 5–10, 10–15, 15–20, 20–24, 24+ °C; `WATER_TEMPERATURE_BANDS` in `layers/water.ts`). Popup: station, water body, temperature, when it was measured (German time; the date too when not today) and a link to the station's chart on the portal. Its own sub-layer rather than a line in the gauge popups: of the five PEGELONLINE gauges only Schmöckwitz has a Wasserportal temperature station at the same place, and PEGELONLINE itself has no water temperature in any of the four cities (`WT` only at Este Sperrwerk, Hamburg-Cranz).
+
+## Data Source
+
+**Wasserportal Berlin** (Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt). Licence **dl-de/by-2.0**: Berlin data register entry `wasserportal-berlin`, "Gewässerkundliche Messdaten" (checked 2026-11-03; the portal's own imprint says only "im Rahmen der gesetzlichen Bestimmungen"). Credit on the Sources page: "Source: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt Berlin – Wasserportal Berlin, dl-de/by-2-0."
+
+- API (documented in `wasserportal.berlin.de/download/wasserportal_berlin_getting_data.pdf`): `GET https://wasserportal.berlin.de/station.php?anzeige=d&station=<id>&thema=owt&sreihe=ew&smode=c&sdatum=DD.MM.YYYY` — single values of water temperature (`owt`) from that date up to now, as CSV. `smode=x` gives WaterML, whose `+00:00` offsets are wrong (local times labelled UTC).
+- **CSV**: ISO-8859-1, `;`-separated, a header row (`Datum;Einzelwert;"Stationsnummer: …";…;"Fehlwerte: -777"`), then `"03.11.2026 02:45";9,3` rows, oldest first, decimal comma, `-777` for a gap. A station that sends in batches pads the rest of the day with `-777`.
+- **Times are MEZ (UTC+1) all year**: the export of 29.03.2026 has 02:00–02:45 (no such local times that day) and that of 25.10.2026 each 02:xx once. The parser gives them a fixed `+01:00`.
+- **Delivery**: the online quality stations (MS/MPS) and some gauges send 15-minute or hourly values within about 20 minutes; others arrive in batches a day or two late (e.g. Tiefwerder, Zoo). The overview `messwerte.php?anzeige=tabelle&thema=owt` (HTML) lists all ~65 temperature stations with their last value and time; use it to choose stations, not as the feed.
+- Station coordinates are not in the CSV. Gauges: WFS `gdi.berlin.de/services/wfs/pegelstandorte` (layer `a_pegelstandorte`, dl-de/zero-2.0). Quality stations (MS/MPS) are not in it; their station page (`station.php?anzeige=i&thema=owt&station=<id>`) gives UTM 33N, converted once.
+- `wasserportal.berlin.de/` itself redirects (302) to `start.php`; the `station.php` paths answer directly.
+
+## City Config
+
+`dataSources.waterTemperature: { provider: 'wasserportal', stations: [{ id, name, waterBody, lat, lon }] }`. Berlin: Fischerinsel (139, Spree, Mitte), Sophienwerder (161, Spree, Spandau), Rahnsdorf (111, Müggelspree), Schmöckwitz (211, Dahme), Pfaueninsel (5803500, Havel), Lichterfelde (5870100, Teltowkanal), Zoo (5866301, Landwehrkanal), Plötzensee (5800312), Krumme Lanke (5800107) and Groß Glienicker See (5800305). `config.test.ts` checks each lies in the bounding box. Stale stations left out on purpose: Mühlendamm (141, last value 2025), Charlottenburg (153, 2025), Teltow-Werft (421, September 2026).
+
+## Server Pipeline
+
+1. **Cron** `ingest-water-temperature` (`4,19,34,49 * * * *`): per city, one request per station in turn, from three days back (`WASSERPORTAL_WINDOW_DAYS`). Keeps the newest valid value (−5…40 °C, rounded to 0.1). A station with no value in the window is left out (no temperatures from last season); a failed request keeps that station's last reading from the cache; when every request fails, nothing is written.
+2. **Cache** `{cityId}:water-temperature` (TTL 1800 s), **snapshot** `wasserportal-temp` (2 days + row cap), DB fallback at most 6 h old.
+3. **Route** `GET /api/:city/water-temperature`: cache → DB → `{ data: null, fetchedAt: null }`, Cache-Control 300 s. Not in the bootstrap: the map fetches it only while the sub-layer is on.
+
+## Shared Types
+
+`WaterTemperatureData { stations: WaterTemperatureStation[] }`, `WaterTemperatureStation { id, name, waterBody, lat, lon, temperature, measuredAt, url }`; Zod `WaterTemperatureDataSchema`.
+
+## Frontend
+
+Feature `waterTemperature` (server `city-features.ts`, web Berlin config); hook `useWaterTemperature(cityId, enabled)` (15-min refetch); markers `updateWaterTemperatureMarkers` and `waterTemperaturePopupHtml` in `layers/water.ts`; i18n `sidebar.water.temperature`, `mapPopup.waterTemperature.*`. On by default with the other water sub-layers (Hamburg opens with gauges only and has no temperature).
+
+## Tests
+
+- `ingest-water-temperature.test.ts` — parser on recorded rows (gaps, batches, MEZ in summer, header only), URL, job: Berlin only, kept reading on a failed request, nothing written when all fail.
+- `water-temperature.test.ts` — route, not in bootstrap. Popups in `popup-language.test.ts`.
 
 ---
 

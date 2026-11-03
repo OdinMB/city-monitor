@@ -643,7 +643,8 @@
     },
     "water": {
       "levels": "مناسيب المياه",
-      "bathing": "مياه السباحة"
+      "bathing": "مياه السباحة",
+      "temperature": "درجة حرارة المياه"
     },
     "social": {
       "rent": "إيجار"
@@ -759,6 +760,11 @@
       "bikes": "الدراجات المتاحة",
       "docks": "أماكن إرجاع شاغرة",
       "updated": "آخر تحديث"
+    },
+    "waterTemperature": {
+      "temperature": "درجة حرارة المياه",
+      "measured": "وقت القياس",
+      "source": "Wasserportal Berlin"
     },
     "accident": {
       "severity": {

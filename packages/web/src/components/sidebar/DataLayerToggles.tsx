@@ -1,6 +1,7 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints } from 'lucide';
+import { Thermometer } from 'lucide';
 import { useCommandCenter, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
@@ -61,6 +62,7 @@ const NOISE_SUB_META: { key: NoiseLayer; icon: IconNode; color: string }[] = [
 const WATER_SUB_META: { key: WaterSubLayer; icon: IconNode; color: string }[] = [
   { key: 'levels', icon: Droplets as IconNode, color: '#3b82f6' },
   { key: 'bathing', icon: Waves as IconNode, color: '#06b6d4' },
+  { key: 'temperature', icon: Thermometer as IconNode, color: '#0d9488' },
 ];
 
 const TRAFFIC_SUB_META: { key: TrafficSubLayer; icon: IconNode; color: string }[] = [

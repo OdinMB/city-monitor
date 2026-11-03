@@ -29,6 +29,7 @@ import { useAirQualityStations } from '../../hooks/useAirQualityStations.js';
 import { withoutRelayedStations } from '../../lib/aqi.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useBathing } from '../../hooks/useBathing.js';
+import { useWaterTemperature } from '../../hooks/useWaterTemperature.js';
 import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { usePopulation } from '../../hooks/usePopulation.js';
 import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
@@ -51,7 +52,7 @@ import { updateWarningPolygons } from './layers/warnings.js';
 import { updatePharmacyMarkers, updateAedMarkers } from './layers/emergencies.js';
 import { updateTrafficLayers, updateConstructionLayers } from './layers/traffic.js';
 import { updateAqGridLayer, updateUbaStationLayer } from './layers/air-quality.js';
-import { updateWaterLevelMarkers, updateBathingMarkers } from './layers/water.js';
+import { updateWaterLevelMarkers, updateBathingMarkers, updateWaterTemperatureMarkers } from './layers/water.js';
 import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/choropleth.js';
 import { socialAtlasOf } from '../../lib/social-atlas.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
@@ -68,6 +69,7 @@ const MARKER_LAYERS = [
   'safety-marker-icon',
   'wl-marker-icon',
   'bathing-marker-icon',
+  'wt-marker-icon',
   'aq-marker-icon',
   'aq-uba-icon',
   'noise-sensor-icon',
@@ -221,6 +223,7 @@ export function CityMap() {
   const waterActive = activeLayers.has('water');
   const selectedWater = useCommandCenter((s) => s.waterSubLayers);
   const waterSubLayers = useMemo(() => effectiveSubLayers(selectedWater, available.water), [selectedWater, available]);
+  const { data: waterTemperatureData } = useWaterTemperature(city.id, activeLayers.has('water') && waterSubLayers.has('temperature'));
   const { data: socialAtlasData } = useSocialAtlas(city.id, socialAtlasActive);
   const { data: populationData } = usePopulation(city.id, populationActive);
   // Lazy: Berlin's stations are about 150 KB, fetched only while the layer is on
@@ -291,6 +294,10 @@ export function CityMap() {
     () => (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [],
     [waterActive, waterSubLayers, bathingData],
   );
+  const waterTemperatureItems = useMemo(
+    () => (waterActive && waterSubLayers.has('temperature')) ? (waterTemperatureData?.data?.stations ?? []) : [],
+    [waterActive, waterSubLayers, waterTemperatureData?.data?.stations],
+  );
   const citizenReportItems = useMemo(
     () => reportsActive ? (citizenReportData?.data?.reports ?? []) : [],
     [reportsActive, citizenReportData?.data?.reports],
@@ -349,6 +356,8 @@ export function CityMap() {
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
   bathingItemsRef.current = bathingItems;
+  const waterTemperatureItemsRef = useRef(waterTemperatureItems);
+  waterTemperatureItemsRef.current = waterTemperatureItems;
   const citizenReportItemsRef = useRef(citizenReportItems);
   citizenReportItemsRef.current = citizenReportItems;
   const socialAtlasGeoJsonRef = useRef(socialAtlasGeoJson);
@@ -435,6 +444,7 @@ export function CityMap() {
         updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
+        updateWaterTemperatureMarkers(map, waterTemperatureItemsRef.current, isDarkRef.current);
         updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
         updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
@@ -527,6 +537,7 @@ export function CityMap() {
       updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
+      updateWaterTemperatureMarkers(map, waterTemperatureItemsRef.current, isDark);
       updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDark, cityIdRef.current);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
@@ -592,7 +603,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, accidentItems, waterLevelItems, bathingItems, citizenReportItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, accidentItems, waterLevelItems, bathingItems, waterTemperatureItems, citizenReportItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -767,6 +778,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [bathingItems]);
+
+  // Update water temperature markers (lazy: fetched only while the sub-layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateWaterTemperatureMarkers(map, waterTemperatureItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [waterTemperatureItems]);
 
   // Update citizen report markers (lazy — fetched only while the reports layer is on)
   useEffect(() => {

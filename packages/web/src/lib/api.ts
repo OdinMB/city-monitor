@@ -31,6 +31,8 @@ export type {
   CitizenReport, CitizenReportData, CitizenReportGroup, CitizenReportStatus,
   TrafficAccident, TrafficAccidentData, AccidentSeverity,
 } from '@city-monitor/shared';
+export type { WaterTemperatureStation, WaterTemperatureData } from '@city-monitor/shared';
+import type { WaterTemperatureData } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
 import type {
@@ -66,6 +68,7 @@ export const api = {
   getBathing: (city: string) => fetchJson<ApiResponse<BathingSpot[]>>(`${API_BASE}/${city}/bathing`),
   getWaterLevels: (city: string) => fetchJson<ApiResponse<WaterLevelData>>(`${API_BASE}/${city}/water-levels`),
   getFloodStatus: (city: string) => fetchJson<ApiResponse<FloodStatus | null>>(`${API_BASE}/${city}/flood-status`),
+  getWaterTemperature: (city: string) => fetchJson<ApiResponse<WaterTemperatureData | null>>(`${API_BASE}/${city}/water-temperature`),
   getLiftOutages: (city: string) => fetchJson<ApiResponse<LiftOutageData | null>>(`${API_BASE}/${city}/lift-outages`),
   getBikeSharing: (city: string) => fetchJson<ApiResponse<BikeSharingData | null>>(`${API_BASE}/${city}/bike-sharing`),
   getElectricity: (city: string) => fetchJson<ApiResponse<ElectricityData | null>>(`${API_BASE}/${city}/electricity`),

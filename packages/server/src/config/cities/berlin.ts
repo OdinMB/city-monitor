@@ -102,6 +102,26 @@ export const berlin: CityConfig = {
         { uuid: '6b595707-8c47-4bc7-a803-dbc327775c26', name: 'Schmöckwitz', waterBody: 'Dahme' },
       ],
     },
+    // Water temperature from the Wasserportal Berlin (dl-de/by-2.0, datenregister "Gewässerkundliche
+    // Messdaten"), every 15 min where the station sends online, otherwise in batches a day or two late.
+    // Ids are station numbers (wasserportal.berlin.de/messwerte.php?anzeige=tabelle&thema=owt lists all
+    // ~65); the first four are quality stations (MS/MPS, coordinates converted from the portal's UTM 33N),
+    // the rest gauges, located from the pegelstandorte WFS (checked 2026-11-03).
+    waterTemperature: {
+      provider: 'wasserportal',
+      stations: [
+        { id: '139', name: 'Fischerinsel', waterBody: 'Spree', lat: 52.51393, lon: 13.41077 },
+        { id: '161', name: 'Sophienwerder', waterBody: 'Spree', lat: 52.53615, lon: 13.21628 },
+        { id: '111', name: 'Rahnsdorf', waterBody: 'Müggelspree', lat: 52.42973, lon: 13.68895 },
+        { id: '211', name: 'Schmöckwitz', waterBody: 'Dahme', lat: 52.3743, lon: 13.65347 },
+        { id: '5803500', name: 'Pfaueninsel', waterBody: 'Havel', lat: 52.43028, lon: 13.12392 },
+        { id: '5870100', name: 'Lichterfelde', waterBody: 'Teltowkanal', lat: 52.41998, lon: 13.30320 },
+        { id: '5866301', name: 'Zoo', waterBody: 'Landwehrkanal', lat: 52.51045, lon: 13.33857 },
+        { id: '5800312', name: 'Plötzensee', waterBody: 'Plötzensee', lat: 52.5427, lon: 13.3308 },
+        { id: '5800107', name: 'Am Wolfsschluchtkanal', waterBody: 'Krumme Lanke', lat: 52.44738, lon: 13.23039 },
+        { id: '5800305', name: 'Groß Glienicker See', waterBody: 'Groß Glienicker See', lat: 52.4592, lon: 13.11282 },
+      ],
+    },
     budget: {
       provider: 'berlin-doppelhaushalt',
       csvUrl: 'https://www.berlin.de/sen/finanzen/service/daten/260223_doppelhaushalt_2026_2027.csv',

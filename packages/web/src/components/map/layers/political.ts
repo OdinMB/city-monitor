@@ -77,7 +77,7 @@ function districtPaint(isDark: boolean) {
 /** Marker symbol layer IDs — district labels must render below all of these */
 const MARKER_LAYER_IDS = [
   'transit-marker-icon', 'news-marker-icon', 'safety-marker-icon',
-  'wl-marker-icon', 'bathing-marker-icon', 'aq-marker-icon',
+  'wl-marker-icon', 'bathing-marker-icon', 'wt-marker-icon', 'aq-marker-icon',
   'noise-sensor-icon', 'pharmacy-marker-icon', 'aed-marker-icon',
   'construction-points', 'political-markers',
   'traffic-incidents-circle', 'traffic-incidents-label',

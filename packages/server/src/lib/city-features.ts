@@ -21,6 +21,7 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['pollen', (c) => c.dataSources.pollen !== undefined],
   ['waterLevels', (c) => (c.dataSources.waterLevels?.stations.length ?? 0) > 0],
   ['floodStatus', (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0],
+  ['waterTemperature', (c) => (c.dataSources.waterTemperature?.stations.length ?? 0) > 0],
   // Config alone, like appointments without FIRECRAWL_API_KEY: Geofox (Hamburg) also needs
   // GEOFOX_USER and GEOFOX_PASSWORD at run time, and without them the job skips the city and
   // the tile says "No transit data available" (ingestsTransit).
