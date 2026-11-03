@@ -9,6 +9,8 @@ export const CK = {
 
   // Transit & Traffic
   transitAlerts: (cityId: string) => `${cityId}:transit:alerts`,
+  /** Geofox's station list as a StationIndex (Hamburg), for placing alerts on the map */
+  geofoxStations: (cityId: string) => `${cityId}:transit:geofox-stations`,
   trafficIncidents: (cityId: string) => `${cityId}:traffic:incidents`,
 
   // News

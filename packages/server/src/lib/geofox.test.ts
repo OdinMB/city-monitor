@@ -1,9 +1,24 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { TransitAlertSchema } from '@city-monitor/shared/schemas.js';
 import {
-  announcementRequestBody, geofoxCredentials, geofoxHeaders, geofoxSignature, isInForce, parseGeofoxAnnouncements,
-  parseGtiDateTime, type GtiAnnouncementResponse,
+  announcementRequestBody, buildStationIndex, geofoxCredentials, geofoxHeaders, geofoxSignature, isInForce,
+  parseGeofoxAnnouncements, parseGtiDateTime, stationListRequestBody, type GtiAnnouncementResponse,
+  type GtiStationListResponse,
 } from './geofox.js';
+import { hamburg } from '../config/cities/hamburg.js';
+
+/**
+ * A synthetic listStations response (no credentials to record one), in the
+ * shape of the Anwenderhandbuch's LSResponse (§2.7.2, listing 20). The ids of
+ * Poppenbüttel, Wedel, Blankenese, Neumühlen/Övelgönne and the deleted
+ * Master:19072 are the documented ones; the Master:900xx ids are invented.
+ * Coordinates are the stations' real positions to about 100 m. Steinwerder has
+ * no coordinate and Kellinghusenstraße one in Gauß-Krüger, so neither is indexed.
+ */
+const STATION_LIST = JSON.parse(
+  readFileSync(new URL('./geofox-fixtures/list-stations.json', import.meta.url), 'utf8'),
+) as GtiStationListResponse;
 
 /**
  * Built from the documented example (GTI Anwenderhandbuch 63.4, §2.9.3,
@@ -71,6 +86,12 @@ describe('geofoxSignature', () => {
 describe('announcementRequestBody', () => {
   it('asks for every current announcement in German, at API version 63, with full locations', () => {
     expect(JSON.parse(announcementRequestBody())).toEqual({ language: 'de', version: 63, full: true, filterPlanned: 'NO_FILTER' });
+  });
+});
+
+describe('stationListRequestBody', () => {
+  it('asks for the whole station list (no dataReleaseID) in WGS84, at API version 63', () => {
+    expect(JSON.parse(stationListRequestBody())).toEqual({ language: 'de', version: 63, coordinateType: 'EPSG_4326', filterEquivalent: false });
   });
 });
 
@@ -241,6 +262,136 @@ describe('parseGeofoxAnnouncements', () => {
       ['disruption', 'high'],
       ['cancellation', 'high'],
     ]);
+  });
+
+  describe('station coordinates from the station list', () => {
+    const stations = buildStationIndex(STATION_LIST);
+    const places = { stations, bounds: hamburg.map.bounds };
+    const validities = [{ begin: '2017-10-12T00:00:00.000+0200' }];
+    type Stop = { name?: string; city?: string; id?: string };
+    const announce = (line: string, begin?: Stop, end?: Stop, extra: Record<string, unknown> = {}) => ({
+      summary: `${line}: Störung`, description: 'Störung.', validities,
+      locations: [{ type: 'SINGLE_LINE', line: { name: line }, begin, end }], ...extra,
+    });
+    const locate = (...announcements: ReturnType<typeof announce>[]) =>
+      parseGeofoxAnnouncements({ returnCode: 'OK', announcements }, NOW, places).map((a) => a.location);
+
+    it('places the documented example at its first stop, by GTI station id', () => {
+      const [alert] = parseGeofoxAnnouncements(DOCUMENTED_RESPONSE, NOW, places);
+      expect(alert.location).toEqual({ lat: 53.6588, lon: 10.0844 });
+    });
+
+    it('matches by id before name', () => {
+      // The name says Barmbek, the id is Blankenese's: the id wins
+      expect(locate(announce('S1', { name: 'Barmbek', id: 'Master:81950' }))).toEqual([{ lat: 53.5648, lon: 9.8152 }]);
+    });
+
+    it('matches a stop without an id by its normalised name', () => {
+      expect(locate(
+        announce('S1', { name: '  alte wöhr   (Stadtpark) ' }),
+        announce('S3', { name: 'S Nettelnburg' }),
+        announce('RE5', { name: 'Hamburg-Harburg' }, { name: 'Hamburg Hbf' }),
+        announce('62', { name: 'Neumühlen' }),
+      )).toEqual([
+        { lat: 53.5976, lon: 10.0302 },
+        { lat: 53.4876, lon: 10.1809 },
+        { lat: 53.456, lon: 9.9893 },
+        // An alias
+        { lat: 53.545, lon: 9.9249 },
+      ]);
+    });
+
+    it('tells stations of the same name apart by city, preferring Hamburg', () => {
+      expect(locate(
+        announce('U3', { name: 'Rathaus' }),
+        announce('S3', { name: 'Rathaus', city: 'Pinneberg' }, undefined, { summary: 'S3: Störung in Pinneberg' }),
+      )).toEqual([{ lat: 53.5505, lon: 9.9925 }, { lat: 53.6596, lon: 9.7996 }]);
+    });
+
+    it('takes the first affected stop with a match inside the map, across locations', () => {
+      expect(locate(
+        announce('S1', { name: 'Nirgendwo' }, { name: 'Landungsbrücken' }),
+        // Bad Oldesloe matches but lies outside Hamburg's map bounds
+        announce('RE80', { name: 'Bad Oldesloe' }, { name: 'Hamburg Hbf' }),
+        { ...announce('U3', { name: 'Unbekannt' }), locations: [
+          { type: 'SINGLE_LINE', line: { name: 'U3' }, begin: { name: 'Unbekannt' }, end: undefined },
+          { type: 'SINGLE_LINE', line: { name: 'U2' }, begin: { name: 'Barmbek' }, end: undefined },
+        ] },
+      )).toEqual([{ lat: 53.5462, lon: 9.9706 }, { lat: 53.553, lon: 10.0067 }, { lat: 53.5873, lon: 10.0445 }]);
+    });
+
+    it('skips deleted stations and those without a WGS84 coordinate', () => {
+      expect(stations.byId.has('Master:19072')).toBe(false);
+      expect(locate(
+        announce('62', { name: 'Steinwerder' }),
+        announce('U1', { name: 'Kellinghusenstraße', id: 'Master:90012' }),
+        announce('S1', { name: 'Nirgendwo' }),
+      )).toEqual([null, null, null]);
+    });
+
+    it('still ingests every alert, without locations, when the station list is missing', () => {
+      const alerts = parseGeofoxAnnouncements(
+        { returnCode: 'OK', announcements: [announce('S1', { name: 'Landungsbrücken' })] }, NOW, { stations: null, bounds: hamburg.map.bounds },
+      );
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0].location).toBeNull();
+    });
+  });
+
+  describe('map scope: rail and ferries only', () => {
+    const stations = buildStationIndex(STATION_LIST);
+    const places = { stations, bounds: hamburg.map.bounds };
+    const validities = [{ begin: '2017-10-12T00:00:00.000+0200' }];
+    const at = { name: 'Landungsbrücken' };
+    const announce = (summary: string, lines: string[], extra: Record<string, unknown> = {}) => ({
+      summary, description: `${summary}.`, validities,
+      locations: lines.map((name) => ({ type: 'SINGLE_LINE', line: { name }, begin: at })), ...extra,
+    });
+    const mapped = (...announcements: ReturnType<typeof announce>[]) =>
+      parseGeofoxAnnouncements({ returnCode: 'OK', announcements }, NOW, places).map((a) => [a.line, a.type, a.location !== null]);
+
+    it('places cancellations, disruptions and planned works touching U, S, AKN, regional trains or ferries', () => {
+      expect(mapped(
+        announce('Zugausfall', ['U3']),
+        announce('Störung', ['S1', '112']),
+        announce('Bauarbeiten', ['A1'], { planned: true }),
+        announce('Bauarbeiten RE7', ['RE7'], { planned: true }),
+        announce('Ersatzverkehr', ['U3-SEV'], { planned: true }),
+        announce('Fährausfall', ['62']),
+        announce('Umleitung Fähre', ['75'], { planned: true, reason: 'ROADWORKS' }),
+      )).toEqual([
+        ['U3', 'cancellation', true],
+        ['S1, 112', 'disruption', true],
+        ['A1', 'planned-work', true],
+        ['RE7', 'planned-work', true],
+        ['U3-SEV', 'planned-work', true],
+        ['62', 'cancellation', true],
+        ['75', 'planned-work', true],
+      ]);
+    });
+
+    it('keeps bus-only alerts, and delays, off the map', () => {
+      expect(mapped(
+        announce('Umleitung', ['180'], { planned: true, reason: 'ROADWORKS' }),
+        announce('Haltestellenverlegung', ['141', 'X46', '641'], { planned: true }),
+        announce('Störung Bus', ['5']),
+        announce('Verspätungen', ['S1']),
+      )).toEqual([
+        ['180', 'planned-work', false],
+        ['141, X46, 641', 'planned-work', false],
+        ['5', 'disruption', false],
+        ['S1', 'delay', false],
+      ]);
+    });
+
+    it('applies the scope to a coordinate GTI sends itself, too', () => {
+      const own = { name: 'Holstenstraße', coordinate: { x: 9.9324, y: 53.5639, type: 'EPSG_4326' } };
+      const alerts = parseGeofoxAnnouncements({ returnCode: 'OK', announcements: [
+        { summary: 'Umleitung', description: 'Umleitung.', planned: true, validities, locations: [{ type: 'SINGLE_LINE', line: { name: '180' }, begin: own }] },
+        { summary: 'S3: Störung', description: 'Störung.', validities, locations: [{ type: 'SINGLE_LINE', line: { name: 'S3' }, begin: own }] },
+      ] }, NOW, places);
+      expect(alerts.map((a) => a.location)).toEqual([null, { lat: 53.5639, lon: 9.9324 }]);
+    });
   });
 
   it('shortens a long first sentence for the message and keeps the full text as detail', () => {

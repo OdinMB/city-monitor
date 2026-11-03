@@ -1,0 +1,23 @@
+{
+  "returnCode": "OK",
+  "dataReleaseID": "63.11.01",
+  "stations": [
+    { "id": "Master:71953", "name": "Poppenbüttel", "city": "Hamburg", "combinedName": "Poppenbüttel", "shortcuts": ["pop"], "vehicleTypes": ["S_BAHN", "METROBUS"], "coordinate": { "x": 10.0844, "y": 53.6588, "type": "EPSG_4326" } },
+    { "id": "Master:85950", "name": "Wedel", "city": "Wedel", "combinedName": "Wedel", "vehicleTypes": ["S_BAHN", "REGIONALBUS"], "coordinate": { "x": 9.7036, "y": 53.5818, "type": "EPSG_4326" } },
+    { "id": "Master:81950", "name": "Blankenese", "city": "Hamburg", "combinedName": "Blankenese", "vehicleTypes": ["S_BAHN", "METROBUS"], "coordinate": { "x": 9.8152, "y": 53.5648, "type": "EPSG_4326" } },
+    { "id": "Master:52982", "name": "Neumühlen/Övelgönne", "city": "Hamburg", "combinedName": "Neumühlen/Övelgönne", "shortcuts": ["neua"], "aliasses": ["Neumühlen"], "vehicleTypes": ["SCHIFF"], "coordinate": { "x": 9.9249, "y": 53.545, "type": "EPSG_4326" } },
+    { "id": "Master:19072", "exists": false },
+    { "id": "Master:90001", "name": "Landungsbrücken", "city": "Hamburg", "combinedName": "Landungsbrücken", "vehicleTypes": ["U_BAHN", "S_BAHN", "SCHIFF"], "coordinate": { "x": 9.9706, "y": 53.5462, "type": "EPSG_4326" } },
+    { "id": "Master:90002", "name": "Alte Wöhr (Stadtpark)", "city": "Hamburg", "combinedName": "Alte Wöhr (Stadtpark)", "vehicleTypes": ["S_BAHN"], "coordinate": { "x": 10.0302, "y": 53.5976, "type": "EPSG_4326" } },
+    { "id": "Master:90003", "name": "Barmbek", "city": "Hamburg", "combinedName": "Barmbek", "vehicleTypes": ["U_BAHN", "S_BAHN", "METROBUS"], "coordinate": { "x": 10.0445, "y": 53.5873, "type": "EPSG_4326" } },
+    { "id": "Master:90004", "name": "Hauptbahnhof", "city": "Hamburg", "combinedName": "Hauptbahnhof", "vehicleTypes": ["U_BAHN", "S_BAHN", "R_BAHN", "F_BAHN"], "coordinate": { "x": 10.0067, "y": 53.553, "type": "EPSG_4326" } },
+    { "id": "Master:90005", "name": "Nettelnburg", "city": "Hamburg", "combinedName": "Nettelnburg", "vehicleTypes": ["S_BAHN"], "coordinate": { "x": 10.1809, "y": 53.4876, "type": "EPSG_4326" } },
+    { "id": "Master:90006", "name": "Rathaus", "city": "Pinneberg", "combinedName": "Rathaus, Pinneberg", "vehicleTypes": ["REGIONALBUS"], "coordinate": { "x": 9.7996, "y": 53.6596, "type": "EPSG_4326" } },
+    { "id": "Master:90007", "name": "Rathaus", "city": "Hamburg", "combinedName": "Rathaus", "vehicleTypes": ["U_BAHN"], "coordinate": { "x": 9.9925, "y": 53.5505, "type": "EPSG_4326" } },
+    { "id": "Master:90008", "name": "Bad Oldesloe", "city": "Bad Oldesloe", "combinedName": "Bad Oldesloe", "vehicleTypes": ["R_BAHN", "REGIONALBUS"], "coordinate": { "x": 10.3732, "y": 53.8099, "type": "EPSG_4326" } },
+    { "id": "Master:90009", "name": "Harburg", "city": "Hamburg", "combinedName": "Harburg", "vehicleTypes": ["S_BAHN", "R_BAHN", "METROBUS"], "coordinate": { "x": 9.9893, "y": 53.456, "type": "EPSG_4326" } },
+    { "id": "Master:90010", "name": "Bissingstraße", "city": "Hamburg", "combinedName": "Bissingstraße", "vehicleTypes": ["METROBUS", "NACHTBUS", "XPRESSBUS"], "coordinate": { "x": 9.9802, "y": 53.4571, "type": "EPSG_4326" } },
+    { "id": "Master:90011", "name": "Steinwerder", "city": "Hamburg", "combinedName": "Steinwerder", "vehicleTypes": ["SCHIFF"] },
+    { "id": "Master:90012", "name": "Kellinghusenstraße", "city": "Hamburg", "combinedName": "Kellinghusenstraße", "vehicleTypes": ["U_BAHN"], "coordinate": { "x": 3565700, "y": 5939500, "type": "EPSG_31467" } }
+  ]
+}
