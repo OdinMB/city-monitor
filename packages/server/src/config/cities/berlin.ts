@@ -142,6 +142,8 @@ export const berlin: CityConfig = {
     },
     // nextbike Berlin's GBFS (CC0-1.0, stated in its system_information): ~1,080 stations
     bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bn/gbfs.json', system: 'nextbike Berlin', operator: 'nextbike' },
+    // Unfallatlas (dl-de/by-2.0): the whole Land, ~13,300 injury accidents in 2025
+    trafficAccidents: { provider: 'unfallatlas', ags: '11000000' },
     appointments: {
       provider: 'service-berlin',
       // Ids are service.berlin.de/dienstleistung/{id}/: open that page to check

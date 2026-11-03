@@ -569,6 +569,7 @@
       "emergencies": "Emergencies",
       "traffic": "Traffic",
       "bike-sharing": "Bike Sharing",
+      "accidents": "Accidents",
       "water": "Water",
       "social": "Social",
       "population": "Population",
@@ -620,6 +621,18 @@
       "none": "No bikes",
       "few": "1–2 bikes",
       "many": "3 or more bikes"
+    },
+    "accidents": {
+      "all": "All accidents",
+      "bike": "With bicycles",
+      "pedestrian": "With pedestrians"
+    },
+    "accidentLegend": {
+      "title": "Accidents with personal injury in {{year}}, by the worst injury",
+      "year": "Injury accidents in {{year}}",
+      "killed": "Someone killed",
+      "serious": "Seriously injured",
+      "slight": "Slightly injured"
     },
     "population": {
       "pop-density": "Population Density",
@@ -701,6 +714,44 @@
       "bikes": "Bikes available",
       "docks": "Free docks",
       "updated": "Updated"
+    },
+    "accident": {
+      "severity": {
+        "1": "Accident with fatalities",
+        "2": "Accident with serious injuries",
+        "3": "Accident with minor injuries"
+      },
+      "type": {
+        "1": "Loss of control",
+        "2": "Turning accident",
+        "3": "Turning-in or crossing accident",
+        "4": "Pedestrian crossing the road",
+        "5": "Accident involving parked vehicles",
+        "6": "Accident in moving traffic",
+        "7": "Other accident"
+      },
+      "kind": {
+        "0": "Other kind of accident",
+        "1": "Collision with a starting, stopping or stationary vehicle",
+        "2": "Collision with a vehicle ahead or waiting",
+        "3": "Collision with a vehicle alongside in the same direction",
+        "4": "Collision with an oncoming vehicle",
+        "5": "Collision with a turning or crossing vehicle",
+        "6": "Collision between a vehicle and a pedestrian",
+        "7": "Impact with an obstacle on the road",
+        "8": "Leaving the road to the right",
+        "9": "Leaving the road to the left"
+      },
+      "participant": {
+        "bike": "bicycle",
+        "car": "car",
+        "pedestrian": "pedestrian",
+        "motorcycle": "motorcycle",
+        "goods": "goods vehicle",
+        "other": "other (bus, tram …)"
+      },
+      "involved": "Involved",
+      "source": "Unfallatlas {{year}}"
     }
   },
   "socialAtlas": {

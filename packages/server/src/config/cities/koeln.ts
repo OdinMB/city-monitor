@@ -135,6 +135,8 @@ export const koeln: CityConfig = {
       baseUrl: 'https://sags-uns.stadt-koeln.de/georeport/v2',
       requestUrl: 'https://sags-uns.stadt-koeln.de/node/{nid}',
     },
+    // Unfallatlas (dl-de/by-2.0): the kreisfreie Stadt, ~4,900 injury accidents in 2025
+    trafficAccidents: { provider: 'unfallatlas', ags: '05315000' },
     // The city's own events (Stadt Köln open data, dl-de/zero-2.0)
     events: [
       { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },

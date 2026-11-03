@@ -10,6 +10,7 @@ import { waterLevelPopupHtml, bathingPopupHtml } from './water';
 import { pharmacyPopupHtml, aedPopupHtml, formatPharmacyDuty } from './emergencies';
 import { noisePopupHtml } from './noise-sensors';
 import { bikeStationPopupHtml } from './bike-sharing';
+import { accidentPopupHtml } from './traffic-accidents';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
@@ -68,6 +69,8 @@ const AED = { indoor: true, description: 'Im Foyer', operator: 'Bezirksamt Mitte
 const NOISE = { id: 4711, laeq: 58.2, laMin: 40.1, laMax: 75.3 };
 // A Unix time on an earlier day, so the popup shows the date with the time
 const BIKE = { name: 'S Halensee (Kurfürstendamm)', bikes: 3, docks: 5, reportedAt: Date.UTC(2026, 2, 3, 8, 0) / 1000, system: 'nextbike Berlin', operator: 'nextbike' };
+// Seriously injured, May, Friday (6) 17–18 h, turning accident with a turning/crossing vehicle, bicycle and car
+const ACCIDENT = { s: 2, m: 5, w: 6, h: 17, k: 5, t: 2, p: 1 | 2 };
 const SOCIAL: SocialAtlasFeatureProps = {
   plrId: '01100101', plrName: 'Stülerstraße', bezId: '01', population: 3400, statusIndex: 2, statusLabel: 'mittel',
   unemployment: 5.2, singleParent: 20.1, welfare: 10.3, childPoverty: 15.4,
@@ -97,6 +100,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['AED', () => aedPopupHtml(AED, COORDS)],
   ['noise sensor', () => noisePopupHtml(NOISE, false)],
   ['bike station', () => bikeStationPopupHtml(BIKE, false)],
+  ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false)],
   ['social atlas', () => socialAtlasPopupHtml(SOCIAL)],
   ['population', () => populationPopupHtml(POPULATION)],
   ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS)],
@@ -119,6 +123,8 @@ const ENGLISH_ONLY = [
   'Noise Sensor', 'Quiet', 'Moderate', 'Loud', 'Min:', 'Max:', 'Unemployment', 'Single-parent', 'Welfare',
   'Child poverty', 'Population', 'Density', 'Foreign', 'Aged 65', 'Under 18', 'Traffic jam', 'Road closure',
   'Roadworks', 'planned work', 'Severe', 'Reported', 'In progress', "city's portal", 'Bikes available', 'Free docks', 'Updated',
+  'Roadworks', 'planned work', 'Severe', 'Bikes available', 'Free docks', 'Updated',
+  'Accident with', 'Turning accident', 'Collision', 'Involved', 'bicycle', 'Friday',
 ];
 
 afterEach(async () => {
@@ -149,6 +155,7 @@ describe('map popups in German', () => {
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Innen', 'Zugang: nur für Kunden', 'Route ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Lärmsensor #4711', '58.2 dB (Laut)', 'Min.: 40.1 dB · Max.: 75.3 dB']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Verfügbare Räder: 3', 'Freie Stellplätze: 5', `Stand: 3. ${GERMAN_MARCH}`, 'nextbike Berlin · nextbike']],
+    ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false), ['Unfall mit Schwerverletzten', 'Abbiegeunfall', 'Zusammenstoß mit einbiegendem oder kreuzendem Fahrzeug', 'Mai 2025 · Freitag, 17:00–18:00', 'Beteiligt: Fahrrad, Pkw', 'Unfallatlas 2025']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Kinder Alleinerziehender20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%', 'MSS-Statusindexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Arbeitslosenquote5.2%', 'Alleinerziehenden-Haushalte20.1%', 'SGB-II-Leistungsberechtigte10.3%']],
     ['Hamburg social atlas', () => socialAtlasPopupHtml(SOCIAL, SOCIAL_ATLAS.hamburg), ['SGB-II- und AsylbLG-Empfänger10.3%', 'Kinder in Mindestsicherung15.4%', 'Statusindex (Sozialmonitoring)mittel']],
@@ -214,6 +221,7 @@ describe('numbers that stay left-to-right in Arabic (right-to-left)', () => {
     ['noise readings', () => noisePopupHtml(NOISE, false), ['58.2 dB', '40.1 dB', '75.3 dB']],
     ['social atlas values', () => socialAtlasPopupHtml(SOCIAL), ['5.2%', '20.1%', '10.3%', '15.4%']],
     ['population density', () => populationPopupHtml(POPULATION), [`${(12000).toLocaleString('ar')}/km²`]],
+    ['accident hour', () => accidentPopupHtml(ACCIDENT, 2025, false), ['17:00–18:00']],
   ] as const)('%s stay left-to-right', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     const texts = ltrTexts(build());
@@ -343,6 +351,9 @@ describe('map popups in English', () => {
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Noise Sensor #4711', '58.2 dB (Loud)', 'Min: 40.1 dB · Max: 75.3 dB']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Bikes available: 3', 'Free docks: 5']],
     ['bike station without docks', () => bikeStationPopupHtml({ ...BIKE, docks: null }, false), ['Bikes available: 3']],
+    ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false), ['Accident with serious injuries', 'Turning accident', 'May 2025 · Friday, 17:00–18:00', 'Involved: bicycle, car']],
+    // Weekday 1 is Sunday; hour 23 runs to midnight
+    ['fatal accident with a pedestrian', () => accidentPopupHtml({ ...ACCIDENT, s: 1, w: 1, h: 23, k: 6, t: 4, p: 4 }, 2025, false), ['Accident with fatalities', 'Pedestrian crossing the road', 'Sunday, 23:00–24:00', 'Involved: pedestrian']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Children of single parents20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%', 'MSS status indexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Unemployment rate5.2%', 'Single-parent households20.1%', 'SGB II recipients10.3%']],
     ['population', () => populationPopupHtml(POPULATION), ['Population3,400', 'Density12,000/km²', 'Aged 65+15.2%', 'Under 1812.1%']],

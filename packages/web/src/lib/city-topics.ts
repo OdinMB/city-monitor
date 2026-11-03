@@ -31,6 +31,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   noiseMap: 'sidebar.layers.noise',
   bikeSharing: 'sidebar.layers.bike-sharing',
   citizenReports: 'sidebar.layers.reports',
+  trafficAccidents: 'sidebar.layers.accidents',
   // Refinements: road works and noise sensors are layers of traffic and noise,
   // pharmacies and defibrillators of the emergencies layer, the rent map a
   // social layer, official air stations part of air quality (every city's topic),

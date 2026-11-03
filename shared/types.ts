@@ -71,6 +71,7 @@ export type CityFeature =
   | 'electricity'     // dataSources.electricity: generation mix of the grid control area, grid CO₂ and signal
   | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
   | 'citizenReports'  // dataSources.citizenReports: citizen issue reports (Open311), the reports map layer
+  | 'trafficAccidents' // dataSources.trafficAccidents: last year's injury accidents on the map (Unfallatlas)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -245,6 +246,21 @@ export type CitizenReportSource = {
   requestUrl: string;
 };
 
+/**
+ * A city's injury accidents from the Unfallatlas of the Statistische Ämter des
+ * Bundes und der Länder: one national file a year, filtered to the city by its
+ * official municipality key (.context/traffic-accidents.md).
+ */
+export type TrafficAccidentSource = {
+  provider: 'unfallatlas';
+  /**
+   * The 8-digit Amtlicher Gemeindeschlüssel: "05315000" for Köln. A city-state's
+   * key ("11000000") matches the whole Land, whose Bezirke the file codes in the
+   * Kreis and Gemeinde digits.
+   */
+  ags: string;
+};
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -298,6 +314,7 @@ export interface CityDataSources {
   bikeSharing?: BikeSharingSource;
   electricity?: ElectricitySource;
   citizenReports?: CitizenReportSource;
+  trafficAccidents?: TrafficAccidentSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -929,6 +946,40 @@ export interface CitizenReportData {
   total: number;
   /** Of `reports`, by status. */
   counts: Record<CitizenReportStatus, number>;
+}
+
+// Traffic accidents (Unfallatlas, Statistische Ämter des Bundes und der Länder)
+/** The worst outcome of an accident: 1 someone killed, 2 seriously injured, 3 slightly injured (UKATEGORIE). */
+export type AccidentSeverity = 1 | 2 | 3;
+
+/**
+ * One accident with personal injury, as a tuple to keep Berlin's ~13,000 small.
+ * `kind` is the Unfallart (UART: 0 other, 1–9 collision kinds), `type` the
+ * Unfalltyp (UTYP1: 1–7). `participants` is a bitmask of who was involved:
+ * 1 bicycle, 2 car, 4 pedestrian, 8 motorcycle, 16 goods vehicle, 32 other
+ * (bus, tram …); `ACCIDENT_PARTICIPANTS` in the server parser and the web layer.
+ */
+export type TrafficAccident = [
+  lon: number,
+  lat: number,
+  severity: AccidentSeverity,
+  /** 1–12 */
+  month: number,
+  /** 1 Sunday … 7 Saturday, as the Unfallatlas counts (UWOCHENTAG) */
+  weekday: number,
+  /** 0–23: the accident happened between this hour and the next */
+  hour: number,
+  kind: number,
+  type: number,
+  participants: number,
+];
+
+export interface TrafficAccidentData {
+  /** The year the accidents happened in. */
+  year: number;
+  accidents: TrafficAccident[];
+  /** When the statistical offices published the file (ISO 8601), null when the index gave no time. */
+  published: string | null;
 }
 
 // Flood status (LHP public API): flood classes at state gauges and regional flood warnings

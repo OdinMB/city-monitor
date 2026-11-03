@@ -21,7 +21,7 @@ import type {
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
-  TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
+  TrafficAccident, TrafficAccidentData, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
@@ -92,6 +92,7 @@ export interface SyntheticData {
   airQualityStations: AirQualityStation[];
   /** Not in Berlin's data set: only Köln and München have an Open311 server (NOT_IN_BERLIN). */
   citizenReports?: CitizenReportData;
+  trafficAccidents: TrafficAccidentData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -151,6 +152,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   electricity: (c) => c.dataSources.electricity !== undefined,
   airQualityStations: (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0,
   citizenReports: (c) => c.dataSources.citizenReports !== undefined,
+  trafficAccidents: (c) => c.dataSources.trafficAccidents !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -266,6 +268,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('electricity')) sets.electricity = generateElectricity(rng, now, city.dataSources.electricity!.controlArea);
   if (has.has('airQualityStations')) sets.airQualityStations = generateAirQualityStations(rng, now, place);
   if (has.has('citizenReports')) sets.citizenReports = generateCitizenReports(rng, now, place);
+  if (has.has('trafficAccidents')) sets.trafficAccidents = generateTrafficAccidents(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1640,6 +1643,27 @@ function generateCitizenReports(rng: Rng, now: Date, place: Place): CitizenRepor
     });
   }
   return buildCitizenReportData(reports);
+}
+
+/**
+ * A last year's worth of accidents in miniature: a dozen around each anchor,
+ * mostly slight, a few serious, one killed per city, with bicycles and
+ * pedestrians among the participants (bits as in TrafficAccident).
+ */
+function generateTrafficAccidents(rng: Rng, now: Date, place: Place): TrafficAccidentData {
+  const year = now.getUTCFullYear() - 1;
+  const accidents: TrafficAccident[] = [];
+  place.anchors.forEach((a) => {
+    for (let k = 0; k < 12; k++) {
+      const { lat, lon } = near(rng, a, 0.015);
+      const roll = rng.int(0, 9);
+      const participants = roll < 4 ? 1 | 2 : roll < 6 ? 2 | 4 : roll < 7 ? 1 : 2;
+      const severity = accidents.length === 0 ? 1 : rng.int(0, 5) === 0 ? 2 : 3;
+      const kind = participants & 4 ? 6 : rng.int(1, 5);
+      accidents.push([lon, lat, severity, rng.int(1, 12), rng.int(1, 7), rng.int(6, 22), kind, rng.int(1, 7), participants]);
+    }
+  });
+  return { year, accidents, published: `${year + 1}-07-07T07:47:16` };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

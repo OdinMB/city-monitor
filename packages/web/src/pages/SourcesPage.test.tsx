@@ -106,6 +106,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Badegewässer Hamburg (Geodienste)', (c) => c.dataSources.bathing?.provider === 'hamburg-wfs'],
   ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
   ['nextbike (GBFS)', (c) => c.dataSources.bikeSharing?.provider === 'gbfs'],
+  ['Unfallatlas (Statistische Ämter des Bundes und der Länder)', (c) => c.dataSources.trafficAccidents?.provider === 'unfallatlas'],
   ['StadtRAD Hamburg (Urban Data Platform)', (c) => c.dataSources.bikeSharing?.provider === 'hamburg-sta'],
   // ingest-electricity: SMARD for the city's control area, Energy-Charts for Germany
   ['SMARD (Bundesnetzagentur)', (c) => c.dataSources.electricity !== undefined],
@@ -225,6 +226,7 @@ describe('SourcesPage licence credits', () => {
     'KVB Open Data (Aufzüge, Fahrtreppen)': 'Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.',
     // CC0 asks for no credit; the feed's operator is named anyway
     'nextbike (GBFS)': 'Data: nextbike GmbH, CC0 1.0.',
+    'Unfallatlas (Statistische Ämter des Bundes und der Länder)': 'Source: Statistische Ämter des Bundes und der Länder, Unfallatlas, dl-de/by-2-0.',
     'StadtRAD Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
     'Sag’s uns (Offene Daten Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
     'Mach München besser': 'Source: Landeshauptstadt München, IT-Referat, CC0 1.0.',

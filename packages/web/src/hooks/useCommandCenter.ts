@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'water' | 'social' | 'population' | 'political' | 'reports';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'accidents' | 'water' | 'social' | 'population' | 'political' | 'reports';
+/** Which accidents the accident layer shows: all, or those with a bicycle or a pedestrian involved. */
+export type AccidentFilter = 'all' | 'bike' | 'pedestrian';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
 export type SocialLayer = 'unemployment' | 'single-parent' | 'welfare' | 'child-poverty' | 'rent';
 export type PopulationLayer = 'pop-density' | 'pop-elderly' | 'pop-foreign';
@@ -23,6 +25,7 @@ interface CommandCenterState {
   emergencySubLayers: Set<EmergencySubLayer>;
   waterSubLayers: Set<WaterSubLayer>;
   trafficSubLayers: Set<TrafficSubLayer>;
+  accidentFilter: AccidentFilter;
   toggleSingleView: () => void;
   toggleLayer: (layer: DataLayer) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
@@ -34,6 +37,7 @@ interface CommandCenterState {
   toggleEmergencySubLayer: (sub: EmergencySubLayer) => void;
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
   toggleTrafficSubLayer: (sub: TrafficSubLayer) => void;
+  setAccidentFilter: (filter: AccidentFilter) => void;
   setActiveLayers: (layers: Set<DataLayer>) => void;
   /** The city whose dashboard the layer choice was last made for. */
   layersCityId: string | null;
@@ -77,6 +81,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
   waterSubLayers: new Set(ALL_WATER_SUBS),
   trafficSubLayers: new Set(ALL_TRAFFIC_SUBS),
+  accidentFilter: 'all',
   toggleSingleView: () =>
     set((state) => {
       const singleView = !state.singleView;
@@ -152,6 +157,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
       }
       return { trafficSubLayers: next };
     }),
+  setAccidentFilter: (filter) => set({ accidentFilter: filter }),
   setActiveLayers: (layers) => set({ activeLayers: layers }),
   layersCityId: null,
   enterCity: (cityId) =>

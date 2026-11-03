@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   AedLocationSchema, AirQualityGridSchema, BathingSpotSchema, BudgetSummarySchema, BuergeramtDataSchema,
   CitizenReportDataSchema, ConstructionSiteSchema, CouncilMeetingSchema, ElectricityDataSchema, EmergencyPharmacySchema, FeuerwehrSummarySchema, FloodStatusSchema,
-  BikeSharingDataSchema, LaborMarketSummarySchema, LiftOutageDataSchema, AirQualityStationsSchema, NinaWarningSchema, NoiseSensorSchema, PoliticalDistrictSchema, PollenForecastSchema,
+  BikeSharingDataSchema, TrafficAccidentDataSchema, LaborMarketSummarySchema, LiftOutageDataSchema, AirQualityStationsSchema, NinaWarningSchema, NoiseSensorSchema, PoliticalDistrictSchema, PollenForecastSchema,
   PopulationSummarySchema, TrafficIncidentSchema, TransitAlertSchema, WastewaterSummarySchema,
   WaterLevelDataSchema, WeatherDataSchema,
 } from '@city-monitor/shared/schemas.js';
@@ -54,6 +54,7 @@ function points(d: CitySyntheticData): Array<{ what: string; lat: number; lon: n
   d.noiseSensors?.forEach((s) => add('noise', s));
   d.bikeSharing?.stations.forEach((s) => add('bike sharing', s));
   d.citizenReports?.reports.forEach((r) => add('citizen report', r));
+  d.trafficAccidents?.accidents.forEach(([lon, lat]) => add('traffic accidents', { lat, lon }));
   d.nina?.forEach((w) => addCoords('nina', (w.area?.geometry as { coordinates?: unknown } | undefined)?.coordinates));
   return out;
 }
@@ -98,6 +99,7 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['electricity', ElectricityDataSchema, d.electricity],
     ['aq stations', AirQualityStationsSchema, d.airQualityStations],
     ['citizen reports', CitizenReportDataSchema, d.citizenReports],
+    ['traffic accidents', TrafficAccidentDataSchema, d.trafficAccidents],
     ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
       [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
   ];
@@ -185,7 +187,7 @@ describe('generateSyntheticData', () => {
 
   it('passes the Zod schemas the database reads validate with', () => {
     const checks = schemaChecks(data);
-    expect(checks).toHaveLength(22 + 4);
+    expect(checks).toHaveLength(23 + 4);
     for (const [name, schema, value] of checks) {
       expect(schema.safeParse(value).error, name).toBeUndefined();
     }
@@ -313,7 +315,7 @@ describe('generateSyntheticCityData', () => {
       // Sozialmonitoring.
       expect([...held].sort()).toEqual([
         'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electricity', 'laborMarket', 'news', 'nina',
-        'pharmacies', 'political', 'pollen', 'population', 'safety', 'socialAtlas', 'summary', 'traffic', 'transit',
+        'pharmacies', 'political', 'pollen', 'population', 'safety', 'socialAtlas', 'summary', 'traffic', 'trafficAccidents', 'transit',
         'wastewater', 'waterLevels', 'weather',
       ]);
       // Geofox announcements have no reporting station or map point
@@ -341,7 +343,7 @@ describe('generateSyntheticCityData', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
         'aeds', 'aq grid', 'aq stations', 'bathing', 'bike sharing', 'construction', 'council', 'electricity', 'labor market', 'nina', 'pharmacies', 'political bundestag',
-        'political state', 'pollen', 'population', 'traffic', 'transit', 'wastewater', 'water levels', 'weather',
+        'political state', 'pollen', 'population', 'traffic', 'traffic accidents', 'transit', 'wastewater', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {
         expect(schema.safeParse(value).error, name).toBeUndefined();

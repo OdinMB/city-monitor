@@ -148,6 +148,17 @@ export const BIKE_AVAILABILITY: ReadonlyArray<{ key: 'none' | 'few' | 'many'; co
   { key: 'many', color: '#16a34a' },
 ];
 
+/**
+ * Accident severity (the worst injury: 1 killed, 2 seriously, 3 slightly
+ * injured), for the accident circles and the sidebar legend; `key` names the
+ * `sidebar.accidentLegend` label.
+ */
+export const ACCIDENT_SEVERITY: ReadonlyArray<{ severity: 1 | 2 | 3; key: 'killed' | 'serious' | 'slight'; color: string }> = [
+  { severity: 1, key: 'killed', color: '#991b1b' },
+  { severity: 2, key: 'serious', color: '#ef4444' },
+  { severity: 3, key: 'slight', color: '#f59e0b' },
+];
+
 /** The classes of the city's rent map, for the sidebar legend (empty without one). */
 export function getRentMapLegend(cityId: string): readonly RentMapClass[] {
   return RENT_MAP_WMS[cityId]?.legend ?? [];

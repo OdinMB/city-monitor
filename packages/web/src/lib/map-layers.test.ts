@@ -25,7 +25,7 @@ describe('cityLayers', () => {
   it('gives Berlin, which has every feature, every layer and sub-layer', () => {
     const all = cityLayers(berlin);
     expect([...all.layers].sort()).toEqual([
-      'air-quality', 'bike-sharing', 'emergencies', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'warnings', 'water', 'weather',
+      'accidents', 'air-quality', 'bike-sharing', 'emergencies', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'warnings', 'water', 'weather',
     ]);
     expect(all.news).toEqual(['news', 'police']);
     expect(all.emergencies).toEqual(['pharmacies', 'aeds']);
@@ -80,6 +80,12 @@ describe('cityLayers', () => {
     for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('bike-sharing'), city.id).toBe(true);
     expect(withFeatures('bikeSharing').layers.has('bike-sharing')).toBe(true);
     expect(withFeatures().layers.has('bike-sharing')).toBe(false);
+  });
+
+  it('shows the accident layer in every city with Unfallatlas data, and not without', () => {
+    for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('accidents'), city.id).toBe(true);
+    expect(withFeatures('trafficAccidents').layers.has('accidents')).toBe(true);
+    expect(withFeatures().layers.has('accidents')).toBe(false);
   });
 
   it('shows the political layer only with political data, and the district-mayor and state views only with theirs', () => {
