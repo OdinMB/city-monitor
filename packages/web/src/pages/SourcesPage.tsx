@@ -324,6 +324,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'Sensor.Community DNMS', url: 'https://sensor.community/en/sensors/dnms/', description: 'Citizen-run noise sensors — LAeq, LAmin, LAmax readings (Berlin only). © Sensor.Community contributors, ODbL.' },
       { name: 'Berlin Open Data (Rent Map)', url: 'https://daten.berlin.de/', description: 'Residential rent zone map (Wohnlagenkarte 2026) as WMS overlay.' },
       { name: 'Berlin Noise Map (SenMVKU)', url: 'https://gdi.berlin.de/services/wms/ua_stratlaerm_2022', description: 'EU strategic noise map 2022 — total, road, rail, and air noise as WMS overlay.' },
+      { name: 'Baumbestand Berlin (Geoportal Berlin)', url: 'https://gdi.berlin.de/services/wms/baumbestand?REQUEST=GetCapabilities&SERVICE=WMS', description: 'Street and park trees from the city\'s tree register as WMS overlay at street level; a click shows the tree\'s species, planting year, height, crown and trunk girth. Source: Geoportal Berlin / Baumbestand Berlin, dl-de/zero-2-0.' },
     ],
   },
 ];
@@ -340,6 +341,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/zero-2-0.' },
       { name: 'Hamburger Wohnlagenverzeichnis (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WMS_Wohnlagen?SERVICE=WMS&REQUEST=GetCapabilities', description: 'Residential location (normal or good Wohnlage) of each address, from the Mietenspiegel, as WMS overlay. Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.' },
+      { name: 'Straßenbaumkataster Hamburg (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WMS_Strassenbaumkataster?SERVICE=WMS&REQUEST=GetCapabilities', description: 'Street trees from the city\'s street-tree register as WMS overlay at street level; a click shows the tree\'s species, planting year, crown and trunk girth. Source: Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft, dl-de/by-2-0.' },
     ],
   },
   {
@@ -467,6 +469,7 @@ const KOELN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'Stadtbezirke Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/stadtbezirke-koeln', description: 'Outlines of the nine Stadtbezirke on the map, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
       { name: 'Umgebungslärmkartierung NRW (LANUV)', url: 'https://www.wms.nrw.de/umwelt/laerm?REQUEST=GetCapabilities&SERVICE=WMS', description: 'EU strategic noise map, 2022 round — road, rail (Stadtbahn and Deutsche Bahn) and air noise (24-hour level Lden) as WMS overlay, drawn at street level only. Source: Land NRW, dl-de/by-2-0.' },
+      { name: 'Baumkataster Köln (Geoportal Stadt Köln)', url: 'https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wms/guest?REQUEST=GetCapabilities&SERVICE=WMS', description: 'Trees in the city\'s tree register as WMS overlay at street level; a click shows the tree\'s species, planting year, height, crown and trunk girth. Source: Stadt Köln, dl-de/zero-2-0.' },
       { name: 'Statistische Quartiere Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/statistische-quartiere-koeln', description: 'Outlines and areas of the 570 Statistische Quartiere for the social atlas and population layers, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
     ],
   },

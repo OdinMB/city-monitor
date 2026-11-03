@@ -43,8 +43,10 @@ import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
-import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_UBA, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, TRAFFIC_FLOW_REFRESH_MS, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
-import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, setTrafficFlowOverlay, loadStyle, zoomedInBounds } from './base.js';
+import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_UBA, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, TRAFFIC_FLOW_REFRESH_MS, STREET_TREES_MIN_ZOOM, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
+import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, setTrafficFlowOverlay, setStreetTreesOverlay, loadStyle, zoomedInBounds } from './base.js';
+import { fetchStreetTree } from '../../lib/street-trees.js';
+import { streetTreePopupHtml, STREET_TREE_REGISTERS } from './layers/street-trees.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
 import { gestureHintLocale, setCooperativeGestures } from './gestures.js';
 import { addDistrictLayer, addDistrictSource, removeDistrictLayers, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
@@ -230,6 +232,8 @@ export function CityMap() {
   const socialActive = activeLayers.has('social');
   const rentMapActive = socialActive && socialLayer === 'rent';
   const socialAtlasActive = socialActive && socialLayer !== undefined && socialLayer !== 'rent';
+  // Frontend only: the city's tree register WMS, nothing from the API
+  const treesActive = activeLayers.has('trees');
   const socialAtlasMetric: SocialAtlasMetric =
     socialLayer === 'single-parent' ? 'singleParent'
     : socialLayer === 'welfare' ? 'welfare'
@@ -421,6 +425,9 @@ export function CityMap() {
   trafficFlowActiveRef.current = trafficFlowActive;
   const trafficFlowRefreshRef = useRef(trafficFlowRefresh);
   trafficFlowRefreshRef.current = trafficFlowRefresh;
+  const treesActiveRef = useRef(treesActive);
+  treesActiveRef.current = treesActive;
+  const treeQueryRef = useRef<AbortController | null>(null);
   const waterActiveRef = useRef(waterActive);
   waterActiveRef.current = waterActive;
   const politicalActiveRef = useRef(politicalActive);
@@ -495,6 +502,7 @@ export function CityMap() {
         setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
         setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
         setTrafficFlowOverlay(map, trafficFlowActiveRef.current, cityIdRef.current, trafficFlowRefreshRef.current);
+        setStreetTreesOverlay(map, treesActiveRef.current, cityIdRef.current);
 
         // Ensure district labels render below all marker icons
         ensureDistrictLabelsBelow(map);
@@ -506,6 +514,26 @@ export function CityMap() {
         containerRef.current
           ?.querySelector('.maplibregl-ctrl-attrib')
           ?.classList.remove('maplibregl-compact-show');
+      });
+
+      // A click on the trees layer at street zoom asks the city's register for
+      // the tree there (GetFeatureInfo), unless it lands on a marker of another
+      // layer, which opens its own popup. No tree there: nothing opens.
+      map.on('click', (e) => {
+        if (!treesActiveRef.current || map.getZoom() < STREET_TREES_MIN_ZOOM) return;
+        const onMarker = map.queryRenderedFeatures(e.point).some((f) =>
+          map.getSource(f.source)?.type === 'geojson' && (!f.layer.id.startsWith('district-') || politicalActiveRef.current));
+        if (onMarker) return;
+        treeQueryRef.current?.abort();
+        const controller = new AbortController();
+        treeQueryRef.current = controller;
+        const cityId = cityIdRef.current;
+        fetchStreetTree(cityId, e.lngLat.lng, e.lngLat.lat, map.getZoom(), controller.signal)
+          .then((tree) => {
+            if (!tree || controller.signal.aborted) return;
+            showMapPopup(map, e.lngLat, streetTreePopupHtml(tree, isDarkRef.current, STREET_TREE_REGISTERS[cityId] ?? ''), { sticky: true });
+          })
+          .catch(() => { /* register unreachable, or the query was dropped: no popup */ });
       });
 
       mapRef.current = map;
@@ -591,6 +619,7 @@ export function CityMap() {
       setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
       setTrafficFlowOverlay(map, trafficFlowActiveRef.current, cityIdRef.current, trafficFlowRefreshRef.current);
+      setStreetTreesOverlay(map, treesActiveRef.current, cityIdRef.current);
       ensureDistrictLabelsBelow(map);
     });
   }, [isDark, city.id]);
@@ -628,6 +657,23 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [rentMapActive, city.id]);
+
+  // Show/hide the city's street-tree register when the layer is toggled
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setStreetTreesOverlay(map, treesActive, city.id);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [treesActive, city.id]);
+
+  // A pending tree query belongs to the layer as it was: switching it off or
+  // changing city drops it.
+  useEffect(() => () => { treeQueryRef.current?.abort(); }, [treesActive, city.id]);
 
   // Show/hide noise WMS overlay when layer or sub-layer changes
   useEffect(() => {

@@ -622,7 +622,8 @@
       "social": "Social",
       "population": "Population",
       "political": "Representation",
-      "reports": "Citizen Reports"
+      "reports": "Citizen Reports",
+      "trees": "Street Trees"
     },
     "reports": {
       "legend": "Status of citizen reports",
@@ -652,6 +653,10 @@
       "air": "Air Traffic",
       "live": "Live Sensors",
       "zoomIn": "Zoom in to street level to see the noise map."
+    },
+    "trees": {
+      "zoomIn": "Zoom in to street level to see the trees.",
+      "hint": "Click a tree for its species, age and size."
     },
     "water": {
       "levels": "Water Levels",
@@ -804,6 +809,14 @@
         "loud": "Loud",
         "veryLoud": "Very Loud"
       }
+    },
+    "tree": {
+      "planted": "Planted",
+      "age_one": "{{count}} year old",
+      "age_other": "{{count}} years old",
+      "height": "Height",
+      "crown": "Crown diameter",
+      "girth": "Trunk girth"
     },
     "bike": {
       "bikes": "Bikes available",

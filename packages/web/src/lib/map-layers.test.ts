@@ -25,7 +25,7 @@ describe('cityLayers', () => {
   it('gives Berlin, which has every feature, every layer and sub-layer', () => {
     const all = cityLayers(berlin);
     expect([...all.layers].sort()).toEqual([
-      'accidents', 'air-quality', 'bike-sharing', 'emergencies', 'ev-charging', 'heat-relief', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'warnings', 'water', 'weather',
+      'accidents', 'air-quality', 'bike-sharing', 'emergencies', 'ev-charging', 'heat-relief', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'trees', 'warnings', 'water', 'weather',
     ]);
     expect(all.heatRelief).toEqual(['cool', 'fountains', 'toilets']);
     expect(all.news).toEqual(['news', 'police']);
@@ -65,6 +65,13 @@ describe('cityLayers', () => {
     expect(cityLayers(muenchen).layers.has('reports')).toBe(true);
     expect(cityLayers(berlin).layers.has('reports')).toBe(false);
     expect(cityLayers(hamburg).layers.has('reports')).toBe(false);
+  });
+
+  it('gives the trees layer to the cities with a tree register, all but München', () => {
+    expect(cityLayers(berlin).layers.has('trees')).toBe(true);
+    expect(cityLayers(hamburg).layers.has('trees')).toBe(true);
+    expect(cityLayers(koeln).layers.has('trees')).toBe(true);
+    expect(cityLayers(muenchen).layers.has('trees')).toBe(false);
   });
 
   it('shows a parent layer when any one of its sub-layers is there', () => {

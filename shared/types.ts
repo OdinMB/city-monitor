@@ -98,6 +98,7 @@ export type CityFeature =
   | 'noiseMap'        // a strategic noise map WMS (road, rail, air)
   | 'noiseTotal'      // its all-sources layer
   | 'trafficFlowMap'  // a live congestion map WMS, the traffic layer's congestion sub-layer
+  | 'streetTrees'     // the street-tree register WMS (STREET_TREES_WMS), the trees map layer
   | 'politicalMap'    // the political map layer, on the city's district outlines (DISTRICT_URLS)
   | 'bundestagByDistrict'; // its Bundestag view: constituencies named after Bezirke (Berlin, Hamburg)
 

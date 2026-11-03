@@ -33,6 +33,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   bikeSharing: 'sidebar.layers.bike-sharing',
   citizenReports: 'sidebar.layers.reports',
   trafficAccidents: 'sidebar.layers.accidents',
+  streetTrees: 'sidebar.layers.trees',
   evCharging: 'sidebar.layers.ev-charging',
   // Every city with a heat-relief layer has fountains; cool places and toilets
   // are its other sub-layers, so the layer counts once.

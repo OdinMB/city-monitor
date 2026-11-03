@@ -21,6 +21,8 @@ import { buildPoliticalPopupHtml } from './political';
 import { newsPopupHtml, safetyPopupHtml } from './news-safety';
 import { aqPopupHtml } from './air-quality';
 import { citizenReportPopupHtml } from './citizen-reports';
+import { streetTreePopupHtml } from './street-trees';
+import type { StreetTree } from '../../../lib/street-trees.js';
 
 /**
  * Map popups are HTML strings built outside React, so they look their words
@@ -110,6 +112,12 @@ const REPORT = {
   updatedAt: '2026-11-02T17:01:17+01:00', url: 'https://sags-uns.stadt-koeln.de/node/95349',
 };
 
+const TREE: StreetTree = {
+  species: 'Silber-Linde', botanical: 'Tilia tomentosa', plantedYear: 1985, heightM: 13, crownM: 6.5, girthCm: 104,
+  location: 'Unter den Linden', district: 'Mitte',
+};
+const TREE_NOW = new Date(2026, 10, 3);
+
 /** Every popup builder, rendered from its fixture. */
 const POPUPS: Array<[string, () => string]> = [
   ['traffic', () => trafficPopupHtml(TRAFFIC)],
@@ -137,6 +145,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['police', () => safetyPopupHtml(SAFETY)],
   ['air quality station', () => aqPopupHtml(AQ_STATION)],
   ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)')],
+  ['street tree', () => streetTreePopupHtml(TREE, false, 'Baumbestand Berlin', TREE_NOW)],
 ];
 
 /**
@@ -157,6 +166,7 @@ const ENGLISH_ONLY = [
   'Charge points', 'Plugs', 'up to', 'In use', 'Available', 'Fast (', 'charging register',
   'Drinking fountain', 'Public toilet', 'Cool place', 'Air-conditioned', 'Off season', 'Runs from', 'Hours',
   'Wheelchair', 'changing table', 'Free of charge',
+  'Planted', 'years old', 'Height', 'Crown diameter', 'Trunk girth',
 ];
 
 afterEach(async () => {
@@ -208,6 +218,7 @@ describe('map popups in German', () => {
     ['police', () => safetyPopupHtml(SAFETY), ['Details →']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['US AQI: 85 (Mäßig)']],
     ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)'), ['Wilder Müll', 'In Bearbeitung', 'Gemeldet: ', 'Aktualisiert: ', 'Im Portal der Stadt ansehen ↗']],
+    ['street tree', () => streetTreePopupHtml(TREE, false, 'Baumbestand Berlin', TREE_NOW), ['Silber-Linde', 'Tilia tomentosa', 'Gepflanzt: 1985 (41 Jahre alt)', 'Höhe: 13 m', 'Kronendurchmesser: 6,5 m', 'Stammumfang: 104 cm', 'Unter den Linden · Mitte', 'Baumbestand Berlin']],
   ] as const)('%s popup', async (_name, build, expected) => {
     await i18n.changeLanguage('de');
     const text = textOf(build());
