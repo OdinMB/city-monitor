@@ -56,6 +56,6 @@ The job stores every source's records unmerged; the route merges at request time
 ## The Klinik-Atlas opt-out
 
 - On by default. `KLINIK_ATLAS=false` on the Render API service (declared in `render.yaml` with `sync: false` and no value) hides it: the job skips the export and the route drops stored Atlas records, effective on the restart that a dashboard change causes. The pattern is described once in [deployment.md](deployment.md#source-opt-outs).
-- Open request (2026-11-03): the owner is asking the G-BA (Bundes-Klinik-Atlas open data) whether the export may be reused in a public AGPL dashboard, and with what attribution. The owner keeps `KLINIK_ATLAS=false` set until the G-BA agrees. No licence is claimed until then.
+- Open request (emailed to info@g-ba.de on 2026-11-03, no answer yet): the owner is asking the G-BA (Bundes-Klinik-Atlas open data) whether the export may be reused in a public AGPL dashboard, and with what attribution. The owner keeps `KLINIK_ATLAS=false` set until the G-BA agrees. No licence is claimed until then.
 - Once the G-BA answers: if yes, unset `KLINIK_ATLAS` and put their terms into the Sources-page credit; if no, keep it `false` and remove the provider (Berlin's own hospital WFS is the fallback, see new-data-sources.md).
 - After switching it on, trigger or wait for `ingest-hospitals` (Monday 05:45; every start runs a job whose data is stale) and check its log line per city ("N hospitals, M in emergency care (klinik-atlas)").
