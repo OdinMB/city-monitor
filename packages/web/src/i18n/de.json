@@ -486,6 +486,8 @@
       "allWorking": "Alle Aufzüge und Fahrtreppen in Betrieb",
       "more": "+{{n}} weitere",
       "atStations": "Betroffene Haltestellen: {{n}}",
+      "db": "DB",
+      "until": "ab {{date}} wieder",
       "asOf": "Stand:",
       "empty": "Keine Störungsdaten"
     },
@@ -684,8 +686,10 @@
     },
     "emergencies": {
       "pharmacies": "Apotheken",
-      "aeds": "Defibrillatoren"
+      "aeds": "Defibrillatoren",
+      "hospitals": "Krankenhäuser"
     },
+    "hospitalLegend": "Krankenhäuser nach Notfallversorgung",
     "noise": {
       "total": "Alle Quellen",
       "road": "Straßenverkehr",
@@ -862,6 +866,27 @@
       "waterTemp": "Wassertemperatur",
       "visibility": "Sichttiefe",
       "euClass": "EU: {{value}}"
+    },
+    "hospital": {
+      "tier": {
+        "comprehensive": "Umfassende Notfallversorgung",
+        "extended": "Erweiterte Notfallversorgung",
+        "basic": "Basisnotfallversorgung",
+        "emergency": "Nimmt an der Notfallversorgung teil",
+        "limited": "Eingeschränkte Notfallversorgung",
+        "specialised": "Nur spezielle Notfallversorgung",
+        "none": "Keine Notaufnahme"
+      },
+      "unit": {
+        "children": "Kindernotfall",
+        "strokeUnit": "Stroke Unit",
+        "chestPainUnit": "Chest Pain Unit",
+        "trauma": "Schwerverletzte"
+      },
+      "beds": "{{n}} Betten",
+      "website": "Website",
+      "sourceAtlas": "Bundes-Klinik-Atlas (G-BA)",
+      "sourceHamburg": "Krankenhausverzeichnis Hamburg"
     },
     "aed": {
       "title": "AED / Defibrillator",

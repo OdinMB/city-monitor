@@ -10,7 +10,7 @@ import {
   WaterLevelDataSchema, WeatherDataSchema,
 } from '@city-monitor/shared/schemas.js';
 import { EvChargingRegisterSchema } from '@city-monitor/shared/schemas.js';
-import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
+import { HeatReliefDataSchema, HospitalDataSchema } from '@city-monitor/shared/schemas.js';
 import { TelraamCountsDataSchema } from '@city-monitor/shared/schemas.js';
 import { ParkingDataSchema, WaterTemperatureDataSchema } from '@city-monitor/shared/schemas.js';
 import type { AirQuality, CityConfig } from '@city-monitor/shared';
@@ -116,6 +116,7 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['traffic counts', TrafficCountDataSchema, d.trafficCounts],
     ['ev charging', EvChargingRegisterSchema, d.evCharging],
     ['heat relief', HeatReliefDataSchema, d.heatRelief],
+    ['hospitals', HospitalDataSchema, d.hospitals],
     ['soil moisture', SoilMoistureDataSchema, d.soilMoisture],
     ['telraam counts', TelraamCountsDataSchema, d.telraamCounts],
     ['water temperature', WaterTemperatureDataSchema, d.waterTemperature],
@@ -208,7 +209,7 @@ describe('generateSyntheticData', () => {
 
   it('passes the Zod schemas the database reads validate with', () => {
     const checks = schemaChecks(data);
-    expect(checks).toHaveLength(30 + 4);
+    expect(checks).toHaveLength(32 + 4);
     for (const [name, schema, value] of checks) {
       expect(schema.safeParse(value).error, name).toBeUndefined();
     }
@@ -335,7 +336,7 @@ describe('generateSyntheticCityData', () => {
       // credentials), bathing water from its own WFS, social atlas from the
       // Sozialmonitoring.
       expect([...held].sort()).toEqual([
-        'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electionResults', 'electricity', 'evCharging', 'heatRelief', 'laborMarket', 'news', 'nina',
+        'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electionResults', 'electricity', 'evCharging', 'heatRelief', 'hospitals', 'laborMarket', 'liftOutages', 'news', 'nina',
         'parking', 'pharmacies', 'political', 'politicalVotes', 'pollen', 'population', 'respiratoryCases', 'safety', 'socialAtlas', 'soilMoisture', 'summary', 'traffic', 'trafficAccidents', 'trafficCounts', 'transit',
         'wastewater', 'waterLevels', 'weather',
       ]);
@@ -366,7 +367,7 @@ describe('generateSyntheticCityData', () => {
     it('passes the Zod schemas the database reads validate with', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
-        'aeds', 'aq grid', 'aq stations', 'bathing', 'bike sharing', 'construction', 'council', 'election results', 'electricity', 'ev charging', 'heat relief', 'labor market', 'nina', 'parking', 'pharmacies', 'political bundestag',
+        'aeds', 'aq grid', 'aq stations', 'bathing', 'bike sharing', 'construction', 'council', 'election results', 'electricity', 'ev charging', 'heat relief', 'hospitals', 'labor market', 'lift outages', 'nina', 'parking', 'pharmacies', 'political bundestag',
         'political state', 'pollen', 'population', 'respiratory cases', 'soil moisture', 'traffic', 'traffic accidents', 'traffic counts', 'transit', 'wastewater', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {
@@ -444,7 +445,7 @@ describe('generateSyntheticCityData', () => {
       for (const p of d.pharmacies!) expect(bezirke).toContain(p.district);
       expect(d.waterLevels === undefined).toBe(city.dataSources.waterLevels === undefined);
       expect(d.floodStatus === undefined).toBe(city.dataSources.floodStatus === undefined);
-      expect(d.liftOutages === undefined).toBe(city.dataSources.liftOutages === undefined);
+      expect(d.liftOutages === undefined).toBe(city.dataSources.liftOutages === undefined && city.dataSources.stationLifts === undefined);
       expect(d.citizenReports === undefined).toBe(city.dataSources.citizenReports === undefined);
       for (const [name, schema, value] of schemaChecks(d)) expect(schema.safeParse(value).error, name).toBeUndefined();
       expectInside(d, city, 20);

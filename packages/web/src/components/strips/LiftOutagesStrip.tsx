@@ -17,12 +17,25 @@ const COLLAPSED_LIFTS = 5;
 
 const FRESH_MAX_AGE = staleAfter('liftOutages');
 
-function LiftRow({ outage }: { outage: LiftOutage }) {
+/** DB's planned return date (YYYY-MM-DD) as a short day and month in the UI language. */
+function formatResumeDate(date: string, lang: string): string {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+}
+
+/** One lift; `markDb` tags a DB station's where the list mixes operators (Köln: KVB and DB). */
+function LiftRow({ outage, markDb }: { outage: LiftOutage; markDb: boolean }) {
+  const { t, i18n } = useTranslation();
   return (
     <li className="flex items-baseline gap-2 min-w-0 text-sm">
       <span aria-hidden="true" className="shrink-0 w-2 h-2 rounded-full bg-signal-bad translate-y-[-1px]" />
+      {markDb && outage.operator === 'db' && (
+        <span className="shrink-0 px-1 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-muted">{t('panel.liftOutages.db')}</span>
+      )}
       <SourceText as="span" lang="de" className="min-w-0 truncate text-gray-900 dark:text-gray-100">{outage.station}</SourceText>
       {outage.unit && <SourceText as="span" lang="de" className="shrink-0 text-[11px] text-muted">{outage.unit}</SourceText>}
+      {outage.resumeDate && (
+        <span className="shrink-0 text-[11px] text-muted">{t('panel.liftOutages.until', { date: formatResumeDate(outage.resumeDate, i18n.language) })}</span>
+      )}
     </li>
   );
 }
@@ -38,8 +51,9 @@ export function LiftOutagesStrip({ expanded = false }: { expanded?: boolean }) {
   const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  const { lifts, escalatorStations, escalatorCount } = useMemo(() => {
+  const { lifts, escalatorStations, escalatorCount, mixed } = useMemo(() => {
     const outages = data?.outages ?? [];
+    const dbCount = outages.filter((o) => o.operator === 'db').length;
     const byStation = new Map<string, number>();
     for (const o of outages) {
       if (o.kind === 'escalator') byStation.set(o.station, (byStation.get(o.station) ?? 0) + 1);
@@ -48,6 +62,7 @@ export function LiftOutagesStrip({ expanded = false }: { expanded?: boolean }) {
       lifts: outages.filter((o) => o.kind === 'lift'),
       escalatorStations: [...byStation.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'de')),
       escalatorCount: outages.length - outages.filter((o) => o.kind === 'lift').length,
+      mixed: dbCount > 0 && dbCount < outages.length,
     };
   }, [data]);
 
@@ -73,7 +88,7 @@ export function LiftOutagesStrip({ expanded = false }: { expanded?: boolean }) {
                 <p className="text-xs text-muted">{t('panel.liftOutages.noLifts')}</p>
               ) : (
                 <ul className="space-y-1">
-                  {shownLifts.map((o) => <LiftRow key={o.id} outage={o} />)}
+                  {shownLifts.map((o) => <LiftRow key={o.id} outage={o} markDb={mixed} />)}
                   {shownLifts.length < lifts.length && (
                     <li className="text-[11px] text-muted">{t('panel.liftOutages.more', { n: lifts.length - shownLifts.length })}</li>
                   )}

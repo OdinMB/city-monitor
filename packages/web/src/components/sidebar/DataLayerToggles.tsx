@@ -1,12 +1,14 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints, Gauge, ThermometerSun, TreeDeciduous } from 'lucide';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints, Gauge, ThermometerSun, TreeDeciduous, Hospital } from 'lucide';
 import { useCommandCenter, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer, type HeatReliefSubLayer } from '../../hooks/useCommandCenter.js';
 import { HEAT_RELIEF_KINDS } from '../../lib/heat-relief.js';
 import { SquareParking, Thermometer, Vote } from 'lucide';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
-import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
+import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers, withoutEmptyHospitals, type CityLayers } from '../../lib/map-layers.js';
+import { useHospitals } from '../../hooks/useHospitals.js';
+import { HOSPITAL_TIER_COLORS, HOSPITAL_TIERS } from '../../lib/hospitals.js';
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
 import { PARKING_OCCUPANCY } from '../map/constants.js';
@@ -71,6 +73,7 @@ const NEWS_SUB_META: { key: NewsSubLayer; icon: IconNode; color: string }[] = [
 const EMERGENCY_SUB_META: { key: EmergencySubLayer; icon: IconNode; color: string }[] = [
   { key: 'pharmacies', icon: Pill as IconNode, color: '#22c55e' },
   { key: 'aeds', icon: HeartPulse as IconNode, color: '#ef4444' },
+  { key: 'hospitals', icon: Hospital as IconNode, color: '#b91c1c' },
 ];
 
 const NOISE_SUB_META: { key: NoiseLayer; icon: IconNode; color: string }[] = [
@@ -235,6 +238,42 @@ function DotLegend({ title, items }: { title: string; items: ReadonlyArray<{ key
         </li>
       ))}
     </ul>
+  );
+}
+
+/** The hospitals' marker colours: only the tiers the city's hospitals have (Hamburg's WFS has no G-BA tier). */
+export function HospitalLegend({ cityId }: { cityId: string }) {
+  const { t } = useTranslation();
+  const { data } = useHospitals(cityId);
+  const present = new Set(data?.hospitals.map((h) => h.tier) ?? []);
+  const items = HOSPITAL_TIERS.filter((tier) => present.has(tier))
+    .map((tier) => ({ key: tier, color: HOSPITAL_TIER_COLORS[tier], label: t(`mapPopup.hospital.tier.${tier}`) }));
+  if (items.length === 0) return null;
+  return <DotLegend title={t('sidebar.hospitalLegend')} items={items} />;
+}
+
+/**
+ * The emergencies layer's sub-layers. Hospitals are listed only once the
+ * server has some for the city: Berlin, Köln and München have only the
+ * Klinik-Atlas, which stays off until KLINIK_ATLAS_ENABLED is set.
+ */
+function EmergencySubLayers({ cityId, layers, parentColor, selected, onSelect }: {
+  cityId: string;
+  layers: CityLayers;
+  parentColor: string;
+  selected: ReadonlySet<EmergencySubLayer>;
+  onSelect: (key: EmergencySubLayer) => void;
+}) {
+  const { t } = useTranslation();
+  const { data } = useHospitals(cityId, layers.emergencies.includes('hospitals'));
+  const available = withoutEmptyHospitals(layers, (data?.hospitals.length ?? 0) > 0).emergencies;
+  const active = effectiveSubLayers(selected, available);
+  return (
+    <>
+      <SubLayerList meta={EMERGENCY_SUB_META} available={available} parentColor={parentColor}
+        isActive={(key) => active.has(key)} onSelect={onSelect} label={(key) => t(`sidebar.emergencies.${key}`)} />
+      {active.has('hospitals') && <HospitalLegend cityId={cityId} />}
+    </>
   );
 }
 
@@ -500,7 +539,6 @@ export function DataLayerToggles() {
   const setHintsOpen = useShortcutSettings((s) => s.setHintsOpen);
   const available = useMemo(() => cityLayers(city), [city]);
   const news = effectiveSubLayers(newsSubLayers, available.news);
-  const emergencies = effectiveSubLayers(emergencySubLayers, available.emergencies);
   const traffic = effectiveSubLayers(trafficSubLayers, available.traffic);
   const water = effectiveSubLayers(waterSubLayers, available.water);
   const heatRelief = effectiveSubLayers(heatReliefSubLayers, available.heatRelief);
@@ -602,8 +640,7 @@ export function DataLayerToggles() {
             );
           } else if (layer === 'emergencies' && active) {
             subItems = (
-              <SubLayerList meta={EMERGENCY_SUB_META} available={available.emergencies} parentColor={color}
-                isActive={(key) => emergencies.has(key)} onSelect={toggleEmergencySubLayer} label={(key) => t(`sidebar.emergencies.${key}`)} />
+              <EmergencySubLayers cityId={city.id} layers={available} parentColor={color} selected={emergencySubLayers} onSelect={toggleEmergencySubLayer} />
             );
           } else if (layer === 'water' && active) {
             subItems = (

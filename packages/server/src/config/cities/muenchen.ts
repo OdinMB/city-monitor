@@ -71,6 +71,10 @@ export const muenchen: CityConfig = {
     wastewater: { provider: 'amelag', sites: ['München'] }, // RKI AMELAG (CC BY 4.0), about 1.24 million people
     // nextbike's MyRadl system (GBFS, CC0-1.0) covers the city and its Landkreis: ~800
     // virtual stations, ~630 of them inside the bounding box, which the job keeps
+    // Lifts and escalators at DB stations (FaSta, CC BY 4.0); fetched only with DB_API_CLIENT_ID and DB_API_KEY
+    stationLifts: { provider: 'db-fasta' },
+    // Hospitals by G-BA emergency tier; read only with KLINIK_ATLAS_ENABLED=true (reuse terms unconfirmed)
+    hospitals: [{ provider: 'klinik-atlas', places: ['München'] }],
     bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_ml/gbfs.json', system: 'MyRadl', operator: 'nextbike' },
     // Unfallatlas (dl-de/by-2.0): the kreisfreie Stadt, ~5,300 injury accidents in 2025
     trafficAccidents: { provider: 'unfallatlas', ags: '09162000' },

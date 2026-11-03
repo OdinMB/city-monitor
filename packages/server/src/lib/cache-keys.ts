@@ -50,6 +50,8 @@ export const CK = {
   electionResults: (cityId: string) => `${cityId}:election-results`,
   /** Not bootstrapped: the election areas' polygons (Berlin ~110 KB), fetched when the map's Election view is on. */
   electionGeojson: (cityId: string) => `${cityId}:election-results:geojson`,
+  /** Not bootstrapped (~60 hospitals, ~15 KB): fetched for the emergencies layer's hospital toggle. */
+  hospitals: (cityId: string) => `${cityId}:hospitals`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

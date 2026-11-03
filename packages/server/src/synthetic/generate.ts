@@ -25,7 +25,7 @@ import type {
   TelraamCountsData, TelraamSegmentCount, TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, RespiratoryCases, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
   CrimeAreaProps, CrimeAtlasData, CrimeIndicator,
 } from '@city-monitor/shared';
-import type { HeatReliefData, HeatReliefPlace } from '@city-monitor/shared';
+import type { HeatReliefData, HeatReliefPlace, Hospital, HospitalData, HospitalTier } from '@city-monitor/shared';
 import type { ParkingData, ParkingFacility, WaterTemperatureData } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
@@ -43,6 +43,7 @@ import { computeLevel, computeTrend } from '../cron/ingest-wastewater.js';
 import { isoWeekLabel, isoWeekMonday } from '../cron/ingest-respiratory-cases.js';
 import { REPORT_WINDOW_DAYS, buildCitizenReportData, reportGroup, reportStatus, requestPageUrl } from '../cron/ingest-citizen-reports.js';
 import { hashString } from '../lib/hash.js';
+import { TIER_ORDER } from '../lib/hospitals.js';
 import { SOCIAL_ATLAS_HAS_STATUS_INDEX, SOCIAL_ATLAS_METRICS } from '../lib/social-atlas-parsers.js';
 
 export interface SyntheticSnapshot {
@@ -94,7 +95,7 @@ export interface SyntheticData {
   politicalVotes: PoliticalVote[];
   /** Not in Berlin's data set: Berlin has no LHP gauges configured (NOT_IN_BERLIN). */
   floodStatus?: FloodStatus;
-  /** Not in Berlin's data set: only Köln's KVB publishes lift outages (NOT_IN_BERLIN). */
+  /** KVB's outages (Köln) and DB stations' (every city with stationLifts). */
   liftOutages?: LiftOutageData;
   bikeSharing: BikeSharingData;
   electricity: ElectricityData;
@@ -109,6 +110,8 @@ export interface SyntheticData {
   /** The register only: the live status (Hamburg) is never stored, so the seed has none. */
   evCharging: EvChargingRegister;
   heatRelief: HeatReliefData;
+  /** As production holds with KLINIK_ATLAS_ENABLED set: hospitals of every tier around the anchors. */
+  hospitals: HospitalData;
   /** Soil moisture at the configured DWD stations; Gieß den Kiez waterings where the city has them. */
   soilMoisture: SoilMoistureData;
   telraamCounts: TelraamCountsData;
@@ -170,7 +173,8 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   councilMeetings: (c) => c.dataSources.councilMeetings !== undefined,
   political: (c) => politicalLevels(c).length > 0,
   floodStatus: (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0,
-  liftOutages: (c) => c.dataSources.liftOutages !== undefined,
+  // As production holds with the DB API Marketplace key set: DB stations wherever stationLifts is configured
+  liftOutages: (c) => c.dataSources.liftOutages !== undefined || c.dataSources.stationLifts !== undefined,
   bikeSharing: (c) => c.dataSources.bikeSharing !== undefined,
   electricity: (c) => c.dataSources.electricity !== undefined,
   airQualityStations: (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0,
@@ -180,6 +184,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   trafficCounts: (c) => (c.dataSources.trafficCounts?.modes.length ?? 0) > 0,
   evCharging: (c) => c.dataSources.evCharging !== undefined,
   heatRelief: (c) => (c.dataSources.heatRelief?.length ?? 0) > 0,
+  hospitals: (c) => (c.dataSources.hospitals?.length ?? 0) > 0,
   soilMoisture: (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0,
   telraamCounts: (c) => c.dataSources.telraamCounts !== undefined,
   respiratoryCases: (c) => c.dataSources.respiratoryCases !== undefined,
@@ -191,7 +196,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
-const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages', 'citizenReports', 'trafficCounts', 'parking'];
+const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'citizenReports', 'trafficCounts', 'parking'];
 
 /** The data sets the synthetic seed writes for `city`: those production would hold for it. */
 export function syntheticCoverage(city: CityConfig): SyntheticDataSet[] {
@@ -298,7 +303,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('political')) sets.political = generatePolitical(rng, place);
   // Drawn last, so adding it left the other data sets' values as they were
   if (has.has('floodStatus')) sets.floodStatus = generateFloodStatus(rng, now, city);
-  if (has.has('liftOutages')) sets.liftOutages = generateLiftOutages(rng, now, place);
+  if (has.has('liftOutages')) sets.liftOutages = generateLiftOutages(rng, now, city, place);
   if (has.has('bikeSharing')) sets.bikeSharing = generateBikeSharing(rng, now, city, place);
   if (has.has('electricity')) sets.electricity = generateElectricity(rng, now, city.dataSources.electricity!.controlArea);
   if (has.has('airQualityStations')) sets.airQualityStations = generateAirQualityStations(rng, now, place);
@@ -307,6 +312,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('trafficCounts')) sets.trafficCounts = generateTrafficCounts(rng, now, city, place);
   if (has.has('evCharging')) sets.evCharging = generateEvCharging(rng, place);
   if (has.has('heatRelief')) sets.heatRelief = generateHeatRelief(rng, city, place);
+  if (has.has('hospitals')) sets.hospitals = generateHospitals(city, place);
   if (has.has('soilMoisture')) sets.soilMoisture = generateSoilMoisture(rng, now, city, place);
   if (has.has('telraamCounts')) sets.telraamCounts = generateTelraamCounts(rng, now, place);
   if (has.has('respiratoryCases')) sets.respiratoryCases = generateRespiratoryCases(rng, now);
@@ -316,6 +322,39 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('crimeAtlas')) sets.crimeAtlas = generateCrimeAtlas(rng, now, place);
   if (has.has('politicalVotes')) sets.politicalVotes = generatePoliticalVotes(rng, now, sets.political ?? {});
   return { cityId: city.id, ...sets, history };
+}
+
+const SYNTHETIC_TIERS: readonly HospitalTier[] = ['comprehensive', 'extended', 'basic', 'none', 'specialised', 'basic', 'extended', 'none'];
+
+/**
+ * One made-up hospital per anchor (up to eight), cycling through the tiers,
+ * from the Klinik-Atlas where the city lists it, else its first source. Drawn
+ * without the generator, so the other data sets keep their values.
+ */
+function generateHospitals(city: CityConfig, place: Place): HospitalData {
+  const sources = city.dataSources.hospitals ?? [];
+  const atlas = sources.some((s) => s.provider === 'klinik-atlas');
+  const source: Hospital['source'] = atlas ? 'klinik-atlas' : 'hamburg-wfs';
+  const hospitals = place.anchors.slice(0, 8).map((a, i): Hospital => {
+    const tier = SYNTHETIC_TIERS[i]!;
+    return {
+      id: `syn-hospital-${i + 1}`,
+      name: `${MARK} Klinikum ${a.name}`,
+      address: `${STREETS[i % STREETS.length]} ${i + 1}`,
+      lat: a.lat + 0.002,
+      lon: a.lon - 0.002,
+      tier,
+      children: tier === 'comprehensive',
+      strokeUnit: tier === 'comprehensive' || tier === 'extended',
+      chestPainUnit: tier === 'comprehensive',
+      trauma: tier === 'comprehensive',
+      beds: 100 + i * 75,
+      url: null,
+      source,
+    };
+  });
+  hospitals.sort((x, y) => TIER_ORDER.indexOf(x.tier) - TIER_ORDER.indexOf(y.tier) || x.name.localeCompare(y.name, 'de'));
+  return { hospitals, atlasDate: atlas ? '2026-10-27' : null };
 }
 
 // ---------------------------------------------------------------------------
@@ -1565,10 +1604,14 @@ function generateFloodStatus(rng: Rng, now: Date, city: CityConfig): FloodStatus
   };
 }
 
-/** A few lifts and more escalators out of service at made-up stations near the city's anchors. */
-function generateLiftOutages(rng: Rng, now: Date, place: Place): LiftOutageData {
+/**
+ * A few lifts and more escalators out of service at made-up stations near the
+ * city's anchors: KVB's where the city has them, and two DB stations where it
+ * has stationLifts (drawn without the generator, so KVB's values stay as they were).
+ */
+function generateLiftOutages(rng: Rng, now: Date, city: CityConfig, place: Place): LiftOutageData {
   const outages: LiftOutage[] = [];
-  const stations = place.anchors.slice(0, 8);
+  const stations = city.dataSources.liftOutages ? place.anchors.slice(0, 8) : [];
   stations.forEach((a, i) => {
     const station = `Haltestelle ${a.name} (synthetisch)`;
     const at = near(rng, a, 0.004);
@@ -1579,6 +1622,16 @@ function generateLiftOutages(rng: Rng, now: Date, place: Place): LiftOutageData 
       outages.push({ id: `${nr}-5${k}`, kind: 'escalator', station, unit: `Fahrtreppe 5${k}`, ...at, info: null });
     }
   });
+  if (city.dataSources.stationLifts) {
+    place.anchors.slice(-2).forEach((a, i) => {
+      const station = `${a.name} (synthetisch)`;
+      const common = { station, lat: a.lat, lon: a.lon, info: null, operator: 'db' as const };
+      outages.push({ ...common, id: `db-9${i}0001`, kind: 'lift', unit: `zu Gleis ${i + 1}/${i + 2}`, resumeDate: `${local(new Date(now.getTime() + 7 * 86_400_000)).date}` });
+      outages.push({ ...common, id: `db-9${i}0002`, kind: 'escalator', unit: 'zur Empfangshalle', resumeDate: null });
+    });
+  }
+  // FaSta gives no list time: only KVB's lists carry one
+  if (!city.dataSources.liftOutages) return { outages, updated: null };
   const updated = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000);
   return { outages, updated: `${localIso(updated)}:00${berlinUtcOffset(`${local(updated).date} 12:00:00`)}` };
 }

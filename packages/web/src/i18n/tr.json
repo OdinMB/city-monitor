@@ -485,6 +485,8 @@
       "allWorking": "Tüm asansörler ve yürüyen merdivenler çalışıyor",
       "more": "+{{n}} daha",
       "atStations": "Etkilenen duraklar: {{n}}",
+      "db": "DB",
+      "until": "{{date}} itibarıyla tekrar",
       "asOf": "Durum:",
       "empty": "Arıza verisi yok"
     },
@@ -678,8 +680,10 @@
     },
     "emergencies": {
       "pharmacies": "Eczaneler",
-      "aeds": "Defibrilatörler"
+      "aeds": "Defibrilatörler",
+      "hospitals": "Hastaneler"
     },
+    "hospitalLegend": "Acil bakıma göre hastaneler",
     "noise": {
       "total": "Tüm Kaynaklar",
       "road": "Karayolu Trafiği",
@@ -852,6 +856,27 @@
       "waterTemp": "Su sıcaklığı",
       "visibility": "Görüş derinliği",
       "euClass": "AB: {{value}}"
+    },
+    "hospital": {
+      "tier": {
+        "comprehensive": "Kapsamlı acil bakım",
+        "extended": "Genişletilmiş acil bakım",
+        "basic": "Temel acil bakım",
+        "emergency": "Acil bakıma katılıyor",
+        "limited": "Sınırlı acil bakım",
+        "specialised": "Yalnızca özel acil bakım",
+        "none": "Acil servis yok"
+      },
+      "unit": {
+        "children": "Çocuk acil",
+        "strokeUnit": "İnme ünitesi",
+        "chestPainUnit": "Göğüs ağrısı ünitesi",
+        "trauma": "Ağır yaralılar"
+      },
+      "beds": "{{n}} yatak",
+      "website": "Web sitesi",
+      "sourceAtlas": "Bundes-Klinik-Atlas (G-BA)",
+      "sourceHamburg": "Hamburg hastane kaydı"
     },
     "aed": {
       "title": "OED / Defibrilatör",

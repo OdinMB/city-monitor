@@ -2,7 +2,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api, type LiftOutageData, type ApiResponse } from '../lib/api.js';
 import { FEED_TIMINGS } from '../lib/freshness.js';
 
-/** The city's lifts and escalators out of service (KVB Köln), bootstrap-seeded. */
+/** The city's lifts and escalators out of service (KVB Köln, DB stations), bootstrap-seeded. */
 export function useLiftOutages(cityId: string) {
   const query = useQuery<ApiResponse<LiftOutageData | null>>({
     queryKey: ['lift-outages', cityId],

@@ -7,7 +7,7 @@ import { trafficPopupHtml, constructionPopupHtml } from './traffic';
 import { transitPopupHtml } from './transit';
 import { warningPopupHtml } from './warnings';
 import { waterLevelPopupHtml, bathingPopupHtml, waterTemperaturePopupHtml } from './water';
-import { pharmacyPopupHtml, aedPopupHtml, formatPharmacyDuty } from './emergencies';
+import { pharmacyPopupHtml, aedPopupHtml, hospitalPopupHtml, formatPharmacyDuty } from './emergencies';
 import { noisePopupHtml } from './noise-sensors';
 import { bikeStationPopupHtml } from './bike-sharing';
 import { accidentPopupHtml } from './traffic-accidents';
@@ -79,6 +79,10 @@ const WATER_TEMP = {
 };
 const PHARMACY = { name: 'Apotheke am Markt', address: 'Marktstraße 1', phone: '030 123456', validFrom: '2026-03-03T09:00:00', validUntil: '2026-03-04T09:00:00' };
 const AED = { indoor: true, description: 'Im Foyer', operator: 'Bezirksamt Mitte', openingHours: 'Mo-Fr 08:00-18:00', access: 'customers' };
+const HOSPITAL = {
+  name: 'Klinikum Nord', address: 'Tangstedter Landstraße 400, 22417 Hamburg', tier: 'extended', url: 'https://example.org/',
+  beds: 820, children: true, strokeUnit: true, chestPainUnit: true, trauma: true, source: 'klinik-atlas', atlasDate: '2026-10-27',
+};
 const NOISE = { id: 4711, laeq: 58.2, laMin: 40.1, laMax: 75.3 };
 // A Unix time on an earlier day, so the popup shows the date with the time
 const BIKE = { name: 'S Halensee (Kurfürstendamm)', bikes: 3, docks: 5, reportedAt: Date.UTC(2026, 2, 3, 8, 0) / 1000, system: 'nextbike Berlin', operator: 'nextbike' };
@@ -146,6 +150,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP)],
   ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS)],
   ['AED', () => aedPopupHtml(AED, COORDS)],
+  ['hospital', () => hospitalPopupHtml(HOSPITAL, COORDS)],
   ['noise sensor', () => noisePopupHtml(NOISE, false)],
   ['bike station', () => bikeStationPopupHtml(BIKE, false)],
   ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false)],
@@ -190,6 +195,7 @@ const ENGLISH_ONLY = [
   'Planted', 'years old', 'Height', 'Crown diameter', 'Trunk girth',
   'Cars', 'Pedestrians', 'lorries', 'counted', 'Monday', 'Citizen sensor', 'weekday',
   'Free spaces', 'Multi-storey', 'Filling up', 'Closed', 'fault',
+  'emergency care', "Children's", 'Severe injuries', ' beds',
 ];
 
 afterEach(async () => {

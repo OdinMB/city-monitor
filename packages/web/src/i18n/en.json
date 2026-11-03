@@ -488,6 +488,8 @@
       "allWorking": "All lifts and escalators in service",
       "more": "+{{n}} more",
       "atStations": "Stations affected: {{n}}",
+      "db": "DB",
+      "until": "back {{date}}",
       "asOf": "As of",
       "empty": "No outage data"
     },
@@ -682,8 +684,10 @@
     },
     "emergencies": {
       "pharmacies": "Pharmacies",
-      "aeds": "AEDs"
+      "aeds": "AEDs",
+      "hospitals": "Hospitals"
     },
+    "hospitalLegend": "Hospitals by emergency care",
     "noise": {
       "total": "All Sources",
       "road": "Road Traffic",
@@ -856,6 +860,27 @@
       "waterTemp": "Water temp",
       "visibility": "Visibility",
       "euClass": "EU: {{value}}"
+    },
+    "hospital": {
+      "tier": {
+        "comprehensive": "Comprehensive emergency care",
+        "extended": "Extended emergency care",
+        "basic": "Basic emergency care",
+        "emergency": "Takes part in emergency care",
+        "limited": "Limited emergency care",
+        "specialised": "Specialised emergency care only",
+        "none": "No emergency department"
+      },
+      "unit": {
+        "children": "Children's emergency",
+        "strokeUnit": "Stroke unit",
+        "chestPainUnit": "Chest pain unit",
+        "trauma": "Severe injuries"
+      },
+      "beds": "{{n}} beds",
+      "website": "Website",
+      "sourceAtlas": "Bundes-Klinik-Atlas (G-BA)",
+      "sourceHamburg": "Hamburg hospital register"
     },
     "aed": {
       "title": "AED / Defibrillator",

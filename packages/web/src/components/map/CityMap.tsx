@@ -21,6 +21,7 @@ import { useSafety } from '../../hooks/useSafety.js';
 import { useNina } from '../../hooks/useNina.js';
 import { usePharmacies } from '../../hooks/usePharmacies.js';
 import { useAeds } from '../../hooks/useAeds.js';
+import { useCityLayers, useHospitals } from '../../hooks/useHospitals.js';
 import { useTrafficIncidents } from '../../hooks/useTraffic.js';
 import { useConstruction } from '../../hooks/useConstruction.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
@@ -44,7 +45,7 @@ import { useTelraamCounts } from '../../hooks/useTelraamCounts.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import type { TrafficCountMode } from '../../lib/api.js';
 import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
-import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
+import { effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
 import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_UBA, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, TRAFFIC_FLOW_REFRESH_MS, STREET_TREES_MIN_ZOOM, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
@@ -57,7 +58,7 @@ import { addDistrictLayer, addDistrictSource, removeDistrictLayers, ensureDistri
 import { filterNewsForMap, updateNewsMarkers, updateSafetyMarkers } from './layers/news-safety.js';
 import { updateTransitMarkers } from './layers/transit.js';
 import { updateWarningPolygons } from './layers/warnings.js';
-import { updatePharmacyMarkers, updateAedMarkers } from './layers/emergencies.js';
+import { updatePharmacyMarkers, updateAedMarkers, updateHospitalMarkers } from './layers/emergencies.js';
 import { updateTrafficLayers, updateConstructionLayers } from './layers/traffic.js';
 import { updateAqGridLayer, updateUbaStationLayer } from './layers/air-quality.js';
 import { updateWaterLevelMarkers, updateBathingMarkers, updateWaterTemperatureMarkers } from './layers/water.js';
@@ -179,13 +180,14 @@ export function CityMap() {
   const catLabel = useCallback((cat: string) => t(`category.${cat}`, cat), [t]);
   // The layer state is shared and outlives a switch to another city, so the
   // map draws only what this city has, and asks the API for nothing else.
-  const available = useMemo(() => cityLayers(city), [city]);
+  const available = useCityLayers(city);
   const { data: transitAlerts } = useTransit(city.id, available.traffic.includes('public-transport'));
   const { data: newsDigest } = useNewsDigest(city.id, available.news.includes('news'));
   const { data: safetyReports } = useSafety(city.id, available.news.includes('police'));
   const { data: ninaWarnings } = useNina(city.id);
   const { data: pharmacyList } = usePharmacies(city.id, available.emergencies.includes('pharmacies'));
   const { data: aedList } = useAeds(city.id, available.emergencies.includes('aeds'));
+  const { data: hospitalData } = useHospitals(city.id, available.emergencies.includes('hospitals'));
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
   const { data: constructionSites } = useConstruction(city.id, available.traffic.includes('roadworks'));
   const { data: aqGrid } = useAirQualityGrid(city.id);
@@ -331,6 +333,11 @@ export function CityMap() {
     () => (emergencyActive && emergencySubLayers.has('aeds')) ? (aedList ?? []) : [],
     [emergencyActive, emergencySubLayers, aedList],
   );
+  const hospitalItems = useMemo(
+    () => (emergencyActive && emergencySubLayers.has('hospitals')) ? (hospitalData?.hospitals ?? []) : [],
+    [emergencyActive, emergencySubLayers, hospitalData],
+  );
+  const atlasDate = hospitalData?.atlasDate ?? null;
   const trafficItems = useMemo(
     () => trafficActive ? (trafficIncidents ?? []) : [],
     [trafficActive, trafficIncidents],
@@ -400,6 +407,10 @@ export function CityMap() {
   pharmacyItemsRef.current = pharmacyItems;
   const aedItemsRef = useRef(aedItems);
   aedItemsRef.current = aedItems;
+  const hospitalItemsRef = useRef(hospitalItems);
+  hospitalItemsRef.current = hospitalItems;
+  const atlasDateRef = useRef(atlasDate);
+  atlasDateRef.current = atlasDate;
   const trafficItemsRef = useRef(trafficItems);
   trafficItemsRef.current = trafficItems;
   const constructionItemsRef = useRef(constructionItems);
@@ -534,6 +545,7 @@ export function CityMap() {
         updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
         updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
         updateAedMarkers(map, aedItemsRef.current, isDarkRef.current);
+        updateHospitalMarkers(map, hospitalItemsRef.current, atlasDateRef.current, isDarkRef.current);
         updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateUbaStationLayer(map, ubaItemsRef.current, isDarkRef.current, langRef.current, timeZoneRef.current);
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
@@ -656,6 +668,7 @@ export function CityMap() {
       updateWarningPolygons(map, warningItemsRef.current, isDark);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
       updateAedMarkers(map, aedItemsRef.current, isDark);
+      updateHospitalMarkers(map, hospitalItemsRef.current, atlasDateRef.current, isDark);
       updateAqGridLayer(map, aqGridItemsRef.current, isDark, cityIdRef.current);
       updateUbaStationLayer(map, ubaItemsRef.current, isDark, langRef.current, timeZoneRef.current);
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
@@ -778,7 +791,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, parkingItems, accidentItems, trafficCountItems, evChargingItems, heatReliefItems, heatReliefSubLayers, telraamItems, waterLevelItems, bathingItems, waterTemperatureItems, citizenReportItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, hospitalItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, parkingItems, accidentItems, trafficCountItems, evChargingItems, heatReliefItems, heatReliefSubLayers, telraamItems, waterLevelItems, bathingItems, waterTemperatureItems, citizenReportItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -820,20 +833,21 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [warningItems]);
 
-  // Update emergency markers (pharmacies + AEDs) — combined into a single effect
-  // to ensure both update atomically when the emergency layer toggles on.
+  // Update emergency markers (pharmacies, AEDs, hospitals) — combined into a single effect
+  // to ensure they update atomically when the emergency layer toggles on.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const apply = () => {
       updatePharmacyMarkers(map, pharmacyItems, isDarkRef.current);
       updateAedMarkers(map, aedItems, isDarkRef.current);
+      updateHospitalMarkers(map, hospitalItems, atlasDate, isDarkRef.current);
     };
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emergencyActive, emergencySubLayers, pharmacyList, aedList]);
+  }, [emergencyActive, emergencySubLayers, pharmacyList, aedList, hospitalData]);
 
   // Update traffic incident layers
   useEffect(() => {

@@ -16,6 +16,8 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   appointments: 'panel.appointments.title',
   bathing: 'panel.bathing.title',
   liftOutages: 'panel.liftOutages.title',
+  // DB stations join the lift tile only once the DB API key is set, so they name no topic
+  stationLifts: null,
   pollen: 'panel.pollen.title',
   nina: 'sidebar.layers.warnings',
   wastewater: 'panel.wastewater.title',
@@ -62,6 +64,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   telraamCounts: null,
   pharmacies: null,
   aeds: null,
+  hospitals: null,
   noiseSensors: null,
   noiseTotal: null,
   rentMap: null,

@@ -119,9 +119,11 @@ describe('DataLayerToggles shortcuts', () => {
 describe('DataLayerToggles per city', () => {
   function renderFor(city: WebCityConfig) {
     return render(
-      <CityContext.Provider value={city}>
-        <DataLayerToggles />
-      </CityContext.Provider>,
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <CityContext.Provider value={city}>
+          <DataLayerToggles />
+        </CityContext.Provider>
+      </QueryClientProvider>,
     );
   }
   const shown = (label: string) => screen.queryAllByText(label, { exact: true }).length > 0;
@@ -191,20 +193,49 @@ describe('DataLayerToggles per city', () => {
   });
 
   it('lists the emergencies layer only with pharmacies or defibrillators, and only the ones the city has', () => {
+    // No hospitals stored: the hospitals sub-layer stays hidden
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ data: null, fetchedAt: null })));
     useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['emergencies']), emergencySubLayers: new Set(['pharmacies']) });
-    renderFor(hamburg);
+    const noHospitals = (f: string) => f !== 'hospitals';
+    renderFor({ ...hamburg, features: hamburg.features.filter(noHospitals) });
     expect(shown(i18n.t('sidebar.emergencies.pharmacies'))).toBe(true);
     expect(shown(i18n.t('sidebar.emergencies.aeds'))).toBe(true);
     cleanup();
 
-    renderFor({ ...hamburg, features: hamburg.features.filter((f) => f !== 'pharmacies') });
+    renderFor({ ...hamburg, features: hamburg.features.filter((f) => noHospitals(f) && f !== 'pharmacies') });
     expect(shown(i18n.t('sidebar.layers.emergencies'))).toBe(true);
     // A lone sub-layer is the layer itself.
     expect(shown(i18n.t('sidebar.emergencies.pharmacies'))).toBe(false);
     cleanup();
 
-    renderFor({ ...hamburg, features: hamburg.features.filter((f) => f !== 'pharmacies' && f !== 'aeds') });
+    renderFor({ ...hamburg, features: hamburg.features.filter((f) => noHospitals(f) && f !== 'pharmacies' && f !== 'aeds') });
     expect(shown(i18n.t('sidebar.layers.emergencies'))).toBe(false);
+    fetchSpy.mockRestore();
+  });
+
+  it('offers hospitals as an emergencies sub-layer only once the server has some, with the tier legend once on', async () => {
+    const hospital = {
+      id: 'hh-1', name: 'Klinik Nord', address: 'Weg 1, 22000 Hamburg', lat: 53.6, lon: 10, tier: 'emergency',
+      children: false, strokeUnit: false, chestPainUnit: false, trauma: false, beds: null, url: null, source: 'hamburg-wfs',
+    };
+    let hospitals: unknown[] = [];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      new Response(JSON.stringify({ data: { hospitals, atlasDate: null }, fetchedAt: '2026-11-03T12:00:00Z' })));
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['emergencies']), emergencySubLayers: new Set(['pharmacies']) });
+    renderFor(hamburg);
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    expect(shown(i18n.t('sidebar.emergencies.hospitals'))).toBe(false);
+    cleanup();
+
+    hospitals = [hospital];
+    renderFor(hamburg);
+    expect(await screen.findByText(i18n.t('sidebar.emergencies.hospitals'))).toBeTruthy();
+    expect(String(fetchSpy.mock.calls.at(-1)![0])).toContain('/hamburg/hospitals');
+    fireEvent.click(buttonWith(i18n.t('sidebar.emergencies.hospitals')));
+    expect(await screen.findByLabelText(i18n.t('sidebar.hospitalLegend'))).toBeTruthy();
+    expect(shown(i18n.t('mapPopup.hospital.tier.emergency'))).toBe(true);
+    expect(shown(i18n.t('mapPopup.hospital.tier.comprehensive'))).toBe(false);
+    fetchSpy.mockRestore();
   });
 
   it('offers Hamburg\'s congestion map and counters as traffic sub-layers, each with its legend once on', () => {
@@ -261,7 +292,7 @@ describe('DataLayerToggles per city', () => {
     expect(shown(i18n.t('mapPopup.reports.status.in_progress'))).toBe(true);
     expect(await screen.findByText(i18n.t('sidebar.reports.window', { days: 14 }))).toBeTruthy();
     expect(shown('4') && shown('2') && shown('3')).toBe(true);
-    expect(String(fetchSpy.mock.calls[0]![0])).toContain('/koeln/citizen-reports');
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('/koeln/citizen-reports'))).toBe(true);
     fetchSpy.mockRestore();
   });
 

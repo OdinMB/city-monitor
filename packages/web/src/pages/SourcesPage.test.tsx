@@ -108,6 +108,11 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Wasserportal Berlin', (c) => c.dataSources.waterTemperature?.provider === 'wasserportal'],
   ['Badegewässer Hamburg (Geodienste)', (c) => c.dataSources.bathing?.provider === 'hamburg-wfs'],
   ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
+  // ingest-lift-outages: DB FaSta when DB_API_CLIENT_ID and DB_API_KEY are set; credited wherever the config names it
+  ['DB FaSta (Deutsche Bahn)', (c) => c.dataSources.stationLifts?.provider === 'db-fasta'],
+  // ingest-hospitals: Hamburg's WFS, and the Klinik-Atlas only with KLINIK_ATLAS_ENABLED; credited wherever the config names it
+  ['Krankenhäuser Hamburg (Geodienste)', (c) => c.dataSources.hospitals?.some((s) => s.provider === 'hamburg-wfs') ?? false],
+  ['Bundes-Klinik-Atlas (G-BA)', (c) => c.dataSources.hospitals?.some((s) => s.provider === 'klinik-atlas') ?? false],
   ['nextbike (GBFS)', (c) => c.dataSources.bikeSharing?.provider === 'gbfs'],
   ['Unfallatlas (Statistische Ämter des Bundes und der Länder)', (c) => c.dataSources.trafficAccidents?.provider === 'unfallatlas'],
   ['Kriminalitätsatlas Berlin (Polizei Berlin)', (c) => c.dataSources.crimeAtlas?.provider === 'polizei-berlin'],
@@ -270,6 +275,10 @@ describe('SourcesPage licence credits', () => {
     'Hamburger Wohnlagenverzeichnis (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.',
     'Badegewässer Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, dl-de/by-2-0.',
     'KVB Open Data (Aufzüge, Fahrtreppen)': 'Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.',
+    // The FaSta product page: CC BY 4.0, Deutsche Bahn named
+    'DB FaSta (Deutsche Bahn)': 'Source: Deutsche Bahn AG, CC BY 4.0.',
+    // HH_WFS_Krankenhaeuser GetCapabilities <ows:Fees> (checked 2026-11-03)
+    'Krankenhäuser Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Gesundheit und Verbraucherschutz, dl-de/by-2-0.',
     // CC0 asks for no credit; the feed's operator is named anyway
     'nextbike (GBFS)': 'Data: nextbike GmbH, CC0 1.0.',
     // The attribution berlin-zaehlt.de's CC BY 4.0 data names

@@ -37,6 +37,10 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['roadworks', (c) => c.dataSources.roadworks !== undefined],
   ['bathing', (c) => c.dataSources.bathing !== undefined],
   ['liftOutages', (c) => c.dataSources.liftOutages !== undefined],
+  // Config alone, like Geofox: the job also needs DB_API_CLIENT_ID and DB_API_KEY, and
+  // without them stores nothing for a city with no other lift source, whose tile then
+  // hides itself (ingestsLiftOutages; LiftOutagesTile in CommandLayout).
+  ['stationLifts', (c) => c.dataSources.stationLifts !== undefined],
   ['bikeSharing', (c) => c.dataSources.bikeSharing !== undefined],
   ['parking', (c) => c.dataSources.parking !== undefined],
   ['electricity', (c) => c.dataSources.electricity !== undefined],
@@ -63,6 +67,10 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['noiseSensors', (c) => c.dataSources.noiseSensors !== undefined],
   ['councilMeetings', (c) => c.dataSources.councilMeetings !== undefined],
   ['pharmacies', hasPharmacySearch],
+  // Config alone: the Klinik-Atlas, the only source of Berlin, Köln and München, also needs
+  // KLINIK_ATLAS_ENABLED=true, and without it the job stores nothing there and the sidebar
+  // leaves out the hospitals toggle (activeHospitalSources; withoutEmptyHospitals on the web).
+  ['hospitals', (c) => (c.dataSources.hospitals?.length ?? 0) > 0],
   // A German city without dataSources.aeds is asked for at the state level (ingest-aeds.ts).
   ['aeds', (c) => c.country === 'DE'],
   ['political', hasParliamentConfig],

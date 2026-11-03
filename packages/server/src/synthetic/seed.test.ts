@@ -19,7 +19,7 @@ type Row = Record<string, unknown>;
 
 /** Snapshot types of sources Berlin's config lacks: München's seed writes them instead. */
 // Berlin has no LHP gauges, and no Oberbürgermeister: only a city inside a state has one.
-const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood', 'abgwatch-mayor', 'kvb-lift-outages', 'open311-reports', 'traffic-counts', 'parking'];
+const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood', 'abgwatch-mayor', 'open311-reports', 'traffic-counts', 'parking'];
 
 /** Records what the write functions insert, per table name. */
 function fakeDb() {
@@ -148,9 +148,9 @@ describe('seedDatabase', () => {
       'open-meteo', 'vbb-disruptions', 'aqi-grid', 'bbk-nina', 'pegelonline', 'tomtom-traffic', 'viz-roadworks', 'aponet', 'osm-aeds',
       'lageso-bathing', 'lageso-wastewater', 'ba-labor-market', 'dwd-pollen', 'abgwatch-bundestag', 'abgwatch-state', 'abgwatch-votes', 'oparl-meetings',
       'mss-social-atlas', 'afstat-population', 'bike-sharing', 'smard-electricity', 'uba-airquality', 'unfallatlas-accidents', 'traffic-counts', 'bnetza-charging', 'heat-relief', 'dwd-soil-moisture',
-      'rki-ifsg-cases', 'parking', 'election-results',
+      'rki-ifsg-cases', 'parking', 'election-results', 'kvb-lift-outages', 'hospitals',
     ]));
-    expect(current).toHaveLength(30);
+    expect(current).toHaveLength(32);
     expect(snapshots.length - current.length).toBe(data.history.length);
     expect(rows.events).toBeUndefined();
     expect(rows.news_items).toHaveLength(data.news!.length);

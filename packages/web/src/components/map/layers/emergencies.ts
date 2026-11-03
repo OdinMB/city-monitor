@@ -1,11 +1,13 @@
 /**
- * Emergency pharmacy and AED defibrillator map markers.
+ * Emergency pharmacy, AED defibrillator and hospital map markers.
  */
 
 import * as maplibregl from 'maplibre-gl';
 import i18n from 'i18next';
-import type { EmergencyPharmacy, AedLocation } from '../../../lib/api.js';
+import type { EmergencyPharmacy, AedLocation, Hospital, HospitalTier } from '../../../lib/api.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
+import { safeUrl } from '../../../lib/safe-url.js';
+import { HOSPITAL_TIER_COLORS, HOSPITAL_TIERS } from '../../../lib/hospitals.js';
 import { registerPopupHandlers, ltr, sourceText } from '../popups.js';
 
 /**
@@ -86,6 +88,90 @@ export function aedPopupHtml(props: Record<string, unknown>, coords: [number, nu
       ${accessLabel}
       ${directionsLink(coords)}
     </div>`;
+}
+
+const HOSPITAL_TIER_RADIUS: Record<HospitalTier, number> = {
+  comprehensive: 9, extended: 8, basic: 7, emergency: 7, limited: 6, specialised: 5, none: 5,
+};
+
+/**
+ * Popup markup for a hospital, from its feature properties: name and address
+ * from the source (German, `sourceText`), the tier and units in the current UI
+ * language, the hospital's website (through `safeUrl`) and the source with its date.
+ */
+export function hospitalPopupHtml(props: Record<string, unknown>, coords: [number, number]): string {
+  const t = (key: string, opts?: Record<string, unknown>) => escapeHtml(i18n.t(key, opts));
+  const tier = String(props.tier ?? 'none') as HospitalTier;
+  const color = HOSPITAL_TIER_COLORS[tier] ?? HOSPITAL_TIER_COLORS.none;
+  const units = (['children', 'strokeUnit', 'chestPainUnit', 'trauma'] as const)
+    .filter((k) => props[k] === true || props[k] === 'true')
+    .map((k) => `<span style="display:inline-block;background:#f3f4f6;color:#374151;font-size:10px;padding:1px 5px;border-radius:4px;margin:2px 4px 0 0">${t(`mapPopup.hospital.unit.${k}`)}</span>`)
+    .join('');
+  const url = typeof props.url === 'string' && /^https?:\/\//i.test(props.url) ? safeUrl(props.url) ?? '' : '';
+  const beds = Number(props.beds);
+  const source = props.source === 'klinik-atlas'
+    ? `${t('mapPopup.hospital.sourceAtlas')}${props.atlasDate ? ` · ${escapeHtml(String(props.atlasDate))}` : ''}`
+    : t('mapPopup.hospital.sourceHamburg');
+  return `<div style="font-size:13px;max-width:280px">
+      <div style="font-weight:600;margin-bottom:4px">${sourceText(props.name)}</div>
+      ${props.address ? `<div style="font-size:12px">${sourceText(props.address)}</div>` : ''}
+      <div style="font-size:12px;margin-top:4px;display:flex;align-items:center;gap:6px">
+        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color}"></span>${t(`mapPopup.hospital.tier.${tier}`)}
+      </div>
+      ${units ? `<div>${units}</div>` : ''}
+      ${props.beds !== null && props.beds !== undefined && props.beds !== '' && Number.isFinite(beds) ? `<div style="font-size:11px;opacity:0.7;margin-top:2px">${t('mapPopup.hospital.beds', { n: beds })}</div>` : ''}
+      <div style="display:flex;flex-wrap:wrap;column-gap:12px">
+        ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">${t('mapPopup.hospital.website')} ↗</a>` : ''}
+        ${directionsLink(coords)}
+      </div>
+      <div style="font-size:10px;opacity:0.55;margin-top:4px">${source}</div>
+    </div>`;
+}
+
+function hospitalsToGeoJSON(hospitals: Hospital[], atlasDate: string | null): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    // Lowest tier first, so the higher tiers are drawn on top
+    features: [...hospitals].reverse().map((h) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [h.lon, h.lat] },
+      properties: {
+        id: h.id, name: h.name, address: h.address ?? '', tier: h.tier, url: h.url ?? '', beds: h.beds,
+        children: h.children, strokeUnit: h.strokeUnit, chestPainUnit: h.chestPainUnit, trauma: h.trauma,
+        source: h.source, atlasDate: h.source === 'klinik-atlas' ? atlasDate ?? '' : '',
+      },
+    })),
+  };
+}
+
+/** Hospitals as circles coloured and sized by emergency tier. */
+export function updateHospitalMarkers(map: maplibregl.Map, hospitals: Hospital[], atlasDate: string | null, isDark: boolean) {
+  for (const id of ['hospital-markers-circle']) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource('hospital-markers')) map.removeSource('hospital-markers');
+  if (hospitals.length === 0) return;
+
+  map.addSource('hospital-markers', { type: 'geojson', data: hospitalsToGeoJSON(hospitals, atlasDate) });
+  const byTier = <T,>(values: Record<HospitalTier, T>) =>
+    ['match', ['get', 'tier'], ...HOSPITAL_TIERS.flatMap((tier) => [tier, values[tier]]), values.none] as unknown as maplibregl.ExpressionSpecification;
+  map.addLayer({
+    id: 'hospital-markers-circle',
+    type: 'circle',
+    source: 'hospital-markers',
+    paint: {
+      'circle-color': byTier(HOSPITAL_TIER_COLORS),
+      'circle-radius': byTier(HOSPITAL_TIER_RADIUS),
+      'circle-stroke-width': 2,
+      'circle-stroke-color': isDark ? '#111827' : '#ffffff',
+    },
+  });
+
+  registerPopupHandlers(map, 'hospital-markers-circle', (e) => {
+    if (!e.features?.length) return null;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    return { html: hospitalPopupHtml(e.features[0].properties!, coords), lngLat: coords };
+  });
 }
 
 function pharmaciesToGeoJSON(pharmacies: EmergencyPharmacy[]): GeoJSON.FeatureCollection {

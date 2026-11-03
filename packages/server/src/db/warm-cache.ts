@@ -19,8 +19,9 @@ import { TELRAAM_COUNTS_TTL_SECONDS } from '../cron/ingest-telraam-counts.js';
 import { ELECTION_RESULTS_TTL_SECONDS } from '../cron/ingest-election-results.js';
 import { CRIME_ATLAS_TTL_SECONDS } from '../cron/ingest-crime-atlas.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
-import { loadHeatRelief } from './reads.js';
+import { loadHeatRelief, loadHospitals } from './reads.js';
 import { HEAT_RELIEF_TTL_SECONDS } from '../cron/ingest-heat-relief.js';
+import { HOSPITALS_TTL_SECONDS } from '../cron/ingest-hospitals.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -248,6 +249,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       cache.set(CK.electionResults(cityId), r.data.results, ELECTION_RESULTS_TTL_SECONDS, r.fetchedAt);
       cache.set(CK.electionGeojson(cityId), r.data.geojson, ELECTION_RESULTS_TTL_SECONDS, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} election results failed`, err)),
+
+    (async () => {
+      const r = await loadHospitals(db, cityId);
+      if (r) cache.set(CK.hospitals(cityId), r.data, HOSPITALS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} hospitals failed`, err)),
 
     (async () => {
       const r = await loadWastewater(db, cityId);

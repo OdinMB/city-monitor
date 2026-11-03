@@ -23,6 +23,7 @@ import { createConstructionRouter } from './routes/construction.js';
 import { createAedsRouter } from './routes/aeds.js';
 import { createSocialAtlasRouter } from './routes/social-atlas.js';
 import { createHeatReliefRouter } from './routes/heat-relief.js';
+import { createHospitalsRouter } from './routes/hospitals.js';
 import { createAppointmentsRouter } from './routes/appointments.js';
 import { createWaterLevelsRouter } from './routes/water-levels.js';
 import { createWaterTemperatureRouter } from './routes/water-temperature.js';
@@ -67,12 +68,13 @@ import { createConstructionIngestion } from './cron/ingest-construction.js';
 import { createAedIngestion } from './cron/ingest-aeds.js';
 import { createSocialAtlasIngestion } from './cron/ingest-social-atlas.js';
 import { createHeatReliefIngestion } from './cron/ingest-heat-relief.js';
+import { activeHospitalSources, createHospitalIngestion } from './cron/ingest-hospitals.js';
 import { createWaterLevelIngestion } from './cron/ingest-water-levels.js';
 import { createWaterTemperatureIngestion } from './cron/ingest-water-temperature.js';
 import { createBudgetIngestion } from './cron/ingest-budget.js';
 import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
-import { createLiftOutageIngestion } from './cron/ingest-lift-outages.js';
+import { createLiftOutageIngestion, ingestsLiftOutages } from './cron/ingest-lift-outages.js';
 import { createBikeSharingIngestion } from './cron/ingest-bike-sharing.js';
 import { createParkingIngestion } from './cron/ingest-parking.js';
 import { createElectricityIngestion } from './cron/ingest-electricity.js';
@@ -203,6 +205,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-aeds',         tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'osm-aeds' }, serves: inGermany },
     { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' }, serves: (c) => !!c.dataSources.socialAtlas },
     { jobName: 'ingest-heat-relief',  tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'heat-relief' }, serves: (c) => !!c.dataSources.heatRelief?.length },
+    { jobName: 'ingest-hospitals',    tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'hospitals' }, serves: (c) => activeHospitalSources(c).length > 0 },
     { jobName: 'ingest-water-levels', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'pegelonline' }, serves: (c) => !!c.dataSources.waterLevels?.stations.length },
     { jobName: 'ingest-water-temperature', tableName: 'snapshots', maxAgeSeconds: 900, filter: { column: 'type', value: 'wasserportal-temp' }, serves: (c) => !!c.dataSources.waterTemperature?.stations.length },
     { jobName: 'ingest-flood-status', tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'lhp-flood' }, serves: (c) => !!c.dataSources.floodStatus?.stations.length },
@@ -212,7 +215,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-appointments', tableName: 'snapshots', maxAgeSeconds: 43200,   filter: { column: 'type', value: 'service-berlin' } },
     // The type is lageso-bathing for every provider, as viz-roadworks is for every roadworks feed
     { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' }, serves: (c) => !!c.dataSources.bathing },
-    { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => !!c.dataSources.liftOutages },
+    { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => ingestsLiftOutages(c) },
     // 30 min: the job stores a row that often (BIKE_SHARING_DB_INTERVAL_MS), though it runs every 5
     { jobName: 'ingest-bike-sharing', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'bike-sharing' }, serves: (c) => !!c.dataSources.bikeSharing },
     // 15 min: the job stores a row that often (PARKING_DB_INTERVAL_MS), though it runs every 5
@@ -267,6 +270,7 @@ export async function createApp(options?: {
   const ingestAeds = createAedIngestion(cache, db);
   const ingestSocialAtlas = createSocialAtlasIngestion(cache, db);
   const ingestHeatRelief = createHeatReliefIngestion(cache, db);
+  const ingestHospitals = createHospitalIngestion(cache, db);
   const ingestWaterLevels = createWaterLevelIngestion(cache, db);
   const ingestWaterTemperature = createWaterTemperatureIngestion(cache, db);
   const ingestFloodStatus = createFloodStatusIngestion(cache, db);
@@ -320,6 +324,7 @@ export async function createApp(options?: {
     { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },
     // Static lists (cool places, fountains, toilets) that change a few times a year
     { name: 'ingest-heat-relief', schedule: '30 5 * * 1', handler: ingestHeatRelief, runOnStart: s('ingest-heat-relief') },
+    { name: 'ingest-hospitals', schedule: '45 5 * * 1', handler: ingestHospitals, runOnStart: s('ingest-hospitals') },
     { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: s('ingest-water-levels') },
     // The Wasserportal's online stations send 15-minute values; off the quarter hour so the newest has landed
     { name: 'ingest-water-temperature', schedule: '4,19,34,49 * * * *', handler: ingestWaterTemperature, runOnStart: s('ingest-water-temperature') },
@@ -418,6 +423,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(43200), createAedsRouter(cache, db));
   app.use('/api', cacheFor(43200), createSocialAtlasRouter(cache, db));
   app.use('/api', cacheFor(43200), createHeatReliefRouter(cache, db));
+  app.use('/api', cacheFor(43200), createHospitalsRouter(cache, db));
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
   app.use('/api', cacheFor(300), createWaterTemperatureRouter(cache, db));
   app.use('/api', cacheFor(120), createFloodStatusRouter(cache, db));

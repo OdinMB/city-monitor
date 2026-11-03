@@ -133,6 +133,17 @@ export const hamburg: CityConfig = {
     respiratoryCases: { provider: 'rki-ifsg', regionId: '02' },
     // StadtRAD's bikes per station on the Urban Data Platform's SensorThings API (dl-de/by-2.0,
     // Transparenzportal "StadtRAD-Stationen Hamburg"): ~360 stations, no docks. No nextbike in Hamburg.
+    // Lifts and escalators at DB stations (FaSta, CC BY 4.0); fetched only with DB_API_CLIENT_ID and DB_API_KEY
+    stationLifts: { provider: 'db-fasta' },
+    // The city's hospital WFS (dl-de/by-2.0, ER participation, no tier) and, with KLINIK_ATLAS_ENABLED=true,
+    // the Klinik-Atlas tiers, which win where both list a hospital
+    hospitals: [
+      {
+        provider: 'hamburg-wfs',
+        url: 'https://geodienste.hamburg.de/HH_WFS_Krankenhaeuser?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0&typeNames=de.hh.up:gesundheit_krankenhaeuser&outputFormat=application/geo%2Bjson&srsName=EPSG:4326',
+      },
+      { provider: 'klinik-atlas', places: ['Hamburg'] },
+    ],
     bikeSharing: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', system: 'StadtRAD Hamburg', operator: 'DB Connect' },
     // Car parks from the Parkleitsystem on the Urban Data Platform's WFS (dl-de/by-2.0, Transparenzportal
     // "Parkhäuser Hamburg"): 127 car parks, 45 of them with live free spaces, which the job keeps (2026-11-03)

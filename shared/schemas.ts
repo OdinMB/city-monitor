@@ -405,7 +405,7 @@ export const PollenForecastSchema = z.object({
   ),
 });
 
-// --- Lift and escalator outages (KVB) ---
+// --- Lift and escalator outages (KVB, DB FaSta) ---
 
 export const LiftOutageDataSchema = z.object({
   outages: z.array(z.object({
@@ -416,8 +416,31 @@ export const LiftOutageDataSchema = z.object({
     lat: z.number().nullable(),
     lon: z.number().nullable(),
     info: z.string().nullable(),
+    operator: z.literal('db').optional(),
+    resumeDate: z.string().nullable().optional(),
   })),
   updated: z.string().nullable(),
+});
+
+// --- Hospitals (Bundes-Klinik-Atlas, Hamburg WFS) ---
+
+export const HospitalDataSchema = z.object({
+  hospitals: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    address: z.string().nullable(),
+    lat: z.number(),
+    lon: z.number(),
+    tier: z.enum(['comprehensive', 'extended', 'basic', 'emergency', 'limited', 'specialised', 'none']),
+    children: z.boolean(),
+    strokeUnit: z.boolean(),
+    chestPainUnit: z.boolean(),
+    trauma: z.boolean(),
+    beds: z.number().nullable(),
+    url: z.string().nullable(),
+    source: z.enum(['klinik-atlas', 'hamburg-wfs']),
+  })),
+  atlasDate: z.string().nullable(),
 });
 
 // --- Bike Sharing ---
