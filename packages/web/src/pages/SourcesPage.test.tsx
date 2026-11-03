@@ -105,11 +105,13 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['München RIS', (c) => c.dataSources.councilMeetings?.muenchenRis !== undefined],
   ['Hamburgische Bürgerschaft (Termine)', (c) => c.dataSources.councilMeetings?.hamburgBuergerschaft !== undefined],
   ['LAGeSo Bathing Water', (c) => c.dataSources.bathing?.provider === 'lageso'],
+  ['Wasserportal Berlin', (c) => c.dataSources.waterTemperature?.provider === 'wasserportal'],
   ['Badegewässer Hamburg (Geodienste)', (c) => c.dataSources.bathing?.provider === 'hamburg-wfs'],
   ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
   ['nextbike (GBFS)', (c) => c.dataSources.bikeSharing?.provider === 'gbfs'],
   ['Unfallatlas (Statistische Ämter des Bundes und der Länder)', (c) => c.dataSources.trafficAccidents?.provider === 'unfallatlas'],
   ['StadtRAD Hamburg (Urban Data Platform)', (c) => c.dataSources.bikeSharing?.provider === 'hamburg-sta'],
+  ['Parkhäuser Hamburg (Urban Data Platform)', (c) => c.dataSources.parking?.provider === 'hamburg-wfs'],
   // ingest-electricity: SMARD for the city's control area, Energy-Charts for Germany
   ['SMARD (Bundesnetzagentur)', (c) => c.dataSources.electricity !== undefined],
   ['Energy-Charts (Fraunhofer ISE)', (c) => c.dataSources.electricity !== undefined],
@@ -232,6 +234,7 @@ describe('SourcesPage licence credits', () => {
     'DWD Soil Moisture (Climate Data Center)': 'Source: Deutscher Wetterdienst, CC BY 4.0.',
     // Both datasets' Readme: CC BY 4.0, "unter Bedingung der Namensnennung des Robert Koch-Instituts als Quelle"
     'RKI IfSG Influenza and RSV Cases': 'Source: Robert Koch-Institut, CC BY 4.0.',
+    'Wasserportal Berlin': 'Source: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt Berlin – Wasserportal Berlin, dl-de/by-2-0.',
     // smard.de/home/datennutzung names the credit "Bundesnetzagentur | SMARD.de"
     'SMARD (Bundesnetzagentur)': 'Source: Bundesnetzagentur | SMARD.de, CC BY 4.0.',
     // The Energy-Charts API description: "Proper attribution to Energy-Charts.info as the source is required."
@@ -266,6 +269,7 @@ describe('SourcesPage licence credits', () => {
     'Berlin zählt Mobilität (Telraam)': 'Source: Berlin zählt Mobilität / Telraam, CC BY 4.0.',
     'Unfallatlas (Statistische Ämter des Bundes und der Länder)':'Source: Statistische Ämter des Bundes und der Länder, Unfallatlas, dl-de/by-2-0.',
     'StadtRAD Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    'Parkhäuser Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
     'Sag’s uns (Offene Daten Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
     'Mach München besser': 'Source: Landeshauptstadt München, IT-Referat, CC0 1.0.',
     // WMS GetCapabilities <Fees> and the Transparenzportal datasets (checked 2026-11-03)

@@ -5,6 +5,9 @@ import { getActiveCities } from '../config/index.js';
 import { loadEvChargingRegister } from './reads.js';
 import { EV_CHARGING_REGISTER_TTL_SECONDS } from '../cron/ingest-ev-charging.js';
 import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficCounts, loadTrafficAccidents, loadElectricity, loadSoilMoisture, loadRespiratoryCases } from './reads.js';
+import { loadParking, loadWaterTemperature } from './reads.js';
+import { WATER_TEMPERATURE_TTL_SECONDS } from '../cron/ingest-water-temperature.js';
+import { PARKING_TTL_SECONDS } from '../cron/ingest-parking.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
@@ -168,6 +171,16 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadLiftOutages(db, cityId);
       if (r) cache.set(CK.liftOutages(cityId), r.data, 1200, r.fetchedAt); // LIFT_OUTAGES_TTL_SECONDS
     })().catch((err) => log.error(`${cityId} lift outages failed`, err)),
+
+    (async () => {
+      const r = await loadWaterTemperature(db, cityId);
+      if (r) cache.set(CK.waterTemperature(cityId), r.data, WATER_TEMPERATURE_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} water temperature failed`, err)),
+
+    (async () => {
+      const r = await loadParking(db, cityId);
+      if (r) cache.set(CK.parking(cityId), r.data, PARKING_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} parking failed`, err)),
 
     (async () => {
       const r = await loadBikeSharing(db, cityId);

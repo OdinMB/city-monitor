@@ -626,6 +626,7 @@
       "emergencies": "Notfall",
       "traffic": "Verkehr",
       "bike-sharing": "Leihräder",
+      "parking": "Parkhäuser",
       "accidents": "Unfälle",
       "ev-charging": "E-Ladesäulen",
       "heat-relief": "Hitzeschutz",
@@ -672,7 +673,8 @@
     },
     "water": {
       "levels": "Pegelstände",
-      "bathing": "Badegewässer"
+      "bathing": "Badegewässer",
+      "temperature": "Wassertemperatur"
     },
     "social": {
       "rent": "Mietspiegel"
@@ -704,6 +706,13 @@
       "none": "Keine Räder",
       "few": "1–2 Räder",
       "many": "3 und mehr Räder"
+    },
+    "parkingLegend": {
+      "title": "Freie Plätze im Parkhaus",
+      "plenty": "30 % oder mehr frei",
+      "some": "10–30 % frei",
+      "few": "Unter 10 % frei",
+      "closed": "Geschlossen oder keine Daten"
     },
     "accidents": {
       "all": "Alle Unfälle",
@@ -859,6 +868,29 @@
       "bikes": "Verfügbare Räder",
       "docks": "Freie Stellplätze",
       "updated": "Stand"
+    },
+    "waterTemperature": {
+      "temperature": "Wassertemperatur",
+      "measured": "Gemessen",
+      "source": "Wasserportal Berlin"
+    },
+    "parking": {
+      "free": "Freie Plätze",
+      "updated": "Stand",
+      "kind": {
+        "garage": "Parkhaus",
+        "underground": "Tiefgarage",
+        "lot": "Parkplatz"
+      },
+      "trend": {
+        "filling": "Füllt sich",
+        "emptying": "Leert sich",
+        "steady": "Gleichbleibend"
+      },
+      "status": {
+        "closed": "Geschlossen",
+        "fault": "Keine aktuelle Zählung (Störung)"
+      }
     },
     "accident": {
       "severity": {

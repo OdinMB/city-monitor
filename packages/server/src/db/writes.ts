@@ -19,6 +19,7 @@ import type { SnapshotType } from './schema.js';
 import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData, RespiratoryCases } from '@city-monitor/shared';
 import type { HeatReliefData } from '@city-monitor/shared';
 import type { TelraamCountsData } from '@city-monitor/shared';
+import type { ParkingData, WaterTemperatureData } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { EvChargingRegister } from '../lib/ev-charging.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -120,6 +121,14 @@ export async function savePollen(db: Db, cityId: string, data: PollenForecast): 
 
 export async function saveLiftOutages(db: Db, cityId: string, data: LiftOutageData): Promise<void> {
   await saveSnapshot(db, cityId, 'kvb-lift-outages', data);
+}
+
+export async function saveWaterTemperature(db: Db, cityId: string, data: WaterTemperatureData): Promise<void> {
+  await saveSnapshot(db, cityId, 'wasserportal-temp', data);
+}
+
+export async function saveParking(db: Db, cityId: string, data: ParkingData): Promise<void> {
+  await saveSnapshot(db, cityId, 'parking', data);
 }
 
 export async function saveBikeSharing(db: Db, cityId: string, data: BikeSharingData): Promise<void> {

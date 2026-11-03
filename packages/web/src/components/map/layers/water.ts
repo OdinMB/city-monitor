@@ -4,8 +4,8 @@
 
 import * as maplibregl from 'maplibre-gl';
 import i18n from 'i18next';
-import { Droplets } from 'lucide';
-import type { WaterLevelStation, BathingSpot } from '../../../lib/api.js';
+import { Droplets, Thermometer } from 'lucide';
+import type { WaterLevelStation, BathingSpot, WaterTemperatureStation } from '../../../lib/api.js';
 import { WATER_STATE_COLORS, BATHING_QUALITY_COLORS, createVerticalBadgeIcon, type IconNode } from '../../../lib/map-icons.js';
 import { escapeHtml } from '../../../lib/escape-html.js';
 import { registerPopupHandlers, ltr, sourceText } from '../popups.js';
@@ -214,5 +214,117 @@ export function bathingPopupHtml(props: Record<string, unknown>): string {
       <div style="font-size:12px;margin-top:4px">${t('mapPopup.bathing.quality')}: <strong style="color:${qColor}">${escapeHtml(qLabel)}</strong>${euClass}</div>
       ${tempLine}${visLine}${algaeLine}${advisoryLine}
       ${detailLink}
+    </div>`;
+}
+
+/**
+ * Water temperature bands, coldest first: the badge colour of a reading at or
+ * above `from` °C (up to the next band).
+ */
+export const WATER_TEMPERATURE_BANDS: ReadonlyArray<{ from: number; color: string }> = [
+  { from: -Infinity, color: '#1d4ed8' },
+  { from: 5, color: '#3b82f6' },
+  { from: 10, color: '#0d9488' },
+  { from: 15, color: '#16a34a' },
+  { from: 20, color: '#f59e0b' },
+  { from: 24, color: '#dc2626' },
+];
+
+export function waterTemperatureColor(temperature: number): string {
+  let color = WATER_TEMPERATURE_BANDS[0]!.color;
+  for (const band of WATER_TEMPERATURE_BANDS) if (temperature >= band.from) color = band.color;
+  return color;
+}
+
+/** "9.3 °C" with the UI language's decimal sign. */
+function formatTemperature(temperature: number): string {
+  return `${temperature.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} °C`;
+}
+
+function waterTemperatureToGeoJSON(stations: WaterTemperatureStation[]): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: stations.map((s) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [s.lon, s.lat] },
+      properties: {
+        id: s.id,
+        name: s.name,
+        waterBody: s.waterBody,
+        temperature: s.temperature,
+        measuredAt: s.measuredAt,
+        url: s.url,
+        iconId: `wt-badge-${s.temperature}`,
+      },
+    })),
+  };
+}
+
+export function updateWaterTemperatureMarkers(map: maplibregl.Map, stations: WaterTemperatureStation[], isDark: boolean) {
+  if (map.getLayer('wt-marker-icon')) map.removeLayer('wt-marker-icon');
+  if (map.getSource('wt-markers')) map.removeSource('wt-markers');
+
+  const geojson = waterTemperatureToGeoJSON(stations);
+  if (geojson.features.length === 0) return;
+
+  // A badge per temperature: the icon in the band's colour, the reading below it
+  const stroke = isDark ? '#1f2937' : '#ffffff';
+  for (const s of stations) {
+    const id = `wt-badge-${s.temperature}`;
+    if (map.hasImage(id)) map.removeImage(id);
+    map.addImage(id, createVerticalBadgeIcon(Thermometer as IconNode, waterTemperatureColor(s.temperature), stroke, formatTemperature(s.temperature)));
+  }
+
+  map.addSource('wt-markers', { type: 'geojson', data: geojson });
+  map.addLayer({
+    id: 'wt-marker-icon',
+    type: 'symbol',
+    source: 'wt-markers',
+    layout: {
+      'icon-image': ['get', 'iconId'] as unknown as maplibregl.ExpressionSpecification,
+      'icon-size': 0.9,
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center',
+    },
+  });
+
+  registerPopupHandlers(map, 'wt-marker-icon', (e) => {
+    if (!e.features?.length) return null;
+    const coords = (e.features[0].geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+    return { html: waterTemperaturePopupHtml(e.features[0].properties!), lngLat: coords };
+  });
+}
+
+/** "02:00" today, "1 Nov, 16:00" on another day, in German time and the UI language. */
+function formatMeasuredAt(iso: string, now = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const locale = i18n.language;
+  const timeZone = 'Europe/Berlin';
+  const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone });
+  const day = (x: Date) => x.toLocaleDateString('en-CA', { timeZone });
+  if (day(d) === day(now)) return time;
+  return `${d.toLocaleDateString(locale, { day: 'numeric', month: 'short', timeZone })}, ${time}`;
+}
+
+/**
+ * Popup markup for a water-temperature station, from its feature properties.
+ * Station and water names come from the config (the portal's own, in German,
+ * `sourceText`), the words from the current UI language; all of it is escaped.
+ */
+export function waterTemperaturePopupHtml(props: Record<string, unknown>, now = new Date()): string {
+  const t = (key: string) => escapeHtml(i18n.t(key));
+  const temperature = Number(props.temperature);
+  const measured = typeof props.measuredAt === 'string' ? formatMeasuredAt(props.measuredAt, now) : '';
+  const url = String(props.url ?? '');
+  const link = url.startsWith('https://')
+    ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:12px;color:#2563eb;text-decoration:none">${t('mapPopup.waterTemperature.source')} ↗</a>`
+    : '';
+  return `<div style="font-size:13px;max-width:240px">
+      <div style="font-weight:600;margin-bottom:2px">${sourceText(props.name)}</div>
+      <div style="font-size:12px;opacity:0.7">${sourceText(props.waterBody)}</div>
+      ${Number.isFinite(temperature) ? `<div style="font-size:12px;margin-top:4px">${t('mapPopup.waterTemperature.temperature')}: <strong style="color:${waterTemperatureColor(temperature)}">${ltr(escapeHtml(formatTemperature(temperature)))}</strong></div>` : ''}
+      ${measured ? `<div style="font-size:11px;opacity:0.6;margin-top:2px">${t('mapPopup.waterTemperature.measured')}: ${ltr(escapeHtml(measured))}</div>` : ''}
+      ${link}
     </div>`;
 }

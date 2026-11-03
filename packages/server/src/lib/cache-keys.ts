@@ -30,6 +30,8 @@ export const CK = {
   aedLocations: (cityId: string) => `${cityId}:aed:locations`,
   /** Not bootstrapped: Berlin's ~1,070 stations are about 150 KB, so the map fetches them when the layer is on. */
   bikeSharing: (cityId: string) => `${cityId}:bike-sharing`,
+  /** Not bootstrapped: the map fetches the car parks when the parking layer is on. */
+  parking: (cityId: string) => `${cityId}:parking`,
   /** Not bootstrapped: Berlin's ~13,000 accidents a year are about 450 KB, fetched when the map layer is on. */
   trafficAccidents: (cityId: string) => `${cityId}:traffic-accidents`,
   /** Not bootstrapped: ~260 Hamburg sites are about 50 KB, fetched when a counts sub-layer is on. */
@@ -46,6 +48,8 @@ export const CK = {
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,
   floodStatus: (cityId: string) => `${cityId}:flood-status`,
+  /** Not bootstrapped: the map fetches it when the water layer's temperature sub-layer is on. */
+  waterTemperature: (cityId: string) => `${cityId}:water-temperature`,
   wastewaterSummary: (cityId: string) => `${cityId}:wastewater:summary`,
   respiratoryCases: (cityId: string) => `${cityId}:respiratory-cases`,
   bathingSpots: (cityId: string) => `${cityId}:bathing:spots`,

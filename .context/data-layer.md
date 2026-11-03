@@ -41,7 +41,9 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:water-levels` | 900s (15 min) | ingest-water-levels |
 | `{cityId}:flood-status` | 600s (10 min) | ingest-flood-status |
 | `{cityId}:lift-outages` | 1200s (20 min) | ingest-lift-outages (Köln) |
+| `{cityId}:water-temperature` | 1800s (30 min) | ingest-water-temperature (Berlin; not in bootstrap) |
 | `{cityId}:bike-sharing` | 600s (10 min) | ingest-bike-sharing (not in bootstrap) |
+| `{cityId}:parking` | 600s (10 min) | ingest-parking (not in bootstrap) |
 | `{cityId}:electricity` | 1800s (30 min) | ingest-electricity |
 | `{cityId}:soil-moisture` | 172800s (48h) | ingest-soil-moisture |
 | `{cityId}:citizen-reports` | 1800s (30 min) | ingest-citizen-reports (Köln, München); not in bootstrap |
@@ -118,7 +120,9 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `rki-ifsg-cases` | RKI lab-confirmed influenza and RSV cases by Land, for the wastewater tile ([wastewater.md](wastewater.md#reported-cases-rki-ifsg)) |
 | `lageso-bathing` | Bathing water quality of every city (LAGeSo Berlin, Geodienste Hamburg; the name is historical) |
 | `kvb-lift-outages` | KVB lifts and escalators out of service ([lift-outages.md](lift-outages.md)) |
+| `wasserportal-temp` | Water temperature at the Wasserportal Berlin's stations ([water-levels.md](water-levels.md#water-temperature-wasserportal-berlin)) |
 | `bike-sharing` | Bike-sharing stations of every provider, at most one row per city every 30 min ([bike-sharing.md](bike-sharing.md)) |
+| `parking` | Car parks with live free spaces, at most one row per city every 15 min ([parking.md](parking.md)) |
 | `smard-electricity` | Control-area generation mix (SMARD) and Germany's grid signal and CO₂ (Energy-Charts) ([electricity.md](electricity.md)) |
 | `dwd-soil-moisture` | DWD soil moisture at the city's stations, 90-day mean, and Gieß den Kiez waterings for Berlin ([soil-moisture.md](soil-moisture.md)) |
 | `open311-reports` | Open311 citizen reports, Köln and München ([citizen-reports.md](citizen-reports.md)); written at most hourly |
@@ -180,7 +184,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 | History | pegelonline | 30 days (history endpoint) |
 | History | ba-labor-market | 730 days / ~24 months (history endpoints) |
 | Non-history (short-lived) | aqi-grid | 6 hours, the age limit of `loadAirQualityGrid` (`AQ_GRID_MAX_AGE_MS`), newest row included (never `keepLatest`) + 100 row cap. Kept no longer than a read can use it, so no air-quality archive builds up ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
-| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, rki-ifsg-cases, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, bike-sharing, smard-electricity, uba-airquality, traffic-counts | 2 days + 100 row cap |
+| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, rki-ifsg-cases, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, wasserportal-temp, bike-sharing, parking, smard-electricity, uba-airquality, traffic-counts | 2 days + 100 row cap |
 | Non-history (large, hourly) | open311-reports | 1 day + 100 row cap |
 | Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr, dwd-soil-moisture, telraam-counts | 7 days + 100 row cap |
 | Non-history (infrequent, weekly/monthly jobs) | mss-social-atlas, afstat-population, unfallatlas-accidents, bnetza-charging, heat-relief, abgwatch-* | 7 days, newest row per city kept (`keepLatest`) + 100 row cap |

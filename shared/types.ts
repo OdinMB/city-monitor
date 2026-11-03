@@ -84,6 +84,8 @@ export type CityFeature =
   | 'soilMoisture'    // dataSources.soilMoisture: DWD soil moisture at the city's stations (drought tile)
   | 'treeWatering'    // dataSources.soilMoisture.treeWatering: street-tree waterings logged by residents (Gieß den Kiez)
   | 'telraamCounts'   // dataSources.telraamCounts: yesterday's street counts of citizen Telraam sensors (Berlin zählt Mobilität)
+  | 'waterTemperature' // dataSources.waterTemperature: the water layer's temperature sub-layer (Wasserportal Berlin)
+  | 'parking'         // dataSources.parking: car parks with live free spaces, the parking map layer (Hamburg)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -225,6 +227,14 @@ export type BikeSharingSource =
   | { provider: 'gbfs'; url: string; system: string; operator: string }
   /** Hamburg's StadtRAD on the Urban Data Platform's SensorThings API (`…/v1.1`) */
   | { provider: 'hamburg-sta'; url: string; system: string; operator: string };
+
+/**
+ * A city's car parks with live occupancy, by provider (.context/parking.md).
+ * `hamburg-wfs`: the Urban Data Platform's car-park WFS (`…/wfs_parkhaeuser`),
+ * fed by the city's Parkleitsystem; only the car parks that report free spaces
+ * are kept.
+ */
+export type ParkingSource = { provider: 'hamburg-wfs'; url: string };
 
 /**
  * A German transmission system operator's control area (Regelzone), spelled as
@@ -421,6 +431,7 @@ export interface CityDataSources {
   bathing?: BathingSource;
   liftOutages?: LiftOutageSource;
   bikeSharing?: BikeSharingSource;
+  parking?: ParkingSource;
   electricity?: ElectricitySource;
   citizenReports?: CitizenReportSource;
   trafficAccidents?: TrafficAccidentSource;
@@ -434,6 +445,16 @@ export interface CityDataSources {
   waterLevels?: {
     provider: 'pegelonline';
     stations: Array<{ uuid: string; name: string; waterBody: string; tidal?: boolean }>;
+  };
+  /**
+   * Water temperature at measuring points of a state's hydrological service, for the
+   * water layer's temperature sub-layer (.context/water-levels.md, "Water Temperature").
+   * `wasserportal`: Berlin's Wasserportal CSV export, one request per station. The
+   * portal's CSV gives no coordinates, so each station carries its own (WGS 84).
+   */
+  waterTemperature?: {
+    provider: 'wasserportal';
+    stations: Array<{ id: string; name: string; waterBody: string; lat: number; lon: number }>;
   };
   /**
    * Flood class (Meldestufe or the state's equivalent) of state flood gauges from the
@@ -776,6 +797,27 @@ export interface WaterLevelData {
   fetchedAt: string;
 }
 
+// Water temperature (Berlin Wasserportal)
+export interface WaterTemperatureStation {
+  /** The provider's station number ("139"). */
+  id: string;
+  name: string;
+  waterBody: string;
+  lat: number;
+  lon: number;
+  /** The newest valid reading, °C. */
+  temperature: number;
+  /** When it was measured (ISO 8601 with offset). */
+  measuredAt: string;
+  /** The station's page on the provider's portal. */
+  url: string;
+}
+
+export interface WaterTemperatureData {
+  /** The configured stations with a reading of the last few days, in config order. */
+  stations: WaterTemperatureStation[];
+}
+
 // Budget data (Berlin Doppelhaushalt)
 export interface BudgetCategoryAmount {
   code: number;
@@ -1015,6 +1057,38 @@ export interface BikeSharingData {
   /** Stations inside the city's bounding box that are installed and renting. */
   stations: BikeStation[];
   /** When the feed was last updated (ISO 8601), null when it gave no time. */
+  updated: string | null;
+}
+
+// Parking (Hamburg car-park WFS)
+export interface ParkingFacility {
+  /** The provider's id ("1012"). */
+  id: string;
+  name: string;
+  /** Multi-storey car park, underground garage or surface car park. */
+  kind: 'garage' | 'underground' | 'lot';
+  lat: number;
+  lon: number;
+  /** Free spaces now. */
+  free: number;
+  /** Spaces in all, as the car park reports them with its free count. */
+  total: number;
+  /** `closed` and `fault` as the guidance system reports them; `free` then means little. */
+  status: 'open' | 'closed' | 'fault';
+  /**
+   * Free spaces against about 10–30 minutes earlier, as the job saw them:
+   * `filling` (fewer free), `emptying` (more free), `steady`; null until the job
+   * has an earlier reading (after a restart) or when the car park did not report.
+   */
+  trend: 'filling' | 'emptying' | 'steady' | null;
+  /** When the car park last reported (ISO 8601 with offset), null when unknown. */
+  updated: string | null;
+}
+
+export interface ParkingData {
+  /** Car parks with live occupancy, by name. */
+  facilities: ParkingFacility[];
+  /** The newest report among them (ISO 8601), null when none gave a time. */
   updated: string | null;
 }
 

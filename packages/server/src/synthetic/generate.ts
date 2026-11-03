@@ -24,6 +24,7 @@ import type {
   TelraamCountsData, TelraamSegmentCount, TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, RespiratoryCases, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
 import type { HeatReliefData, HeatReliefPlace } from '@city-monitor/shared';
+import type { ParkingData, ParkingFacility, WaterTemperatureData } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
 import type { PersistedNewsItem } from '../db/writes.js';
@@ -106,6 +107,9 @@ export interface SyntheticData {
   /** Soil moisture at the configured DWD stations; Gieß den Kiez waterings where the city has them. */
   soilMoisture: SoilMoistureData;
   telraamCounts: TelraamCountsData;
+  waterTemperature: WaterTemperatureData;
+  /** Not in Berlin's data set: Berlin has no Parkleitsystem with open data (NOT_IN_BERLIN). */
+  parking?: ParkingData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -172,10 +176,12 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   soilMoisture: (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0,
   telraamCounts: (c) => c.dataSources.telraamCounts !== undefined,
   respiratoryCases: (c) => c.dataSources.respiratoryCases !== undefined,
+  waterTemperature: (c) => (c.dataSources.waterTemperature?.stations.length ?? 0) > 0,
+  parking: (c) => c.dataSources.parking !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
-const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages', 'citizenReports', 'trafficCounts'];
+const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages', 'citizenReports', 'trafficCounts', 'parking'];
 
 /** The data sets the synthetic seed writes for `city`: those production would hold for it. */
 export function syntheticCoverage(city: CityConfig): SyntheticDataSet[] {
@@ -294,6 +300,8 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('soilMoisture')) sets.soilMoisture = generateSoilMoisture(rng, now, city, place);
   if (has.has('telraamCounts')) sets.telraamCounts = generateTelraamCounts(rng, now, place);
   if (has.has('respiratoryCases')) sets.respiratoryCases = generateRespiratoryCases(rng, now);
+  if (has.has('waterTemperature')) sets.waterTemperature = generateWaterTemperature(rng, now, city);
+  if (has.has('parking')) sets.parking = generateParking(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1560,6 +1568,54 @@ function generateLiftOutages(rng: Rng, now: Date, place: Place): LiftOutageData 
   });
   const updated = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000);
   return { outages, updated: `${localIso(updated)}:00${berlinUtcOffset(`${local(updated).date} 12:00:00`)}` };
+}
+
+/**
+ * Made-up temperatures at the configured stations: around a seasonal curve
+ * (about 2 °C in early February, 22 °C in early August), the lakes a little
+ * warmer, each reading from the last quarter-hour in MEZ, as the portal keeps them.
+ */
+function generateWaterTemperature(rng: Rng, now: Date, city: CityConfig): WaterTemperatureData {
+  const dayOfYear = (now.getTime() - Date.UTC(now.getUTCFullYear(), 0, 1)) / DAY;
+  const seasonal = 12 - 10 * Math.cos(((dayOfYear - 30) / 365) * 2 * Math.PI);
+  const quarter = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000 + HOUR);
+  const measuredAt = `${quarter.toISOString().slice(0, 16)}:00+01:00`;
+  const stations = city.dataSources.waterTemperature!.stations.map((s) => ({
+    id: s.id,
+    name: s.name,
+    waterBody: s.waterBody,
+    lat: s.lat,
+    lon: s.lon,
+    temperature: round(seasonal + rng.float(-1.5, 1.5) + (s.name === s.waterBody ? 0.8 : 0), 1),
+    measuredAt,
+    url: `${EXAMPLE}/water-temperature/${s.id}`,
+  }));
+  return { stations };
+}
+
+/** Car parks by the city's first anchors, one nearly full, one closed, each trend once. */
+function generateParking(rng: Rng, now: Date, place: Place): ParkingData {
+  const kinds: ParkingFacility['kind'][] = ['garage', 'underground', 'lot'];
+  const trends: ParkingFacility['trend'][] = ['filling', 'emptying', 'steady', null];
+  const reported = new Date(Math.floor(now.getTime() / (5 * 60_000)) * 5 * 60_000);
+  const updated = `${localIso(reported)}:00${berlinUtcOffset(`${local(reported).date} 12:00:00`)}`;
+  const facilities: ParkingFacility[] = place.anchors.slice(0, 8).map((a, i) => {
+    const total = rng.int(4, 40) * 20;
+    const free = i === 0 ? rng.int(0, 5) : rng.int(0, total);
+    const status: ParkingFacility['status'] = i === 1 ? 'closed' : 'open';
+    return {
+      id: `syn-${i + 1}`,
+      name: `${MARK} Parkhaus ${a.name}`,
+      kind: kinds[i % kinds.length]!,
+      ...near(rng, a, 0.004),
+      free,
+      total,
+      status,
+      trend: status === 'open' ? trends[i % trends.length]! : null,
+      updated,
+    };
+  });
+  return { facilities, updated };
 }
 
 /** Bike-sharing stations around the city's anchors, some empty; docks only where the real system has them. */

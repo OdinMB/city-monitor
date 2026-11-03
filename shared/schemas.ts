@@ -95,6 +95,19 @@ export const WaterLevelDataSchema = z.object({
   fetchedAt: z.string(),
 });
 
+export const WaterTemperatureDataSchema = z.object({
+  stations: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    waterBody: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    temperature: z.number(),
+    measuredAt: z.string(),
+    url: z.string(),
+  })),
+});
+
 // --- Bürgeramt Appointments ---
 
 export const BuergeramtServiceSchema = z.object({
@@ -396,6 +409,24 @@ export const BikeSharingDataSchema = z.object({
     bikes: z.number(),
     docks: z.number().nullable(),
     reportedAt: z.number().nullable(),
+  })),
+  updated: z.string().nullable(),
+});
+
+// --- Parking ---
+
+export const ParkingDataSchema = z.object({
+  facilities: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    kind: z.enum(['garage', 'underground', 'lot']),
+    lat: z.number(),
+    lon: z.number(),
+    free: z.number(),
+    total: z.number(),
+    status: z.enum(['open', 'closed', 'fault']),
+    trend: z.enum(['filling', 'emptying', 'steady']).nullable(),
+    updated: z.string().nullable(),
   })),
   updated: z.string().nullable(),
 });

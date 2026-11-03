@@ -29,6 +29,7 @@ import { useAirQualityStations } from '../../hooks/useAirQualityStations.js';
 import { withoutRelayedStations } from '../../lib/aqi.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useBathing } from '../../hooks/useBathing.js';
+import { useWaterTemperature } from '../../hooks/useWaterTemperature.js';
 import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { usePopulation } from '../../hooks/usePopulation.js';
 import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
@@ -57,11 +58,13 @@ import { updateWarningPolygons } from './layers/warnings.js';
 import { updatePharmacyMarkers, updateAedMarkers } from './layers/emergencies.js';
 import { updateTrafficLayers, updateConstructionLayers } from './layers/traffic.js';
 import { updateAqGridLayer, updateUbaStationLayer } from './layers/air-quality.js';
-import { updateWaterLevelMarkers, updateBathingMarkers } from './layers/water.js';
+import { updateWaterLevelMarkers, updateBathingMarkers, updateWaterTemperatureMarkers } from './layers/water.js';
 import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/choropleth.js';
 import { socialAtlasOf } from '../../lib/social-atlas.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 import { updateBikeSharingMarkers } from './layers/bike-sharing.js';
+import { updateParkingMarkers } from './layers/parking.js';
+import { useParking } from '../../hooks/useParking.js';
 import { updateCitizenReportMarkers } from './layers/citizen-reports.js';
 import { updateTrafficAccidentLayer } from './layers/traffic-accidents.js';
 import { updateTrafficCountMarkers } from './layers/traffic-counts.js';
@@ -79,6 +82,7 @@ const MARKER_LAYERS = [
   'safety-marker-icon',
   'wl-marker-icon',
   'bathing-marker-icon',
+  'wt-marker-icon',
   'aq-marker-icon',
   'aq-uba-icon',
   'noise-sensor-icon',
@@ -252,11 +256,15 @@ export function CityMap() {
   const waterActive = activeLayers.has('water');
   const selectedWater = useCommandCenter((s) => s.waterSubLayers);
   const waterSubLayers = useMemo(() => effectiveSubLayers(selectedWater, available.water), [selectedWater, available]);
+  const { data: waterTemperatureData } = useWaterTemperature(city.id, activeLayers.has('water') && waterSubLayers.has('temperature'));
   const { data: socialAtlasData } = useSocialAtlas(city.id, socialAtlasActive);
   const { data: populationData } = usePopulation(city.id, populationActive);
   // Lazy: Berlin's stations are about 150 KB, fetched only while the layer is on
   const bikeSharingActive = activeLayers.has('bike-sharing');
   const { data: bikeSharingData } = useBikeSharing(city.id, bikeSharingActive);
+  // Lazy: fetched only while the parking layer is on
+  const parkingActive = activeLayers.has('parking');
+  const { data: parkingData } = useParking(city.id, parkingActive);
   // Lazy: Berlin's year of accidents is about 470 KB, fetched only while the layer is on
   const accidentsActive = activeLayers.has('accidents');
   const accidentFilter = useCommandCenter((s) => s.accidentFilter);
@@ -333,6 +341,10 @@ export function CityMap() {
     () => (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [],
     [waterActive, waterSubLayers, bathingData],
   );
+  const waterTemperatureItems = useMemo(
+    () => (waterActive && waterSubLayers.has('temperature')) ? (waterTemperatureData?.data?.stations ?? []) : [],
+    [waterActive, waterSubLayers, waterTemperatureData?.data?.stations],
+  );
   const citizenReportItems = useMemo(
     () => reportsActive ? (citizenReportData?.data?.reports ?? []) : [],
     [reportsActive, citizenReportData?.data?.reports],
@@ -340,6 +352,7 @@ export function CityMap() {
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
   const bikeSharingItems = bikeSharingActive ? (bikeSharingData?.data ?? null) : null;
+  const parkingItems = parkingActive ? (parkingData?.data ?? null) : null;
   const accidentItems = accidentsActive ? (accidentData?.data ?? null) : null;
   const trafficCountItems = trafficCountModes.size > 0 ? (trafficCountData?.data ?? null) : null;
   const evChargingItems = evChargingActive ? (evChargingData?.data ?? null) : null;
@@ -387,6 +400,8 @@ export function CityMap() {
   noiseSensorItemsRef.current = noiseSensorItems;
   const bikeSharingItemsRef = useRef(bikeSharingItems);
   bikeSharingItemsRef.current = bikeSharingItems;
+  const parkingItemsRef = useRef(parkingItems);
+  parkingItemsRef.current = parkingItems;
   const accidentItemsRef = useRef(accidentItems);
   accidentItemsRef.current = accidentItems;
   const accidentFilterRef = useRef(accidentFilter);
@@ -407,6 +422,8 @@ export function CityMap() {
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
   bathingItemsRef.current = bathingItems;
+  const waterTemperatureItemsRef = useRef(waterTemperatureItems);
+  waterTemperatureItemsRef.current = waterTemperatureItems;
   const citizenReportItemsRef = useRef(citizenReportItems);
   citizenReportItemsRef.current = citizenReportItems;
   const socialAtlasGeoJsonRef = useRef(socialAtlasGeoJson);
@@ -497,6 +514,7 @@ export function CityMap() {
         updateUbaStationLayer(map, ubaItemsRef.current, isDarkRef.current, langRef.current, timeZoneRef.current);
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDarkRef.current);
+        updateParkingMarkers(map, parkingItemsRef.current, isDarkRef.current);
         updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDarkRef.current);
         updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDarkRef.current);
         updateEvChargingMarkers(map, evChargingItemsRef.current, isDarkRef.current);
@@ -504,6 +522,7 @@ export function CityMap() {
         updateTelraamMarkers(map, telraamItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
+        updateWaterTemperatureMarkers(map, waterTemperatureItemsRef.current, isDarkRef.current);
         updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
         updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
@@ -615,6 +634,7 @@ export function CityMap() {
       updateUbaStationLayer(map, ubaItemsRef.current, isDark, langRef.current, timeZoneRef.current);
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDark);
+      updateParkingMarkers(map, parkingItemsRef.current, isDark);
       updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDark);
       updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDark);
       updateEvChargingMarkers(map, evChargingItemsRef.current, isDark);
@@ -622,6 +642,7 @@ export function CityMap() {
       updateTelraamMarkers(map, telraamItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
+      updateWaterTemperatureMarkers(map, waterTemperatureItemsRef.current, isDark);
       updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDark, cityIdRef.current);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
@@ -729,7 +750,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, accidentItems, trafficCountItems, evChargingItems, heatReliefItems, heatReliefSubLayers, telraamItems, waterLevelItems, bathingItems, citizenReportItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, parkingItems, accidentItems, trafficCountItems, evChargingItems, heatReliefItems, heatReliefSubLayers, telraamItems, waterLevelItems, bathingItems, waterTemperatureItems, citizenReportItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -874,6 +895,16 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [bikeSharingItems]);
 
+  // Update car parks (lazy: data only while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateParkingMarkers(map, parkingItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [parkingItems]);
+
   // Update the accident layer (lazy: data only while the layer is on) and its filter
   useEffect(() => {
     const map = mapRef.current;
@@ -934,6 +965,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [bathingItems]);
+
+  // Update water temperature markers (lazy: fetched only while the sub-layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateWaterTemperatureMarkers(map, waterTemperatureItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [waterTemperatureItems]);
 
   // Update citizen report markers (lazy — fetched only while the reports layer is on)
   useEffect(() => {

@@ -31,7 +31,7 @@ describe('cityLayers', () => {
     expect(all.news).toEqual(['news', 'police']);
     expect(all.emergencies).toEqual(['pharmacies', 'aeds']);
     expect(all.traffic).toEqual(['public-transport', 'incidents', 'roadworks', 'telraam']);
-    expect(all.water).toEqual(['levels', 'bathing']);
+    expect(all.water).toEqual(['levels', 'bathing', 'temperature']);
     expect(all.noise).toEqual(['total', 'road', 'rail', 'air']);
     expect(all.noiseLive).toBe(true);
     expect(all.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty', 'rent']);
@@ -78,6 +78,7 @@ describe('cityLayers', () => {
     expect(withFeatures('police').layers.has('news')).toBe(true);
     expect(withFeatures('police').news).toEqual(['police']);
     expect(withFeatures('bathing').layers.has('water')).toBe(true);
+    expect(withFeatures('waterTemperature').water).toEqual(['temperature']);
     expect(withFeatures('noiseSensors').layers.has('noise')).toBe(true);
     expect(withFeatures('rentMap').social).toEqual(['rent']);
     expect(withFeatures('aeds').layers.has('emergencies')).toBe(true);
@@ -98,6 +99,12 @@ describe('cityLayers', () => {
     for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('bike-sharing'), city.id).toBe(true);
     expect(withFeatures('bikeSharing').layers.has('bike-sharing')).toBe(true);
     expect(withFeatures().layers.has('bike-sharing')).toBe(false);
+  });
+
+  it('shows the parking layer only in Hamburg, the one city with a live car-park feed', () => {
+    expect(cityLayers(hamburg).layers.has('parking')).toBe(true);
+    for (const city of [berlin, koeln, muenchen]) expect(cityLayers(city).layers.has('parking'), city.id).toBe(false);
+    expect(withFeatures('parking').layers.has('parking')).toBe(true);
   });
 
   it('shows the accident layer in every city with Unfallatlas data, and not without', () => {

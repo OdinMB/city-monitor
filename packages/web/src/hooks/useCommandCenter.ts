@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'ev-charging' | 'heat-relief' | 'accidents' | 'water' | 'social' | 'population' | 'political' | 'reports' | 'trees';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'parking' | 'ev-charging' | 'heat-relief' | 'accidents' | 'water' | 'social' | 'population' | 'political' | 'reports' | 'trees';
 /** Which accidents the accident layer shows: all, or those with a bicycle or a pedestrian involved. */
 export type AccidentFilter = 'all' | 'bike' | 'pedestrian';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
@@ -10,7 +10,7 @@ export type NoiseLayer = 'total' | 'road' | 'rail' | 'air';
 export type NoiseWmsLayer = NoiseLayer | null;
 export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
-export type WaterSubLayer = 'levels' | 'bathing';
+export type WaterSubLayer = 'levels' | 'bathing' | 'temperature';
 /** `telraam`: yesterday's citizen street counts (Berlin), off until chosen (not in DEFAULT_TRAFFIC_SUBS). */
 export type TrafficSubLayer = 'public-transport' | 'incidents' | 'congestion' | 'roadworks' | 'car-counts' | 'bike-counts' | 'telraam';
 export type HeatReliefSubLayer = 'cool' | 'fountains' | 'toilets';
@@ -72,7 +72,7 @@ export function defaultLayersFor(cityId: string): Set<DataLayer> {
 }
 const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['news']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies']);
-const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
+const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing', 'temperature']);
 /**
  * The traffic sub-layers shown when the layer is switched on. The congestion
  * map and the counting sites are opt-in: they would crowd the incidents, and

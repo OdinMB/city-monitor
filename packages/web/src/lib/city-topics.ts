@@ -31,6 +31,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   socialAtlas: 'sidebar.layers.social',
   noiseMap: 'sidebar.layers.noise',
   bikeSharing: 'sidebar.layers.bike-sharing',
+  parking: 'sidebar.layers.parking',
   citizenReports: 'sidebar.layers.reports',
   trafficAccidents: 'sidebar.layers.accidents',
   streetTrees: 'sidebar.layers.trees',
@@ -49,6 +50,8 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   publicToilets: null,
   treeWatering: null,
   respiratoryCases: null, // shown in the wastewater tile
+  // A sub-layer of the water layer, whose topic is the water levels
+  waterTemperature: null,
   roadworks: null,
   // The congestion map and the counters refine the traffic layer every city has
   trafficFlowMap: null,

@@ -51,7 +51,7 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
     ['public-transport', has('transit')], ['incidents', true], ['congestion', has('trafficFlowMap')], ['roadworks', has('roadworks')],
     ['car-counts', has('carCounts')], ['bike-counts', has('bikeCounts')], ['telraam', has('telraamCounts')],
   ]);
-  const water = present<WaterSubLayer>([['levels', has('waterLevels')], ['bathing', has('bathing')]]);
+  const water = present<WaterSubLayer>([['levels', has('waterLevels')], ['bathing', has('bathing')], ['temperature', has('waterTemperature')]]);
   const heatRelief = present<HeatReliefSubLayer>([
     ['cool', has('coolPlaces')], ['fountains', has('drinkingFountains')], ['toilets', has('publicToilets')],
   ]);
@@ -75,6 +75,7 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
     ['news', news.length > 0],
     ['traffic', true],
     ['bike-sharing', has('bikeSharing')],
+    ['parking', has('parking')],
     ['accidents', has('trafficAccidents')],
     ['ev-charging', has('evCharging')],
     ['heat-relief', heatRelief.length > 0],

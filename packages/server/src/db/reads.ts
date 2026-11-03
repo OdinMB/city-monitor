@@ -22,6 +22,8 @@ import type { HeatReliefData } from '@city-monitor/shared';
 import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
 import type { TelraamCountsData } from '@city-monitor/shared';
 import { TelraamCountsDataSchema } from '@city-monitor/shared/schemas.js';
+import type { ParkingData, WaterTemperatureData } from '@city-monitor/shared';
+import { ParkingDataSchema, WaterTemperatureDataSchema } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import { EvChargingRegisterSchema } from '@city-monitor/shared/schemas.js';
 import type { EvChargingRegister } from '../lib/ev-charging.js';
@@ -199,6 +201,16 @@ export async function loadPollen(db: Db, cityId: string): Promise<DbResult<Polle
 /** At most 2 hours old: an outage list from a stopped job would show lifts long repaired (the job runs every 15 min). */
 export async function loadLiftOutages(db: Db, cityId: string): Promise<DbResult<LiftOutageData>> {
   return loadSnapshot(db, cityId, 'kvb-lift-outages', { schema: LiftOutageDataSchema, maxAgeMs: 2 * 3600_000 });
+}
+
+/** At most 6 hours old: water warms and cools slowly, and the readings themselves can be a day or two late (the job runs every 15 min). */
+export async function loadWaterTemperature(db: Db, cityId: string): Promise<DbResult<WaterTemperatureData>> {
+  return loadSnapshot(db, cityId, 'wasserportal-temp', { schema: WaterTemperatureDataSchema, maxAgeMs: 6 * 3600_000 });
+}
+
+/** At most 30 minutes old: free spaces change by the minute (the job runs every 5 min, stores every 15). */
+export async function loadParking(db: Db, cityId: string): Promise<DbResult<ParkingData>> {
+  return loadSnapshot(db, cityId, 'parking', { schema: ParkingDataSchema, maxAgeMs: 30 * 60_000 });
 }
 
 /** At most 2 hours old: older counts say nothing about bikes there now (the job runs every 5 min, stores every 30). */

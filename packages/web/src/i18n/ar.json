@@ -664,6 +664,7 @@
       "emergencies": "طوارئ",
       "traffic": "حركة المرور",
       "bike-sharing": "مشاركة الدراجات",
+      "parking": "مواقف السيارات",
       "accidents": "الحوادث",
       "ev-charging": "شحن السيارات الكهربائية",
       "heat-relief": "الحماية من الحر",
@@ -710,7 +711,8 @@
     },
     "water": {
       "levels": "مناسيب المياه",
-      "bathing": "مياه السباحة"
+      "bathing": "مياه السباحة",
+      "temperature": "درجة حرارة المياه"
     },
     "social": {
       "rent": "إيجار"
@@ -742,6 +744,13 @@
       "none": "لا توجد دراجات",
       "few": "دراجة أو دراجتان",
       "many": "3 دراجات أو أكثر"
+    },
+    "parkingLegend": {
+      "title": "الأماكن الشاغرة في الموقف",
+      "plenty": "30٪ أو أكثر شاغرة",
+      "some": "10–30٪ شاغرة",
+      "few": "أقل من 10٪ شاغرة",
+      "closed": "مغلق أو لا توجد بيانات"
     },
     "accidents": {
       "all": "جميع الحوادث",
@@ -902,6 +911,29 @@
       "bikes": "الدراجات المتاحة",
       "docks": "أماكن إرجاع شاغرة",
       "updated": "آخر تحديث"
+    },
+    "waterTemperature": {
+      "temperature": "درجة حرارة المياه",
+      "measured": "وقت القياس",
+      "source": "Wasserportal Berlin"
+    },
+    "parking": {
+      "free": "الأماكن الشاغرة",
+      "updated": "آخر تحديث",
+      "kind": {
+        "garage": "موقف متعدد الطوابق",
+        "underground": "موقف تحت الأرض",
+        "lot": "موقف مكشوف"
+      },
+      "trend": {
+        "filling": "يمتلئ",
+        "emptying": "يفرغ",
+        "steady": "مستقر"
+      },
+      "status": {
+        "closed": "مغلق",
+        "fault": "لا يوجد عدّ حالي (عطل)"
+      }
     },
     "accident": {
       "severity": {

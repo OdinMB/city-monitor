@@ -27,6 +27,7 @@ export const berlin: WebCityConfig = {
     'political', 'districtMayors', 'stateByDistrict',
     'bathing', 'population', 'feuerwehr', 'airQualityStations', 'bikeSharing', 'trafficAccidents', 'telraamCounts', 'electricity',
     'evCharging', 'coolPlaces', 'drinkingFountains', 'publicToilets', 'soilMoisture', 'treeWatering',
+    'waterTemperature',
     'crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap', 'bundestagByDistrict', 'streetTrees',
   ],
 };
