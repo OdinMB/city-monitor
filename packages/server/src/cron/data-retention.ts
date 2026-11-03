@@ -92,6 +92,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'bnetza-charging',    retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'heat-relief',        retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'telraam-counts',     retentionMs: 7 * DAY_MS }, // twice daily, ~20 KB a row
+  { type: 'election-results', retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
   { type: 'abgwatch-bezirke',       retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-mayor',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-bundestag',     retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly

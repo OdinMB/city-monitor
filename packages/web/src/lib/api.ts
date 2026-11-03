@@ -34,6 +34,7 @@ export type {
   TrafficAccident, TrafficAccidentData, AccidentSeverity,
   TrafficCountMode, TrafficCountSite, TrafficCountData,
   EvChargingData, EvChargingStation, EvLivePoint, EvPlug, EvPointStatus,
+  ElectionResults, ElectionAreaResult, ElectionShare, ElectionFeatureProps, ElectionKind, ElectionAreaLevel,
 } from '@city-monitor/shared';
 export type { TelraamCountsData, TelraamSegmentCount, TelraamDayCounts } from '@city-monitor/shared';
 import type { TelraamCountsData } from '@city-monitor/shared';
@@ -50,6 +51,7 @@ import type {
   CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy,
   PoliticalDistrict, TransitAlert, AirQuality, BootstrapData,
   NewsSummaryData, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficAccidentData, TrafficCountData, ElectricityData, SoilMoistureData,
+  ElectionResults,
 } from '@city-monitor/shared';
 import type { EvChargingData } from '@city-monitor/shared';
 export type { HeatReliefData, HeatReliefPlace, HeatReliefKind, DwdHeatTrend } from '@city-monitor/shared';
@@ -89,6 +91,8 @@ export const api = {
   getEvCharging: (city: string) => fetchJson<ApiResponse<EvChargingData | null>>(`${API_BASE}/${city}/ev-charging`),
   getHeatRelief: (city: string) => fetchJson<ApiResponse<HeatReliefData | null>>(`${API_BASE}/${city}/heat-relief`),
   getTelraamCounts: (city: string) => fetchJson<ApiResponse<TelraamCountsData | null>>(`${API_BASE}/${city}/telraam-counts`),
+  getElectionResults: (city: string) => fetchJson<ApiResponse<ElectionResults | null>>(`${API_BASE}/${city}/election-results`),
+  getElectionGeojson: (city: string) => fetchJson<ApiResponse<GeoJSON.FeatureCollection | null>>(`${API_BASE}/${city}/election-results/geojson`),
   getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),

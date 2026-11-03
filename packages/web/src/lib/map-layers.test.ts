@@ -35,7 +35,7 @@ describe('cityLayers', () => {
     expect(all.noise).toEqual(['total', 'road', 'rail', 'air']);
     expect(all.noiseLive).toBe(true);
     expect(all.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty', 'rent']);
-    expect(all.political).toEqual(['bezirke', 'bundestag', 'landesparlament']);
+    expect(all.political).toEqual(['bezirke', 'bundestag', 'landesparlament', 'elections']);
   });
 
   it('leaves out what Hamburg has no source for', () => {
@@ -49,7 +49,7 @@ describe('cityLayers', () => {
     expect(hh.water).toEqual(['levels', 'bathing']);
     expect(hh.noise).toEqual(['road', 'rail', 'air']);
     expect(hh.noiseLive).toBe(false);
-    expect(hh.political).toEqual(['bundestag']);
+    expect(hh.political).toEqual(['bundestag', 'elections']);
   });
 
   it('leaves out the social-atlas indicators a city\'s source lacks', () => {
@@ -138,6 +138,13 @@ describe('cityLayers', () => {
   it('leaves out the Bundestag view where constituencies are not named after Bezirke', () => {
     expect(withFeatures('political', 'districtMayors', 'mayor', 'politicalMap').political).toEqual(['bezirke']);
     expect(withFeatures('political', 'politicalMap').layers.has('political')).toBe(false);
+  });
+
+  it('shows the election view wherever there are election results, which bring their own areas', () => {
+    expect(withFeatures('electionResults').political).toEqual(['elections']);
+    expect(withFeatures('electionResults').layers.has('political')).toBe(true);
+    expect(cityLayers(muenchen).political).toEqual(['elections']);
+    expect(cityLayers(koeln).political).not.toContain('elections');
   });
 
   it('shows no political layer without district outlines', () => {

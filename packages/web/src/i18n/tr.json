@@ -225,6 +225,22 @@
         "cmdScroll": "Haritayı yakınlaştırıp uzaklaştırmak için ⌘ + kaydırma kullanın"
       }
     },
+    "elections": {
+      "tab": "Seçim",
+      "title": "{{election}}, {{date}}",
+      "kind": {
+        "abgeordnetenhaus": "Eyalet meclisi seçimi (Abgeordnetenhaus)",
+        "buergerschaft": "Eyalet meclisi seçimi (Bürgerschaft)",
+        "stadtrat": "Belediye meclisi seçimi"
+      },
+      "vote": {
+        "abgeordnetenhaus": "ikinci oylar",
+        "buergerschaft": "parti listesi oyları",
+        "stadtrat": "tüm oyların payı"
+      },
+      "others": "Diğerleri",
+      "turnout": "Katılım"
+    },
     "political": {
       "empty": "Veri bulunamadı",
       "districts": "seçim bölgesi",
@@ -713,6 +729,12 @@
       "bike": "Bisikletli",
       "pedestrian": "Yayalı"
     },
+    "electionLegend": {
+      "strongest": "Bölge başına en güçlü parti",
+      "strongest_wahlkreis": "Seçim bölgesi başına en güçlü parti",
+      "strongest_stadtteil": "Semt başına en güçlü parti",
+      "strongest_stadtbezirk": "İlçe başına en güçlü parti"
+    },
     "accidentLegend": {
       "title": "{{year}} yılındaki yaralanmalı kazalar, en ağır sonuca göre",
       "year": "{{year}} yılındaki yaralanmalı kazalar",
@@ -755,7 +777,8 @@
       "bezirke": "Bezirke",
       "mayor": "Belediye",
       "bundestag": "Bundestag",
-      "landesparlament": "Eyalet Parlamentosu"
+      "landesparlament": "Eyalet Parlamentosu",
+      "elections": "Seçim sonuçları"
     }
   },
   "mapPopup": {

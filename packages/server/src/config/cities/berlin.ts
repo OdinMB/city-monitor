@@ -191,6 +191,15 @@ export const berlin: CityConfig = {
     trafficAccidents: { provider: 'unfallatlas', ags: '11000000' },
     // Berlin zählt Mobilität (CC BY 4.0): citizen Telraam sensors, ~100 Berlin segments counting each day
     telraamCounts: { provider: 'berlin-zaehlt', baseUrl: 'https://berlin-zaehlt.de/csv/', region: 'DE-BE' },
+    // Abgeordnetenhaus 2026, final result per Wahlbezirk (Amt für Statistik Berlin-Brandenburg,
+    // CC BY 3.0 DE), summed to the 78 Wahlkreise of the outlines (WFS wahlgebiete_agh2026, CC BY 3.0)
+    electionResults: {
+      provider: 'berlin-agh-xlsx',
+      url: 'https://www.wahlen-berlin.de/wahlen/BE2026/Afspraes/AGH/DL/DL_BE_AGHBVV2026.xlsx',
+      election: 'abgeordnetenhaus',
+      date: '2026-09-20',
+      outlines: 'berlin-agh2026-wahlkreise.geojson',
+    },
     appointments: {
       provider: 'service-berlin',
       // Ids are service.berlin.de/dienstleistung/{id}/: open that page to check

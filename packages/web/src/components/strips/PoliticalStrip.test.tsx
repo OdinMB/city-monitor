@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { WebCityConfig } from '@city-monitor/shared';
-import type { PoliticalDistrict } from '../../lib/api.js';
+import type { ElectionResults, PoliticalDistrict } from '../../lib/api.js';
 import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
 import { koeln } from '../../config/cities/koeln.js';
@@ -33,6 +33,31 @@ vi.mock('../../hooks/usePolitical.js', () => ({
   },
 }));
 
+const ELECTION: ElectionResults = {
+  election: 'abgeordnetenhaus',
+  date: '2026-09-20',
+  areaLevel: 'wahlkreis',
+  sourceUrl: 'https://example.org/results.xlsx',
+  total: {
+    id: 'total', name: 'Berlin', turnout: 74.2, otherPct: 4.9, leader: 'Die Linke', eligible: null, voters: null,
+    shares: [
+      { party: 'Die Linke', pct: 25.7 }, { party: 'CDU', pct: 18.8 }, { party: 'AfD', pct: 16.3 },
+      { party: 'Grüne', pct: 14.3 }, { party: 'SPD', pct: 12.1 }, { party: 'BSW', pct: 4.0 }, { party: 'FDP', pct: 3.9 },
+    ],
+  },
+  areas: [
+    { id: '0101', name: 'Mitte 1', turnout: 70, otherPct: 5, leader: 'Die Linke', shares: [] },
+    { id: '0102', name: 'Mitte 2', turnout: 71, otherPct: 5, leader: 'Die Linke', shares: [] },
+    { id: '0201', name: 'Friedrichshain-Kreuzberg 1', turnout: 72, otherPct: 5, leader: 'Grüne', shares: [] },
+  ],
+};
+
+vi.mock('../../hooks/useElectionResults.js', () => ({
+  useElectionResults: (_cityId: string, enabled: boolean) => ({
+    data: enabled ? { data: ELECTION, fetchedAt: null } : undefined, isLoading: false, isError: false, refetch: vi.fn(),
+  }),
+}));
+
 beforeEach(() => {
   state.city = berlin;
   state.levels = [];
@@ -44,16 +69,16 @@ describe('PoliticalStrip views per city', () => {
     await i18n.changeLanguage('en');
   });
 
-  it('gives Berlin its state members by Bezirk, its district mayors and the Bundestag', () => {
+  it('gives Berlin its state members by Bezirk, its district mayors, the Bundestag and the election', () => {
     render(<PoliticalStrip expanded={false} />);
-    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
     expect(state.levels.at(-1)).toBe('state-bezirke');
   });
 
-  it('gives Hamburg its state parliament by constituency and the Bundestag, with no district-mayor view', () => {
+  it('gives Hamburg its state parliament by constituency, the Bundestag and the election, with no district-mayor view', () => {
     state.city = hamburg;
     render(<PoliticalStrip expanded={false} />);
-    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
     expect(screen.queryByRole('tab', { name: i18n.t('sidebar.political.bezirke') })).toBeNull();
     expect(state.levels.at(-1)).toBe('state');
   });
@@ -74,11 +99,28 @@ describe('PoliticalStrip views per city', () => {
     expect(screen.queryByText(i18n.t('panel.political.representatives', { count: 1 }))).toBeNull();
   });
 
-  it('gives München its Landtag, its Oberbürgermeister and the Bundestag, with no district-mayor view', () => {
+  it('gives München its Landtag, its Oberbürgermeister, the Bundestag and the election, with no district-mayor view', () => {
     state.city = muenchen;
     render(<PoliticalStrip expanded={false} />);
-    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
     expect(screen.queryByRole('tab', { name: i18n.t('sidebar.political.bezirke') })).toBeNull();
+  });
+
+  it('shows the city-wide election result: five parties collapsed, every party and the strongest per area expanded', () => {
+    const { unmount } = render(<PoliticalStrip expanded={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('panel.elections.tab') }));
+    expect(screen.getByText('Die Linke')).toBeTruthy();
+    expect(screen.getByText('SPD')).toBeTruthy();
+    expect(screen.queryByText('BSW')).toBeNull();
+    expect(screen.getByText(i18n.t('panel.political.showMore', { count: 2 }))).toBeTruthy();
+    expect(screen.getByText('74.2 %')).toBeTruthy();
+    expect(screen.queryByText(i18n.t('sidebar.electionLegend.strongest', { context: 'wahlkreis' }))).toBeNull();
+    unmount();
+
+    render(<PoliticalStrip expanded />);
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('panel.elections.tab') }));
+    expect(screen.getByText('FDP')).toBeTruthy();
+    expect(screen.getByText(i18n.t('sidebar.electionLegend.strongest', { context: 'wahlkreis' }))).toBeTruthy();
   });
 
   it('calls Köln\'s and München\'s state parliament the Landtag in German', async () => {

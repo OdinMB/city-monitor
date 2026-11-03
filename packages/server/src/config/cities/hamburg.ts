@@ -149,6 +149,15 @@ export const hamburg: CityConfig = {
       sitesWfsUrl: 'https://geodienste.hamburg.de/HH_WFS_Verkehrszaehlstellen',
       modes: ['car', 'bike'],
     },
+    // Bürgerschaft 2025, final Landesliste shares per Stadtteil (Statistikamt Nord, BUE2025_e_06;
+    // "Verbreitung mit Quellenangabe"), on the Stadtteil outlines the population map uses
+    electionResults: {
+      provider: 'hamburg-stadtteile-xlsx',
+      url: 'https://www.statistik-nord.de/fileadmin/Dokumente/BUE2025_e_06.xlsx',
+      election: 'buergerschaft',
+      date: '2025-03-02',
+      outlines: 'hamburg-stadtteile.geojson',
+    },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

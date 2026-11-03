@@ -6,6 +6,7 @@ import {
   CitizenReportDataSchema, ConstructionSiteSchema, CouncilMeetingSchema, ElectricityDataSchema, EmergencyPharmacySchema, FeuerwehrSummarySchema, FloodStatusSchema,
   BikeSharingDataSchema, TrafficAccidentDataSchema, LaborMarketSummarySchema, LiftOutageDataSchema, AirQualityStationsSchema, NinaWarningSchema, NoiseSensorSchema, PoliticalDistrictSchema, PollenForecastSchema,
   PopulationSummarySchema, RespiratoryCasesSchema, SoilMoistureDataSchema, TrafficCountDataSchema, TrafficIncidentSchema, TransitAlertSchema, WastewaterSummarySchema,
+  ElectionResultsSchema,
   WaterLevelDataSchema, WeatherDataSchema,
 } from '@city-monitor/shared/schemas.js';
 import { EvChargingRegisterSchema } from '@city-monitor/shared/schemas.js';
@@ -65,6 +66,7 @@ function points(d: CitySyntheticData): Array<{ what: string; lat: number; lon: n
   d.telraamCounts?.segments.forEach((s) => add('telraam counts', s));
   d.waterTemperature?.stations.forEach((s) => add('water temperature', s));
   d.parking?.facilities.forEach((f) => add('parking', f));
+  d.electionResults?.geojson.features.forEach((f) => addCoords('election results', f.geometry.coordinates));
   d.nina?.forEach((w) => addCoords('nina', (w.area?.geometry as { coordinates?: unknown } | undefined)?.coordinates));
   return out;
 }
@@ -118,6 +120,7 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['telraam counts', TelraamCountsDataSchema, d.telraamCounts],
     ['water temperature', WaterTemperatureDataSchema, d.waterTemperature],
     ['parking', ParkingDataSchema, d.parking],
+    ['election results', ElectionResultsSchema, d.electionResults?.results],
     ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
       [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
   ];
@@ -205,7 +208,7 @@ describe('generateSyntheticData', () => {
 
   it('passes the Zod schemas the database reads validate with', () => {
     const checks = schemaChecks(data);
-    expect(checks).toHaveLength(29 + 4);
+    expect(checks).toHaveLength(30 + 4);
     for (const [name, schema, value] of checks) {
       expect(schema.safeParse(value).error, name).toBeUndefined();
     }
@@ -332,7 +335,7 @@ describe('generateSyntheticCityData', () => {
       // credentials), bathing water from its own WFS, social atlas from the
       // Sozialmonitoring.
       expect([...held].sort()).toEqual([
-        'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electricity', 'evCharging', 'heatRelief', 'laborMarket', 'news', 'nina',
+        'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electionResults', 'electricity', 'evCharging', 'heatRelief', 'laborMarket', 'news', 'nina',
         'parking', 'pharmacies', 'political', 'pollen', 'population', 'respiratoryCases', 'safety', 'socialAtlas', 'soilMoisture', 'summary', 'traffic', 'trafficAccidents', 'trafficCounts', 'transit',
         'wastewater', 'waterLevels', 'weather',
       ]);
@@ -363,7 +366,7 @@ describe('generateSyntheticCityData', () => {
     it('passes the Zod schemas the database reads validate with', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
-        'aeds', 'aq grid', 'aq stations', 'bathing', 'bike sharing', 'construction', 'council', 'electricity', 'ev charging', 'heat relief', 'labor market', 'nina', 'parking', 'pharmacies', 'political bundestag',
+        'aeds', 'aq grid', 'aq stations', 'bathing', 'bike sharing', 'construction', 'council', 'election results', 'electricity', 'ev charging', 'heat relief', 'labor market', 'nina', 'parking', 'pharmacies', 'political bundestag',
         'political state', 'pollen', 'population', 'respiratory cases', 'soil moisture', 'traffic', 'traffic accidents', 'traffic counts', 'transit', 'wastewater', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {

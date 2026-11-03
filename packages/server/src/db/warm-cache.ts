@@ -8,12 +8,14 @@ import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNews
 import { loadParking, loadWaterTemperature } from './reads.js';
 import { WATER_TEMPERATURE_TTL_SECONDS } from '../cron/ingest-water-temperature.js';
 import { PARKING_TTL_SECONDS } from '../cron/ingest-parking.js';
+import { loadElectionResults } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
 import { TRAFFIC_ACCIDENTS_TTL_SECONDS } from '../cron/ingest-traffic-accidents.js';
 import { loadTelraamCounts } from './reads.js';
 import { TELRAAM_COUNTS_TTL_SECONDS } from '../cron/ingest-telraam-counts.js';
+import { ELECTION_RESULTS_TTL_SECONDS } from '../cron/ingest-election-results.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
 import { loadHeatRelief } from './reads.js';
 import { HEAT_RELIEF_TTL_SECONDS } from '../cron/ingest-heat-relief.js';
@@ -227,6 +229,13 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadTelraamCounts(db, cityId);
       if (r) cache.set(CK.telraamCounts(cityId), r.data, TELRAAM_COUNTS_TTL_SECONDS, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} Telraam counts failed`, err)),
+
+    (async () => {
+      const r = await loadElectionResults(db, cityId);
+      if (!r) return;
+      cache.set(CK.electionResults(cityId), r.data.results, ELECTION_RESULTS_TTL_SECONDS, r.fetchedAt);
+      cache.set(CK.electionGeojson(cityId), r.data.geojson, ELECTION_RESULTS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} election results failed`, err)),
 
     (async () => {
       const r = await loadWastewater(db, cityId);

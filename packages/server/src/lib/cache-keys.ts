@@ -44,6 +44,10 @@ export const CK = {
   heatRelief: (cityId: string) => `${cityId}:heat-relief`,
   /** Not bootstrapped: ~100 Telraam segments (about 20 KB) for a sub-layer that is off by default. */
   telraamCounts: (cityId: string) => `${cityId}:telraam-counts`,
+  /** Not bootstrapped (~25 KB for Berlin's 78 Wahlkreise): the political tile's Election view and the map popup fetch it. */
+  electionResults: (cityId: string) => `${cityId}:election-results`,
+  /** Not bootstrapped: the election areas' polygons (Berlin ~110 KB), fetched when the map's Election view is on. */
+  electionGeojson: (cityId: string) => `${cityId}:election-results:geojson`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

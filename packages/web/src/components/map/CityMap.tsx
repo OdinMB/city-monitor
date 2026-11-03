@@ -24,6 +24,7 @@ import { useAeds } from '../../hooks/useAeds.js';
 import { useTrafficIncidents } from '../../hooks/useTraffic.js';
 import { useConstruction } from '../../hooks/useConstruction.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
+import { useElectionGeojson, useElectionResults } from '../../hooks/useElectionResults.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
 import { useAirQualityStations } from '../../hooks/useAirQualityStations.js';
 import { withoutRelayedStations } from '../../lib/aqi.js';
@@ -72,6 +73,7 @@ import { updateEvChargingMarkers } from './layers/ev-charging.js';
 import { useEvCharging } from '../../hooks/useEvCharging.js';
 import { updateHeatReliefMarkers } from './layers/heat-relief.js';
 import { updateTelraamMarkers } from './layers/telraam-counts.js';
+import { updateElectionLayer } from './layers/elections.js';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -201,9 +203,11 @@ export function CityMap() {
   const newsSubLayers = useMemo(() => effectiveSubLayers(selectedNews, available.news), [selectedNews, available]);
   const selectedEmergencies = useCommandCenter((s) => s.emergencySubLayers);
   const emergencySubLayers = useMemo(() => effectiveSubLayers(selectedEmergencies, available.emergencies), [selectedEmergencies, available]);
-  const politicalActive = activeLayers.has('political');
   // Falls back to 'bundestag' for a layer only political cities have; unused while the layer is off.
   const politicalLayer = effectiveChoice(useCommandCenter((s) => s.politicalLayer), available.political) ?? 'bundestag';
+  // The representatives' views colour the district outlines; the election view draws its own areas.
+  const electionsActive = activeLayers.has('political') && politicalLayer === 'elections';
+  const politicalActive = activeLayers.has('political') && !electionsActive;
   const selectedTraffic = useCommandCenter((s) => s.trafficSubLayers);
   const trafficSubLayers = useMemo(() => effectiveSubLayers(selectedTraffic, available.traffic), [selectedTraffic, available]);
   const trafficActive = activeLayers.has('traffic') && trafficSubLayers.has('incidents');
@@ -280,6 +284,11 @@ export function CityMap() {
   // Lazy: yesterday's Telraam counts, fetched only while their traffic sub-layer is on
   const telraamActive = activeLayers.has('traffic') && trafficSubLayers.has('telraam');
   const { data: telraamData } = useTelraamCounts(city.id, telraamActive);
+  // Lazy: the polygons (Berlin ~110 KB) and results only while the election view is on
+  const { data: electionGeoJsonResp } = useElectionGeojson(city.id, electionsActive);
+  const { data: electionResultsResp } = useElectionResults(city.id, electionsActive);
+  const electionGeoJson = electionsActive ? (electionGeoJsonResp?.data ?? null) : null;
+  const electionResults = electionResultsResp?.data ?? null;
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke', available.political.includes('bezirke'));
   const { data: bundestagData } = usePolitical(city.id, 'bundestag', available.political.includes('bundestag'));
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke', available.political.includes('landesparlament'));
@@ -434,6 +443,10 @@ export function CityMap() {
   socialAtlasRef.current = socialAtlas;
   const populationGeoJsonRef = useRef(populationGeoJson);
   populationGeoJsonRef.current = populationGeoJson;
+  const electionGeoJsonRef = useRef(electionGeoJson);
+  electionGeoJsonRef.current = electionGeoJson;
+  const electionResultsRef = useRef(electionResults);
+  electionResultsRef.current = electionResults;
   const populationMetricRef = useRef(populationMetric);
   populationMetricRef.current = populationMetric;
   const roadsActiveRef = useRef(roadsActive);
@@ -526,6 +539,7 @@ export function CityMap() {
         updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
         updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
+        updateElectionLayer(map, electionGeoJsonRef.current, electionResultsRef.current, isDarkRef.current);
         setWeatherOverlay(map, weatherActiveRef.current);
         setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
         setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
@@ -646,6 +660,7 @@ export function CityMap() {
       updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDark, cityIdRef.current);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
+      updateElectionLayer(map, electionGeoJsonRef.current, electionResultsRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
       setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
@@ -1008,6 +1023,16 @@ export function CityMap() {
 
   }, [populationGeoJson, populationMetric]);
 
+  // Update the election view's areas (lazy — polygons only while the view is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateElectionLayer(map, electionGeoJson, electionResults, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [electionGeoJson, electionResults]);
+
   // Political layer: swap GeoJSON source + apply/reset styling
   const politicalData = politicalLayer === 'bundestag'
     ? bundestagData
@@ -1085,7 +1110,7 @@ export function CityMap() {
   // Effect 2: apply party colors + markers when political data arrives/changes
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded() || !politicalActive || !politicalData) return;
+    if (!map || !map.isStyleLoaded() || !politicalActive || !politicalData || politicalLayer === 'elections') return;
     applyPoliticalStyling(map, politicalData, politicalGeoFeaturesRef.current, isDarkRef.current, activeNameFieldRef.current);
     if (politicalGeoFeaturesRef.current.length) {
       updatePoliticalMarkers(map, politicalData, politicalGeoFeaturesRef.current, politicalLayer, activeNameFieldRef.current, isDarkRef.current);

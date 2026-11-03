@@ -13,7 +13,7 @@ import type { Db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import {
   saveAeds, saveAirQualityGrid, saveAirQualityStations, saveAppointments, saveBathingSpots, saveBudget, saveCitizenReports, saveConstructionSites,
-  saveBikeSharing, saveTrafficAccidents, saveTelraamCounts,saveCouncilMeetings, saveElectricity, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
+  saveBikeSharing, saveTrafficAccidents, saveTelraamCounts, saveElectionResults, saveCouncilMeetings, saveElectricity, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
   saveNoiseSensors, savePharmacies, savePoliticalDistricts, savePollen, savePopulation, saveSafetyReports,
   saveSocialAtlas, saveSoilMoisture, saveSummary, saveTrafficCounts, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
   saveWeather, saveRespiratoryCases,
@@ -132,6 +132,7 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.telraamCounts) await saveTelraamCounts(db, cityId, data.telraamCounts);
   if (data.waterTemperature) await saveWaterTemperature(db, cityId, data.waterTemperature);
   if (data.parking) await saveParking(db, cityId, data.parking);
+  if (data.electionResults) await saveElectionResults(db, cityId, data.electionResults);
   for (const [level, districts] of Object.entries(data.political ?? {})) {
     await savePoliticalDistricts(db, cityId, level, districts);
   }

@@ -3,7 +3,8 @@ import { create } from 'zustand';
 export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'parking' | 'ev-charging' | 'heat-relief' | 'accidents' | 'water' | 'social' | 'population' | 'political' | 'reports' | 'trees';
 /** Which accidents the accident layer shows: all, or those with a bicycle or a pedestrian involved. */
 export type AccidentFilter = 'all' | 'bike' | 'pedestrian';
-export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
+/** The political map's views: who represents each area, or how it voted in the latest election (`elections`). */
+export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament' | 'elections';
 export type SocialLayer = 'unemployment' | 'single-parent' | 'welfare' | 'child-poverty' | 'rent';
 export type PopulationLayer = 'pop-density' | 'pop-elderly' | 'pop-foreign';
 export type NoiseLayer = 'total' | 'road' | 'rail' | 'air';

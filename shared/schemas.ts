@@ -590,6 +590,26 @@ export const TelraamCountsDataSchema = z.object({
   })),
 });
 
+// --- Election results ---
+
+const ElectionAreaResultSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  turnout: z.number().nullable(),
+  shares: z.array(z.object({ party: z.string(), pct: z.number() })),
+  otherPct: z.number(),
+  leader: z.string().nullable(),
+});
+
+export const ElectionResultsSchema = z.object({
+  election: z.enum(['abgeordnetenhaus', 'buergerschaft', 'stadtrat']),
+  date: z.string(),
+  areaLevel: z.enum(['wahlkreis', 'stadtteil', 'stadtbezirk']),
+  total: ElectionAreaResultSchema.extend({ eligible: z.number().nullable(), voters: z.number().nullable() }),
+  areas: z.array(ElectionAreaResultSchema),
+  sourceUrl: z.string(),
+});
+
 // --- Flood Status (LHP) ---
 
 export const FloodStatusSchema = z.object({

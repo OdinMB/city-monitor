@@ -86,6 +86,7 @@ export type CityFeature =
   | 'telraamCounts'   // dataSources.telraamCounts: yesterday's street counts of citizen Telraam sensors (Berlin zählt Mobilität)
   | 'waterTemperature' // dataSources.waterTemperature: the water layer's temperature sub-layer (Wasserportal Berlin)
   | 'parking'         // dataSources.parking: car parks with live free spaces, the parking map layer (Hamburg)
+  | 'electionResults' // dataSources.electionResults: the latest election per area, the political map's Election view
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -380,6 +381,33 @@ export type TelraamCountsSource = {
   region: string;
 };
 
+/** The elections the political map can show the result of, by the body elected. */
+export type ElectionKind = 'abgeordnetenhaus' | 'buergerschaft' | 'stadtrat';
+
+/** The areas an election's result is mapped by. */
+export type ElectionAreaLevel = 'wahlkreis' | 'stadtteil' | 'stadtbezirk';
+
+/**
+ * A city's latest election result per area, by the provider whose file it is
+ * (parsers in packages/server/src/lib/election-parsers.ts,
+ * .context/election-results.md). `outlines` names the area polygons in
+ * packages/server/data/; `date` is election day (YYYY-MM-DD).
+ */
+export type ElectionResultSource = {
+  /**
+   * `berlin-agh-xlsx`: the Landeswahlleiterin's XLSX of the Abgeordnetenhaus
+   * election per Wahlbezirk (second votes, summed per Wahlkreis);
+   * `hamburg-stadtteile-xlsx`: Statistikamt Nord's Bürgerschaft result per
+   * Stadtteil (Landesliste shares); `muenchen-stadtrat-zip`: the Wahlamt's
+   * Stadtrat result per Stadtbezirk (CSV in a ZIP).
+   */
+  provider: 'berlin-agh-xlsx' | 'hamburg-stadtteile-xlsx' | 'muenchen-stadtrat-zip';
+  url: string;
+  election: ElectionKind;
+  date: string;
+  outlines: string;
+};
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -441,6 +469,8 @@ export interface CityDataSources {
   heatRelief?: HeatReliefSource[];
   soilMoisture?: SoilMoistureSource;
   telraamCounts?: TelraamCountsSource;
+  /** The latest election's result per area, the political map's Election view. */
+  electionResults?: ElectionResultSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -652,6 +682,50 @@ export interface PoliticalDistrict {
   name: string;
   level: 'stadt' | 'bezirk' | 'bundestag' | 'landesparlament';
   representatives: Representative[];
+}
+
+// Election results (dataSources.electionResults)
+
+/** A party's share of the valid votes, in percent. */
+export interface ElectionShare {
+  party: string;
+  pct: number;
+}
+
+/** One area's result, or the city's (`ElectionResults.total`). */
+export interface ElectionAreaResult {
+  /** The outline's ID ("0101", "05"; a Hamburg Stadtteil group by its outlines' IDs joined with "+"). */
+  id: string;
+  /** As the source names it ("Mitte 1", "Billbrook/Rothenburgsort", "Altstadt-Lehel"). */
+  name: string;
+  /** Voters per 100 eligible; null where the source gives none. */
+  turnout: number | null;
+  /** The parties with at least 1 % city-wide, in the city's order (strongest first), each with its share here. */
+  shares: ElectionShare[];
+  /** Every other party's share together. */
+  otherPct: number;
+  /** The strongest party here (the shares' maximum), null if none has votes. */
+  leader: string | null;
+}
+
+export interface ElectionResults {
+  election: ElectionKind;
+  /** Election day, YYYY-MM-DD. */
+  date: string;
+  areaLevel: ElectionAreaLevel;
+  /** The city-wide result (`id` "total"), with the eligible and voters counts where the source has them. */
+  total: ElectionAreaResult & { eligible: number | null; voters: number | null };
+  areas: ElectionAreaResult[];
+  /** The official file the result was read from. */
+  sourceUrl: string;
+}
+
+/** The properties of an election map area: the result is looked up by `id` in `ElectionResults.areas`. */
+export interface ElectionFeatureProps {
+  id: string;
+  name: string;
+  leader: string | null;
+  leaderPct: number | null;
 }
 
 // Traffic incidents

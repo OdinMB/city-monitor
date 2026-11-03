@@ -10,6 +10,7 @@ import {
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
 import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, RespiratoryCases, SoilMoistureData } from '@city-monitor/shared';
+import type { ElectionResults } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
@@ -17,6 +18,7 @@ import {
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
   TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema, RespiratoryCasesSchema, SoilMoistureDataSchema,
+  ElectionResultsSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { HeatReliefData } from '@city-monitor/shared';
 import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
@@ -265,6 +267,17 @@ export async function loadHeatRelief(db: Db, cityId: string): Promise<DbResult<H
 /** At most 3 days old: the counts describe one day, and the job runs twice a day. */
 export async function loadTelraamCounts(db: Db, cityId: string): Promise<DbResult<TelraamCountsData>> {
   return loadSnapshot(db, cityId, 'telraam-counts', { schema: TelraamCountsDataSchema, maxAgeMs: 3 * 86400_000 });
+}
+
+/**
+ * No age limit: a final result stands until the next election. The results are
+ * validated; the polygons are passed on as stored, as the population ones are.
+ */
+export async function loadElectionResults(db: Db, cityId: string): Promise<DbResult<{ results: ElectionResults; geojson: unknown }>> {
+  const result = await loadSnapshot<{ results: unknown; geojson: unknown }>(db, cityId, 'election-results');
+  if (!result) return null;
+  const results = validateJsonb(ElectionResultsSchema, result.data.results, 'election-results');
+  return results ? { data: { results, geojson: result.data.geojson }, fetchedAt: result.fetchedAt } : null;
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {

@@ -17,6 +17,7 @@ import type {
   AedLocation, AirQuality, AirQualityGridPoint, AirQualityStation, BathingSpot, BikeSharingData, BikeStation, BudgetSummary, BuergeramtData,
   CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, ElectricityData, EmergencyPharmacy,
   CitizenReport, CitizenReportData, GridPoint, GridSignal, SoilMoistureData,
+  ElectionAreaResult, ElectionFeatureProps, ElectionResults, ElectionShare,
   FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
@@ -110,6 +111,7 @@ export interface SyntheticData {
   waterTemperature: WaterTemperatureData;
   /** Not in Berlin's data set: Berlin has no Parkleitsystem with open data (NOT_IN_BERLIN). */
   parking?: ParkingData;
+  electionResults: { results: ElectionResults; geojson: PolygonFeatureCollection<ElectionFeatureProps> };
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -178,6 +180,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   respiratoryCases: (c) => c.dataSources.respiratoryCases !== undefined,
   waterTemperature: (c) => (c.dataSources.waterTemperature?.stations.length ?? 0) > 0,
   parking: (c) => c.dataSources.parking !== undefined,
+  electionResults: (c) => c.dataSources.electionResults !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -302,6 +305,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('respiratoryCases')) sets.respiratoryCases = generateRespiratoryCases(rng, now);
   if (has.has('waterTemperature')) sets.waterTemperature = generateWaterTemperature(rng, now, city);
   if (has.has('parking')) sets.parking = generateParking(rng, now, place);
+  if (has.has('electionResults')) sets.electionResults = generateElectionResults(rng, city, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1918,6 +1922,57 @@ function generateTelraamCounts(rng: Rng, now: Date, place: Place): TelraamCounts
     }
   });
   return { date, segments };
+}
+
+/** The parties each kind of election is drawn with, strongest first by weight. */
+const ELECTION_PARTIES: Record<ElectionResults['election'], Array<[string, number]>> = {
+  abgeordnetenhaus: [['CDU', 22], ['Die Linke', 20], ['Grüne', 16], ['AfD', 15], ['SPD', 14], ['BSW', 5], ['FDP', 3]],
+  buergerschaft: [['SPD', 33], ['CDU', 20], ['Grüne', 18], ['Die Linke', 11], ['AfD', 8], ['Volt', 3], ['FDP', 2]],
+  stadtrat: [['Grüne', 26], ['CSU', 25], ['SPD', 19], ['Die Linke', 7], ['AfD', 6], ['Volt', 5], ['FDP', 3]],
+};
+
+/**
+ * One made-up area per anchor, a small square around it ("Synthetisches
+ * Wahlgebiet n"), with shares scattered around the election's weights; the city
+ * total is their mean. Clearly fake: no real area's outline or result.
+ */
+function generateElectionResults(rng: Rng, city: CityConfig, place: Place): SyntheticData['electionResults'] {
+  const source = city.dataSources.electionResults!;
+  const parties = ELECTION_PARTIES[source.election];
+  const areaOf = (id: string, name: string): ElectionAreaResult => {
+    const raw = parties.map(([party, w]) => [party, Math.max(0.5, w * rng.float(0.6, 1.4))] as const);
+    const sum = raw.reduce((s, [, v]) => s + v, 0) / 96;
+    const shares: ElectionShare[] = raw.map(([party, v]) => ({ party, pct: round(v / sum, 2) }));
+    const leader = shares.reduce((a, b) => (b.pct > a.pct ? b : a)).party;
+    return { id, name, turnout: round(rng.float(55, 82), 2), shares, otherPct: round(100 - shares.reduce((s, x) => s + x.pct, 0), 2), leader };
+  };
+  const areas = place.anchors.map((_, i) => areaOf(pad(i + 1, 4), `Synthetisches Wahlgebiet ${i + 1}`));
+  const shares = parties.map(([party], k) => ({ party, pct: round(areas.reduce((s, a) => s + a.shares[k]!.pct, 0) / areas.length, 2) }));
+  shares.sort((a, b) => b.pct - a.pct);
+  const total = {
+    id: 'total', name: 'total', turnout: round(areas.reduce((s, a) => s + a.turnout!, 0) / areas.length, 2),
+    shares, otherPct: round(100 - shares.reduce((s, x) => s + x.pct, 0), 2), leader: shares[0]!.party, eligible: null, voters: null,
+  };
+  const d = 0.008;
+  const features = place.anchors.map((a, i) => {
+    const area = areas[i]!;
+    return {
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [[[a.lon - d, a.lat - d], [a.lon + d, a.lat - d], [a.lon + d, a.lat + d], [a.lon - d, a.lat + d], [a.lon - d, a.lat - d]]
+          .map(([lon, lat]) => [round(lon!, 5), round(lat!, 5)])],
+      },
+      properties: { id: area.id, name: area.name, leader: area.leader, leaderPct: area.shares.find((s) => s.party === area.leader)!.pct },
+    };
+  });
+  return {
+    results: {
+      election: source.election, date: source.date, areaLevel: 'wahlkreis', total, areas,
+      sourceUrl: 'https://example.com/synthetic/election-results.xlsx',
+    },
+    geojson: { type: 'FeatureCollection', features },
+  };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

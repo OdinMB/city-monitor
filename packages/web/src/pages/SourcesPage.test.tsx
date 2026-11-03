@@ -142,6 +142,10 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Amt für Statistik Berlin-Brandenburg', (c) => c.dataSources.population?.provider === 'afstat-ewr-xlsx'],
   ['Indikatorenatlas München', (c) => c.dataSources.socialAtlas?.provider === 'muenchen-indikatorenatlas' || c.dataSources.population?.provider === 'muenchen-indikatorenatlas'],
   ['Berliner Feuerwehr Open Data', berlinOnly],
+  // ingest-election-results: one provider per city's results file
+  ['Wahlen Berlin (Abgeordnetenhauswahl 2026)', (c) => c.dataSources.electionResults?.provider === 'berlin-agh-xlsx'],
+  ['Statistikamt Nord (Bürgerschaftswahl 2025)', (c) => c.dataSources.electionResults?.provider === 'hamburg-stadtteile-xlsx'],
+  ['Wahlamt München (Stadtratswahl 2026)', (c) => c.dataSources.electionResults?.provider === 'muenchen-stadtrat-zip'],
   // ingest-feeds classifies news items and ingest-safety places police reports with the LLM
   ['OpenAI', (c) => c.feeds.length > 0 || c.dataSources.police !== undefined],
 ];
@@ -291,6 +295,11 @@ describe('SourcesPage licence credits', () => {
     'Öffentliche Toiletten Köln (AWB)': 'Source: Abfallwirtschaftsbetriebe Köln, dl-de/zero-2-0.',
     'Indikatorenatlas München': 'Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0.',
     'Stadtbezirke München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
+    // The XLSX's Impressum sheet and the WFS's Quellenvermerk, both CC BY 3.0 DE
+    'Wahlen Berlin (Abgeordnetenhauswahl 2026)': 'Source: Amt für Statistik Berlin-Brandenburg, CC BY 3.0 DE.',
+    // Uncatalogued file; Statistikamt Nord's imprint allows passing it on with the source named
+    'Statistikamt Nord (Bürgerschaftswahl 2025)': 'Source: Statistisches Amt für Hamburg und Schleswig-Holstein',
+    'Wahlamt München (Stadtratswahl 2026)': 'Source: Landeshauptstadt München – Kreisverwaltungsreferat, Wahlamt, dl-de/by-2-0.',
   };
 
   it('finds every listed source on some city page', () => {

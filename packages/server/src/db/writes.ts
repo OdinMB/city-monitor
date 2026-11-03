@@ -20,6 +20,7 @@ import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, Bu
 import type { HeatReliefData } from '@city-monitor/shared';
 import type { TelraamCountsData } from '@city-monitor/shared';
 import type { ParkingData, WaterTemperatureData } from '@city-monitor/shared';
+import type { ElectionResults } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { EvChargingRegister } from '../lib/ev-charging.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -169,6 +170,10 @@ export async function saveHeatRelief(db: Db, cityId: string, data: HeatReliefDat
 
 export async function saveTelraamCounts(db: Db, cityId: string, data: TelraamCountsData): Promise<void> {
   await saveSnapshot(db, cityId, 'telraam-counts', data);
+}
+
+export async function saveElectionResults(db: Db, cityId: string, data: { results: ElectionResults; geojson: unknown }): Promise<void> {
+  await saveSnapshot(db, cityId, 'election-results', data);
 }
 
 export async function saveFloodStatus(db: Db, cityId: string, data: FloodStatus): Promise<void> {
