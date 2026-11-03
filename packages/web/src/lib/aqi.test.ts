@@ -6,7 +6,7 @@ import tr from '../i18n/tr.json';
 import ar from '../i18n/ar.json';
 import {
   getAqiLevel, getUsAqiLevel, getAqiLevelOnScale, gridPointScale, isWaqiStation, waqiAgencies,
-  getUbaLevel, measuredSummary, shortStationName, withoutRelayedStations,
+  getUbaLevel, measuredSummary, shortStationName,
 } from './aqi.js';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
@@ -136,22 +136,6 @@ describe('shortStationName', () => {
     ['Barsbüttel', 'Hamburg', 'Barsbüttel'],
   ])('%s in %s → %s', (name, city, short) => {
     expect(shortStationName(name, city)).toBe(short);
-  });
-});
-
-describe('withoutRelayedStations', () => {
-  const waqi = { lat: 52.5136, lon: 13.4190, url: 'https://aqicn.org/station/@6132/' };
-  const farWaqi = { lat: 52.45, lon: 13.3, url: 'https://aqicn.org/station/@1/' };
-  const sensor = { lat: 52.5136, lon: 13.4188, url: 'https://maps.sensor.community/#17/52.5/13.4' };
-
-  it('drops a WAQI point at an official station and keeps the rest', () => {
-    const official = [{ lat: 52.5136, lon: 13.4188 }];
-    expect(withoutRelayedStations([waqi, farWaqi, sensor], official)).toEqual([farWaqi, sensor]);
-  });
-
-  it('keeps the grid as it is without official stations', () => {
-    const grid = [waqi];
-    expect(withoutRelayedStations(grid, [])).toBe(grid);
   });
 });
 

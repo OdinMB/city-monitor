@@ -170,7 +170,8 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
   // Must be above early returns to satisfy Rules of Hooks
   const official = useMemo(() => [...(ubaData ?? [])].sort(byIndexThenName), [ubaData]);
   const measured = useMemo(() => measuredSummary(ubaData ?? []), [ubaData]);
-  // WAQI stations, only for a city without official ones: sorted by name for stable order, take 8
+  // WAQI stations, the fallback while the city has no fresh official readings (the server
+  // then sends no UBA stations and the grid's WAQI points): sorted by name, take 8
   const stations = useMemo(
     () => official.length > 0 ? [] : (gridData ?? [])
       .filter((s) => isWaqiStation(s))

@@ -28,7 +28,6 @@ import { usePolitical } from '../../hooks/usePolitical.js';
 import { useElectionGeojson, useElectionResults } from '../../hooks/useElectionResults.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
 import { useAirQualityStations } from '../../hooks/useAirQualityStations.js';
-import { withoutRelayedStations } from '../../lib/aqi.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useBathing } from '../../hooks/useBathing.js';
 import { useWaterTemperature } from '../../hooks/useWaterTemperature.js';
@@ -348,11 +347,8 @@ export function CityMap() {
   );
   const aqActive = activeLayers.has('air-quality');
   const ubaItems = aqActive ? (ubaStations ?? EMPTY_UBA) : EMPTY_UBA;
-  // An official station shown from UBA is not drawn a second time from WAQI
-  const aqGridItems = useMemo(
-    () => aqActive ? withoutRelayedStations(aqGrid ?? EMPTY_AQ, ubaItems) : EMPTY_AQ,
-    [aqActive, aqGrid, ubaItems],
-  );
+  // The server sends WAQI points only while the city has no fresh UBA readings, so the two never overlap
+  const aqGridItems = aqActive ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
   const lang = i18n.language;
   const noiseSensorItems = useMemo(
     () => (noiseActive && noiseLiveData) ? (noiseSensorData?.data ?? []) : [],

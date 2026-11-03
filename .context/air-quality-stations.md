@@ -1,6 +1,6 @@
 # Official Air Quality Stations (UBA Air Data API)
 
-Hourly readings of the state networks' official measuring stations, for all four cities, from the Umweltbundesamt's Air Data API v4. They sit in the existing air-quality map layer and tile; Open-Meteo (CAMS model), WAQI and Sensor.Community stay as they are ([weather.md](weather.md)).
+Hourly readings of the state networks' official measuring stations, for all four cities, from the Umweltbundesamt's Air Data API v4. They sit in the existing air-quality map layer and tile; Open-Meteo (CAMS model) and Sensor.Community stay as they are ([weather.md](weather.md)), and WAQI is only the fallback for them ([below](#waqi-as-fallback)).
 
 ## Source
 
@@ -36,19 +36,27 @@ Shape (`AirQualityStation` in `shared/types.ts`): `code`, `name`, `lat`, `lon`, 
 
 ## Endpoint
 
-`GET /api/:city/air-quality/stations` → `{ data: AirQualityStation[] | null, fetchedAt }` (cache → Postgres → null), `Cache-Control: max-age=600`.
+`GET /api/:city/air-quality/stations` → `{ data: AirQualityStation[] | null, fetchedAt }` (cache → Postgres → null), `Cache-Control: max-age=600`. Stale readings (see below) are served as `{ data: null, fetchedAt: null }`, and bootstrap's `airQualityStations` is then `null`.
+
+## WAQI as fallback
+
+One rule, decided on the server (`lib/air-quality-sources.ts`) so the browser receives one station set:
+
+- **UBA fresh** (`ubaIsFresh`: the newest `measuredAt` of the city's cached stations ended under `UBA_FRESH_MAX_AGE_MS`, 4 h ago; UBA's hours normally end 1–2 h back, so this allows about two missed hours): the stations route and bootstrap serve the UBA stations, and `GET /api/:city/air-quality/grid` drops every WAQI point (`servedGrid`; Sensor.Community points stay). The grid job does not call WAQI for that city at all (`ingest-air-quality-grid.ts`), which saves one call per city every 30 minutes.
+- **UBA stale or missing**: stations are served as null, and the grid carries the whole WAQI set, as before UBA existed; no proximity filter is needed since the two never reach the browser together.
+- **Switch-over:** when UBA goes stale between two grid runs, the cached grid has no WAQI points until the next run (at most 30 minutes); the map shows only Sensor.Community points and the tile the model values meanwhile. When UBA comes back, the route drops WAQI at once.
 
 ## Web
 
 - **Feature** `airQualityStations` (server: `ubaStations` non-empty), in all four web configs. Not a picker topic: air quality is every city's topic already.
 - **Hook** `useAirQualityStations(cityId, enabled)`, polls every 15 min, seeded from bootstrap.
-- **Map** (`components/map/layers/air-quality.ts`, `updateUbaStationLayer`): on the air-quality layer, a landmark badge per station in the UBA class colour with the class name in the UI language (badge ids carry the language, so a language change redraws them). Popup (`ubaPopupHtml`): name, "Official measuring station · <type>", UBA index class, the measured components in µg/m³, the end of the hour on the city's clock and the UBA source line. While UBA stations are drawn, `withoutRelayedStations` hides WAQI points within 300 m of one, since WAQI relays the same stations; Sensor.Community points stay.
-- **Tile** (`AirQualityStrip`): the headline AQI and scale bar stay the Open-Meteo/CAMS European AQI (the model's forecast). The four pollutant cards show, per pollutant, the mean of the newest hour over the official **urban background** stations (`measuredSummary`; all stations when a city had no background station), since traffic stations describe one street and not the city, with a caption naming the hour; a pollutant no station measured shows the model's value tagged "(model)". Without UBA data the caption says "Model forecast (CAMS)". The expanded tile lists every official station, worst class first, with the class name, a "Traffic" tag for traffic stations, and the source line; the WAQI station list shows only for a city without official stations.
+- **Map** (`components/map/layers/air-quality.ts`, `updateUbaStationLayer`): on the air-quality layer, a landmark badge per station in the UBA class colour with the class name in the UI language (badge ids carry the language, so a language change redraws them). Popup (`ubaPopupHtml`): name, "Official measuring station · <type>", UBA index class, the measured components in µg/m³, the end of the hour on the city's clock and the UBA source line. The map draws whatever the server sends: UBA badges while fresh, WAQI points otherwise, Sensor.Community always ([WAQI as fallback](#waqi-as-fallback)).
+- **Tile** (`AirQualityStrip`): the headline AQI and scale bar stay the Open-Meteo/CAMS European AQI (the model's forecast). The four pollutant cards show, per pollutant, the mean of the newest hour over the official **urban background** stations (`measuredSummary`; all stations when a city had no background station), since traffic stations describe one street and not the city, with a caption naming the hour; a pollutant no station measured shows the model's value tagged "(model)". Without UBA data the caption says "Model forecast (CAMS)". The expanded tile lists every official station, worst class first, with the class name, a "Traffic" tag for traffic stations, and the source line; the WAQI station list shows only when the server sends no official stations (none configured, or stale).
 - **Index colours** (`getUbaLevel` in `lib/aqi.ts`): very good `#50F0E6`, good `#50CCAA`, moderate `#F0E641`, poor `#FF5050`, very poor `#960032`, no index grey; dark text on all but very poor. A third scale: never colour a European or US AQI value with these, or the reverse.
 
 ## What became redundant
 
-WAQI's stations in these four cities are the same state-network stations (WAQI relays them via the EEA and the networks; [weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)), so for them WAQI adds nothing UBA lacks, and its terms forbid archiving. It still runs: it is the station source for a future city without a UBA config, and it was left in place on purpose. Removing it, or dropping `WAQI_API_TOKEN`, is the owner's call.
+WAQI's stations in these four cities are the same state-network stations (WAQI relays them via the EEA and the networks; [weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)), so for them WAQI adds nothing UBA lacks, and its terms forbid archiving. Since 2026-11-03 it is a pure fallback: asked and shown only while a city's UBA readings are stale or missing, and the station source for a future city without a UBA config. Removing it, or dropping `WAQI_API_TOKEN`, is the owner's call.
 
 ## Not built (yet)
 

@@ -165,27 +165,6 @@ export function measuredSummary(stations: readonly Pick<AirQualityStation, Pollu
   return { values: { no2: mean('no2'), pm10: mean('pm10'), pm25: mean('pm25'), o3: mean('o3') }, basis, measuredAt };
 }
 
-/** Distance in metres between two points (equirectangular, fine at city scale). */
-function metresBetween(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
-  const k = Math.PI / 180;
-  const x = (b.lon - a.lon) * k * Math.cos(((a.lat + b.lat) / 2) * k);
-  const y = (b.lat - a.lat) * k;
-  return Math.sqrt(x * x + y * y) * 6_371_000;
-}
-
-/**
- * The grid without the WAQI points that relay an official station the map
- * already shows from UBA (a WAQI point within `radius` metres of one), so a
- * station is not drawn twice. Sensor.Community points stay.
- */
-export function withoutRelayedStations<T extends { lat: number; lon: number; url?: string }>(
-  grid: readonly T[],
-  stations: readonly { lat: number; lon: number }[],
-  radius = 300,
-): T[] {
-  if (stations.length === 0) return grid as T[];
-  return grid.filter((p) => !isWaqiStation(p) || !stations.some((s) => metresBetween(p, s) <= radius));
-}
 
 /** Agencies that run the official stations WAQI relays for a city. */
 export interface WaqiAgencies {

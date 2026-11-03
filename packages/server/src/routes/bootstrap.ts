@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import type { NinaWarning } from '@city-monitor/shared';
+import type { AirQualityStation, NinaWarning } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
+import { servedUbaStations } from '../lib/air-quality-sources.js';
 import { getCityConfig } from '../config/index.js';
 import { CK } from '../lib/cache-keys.js';
 import { currentWarnings } from '../cron/ingest-nina.js';
@@ -21,6 +22,9 @@ export function createBootstrapRouter(cache: Cache) {
     const data = cache.getBatchWithMeta(CK.bootstrapKeys(city.id));
     // As in the NINA route: leave out the warnings that have ended since the list was cached
     const nina = data[CK.ninaWarnings(city.id)] as { data: NinaWarning[]; fetchedAt: string } | undefined;
+    // Stale UBA readings are left out, as in the stations route: WAQI then takes their place
+    const uba = data[CK.airQualityStations(city.id)] as { data: AirQualityStation[]; fetchedAt: string } | undefined;
+    const ubaStations = servedUbaStations(uba?.data);
 
     res.json({
       news: data[CK.newsDigest(city.id)] ?? null,
@@ -30,7 +34,7 @@ export function createBootstrapRouter(cache: Cache) {
       safety: data[CK.safetyRecent(city.id)] ?? null,
       nina: nina ? { data: currentWarnings(nina.data), fetchedAt: nina.fetchedAt } : null,
       airQuality: data[CK.airQuality(city.id)] ?? null,
-      airQualityStations: data[CK.airQualityStations(city.id)] ?? null,
+      airQualityStations: uba && ubaStations ? { data: ubaStations, fetchedAt: uba.fetchedAt } : null,
       pharmacies: data[CK.pharmacies(city.id)] ?? null,
       aeds: data[CK.aedLocations(city.id)] ?? null,
       traffic: data[CK.trafficIncidents(city.id)] ?? null,

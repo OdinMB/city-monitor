@@ -6,11 +6,16 @@ import { loadAirQualityStations } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { servedUbaStations } from '../lib/air-quality-sources.js';
 import { AIR_QUALITY_STATIONS_TTL_SECONDS } from '../cron/ingest-uba-air-quality.js';
 
 const log = createLogger('route:air-quality-stations');
 
-/** Official state-network stations (UBA) of a city: cache, then Postgres, then null. */
+/**
+ * Official state-network stations (UBA) of a city: cache, then Postgres, then
+ * null. Readings that are no longer fresh are served as null, so the map and
+ * tile fall back to WAQI (lib/air-quality-sources.ts).
+ */
 export function createAirQualityStationsRouter(cache: Cache, db: Db | null = null) {
   const router = Router();
 
@@ -24,7 +29,8 @@ export function createAirQualityStationsRouter(cache: Cache, db: Db | null = nul
     const key = CK.airQualityStations(city.id);
     const cached = cache.getWithMeta<AirQualityStation[]>(key);
     if (cached) {
-      res.json(cached);
+      const data = servedUbaStations(cached.data);
+      res.json(data ? cached : { data: null, fetchedAt: null });
       return;
     }
 
@@ -33,7 +39,8 @@ export function createAirQualityStationsRouter(cache: Cache, db: Db | null = nul
         const result = await loadAirQualityStations(db, city.id);
         if (result) {
           cache.set(key, result.data, AIR_QUALITY_STATIONS_TTL_SECONDS, result.fetchedAt);
-          res.json({ data: result.data, fetchedAt: result.fetchedAt.toISOString() });
+          const data = servedUbaStations(result.data);
+          res.json(data ? { data, fetchedAt: result.fetchedAt.toISOString() } : { data: null, fetchedAt: null });
           return;
         }
       } catch (err) {

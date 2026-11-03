@@ -67,7 +67,7 @@
 
 ### Official stations (UBA)
 
-Every city also has its state network's official stations from the Umweltbundesamt's Air Data API (dl-de/by-2-0), stored and archivable unlike WAQI. They are badges on the same air-quality map layer, feed the tile's pollutant values and replace its WAQI station list; on the map a WAQI point within 300 m of a UBA station is hidden as a duplicate. See [air-quality-stations.md](air-quality-stations.md).
+Every city also has its state network's official stations from the Umweltbundesamt's Air Data API (dl-de/by-2-0), stored and archivable unlike WAQI. They are badges on the same air-quality map layer and feed the tile's pollutant values. WAQI is their fallback: while a city's UBA readings are fresh (newest under 4 h old) the server sends no WAQI points and the grid job does not ask WAQI; only when they are stale or missing do the WAQI points and the tile's WAQI list appear, and the UBA stations are then not served. See [air-quality-stations.md](air-quality-stations.md).
 
 ### AQI scales on screen
 
