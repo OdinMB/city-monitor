@@ -36,6 +36,7 @@ export function useBootstrap(cityId: string) {
     if (data.appointments) queryClient.setQueryData(['appointments', cityId], data.appointments);
     if (data.laborMarket) queryClient.setQueryData(['labor-market', cityId], data.laborMarket);
     if (data.wastewater) queryClient.setQueryData(['wastewater', cityId], data.wastewater);
+    if (data.respiratoryCases) queryClient.setQueryData(['respiratory-cases', cityId], data.respiratoryCases);
     if (data.populationSummary) queryClient.setQueryData(['population-summary', cityId], data.populationSummary);
     if (data.feuerwehr) queryClient.setQueryData(['feuerwehr', cityId], data.feuerwehr);
     if (data.pollen) queryClient.setQueryData(['pollen', cityId], data.pollen);

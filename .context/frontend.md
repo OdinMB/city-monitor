@@ -71,7 +71,7 @@ App (HelmetProvider)
 
 ### Bootstrap Pattern
 
-On mount, `useBootstrap(cityId)` fetches `GET /api/:city/bootstrap` — a single request returning the cached value of every domain in `CK.bootstrapKeys` (news, weather, transit, events, safety, NINA warnings, air quality, pharmacies, AEDs, traffic, construction, water levels, flood status, lift outages, budget, appointments, labor market, wastewater, population summary, Feuerwehr, pollen, noise sensors, council meetings). Large GeoJSON (social atlas, population map) is not included. The response is split and injected into React Query's cache via `queryClient.setQueryData()`, so downstream hooks get instant data without their own initial fetch.
+On mount, `useBootstrap(cityId)` fetches `GET /api/:city/bootstrap` — a single request returning the cached value of every domain in `CK.bootstrapKeys` (news, weather, transit, events, safety, NINA warnings, air quality, pharmacies, AEDs, traffic, construction, water levels, flood status, lift outages, budget, appointments, labor market, wastewater, respiratory cases, population summary, Feuerwehr, pollen, noise sensors, council meetings). Large GeoJSON (social atlas, population map) is not included. The response is split and injected into React Query's cache via `queryClient.setQueryData()`, so downstream hooks get instant data without their own initial fetch.
 
 ### Per-Domain Hooks
 

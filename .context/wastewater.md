@@ -80,6 +80,28 @@ interface WastewaterSummary {
 }
 ```
 
+## Reported cases (RKI IfSG)
+
+Berlin and Hamburg's expanded tile also shows the lab-confirmed influenza and RSV cases notified under the Infektionsschutzgesetz, below the viral load, so the two can be read side by side.
+
+- **Sources:** `https://raw.githubusercontent.com/robert-koch-institut/Influenzafaelle_in_Deutschland/main/IfSG_Influenzafaelle.tsv` (about 0.7 MB, starts with a byte order mark) and `.../Respiratorische_Synzytialvirusfaelle_in_Deutschland/main/IfSG_RSVfaelle.tsv` (about 0.15 MB). The github.com pages answer 403 through the proxy; raw works. Both overwritten weekly (data cut Wednesday 0:00); newest week 2026-W43 on 2026-11-03
+- **Format:** TSV `Meldewoche, Region, Region_Id, Altersgruppe, Fallzahl, Inzidenz`, columns found by name. `Region_Id` is the Land key (`00` Germany, `11` Berlin, `02` Hamburg). Only `Altersgruppe` = `00+` is used. The influenza file **leaves out a Land's weeks without a case** (Hamburg W29 and W30 of 2026), so a missing week counts as 0; the RSV file writes zeros
+- **Coverage:** Land only, no Kreis, so only the city-states. Köln and München have no `dataSources.respiratoryCases` and show no cases (NRW or Bayern figures would not be the city's)
+- **Licence:** CC BY 4.0, "unter Bedingung der Namensnennung des Robert Koch-Instituts als Quelle" (both Readmes). Credited on the Sources page as "RKI IfSG Influenza and RSV Cases" for Berlin and Hamburg, and in the tile section's source line
+- **Ingestion** (`cron/ingest-respiratory-cases.ts`, `15 6 * * *`): downloads both files once per run (`parseIfsgTsv`), then per city `buildRespiratoryCases`: the newest week of either file, per pathogen that week's cases and incidence, the week before, the trend (`computeTrend` from the wastewater job: rising >1.5x, falling <0.67x, new, gone) and 12 weekly counts (`buildCaseSeries`; not padded before the file's first week). One file failing writes the other pathogen alone; both failing leaves cache and DB as they were
+- **Storage:** snapshot type `rki-ifsg-cases` (about 300 bytes a city), cache key `${cityId}:respiratory-cases` (7 days), bootstrapped, route `GET /:city/respiratory-cases` (12 h HTTP cache), freshness spec 1 day
+- **Frontend:** `useRespiratoryCases(cityId, enabled)`, enabled by the `respiratoryCases` city feature. `ReportedCases` in `WastewaterStrip.tsx` renders in the expanded view only, after the viral-load pathogens: heading "Reported cases" with the week number, per pathogen the count, incidence per 100k, trend arrow and the same `Sparkline` (blue, ending on the Meldewoche's Monday). The collapsed tile is unchanged
+- Tests: `cron/fixtures/rki-ifsg-influenza-trimmed.tsv` and `rki-ifsg-rsv-trimmed.tsv`, real rows recorded 2026-11-03
+
+```typescript
+interface RespiratoryCases {
+  week: string;        // "2026-W43"
+  weekStart: string;   // "2026-10-19", Monday of that week
+  pathogens: Array<{ name: 'Influenza' | 'RSV'; cases: number; incidence: number; previousCases: number;
+    trend: 'rising' | 'falling' | 'stable' | 'new' | 'gone'; history: number[] }>;
+}
+```
+
 ## Adding a city
 
-Find its plants in the AMELAG file (`standort`, with `bundesland` and `einwohner`; see the add-city skill's source-lookups.md) and set `wastewater: { provider: 'amelag', sites: [...] }`. A plant serving only part of the city still represents it; one serving mostly a neighbouring Landkreis does not.
+Find its plants in the AMELAG file (`standort`, with `bundesland` and `einwohner`; see the add-city skill's source-lookups.md) and set `wastewater: { provider: 'amelag', sites: [...] }`. A plant serving only part of the city still represents it; one serving mostly a neighbouring Landkreis does not. Only a city-state (Bremen would be the next) also gets `respiratoryCases: { provider: 'rki-ifsg', regionId: '<Land key>' }` and the `respiratoryCases` web feature.

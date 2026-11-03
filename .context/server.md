@@ -48,6 +48,7 @@ Applied via middleware per route tier:
 | `/api/:city/appointments` | 3600s (1h) | Appointments update every 12h |
 | `/api/:city/bathing` | 43200s (12h) | Bathing quality updates daily |
 | `/api/:city/wastewater` | 43200s (12h) | Wastewater updates daily |
+| `/api/:city/respiratory-cases` | 43200s (12h) | RKI IfSG files change weekly, checked daily |
 | `/api/:city/labor-market` | 3600s (1h) | Labor market updates daily |
 | `/api/:city/political/:level` | 3600s (1h) | Political data updates weekly |
 | `/api/:city/population`, `/population/summary` | 43200s (12h) | Population updates monthly |
@@ -68,7 +69,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 
 ### Jobs (defined in app.ts)
 
-33 jobs; `app.test.ts` pins the count.
+34 jobs; `app.test.ts` pins the count.
 
 | Job | Schedule | Description |
 |---|---|---|
@@ -97,6 +98,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-citizen-reports` | `7,22,37,52 * * * *` | Open311 citizen reports of the last 14 days, for cities with `dataSources.citizenReports` (Köln, München; [citizen-reports.md](citizen-reports.md)). Pages of 200, 500 ms apart; Postgres at most hourly |
 | `ingest-traffic-accidents` | `0 5 2 * *` | Injury accidents from the Unfallatlas, for cities with `dataSources.trafficAccidents`: the newest year's national CSV, one download per run, filtered by municipality key ([traffic-accidents.md](traffic-accidents.md)) (monthly) |
 | `ingest-wastewater` | `0 6 * * *` | Wastewater viral loads: RKI AMELAG for every city with `dataSources.wastewater` (one download), plus LAGeSo for Berlin (daily) |
+| `ingest-respiratory-cases` | `15 6 * * *` | RKI lab-confirmed influenza and RSV cases (IfSG) for cities with `dataSources.respiratoryCases` (Berlin, Hamburg): two nationwide TSVs, one download each ([wastewater.md](wastewater.md#reported-cases-rki-ifsg)) (daily; the files change weekly) |
 | `ingest-labor-market` | `0 7 * * *` | BA unemployment statistics, the Land or Kreis table in `dataSources.laborMarket` (daily) |
 | `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly; skips the API only when the stored data is under 6 days old, so every weekly run refreshes) |
 | `ingest-population` | `0 6 1 * *` | Population per small area by provider, for cities with `dataSources.population`: EWR XLSX (Berlin), Stadtteil OGC API (Hamburg), Datenkatalog CSV (Köln), Indikatorenatlas CSVs via CKAN (München) (monthly; [population.md](population.md)) |
@@ -108,7 +110,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 
 Ingestion jobs use conditional `runOnStart` based on DB freshness checks — only stale/missing domains trigger startup API calls. `ingest-aq-grid` always runs on start, and `data-retention` never does. `summarize-news` has `dependsOn: ['ingest-feeds']`, `ingest-population` has `dependsOn: ['ingest-social-atlas']`.
 
-**Which cities a job serves.** Most jobs loop over `getActiveCities()` and skip a city without the matching `dataSources` entry (budget, appointments, social atlas, population, labour market, wastewater, bathing, lift outages, bike sharing, traffic accidents, electricity, citizen reports, council meetings, noise sensors, roadworks, transit, events…), so they fetch nothing for a city that lacks the source. Each job's `FRESHNESS_SPECS` entry in `app.ts` repeats that filter as its `serves` predicate, so the startup check looks only at the cities the job writes rows for; change the two together. `ingest-appointments` (paid Firecrawl calls) is the one job without it, and keeps the table-wide check ([data-layer.md](data-layer.md#freshness-checks-warm-cachets)). One job has no config entry because its source covers Berlin only, with a hardcoded URL and rows written under `'berlin'`: `ingest-feuerwehr` (wastewater, labour market, bathing and population moved to config on 2026-11-02). Its handler returns before any request when `getCityConfig('berlin')` is undefined, and `app.ts` lists it in `BERLIN_ONLY_JOBS` so that, without Berlin, it is left out of the freshness check and gets no startup run. It stays scheduled (the health endpoint lists all 33 jobs) and its ticks do nothing. With Berlin active, alone or with other cities, it makes the same requests and writes as before. A new Berlin-only source without a config entry follows the same two steps ([new-data-sources.md](new-data-sources.md)).
+**Which cities a job serves.** Most jobs loop over `getActiveCities()` and skip a city without the matching `dataSources` entry (budget, appointments, social atlas, population, labour market, wastewater, bathing, lift outages, bike sharing, traffic accidents, electricity, citizen reports, council meetings, noise sensors, roadworks, transit, events…), so they fetch nothing for a city that lacks the source. Each job's `FRESHNESS_SPECS` entry in `app.ts` repeats that filter as its `serves` predicate, so the startup check looks only at the cities the job writes rows for; change the two together. `ingest-appointments` (paid Firecrawl calls) is the one job without it, and keeps the table-wide check ([data-layer.md](data-layer.md#freshness-checks-warm-cachets)). One job has no config entry because its source covers Berlin only, with a hardcoded URL and rows written under `'berlin'`: `ingest-feuerwehr` (wastewater, labour market, bathing and population moved to config on 2026-11-02). Its handler returns before any request when `getCityConfig('berlin')` is undefined, and `app.ts` lists it in `BERLIN_ONLY_JOBS` so that, without Berlin, it is left out of the freshness check and gets no startup run. It stays scheduled (the health endpoint lists all 34 jobs) and its ticks do nothing. With Berlin active, alone or with other cities, it makes the same requests and writes as before. A new Berlin-only source without a config entry follows the same two steps ([new-data-sources.md](new-data-sources.md)).
 
 **Political data** (`ingest-political.ts`, served at `/api/:city/political/:level`). abgeordnetenwatch.de API v2 (CC0 1.0) for the current Bundestag and state legislature, one city at a time, for each city in `PARLIAMENT_CONFIG`. Levels: `bundestag` and `state` (members grouped by constituency), `state-bezirke` (state members by Bezirk, Berlin only, `STATE_CONSTITUENCY_BEZIRKE`), and two hand-kept levels with a source page and `lastVerified` date each (the server warns 180 days after it): `bezirke` (`BEZIRKSBUERGERMEISTER`, Berlin and Köln) and `mayor` (`OBERBUERGERMEISTER`, Köln and München). Whose mandates count:
 - A city-state (Berlin, Hamburg; no `constituencies`): every member of the state parliament, and the Bundestag members whose constituency or Landesliste label names the city.
@@ -150,7 +152,7 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 
 ## Bootstrap Endpoint
 
-`GET /api/:city/bootstrap` (in `routes/bootstrap.ts`) returns 24 data slots in one response for fast initial page load: news, weather, transit, events, safety, nina, airQuality, pharmacies, aeds, traffic, construction, waterLevels, floodStatus, liftOutages, electricity, budget, appointments, laborMarket, wastewater, populationSummary, feuerwehr, pollen, noiseSensors, councilMeetings. It is cache-only (`cache.getBatchWithMeta(CK.bootstrapKeys(cityId))`, no DB fallback), so a cold slot is `null`.
+`GET /api/:city/bootstrap` (in `routes/bootstrap.ts`) returns 25 data slots in one response for fast initial page load: news, weather, transit, events, safety, nina, airQuality, pharmacies, aeds, traffic, construction, waterLevels, floodStatus, liftOutages, electricity, budget, appointments, laborMarket, wastewater, respiratoryCases, populationSummary, feuerwehr, pollen, noiseSensors, councilMeetings. It is cache-only (`cache.getBatchWithMeta(CK.bootstrapKeys(cityId))`, no DB fallback), so a cold slot is `null`.
 
 ## City Configuration (`packages/server/src/config/`)
 

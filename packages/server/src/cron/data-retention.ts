@@ -65,6 +65,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'aponet',             retentionMs: 2 * DAY_MS },
   { type: 'service-berlin',     retentionMs: 2 * DAY_MS },
   { type: 'lageso-wastewater',  retentionMs: 2 * DAY_MS },
+  { type: 'rki-ifsg-cases',     retentionMs: 2 * DAY_MS },
   { type: 'lageso-bathing',     retentionMs: 2 * DAY_MS },
   { type: 'dwd-pollen',         retentionMs: 2 * DAY_MS },
   { type: 'sc-dnms',            retentionMs: 2 * DAY_MS },

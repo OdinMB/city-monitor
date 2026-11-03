@@ -2,13 +2,14 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useWastewater } from '../../hooks/useWastewater.js';
+import { useRespiratoryCases } from '../../hooks/useRespiratoryCases.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
-import { formatCompactReading, withUnit } from '../../lib/format-value.js';
+import { formatCompactReading, formatCount, formatDecimal, withUnit } from '../../lib/format-value.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
-import type { WastewaterPathogen } from '../../lib/api.js';
+import type { RespiratoryCases, RespiratoryCaseSeries, WastewaterPathogen } from '../../lib/api.js';
 
 const TREND_ARROWS: Record<WastewaterPathogen['trend'], string> = {
   rising: '\u2191',
@@ -89,11 +90,61 @@ const Sparkline = memo(function Sparkline({ data, color, sampleDate, label, loca
   );
 });
 
+/** One colour for reported cases, apart from the viral-load level colours. */
+const CASES_STROKE = '#3b82f6';
+
+function caseLabel(name: RespiratoryCaseSeries['name'], t: (key: string) => string): string {
+  return name === 'Influenza' ? t('panel.wastewater.cases.flu') : t('panel.wastewater.cases.rsv');
+}
+
+/**
+ * The RKI's notified flu and RSV cases for the city's Land, below the viral
+ * load: the latest Meldewoche's count and incidence, the trend against the
+ * week before and 12 weeks of counts.
+ */
+function ReportedCases({ data, locale }: { data: RespiratoryCases; locale: string }) {
+  const { t } = useTranslation();
+  return (
+    <section className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-baseline justify-between mb-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{t('panel.wastewater.cases.title')}</h3>
+        <span className="text-[10px] text-muted">{t('panel.wastewater.cases.week', { week: Number(data.week.slice(-2)) })}</span>
+      </div>
+      <div className="space-y-3">
+        {data.pathogens.map((p) => (
+          <div key={p.name}>
+            <div className="flex items-baseline justify-between mb-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{caseLabel(p.name, t)}</span>
+                <span className="text-xs tabular-nums text-muted">
+                  {t('panel.wastewater.cases.incidence', { value: formatDecimal(p.incidence, 2) })}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-bold tabular-nums leading-none text-gray-900 dark:text-gray-100">
+                  {formatCount(p.cases, locale)}
+                </span>
+                {(p.cases > 0 || p.trend === 'gone') && (
+                  <span className="text-xs text-muted">{TREND_ARROWS[p.trend]}</span>
+                )}
+              </div>
+            </div>
+            <Sparkline data={p.history} color={CASES_STROKE} sampleDate={data.weekStart} label={t('panel.wastewater.cases.trendLabel', { pathogen: caseLabel(p.name, t) })} locale={locale} />
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[10px] text-muted">{t('panel.wastewater.cases.source')}</p>
+    </section>
+  );
+}
+
 const FRESH_MAX_AGE = staleAfter('wastewater');
 
 export function WastewaterStrip({ expanded }: { expanded: boolean }) {
-  const { id: cityId } = useCityConfig();
+  const { id: cityId, features } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useWastewater(cityId);
+  // Only a city-state has them: the RKI counts by Land (.context/wastewater.md)
+  const { data: cases } = useRespiratoryCases(cityId, features.includes('respiratoryCases'));
   const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
   const locale = i18n.language;
@@ -180,6 +231,7 @@ export function WastewaterStrip({ expanded }: { expanded: boolean }) {
           </div>
         ))}
       </div>
+      {cases && cases.pathogens.length > 0 && <ReportedCases data={cases} locale={locale} />}
       <TileFooter stale={isStale}>
         {t('panel.wastewater.sampleDate', { date: formatSampleDate(data.sampleDate, locale) })}
         {agoText && (' · ' + t('stale.updated', { time: agoText }))}

@@ -129,6 +129,8 @@ export const berlin: CityConfig = {
       csvUrl: 'https://data.lageso.de/infektionsschutz/opendata/abwassermonitoring/BEWAC_abwassermonitoring_berlin.csv',
       sites: ['Berlin Ruhleben', 'Berlin Schönerlinde', 'Berlin Waßmannsdorf'],
     },
+    // RKI IfSG flu and RSV notifications (CC BY 4.0), by Land: Berlin is one
+    respiratoryCases: { provider: 'rki-ifsg', regionId: '11' },
     pollen: {
       provider: 'dwd',
       regionId: 50,         // Brandenburg und Berlin

@@ -63,6 +63,7 @@ export type CityFeature =
   | 'population'      // dataSources.population: population map layer and tile
   | 'laborMarket'     // dataSources.laborMarket: BA unemployment figures
   | 'wastewater'      // dataSources.wastewater: viral load in wastewater
+  | 'respiratoryCases' // dataSources.respiratoryCases: RKI-notified flu and RSV cases, in the wastewater tile
   | 'noiseSensors'
   | 'councilMeetings'
   | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
@@ -364,6 +365,13 @@ export interface CityDataSources {
   wastewater?:
     | { provider: 'amelag'; sites: readonly string[] }
     | { provider: 'lageso'; csvUrl: string; sites: readonly string[] };
+  /**
+   * Weekly lab-confirmed influenza and RSV cases notified under the IfSG, from
+   * the RKI's GitHub datasets (packages/server/src/cron/ingest-respiratory-cases.ts).
+   * The data go down to the Bundesland only, so only a city-state has them:
+   * `regionId` is the Land's two-digit key ("11" Berlin, "02" Hamburg).
+   */
+  respiratoryCases?: { provider: 'rki-ifsg'; regionId: string };
   pollen?: {
     provider: 'dwd';
     regionId: number;
@@ -744,6 +752,24 @@ export interface WastewaterSummary {
   sampleDate: string;
   pathogens: WastewaterPathogen[];
   plantCount: number;
+}
+
+// Lab-confirmed influenza and RSV cases notified under the IfSG (RKI), shown in the wastewater tile
+export interface RespiratoryCaseSeries {
+  name: 'Influenza' | 'RSV';
+  cases: number;            // notified cases in the latest Meldewoche
+  incidence: number;        // cases per 100,000 residents in that week
+  previousCases: number;    // the week before
+  trend: 'rising' | 'falling' | 'stable' | 'new' | 'gone';
+  history: number[];        // cases in the last 12 weeks, oldest first, 7 days apart
+}
+
+export interface RespiratoryCases {
+  /** The latest Meldewoche in the RKI files, "2026-W43". */
+  week: string;
+  /** Monday of that week, "2026-10-19": the sparkline's end date. */
+  weekStart: string;
+  pathogens: RespiratoryCaseSeries[];
 }
 
 // Feuerwehr (Berlin Fire Department) monthly operations
@@ -1127,6 +1153,7 @@ export interface BootstrapData {
   appointments: ApiResponse<BuergeramtData> | null;
   laborMarket: ApiResponse<LaborMarketSummary | null> | null;
   wastewater: ApiResponse<WastewaterSummary | null> | null;
+  respiratoryCases: ApiResponse<RespiratoryCases | null> | null;
   populationSummary: ApiResponse<PopulationSummary | null> | null;
   feuerwehr: ApiResponse<FeuerwehrSummary | null> | null;
   pollen: ApiResponse<PollenForecast | null> | null;

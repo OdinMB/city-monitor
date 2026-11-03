@@ -205,6 +205,15 @@ function amelagSource(plants: string): Source {
   };
 }
 
+/** RKI IfSG notifications, for a city-state: the datasets go down to the Land only. CC BY 4.0, credit the RKI. */
+function rkiIfsgSource(land: string): Source {
+  return {
+    name: 'RKI IfSG Influenza and RSV Cases',
+    url: 'https://github.com/robert-koch-institut/Influenzafaelle_in_Deutschland',
+    description: `Weekly lab-confirmed influenza and RSV cases notified under the Infection Protection Act (IfSG) for the Land ${land}, with the incidence per 100,000, from the datasets "Laborbestätigte Influenzafälle in Deutschland" and "Respiratorische Synzytialvirusfälle in Deutschland". Source: Robert Koch-Institut, CC BY 4.0. City Monitor shows the latest week, the trend against the week before and the last 12 weeks.`,
+  };
+}
+
 /** nextbike's GBFS feed for the city's system. CC0-1.0 (the feed's `license_id`): no credit required, nextbike named as a courtesy. */
 function nextbikeSource(system: string, note = ''): Source {
   return {
@@ -257,6 +266,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'LAGeSo Bathing Water', url: 'https://data.lageso.de/', description: 'Water quality measurements for Berlin bathing spots.' },
       { name: 'LAGeSo Wastewater Monitoring', url: 'https://data.lageso.de/', description: 'Weekly viral load measurements (Influenza A/B, RSV) in Berlin wastewater. Source: Lageso Berlin and Berliner Wasserbetriebe, dl-de/by-2-0. City Monitor averages the plants and derives the trend and level.' },
       { name: 'RKI AMELAG Wastewater Surveillance', url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG', description: 'SARS-CoV-2 viral load at the three Berlin treatment plants. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the samples per week and the plants, weighted by the population each serves, and derives the trend and level.' },
+      rkiIfsgSource('Berlin'),
     ],
   },
   {
@@ -344,6 +354,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time tidal water levels from Elbe gauges (St. Pauli, Bunthaus, Seemannshöft).' },
       { name: 'Badegewässer Hamburg (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WFS_Badegewaesser?SERVICE=WFS&REQUEST=GetCapabilities', description: 'The 17 EU bathing spots with their latest sample: water temperature, visibility, algae and the health authority\'s remarks. City Monitor rates each spot from those remarks (a bathing ban as poor, a warning or heavy algae as a warning). Source: Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, dl-de/by-2-0.' },
       amelagSource('Hamburg\'s two treatment plants (Hamburg 01 and Hamburg 02)'),
+      rkiIfsgSource('Hamburg'),
     ],
   },
   {

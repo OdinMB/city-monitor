@@ -51,6 +51,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:aed:locations` | 86400s (24h) | ingest-aeds |
 | `{cityId}:social-atlas:geojson` | 604800s (7 days) | ingest-social-atlas |
 | `{cityId}:wastewater:summary` | 604800s (7 days) | ingest-wastewater |
+| `{cityId}:respiratory-cases` | 604800s (7 days) | ingest-respiratory-cases (Berlin, Hamburg) |
 | `{cityId}:bathing:spots` | 86400s (24h) | ingest-bathing (Berlin, Hamburg) |
 | `{cityId}:labor-market` | 86400s (24h) | ingest-labor-market |
 | `{cityId}:appointments` | 43200s (12h) | ingest-appointments |
@@ -107,6 +108,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `osm-aeds` | OpenStreetMap AED locations (Overpass) |
 | `mss-social-atlas` | Social atlas of every provider (MSS WFS, Hamburg Sozialmonitoring, Köln Datenkatalog) |
 | `lageso-wastewater` | Lageso wastewater viral monitoring |
+| `rki-ifsg-cases` | RKI lab-confirmed influenza and RSV cases by Land, for the wastewater tile ([wastewater.md](wastewater.md#reported-cases-rki-ifsg)) |
 | `lageso-bathing` | Bathing water quality of every city (LAGeSo Berlin, Geodienste Hamburg; the name is historical) |
 | `kvb-lift-outages` | KVB lifts and escalators out of service ([lift-outages.md](lift-outages.md)) |
 | `bike-sharing` | Bike-sharing stations of every provider, at most one row per city every 30 min ([bike-sharing.md](bike-sharing.md)) |
@@ -147,7 +149,7 @@ The synthetic dev seed (`synthetic/seed.ts`, see [dev-database.md](dev-database.
 
 ### Cache Warming (`warm-cache.ts`)
 
-Runs on server start if DB is connected. First loads every geocode lookup into the geocoder's in-process map, then all data types for all active cities from Postgres into cache. Frequently refreshed domains get their cron interval plus 20% as TTL (weather 4320s, transit and water levels 1080s, news and safety 720s, NINA and traffic 360s, AQ grid and construction 2160s, events and pharmacies 25920s, appointments 51840s, lift outages 1200s); the rest get the cron job's own TTL. Berlin-only domains (Feuerwehr, noise sensors) are guarded with `cityId === 'berlin'`; social atlas, population, bathing, lift outages, bike sharing, traffic accidents, citizen reports (TTL 1800s), wastewater, labour market and council meetings are loaded for every city. The warmed AQ grid, like the air-quality route's DB fallback, has Sensor.Community points only; the WAQI stations come back with the `ingest-aq-grid` run that every start triggers. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
+Runs on server start if DB is connected. First loads every geocode lookup into the geocoder's in-process map, then all data types for all active cities from Postgres into cache. Frequently refreshed domains get their cron interval plus 20% as TTL (weather 4320s, transit and water levels 1080s, news and safety 720s, NINA and traffic 360s, AQ grid and construction 2160s, events and pharmacies 25920s, appointments 51840s, lift outages 1200s); the rest get the cron job's own TTL. Berlin-only domains (Feuerwehr, noise sensors) are guarded with `cityId === 'berlin'`; social atlas, population, bathing, lift outages, bike sharing, traffic accidents, citizen reports (TTL 1800s), wastewater, respiratory cases, labour market and council meetings are loaded for every city. The warmed AQ grid, like the air-quality route's DB fallback, has Sensor.Community points only; the WAQI stations come back with the `ingest-aq-grid` run that every start triggers. News items are loaded, filtered via `applyDropLogic`, and written to both digest and per-category cache keys. Errors are logged but don't block startup — each domain is independent.
 ### Freshness Checks (`warm-cache.ts`)
 
 `findStaleJobs(db, specs)` determines which cron jobs need a startup run. Each `FreshnessSpec` names a job, its table (with an optional row filter, the snapshot `type`), a max age and the active cities the job serves (`cityIds`). One query per spec reads the newest timestamp of each of those cities (`MAX(...) … GROUP BY city_id`). The job is stale when any of them has no row, or only rows older than `maxAgeSeconds`, so a city newly added to `ACTIVE_CITIES` gets its data at startup instead of at each job's next scheduled run (hours to a month later). A job that serves none of the active cities is never stale and sends no query. Max ages are set to roughly the cron interval (e.g. 600s for a `*/10` job, 86400s for a daily job). The stale set is used in `app.ts` to conditionally set `runOnStart` on each job — when every served city is fresh, the job skips its startup API calls entirely. The startup log names the cities that lack data, e.g. `will refresh: ingest-weather (hamburg)`.
@@ -166,7 +168,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 | History | pegelonline | 30 days (history endpoint) |
 | History | ba-labor-market | 730 days / ~24 months (history endpoints) |
 | Non-history (short-lived) | aqi-grid | 6 hours, the age limit of `loadAirQualityGrid` (`AQ_GRID_MAX_AGE_MS`), newest row included (never `keepLatest`) + 100 row cap. Kept no longer than a read can use it, so no air-quality archive builds up ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
-| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, bike-sharing, smard-electricity, uba-airquality | 2 days + 100 row cap |
+| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, rki-ifsg-cases, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, bike-sharing, smard-electricity, uba-airquality | 2 days + 100 row cap |
 | Non-history (large, hourly) | open311-reports | 1 day + 100 row cap |
 | Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr | 7 days + 100 row cap |
 | Non-history (infrequent, weekly/monthly jobs) | mss-social-atlas, afstat-population, unfallatlas-accidents, abgwatch-* | 7 days, newest row per city kept (`keepLatest`) + 100 row cap |

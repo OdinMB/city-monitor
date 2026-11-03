@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
-import type { WastewaterPathogen, WastewaterSummary } from '../../lib/api.js';
+import type { RespiratoryCases, WastewaterPathogen, WastewaterSummary } from '../../lib/api.js';
 import { isolate } from '../../lib/bidi.js';
 import { WastewaterStrip } from './WastewaterStrip.js';
 
@@ -32,12 +32,23 @@ const LABELS = ['Flu A', 'Flu B', 'RSV', 'COVID-19', 'Mpox'];
 
 let summary: WastewaterSummary;
 
+let features: string[] = [];
+let cases: RespiratoryCases | undefined;
+const casesHook = vi.fn();
+
 vi.mock('../../hooks/useCityConfig.js', () => ({
-  useCityConfig: () => ({ id: 'berlin', name: 'Berlin' }),
+  useCityConfig: () => ({ id: 'berlin', name: 'Berlin', features }),
 }));
 
 vi.mock('../../hooks/useWastewater.js', () => ({
   useWastewater: () => ({ data: summary, fetchedAt: null, isLoading: false, isError: false, refetch: vi.fn() }),
+}));
+
+vi.mock('../../hooks/useRespiratoryCases.js', () => ({
+  useRespiratoryCases: (cityId: string, enabled: boolean) => {
+    casesHook(cityId, enabled);
+    return { data: enabled ? cases : undefined };
+  },
 }));
 
 /**
@@ -177,5 +188,69 @@ describe('WastewaterStrip collapsed layout', () => {
     expect(screen.getAllByText('↑')).toHaveLength(2);
     expect(screen.getAllByText('↓')).toHaveLength(1);
     expect(screen.getAllByText('→')).toHaveLength(1);
+  });
+});
+
+describe('WastewaterStrip reported cases', () => {
+  const CASES: RespiratoryCases = {
+    week: '2026-W43',
+    weekStart: '2026-10-19',
+    pathogens: [
+      { name: 'Influenza', cases: 1234, incidence: 0.49, previousCases: 32, trend: 'rising', history: [6, 11, 13, 32, 1234] },
+      { name: 'RSV', cases: 0, incidence: 0, previousCases: 0, trend: 'stable', history: [0, 1, 4, 0, 0] },
+    ],
+  };
+
+  beforeEach(() => {
+    summary = SUMMARY;
+    cases = CASES;
+    casesHook.mockClear();
+  });
+
+  afterEach(async () => {
+    cleanup();
+    features = [];
+    await i18n.changeLanguage('en');
+  });
+
+  it('asks for them only where the city has the feature', () => {
+    render(<WastewaterStrip expanded />);
+    expect(casesHook).toHaveBeenLastCalledWith('berlin', false);
+    expect(screen.queryByText('Reported cases')).toBeNull();
+
+    cleanup();
+    features = ['wastewater', 'respiratoryCases'];
+    render(<WastewaterStrip expanded />);
+    expect(casesHook).toHaveBeenLastCalledWith('berlin', true);
+    expect(screen.getByText('Reported cases')).toBeTruthy();
+  });
+
+  it('shows count, incidence, week and a 12-week sparkline in the expanded tile only', () => {
+    features = ['wastewater', 'respiratoryCases'];
+    const { container } = render(<WastewaterStrip expanded />);
+    const text = container.textContent!;
+    expect(text).toContain('Week 43');
+    expect(text).toContain('1,234');
+    expect(text).toContain('0.49 per 100k');
+    expect(screen.getByRole('img', { name: 'Influenza reported cases trend' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'RSV reported cases trend' })).toBeTruthy();
+    // The sparkline ends on the Meldewoche's Monday, four weeks after its first point
+    expect(text).toContain('Sep 21');
+    expect(text).toContain('Oct 19');
+
+    cleanup();
+    render(<WastewaterStrip expanded={false} />);
+    expect(screen.queryByText('Reported cases')).toBeNull();
+  });
+
+  it('labels them in German', async () => {
+    features = ['wastewater', 'respiratoryCases'];
+    await i18n.changeLanguage('de');
+    const { container } = render(<WastewaterStrip expanded />);
+    const text = container.textContent!;
+    expect(text).toContain('Gemeldete Fälle');
+    expect(text).toContain('KW 43');
+    expect(text).toContain('1.234');
+    expect(text).toContain('0.49 je 100.000');
   });
 });

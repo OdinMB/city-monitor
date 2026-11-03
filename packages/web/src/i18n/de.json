@@ -330,6 +330,15 @@
         "low": "Niedrig",
         "moderate": "Mittel",
         "high": "Hoch"
+      },
+      "cases": {
+        "title": "Gemeldete Fälle",
+        "week": "KW {{week}}",
+        "flu": "Influenza",
+        "rsv": "RSV",
+        "incidence": "{{value}} je 100.000",
+        "trendLabel": "Verlauf gemeldete Fälle {{pathogen}}",
+        "source": "Laborbestätigte Fälle, gemeldet nach dem Infektionsschutzgesetz (RKI)"
       }
     },
     "waterLevels": {

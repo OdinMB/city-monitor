@@ -114,7 +114,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
       vi.stubEnv('ACTIVE_CITIES', activeCities);
       await createApp();
 
-      expect(scheduled.jobs).toHaveLength(33);
+      expect(scheduled.jobs).toHaveLength(34);
       for (const name of BERLIN_ONLY) expect(names(scheduled.jobs)).toContain(name);
       expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
         .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention')));
@@ -125,7 +125,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
     vi.stubEnv('ACTIVE_CITIES', 'hamburg');
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(33);
+    expect(scheduled.jobs).toHaveLength(34);
     expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
       .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention' && !BERLIN_ONLY.includes(j.name))));
   });
@@ -162,7 +162,7 @@ describe('createApp startup runs with fresh stored data', () => {
   it('still runs the air-quality grid job on start, since the stored grid has no WAQI stations', async () => {
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(33);
+    expect(scheduled.jobs).toHaveLength(34);
     const startup = scheduled.jobs.filter((j) => j.runOnStart).map((j) => j.name);
     expect(startup).toEqual(['ingest-aq-grid']);
   });
@@ -241,7 +241,7 @@ describe('createApp startup runs per active city', () => {
     expect(startupRuns()).toEqual([
       'ingest-feeds', 'summarize-news', 'ingest-weather', 'ingest-safety', 'ingest-nina',
       'ingest-pharmacies', 'ingest-traffic', 'ingest-political', 'ingest-aq-grid', 'ingest-uba-air-quality', 'ingest-construction', 'ingest-aeds',
-      'ingest-social-atlas', 'ingest-water-levels', 'ingest-bathing', 'ingest-bike-sharing', 'ingest-electricity', 'ingest-wastewater', 'ingest-labor-market',
+      'ingest-social-atlas', 'ingest-water-levels', 'ingest-bathing', 'ingest-bike-sharing', 'ingest-electricity', 'ingest-wastewater', 'ingest-respiratory-cases', 'ingest-labor-market',
       'ingest-population', 'ingest-traffic-accidents', 'ingest-pollen', 'ingest-council-meetings',
     ]);
   });

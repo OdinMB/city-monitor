@@ -16,7 +16,7 @@ import {
   saveBikeSharing, saveTrafficAccidents, saveCouncilMeetings, saveElectricity, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
   saveNoiseSensors, savePharmacies, savePoliticalDistricts, savePollen, savePopulation, saveSafetyReports,
   saveSocialAtlas, saveSummary, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
-  saveWeather,
+  saveWeather, saveRespiratoryCases,
 } from '../db/writes.js';
 import type { CitySyntheticData } from './generate.js';
 import { assertLocalDatabaseUrl } from './local-guard.js';
@@ -108,6 +108,7 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.socialAtlas) await saveSocialAtlas(db, cityId, data.socialAtlas);
   if (data.population) await savePopulation(db, cityId, data.population.geojson, data.population.summary);
   if (data.wastewater) await saveWastewater(db, cityId, data.wastewater);
+  if (data.respiratoryCases) await saveRespiratoryCases(db, cityId, data.respiratoryCases);
   if (data.bathing) await saveBathingSpots(db, cityId, data.bathing);
   if (data.laborMarket) await saveLaborMarket(db, cityId, data.laborMarket);
   if (data.feuerwehr) await saveFeuerwehr(db, cityId, data.feuerwehr);
