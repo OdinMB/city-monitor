@@ -59,6 +59,8 @@ export const muenchen: CityConfig = {
     // nextbike's MyRadl system (GBFS, CC0-1.0) covers the city and its Landkreis: ~800
     // virtual stations, ~630 of them inside the bounding box, which the job keeps
     bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_ml/gbfs.json', system: 'MyRadl', operator: 'nextbike' },
+    // Unfallatlas (dl-de/by-2.0): the kreisfreie Stadt, ~5,300 injury accidents in 2025
+    trafficAccidents: { provider: 'unfallatlas', ags: '09162000' },
     // The Isar's flood class (Meldestufe) from the LHP public API (CC BY 4.0): the HND gauge
     // München (16005701, Meldestufen at 240/300/380 cm and a 4th) and Puppling, the last
     // gauge upstream, about 25 km south. LHP gives no water levels (checked 2026-11-01).

@@ -100,6 +100,8 @@ export const hamburg: CityConfig = {
     // StadtRAD's bikes per station on the Urban Data Platform's SensorThings API (dl-de/by-2.0,
     // Transparenzportal "StadtRAD-Stationen Hamburg"): ~360 stations, no docks. No nextbike in Hamburg.
     bikeSharing: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', system: 'StadtRAD Hamburg', operator: 'DB Connect' },
+    // Unfallatlas (dl-de/by-2.0): the whole Land, ~7,100 injury accidents in 2025
+    trafficAccidents: { provider: 'unfallatlas', ags: '02000000' },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

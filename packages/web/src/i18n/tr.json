@@ -512,6 +512,7 @@
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
       "bike-sharing": "Bisiklet Paylaşımı",
+      "accidents": "Kazalar",
       "water": "Su",
       "social": "Sosyal",
       "population": "Nüfus",
@@ -558,6 +559,18 @@
       "none": "Bisiklet yok",
       "few": "1–2 bisiklet",
       "many": "3 veya daha fazla bisiklet"
+    },
+    "accidents": {
+      "all": "Tüm kazalar",
+      "bike": "Bisikletli",
+      "pedestrian": "Yayalı"
+    },
+    "accidentLegend": {
+      "title": "{{year}} yılındaki yaralanmalı kazalar, en ağır sonuca göre",
+      "year": "{{year}} yılındaki yaralanmalı kazalar",
+      "killed": "Ölümlü",
+      "serious": "Ağır yaralı",
+      "slight": "Hafif yaralı"
     },
     "population": {
       "pop-density": "Nüfus Yoğunluğu",
@@ -629,6 +642,44 @@
       "bikes": "Kullanılabilir bisiklet",
       "docks": "Boş park yeri",
       "updated": "Güncelleme"
+    },
+    "accident": {
+      "severity": {
+        "1": "Ölümlü kaza",
+        "2": "Ağır yaralanmalı kaza",
+        "3": "Hafif yaralanmalı kaza"
+      },
+      "type": {
+        "1": "Kontrol kaybı",
+        "2": "Dönüş kazası",
+        "3": "Yola çıkma veya kavşakta kesişme kazası",
+        "4": "Karşıya geçen yaya kazası",
+        "5": "Park halindeki araçlardan kaynaklanan kaza",
+        "6": "Aynı yolda seyir halindeki araçlar arasında kaza",
+        "7": "Diğer kaza"
+      },
+      "kind": {
+        "0": "Başka türde kaza",
+        "1": "Kalkan, duran veya park halindeki araçla çarpışma",
+        "2": "Öndeki veya bekleyen araçla çarpışma",
+        "3": "Aynı yönde yandan giden araçla çarpışma",
+        "4": "Karşıdan gelen araçla çarpışma",
+        "5": "Dönen veya kesişen araçla çarpışma",
+        "6": "Araç ile yaya arasında çarpışma",
+        "7": "Yoldaki bir engele çarpma",
+        "8": "Yoldan sağa çıkma",
+        "9": "Yoldan sola çıkma"
+      },
+      "participant": {
+        "bike": "bisiklet",
+        "car": "otomobil",
+        "pedestrian": "yaya",
+        "motorcycle": "motosiklet",
+        "goods": "yük aracı",
+        "other": "diğer (otobüs, tramvay …)"
+      },
+      "involved": "Karışanlar",
+      "source": "Unfallatlas {{year}}"
     }
   },
   "socialAtlas": {

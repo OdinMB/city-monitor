@@ -518,6 +518,7 @@
       "emergencies": "Notfall",
       "traffic": "Verkehr",
       "bike-sharing": "Leihräder",
+      "accidents": "Unfälle",
       "water": "Wasser",
       "social": "Soziales",
       "population": "Bevölkerung",
@@ -564,6 +565,18 @@
       "none": "Keine Räder",
       "few": "1–2 Räder",
       "many": "3 und mehr Räder"
+    },
+    "accidents": {
+      "all": "Alle Unfälle",
+      "bike": "Mit Fahrrad",
+      "pedestrian": "Mit Fußgängern"
+    },
+    "accidentLegend": {
+      "title": "Unfälle mit Personenschaden {{year}} nach der schwersten Unfallfolge",
+      "year": "Unfälle mit Personenschaden {{year}}",
+      "killed": "Mit Getöteten",
+      "serious": "Mit Schwerverletzten",
+      "slight": "Mit Leichtverletzten"
     },
     "population": {
       "pop-density": "Bevölkerungsdichte",
@@ -639,6 +652,44 @@
       "bikes": "Verfügbare Räder",
       "docks": "Freie Stellplätze",
       "updated": "Stand"
+    },
+    "accident": {
+      "severity": {
+        "1": "Unfall mit Getöteten",
+        "2": "Unfall mit Schwerverletzten",
+        "3": "Unfall mit Leichtverletzten"
+      },
+      "type": {
+        "1": "Fahrunfall",
+        "2": "Abbiegeunfall",
+        "3": "Einbiegen-/Kreuzen-Unfall",
+        "4": "Überschreiten-Unfall",
+        "5": "Unfall durch ruhenden Verkehr",
+        "6": "Unfall im Längsverkehr",
+        "7": "Sonstiger Unfall"
+      },
+      "kind": {
+        "0": "Unfall anderer Art",
+        "1": "Zusammenstoß mit anfahrendem, anhaltendem oder ruhendem Fahrzeug",
+        "2": "Zusammenstoß mit vorausfahrendem oder wartendem Fahrzeug",
+        "3": "Zusammenstoß mit seitlich in gleicher Richtung fahrendem Fahrzeug",
+        "4": "Zusammenstoß mit entgegenkommendem Fahrzeug",
+        "5": "Zusammenstoß mit einbiegendem oder kreuzendem Fahrzeug",
+        "6": "Zusammenstoß zwischen Fahrzeug und Fußgänger",
+        "7": "Aufprall auf Fahrbahnhindernis",
+        "8": "Abkommen von der Fahrbahn nach rechts",
+        "9": "Abkommen von der Fahrbahn nach links"
+      },
+      "participant": {
+        "bike": "Fahrrad",
+        "car": "Pkw",
+        "pedestrian": "Fußgänger",
+        "motorcycle": "Kraftrad",
+        "goods": "Güterkraftfahrzeug",
+        "other": "Sonstige (Bus, Straßenbahn …)"
+      },
+      "involved": "Beteiligt",
+      "source": "Unfallatlas {{year}}"
     }
   },
   "socialAtlas": {

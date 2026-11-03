@@ -359,6 +359,18 @@ export const BikeSharingDataSchema = z.object({
   updated: z.string().nullable(),
 });
 
+// --- Traffic Accidents (Unfallatlas) ---
+
+export const TrafficAccidentDataSchema = z.object({
+  year: z.number(),
+  // [lon, lat, severity, month, weekday, hour, kind, type, participants]
+  accidents: z.array(z.tuple([
+    z.number(), z.number(), z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    z.number(), z.number(), z.number(), z.number(), z.number(), z.number(),
+  ])),
+  published: z.string().nullable(),
+});
+
 // --- Flood Status (LHP) ---
 
 export const FloodStatusSchema = z.object({

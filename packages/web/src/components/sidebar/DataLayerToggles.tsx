@@ -1,13 +1,15 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Bike } from 'lucide';
-import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Bike, CarFront, Footprints } from 'lucide';
+import { useCommandCenter, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
-import { BIKE_AVAILABILITY, getNoiseWmsMinZoom, getRentMapLegend } from '../map/constants.js';
+import { ACCIDENT_SEVERITY, BIKE_AVAILABILITY, getNoiseWmsMinZoom, getRentMapLegend } from '../map/constants.js';
+import { useTrafficAccidents } from '../../hooks/useTrafficAccidents.js';
+import { countBySeverity } from '../map/layers/traffic-accidents.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -22,6 +24,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6' },
   // After the nine layers with a number key, so the badges stay in order
   { layer: 'bike-sharing', icon: Bike as IconNode, color: '#16a34a' },
+  { layer: 'accidents', icon: CarFront as IconNode, color: '#dc2626' },
   { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
 ];
@@ -62,7 +65,13 @@ const TRAFFIC_SUB_META: { key: TrafficSubLayer; icon: IconNode; color: string }[
   { key: 'roadworks', icon: Construction as IconNode, color: '#d97706' },
 ];
 
-const SOCIAL_SUB_META: { key: SocialLayer; icon: IconNode; color: string }[] = [
+const ACCIDENT_FILTER_META: { key: AccidentFilter; icon: IconNode; color: string }[] = [
+  { key: 'all', icon: CarFront as IconNode, color: '#dc2626' },
+  { key: 'bike', icon: Bike as IconNode, color: '#dc2626' },
+  { key: 'pedestrian', icon: Footprints as IconNode, color: '#dc2626' },
+];
+
+const SOCIAL_SUB_META:{ key: SocialLayer; icon: IconNode; color: string }[] = [
   { key: 'unemployment', icon: Briefcase as IconNode, color: '#ef4444' },
   { key: 'single-parent', icon: Baby as IconNode, color: '#f59e0b' },
   { key: 'welfare', icon: HandCoins as IconNode, color: '#8b5cf6' },
@@ -155,6 +164,33 @@ export function BikeSharingLegend() {
 }
 
 /**
+ * The year shown and what the accident circles' colours mean, with how many
+ * accidents of each severity the current filter keeps. Shares the map's query,
+ * so it fetches nothing of its own.
+ */
+export function AccidentLegend({ cityId, filter }: { cityId: string; filter: AccidentFilter }) {
+  const { t, i18n } = useTranslation();
+  const { data } = useTrafficAccidents(cityId, true);
+  const accidents = data?.data;
+  const counts = useMemo(() => (accidents ? countBySeverity(accidents.accidents, filter) : null), [accidents, filter]);
+  const format = (n: number) => n.toLocaleString(i18n.language);
+  return (
+    <div className="ps-9 pe-2 py-1">
+      {accidents && <p className="text-[12px] text-muted mb-0.5">{t('sidebar.accidentLegend.year', { year: accidents.year })}</p>}
+      <ul aria-label={t('sidebar.accidentLegend.title', { year: accidents?.year ?? '' })} className="space-y-0.5">
+        {ACCIDENT_SEVERITY.map(({ severity, key, color }) => (
+          <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+            <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
+            <span>{t(`sidebar.accidentLegend.${key}`)}</span>
+            {counts && <span className="ms-auto tabular-nums">{format(counts[severity])}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
  * A layer's sub-layer buttons for the ones the city has, or nothing when it
  * has one or none: a lone sub-layer is the layer itself. `minItems` is 1 where
  * another button sits beside the list (noise's live sensors).
@@ -211,6 +247,8 @@ export function DataLayerToggles() {
   const setSocialLayer = useCommandCenter((s) => s.setSocialLayer);
   const populationLayer = useCommandCenter((s) => s.populationLayer);
   const setPopulationLayer = useCommandCenter((s) => s.setPopulationLayer);
+  const accidentFilter = useCommandCenter((s) => s.accidentFilter);
+  const setAccidentFilter = useCommandCenter((s) => s.setAccidentFilter);
   // With the single-key shortcuts switched off, the number badges would point to keys that do nothing.
   const shortcutsOn = useShortcutSettings((s) => s.enabled);
   const setHintsOpen = useShortcutSettings((s) => s.setHintsOpen);
@@ -277,6 +315,14 @@ export function DataLayerToggles() {
             );
           } else if (layer === 'bike-sharing' && active) {
             subItems = <BikeSharingLegend />;
+          } else if (layer === 'accidents' && active) {
+            subItems = (
+              <>
+                <SubLayerList meta={ACCIDENT_FILTER_META} available={ACCIDENT_FILTER_META.map((m) => m.key)} parentColor={color}
+                  isActive={(key) => accidentFilter === key} onSelect={setAccidentFilter} label={(key) => t(`sidebar.accidents.${key}`)} />
+                <AccidentLegend cityId={city.id} filter={accidentFilter} />
+              </>
+            );
           } else if (layer === 'emergencies' && active) {
             subItems = (
               <SubLayerList meta={EMERGENCY_SUB_META} available={available.emergencies} parentColor={color}

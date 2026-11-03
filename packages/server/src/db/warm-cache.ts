@@ -2,10 +2,11 @@ import { sql, type SQL } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadBikeSharing } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadBikeSharing, loadTrafficAccidents } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
+import { TRAFFIC_ACCIDENTS_TTL_SECONDS } from '../cron/ingest-traffic-accidents.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
@@ -161,6 +162,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadBikeSharing(db, cityId);
       if (r) cache.set(CK.bikeSharing(cityId), r.data, 600, r.fetchedAt); // BIKE_SHARING_TTL_SECONDS
     })().catch((err) => log.error(`${cityId} bike sharing failed`, err)),
+
+    (async () => {
+      const r = await loadTrafficAccidents(db, cityId);
+      if (r) cache.set(CK.trafficAccidents(cityId), r.data, TRAFFIC_ACCIDENTS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} traffic accidents failed`, err)),
 
     (async () => {
       const r = await loadWastewater(db, cityId);

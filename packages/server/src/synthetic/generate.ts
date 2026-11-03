@@ -20,7 +20,7 @@ import type {
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
-  TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
+  TrafficAccident, TrafficAccidentData, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
@@ -85,6 +85,7 @@ export interface SyntheticData {
   /** Not in Berlin's data set: only Köln's KVB publishes lift outages (NOT_IN_BERLIN). */
   liftOutages?: LiftOutageData;
   bikeSharing: BikeSharingData;
+  trafficAccidents: TrafficAccidentData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -141,6 +142,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   floodStatus: (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0,
   liftOutages: (c) => c.dataSources.liftOutages !== undefined,
   bikeSharing: (c) => c.dataSources.bikeSharing !== undefined,
+  trafficAccidents: (c) => c.dataSources.trafficAccidents !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -253,6 +255,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('floodStatus')) sets.floodStatus = generateFloodStatus(rng, now, city);
   if (has.has('liftOutages')) sets.liftOutages = generateLiftOutages(rng, now, place);
   if (has.has('bikeSharing')) sets.bikeSharing = generateBikeSharing(rng, now, city, place);
+  if (has.has('trafficAccidents')) sets.trafficAccidents = generateTrafficAccidents(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1511,6 +1514,27 @@ function generateBikeSharing(rng: Rng, now: Date, city: CityConfig, place: Place
     }
   });
   return { system: source.system, operator: source.operator, stations, updated: new Date(reportedAt * 1000).toISOString() };
+}
+
+/**
+ * A last year's worth of accidents in miniature: a dozen around each anchor,
+ * mostly slight, a few serious, one killed per city, with bicycles and
+ * pedestrians among the participants (bits as in TrafficAccident).
+ */
+function generateTrafficAccidents(rng: Rng, now: Date, place: Place): TrafficAccidentData {
+  const year = now.getUTCFullYear() - 1;
+  const accidents: TrafficAccident[] = [];
+  place.anchors.forEach((a) => {
+    for (let k = 0; k < 12; k++) {
+      const { lat, lon } = near(rng, a, 0.015);
+      const roll = rng.int(0, 9);
+      const participants = roll < 4 ? 1 | 2 : roll < 6 ? 2 | 4 : roll < 7 ? 1 : 2;
+      const severity = accidents.length === 0 ? 1 : rng.int(0, 5) === 0 ? 2 : 3;
+      const kind = participants & 4 ? 6 : rng.int(1, 5);
+      accidents.push([lon, lat, severity, rng.int(1, 12), rng.int(1, 7), rng.int(6, 22), kind, rng.int(1, 7), participants]);
+    }
+  });
+  return { year, accidents, published: `${year + 1}-07-07T07:47:16` };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

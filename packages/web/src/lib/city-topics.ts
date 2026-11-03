@@ -29,6 +29,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   socialAtlas: 'sidebar.layers.social',
   noiseMap: 'sidebar.layers.noise',
   bikeSharing: 'sidebar.layers.bike-sharing',
+  trafficAccidents: 'sidebar.layers.accidents',
   // Refinements: road works and noise sensors are layers of traffic and noise,
   // pharmacies and defibrillators of the emergencies layer, the rent map a
   // social layer, the rest parts of the political tile.

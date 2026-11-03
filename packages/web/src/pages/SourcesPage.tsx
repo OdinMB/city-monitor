@@ -191,6 +191,13 @@ function nextbikeSource(system: string, note = ''): Source {
   };
 }
 
+/** The Unfallatlas (dl-de/by-2.0), filtered to the city: every city with `dataSources.trafficAccidents`. */
+const UNFALLATLAS_SOURCE: Source = {
+  name: 'Unfallatlas (Statistische Ämter des Bundes und der Länder)',
+  url: 'https://unfallatlas.statistikportal.de/',
+  description: 'Road accidents with personal injury recorded by the police in the latest year published, with their location, month, weekday, hour, kind, type and who was involved; accidents with damage to property only are not included. City Monitor shows the city\'s accidents as a heat map and as points coloured by the worst injury. Downloaded from open.nrw (opengeodata.nrw.de). Source: Statistische Ämter des Bundes und der Länder, Unfallatlas, dl-de/by-2-0.',
+};
+
 const BERLIN_SOURCES: SourceGroup[] = [
   {
     category: 'News',
@@ -217,6 +224,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'VIZ Berlin', url: 'https://viz.berlin.de/', description: 'Berlin traffic information center — construction sites and road closures. Source: Digitale Plattform Stadtverkehr Berlin, dl-de/by-2-0.' },
       nextbikeSource('nextbike Berlin'),
+      UNFALLATLAS_SOURCE,
     ],
   },
   {
@@ -304,6 +312,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
       { name: 'HVV / Hamburger Hochbahn, Geofox GTI', url: 'https://www.hvv.de/', description: 'Current disruption and service announcements for hvv lines, from the Geofox Thin Interface (GTI) of HOCHBAHN, used under its terms of access. City Monitor shows the announcements in force now, with their full text; a long one is shortened in the collapsed row. Source: hvv / Hamburger Hochbahn AG. Alle Angaben ohne Gewähr.' },
       { name: 'Baustellen Hamburg (Bauweiser)', url: 'https://api.hamburg.de/datasets/v1/baustellen', description: 'Construction sites on main roads and federal highways, with their traffic impact and construction period. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0. City Monitor shows the sites running now or starting within two weeks and shortens long descriptions.' },
       { name: 'StadtRAD Hamburg (Urban Data Platform)', url: 'https://suche.transparenz.hamburg.de/dataset?q=StadtRAD-Stationen', description: 'StadtRAD stations with the bikes available, from the Urban Data Platform\'s SensorThings API (iot.hamburg.de), refreshed every 5 minutes; a station whose count has not changed for a month is not shown. StadtRAD is run by DB Connect. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.' },
+      UNFALLATLAS_SOURCE,
     ],
   },
   {
@@ -348,6 +357,7 @@ const KOELN_SOURCES: SourceGroup[] = [
       { name: 'Baustellen Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/baustellen-koeln', description: 'Permitted roadworks on city streets — road, utility, sewer, traffic-light, bridge, track and emergency works. The dates are the permit period, which the works need not fill. Source: Stadt Köln, dl-de/zero-2-0.' },
       { name: 'KVB Open Data (Aufzüge, Fahrtreppen)', url: 'https://www.kvb.koeln/service/open_data.html', description: 'Lifts and escalators out of service at KVB stations, updated about every 15 minutes. Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.' },
       nextbikeSource('KVB-Rad', ' KVB-Rad is run by nextbike for the KVB.'),
+      UNFALLATLAS_SOURCE,
     ],
   },
   {
@@ -414,6 +424,7 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'Baustellen München (Geoportal)', url: 'https://opendata.muenchen.de/dataset/baustellen_4_weeks_opendata', description: 'Construction works that narrow or close the carriageway, from the city\'s roadworks service map. Source: Landeshauptstadt München – opendata.muenchen.de, dl-de/by-2-0. City Monitor shows each site as a point at the middle of its area.' },
       nextbikeSource('MyRadl', ' The system also covers the Landkreis München; only the stations inside the city are shown.'),
+      UNFALLATLAS_SOURCE,
     ],
   },
   {
