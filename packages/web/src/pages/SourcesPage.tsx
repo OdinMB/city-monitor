@@ -133,7 +133,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'abgeordnetenwatch.de',
         url: 'https://www.abgeordnetenwatch.de/',
-        description: 'Members of the Bundestag and the state parliament for the city\'s constituencies. Licensed CC0 1.0.',
+        description: 'Members of the Bundestag and the state parliament for the city\'s constituencies, and the three latest roll-call votes of each parliament with how those members voted, refreshed weekly. Licensed CC0 1.0.',
         requires: 'political',
       },
     ],

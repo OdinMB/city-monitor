@@ -1,8 +1,9 @@
-import type { CityConfig, PoliticalDistrict, Representative } from '@city-monitor/shared';
+import type { CityConfig, PoliticalDistrict, PoliticalVote, Representative } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
-import { savePoliticalDistricts } from '../db/writes.js';
+import { savePoliticalDistricts, savePoliticalVotes } from '../db/writes.js';
 import { loadPoliticalFetchedAt } from '../db/reads.js';
+import { POLLS_PER_PARLIAMENT, tallyPoll, type AwPoll, type AwVote, type CityMember } from '../lib/political-votes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
@@ -283,12 +284,14 @@ export function hasParliamentConfig(city: CityConfig): boolean {
 export function createPoliticalIngestion(cache: Cache, db: Db | null) {
   return async function ingestPolitical(): Promise<void> {
     const cities = getActiveCities();
+    // One fetch per parliament period and run: every city shares the Bundestag's polls.
+    const polls: PollFetches = new Map();
     for (const city of cities) {
       if (!hasParliamentConfig(city)) continue;
       const config = PARLIAMENT_CONFIG[city.id];
 
       try {
-        await ingestCityPolitical(city, config, cache, db);
+        await ingestCityPolitical(city, config, cache, db, polls);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -329,6 +332,69 @@ async function fetchMandates(periodId: number): Promise<AW_Mandate[] | null> {
   }
 
   return mandates;
+}
+
+type PollWithVotes = { poll: AwPoll; votes: AwVote[] };
+/** Per run: a parliament period's latest polls with their votes, or null when the poll list failed. */
+type PollFetches = Map<number, Promise<PollWithVotes[] | null>>;
+
+async function getJson<T>(url: string): Promise<T | null> {
+  const response = await log.fetch(url, {
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    headers: { 'User-Agent': 'CityMonitor/1.0' },
+  });
+  if (!response.ok) {
+    log.warn(`abgeordnetenwatch returned ${response.status} for ${url}`);
+    return null;
+  }
+  return (await response.json()) as T;
+}
+
+/**
+ * The period's POLLS_PER_PARLIAMENT latest roll-call votes, each with all its
+ * votes (one request per poll, ~600 KB for the Bundestag; only the tallies are
+ * kept). A poll whose votes fail or arrive incomplete is left out.
+ */
+async function fetchLatestPolls(periodId: number): Promise<PollWithVotes[] | null> {
+  const list = await getJson<{ data: AwPoll[] }>(`${API_BASE}/polls`
+    + `?field_legislature=${periodId}`
+    + `&sort_by=field_poll_date`
+    + `&sort_direction=desc`
+    + `&range_end=${POLLS_PER_PARLIAMENT}`);
+  if (!list) return null;
+  const result: PollWithVotes[] = [];
+  for (const poll of list.data) {
+    const votes = await getJson<{ data: AwVote[]; meta: { result: { total: number } } }>(
+      `${API_BASE}/votes?poll=${poll.id}&range_end=1000`,
+    );
+    if (!votes || votes.data.length < votes.meta.result.total) {
+      log.warn(`poll ${poll.id}: votes unavailable or incomplete, left out`);
+      continue;
+    }
+    result.push({ poll, votes: votes.data });
+  }
+  return result;
+}
+
+function latestPolls(fetches: PollFetches, periodId: number): Promise<PollWithVotes[] | null> {
+  let pending = fetches.get(periodId);
+  if (!pending) {
+    pending = fetchLatestPolls(periodId).catch((err) => {
+      log.error(`polls of period ${periodId} failed`, err);
+      return null;
+    });
+    fetches.set(periodId, pending);
+  }
+  return pending;
+}
+
+/** The city's members by mandate id, named and with the party the tile shows. */
+export function membersByMandate(mandates: AW_Mandate[], role: string, unionParty?: 'CSU'): Map<number, CityMember> {
+  return new Map(mandates.map((m) => {
+    const rep = mandateToRepresentative(m, role);
+    const party = unionParty && rep.party === 'CDU' ? unionParty : rep.party;
+    return [m.id, { name: rep.name, party }];
+  }));
 }
 
 async function fetchCurrentPeriod(parliamentId: number): Promise<number | null> {
@@ -480,6 +546,7 @@ async function ingestCityPolitical(
   config: ParliamentConfig,
   cache: Cache,
   db: Db | null,
+  polls: PollFetches,
 ): Promise<void> {
   // Helper: persist to DB without killing the ingestion on failure
   const persistToDb = async (level: string, districts: PoliticalDistrict[]) => {
@@ -501,10 +568,14 @@ async function ingestCityPolitical(
   }
 
   // Skip API calls if DB data was fetched within the current weekly cycle
+  // (both the members and their votes: the older of the two decides)
   if (db) {
-    const fetchedAt = await loadPoliticalFetchedAt(db, city.id, 'bundestag');
-    if (fetchedAt) {
-      const ageMs = Date.now() - fetchedAt.getTime();
+    const [membersAt, votesAt] = await Promise.all([
+      loadPoliticalFetchedAt(db, city.id, 'bundestag'),
+      loadPoliticalFetchedAt(db, city.id, 'votes'),
+    ]);
+    if (membersAt && votesAt) {
+      const ageMs = Date.now() - Math.min(membersAt.getTime(), votesAt.getTime());
       if (ageMs < SKIP_FETCH_IF_YOUNGER_THAN_MS) {
         const ageDays = Math.round(ageMs / 86_400_000);
         log.info(`${city.id}: political data is ${ageDays}d old (refetch after 6d), skipping API fetch`);
@@ -619,4 +690,30 @@ async function ingestCityPolitical(
       log.info(`${city.id}: ${stateBezirke.length} Bezirke with aggregated ${config.state.role}s`);
     }
   }
+
+  // The latest roll-call votes and how the city's members voted
+  const parliaments: Array<[PoliticalVote['parliament'], number, Map<number, CityMember>]> = [
+    ['bundestag', bundestagPeriodId, membersByMandate(cityBundestag, config.bundestag.role, config.bundestag.unionParty)],
+  ];
+  if (statePeriodId && stateMandates.length > 0) {
+    parliaments.push(['state', statePeriodId, membersByMandate(stateMandates, config.state.role)]);
+  }
+  const votes: PoliticalVote[] = [];
+  for (const [parliament, periodId, members] of parliaments) {
+    const fetched = await latestPolls(polls, periodId);
+    if (!fetched) {
+      log.warn(`${city.id}: ${parliament} polls unavailable, keeping previous votes`);
+      return;
+    }
+    votes.push(...fetched.map(({ poll, votes: pollVotes }) => tallyPoll(poll, parliament, pollVotes, members)));
+  }
+  cache.set(CK.politicalVotes(city.id), votes, TTL_SECONDS);
+  if (db) {
+    try {
+      await savePoliticalVotes(db, city.id, votes);
+    } catch (err) {
+      log.error(`${city.id}: DB save for votes failed`, err);
+    }
+  }
+  log.info(`${city.id}: ${votes.length} roll-call votes`);
 }

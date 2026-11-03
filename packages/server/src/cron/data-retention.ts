@@ -94,6 +94,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'abgwatch-bundestag',     retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-state',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-state-bezirke', retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'abgwatch-votes',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
 ];
 
 export async function runDataRetention(db: Db) {

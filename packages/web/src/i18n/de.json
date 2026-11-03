@@ -233,7 +233,17 @@
       "seats_one": "Sitz",
       "seats_other": "Sitze",
       "showMore": "+{{count}} weitere…",
-      "profileLink": "Profil von {{name}}"
+      "profileLink": "Profil von {{name}}",
+      "votes": {
+        "title": "Letzte namentliche Abstimmungen",
+        "accepted": "Angenommen",
+        "rejected": "Abgelehnt",
+        "overall": "Ganzes Parlament: {{yes}} Ja, {{no}} Nein",
+        "cityMembers": "Abgeordnete der Stadt:",
+        "showMembers": "Wer wie abgestimmt hat",
+        "hideMembers": "Abgeordnete ausblenden",
+        "choice": { "yes": "Ja", "no": "Nein", "abstain": "Enthalten", "no_show": "Nicht beteiligt" }
+      }
     },
     "budget": {
       "title": "Stadthaushalt",

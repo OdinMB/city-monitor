@@ -251,7 +251,17 @@
       "seats_many": "مقعدًا",
       "seats_other": "مقعد",
       "showMore": "+{{count}} أخرى…",
-      "profileLink": "الملف الشخصي: {{name}}"
+      "profileLink": "الملف الشخصي: {{name}}",
+      "votes": {
+        "title": "آخر عمليات التصويت بالمناداة بالأسماء",
+        "accepted": "اعتُمد",
+        "rejected": "رُفض",
+        "overall": "البرلمان كله: {{yes}} نعم، {{no}} لا",
+        "cityMembers": "نواب المدينة:",
+        "showMembers": "كيف صوّتوا",
+        "hideMembers": "إخفاء النواب",
+        "choice": { "yes": "نعم", "no": "لا", "abstain": "امتنع", "no_show": "غائب" }
+      }
     },
     "budget": {
       "title": "ميزانية المدينة",

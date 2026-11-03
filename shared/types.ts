@@ -621,6 +621,36 @@ export interface PoliticalDistrict {
   representatives: Representative[];
 }
 
+/** One member's vote in a roll-call vote, as abgeordnetenwatch.de records it. */
+export type VoteChoice = 'yes' | 'no' | 'abstain' | 'no_show';
+
+export interface VoteCounts {
+  yes: number;
+  no: number;
+  abstain: number;
+  noShow: number;
+}
+
+/**
+ * A roll-call vote (abgeordnetenwatch "poll") in the Bundestag or the city's
+ * state parliament: the whole parliament's result and how the city's members
+ * (the same ones as the political tile's member list) voted.
+ */
+export interface PoliticalVote {
+  id: number;
+  parliament: 'bundestag' | 'state';
+  title: string;
+  /** YYYY-MM-DD */
+  date: string;
+  /** Whether the motion was adopted; null when abgeordnetenwatch has no result. */
+  accepted: boolean | null;
+  topics: string[];
+  url: string;
+  totals: VoteCounts;
+  city: VoteCounts;
+  members: Array<{ name: string; party: string; vote: VoteChoice }>;
+}
+
 // Traffic incidents
 export interface TrafficIncident {
   id: string;

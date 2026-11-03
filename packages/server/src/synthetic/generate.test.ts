@@ -324,7 +324,7 @@ describe('generateSyntheticCityData', () => {
       // Sozialmonitoring.
       expect([...held].sort()).toEqual([
         'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electricity', 'evCharging', 'heatRelief', 'laborMarket', 'news', 'nina',
-        'pharmacies', 'political', 'pollen', 'population', 'safety', 'socialAtlas', 'soilMoisture', 'summary', 'traffic', 'trafficAccidents', 'trafficCounts', 'transit',
+        'pharmacies', 'political', 'politicalVotes', 'pollen', 'population', 'safety', 'socialAtlas', 'soilMoisture', 'summary', 'traffic', 'trafficAccidents', 'trafficCounts', 'transit',
         'wastewater', 'waterLevels', 'weather',
       ]);
       // Hamburg's two DWD stations, without Berlin's Gieß den Kiez waterings

@@ -232,7 +232,17 @@
       "districtMayors": "{{count}} ilçe başkanı",
       "seats": "sandalye",
       "showMore": "+{{count}} daha…",
-      "profileLink": "Profil: {{name}}"
+      "profileLink": "Profil: {{name}}",
+      "votes": {
+        "title": "Son açık oylamalar",
+        "accepted": "Kabul edildi",
+        "rejected": "Reddedildi",
+        "overall": "Tüm meclis: {{yes}} evet, {{no}} hayır",
+        "cityMembers": "Şehrin milletvekilleri:",
+        "showMembers": "Kim nasıl oy verdi",
+        "hideMembers": "Milletvekillerini gizle",
+        "choice": { "yes": "Evet", "no": "Hayır", "abstain": "Çekimser", "no_show": "Katılmadı" }
+      }
     },
     "budget": {
       "title": "Kent Bütçesi",

@@ -9,10 +9,10 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData, CrimeAtlasData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, PoliticalVote,WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData, CrimeAtlasData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
-  PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
+  PoliticalDistrictSchema, PoliticalVoteSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
@@ -292,6 +292,10 @@ export async function loadPoliticalDistricts(
   level: string,
 ): Promise<DbResult<PoliticalDistrict[]>> {
   return loadSnapshot(db, cityId, `abgwatch-${level}` as SnapshotType, { schema: z.array(PoliticalDistrictSchema) });
+}
+
+export async function loadPoliticalVotes(db: Db, cityId: string): Promise<DbResult<PoliticalVote[]>> {
+  return loadSnapshot(db, cityId, 'abgwatch-votes', { schema: z.array(PoliticalVoteSchema) });
 }
 
 export async function loadPoliticalFetchedAt(

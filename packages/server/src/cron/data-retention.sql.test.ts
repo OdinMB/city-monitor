@@ -103,6 +103,7 @@ describe('data-retention: snapshots', () => {
     'abgwatch-bundestag',      // weekly, 7 days
     'abgwatch-state',          // weekly, 7 days
     'abgwatch-state-bezirke',  // weekly, 7 days
+    'abgwatch-votes',          // weekly, 7 days
   ];
   const allTypes = [...HISTORY_RETENTION, ...CAPPED_RETENTION].map((c) => c.type);
   const ageOnlyTypes = allTypes.filter((t) => !KEEP_LATEST_TYPES.includes(t));

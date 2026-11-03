@@ -19,7 +19,7 @@ import type {
   CitizenReport, CitizenReportData, GridPoint, GridSignal, SoilMoistureData,
   FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
   LiftOutageData, NinaWarning,
-  NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
+  NoiseSensor, PoliticalDistrict, PoliticalVote, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
   CrimeAreaProps, CrimeAtlasData, CrimeIndicator,
   TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
@@ -85,6 +85,8 @@ export interface SyntheticData {
   councilMeetings: CouncilMeeting[];
   /** Berlin's full set has every level but `mayor`, which only a city inside a state has. */
   political: Record<Exclude<PoliticalLevel, 'mayor'>, PoliticalDistrict[]> & { mayor?: PoliticalDistrict[] };
+  /** Roll-call votes of the Bundestag and the state parliament, cast by the synthetic members above. */
+  politicalVotes: PoliticalVote[];
   /** Not in Berlin's data set: Berlin has no LHP gauges configured (NOT_IN_BERLIN). */
   floodStatus?: FloodStatus;
   /** Not in Berlin's data set: only Köln's KVB publishes lift outages (NOT_IN_BERLIN). */
@@ -169,6 +171,8 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   evCharging: (c) => c.dataSources.evCharging !== undefined,
   heatRelief: (c) => (c.dataSources.heatRelief?.length ?? 0) > 0,
   soilMoisture: (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0,
+  // Last, like its draw in generateSyntheticCityData
+  politicalVotes: hasParliamentConfig,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -290,6 +294,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('heatRelief')) sets.heatRelief = generateHeatRelief(rng, city, place);
   if (has.has('soilMoisture')) sets.soilMoisture = generateSoilMoisture(rng, now, city, place);
   if (has.has('crimeAtlas')) sets.crimeAtlas = generateCrimeAtlas(rng, now, place);
+  if (has.has('politicalVotes')) sets.politicalVotes = generatePoliticalVotes(rng, now, sets.political ?? {});
   return { cityId: city.id, ...sets, history };
 }
 
@@ -2009,6 +2014,48 @@ function generatePolitical(rng: Rng, place: Place): Partial<Record<PoliticalLeve
     }));
   }
   return political;
+}
+
+const VOTE_CHOICES = ['yes', 'yes', 'yes', 'no', 'no', 'abstain', 'no_show'] as const;
+
+/**
+ * Three roll-call votes per parliament, a week apart, cast by the city's
+ * synthetic members (the Bundestag's and the state parliament's levels); the
+ * parliament's totals are the city's plus invented others.
+ */
+function generatePoliticalVotes(rng: Rng, now: Date, political: Partial<Record<PoliticalLevel, PoliticalDistrict[]>>): PoliticalVote[] {
+  const votes: PoliticalVote[] = [];
+  const parliaments = [['bundestag', political.bundestag, 630], ['state', political.state, 150]] as const;
+  for (const [parliament, districts, seats] of parliaments) {
+    const reps = (districts ?? []).flatMap((d) => d.representatives);
+    if (reps.length === 0) continue;
+    for (let i = 0; i < 3; i++) {
+      const members = reps
+        .map((r) => ({ name: r.name, party: r.party, vote: rng.pick(VOTE_CHOICES) }))
+        .sort((a, b) => a.party.localeCompare(b.party, 'de') || a.name.localeCompare(b.name, 'de'));
+      const city = { yes: 0, no: 0, abstain: 0, noShow: 0 };
+      for (const m of members) city[m.vote === 'no_show' ? 'noShow' : m.vote]++;
+      const others = Math.max(0, seats - members.length);
+      const yes = city.yes + Math.round(others * rng.float(0.3, 0.6));
+      const abstain = city.abstain + Math.round(others * 0.05);
+      const noShow = city.noShow + Math.round(others * 0.08);
+      const totals = { yes, no: seats - yes - abstain - noShow, abstain, noShow };
+      const id = (parliament === 'bundestag' ? 9000 : 9100) + i;
+      votes.push({
+        id,
+        parliament,
+        title: `${MARK} Antrag ${id}`,
+        date: shiftDate(local(now).date, -(i * 7 + 2)),
+        accepted: totals.yes > totals.no,
+        topics: [rng.pick(['Energie', 'Verkehr', 'Wohnen', 'Bildung'])],
+        url: `${EXAMPLE}/polls/${id}`,
+        totals,
+        city,
+        members,
+      });
+    }
+  }
+  return votes;
 }
 
 // ---------------------------------------------------------------------------

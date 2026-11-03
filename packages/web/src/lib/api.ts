@@ -49,6 +49,8 @@ import type {
 } from '@city-monitor/shared';
 import type { EvChargingData } from '@city-monitor/shared';
 import type { CrimeAtlasData } from '@city-monitor/shared';
+export type { PoliticalVote, VoteChoice, VoteCounts } from '@city-monitor/shared';
+import type { PoliticalVote } from '@city-monitor/shared';
 export type { HeatReliefData, HeatReliefPlace, HeatReliefKind, DwdHeatTrend } from '@city-monitor/shared';
 import type { HeatReliefData } from '@city-monitor/shared';
 
@@ -85,6 +87,7 @@ export const api = {
   getEvCharging: (city: string) => fetchJson<ApiResponse<EvChargingData | null>>(`${API_BASE}/${city}/ev-charging`),
   getHeatRelief: (city: string) => fetchJson<ApiResponse<HeatReliefData | null>>(`${API_BASE}/${city}/heat-relief`),
   getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
+  getPoliticalVotes: (city: string) => fetchJson<ApiResponse<PoliticalVote[]>>(`${API_BASE}/${city}/political-votes`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),
   getSocialAtlas: (city: string) => fetchJson<ApiResponse<GeoJSON.FeatureCollection | null>>(`${API_BASE}/${city}/social-atlas`),

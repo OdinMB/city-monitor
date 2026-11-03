@@ -57,6 +57,7 @@ export const CK = {
 
   // Political
   political: (cityId: string, level: string) => `${cityId}:political:${level}`,
+  politicalVotes: (cityId: string) => `${cityId}:political-votes`,
 
   // Emergency Services
   feuerwehr: (cityId: string) => `${cityId}:feuerwehr`,

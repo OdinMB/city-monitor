@@ -52,6 +52,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:ev-charging:status` | 900s (15 min) | ingest-ev-charging-status (Hamburg; cache only, never stored) |
 | `{cityId}:heat-relief` | 691200s (8 days) | ingest-heat-relief (not in bootstrap) |
 | `{cityId}:political:{level}` | 604800s (7 days) | ingest-political |
+| `{cityId}:political-votes` | 604800s (7 days) | ingest-political (roll-call votes; not in bootstrap) |
 | `{cityId}:budget` | 86400s (24h) | ingest-budget |
 | `{cityId}:traffic:incidents` | 300s (5 min) | ingest-traffic |
 | `{cityId}:pharmacies:emergency` | 21600s (6h) | ingest-pharmacies |
@@ -136,14 +137,14 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `aqi-grid` | Sensor.Community air quality points; the WAQI stations of the same grid are cached, never stored ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
 | `uba-airquality` | Official state-network air quality stations from the UBA Air Data API ([air-quality-stations.md](air-quality-stations.md)) |
 | `bbk-nina` | BBK NINA civil protection warnings |
-| `abgwatch-*` | Political districts (5 sub-types): `bundestag`, `state`, `state-bezirke` from abgeordnetenwatch; `bezirke` and `mayor` from the hand-kept tables in `ingest-political.ts` |
+| `abgwatch-*` | Political districts (5 sub-types): `bundestag`, `state`, `state-bezirke` from abgeordnetenwatch; `bezirke` and `mayor` from the hand-kept tables in `ingest-political.ts`. Plus `abgwatch-votes`: the latest roll-call votes (`PoliticalVote[]`, `savePoliticalVotes`/`loadPoliticalVotes`) |
 
 All tables have `id` (serial PK), and all but `geocodeLookups` have `cityId` (text). Snapshots have `fetchedAt` (timestamptz, default now).
 
 ### Reads (`reads.ts`)
 
 All route-facing read functions return `DbResult<T>` (`{ data: T; fetchedAt: Date } | null`). This wrapper ensures routes always have the real `fetchedAt` timestamp from the DB — never `new Date()`. Each function loads the most recent data for a city. Internal `loadSnapshot<T>(db, cityId, type, opts?)` queries the unified `snapshots` table filtered by `(cityId, type)` and `ORDER BY fetchedAt DESC LIMIT 1`. Optional `maxAgeMs` enables staleness guards (30 min–48h depending on domain: flood status 30 min, lift outages, bike sharing, citizen reports and noise sensors 2h, NINA, electricity and traffic counts 3h, AQ grid 6h, pollen and council meetings 48h, soil moisture 7 days, the EV charging register 90 days; `loadEvents` applies its own 48h guard) to prevent serving extremely stale data when a cron job has stopped entirely. Named wrappers preserve their original signatures — zero caller changes.
-- `loadWeather`, `loadTransitAlerts`, `loadEvents`, `loadSafetyReports`, `loadNewsItems`, `loadSummary`, `loadNinaWarnings`, `loadAirQualityGrid`, `loadWaterLevels`, `loadPoliticalDistricts`, `loadPoliticalFetchedAt`, `loadAppointments`
+- `loadWeather`, `loadTransitAlerts`, `loadEvents`, `loadSafetyReports`, `loadNewsItems`, `loadSummary`, `loadNinaWarnings`, `loadAirQualityGrid`, `loadWaterLevels`, `loadPoliticalDistricts`, `loadPoliticalVotes`, `loadPoliticalFetchedAt`, `loadAppointments`
 - `loadBudget`, `loadConstructionSites`, `loadTrafficIncidents`, `loadPharmacies`, `loadAeds`, `loadSocialAtlas`, `loadWastewater`, `loadBathingSpots`, `loadLaborMarket`, `loadPopulationGeojson`, `loadPopulationSummary`, `loadFeuerwehr`, `loadPollen`, `loadNoiseSensors`, `loadCouncilMeetings`, `loadFloodStatus`, `loadLiftOutages`, `loadBikeSharing`, `loadTrafficAccidents`, `loadElectricity`, `loadSoilMoisture`, `loadAirQualityStations`, `loadCitizenReports`
 - Cron-side reads (not route-facing, no `DbResult`): `loadSafetyGeoState` (safety cron), `loadAllNewsAssessments` (feed cron), `loadGeocodeLookup` / `loadAllGeocodeLookups` (geocoder and cache warming)
 - **Historical queries** (used by `/history` endpoints, not cron): `loadWeatherHistory`, `loadWaterLevelHistory`, `loadLaborMarketHistory` — each takes `(db, cityId, sinceDays)` and returns `HistoryPoint[]`. Air quality has none: the stored grid is kept 6 hours and holds no WAQI stations.

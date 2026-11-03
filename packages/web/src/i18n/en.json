@@ -235,7 +235,17 @@
       "seats_one": "seat",
       "seats_other": "seats",
       "showMore": "+{{count}} more…",
-      "profileLink": "Profile of {{name}}"
+      "profileLink": "Profile of {{name}}",
+      "votes": {
+        "title": "Latest roll-call votes",
+        "accepted": "Adopted",
+        "rejected": "Rejected",
+        "overall": "Whole parliament: {{yes}} yes, {{no}} no",
+        "cityMembers": "City's members:",
+        "showMembers": "How they voted",
+        "hideMembers": "Hide members",
+        "choice": { "yes": "Yes", "no": "No", "abstain": "Abstained", "no_show": "Absent" }
+      }
     },
     "budget": {
       "title": "City Budget",
