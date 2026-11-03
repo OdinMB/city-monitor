@@ -223,6 +223,22 @@
         "cmdScroll": "استخدم ⌘ + التمرير لتكبير الخريطة أو تصغيرها"
       }
     },
+    "elections": {
+      "tab": "الانتخابات",
+      "title": "{{election}}، {{date}}",
+      "kind": {
+        "abgeordnetenhaus": "انتخابات برلمان الولاية (Abgeordnetenhaus)",
+        "buergerschaft": "انتخابات برلمان الولاية (Bürgerschaft)",
+        "stadtrat": "انتخابات مجلس المدينة"
+      },
+      "vote": {
+        "abgeordnetenhaus": "الأصوات الثانية",
+        "buergerschaft": "أصوات القوائم الحزبية",
+        "stadtrat": "حصة من جميع الأصوات"
+      },
+      "others": "أحزاب أخرى",
+      "turnout": "نسبة المشاركة"
+    },
     "political": {
       "empty": "لا توجد بيانات",
       "districts": "دوائر انتخابية",
@@ -667,6 +683,12 @@
       "bike": "بمشاركة دراجات",
       "pedestrian": "بمشاركة مشاة"
     },
+    "electionLegend": {
+      "strongest": "أقوى حزب في كل منطقة",
+      "strongest_wahlkreis": "أقوى حزب في كل دائرة انتخابية",
+      "strongest_stadtteil": "أقوى حزب في كل حي",
+      "strongest_stadtbezirk": "أقوى حزب في كل منطقة إدارية"
+    },
     "accidentLegend": {
       "title": "حوادث بإصابات بشرية في عام {{year}} حسب أشد إصابة",
       "year": "حوادث بإصابات بشرية في عام {{year}}",
@@ -683,7 +705,8 @@
       "bezirke": "الأحياء",
       "mayor": "البلدية",
       "bundestag": "البوندستاغ",
-      "landesparlament": "برلمان الولاية"
+      "landesparlament": "برلمان الولاية",
+      "elections": "نتائج الانتخابات"
     }
   },
   "mapPopup": {

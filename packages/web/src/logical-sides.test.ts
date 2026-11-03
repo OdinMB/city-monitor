@@ -102,6 +102,11 @@ const IN_PAGE_DIRECTION: { file: string; found: string; reason: string }[] = [
     reason: 'the UBA class swatch sits between the translated index label and the translated class name, all in the page direction',
   },
   {
+    file: 'components/map/layers/elections.ts',
+    found: 'border-radius:50%;background:${};margin-inline-end:6px',
+    reason: 'the party swatch opens its table cell, before the party name, which sits in its own isolated run',
+  },
+  {
     file: 'components/strips/AirQualityStrip.tsx',
     found: 'ms-1 text-[9px] font-normal',
     reason: 'the translated "(model)" tag follows the pollutant label, in the page direction',

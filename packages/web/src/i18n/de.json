@@ -219,6 +219,22 @@
         "cmdScroll": "Karte mit ⌘ + Scrollen zoomen"
       }
     },
+    "elections": {
+      "tab": "Wahl",
+      "title": "{{election}}, {{date}}",
+      "kind": {
+        "abgeordnetenhaus": "Abgeordnetenhauswahl",
+        "buergerschaft": "Bürgerschaftswahl",
+        "stadtrat": "Stadtratswahl"
+      },
+      "vote": {
+        "abgeordnetenhaus": "Zweitstimmen",
+        "buergerschaft": "Landeslistenstimmen",
+        "stadtrat": "Anteil aller Stimmen"
+      },
+      "others": "Sonstige",
+      "turnout": "Wahlbeteiligung"
+    },
     "political": {
       "empty": "Keine Daten verfügbar",
       "districts": "Wahlkreise",
@@ -629,6 +645,12 @@
       "bike": "Mit Fahrrad",
       "pedestrian": "Mit Fußgängern"
     },
+    "electionLegend": {
+      "strongest": "Stärkste Partei je Gebiet",
+      "strongest_wahlkreis": "Stärkste Partei je Wahlkreis",
+      "strongest_stadtteil": "Stärkste Partei je Stadtteil",
+      "strongest_stadtbezirk": "Stärkste Partei je Stadtbezirk"
+    },
     "accidentLegend": {
       "title": "Unfälle mit Personenschaden {{year}} nach der schwersten Unfallfolge",
       "year": "Unfälle mit Personenschaden {{year}}",
@@ -649,7 +671,8 @@
       "landesparlament_berlin": "Abgeordnetenhaus",
       "landesparlament_hamburg": "Bürgerschaft",
       "landesparlament_koeln": "Landtag",
-      "landesparlament_muenchen": "Landtag"
+      "landesparlament_muenchen": "Landtag",
+      "elections": "Wahlergebnisse"
     }
   },
   "mapPopup": {

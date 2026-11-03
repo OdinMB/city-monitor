@@ -30,6 +30,10 @@ export const CK = {
   bikeSharing: (cityId: string) => `${cityId}:bike-sharing`,
   /** Not bootstrapped: Berlin's ~13,000 accidents a year are about 450 KB, fetched when the map layer is on. */
   trafficAccidents: (cityId: string) => `${cityId}:traffic-accidents`,
+  /** Not bootstrapped (~25 KB for Berlin's 78 Wahlkreise): the political tile's Election view and the map popup fetch it. */
+  electionResults: (cityId: string) => `${cityId}:election-results`,
+  /** Not bootstrapped: the election areas' polygons (Berlin ~110 KB), fetched when the map's Election view is on. */
+  electionGeojson: (cityId: string) => `${cityId}:election-results:geojson`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

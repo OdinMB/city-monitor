@@ -52,15 +52,15 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
   ]);
   const noiseLive = has('noiseSensors');
   const social = present<SocialLayer>([...socialAtlasLayers(id).map((key) => [key, has('socialAtlas')] as const), ['rent', has('rentMap')]]);
-  // The political layer colours district outlines, which only some cities ship,
-  // and each view only where its members map onto Bezirke: district mayors,
+  // The representatives' views colour district outlines, which only some cities
+  // ship, and each only where its members map onto Bezirke: district mayors,
   // Bundestag constituencies named after Bezirke (not Köln's "Köln I"), state
-  // members grouped by Bezirk.
-  const political = has('political') && has('politicalMap')
-    ? present<PoliticalLayer>([
-      ['bezirke', has('districtMayors')], ['bundestag', has('bundestagByDistrict')], ['landesparlament', has('stateByDistrict')],
-    ])
-    : [];
+  // members grouped by Bezirk. The election view brings its own areas.
+  const onDistricts = has('political') && has('politicalMap');
+  const political = present<PoliticalLayer>([
+    ['bezirke', onDistricts && has('districtMayors')], ['bundestag', onDistricts && has('bundestagByDistrict')],
+    ['landesparlament', onDistricts && has('stateByDistrict')], ['elections', has('electionResults')],
+  ]);
 
   const layers = new Set(present<DataLayer>([
     ['warnings', has('nina')],

@@ -8,6 +8,7 @@ const PARTY_COLORS: Record<string, string> = {
   'BSW': '#732048',
   'AfD': '#009EE0',
   'Freie Wähler': '#F7A800',
+  'Volt': '#502379',
   'Parteilos': '#808080',
 };
 

@@ -160,8 +160,9 @@ describe('DataLayerToggles per city', () => {
   it('lists a layer\'s sub-layers only when the city has more than one', () => {
     useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic', 'water', 'noise', 'political', 'news']) });
     renderFor(hamburg);
-    // Hamburg has only the Bundestag view; its water layer has gauges and bathing spots.
-    expect(shown(i18n.t('sidebar.political.bundestag'))).toBe(false);
+    // Hamburg has the Bundestag and election views; its water layer has gauges and bathing spots.
+    expect(shown(i18n.t('sidebar.political.bundestag'))).toBe(true);
+    expect(shown(i18n.t('sidebar.political.elections'))).toBe(true);
     expect(shown(i18n.t('sidebar.water.levels'))).toBe(true);
     expect(shown(i18n.t('sidebar.water.bathing'))).toBe(true);
     // It has traffic incidents and roadworks, news and police, and three noise maps without

@@ -2,11 +2,12 @@ import { sql, type SQL } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficAccidents, loadElectricity } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficAccidents, loadElectricity, loadElectionResults } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
 import { TRAFFIC_ACCIDENTS_TTL_SECONDS } from '../cron/ingest-traffic-accidents.js';
+import { ELECTION_RESULTS_TTL_SECONDS } from '../cron/ingest-election-results.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
@@ -182,6 +183,13 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadTrafficAccidents(db, cityId);
       if (r) cache.set(CK.trafficAccidents(cityId), r.data, TRAFFIC_ACCIDENTS_TTL_SECONDS, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} traffic accidents failed`, err)),
+
+    (async () => {
+      const r = await loadElectionResults(db, cityId);
+      if (!r) return;
+      cache.set(CK.electionResults(cityId), r.data.results, ELECTION_RESULTS_TTL_SECONDS, r.fetchedAt);
+      cache.set(CK.electionGeojson(cityId), r.data.geojson, ELECTION_RESULTS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} election results failed`, err)),
 
     (async () => {
       const r = await loadWastewater(db, cityId);

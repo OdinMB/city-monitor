@@ -219,6 +219,22 @@
         "cmdScroll": "Use ⌘ + scroll to zoom the map"
       }
     },
+    "elections": {
+      "tab": "Election",
+      "title": "{{election}}, {{date}}",
+      "kind": {
+        "abgeordnetenhaus": "Abgeordnetenhaus election",
+        "buergerschaft": "Bürgerschaft election",
+        "stadtrat": "City council election"
+      },
+      "vote": {
+        "abgeordnetenhaus": "second votes",
+        "buergerschaft": "party list votes",
+        "stadtrat": "share of all votes"
+      },
+      "others": "Others",
+      "turnout": "Turnout"
+    },
     "political": {
       "empty": "No data available",
       "districts": "districts",
@@ -627,6 +643,12 @@
       "bike": "With bicycles",
       "pedestrian": "With pedestrians"
     },
+    "electionLegend": {
+      "strongest": "Strongest party per area",
+      "strongest_wahlkreis": "Strongest party per constituency",
+      "strongest_stadtteil": "Strongest party per quarter",
+      "strongest_stadtbezirk": "Strongest party per district"
+    },
     "accidentLegend": {
       "title": "Accidents with personal injury in {{year}}, by the worst injury",
       "year": "Injury accidents in {{year}}",
@@ -643,7 +665,8 @@
       "bezirke": "Districts",
       "mayor": "City Hall",
       "bundestag": "Bundestag",
-      "landesparlament": "State Parliament"
+      "landesparlament": "State Parliament",
+      "elections": "Election results"
     }
   },
   "mapPopup": {

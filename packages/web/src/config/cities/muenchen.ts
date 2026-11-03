@@ -27,5 +27,5 @@ export const muenchen: WebCityConfig = {
   // chairs) and the crisis-services directory. Its 25 Stadtbezirke ship as
   // outlines, but there is no political map layer: no Bezirksausschuss chairs,
   // and its constituencies are not Stadtbezirke.
-  features: ['news', 'nina', 'pollen', 'floodStatus', 'roadworks', 'socialAtlas', 'population', 'laborMarket', 'wastewater', 'councilMeetings', 'citizenReports', 'airQualityStations', 'bikeSharing', 'trafficAccidents', 'electricity', 'pharmacies', 'aeds', 'political', 'mayor', 'crisis'],
+  features: ['news', 'nina', 'pollen', 'floodStatus', 'roadworks', 'socialAtlas', 'population', 'laborMarket', 'wastewater', 'councilMeetings', 'citizenReports', 'airQualityStations', 'bikeSharing', 'trafficAccidents', 'electricity', 'electionResults', 'pharmacies', 'aeds', 'political', 'mayor', 'crisis'],
 };

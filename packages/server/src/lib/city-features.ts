@@ -36,6 +36,7 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['airQualityStations', (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0],
   ['citizenReports', (c) => c.dataSources.citizenReports !== undefined],
   ['trafficAccidents', (c) => c.dataSources.trafficAccidents !== undefined],
+  ['electionResults', (c) => c.dataSources.electionResults !== undefined],
   ['socialAtlas', (c) => c.dataSources.socialAtlas !== undefined],
   ['population', (c) => c.dataSources.population !== undefined],
   ['laborMarket', (c) => c.dataSources.laborMarket !== undefined],

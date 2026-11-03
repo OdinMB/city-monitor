@@ -64,6 +64,15 @@ export const muenchen: CityConfig = {
     bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_ml/gbfs.json', system: 'MyRadl', operator: 'nextbike' },
     // Unfallatlas (dl-de/by-2.0): the kreisfreie Stadt, ~5,300 injury accidents in 2025
     trafficAccidents: { provider: 'unfallatlas', ags: '09162000' },
+    // Stadtrat 2026, final result per Stadtbezirk (KVR – Wahlamt, dl-de/by-2.0 on
+    // opendata.muenchen.de "Stadtratswahl 2026 - Ergebnisse München")
+    electionResults: {
+      provider: 'muenchen-stadtrat-zip',
+      url: 'https://www.wahlen-muenchen.de/ergebnisse/20260308oberbuergermeisterwahl/endergebnis_stadtratswahl.zip',
+      election: 'stadtrat',
+      date: '2026-03-08',
+      outlines: 'muenchen-stadtbezirke.geojson',
+    },
     // The Isar's flood class (Meldestufe) from the LHP public API (CC BY 4.0): the HND gauge
     // München (16005701, Meldestufen at 240/300/380 cm and a 4th) and Puppling, the last
     // gauge upstream, about 25 km south. LHP gives no water levels (checked 2026-11-01).

@@ -1,6 +1,6 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints } from 'lucide';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints, Vote } from 'lucide';
 import { useCommandCenter, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
@@ -13,6 +13,10 @@ import { useCitizenReports } from '../../hooks/useCitizenReports.js';
 import type { CitizenReportStatus } from '../../lib/api.js';
 import { useTrafficAccidents } from '../../hooks/useTrafficAccidents.js';
 import { countBySeverity } from '../map/layers/traffic-accidents.js';
+import { useElectionResults } from '../../hooks/useElectionResults.js';
+import { electionTitle, leadersOf } from '../map/layers/elections.js';
+import { getPartyColor } from '../../lib/party-colors.js';
+import { SourceText } from '../SourceText.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -93,6 +97,7 @@ const POLITICAL_SUB_META: { key: PoliticalLayer; icon: IconNode; color: string }
   { key: 'bezirke', icon: Landmark as IconNode, color: '#64748b' },
   { key: 'bundestag', icon: Building2 as IconNode, color: '#64748b' },
   { key: 'landesparlament', icon: Building as IconNode, color: '#64748b' },
+  { key: 'elections', icon: Vote as IconNode, color: '#64748b' },
 ];
 
 function LayerBadge({ icon, color, active, small }: { icon: IconNode; color: string; active: boolean; small?: boolean }) {
@@ -213,6 +218,34 @@ export function AccidentLegend({ cityId, filter }: { cityId: string; filter: Acc
             <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
             <span>{t(`sidebar.accidentLegend.${key}`)}</span>
             {counts && <span className="ms-auto tabular-nums">{format(counts[severity])}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * The election view's key: which election, and each party that is strongest
+ * somewhere, in its map colour, with the number of areas it leads. Shares the
+ * map's query.
+ */
+export function ElectionLegend({ cityId }: { cityId: string }) {
+  const { t, i18n } = useTranslation();
+  const { data } = useElectionResults(cityId, true);
+  const results = data?.data;
+  const leaders = useMemo(() => (results ? leadersOf(results) : []), [results]);
+  if (!results) return null;
+  return (
+    <div className="ps-9 pe-2 py-1">
+      <p className="text-[12px] text-muted mb-0.5">{electionTitle(results)}</p>
+      <ul aria-label={t('sidebar.electionLegend.strongest', { context: results.areaLevel })} className="space-y-0.5">
+        <li className="text-[11px] text-muted">{t('sidebar.electionLegend.strongest', { context: results.areaLevel })}</li>
+        {leaders.map(([party, count]) => (
+          <li key={party} className="flex items-center gap-2 text-[12px] text-muted">
+            <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-sm border border-gray-400/60 shrink-0" style={{ backgroundColor: getPartyColor(party) }} />
+            <SourceText as="span">{party}</SourceText>
+            <span className="ms-auto tabular-nums">{count.toLocaleString(i18n.language)}</span>
           </li>
         ))}
       </ul>
@@ -407,9 +440,12 @@ export function DataLayerToggles() {
           } else if (layer === 'political' && active) {
             // The state parliament has its own name per city (the `_<city id>` keys).
             subItems = (
-              <SubLayerList meta={POLITICAL_SUB_META} available={available.political} parentColor={color}
-                isActive={(key) => political === key} onSelect={setPoliticalLayer}
-                label={(key) => t(`sidebar.political.${key}`, { context: city.id })} />
+              <>
+                <SubLayerList meta={POLITICAL_SUB_META} available={available.political} parentColor={color}
+                  isActive={(key) => political === key} onSelect={setPoliticalLayer}
+                  label={(key) => t(`sidebar.political.${key}`, { context: city.id })} />
+                {political === 'elections' && <ElectionLegend cityId={city.id} />}
+              </>
             );
           }
 

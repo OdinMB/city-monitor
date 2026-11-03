@@ -289,6 +289,12 @@ const BERLIN_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Politics',
+    sources: [
+      { name: 'Wahlen Berlin (Abgeordnetenhauswahl 2026)', url: 'https://www.wahlen-berlin.de/wahlen/BE2026/AFSPRAES/agh/index.html', description: 'Final result of the Abgeordnetenhaus election of 20 September 2026 per polling district, which City Monitor sums to second-vote shares and turnout per Wahlkreis for the political map and tile. Source: Amt für Statistik Berlin-Brandenburg, CC BY 3.0 DE. Wahlkreis outlines, simplified: Amt für Statistik Berlin-Brandenburg / Wahlgebiete für die Wahl zum 20. Abgeordnetenhaus von Berlin 2026, CC BY 3.0 DE.' },
+    ],
+  },
+  {
     category: 'Maps',
     sources: [
       { name: 'Sensor.Community', url: 'https://sensor.community/', description: 'Citizen-run air quality sensors — PM2.5 and PM10 readings. © Sensor.Community contributors, ODbL.' },
@@ -304,6 +310,12 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Council Meetings',
     sources: [
       { name: 'Hamburgische Bürgerschaft (Termine)', url: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine', description: 'Public committee and plenary sessions of the state parliament, read from its website calendar. Official public records; the site states no licence.' },
+    ],
+  },
+  {
+    category: 'Politics',
+    sources: [
+      { name: 'Statistikamt Nord (Bürgerschaftswahl 2025)', url: 'https://www.statistik-nord.de/wahlen/wahlen-in-hamburg/buergerschaftswahlen/2025', description: 'Final result of the Bürgerschaft election of 2 March 2025 per Stadtteil (party-list shares and turnout), for the political map and tile; small Stadtteile are reported together. Source: Statistisches Amt für Hamburg und Schleswig-Holstein, reproduced with source attribution as its terms allow.' },
     ],
   },
   {
@@ -486,6 +498,7 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     category: 'Politics',
     sources: [
       { name: 'Landeshauptstadt München (Oberbürgermeister)', url: 'https://stadt.muenchen.de/infos/oberbuergermeister.html', description: 'The Oberbürgermeister, copied by hand from the city\'s page and checked twice a year.' },
+      { name: 'Wahlamt München (Stadtratswahl 2026)', url: 'https://opendata.muenchen.de/dataset/stadtratswahl-2026-ergebnisse-muenchen', description: 'Final result of the Stadtrat election of 8 March 2026 per Stadtbezirk (each party\'s share of all votes cast, and turnout), for the political map and tile. Source: Landeshauptstadt München – Kreisverwaltungsreferat, Wahlamt, dl-de/by-2-0.' },
     ],
   },
   {

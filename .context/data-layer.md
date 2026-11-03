@@ -44,6 +44,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:electricity` | 1800s (30 min) | ingest-electricity |
 | `{cityId}:citizen-reports` | 1800s (30 min) | ingest-citizen-reports (Köln, München); not in bootstrap |
 | `{cityId}:traffic-accidents` | 3214080s (37.2 days) | ingest-traffic-accidents (not in bootstrap) |
+| `{cityId}:election-results`, `{cityId}:election-geojson` | 3214080s (37.2 days) | ingest-election-results (not in bootstrap) |
 | `{cityId}:political:{level}` | 604800s (7 days) | ingest-political |
 | `{cityId}:budget` | 86400s (24h) | ingest-budget |
 | `{cityId}:traffic:incidents` | 300s (5 min) | ingest-traffic |
@@ -113,6 +114,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `smard-electricity` | Control-area generation mix (SMARD) and Germany's grid signal and CO₂ (Energy-Charts) ([electricity.md](electricity.md)) |
 | `open311-reports` | Open311 citizen reports, Köln and München ([citizen-reports.md](citizen-reports.md)); written at most hourly |
 | `unfallatlas-accidents` | Last year's injury accidents from the Unfallatlas ([traffic-accidents.md](traffic-accidents.md)) |
+| `election-results` | The latest election's results per area and the areas' choropleth GeoJSON ([election-results.md](election-results.md)) |
 | `ba-labor-market` | Bundesagentur für Arbeit unemployment |
 | `afstat-population` | Population of every provider (Amt für Statistik EWR, Hamburg Stadtteile, Köln Datenkatalog) |
 | `bf-feuerwehr` | Berliner Feuerwehr operations CSV |
@@ -156,9 +158,9 @@ Runs on server start if DB is connected. First loads every geocode lookup into t
 
 ### Data Retention (`cron/data-retention.ts`)
 
-Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion for all snapshot types + non-snapshot tables. Phase 2: row-count cap (100 rows per cityId/type) for non-history snapshot types, using `ROW_NUMBER() OVER (PARTITION BY city_id ORDER BY fetched_at DESC)` raw SQL; it keeps rows 1–100, so it never removes the newest. Each cleanup task is independent — one failure doesn't block others. Config is split into `HISTORY_RETENTION` (3 time-only entries) and `CAPPED_RETENTION` (24 entries: time + row cap).
+Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion for all snapshot types + non-snapshot tables. Phase 2: row-count cap (100 rows per cityId/type) for non-history snapshot types, using `ROW_NUMBER() OVER (PARTITION BY city_id ORDER BY fetched_at DESC)` raw SQL; it keeps rows 1–100, so it never removes the newest. Each cleanup task is independent — one failure doesn't block others. Config is split into `HISTORY_RETENTION` (3 time-only entries) and `CAPPED_RETENTION` (30 entries: time + row cap).
 
-**Keep-latest is opt-in (`keepLatest: true` on a config entry).** By default Phase 1 deletes snapshot rows by age alone, the newest included. A `keepLatest` type never loses its newest row per (cityId, type) by age: Phase 1 skips the row with the latest `fetchedAt`, and of rows tied on it the highest `id`, so exactly one stays (`id NOT IN` a `SELECT DISTINCT ON (city_id) id … ORDER BY city_id, fetched_at DESC, id DESC` subquery of the same type). Only types whose job runs no more often than their retention period get it, since those lose their only row after one failed run (or, if monthly, every month): `mss-social-atlas` and `abgwatch-*` (weekly, 7-day retention) and `afstat-population` and `unfallatlas-accidents` (monthly). They so keep a row for cache warming and the routes' DB fallback after a restart, and population's change figure has a previous snapshot to compare with. Their reads have no `maxAgeMs` guard, so after a long outage the kept row is served old, with its real `fetchedAt`. Frequently fetched types stay age-only, so a stopped job leaves them empty rather than stale; `aqi-grid` must stay age-only ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)).
+**Keep-latest is opt-in (`keepLatest: true` on a config entry).** By default Phase 1 deletes snapshot rows by age alone, the newest included. A `keepLatest` type never loses its newest row per (cityId, type) by age: Phase 1 skips the row with the latest `fetchedAt`, and of rows tied on it the highest `id`, so exactly one stays (`id NOT IN` a `SELECT DISTINCT ON (city_id) id … ORDER BY city_id, fetched_at DESC, id DESC` subquery of the same type). Only types whose job runs no more often than their retention period get it, since those lose their only row after one failed run (or, if monthly, every month): `mss-social-atlas` and `abgwatch-*` (weekly, 7-day retention) and `afstat-population`, `unfallatlas-accidents` and `election-results` (monthly). They so keep a row for cache warming and the routes' DB fallback after a restart, and population's change figure has a previous snapshot to compare with. Their reads have no `maxAgeMs` guard, so after a long outage the kept row is served old, with its real `fetchedAt`. Frequently fetched types stay age-only, so a stopped job leaves them empty rather than stale; `aqi-grid` must stay age-only ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)).
 
 | Category | Snapshot types / tables | Retention |
 |---|---|---|
@@ -169,7 +171,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 | Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, bike-sharing, smard-electricity, uba-airquality | 2 days + 100 row cap |
 | Non-history (large, hourly) | open311-reports | 1 day + 100 row cap |
 | Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr | 7 days + 100 row cap |
-| Non-history (infrequent, weekly/monthly jobs) | mss-social-atlas, afstat-population, unfallatlas-accidents, abgwatch-* | 7 days, newest row per city kept (`keepLatest`) + 100 row cap |
+| Non-history (infrequent, weekly/monthly jobs) | mss-social-atlas, afstat-population, unfallatlas-accidents, election-results, abgwatch-* | 7 days, newest row per city kept (`keepLatest`) + 100 row cap |
 | Non-snapshot | news, events, safety | 3 days |
 | Summaries | AI summaries; also any whose city has no news items left | 7 days |
 

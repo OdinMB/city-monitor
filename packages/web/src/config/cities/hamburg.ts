@@ -29,5 +29,5 @@ export const hamburg: WebCityConfig = {
   // Stadtteil statistics (99 Stadtteile). The Bürgerschaft's constituencies are
   // not Bezirke, so its members are not grouped by Bezirk; its Bundestag
   // constituencies are named after them, so the political map has a Bundestag view.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'transit', 'roadworks', 'bathing', 'socialAtlas', 'population', 'councilMeetings', 'laborMarket', 'wastewater', 'airQualityStations', 'bikeSharing', 'trafficAccidents', 'electricity', 'pharmacies', 'aeds', 'political', 'noiseMap', 'rentMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
+  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'transit', 'roadworks', 'bathing', 'socialAtlas', 'population', 'councilMeetings', 'laborMarket', 'wastewater', 'airQualityStations', 'bikeSharing', 'trafficAccidents', 'electricity', 'electionResults', 'pharmacies', 'aeds', 'political', 'noiseMap', 'rentMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
 };

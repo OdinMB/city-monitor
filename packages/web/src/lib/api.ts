@@ -30,6 +30,7 @@ export type {
   AirQualityStation, UbaAirIndex,
   CitizenReport, CitizenReportData, CitizenReportGroup, CitizenReportStatus,
   TrafficAccident, TrafficAccidentData, AccidentSeverity,
+  ElectionResults, ElectionAreaResult, ElectionShare, ElectionFeatureProps, ElectionKind, ElectionAreaLevel,
 } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
@@ -42,6 +43,7 @@ import type {
   CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy,
   PoliticalDistrict, TransitAlert, AirQuality, BootstrapData,
   NewsSummaryData, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficAccidentData, ElectricityData,
+  ElectionResults,
 } from '@city-monitor/shared';
 
 /** The levels `GET /api/:city/political/:level` serves (packages/server/src/routes/political.ts). */
@@ -71,6 +73,8 @@ export const api = {
   getElectricity: (city: string) => fetchJson<ApiResponse<ElectricityData | null>>(`${API_BASE}/${city}/electricity`),
   getCitizenReports: (city: string) => fetchJson<ApiResponse<CitizenReportData | null>>(`${API_BASE}/${city}/citizen-reports`),
   getTrafficAccidents: (city: string) => fetchJson<ApiResponse<TrafficAccidentData | null>>(`${API_BASE}/${city}/traffic-accidents`),
+  getElectionResults: (city: string) => fetchJson<ApiResponse<ElectionResults | null>>(`${API_BASE}/${city}/election-results`),
+  getElectionGeojson: (city: string) => fetchJson<ApiResponse<GeoJSON.FeatureCollection | null>>(`${API_BASE}/${city}/election-results/geojson`),
   getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),

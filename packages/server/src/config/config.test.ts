@@ -273,7 +273,8 @@ describe('München config', () => {
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
       airQuality: _airQuality, floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population,
-      bikeSharing: _bikes, trafficAccidents: _accidents, electricity: _electricity, citizenReports: _reports, ...rest
+      bikeSharing: _bikes, trafficAccidents: _accidents, electricity: _electricity, citizenReports: _reports,
+      electionResults: _elections, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });

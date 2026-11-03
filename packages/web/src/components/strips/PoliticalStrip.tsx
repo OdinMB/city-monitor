@@ -13,25 +13,89 @@ import { StripErrorFallback } from '../ErrorFallback.js';
 import { SourceText } from '../SourceText.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
-import type { PoliticalDistrict, PoliticalLevel, Representative } from '../../lib/api.js';
+import { Ltr } from '../Ltr.js';
+import { useElectionResults } from '../../hooks/useElectionResults.js';
+import { electionTitle, leadersOf } from '../map/layers/elections.js';
+import type { ElectionResults, PoliticalDistrict, PoliticalLevel, Representative } from '../../lib/api.js';
 
-type View = 'state' | 'mayor' | 'bezirke' | 'bundestag';
+type View = 'state' | 'mayor' | 'bezirke' | 'bundestag' | 'election';
 
 /**
  * The views the city has data for, each with the level it reads. The state
  * parliament's seat chart reads its members grouped by Bezirk where the
  * political job groups them (Berlin), otherwise by constituency; the
  * Oberbürgermeister and the district mayors exist only where they are kept
- * (Köln, München; Berlin, Köln).
+ * (Köln, München; Berlin, Köln). The election view (the latest election's
+ * city-wide result) reads no political level.
  */
-function viewsOf(features: readonly CityFeature[]): Array<{ key: View; level: PoliticalLevel }> {
-  const views: Array<{ key: View; level: PoliticalLevel }> = [
+function viewsOf(features: readonly CityFeature[]): Array<{ key: View; level: PoliticalLevel | null }> {
+  const views: Array<{ key: View; level: PoliticalLevel | null }> = [
     { key: 'state', level: features.includes('stateByDistrict') ? 'state-bezirke' : 'state' },
   ];
   if (features.includes('mayor')) views.push({ key: 'mayor', level: 'mayor' });
   if (features.includes('districtMayors')) views.push({ key: 'bezirke', level: 'bezirke' });
   views.push({ key: 'bundestag', level: 'bundestag' });
+  if (features.includes('electionResults')) views.push({ key: 'election', level: null });
   return views;
+}
+
+/* ── Election: the city-wide result ───────────────────────── */
+
+const ELECTION_PREVIEW = 5;
+
+/**
+ * The latest election's city-wide shares as bars in the parties' colours,
+ * the other parties together and turnout; expanded, every party and the
+ * number of areas each is strongest in.
+ */
+function ElectionResult({ results, expanded, onExpand }: { results: ElectionResults; expanded: boolean; onExpand?: () => void }) {
+  const { t, i18n } = useTranslation();
+  const { total } = results;
+  const shares = expanded ? total.shares : total.shares.slice(0, ELECTION_PREVIEW);
+  const hidden = total.shares.length - shares.length;
+  const max = Math.max(...total.shares.map((s) => s.pct), 1);
+  const pct = (n: number) => `${n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
+  const leaders = leadersOf(results);
+  return (
+    <div>
+      <div className="text-[11px] text-muted mb-1.5">
+        {electionTitle(results)} · {t(`panel.elections.vote.${results.election}`)}
+      </div>
+      <ul className="space-y-1" aria-label={electionTitle(results)}>
+        {shares.map((s) => (
+          <li key={s.party} className="flex items-center gap-1.5 text-[11px]">
+            <SourceText as="span" className="w-20 shrink-0 truncate text-gray-800 dark:text-gray-200 font-medium">{s.party}</SourceText>
+            <span className="flex-1 h-2.5 rounded-sm bg-gray-100 dark:bg-gray-800 overflow-hidden" aria-hidden="true">
+              <span className="block h-full rounded-sm" style={{ width: `${(s.pct / max) * 100}%`, backgroundColor: getPartyColor(s.party) }} />
+            </span>
+            <span className="w-12 shrink-0 text-end tabular-nums text-gray-700 dark:text-gray-300"><Ltr>{pct(s.pct)}</Ltr></span>
+          </li>
+        ))}
+      </ul>
+      {hidden > 0 && (
+        <button type="button" onClick={onExpand} className="mt-1 text-xs text-link hover:underline cursor-pointer">
+          {t('panel.political.showMore', { count: hidden })}
+        </button>
+      )}
+      <div className="mt-1.5 flex flex-wrap gap-x-3 text-[11px] text-muted">
+        {total.otherPct > 0 && <span>{t('panel.elections.others')}: <Ltr>{pct(total.otherPct)}</Ltr></span>}
+        {total.turnout !== null && <span>{t('panel.elections.turnout')}: <Ltr>{pct(total.turnout)}</Ltr></span>}
+      </div>
+      {expanded && leaders.length > 0 && (
+        <div className="mt-2">
+          <div className="text-[11px] text-muted mb-0.5">{t('sidebar.electionLegend.strongest', { context: results.areaLevel })}</div>
+          <div className="flex flex-wrap gap-x-2.5 gap-y-0.5">
+            {leaders.map(([party, count]) => (
+              <span key={party} className="inline-flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-400">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getPartyColor(party) }} />
+                <SourceText>{party}</SourceText> ({count.toLocaleString(i18n.language)})
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ── helpers ──────────────────────────────────────────────── */
@@ -210,12 +274,21 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
   // The state parliament has its own name per city (the `_<city id>` keys).
   const views = useMemo(() => viewsOf(features).map((v) => ({
     ...v,
-    label: t(`sidebar.political.${v.key === 'state' ? 'landesparlament' : v.key}`, { context: cityId }),
+    label: v.key === 'election'
+      ? t('panel.elections.tab')
+      : t(`sidebar.political.${v.key === 'state' ? 'landesparlament' : v.key}`, { context: cityId }),
   })), [features, cityId, t]);
   const current = views.find((v) => v.key === selected) ?? views[0]!;
   const view = current.key;
 
-  const { data, fetchedAt, isLoading, isError, refetch } = usePolitical(cityId, current.level);
+  const isElection = current.level === null;
+  const political = usePolitical(cityId, current.level ?? 'state', !isElection);
+  const election = useElectionResults(cityId, isElection);
+  const { data } = political;
+  const { isLoading, isError, refetch } = isElection ? election : political;
+  const electionResults = election.data?.data ?? null;
+  // A final election result has no staleness to show
+  const fetchedAt = isElection ? null : political.fetchedAt;
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   const viewIdx = views.indexOf(current);
@@ -254,7 +327,10 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
       </div>
 
       <div id="political-panel" role="tabpanel" aria-labelledby={`political-tab-${view}`}>
-        {!data || data.length === 0 ? (
+        {isElection ? (
+          electionResults ? <ElectionResult results={electionResults} expanded={expanded} onExpand={onExpand} />
+            : <div className="text-sm text-muted text-center py-2">{t('panel.political.empty')}</div>
+        ) : !data || data.length === 0 ? (
           <div className="text-sm text-muted text-center py-2">
             {t('panel.political.empty')}
           </div>

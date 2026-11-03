@@ -112,6 +112,15 @@ export const hamburg: CityConfig = {
     bikeSharing: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', system: 'StadtRAD Hamburg', operator: 'DB Connect' },
     // Unfallatlas (dl-de/by-2.0): the whole Land, ~7,100 injury accidents in 2025
     trafficAccidents: { provider: 'unfallatlas', ags: '02000000' },
+    // Bürgerschaft 2025, final Landesliste shares per Stadtteil (Statistikamt Nord, BUE2025_e_06;
+    // "Verbreitung mit Quellenangabe"), on the Stadtteil outlines the population map uses
+    electionResults: {
+      provider: 'hamburg-stadtteile-xlsx',
+      url: 'https://www.statistik-nord.de/fileadmin/Dokumente/BUE2025_e_06.xlsx',
+      election: 'buergerschaft',
+      date: '2025-03-02',
+      outlines: 'hamburg-stadtteile.geojson',
+    },
     waterLevels: {
       provider: 'pegelonline',
       stations: [
