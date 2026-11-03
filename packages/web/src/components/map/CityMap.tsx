@@ -31,13 +31,15 @@ import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { usePopulation } from '../../hooks/usePopulation.js';
 import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
 import { useBikeSharing } from '../../hooks/useBikeSharing.js';
+import { useTrafficCounts } from '../../hooks/useTrafficCounts.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
+import type { TrafficCountMode } from '../../lib/api.js';
 import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
-import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
-import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle, zoomedInBounds } from './base.js';
+import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, TRAFFIC_FLOW_REFRESH_MS, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
+import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, setTrafficFlowOverlay, loadStyle, zoomedInBounds } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
 import { gestureHintLocale, setCooperativeGestures } from './gestures.js';
 import { addDistrictLayer, addDistrictSource, removeDistrictLayers, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
@@ -52,6 +54,7 @@ import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/chorople
 import { socialAtlasOf } from '../../lib/social-atlas.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 import { updateBikeSharingMarkers } from './layers/bike-sharing.js';
+import { updateTrafficCountMarkers } from './layers/traffic-counts.js';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -183,6 +186,24 @@ export function CityMap() {
   const trafficActive = activeLayers.has('traffic') && trafficSubLayers.has('incidents');
   const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
   const roadsActive = trafficActive || constructionActive;
+  const trafficFlowActive = activeLayers.has('traffic') && trafficSubLayers.has('congestion');
+  // A new value every few minutes while the congestion map is shown, so its tiles are asked for again
+  const [trafficFlowRefresh, setTrafficFlowRefresh] = useState(() => Math.floor(Date.now() / TRAFFIC_FLOW_REFRESH_MS));
+  useEffect(() => {
+    if (!trafficFlowActive) return;
+    const tick = () => setTrafficFlowRefresh(Math.floor(Date.now() / TRAFFIC_FLOW_REFRESH_MS));
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, [trafficFlowActive]);
+  const trafficCountModes = useMemo(() => {
+    const modes = new Set<TrafficCountMode>();
+    if (activeLayers.has('traffic') && trafficSubLayers.has('car-counts')) modes.add('car');
+    if (activeLayers.has('traffic') && trafficSubLayers.has('bike-counts')) modes.add('bike');
+    return modes;
+  }, [activeLayers, trafficSubLayers]);
+  // Lazy: Hamburg's sites are about 50 KB, fetched only while a counts sub-layer is on
+  const { data: trafficCountData } = useTrafficCounts(city.id, trafficCountModes.size > 0);
   const weatherActive = activeLayers.has('weather');
   const noiseLayerSel = effectiveNoiseLayer(useCommandCenter((s) => s.noiseLayer), available);
   const noiseLiveData = useCommandCenter((s) => s.noiseLiveData) && available.noiseLive;
@@ -272,6 +293,7 @@ export function CityMap() {
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
   const bikeSharingItems = bikeSharingActive ? (bikeSharingData?.data ?? null) : null;
+  const trafficCountItems = trafficCountModes.size > 0 ? (trafficCountData?.data ?? null) : null;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -308,6 +330,10 @@ export function CityMap() {
   noiseSensorItemsRef.current = noiseSensorItems;
   const bikeSharingItemsRef = useRef(bikeSharingItems);
   bikeSharingItemsRef.current = bikeSharingItems;
+  const trafficCountItemsRef = useRef(trafficCountItems);
+  trafficCountItemsRef.current = trafficCountItems;
+  const trafficCountModesRef = useRef(trafficCountModes);
+  trafficCountModesRef.current = trafficCountModes;
   const waterLevelItemsRef = useRef(waterLevelItems);
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
@@ -332,6 +358,10 @@ export function CityMap() {
   effectiveNoiseLayerRef.current = noiseWmsLayer;
   const rentMapActiveRef = useRef(rentMapActive);
   rentMapActiveRef.current = rentMapActive;
+  const trafficFlowActiveRef = useRef(trafficFlowActive);
+  trafficFlowActiveRef.current = trafficFlowActive;
+  const trafficFlowRefreshRef = useRef(trafficFlowRefresh);
+  trafficFlowRefreshRef.current = trafficFlowRefresh;
   const waterActiveRef = useRef(waterActive);
   waterActiveRef.current = waterActive;
   const politicalActiveRef = useRef(politicalActive);
@@ -392,6 +422,7 @@ export function CityMap() {
         updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDarkRef.current);
+        updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
@@ -399,6 +430,7 @@ export function CityMap() {
         setWeatherOverlay(map, weatherActiveRef.current);
         setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
         setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
+        setTrafficFlowOverlay(map, trafficFlowActiveRef.current, cityIdRef.current, trafficFlowRefreshRef.current);
 
         // Ensure district labels render below all marker icons
         ensureDistrictLabelsBelow(map);
@@ -481,6 +513,7 @@ export function CityMap() {
       updateAqGridLayer(map, aqGridItemsRef.current, isDark, cityIdRef.current);
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDark);
+      updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
@@ -488,6 +521,7 @@ export function CityMap() {
       setWeatherOverlay(map, weatherActiveRef.current);
       setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
+      setTrafficFlowOverlay(map, trafficFlowActiveRef.current, cityIdRef.current, trafficFlowRefreshRef.current);
       ensureDistrictLabelsBelow(map);
     });
   }, [isDark, city.id]);
@@ -539,6 +573,29 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [noiseWmsActive, noiseWmsLayer, city.id]);
 
+  // Show/hide the live congestion map, and ask for fresh tiles as it is recomputed
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setTrafficFlowOverlay(map, trafficFlowActive, city.id, trafficFlowRefresh);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [trafficFlowActive, trafficFlowRefresh, city.id]);
+
+  // Update traffic counting sites (lazy: data only while a counts sub-layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateTrafficCountMarkers(map, trafficCountItems, trafficCountModes, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [trafficCountItems, trafficCountModes]);
+
   // Keep district labels below marker layers whenever marker data changes
   useEffect(() => {
     const map = mapRef.current;
@@ -547,7 +604,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, waterLevelItems, bathingItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, trafficCountItems, waterLevelItems, bathingItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {

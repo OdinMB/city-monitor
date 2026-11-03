@@ -15,7 +15,7 @@ import {
   saveAeds, saveAirQualityGrid, saveAppointments, saveBathingSpots, saveBudget, saveConstructionSites,
   saveBikeSharing, saveCouncilMeetings, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
   saveNoiseSensors, savePharmacies, savePoliticalDistricts, savePollen, savePopulation, saveSafetyReports,
-  saveSocialAtlas, saveSummary, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
+  saveSocialAtlas, saveSummary, saveTrafficCounts, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
   saveWeather,
 } from '../db/writes.js';
 import type { CitySyntheticData } from './generate.js';
@@ -117,6 +117,7 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.floodStatus) await saveFloodStatus(db, cityId, data.floodStatus);
   if (data.liftOutages) await saveLiftOutages(db, cityId, data.liftOutages);
   if (data.bikeSharing) await saveBikeSharing(db, cityId, data.bikeSharing);
+  if (data.trafficCounts) await saveTrafficCounts(db, cityId, data.trafficCounts);
   for (const [level, districts] of Object.entries(data.political ?? {})) {
     await savePoliticalDistricts(db, cityId, level, districts);
   }

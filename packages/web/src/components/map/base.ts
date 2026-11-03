@@ -20,6 +20,11 @@ import {
   getNoiseWmsUrl,
   getNoiseWmsAttribution,
   getNoiseWmsMinZoom,
+  TRAFFIC_FLOW_SOURCE,
+  TRAFFIC_FLOW_LAYER,
+  getTrafficFlowWmsUrl,
+  getTrafficFlowAttribution,
+  getTrafficFlowMinZoom,
 } from './constants.js';
 import { API_BASE } from '../../lib/api.js';
 
@@ -213,6 +218,45 @@ export function setNoiseOverlay(map: maplibregl.Map, visible: boolean, cityId: s
       paint: {
         'raster-opacity': 0.7,
       },
+    }, beforeId);
+  }
+}
+
+/**
+ * The city's live congestion map (the traffic layer's congestion sub-layer).
+ * A new `refresh` swaps the tile URL in place so the map shows the newest
+ * state without the layer blinking out; another city's map is replaced.
+ */
+export function setTrafficFlowOverlay(map: maplibregl.Map, visible: boolean, cityId: string, refresh: number) {
+  const url = visible ? getTrafficFlowWmsUrl(cityId, refresh) : null;
+  const source = map.getSource(TRAFFIC_FLOW_SOURCE) as maplibregl.RasterTileSource | undefined;
+  const base = (u: string | undefined) => u?.replace(/&t=\d+$/, '');
+  if (source && (!url || base(source.tiles?.[0]) !== base(url))) {
+    if (map.getLayer(TRAFFIC_FLOW_LAYER)) map.removeLayer(TRAFFIC_FLOW_LAYER);
+    map.removeSource(TRAFFIC_FLOW_SOURCE);
+  }
+  if (!url) return;
+  const current = map.getSource(TRAFFIC_FLOW_SOURCE) as maplibregl.RasterTileSource | undefined;
+  if (current) {
+    if (current.tiles?.[0] !== url) current.setTiles([url]);
+  } else {
+    const minzoom = getTrafficFlowMinZoom(cityId);
+    map.addSource(TRAFFIC_FLOW_SOURCE, {
+      type: 'raster',
+      tiles: [url],
+      tileSize: 256,
+      attribution: getTrafficFlowAttribution(cityId),
+      ...(minzoom !== undefined && { minzoom }),
+    });
+  }
+  if (!map.getLayer(TRAFFIC_FLOW_LAYER)) {
+    // Under the incident lines and roadworks, which say why a road is slow
+    const beforeId = ['traffic-line-casing', 'construction-line-casing', 'construction-points'].find((id) => map.getLayer(id));
+    map.addLayer({
+      id: TRAFFIC_FLOW_LAYER,
+      type: 'raster',
+      source: TRAFFIC_FLOW_SOURCE,
+      paint: { 'raster-opacity': 0.85 },
     }, beforeId);
   }
 }

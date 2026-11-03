@@ -105,6 +105,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
   ['nextbike (GBFS)', (c) => c.dataSources.bikeSharing?.provider === 'gbfs'],
   ['StadtRAD Hamburg (Urban Data Platform)', (c) => c.dataSources.bikeSharing?.provider === 'hamburg-sta'],
+  ['Verkehrsdaten Hamburg (Infrarotdetektoren)', (c) => c.dataSources.trafficCounts?.provider === 'hamburg-sta'],
   ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
   // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
@@ -137,6 +138,7 @@ describe('SourcesPage credits per city', () => {
    */
   const FEATURE_BOUND: ReadonlyArray<[credit: string, feature: CityFeature]> = [
     ['abgeordnetenwatch.de', 'political'],
+    ['Verkehrslage Hamburg (Geodienste)', 'trafficFlowMap'],
     ['aponet.de', 'pharmacies'],
   ];
 
@@ -212,6 +214,9 @@ describe('SourcesPage licence credits', () => {
     // CC0 asks for no credit; the feed's operator is named anyway
     'nextbike (GBFS)': 'Data: nextbike GmbH, CC0 1.0.',
     'StadtRAD Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    // WMS GetCapabilities <Fees> and the Transparenzportal datasets (checked 2026-11-03)
+    'Verkehrslage Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    'Verkehrsdaten Hamburg (Infrarotdetektoren)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
     'Indikatorenatlas München': 'Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0.',
     'Stadtbezirke München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
   };

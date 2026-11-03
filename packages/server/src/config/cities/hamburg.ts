@@ -100,6 +100,16 @@ export const hamburg: CityConfig = {
     // StadtRAD's bikes per station on the Urban Data Platform's SensorThings API (dl-de/by-2.0,
     // Transparenzportal "StadtRAD-Stationen Hamburg"): ~360 stations, no docks. No nextbike in Hamburg.
     bikeSharing: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', system: 'StadtRAD Hamburg', operator: 'DB Connect' },
+    // Infrared car and bicycle counters on the same SensorThings API, hourly (dl-de/by-2.0,
+    // Transparenzportal "Verkehrsdaten Kfz/Rad (Infrarotdetektoren) Hamburg"): 829 car counters
+    // at 179 sites and 313 bicycle counters at 83 sites on 2026-11-03. The site names come
+    // from the Verkehrszählstellen WFS (dl-de/by-2.0).
+    trafficCounts: {
+      provider: 'hamburg-sta',
+      url: 'https://iot.hamburg.de/v1.1',
+      sitesWfsUrl: 'https://geodienste.hamburg.de/HH_WFS_Verkehrszaehlstellen',
+      modes: ['car', 'bike'],
+    },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

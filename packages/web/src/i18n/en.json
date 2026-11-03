@@ -528,7 +528,11 @@
     "traffic": {
       "public-transport": "Public Transport",
       "incidents": "Incidents",
-      "roadworks": "Roadworks"
+      "congestion": "Congestion (live)",
+      "roadworks": "Roadworks",
+      "car-counts": "Car counts",
+      "bike-counts": "Bicycle counts",
+      "zoomIn": "Zoom in to see the congestion map"
     },
     "emergencies": {
       "pharmacies": "Pharmacies",
@@ -562,6 +566,22 @@
       "none": "No bikes",
       "few": "1–2 bikes",
       "many": "3 or more bikes"
+    },
+    "trafficFlowLegend": {
+      "title": "Traffic flow",
+      "flowing": "Flowing",
+      "dense": "Heavy",
+      "slow": "Slow-moving",
+      "jammed": "Jammed"
+    },
+    "trafficCountLegend": {
+      "title": "Last hour compared with the usual for that hour",
+      "wellBelow": "Far less than usual",
+      "below": "Less than usual",
+      "usual": "As usual",
+      "above": "More than usual",
+      "wellAbove": "Far more than usual",
+      "none": "Nothing to compare"
     },
     "population": {
       "pop-density": "Population Density",
@@ -633,6 +653,17 @@
       "bikes": "Bikes available",
       "docks": "Free docks",
       "updated": "Updated"
+    },
+    "trafficCount": {
+      "car": "Motor vehicles",
+      "bike": "Bicycles",
+      "site": "Counting site {{site}}",
+      "count": "Counted in the hour",
+      "typical": "Usual for this hour",
+      "noTypical": "No usual count yet for this hour",
+      "tooFew": "Too little traffic to compare",
+      "counters_one": "{{count}} counter",
+      "counters_other": "{{count}} counters"
     }
   },
   "socialAtlas": {

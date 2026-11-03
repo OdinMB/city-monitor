@@ -9,14 +9,14 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, BikeSharingData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, BikeSharingData, TrafficCountData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
-  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, BikeSharingDataSchema,
+  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, BikeSharingDataSchema, TrafficCountDataSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -194,6 +194,11 @@ export async function loadLiftOutages(db: Db, cityId: string): Promise<DbResult<
 /** At most 2 hours old: older counts say nothing about bikes there now (the job runs every 5 min, stores every 30). */
 export async function loadBikeSharing(db: Db, cityId: string): Promise<DbResult<BikeSharingData>> {
   return loadSnapshot(db, cityId, 'bike-sharing', { schema: BikeSharingDataSchema, maxAgeMs: 2 * 3600_000 });
+}
+
+/** At most 3 hours old: the counts are hourly and a row is stored when a new hour comes in. */
+export async function loadTrafficCounts(db: Db, cityId: string): Promise<DbResult<TrafficCountData>> {
+  return loadSnapshot(db, cityId, 'traffic-counts', { schema: TrafficCountDataSchema, maxAgeMs: 3 * 3600_000 });
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {

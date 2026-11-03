@@ -1,13 +1,16 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Bike } from 'lucide';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Bike, CarFront, Gauge } from 'lucide';
 import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
-import { BIKE_AVAILABILITY, getNoiseWmsMinZoom, getRentMapLegend } from '../map/constants.js';
+import {
+  BIKE_AVAILABILITY, TRAFFIC_COUNT_LEVELS, TRAFFIC_COUNT_NONE_COLOR, getNoiseWmsMinZoom, getRentMapLegend, getTrafficFlowLegend,
+  getTrafficFlowMinZoom,
+} from '../map/constants.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -59,7 +62,10 @@ const WATER_SUB_META: { key: WaterSubLayer; icon: IconNode; color: string }[] = 
 const TRAFFIC_SUB_META: { key: TrafficSubLayer; icon: IconNode; color: string }[] = [
   { key: 'public-transport', icon: TrainFront as IconNode, color: '#f59e0b' },
   { key: 'incidents', icon: Car as IconNode, color: '#8b5cf6' },
+  { key: 'congestion', icon: Gauge as IconNode, color: '#e70104' },
   { key: 'roadworks', icon: Construction as IconNode, color: '#d97706' },
+  { key: 'car-counts', icon: CarFront as IconNode, color: '#64748b' },
+  { key: 'bike-counts', icon: Bike as IconNode, color: '#16a34a' },
 ];
 
 const SOCIAL_SUB_META: { key: SocialLayer; icon: IconNode; color: string }[] = [
@@ -152,6 +158,43 @@ export function BikeSharingLegend() {
       ))}
     </ul>
   );
+}
+
+/** A legend of coloured dots: a list of `label` keys with their colours. */
+function DotLegend({ title, items }: { title: string; items: ReadonlyArray<{ key: string; label: string; color: string }> }) {
+  return (
+    <ul aria-label={title} className="ps-9 pe-2 py-1 space-y-0.5">
+      {items.map(({ key, label, color }) => (
+        <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+          <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
+          {label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The classes of the city's live congestion map with the colours its WMS draws them in. */
+export function TrafficFlowLegend({ cityId }: { cityId: string }) {
+  const { t } = useTranslation();
+  const legend = getTrafficFlowLegend(cityId);
+  if (legend.length === 0) return null;
+  return (
+    <DotLegend
+      title={t('sidebar.trafficFlowLegend.title')}
+      items={legend.map(({ key, color }) => ({ key, color, label: t(`sidebar.trafficFlowLegend.${key}`) }))}
+    />
+  );
+}
+
+/** What the counting sites' colours mean: the hour's count against the usual count. */
+export function TrafficCountLegend() {
+  const { t } = useTranslation();
+  const items = [
+    ...TRAFFIC_COUNT_LEVELS.map(({ key, color }) => ({ key, color })),
+    { key: 'none', color: TRAFFIC_COUNT_NONE_COLOR },
+  ].map(({ key, color }) => ({ key, color, label: t(`sidebar.trafficCountLegend.${key}`) }));
+  return <DotLegend title={t('sidebar.trafficCountLegend.title')} items={items} />;
 }
 
 /**
@@ -271,9 +314,21 @@ export function DataLayerToggles() {
                 isActive={(key) => news.has(key)} onSelect={toggleNewsSubLayer} label={(key) => t(`sidebar.news.${key}`)} />
             );
           } else if (layer === 'traffic' && active) {
+            const showsCounts = traffic.has('car-counts') || traffic.has('bike-counts');
             subItems = (
-              <SubLayerList meta={TRAFFIC_SUB_META} available={available.traffic} parentColor={color}
-                isActive={(key) => traffic.has(key)} onSelect={toggleTrafficSubLayer} label={(key) => t(`sidebar.traffic.${key}`)} />
+              <>
+                <SubLayerList meta={TRAFFIC_SUB_META} available={available.traffic} parentColor={color}
+                  isActive={(key) => traffic.has(key)} onSelect={toggleTrafficSubLayer} label={(key) => t(`sidebar.traffic.${key}`)} />
+                {traffic.has('congestion') && (
+                  <>
+                    <TrafficFlowLegend cityId={city.id} />
+                    {getTrafficFlowMinZoom(city.id) !== undefined && (
+                      <p className="ps-9 pe-2 py-1 text-[12px] text-muted">{t('sidebar.traffic.zoomIn')}</p>
+                    )}
+                  </>
+                )}
+                {showsCounts && <TrafficCountLegend />}
+              </>
             );
           } else if (layer === 'bike-sharing' && active) {
             subItems = <BikeSharingLegend />;

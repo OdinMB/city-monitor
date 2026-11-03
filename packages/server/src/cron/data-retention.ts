@@ -72,6 +72,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'lhp-flood',          retentionMs: 2 * DAY_MS },
   { type: 'kvb-lift-outages',   retentionMs: 2 * DAY_MS },
   { type: 'bike-sharing',       retentionMs: 2 * DAY_MS },
+  { type: 'traffic-counts',     retentionMs: 2 * DAY_MS },
 
   // Infrequent (7 days). keepLatest where the job runs weekly or monthly; the
   // daily jobs write a fresh row each run.

@@ -27,6 +27,8 @@ export const CK = {
   aedLocations: (cityId: string) => `${cityId}:aed:locations`,
   /** Not bootstrapped: Berlin's ~1,070 stations are about 150 KB, so the map fetches them when the layer is on. */
   bikeSharing: (cityId: string) => `${cityId}:bike-sharing`,
+  /** Not bootstrapped: ~260 Hamburg sites are about 50 KB, fetched when a counts sub-layer is on. */
+  trafficCounts: (cityId: string) => `${cityId}:traffic-counts`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

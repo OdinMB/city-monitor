@@ -33,6 +33,10 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   // pharmacies and defibrillators of the emergencies layer, the rent map a
   // social layer, the rest parts of the political tile.
   roadworks: null,
+  // The congestion map and the counters refine the traffic layer every city has
+  trafficFlowMap: null,
+  carCounts: null,
+  bikeCounts: null,
   pharmacies: null,
   aeds: null,
   noiseSensors: null,

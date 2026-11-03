@@ -10,6 +10,7 @@ import { waterLevelPopupHtml, bathingPopupHtml } from './water';
 import { pharmacyPopupHtml, aedPopupHtml, formatPharmacyDuty } from './emergencies';
 import { noisePopupHtml } from './noise-sensors';
 import { bikeStationPopupHtml } from './bike-sharing';
+import { trafficCountPopupHtml } from './traffic-counts';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
@@ -67,6 +68,8 @@ const AED = { indoor: true, description: 'Im Foyer', operator: 'Bezirksamt Mitte
 const NOISE = { id: 4711, laeq: 58.2, laMin: 40.1, laMax: 75.3 };
 // A Unix time on an earlier day, so the popup shows the date with the time
 const BIKE = { name: 'S Halensee (Kurfürstendamm)', bikes: 3, docks: 5, reportedAt: Date.UTC(2026, 2, 3, 8, 0) / 1000, system: 'nextbike Berlin', operator: 'nextbike' };
+// An hour on an earlier day, 64 vehicles where 137 are usual (-53 %)
+const COUNT = { mode: 'car', site: '0113', name: 'Shanghaiallee / Überseeallee', hour: '2026-03-03T08:00:00.000Z', count: 64, typical: 137, counters: 3 };
 const SOCIAL: SocialAtlasFeatureProps = {
   plrId: '01100101', plrName: 'Stülerstraße', bezId: '01', population: 3400, statusIndex: 2, statusLabel: 'mittel',
   unemployment: 5.2, singleParent: 20.1, welfare: 10.3, childPoverty: 15.4,
@@ -92,6 +95,8 @@ const POPUPS: Array<[string, () => string]> = [
   ['AED', () => aedPopupHtml(AED, COORDS)],
   ['noise sensor', () => noisePopupHtml(NOISE, false)],
   ['bike station', () => bikeStationPopupHtml(BIKE, false)],
+  ['traffic count', () => trafficCountPopupHtml(COUNT, false)],
+  ['traffic count without a usual count', () => trafficCountPopupHtml({ ...COUNT, name: null, typical: null }, false)],
   ['social atlas', () => socialAtlasPopupHtml(SOCIAL)],
   ['population', () => populationPopupHtml(POPULATION)],
   ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS)],
@@ -113,6 +118,7 @@ const ENGLISH_ONLY = [
   'Noise Sensor', 'Quiet', 'Moderate', 'Loud', 'Min:', 'Max:', 'Unemployment', 'Single-parent', 'Welfare',
   'Child poverty', 'Population', 'Density', 'Foreign', 'Aged 65', 'Under 18', 'Traffic jam', 'Road closure',
   'Roadworks', 'planned work', 'Severe', 'Bikes available', 'Free docks', 'Updated',
+  'Motor vehicles', 'Counted', 'Usual', 'counter', 'Counting site', 'No usual',
 ];
 
 afterEach(async () => {
@@ -143,6 +149,8 @@ describe('map popups in German', () => {
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Innen', 'Zugang: nur für Kunden', 'Route ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Lärmsensor #4711', '58.2 dB (Laut)', 'Min.: 40.1 dB · Max.: 75.3 dB']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Verfügbare Räder: 3', 'Freie Stellplätze: 5', `Stand: 3. ${GERMAN_MARCH}`, 'nextbike Berlin · nextbike']],
+    ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Kraftfahrzeuge', 'Gezählt in der Stunde: 64', 'Üblich zu dieser Stunde: 137 (-53 %)', '3 Zähler']],
+    ['traffic count without a usual count', () => trafficCountPopupHtml({ ...COUNT, name: null, typical: null }, false), ['Zählstelle 0113', 'Noch kein üblicher Wert für diese Stunde']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Kinder Alleinerziehender20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%', 'MSS-Statusindexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Arbeitslosenquote5.2%', 'Alleinerziehenden-Haushalte20.1%', 'SGB-II-Leistungsberechtigte10.3%']],
     ['Hamburg social atlas', () => socialAtlasPopupHtml(SOCIAL, SOCIAL_ATLAS.hamburg), ['SGB-II- und AsylbLG-Empfänger10.3%', 'Kinder in Mindestsicherung15.4%', 'Statusindex (Sozialmonitoring)mittel']],
@@ -243,6 +251,7 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['police', () => safetyPopupHtml(SAFETY), ['Einbruch in Wohnung', 'Mitte']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['Berlin Mitte']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['S Halensee (Kurfürstendamm)', 'nextbike Berlin', 'nextbike']],
+    ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Shanghaiallee / Überseeallee']],
   ] as const)('%s popup isolates its feed text', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     expect(sourceTexts(build())).toEqual(values);
@@ -336,6 +345,8 @@ describe('map popups in English', () => {
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Noise Sensor #4711', '58.2 dB (Loud)', 'Min: 40.1 dB · Max: 75.3 dB']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Bikes available: 3', 'Free docks: 5']],
     ['bike station without docks', () => bikeStationPopupHtml({ ...BIKE, docks: null }, false), ['Bikes available: 3']],
+    ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Motor vehicles', 'Counted in the hour: 64', 'Usual for this hour: 137 (-53%)', '3 counters']],
+    ['traffic count at night', () => trafficCountPopupHtml({ ...COUNT, count: 12, typical: 20 }, false), ['Usual for this hour: 20', 'Too little traffic to compare']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Children of single parents20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%', 'MSS status indexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Unemployment rate5.2%', 'Single-parent households20.1%', 'SGB II recipients10.3%']],
     ['population', () => populationPopupHtml(POPULATION), ['Population3,400', 'Density12,000/km²', 'Aged 65+15.2%', 'Under 1812.1%']],
