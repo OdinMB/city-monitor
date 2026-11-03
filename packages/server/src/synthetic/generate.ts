@@ -26,6 +26,7 @@ import type {
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
 import type { PersistedNewsItem } from '../db/writes.js';
+import type { EvChargingRegister, RegisterStation } from '../lib/ev-charging.js';
 import { aggregateBudgetData, type ParsedBudgetRow } from '../cron/ingest-budget.js';
 import { deriveStatus } from '../cron/ingest-appointments.js';
 import { berlinUtcOffset } from '../cron/ingest-council-meetings.js';
@@ -95,6 +96,8 @@ export interface SyntheticData {
   trafficAccidents: TrafficAccidentData;
   /** Not in Berlin's data set: only Hamburg's counters are configured (NOT_IN_BERLIN). */
   trafficCounts?: TrafficCountData;
+  /** The register only: the live status (Hamburg) is never stored, so the seed has none. */
+  evCharging: EvChargingRegister;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -156,6 +159,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   citizenReports: (c) => c.dataSources.citizenReports !== undefined,
   trafficAccidents: (c) => c.dataSources.trafficAccidents !== undefined,
   trafficCounts: (c) => (c.dataSources.trafficCounts?.modes.length ?? 0) > 0,
+  evCharging: (c) => c.dataSources.evCharging !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -273,6 +277,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('citizenReports')) sets.citizenReports = generateCitizenReports(rng, now, place);
   if (has.has('trafficAccidents')) sets.trafficAccidents = generateTrafficAccidents(rng, now, place);
   if (has.has('trafficCounts')) sets.trafficCounts = generateTrafficCounts(rng, now, city, place);
+  if (has.has('evCharging')) sets.evCharging = generateEvCharging(rng, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1698,6 +1703,27 @@ function generateTrafficCounts(rng: Rng, now: Date, city: CityConfig, place: Pla
     });
   }
   return { sites, updated: now.toISOString() };
+}
+
+/** Charging stations around the city's anchors: two normal ones each, and a fast or high-power one at every other anchor. */
+function generateEvCharging(rng: Rng, place: Place): EvChargingRegister {
+  const stations: RegisterStation[] = [];
+  place.anchors.forEach((a, i) => {
+    for (let k = 1; k <= 2; k++) {
+      stations.push({
+        id: `syn-ev-${i + 1}-${k}`, ...near(rng, a, 0.01), operator: `${MARK} Stadtwerke`, address: `${MARK} ${a.name} ${k}`,
+        points: rng.int(1, 2) * 2, maxKw: k === 1 ? 22 : 11, fast: false, plugs: ['type2'],
+      });
+    }
+    if (i % 2 === 0) {
+      const hpc = rng.int(0, 1) === 1;
+      stations.push({
+        id: `syn-ev-${i + 1}-fast`, ...near(rng, a, 0.01), operator: `${MARK} Schnellladen`, address: `${MARK} ${a.name} Schnell`,
+        points: rng.int(2, 8), maxKw: hpc ? 300 : 50, fast: true, plugs: hpc ? ['ccs'] : ['ccs', 'chademo', 'type2'],
+      });
+    }
+  });
+  return { edition: '2026-09-01', stations };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

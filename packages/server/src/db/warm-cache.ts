@@ -2,6 +2,8 @@ import { sql, type SQL } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
+import { loadEvChargingRegister } from './reads.js';
+import { EV_CHARGING_REGISTER_TTL_SECONDS } from '../cron/ingest-ev-charging.js';
 import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficCounts, loadTrafficAccidents, loadElectricity } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
@@ -167,6 +169,12 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadBikeSharing(db, cityId);
       if (r) cache.set(CK.bikeSharing(cityId), r.data, 600, r.fetchedAt); // BIKE_SHARING_TTL_SECONDS
     })().catch((err) => log.error(`${cityId} bike sharing failed`, err)),
+
+    // The register only: the live status is not stored, and comes with the status job's start-up run
+    (async () => {
+      const r = await loadEvChargingRegister(db, cityId);
+      if (r) cache.set(CK.evChargingRegister(cityId), r.data, EV_CHARGING_REGISTER_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} EV charging failed`, err)),
 
     (async () => {
       const r = await loadElectricity(db, cityId);

@@ -566,6 +566,7 @@
       "traffic": "Trafik",
       "bike-sharing": "Bisiklet Paylaşımı",
       "accidents": "Kazalar",
+      "ev-charging": "Elektrikli Araç Şarjı",
       "water": "Su",
       "social": "Sosyal",
       "population": "Nüfus",
@@ -649,6 +650,16 @@
       "above": "Olağandan fazla",
       "wellAbove": "Olağandan çok daha fazla",
       "none": "Karşılaştırma yapılamıyor"
+    },
+    "evLegend": {
+      "title": "Şarj gücü",
+      "normal": "Normal (22 kW'a kadar)",
+      "fast": "Hızlı (22 kW üzeri)",
+      "hpc": "Ultra hızlı (150 kW ve üzeri)",
+      "liveTitle": "Canlı durum (halka)",
+      "available": "Boş şarj noktası var",
+      "occupied": "Tümü kullanımda",
+      "outOfOrder": "Arızalı"
     },
     "population": {
       "pop-density": "Nüfus Yoğunluğu",
@@ -779,6 +790,28 @@
       "tooFew": "Karşılaştırma için trafik çok az",
       "counters_one": "{{count}} sayaç",
       "counters_other": "{{count}} sayaç"
+    },
+    "ev": {
+      "points": "Şarj noktaları",
+      "plugs": "Fişler",
+      "upTo": "en fazla",
+      "live": "Canlı: {{total}} noktadan {{free}} tanesi boş",
+      "since": "son değişiklik",
+      "register": "BNetzA şarj istasyonu kaydı, tarih:",
+      "status": {
+        "available": "Boş",
+        "occupied": "Kullanımda",
+        "outOfOrder": "Arızalı",
+        "unknown": "Bilinmiyor"
+      },
+      "plug": {
+        "type2": "Tip 2",
+        "ccs": "CCS",
+        "chademo": "CHAdeMO",
+        "schuko": "Schuko",
+        "type1": "Tip 1",
+        "mcs": "MCS"
+      }
     }
   },
   "socialAtlas": {

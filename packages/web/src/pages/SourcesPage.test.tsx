@@ -115,6 +115,8 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Sag’s uns (Offene Daten Köln)', (c) => c.dataSources.citizenReports?.baseUrl.startsWith('https://sags-uns.stadt-koeln.de/') === true],
   ['Mach München besser', (c) => c.dataSources.citizenReports?.baseUrl.startsWith('https://machmuenchenbesser.de/') === true],
   ['Verkehrsdaten Hamburg (Infrarotdetektoren)', (c) => c.dataSources.trafficCounts?.provider === 'hamburg-sta'],
+  ['Ladesäulenregister (Bundesnetzagentur)', (c) => c.dataSources.evCharging?.provider === 'bnetza'],
+  ['E-Ladestationen Hamburg (Urban Data Platform)', (c) => c.dataSources.evCharging?.liveStatus?.provider === 'hamburg-sta'],
   ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
   // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
@@ -235,6 +237,10 @@ describe('SourcesPage licence credits', () => {
     // WMS GetCapabilities <Fees> and the Transparenzportal datasets (checked 2026-11-03)
     'Verkehrslage Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
     'Verkehrsdaten Hamburg (Infrarotdetektoren)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    // The landing page: "Als Namensnennung für Daten dieser Internetseite ist Bundesnetzagentur.de zu verwenden."
+    'Ladesäulenregister (Bundesnetzagentur)': 'Source: Bundesnetzagentur.de, CC BY 4.0.',
+    // Transparenzportal "Elektro Ladestandorte Hamburg": dl-de-by-2.0, author BWAI
+    'E-Ladestationen Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Wirtschaft, Arbeit und Innovation, dl-de/by-2-0.',
     'Indikatorenatlas München': 'Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0.',
     'Stadtbezirke München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
   };

@@ -71,6 +71,7 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
     ['traffic', true],
     ['bike-sharing', has('bikeSharing')],
     ['accidents', has('trafficAccidents')],
+    ['ev-charging', has('evCharging')],
     ['weather', true],
     ['air-quality', true],
     ['noise', noise.length > 0 || noiseLive],

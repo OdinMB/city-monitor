@@ -83,6 +83,7 @@ const MARKER_LAYER_IDS = [
   'traffic-incidents-circle', 'traffic-incidents-label',
   'bike-station-circle', 'traffic-count-circle',
   'accident-heat', 'accident-circle', 'accident-fatal',
+  'ev-station-circle',
 ];
 
 /** Move district-label below the first existing marker layer so labels render behind markers. */

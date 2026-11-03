@@ -9,6 +9,12 @@ import { hamburg } from './config/cities/hamburg.js';
 import { CK } from './lib/cache-keys.js';
 import type { ScheduledJob } from './lib/scheduler.js';
 
+/**
+ * Jobs that run on every start whatever is stored: the air-quality grid (WAQI's
+ * stations are never stored) and the live charging status (cache only).
+ */
+const ALWAYS_ON_START = ['ingest-aq-grid', 'ingest-ev-charging-status'];
+
 // Capture the job list instead of starting node-cron and the startup runs
 const scheduled = vi.hoisted(() => ({ jobs: [] as ScheduledJob[] }));
 vi.mock('./lib/scheduler.js', () => ({
@@ -114,7 +120,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
       vi.stubEnv('ACTIVE_CITIES', activeCities);
       await createApp();
 
-      expect(scheduled.jobs).toHaveLength(34);
+      expect(scheduled.jobs).toHaveLength(36);
       for (const name of BERLIN_ONLY) expect(names(scheduled.jobs)).toContain(name);
       expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
         .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention')));
@@ -125,7 +131,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
     vi.stubEnv('ACTIVE_CITIES', 'hamburg');
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(34);
+    expect(scheduled.jobs).toHaveLength(36);
     expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
       .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention' && !BERLIN_ONLY.includes(j.name))));
   });
@@ -159,12 +165,12 @@ describe('createApp startup runs with fresh stored data', () => {
     vi.unstubAllGlobals();
   });
 
-  it('still runs the air-quality grid job on start, since the stored grid has no WAQI stations', async () => {
+  it('still runs the air-quality grid and live charging-status jobs on start, since neither is stored in full', async () => {
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(34);
+    expect(scheduled.jobs).toHaveLength(36);
     const startup = scheduled.jobs.filter((j) => j.runOnStart).map((j) => j.name);
-    expect(startup).toEqual(['ingest-aq-grid']);
+    expect(startup).toEqual(ALWAYS_ON_START);
   });
 });
 
@@ -183,12 +189,12 @@ describe('createApp startup runs per active city', () => {
     vi.unstubAllGlobals();
   });
 
-  it('runs only the air-quality grid job when Berlin, the only active city, has fresh data', async () => {
+  it('runs only the always-on-start jobs when Berlin, the only active city, has fresh data', async () => {
     vi.stubEnv('ACTIVE_CITIES', 'berlin');
     stored.execute = rowsFreshFor(['berlin']);
     await createApp();
 
-    expect(startupRuns()).toEqual(['ingest-aq-grid']);
+    expect(startupRuns()).toEqual(ALWAYS_ON_START);
   });
 
   it('runs every ingestion job that serves Berlin when Berlin, the only active city, has no data', async () => {
@@ -227,12 +233,12 @@ describe('createApp startup runs per active city', () => {
     expect(startupRuns()).toContain('ingest-flood-status');
   });
 
-  it('runs only the air-quality grid job when every active city has fresh data', async () => {
+  it('runs only the always-on-start jobs when every active city has fresh data', async () => {
     vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
     stored.execute = rowsFreshFor(['berlin', 'hamburg']);
     await createApp();
 
-    expect(startupRuns()).toEqual(['ingest-aq-grid']);
+    expect(startupRuns()).toEqual(ALWAYS_ON_START);
   });
 
   it('runs the jobs that serve a newly activated city without data, and no Berlin-only job', async () => {
@@ -243,7 +249,7 @@ describe('createApp startup runs per active city', () => {
     expect(startupRuns()).toEqual([
       'ingest-feeds', 'summarize-news', 'ingest-weather', 'ingest-safety', 'ingest-nina',
       'ingest-pharmacies', 'ingest-traffic', 'ingest-political', 'ingest-aq-grid', 'ingest-uba-air-quality', 'ingest-construction', 'ingest-aeds',
-      'ingest-social-atlas', 'ingest-water-levels', 'ingest-bathing', 'ingest-bike-sharing', 'ingest-electricity', 'ingest-traffic-counts', 'ingest-wastewater', 'ingest-labor-market',
+      'ingest-social-atlas', 'ingest-water-levels', 'ingest-bathing', 'ingest-bike-sharing', 'ingest-electricity', 'ingest-traffic-counts', 'ingest-ev-charging', 'ingest-ev-charging-status', 'ingest-wastewater', 'ingest-labor-market',
       'ingest-population', 'ingest-traffic-accidents', 'ingest-pollen', 'ingest-council-meetings',
     ]);
   });

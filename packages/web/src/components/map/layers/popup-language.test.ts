@@ -12,6 +12,8 @@ import { noisePopupHtml } from './noise-sensors';
 import { bikeStationPopupHtml } from './bike-sharing';
 import { accidentPopupHtml } from './traffic-accidents';
 import { trafficCountPopupHtml } from './traffic-counts';
+import { evStationPopupHtml } from './ev-charging';
+import type { EvChargingStation } from '../../../lib/api.js';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
@@ -74,6 +76,16 @@ const BIKE = { name: 'S Halensee (Kurfürstendamm)', bikes: 3, docks: 5, reporte
 const ACCIDENT = { s: 2, m: 5, w: 6, h: 17, k: 5, t: 2, p: 1 | 2 };
 // An hour on an earlier day, 64 vehicles where 137 are usual (-53 %)
 const COUNT = { mode: 'car', site: '0113', name: 'Shanghaiallee / Überseeallee', hour: '2026-03-03T08:00:00.000Z', count: 64, typical: 137, counters: 3 };
+// A fast charger with a live status, its second point busy since an earlier day
+const EV: EvChargingStation = {
+  id: '1009424', lat: 53.54938, lon: 10.00471, operator: 'HEnW-Mobil', address: 'Altstädter Str. 2', points: 2, maxKw: 150, fast: true,
+  plugs: ['ccs', 'type2'],
+  live: [
+    { id: 'DE*HHM*E977*01', status: 'available', since: null },
+    { id: 'DE*HHM*E977*02', status: 'occupied', since: Date.UTC(2026, 2, 3, 8, 0) / 1000 },
+  ],
+};
+const EV_NORMAL: EvChargingStation = { ...EV, maxKw: 22, fast: false, plugs: ['type2'], live: undefined };
 const SOCIAL: SocialAtlasFeatureProps = {
   plrId: '01100101', plrName: 'Stülerstraße', bezId: '01', population: 3400, statusIndex: 2, statusLabel: 'mittel',
   unemployment: 5.2, singleParent: 20.1, welfare: 10.3, childPoverty: 15.4,
@@ -106,6 +118,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false)],
   ['traffic count', () => trafficCountPopupHtml(COUNT, false)],
   ['traffic count without a usual count', () => trafficCountPopupHtml({ ...COUNT, name: null, typical: null }, false)],
+  ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false)],
   ['social atlas', () => socialAtlasPopupHtml(SOCIAL)],
   ['population', () => populationPopupHtml(POPULATION)],
   ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS)],
@@ -131,6 +144,7 @@ const ENGLISH_ONLY = [
   'Roadworks', 'planned work', 'Severe', 'Bikes available', 'Free docks', 'Updated',
   'Accident with', 'Turning accident', 'Collision', 'Involved', 'bicycle', 'Friday',
   'Motor vehicles', 'Counted', 'Usual', 'counter', 'Counting site', 'No usual',
+  'Charge points', 'Plugs', 'up to', 'In use', 'Available', 'Fast (', 'charging register',
 ];
 
 afterEach(async () => {
@@ -164,6 +178,10 @@ describe('map popups in German', () => {
     ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false), ['Unfall mit Schwerverletzten', 'Abbiegeunfall', 'Zusammenstoß mit einbiegendem oder kreuzendem Fahrzeug', 'Mai 2025 · Freitag, 17:00–18:00', 'Beteiligt: Fahrrad, Pkw', 'Unfallatlas 2025']],
     ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Kraftfahrzeuge', 'Gezählt in der Stunde: 64', 'Üblich zu dieser Stunde: 137 (-53 %)', '3 Zähler']],
     ['traffic count without a usual count', () => trafficCountPopupHtml({ ...COUNT, name: null, typical: null }, false), ['Zählstelle 0113', 'Noch kein üblicher Wert für diese Stunde']],
+    ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), [
+      'Ultraschnell (ab 150 kW) · bis 150 kW', 'Ladepunkte: 2', 'Stecker: CCS, Typ 2', 'Live: 1 von 2 frei', '01: Frei', `02: Belegt seit 3. ${GERMAN_MARCH}`,
+      'Ladesäulenregister der BNetzA vom',
+    ]],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Kinder Alleinerziehender20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%', 'MSS-Statusindexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Arbeitslosenquote5.2%', 'Alleinerziehenden-Haushalte20.1%', 'SGB-II-Leistungsberechtigte10.3%']],
     ['Hamburg social atlas', () => socialAtlasPopupHtml(SOCIAL, SOCIAL_ATLAS.hamburg), ['SGB-II- und AsylbLG-Empfänger10.3%', 'Kinder in Mindestsicherung15.4%', 'Statusindex (Sozialmonitoring)mittel']],
@@ -267,6 +285,7 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['Berlin Mitte']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['S Halensee (Kurfürstendamm)', 'nextbike Berlin', 'nextbike']],
     ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Shanghaiallee / Überseeallee']],
+    ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), ['HEnW-Mobil', 'Altstädter Str. 2']],
   ] as const)('%s popup isolates its feed text', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     expect(sourceTexts(build())).toEqual(values);
@@ -365,6 +384,8 @@ describe('map popups in English', () => {
     ['fatal accident with a pedestrian', () => accidentPopupHtml({ ...ACCIDENT, s: 1, w: 1, h: 23, k: 6, t: 4, p: 4 }, 2025, false), ['Accident with fatalities', 'Pedestrian crossing the road', 'Sunday, 23:00–24:00', 'Involved: pedestrian']],
     ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Motor vehicles', 'Counted in the hour: 64', 'Usual for this hour: 137 (-53%)', '3 counters']],
     ['traffic count at night', () => trafficCountPopupHtml({ ...COUNT, count: 12, typical: 20 }, false), ['Usual for this hour: 20', 'Too little traffic to compare']],
+    ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), ['High power (150 kW and up) · up to 150 kW', 'Charge points: 2', 'Plugs: CCS, Type 2', 'Live: 1 of 2 free', '01: Available', '02: In use since']],
+    ['EV charging station without live status', () => evStationPopupHtml(EV_NORMAL, null, false), ['Normal (up to 22 kW) · up to 22 kW', 'Plugs: Type 2']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Children of single parents20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%', 'MSS status indexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Unemployment rate5.2%', 'Single-parent households20.1%', 'SGB II recipients10.3%']],
     ['population', () => populationPopupHtml(POPULATION), ['Population3,400', 'Density12,000/km²', 'Aged 65+15.2%', 'Under 1812.1%']],

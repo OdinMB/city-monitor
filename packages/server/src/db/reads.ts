@@ -19,6 +19,8 @@ import {
   TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
+import { EvChargingRegisterSchema } from '@city-monitor/shared/schemas.js';
+import type { EvChargingRegister } from '../lib/ev-charging.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
@@ -219,6 +221,15 @@ export async function loadTrafficAccidents(db: Db, cityId: string): Promise<DbRe
 /** At most 3 hours old: the counts are hourly and a row is stored when a new hour comes in. */
 export async function loadTrafficCounts(db: Db, cityId: string): Promise<DbResult<TrafficCountData>> {
   return loadSnapshot(db, cityId, 'traffic-counts', { schema: TrafficCountDataSchema, maxAgeMs: 3 * 3600_000 });
+}
+
+/**
+ * At most 90 days old: the register is monthly and its CSV can lag a month or
+ * two behind (2026-09-01 was still the newest on 2026-11-03), so a weekly job
+ * that keeps failing leaves the last edition up for a while, but not for ever.
+ */
+export async function loadEvChargingRegister(db: Db, cityId: string): Promise<DbResult<EvChargingRegister>> {
+  return loadSnapshot(db, cityId, 'bnetza-charging', { schema: EvChargingRegisterSchema, maxAgeMs: 90 * 86_400_000 });
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {

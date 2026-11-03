@@ -96,6 +96,8 @@ export const koeln: CityConfig = {
     // The four LANUK (LUQS) stations inside the city in the UBA station list (checked 2026-11-03)
     airQuality: { ubaStations: ['DENW053', 'DENW059', 'DENW211', 'DENW212'] },
     nina: { ars: '053150000000' }, // kreisfreie Stadt Köln, AGS 05315000
+    // BNetzA Ladesäulenregister (CC BY 4.0): ~1,480 charging devices, ~770 places
+    evCharging: { provider: 'bnetza', kreis: 'Kreisfreie Stadt Köln' },
     aeds: { adminLevel: 6 },       // OSM boundary "Köln" of the kreisfreie Stadt
     pollen: {
       provider: 'dwd',

@@ -31,5 +31,5 @@ export const hamburg: WebCityConfig = {
   // constituencies are named after them, so the political map has a Bundestag view.
   // The traffic layer adds the Verkehrslage congestion map (WMS) and the city's
   // car and bicycle counters.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'transit', 'roadworks', 'bathing', 'socialAtlas', 'population', 'councilMeetings', 'laborMarket', 'wastewater', 'airQualityStations', 'bikeSharing', 'carCounts', 'bikeCounts', 'trafficAccidents', 'electricity', 'pharmacies', 'aeds', 'political', 'noiseMap', 'rentMap', 'trafficFlowMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
+  features: ['news', 'police', 'nina', 'evCharging', 'evChargingLive', 'pollen', 'waterLevels', 'transit', 'roadworks', 'bathing', 'socialAtlas', 'population', 'councilMeetings', 'laborMarket', 'wastewater', 'airQualityStations', 'bikeSharing', 'carCounts', 'bikeCounts', 'trafficAccidents', 'electricity', 'pharmacies', 'aeds', 'political', 'noiseMap', 'rentMap', 'trafficFlowMap', 'crisis', 'politicalMap', 'bundestagByDistrict'],
 };

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'accidents' | 'water' | 'social' | 'population' | 'political' | 'reports';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'ev-charging' | 'accidents' | 'water' | 'social' | 'population' | 'political' | 'reports';
 /** Which accidents the accident layer shows: all, or those with a bicycle or a pedestrian involved. */
 export type AccidentFilter = 'all' | 'bike' | 'pedestrian';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';

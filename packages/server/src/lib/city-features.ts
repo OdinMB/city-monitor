@@ -38,6 +38,8 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['trafficAccidents', (c) => c.dataSources.trafficAccidents !== undefined],
   ['carCounts', (c) => c.dataSources.trafficCounts?.modes.includes('car') === true],
   ['bikeCounts', (c) => c.dataSources.trafficCounts?.modes.includes('bike') === true],
+  ['evCharging', (c) => c.dataSources.evCharging !== undefined],
+  ['evChargingLive', (c) => c.dataSources.evCharging?.liveStatus !== undefined],
   ['socialAtlas', (c) => c.dataSources.socialAtlas !== undefined],
   ['population', (c) => c.dataSources.population !== undefined],
   ['laborMarket', (c) => c.dataSources.laborMarket !== undefined],

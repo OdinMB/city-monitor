@@ -32,6 +32,10 @@ export const CK = {
   trafficAccidents: (cityId: string) => `${cityId}:traffic-accidents`,
   /** Not bootstrapped: ~260 Hamburg sites are about 50 KB, fetched when a counts sub-layer is on. */
   trafficCounts: (cityId: string) => `${cityId}:traffic-counts`,
+  /** The city's stations from the BNetzA register (with EVSE ids where a live feed merges on them). Not bootstrapped: Berlin's ~3,500 stations are several hundred KB. */
+  evChargingRegister: (cityId: string) => `${cityId}:ev-charging:register`,
+  /** Live charge-point status (Hamburg), cache only; the route merges it onto the register. */
+  evChargingStatus: (cityId: string) => `${cityId}:ev-charging:status`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

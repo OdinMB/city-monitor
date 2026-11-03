@@ -15,7 +15,7 @@ export const SNAPSHOT_TYPES = [
   'viz-roadworks', 'tomtom-traffic', 'aponet', 'osm-aeds',
   'mss-social-atlas', 'lageso-wastewater', 'lageso-bathing',
   'ba-labor-market', 'afstat-population', 'bf-feuerwehr',
-  'dwd-pollen', 'sc-dnms', 'oparl-meetings', 'lhp-flood', 'kvb-lift-outages', 'open311-reports', 'bike-sharing', 'unfallatlas-accidents', 'traffic-counts', 'smard-electricity',
+  'dwd-pollen', 'sc-dnms', 'oparl-meetings', 'lhp-flood', 'kvb-lift-outages', 'open311-reports', 'bike-sharing', 'unfallatlas-accidents', 'traffic-counts', 'smard-electricity', 'bnetza-charging',
   'vbb-disruptions', 'aqi-grid', 'uba-airquality', 'bbk-nina',
   'abgwatch-bezirke', 'abgwatch-mayor', 'abgwatch-bundestag', 'abgwatch-state', 'abgwatch-state-bezirke',
 ] as const;

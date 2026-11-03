@@ -570,6 +570,7 @@
       "traffic": "Traffic",
       "bike-sharing": "Bike Sharing",
       "accidents": "Accidents",
+      "ev-charging": "EV Charging",
       "water": "Water",
       "social": "Social",
       "population": "Population",
@@ -653,6 +654,16 @@
       "above": "More than usual",
       "wellAbove": "Far more than usual",
       "none": "Nothing to compare"
+    },
+    "evLegend": {
+      "title": "Charging power",
+      "normal": "Normal (up to 22 kW)",
+      "fast": "Fast (over 22 kW)",
+      "hpc": "High power (150 kW and up)",
+      "liveTitle": "Live status (ring)",
+      "available": "A point is free",
+      "occupied": "All in use",
+      "outOfOrder": "Out of order"
     },
     "population": {
       "pop-density": "Population Density",
@@ -783,6 +794,28 @@
       "tooFew": "Too little traffic to compare",
       "counters_one": "{{count}} counter",
       "counters_other": "{{count}} counters"
+    },
+    "ev": {
+      "points": "Charge points",
+      "plugs": "Plugs",
+      "upTo": "up to",
+      "live": "Live: {{free}} of {{total}} free",
+      "since": "since",
+      "register": "BNetzA charging register of",
+      "status": {
+        "available": "Available",
+        "occupied": "In use",
+        "outOfOrder": "Out of order",
+        "unknown": "Unknown"
+      },
+      "plug": {
+        "type2": "Type 2",
+        "ccs": "CCS",
+        "chademo": "CHAdeMO",
+        "schuko": "Schuko",
+        "type1": "Type 1",
+        "mcs": "MCS"
+      }
     }
   },
   "socialAtlas": {

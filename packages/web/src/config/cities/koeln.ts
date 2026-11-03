@@ -29,5 +29,5 @@ export const koeln: WebCityConfig = {
   // view alone: its constituencies ("Köln I") are not Stadtbezirke. The noise
   // map is NRW's statewide one (road, rail, air; no combined layer), which
   // draws only from zoom 13.
-  features: ['news', 'police', 'nina', 'pollen', 'waterLevels', 'events', 'roadworks', 'socialAtlas', 'population', 'laborMarket', 'wastewater', 'councilMeetings', 'liftOutages', 'citizenReports', 'airQualityStations', 'bikeSharing', 'trafficAccidents', 'electricity', 'pharmacies', 'aeds', 'political', 'districtMayors', 'mayor', 'crisis', 'politicalMap', 'noiseMap'],
+  features: ['news', 'police', 'nina', 'evCharging', 'pollen', 'waterLevels', 'events', 'roadworks', 'socialAtlas', 'population', 'laborMarket', 'wastewater', 'councilMeetings', 'liftOutages', 'citizenReports', 'airQualityStations', 'bikeSharing', 'trafficAccidents', 'electricity', 'pharmacies', 'aeds', 'political', 'districtMayors', 'mayor', 'crisis', 'politicalMap', 'noiseMap'],
 };

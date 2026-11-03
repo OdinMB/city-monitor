@@ -610,6 +610,7 @@
       "traffic": "حركة المرور",
       "bike-sharing": "مشاركة الدراجات",
       "accidents": "الحوادث",
+      "ev-charging": "شحن السيارات الكهربائية",
       "water": "المياه",
       "social": "اجتماعي",
       "population": "السكان",
@@ -693,6 +694,16 @@
       "above": "أكثر من المعتاد",
       "wellAbove": "أكثر بكثير من المعتاد",
       "none": "لا تتوفر مقارنة"
+    },
+    "evLegend": {
+      "title": "قدرة الشحن",
+      "normal": "عادي (حتى 22 كيلوواط)",
+      "fast": "سريع (أكثر من 22 كيلوواط)",
+      "hpc": "فائق السرعة (150 كيلوواط فأكثر)",
+      "liveTitle": "الحالة المباشرة (الحلقة)",
+      "available": "توجد نقطة شحن متاحة",
+      "occupied": "كلها مشغولة",
+      "outOfOrder": "معطّلة"
     },
     "population": {
       "pop-density": "الكثافة السكانية",
@@ -832,6 +843,28 @@
       "counters_few": "{{count}} عدّادات",
       "counters_many": "{{count}} عدّادًا",
       "counters_other": "{{count}} عدّاد"
+    },
+    "ev": {
+      "points": "نقاط الشحن",
+      "plugs": "المقابس",
+      "upTo": "حتى",
+      "live": "مباشر: {{free}} من {{total}} متاحة",
+      "since": "منذ",
+      "register": "سجل محطات الشحن لدى BNetzA بتاريخ",
+      "status": {
+        "available": "متاحة",
+        "occupied": "مشغولة",
+        "outOfOrder": "معطّلة",
+        "unknown": "غير معروفة"
+      },
+      "plug": {
+        "type2": "النوع 2",
+        "ccs": "CCS",
+        "chademo": "CHAdeMO",
+        "schuko": "شوكو",
+        "type1": "النوع 1",
+        "mcs": "MCS"
+      }
     }
   },
   "socialAtlas": {

@@ -49,6 +49,8 @@ export const muenchen: CityConfig = {
     // The five LÜB stations (Bayerisches Landesamt für Umwelt) in the city, from the UBA station list (checked 2026-11-03)
     airQuality: { ubaStations: ['DEBY037', 'DEBY039', 'DEBY089', 'DEBY115', 'DEBY189'] },
     nina: { ars: '091620000000' }, // kreisfreie Stadt München, AGS 09162000
+    // BNetzA Ladesäulenregister (CC BY 4.0): ~2,390 devices, ~970 places; not "Landkreis München"
+    evCharging: { provider: 'bnetza', kreis: 'Kreisfreie Stadt München' },
     aeds: { adminLevel: 6 },       // OSM boundary "München" of the kreisfreie Stadt
     pollen: {
       provider: 'dwd',
