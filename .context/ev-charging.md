@@ -37,7 +37,7 @@ Status mapping (`ocppStatus`): AVAILABLE → `available`; OCCUPIED, PREPARING, C
 
 ## Frontend
 
-- Top-level `DataLayer` `'ev-charging'` (off by default, no number key), gated on the `evCharging` feature; the sidebar legend shows the power classes, and the ring states where the city has `evChargingLive` (Hamburg).
+- `DataLayer` `'ev-charging'` in the Traffic category (off by default), gated on the `evCharging` feature; the sidebar legend shows the power classes, and the ring states where the city has `evChargingLive` (Hamburg).
 - `hooks/useEvCharging.ts` fetches only while the layer is on; refetches every 5 minutes in a city with `evChargingLive`, otherwise not at all (stale after 6 hours).
 - `components/map/layers/ev-charging.ts`: one `circle` layer (`ev-station-circle`), sorted so high-power chargers sit on top; the popup looks its station up by feature index (`evStationPopupHtml`, covered by `popup-language.test.ts`). Colours: `EV_POWER_CLASSES` and `EV_LIVE_STATES` in `components/map/constants.ts`.
 - Synthetic data: two normal stations per anchor and a fast or high-power one at every other anchor, no live status (`synthetic/generate.ts`).

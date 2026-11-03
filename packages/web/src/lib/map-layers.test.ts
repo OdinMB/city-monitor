@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { CityFeature } from '@city-monitor/shared';
-import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers, withoutEmptyHospitals } from './map-layers.js';
+import {
+  categoryDefaults, categoryLayers, cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers, withoutEmptyHospitals, withoutEmptyLifts,
+} from './map-layers.js';
+import { CATEGORY_LAYERS, CATEGORY_ORDER, type DataLayer } from '../hooks/useCommandCenter.js';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
 import { koeln } from '../config/cities/koeln.js';
@@ -37,7 +40,7 @@ describe('cityLayers', () => {
   it('gives Berlin, which has every feature, every layer and sub-layer', () => {
     const all = cityLayers(berlin);
     expect([...all.layers].sort()).toEqual([
-      'accidents', 'air-quality', 'bike-sharing', 'crime', 'emergencies', 'ev-charging', 'heat-relief', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'trees', 'warnings', 'water', 'weather',
+      'accidents', 'air-quality', 'bike-sharing', 'crime', 'emergencies', 'ev-charging', 'heat-relief', 'lifts', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'trees', 'warnings', 'water', 'weather',
     ]);
     expect(all.heatRelief).toEqual(['cool', 'fountains', 'toilets']);
     expect(all.news).toEqual(['news', 'police']);
@@ -211,5 +214,45 @@ describe('effectiveNoiseLayer', () => {
 
   it('shows no map for a city without one', () => {
     expect(effectiveNoiseLayer('road', withFeatures('noiseSensors'))).toBeNull();
+  });
+});
+
+describe('map categories', () => {
+  it('puts every layer in exactly one category', () => {
+    const all = CATEGORY_ORDER.flatMap((c) => CATEGORY_LAYERS[c]);
+    expect(new Set(all).size).toBe(all.length);
+    expect([...cityLayers(berlin).layers].every((l) => all.includes(l))).toBe(true);
+  });
+
+  it('groups mobility under traffic, the environment layers under environment and the area statistics under social', () => {
+    const layers = cityLayers(berlin).layers;
+    expect(categoryLayers('traffic', layers)).toEqual(['traffic', 'lifts', 'accidents', 'ev-charging', 'bike-sharing']);
+    expect(categoryLayers('environment', layers)).toEqual(['air-quality', 'noise', 'water', 'heat-relief', 'trees']);
+    expect(categoryLayers('social', layers)).toEqual(['social', 'population', 'crime', 'political']);
+    expect(categoryLayers('traffic', cityLayers(hamburg).layers)).toContain('parking');
+  });
+
+  it('opens a category with its defaults, or its first layer where the city lacks them', () => {
+    const berlinLayers = cityLayers(berlin).layers;
+    expect(categoryDefaults('traffic', berlinLayers)).toEqual(['traffic']);
+    expect(categoryDefaults('environment', berlinLayers)).toEqual(['air-quality']);
+    expect(categoryDefaults('social', berlinLayers)).toEqual(['social']);
+    expect(categoryDefaults('warnings', berlinLayers)).toEqual(['warnings']);
+    const noAtlas = new Set<DataLayer>(['population', 'political']);
+    expect(categoryDefaults('social', noAtlas)).toEqual(['population']);
+    expect(categoryDefaults('reports', berlinLayers)).toEqual([]);
+  });
+});
+
+describe('lift outages layer', () => {
+  it('is there for KVB in Köln and for DB stations everywhere', () => {
+    for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('lifts'), city.id).toBe(true);
+    expect(withFeatures().layers.has('lifts')).toBe(false);
+  });
+
+  it('drops while the server has no data for a city with DB stations only, but stays for KVB', () => {
+    expect(withoutEmptyLifts(cityLayers(berlin), berlin.features, false).layers.has('lifts')).toBe(false);
+    expect(withoutEmptyLifts(cityLayers(berlin), berlin.features, true).layers.has('lifts')).toBe(true);
+    expect(withoutEmptyLifts(cityLayers(koeln), koeln.features, false).layers.has('lifts')).toBe(true);
   });
 });

@@ -30,7 +30,7 @@ The reports are public on the portals, but München's free text often carries th
 
 ## Frontend
 
-- Layer `reports` (`DataLayer`, no number shortcut), shown where the city has `citizenReports` (`lib/map-layers.ts`). `useCitizenReports(cityId, enabled)` fetches only while the layer is on, refetching every 15 min.
+- Layer `reports` (`DataLayer`, its own sidebar category, number key 8), shown where the city has `citizenReports` (`lib/map-layers.ts`). The map draws open and in-progress reports by default; closed ones are a switch in the sidebar's status list (`reportStatuses`, filtered in `CityMap`), and the counts there always cover all three. `useCitizenReports(cityId, enabled)` fetches only while the layer is on, refetching every 15 min.
 - `components/map/layers/citizen-reports.ts`: `updateCitizenReportMarkers` registers 24 icons (8 group icons × 3 status colours: open red, in progress amber, closed green) and draws one symbol layer, zoom-scaled, open reports on top (`symbol-sort-key`) and closed ones at 55 % opacity. `citizenReportPopupHtml`: category, translated status with the portal's own word where it differs, report and update time in the UI language, "View on the city's portal" (https links only) and the portal's name.
 - Sidebar: `CitizenReportLegend` under the active layer, the three status colours with their counts and "Reports of the last 14 days".
 - i18n: `sidebar.layers.reports`, `sidebar.reports.*`, `mapPopup.reports.*` in all four bundles.

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CityProvider } from '../../hooks/CityProvider.js';
 import { Sidebar } from './Sidebar.js';
 
@@ -21,11 +22,13 @@ vi.mock('../../config/index.js', async (importOriginal) => {
 
 function renderSidebar() {
   render(
-    <MemoryRouter initialEntries={['/berlin']}>
-      <CityProvider cityId="berlin">
-        <Sidebar />
-      </CityProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter initialEntries={['/berlin']}>
+        <CityProvider cityId="berlin">
+          <Sidebar />
+        </CityProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

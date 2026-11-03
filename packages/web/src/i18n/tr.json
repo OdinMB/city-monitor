@@ -637,6 +637,11 @@
       "multi": "Çoklu"
     },
     "toggleLayers": "Katman panelini aç/kapat",
+    "categories": {
+      "traffic": "Trafik",
+      "environment": "Çevre",
+      "social": "Sosyal"
+    },
     "layers": {
       "label": "Katmanlar",
       "events": "Etkinlikler",
@@ -650,11 +655,12 @@
       "bike-sharing": "Bisiklet Paylaşımı",
       "parking": "Otoparklar",
       "accidents": "Kazalar",
+      "lifts": "Asansörler ve Yürüyen Merdivenler",
       "crime": "Suç",
       "ev-charging": "Elektrikli Araç Şarjı",
       "heat-relief": "Sıcaktan Korunma",
       "water": "Su",
-      "social": "Sosyal",
+      "social": "Sosyal Atlas",
       "population": "Nüfus",
       "political": "Temsil",
       "reports": "Vatandaş Bildirimleri",
@@ -725,6 +731,11 @@
       "most": "Yarısı veya daha fazlası bisiklet",
       "day": "{{day}} · Sensör: {{segments}}",
       "citizen": "Vatandaşların işlettiği Telraam sensörleri (Berlin zählt Mobilität). Çoğu yalnızca gün ışığında sayar."
+    },
+    "liftLegend": {
+      "title": "Hizmet dışı asansörler ve yürüyen merdivenler",
+      "lift": "Asansör hizmet dışı",
+      "escalator": "Yürüyen merdiven hizmet dışı"
     },
     "bikeLegend": {
       "title": "İstasyondaki kullanılabilir bisikletler",
@@ -816,6 +827,10 @@
     }
   },
   "mapPopup": {
+    "lifts": {
+      "lift": "Asansör hizmet dışı",
+      "escalator": "Yürüyen merdiven hizmet dışı"
+    },
     "readMore": "Devamını oku",
     "details": "Ayrıntılar",
     "directions": "Yol tarifi",
@@ -1101,7 +1116,7 @@
     "title": "Klavye Kısayolları",
     "toggleHints": "Kısayolları göster / gizle",
     "toggleDark": "Karanlık modu değiştir",
-    "toggleLayer": "Veri katmanı 1–9 değiştir",
+    "toggleLayer": "Harita kategorisi 1–8 değiştir",
     "clearLayers": "Tüm katmanları temizle",
     "close": "Kapat",
     "toastHint": "Klavye kısayolları",

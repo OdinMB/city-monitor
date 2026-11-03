@@ -138,7 +138,7 @@ describe('KeyboardHints', () => {
   it('renders shortcut keys', () => {
     render(<KeyboardHints open={true} onClose={onClose} />);
     const kbds = screen.getByRole('dialog').querySelectorAll('kbd');
-    // 5 shortcuts: ?, D, 1-9, 0, Esc
+    // 5 shortcuts: ?, D, 1-8, 0, Esc
     expect(kbds.length).toBe(5);
   });
 
@@ -149,7 +149,7 @@ describe('KeyboardHints', () => {
     );
     expect(kbdTexts).toContain('?');
     expect(kbdTexts).toContain('D');
-    expect(kbdTexts).toContain('1-9');
+    expect(kbdTexts).toContain('1-8');
     expect(kbdTexts).toContain('0');
     expect(kbdTexts).toContain('Esc');
   });

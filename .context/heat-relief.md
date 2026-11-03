@@ -50,7 +50,7 @@ Live counts on 2026-11-03, inside the bounding box: Berlin 126 cool / 242 founta
 
 ## Frontend
 
-- `DataLayer` `'heat-relief'` (off by default, no number key) with sub-layers `cool`, `fountains`, `toilets` (`heatReliefSubLayers`), gated by the three features (`lib/map-layers.ts`). A city with one list (Hamburg) shows no sub-layer buttons.
+- `DataLayer` `'heat-relief'` in the Environment category (off by default) with sub-layers `cool`, `fountains`, `toilets` (`heatReliefSubLayers`), gated by the three features (`lib/map-layers.ts`). A city with one list (Hamburg) shows no sub-layer buttons.
 - `hooks/useHeatRelief.ts` fetches only while the layer is on (`staleTime` 6 h, no polling).
 - `components/map/layers/heat-relief.ts`: one `symbol` layer (`heat-relief-icon`); `heatReliefPopupHtml` follows the UI language (`popup-language.test.ts`); feed text stays German in `sourceText` isolates.
 - `components/HeatReliefHint.tsx` in the weather tile; its button calls `showHeatRelief()` (adds the layer, or replaces it in single view, and turns all sub-layers on) and scrolls up to the map.

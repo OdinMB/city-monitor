@@ -643,6 +643,11 @@
       "multi": "Multi"
     },
     "toggleLayers": "Ebenenleiste ein-/ausblenden",
+    "categories": {
+      "traffic": "Verkehr",
+      "environment": "Umwelt",
+      "social": "Soziales"
+    },
     "layers": {
       "label": "Ebenen",
       "events": "Veranstaltungen",
@@ -656,11 +661,12 @@
       "bike-sharing": "Leihräder",
       "parking": "Parkhäuser",
       "accidents": "Unfälle",
+      "lifts": "Aufzüge & Fahrtreppen",
       "crime": "Kriminalität",
       "ev-charging": "E-Ladesäulen",
       "heat-relief": "Hitzeschutz",
       "water": "Wasser",
-      "social": "Soziales",
+      "social": "Sozialatlas",
       "population": "Bevölkerung",
       "political": "Vertretung",
       "reports": "Bürgermeldungen",
@@ -676,7 +682,7 @@
     },
     "traffic": {
       "public-transport": "Nahverkehr",
-      "incidents": "Verkehrslage",
+      "incidents": "Verkehrsmeldungen",
       "congestion": "Verkehrsfluss (live)",
       "roadworks": "Baustellen",
       "car-counts": "Kfz-Zählstellen",
@@ -731,6 +737,11 @@
       "most": "Die Hälfte oder mehr Räder",
       "day": "{{day}} · Sensoren: {{segments}}",
       "citizen": "Telraam-Sensoren von Bürgerinnen und Bürgern (Berlin zählt Mobilität). Die meisten zählen nur bei Tageslicht."
+    },
+    "liftLegend": {
+      "title": "Aufzüge und Fahrtreppen außer Betrieb",
+      "lift": "Aufzug außer Betrieb",
+      "escalator": "Fahrtreppe außer Betrieb"
     },
     "bikeLegend": {
       "title": "Verfügbare Räder an der Station",
@@ -826,6 +837,10 @@
     }
   },
   "mapPopup": {
+    "lifts": {
+      "lift": "Aufzug außer Betrieb",
+      "escalator": "Fahrtreppe außer Betrieb"
+    },
     "readMore": "Weiterlesen",
     "details": "Details",
     "directions": "Route",
@@ -1111,7 +1126,7 @@
     "title": "Tastenkürzel",
     "toggleHints": "Tastenkürzel ein-/ausblenden",
     "toggleDark": "Dark Mode umschalten",
-    "toggleLayer": "Datenebene 1–9 umschalten",
+    "toggleLayer": "Kartenkategorie 1–8 umschalten",
     "clearLayers": "Alle Ebenen deaktivieren",
     "close": "Schließen",
     "toastHint": "Tastenkürzel",

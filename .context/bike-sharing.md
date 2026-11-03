@@ -35,7 +35,7 @@ Live counts on 2026-11-03 at 01:26 UTC: Berlin 1,068 stations / 2,380 bikes (148
 
 ## Frontend
 
-- Top-level `DataLayer` `'bike-sharing'` (off by default, no number key), gated on the `bikeSharing` city feature (`lib/map-layers.ts`). The sidebar shows a three-colour legend under it (`BIKE_AVAILABILITY` in `components/map/constants.ts`).
+- `DataLayer` `'bike-sharing'` in the Traffic category (off by default), gated on the `bikeSharing` city feature (`lib/map-layers.ts`). The sidebar shows a three-colour legend under it (`BIKE_AVAILABILITY` in `components/map/constants.ts`).
 - `hooks/useBikeSharing.ts` fetches only while the layer is on, refetching every 5 minutes.
 - `components/map/layers/bike-sharing.ts`: a `circle` layer (`bike-station-circle`) and a count `symbol` layer from zoom 14; `bikeStationPopupHtml` follows the UI language (`popup-language.test.ts`).
 - Synthetic data: four stations per anchor, docks only for a GBFS city (`synthetic/generate.ts`).

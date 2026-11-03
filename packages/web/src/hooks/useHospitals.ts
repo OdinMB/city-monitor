@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import type { WebCityConfig } from '@city-monitor/shared';
 import { api, type ApiResponse, type HospitalData } from '../lib/api.js';
-import { cityLayers, withoutEmptyHospitals, type CityLayers } from '../lib/map-layers.js';
+import { cityLayers, withoutEmptyHospitals, withoutEmptyLifts, type CityLayers } from '../lib/map-layers.js';
+import { useLiftOutages } from './useLiftOutages.js';
 
 /** The city's hospitals (weekly job). `enabled` false for a city without the source. */
 export function useHospitals(cityId: string, enabled = true) {
@@ -29,5 +30,11 @@ export function useCityLayers(city: Pick<WebCityConfig, 'id' | 'features'>): Cit
   const base = useMemo(() => cityLayers(city), [city]);
   const { data } = useHospitals(city.id, base.emergencies.includes('hospitals'));
   const hasHospitals = (data?.hospitals.length ?? 0) > 0;
-  return useMemo(() => withoutEmptyHospitals(base, hasHospitals), [base, hasHospitals]);
+  // The lift tile's query (bootstrap-seeded), so no request of its own
+  const { data: lifts } = useLiftOutages(city.id, base.layers.has('lifts'));
+  const hasLiftData = lifts != null;
+  return useMemo(
+    () => withoutEmptyLifts(withoutEmptyHospitals(base, hasHospitals), city.features, hasLiftData),
+    [base, hasHospitals, city.features, hasLiftData],
+  );
 }

@@ -1,13 +1,8 @@
 import { useEffect, useCallback } from 'react';
 import { useTheme } from './useTheme.js';
-import { useCommandCenter, type DataLayer } from './useCommandCenter.js';
+import { CATEGORY_ORDER, useCommandCenter, type DataLayer } from './useCommandCenter.js';
 import { useShortcutSettings } from './useShortcutSettings.js';
-
-/** Ordered list of data layers for number-key shortcuts (1-9). */
-const LAYER_ORDER: DataLayer[] = [
-  'warnings', 'news', 'traffic', 'weather', 'air-quality',
-  'noise', 'water', 'emergencies', 'social',
-];
+import { categoryDefaults } from '../lib/map-layers.js';
 
 function isInputFocused(): boolean {
   const el = document.activeElement;
@@ -20,7 +15,7 @@ function isInputFocused(): boolean {
 
 /**
  * The page-wide single-key shortcuts: ? for the shortcuts dialog, D for dark
- * mode, 1-9 for a data layer and 0 to clear them. They work anywhere on the
+ * mode, 1-8 for a map category (CATEGORY_ORDER) and 0 to clear them. They work anywhere on the
  * page, as they always have, until someone switches them off in that dialog
  * (WCAG 2.1.4); Escape still closes the dialog then. A number keeps its layer
  * in every city, and does nothing in a city without that layer (`layers`, the
@@ -28,7 +23,7 @@ function isInputFocused(): boolean {
  */
 export function useKeyboardShortcuts(layers: ReadonlySet<DataLayer>) {
   const { toggle: toggleTheme } = useTheme();
-  const toggleLayer = useCommandCenter((s) => s.toggleLayer);
+  const toggleCategory = useCommandCenter((s) => s.toggleCategory);
   const setActiveLayers = useCommandCenter((s) => s.setActiveLayers);
   const enabled = useShortcutSettings((s) => s.enabled);
   const hintsOpen = useShortcutSettings((s) => s.hintsOpen);
@@ -74,15 +69,18 @@ export function useKeyboardShortcuts(layers: ReadonlySet<DataLayer>) {
       }
 
       const num = parseInt(key, 10);
-      if (num >= 1 && num <= 9 && num <= LAYER_ORDER.length && layers.has(LAYER_ORDER[num - 1])) {
+      if (num >= 1 && num <= 9 && num <= CATEGORY_ORDER.length) {
+        const category = CATEGORY_ORDER[num - 1];
+        const defaults = categoryDefaults(category, layers);
+        if (defaults.length === 0) return;
         e.preventDefault();
-        toggleLayer(LAYER_ORDER[num - 1]);
+        toggleCategory(category, defaults);
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [enabled, hintsOpen, setHintsOpen, toggleTheme, toggleLayer, setActiveLayers, layers]);
+  }, [enabled, hintsOpen, setHintsOpen, toggleTheme, toggleCategory, setActiveLayers, layers]);
 
   return { hintsOpen, openHints, closeHints };
 }

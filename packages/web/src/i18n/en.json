@@ -641,6 +641,11 @@
       "multi": "Multi"
     },
     "toggleLayers": "Toggle layers panel",
+    "categories": {
+      "traffic": "Traffic",
+      "environment": "Environment",
+      "social": "Social"
+    },
     "layers": {
       "label": "Layers",
       "events": "Events",
@@ -654,11 +659,12 @@
       "bike-sharing": "Bike Sharing",
       "parking": "Car Parks",
       "accidents": "Accidents",
+      "lifts": "Lifts & Escalators",
       "crime": "Crime",
       "ev-charging": "EV Charging",
       "heat-relief": "Heat Relief",
       "water": "Water",
-      "social": "Social",
+      "social": "Social Atlas",
       "population": "Population",
       "political": "Representation",
       "reports": "Citizen Reports",
@@ -729,6 +735,11 @@
       "most": "Half or more bikes",
       "day": "{{day}} · Sensors: {{segments}}",
       "citizen": "Citizen-run Telraam sensors (Berlin zählt Mobilität). Most count in daylight only."
+    },
+    "liftLegend": {
+      "title": "Lifts and escalators out of service",
+      "lift": "Lift out of service",
+      "escalator": "Escalator out of service"
     },
     "bikeLegend": {
       "title": "Bikes available at a station",
@@ -820,6 +831,10 @@
     }
   },
   "mapPopup": {
+    "lifts": {
+      "lift": "Lift out of service",
+      "escalator": "Escalator out of service"
+    },
     "readMore": "Read more",
     "details": "Details",
     "directions": "Directions",
@@ -1105,7 +1120,7 @@
     "title": "Keyboard Shortcuts",
     "toggleHints": "Show / hide shortcuts",
     "toggleDark": "Toggle dark mode",
-    "toggleLayer": "Toggle data layer 1–9",
+    "toggleLayer": "Toggle map category 1–8",
     "clearLayers": "Clear all layers",
     "close": "Close",
     "toastHint": "Keyboard shortcuts",

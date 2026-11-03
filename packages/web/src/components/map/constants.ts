@@ -154,7 +154,13 @@ export const BIKE_AVAILABILITY: ReadonlyArray<{ key: 'none' | 'few' | 'many'; co
  * the lowest free share of the band; `closed` is a closed car park or one whose
  * guidance system reports a fault, whatever its count.
  */
-export const PARKING_OCCUPANCY: ReadonlyArray<{ key: 'plenty' | 'some' | 'few' | 'closed'; color: string; minShare: number | null }> = [
+/** Lift outages on the map: lifts, which wheelchairs and prams depend on, stronger than escalators. */
+export const LIFT_KIND_COLORS: Readonly<Record<'lift' | 'escalator', string>> = {
+  lift: '#dc2626',
+  escalator: '#f59e0b',
+};
+
+export const PARKING_OCCUPANCY:ReadonlyArray<{ key: 'plenty' | 'some' | 'few' | 'closed'; color: string; minShare: number | null }> = [
   { key: 'plenty', color: '#16a34a', minShare: 0.3 },
   { key: 'some', color: '#f59e0b', minShare: 0.1 },
   { key: 'few', color: '#dc2626', minShare: 0 },

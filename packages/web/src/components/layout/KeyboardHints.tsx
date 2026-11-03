@@ -10,7 +10,7 @@ interface KeyboardHintsProps {
 const SHORTCUTS = [
   { key: '?', action: 'shortcuts.toggleHints' },
   { key: 'D', action: 'shortcuts.toggleDark' },
-  { key: '1-9', action: 'shortcuts.toggleLayer' },
+  { key: '1-8', action: 'shortcuts.toggleLayer' },
   { key: '0', action: 'shortcuts.clearLayers' },
   { key: 'Esc', action: 'shortcuts.close' },
 ] as const;
