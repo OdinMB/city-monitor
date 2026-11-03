@@ -255,7 +255,7 @@ export function HospitalLegend({ cityId }: { cityId: string }) {
 /**
  * The emergencies layer's sub-layers. Hospitals are listed only once the
  * server has some for the city: Berlin, Köln and München have only the
- * Klinik-Atlas, which stays off until KLINIK_ATLAS_ENABLED is set.
+ * Klinik-Atlas, which the server leaves out with KLINIK_ATLAS=false.
  */
 function EmergencySubLayers({ cityId, layers, parentColor, selected, onSelect }: {
   cityId: string;

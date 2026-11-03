@@ -203,11 +203,21 @@ describe('createApp startup runs per active city', () => {
     await createApp();
 
     // Berlin has no LHP gauges (its rivers are on PEGELONLINE), no KVB lifts, no Open311 server
-    // no traffic counters configured and no car parks with open live counts; its DB lifts and
-    // Klinik-Atlas hospitals wait for their switches
+    // no traffic counters configured and no car parks with open live counts; its DB lifts wait
+    // for their keys. Hospitals (Klinik-Atlas) are on by default, so their job runs too.
     expect(startupRuns()).toEqual(ingestionJobs().filter((name) =>
       name !== 'ingest-flood-status' && name !== 'ingest-lift-outages' && name !== 'ingest-citizen-reports'
-      && name !== 'ingest-traffic-counts' && name !== 'ingest-parking' && name !== 'ingest-hospitals'));
+      && name !== 'ingest-traffic-counts' && name !== 'ingest-parking'));
+  });
+
+  it('skips the hospitals job for Berlin with KLINIK_ATLAS=false, its only hospital source', async () => {
+    vi.stubEnv('ACTIVE_CITIES', 'berlin');
+    vi.stubEnv('KLINIK_ATLAS', 'false');
+    stored.execute = rowsFreshFor([]);
+    await createApp();
+
+    expect(startupRuns()).not.toContain('ingest-hospitals');
+    expect(startupRuns()).toContain('ingest-aeds');
   });
 
   it('runs the citizen-reports job for Köln and München without data', async () => {

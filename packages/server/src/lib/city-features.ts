@@ -67,9 +67,8 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['noiseSensors', (c) => c.dataSources.noiseSensors !== undefined],
   ['councilMeetings', (c) => c.dataSources.councilMeetings !== undefined],
   ['pharmacies', hasPharmacySearch],
-  // Config alone: the Klinik-Atlas, the only source of Berlin, Köln and München, also needs
-  // KLINIK_ATLAS_ENABLED=true, and without it the job stores nothing there and the sidebar
-  // leaves out the hospitals toggle (activeHospitalSources; withoutEmptyHospitals on the web).
+  // Config alone: with KLINIK_ATLAS=false, Berlin, Köln and München (Klinik-Atlas only) get no
+  // hospitals from the API, and the sidebar leaves out the toggle (withoutEmptyHospitals on the web).
   ['hospitals', (c) => (c.dataSources.hospitals?.length ?? 0) > 0],
   // A German city without dataSources.aeds is asked for at the state level (ingest-aeds.ts).
   ['aeds', (c) => c.country === 'DE'],

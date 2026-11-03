@@ -110,7 +110,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
   // ingest-lift-outages: DB FaSta when DB_API_CLIENT_ID and DB_API_KEY are set; credited wherever the config names it
   ['DB FaSta (Deutsche Bahn)', (c) => c.dataSources.stationLifts?.provider === 'db-fasta'],
-  // ingest-hospitals: Hamburg's WFS, and the Klinik-Atlas only with KLINIK_ATLAS_ENABLED; credited wherever the config names it
+  // ingest-hospitals: Hamburg's WFS, and the Klinik-Atlas unless KLINIK_ATLAS=false; credited wherever the config names it
   ['Krankenhäuser Hamburg (Geodienste)', (c) => c.dataSources.hospitals?.some((s) => s.provider === 'hamburg-wfs') ?? false],
   ['Bundes-Klinik-Atlas (G-BA)', (c) => c.dataSources.hospitals?.some((s) => s.provider === 'klinik-atlas') ?? false],
   ['nextbike (GBFS)', (c) => c.dataSources.bikeSharing?.provider === 'gbfs'],

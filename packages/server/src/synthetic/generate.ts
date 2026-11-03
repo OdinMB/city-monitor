@@ -110,7 +110,7 @@ export interface SyntheticData {
   /** The register only: the live status (Hamburg) is never stored, so the seed has none. */
   evCharging: EvChargingRegister;
   heatRelief: HeatReliefData;
-  /** As production holds with KLINIK_ATLAS_ENABLED set: hospitals of every tier around the anchors. */
+  /** As production holds by default (Klinik-Atlas on): hospitals of every tier around the anchors. */
   hospitals: HospitalData;
   /** Soil moisture at the configured DWD stations; Gieß den Kiez waterings where the city has them. */
   soilMoisture: SoilMoistureData;

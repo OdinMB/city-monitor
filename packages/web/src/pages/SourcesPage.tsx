@@ -115,10 +115,10 @@ const SHARED_SOURCES: SourceGroup[] = [
         description: 'Automated external defibrillator (AED) locations (via the Overpass API), and the place search (Nominatim) that puts news items and police reports on the map. © OpenStreetMap contributors, ODbL.',
       },
       {
-        // Credited wherever the config names it; the job reads it only with KLINIK_ATLAS_ENABLED=true
+        // Credited wherever the config names it; the page cannot see the server's KLINIK_ATLAS opt-out
         name: 'Bundes-Klinik-Atlas (G-BA)',
         url: 'https://bundes-klinik-atlas.de/open-data/',
-        description: 'Hospital sites with their emergency tier under the G-BA\'s emergency-care rules (basic, extended, comprehensive), children\'s emergency care, stroke and chest-pain units, from the open-data export, for the emergencies map layer. Source: Gemeinsamer Bundesausschuss (G-BA), Bundes-Klinik-Atlas.',
+        description: 'Hospital sites with their emergency tier under the G-BA\'s emergency-care rules (basic, extended, comprehensive), children\'s emergency care, stroke and chest-pain units, from the Bundes-Klinik-Atlas open-data export, for the emergencies map layer. Source: Gemeinsamer Bundesausschuss (G-BA), Bundes-Klinik-Atlas. The export states no licence or reuse terms.',
         requires: 'hospitals',
         cities: ['berlin', 'hamburg', 'koeln', 'muenchen'],
       },

@@ -42,8 +42,8 @@ services:
         sync: false
       - key: DB_API_KEY
         sync: false
-      # Hospitals from the Bundes-Klinik-Atlas: set to true only after the G-BA confirms reuse
-      - key: KLINIK_ATLAS_ENABLED
+      # Optional opt-out: false hides the Bundes-Klinik-Atlas hospitals (on when unset)
+      - key: KLINIK_ATLAS
         sync: false
       - key: SENTRY_DSN
         sync: false

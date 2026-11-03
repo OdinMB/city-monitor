@@ -97,8 +97,8 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
 
 /**
  * The layers without the hospitals sub-layer when the server holds no
- * hospital for the city (a source switched off, like the Klinik-Atlas without
- * KLINIK_ATLAS_ENABLED), and without the emergencies layer if that left it empty.
+ * hospital for the city (a source switched off, like the Klinik-Atlas with
+ * KLINIK_ATLAS=false), and without the emergencies layer if that left it empty.
  */
 export function withoutEmptyHospitals(layers: CityLayers, hasHospitals: boolean): CityLayers {
   if (hasHospitals || !layers.emergencies.includes('hospitals')) return layers;

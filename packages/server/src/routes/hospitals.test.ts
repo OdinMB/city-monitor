@@ -28,7 +28,7 @@ describe('Hospitals API', () => {
     vi.unstubAllEnvs();
   });
 
-  it('GET /api/berlin/hospitals returns empty data when no cache (Klinik-Atlas off)', async () => {
+  it('GET /api/berlin/hospitals returns empty data when no cache', async () => {
     const res = await fetch(`${baseUrl}/api/berlin/hospitals`);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ data: null, fetchedAt: null });
@@ -53,6 +53,29 @@ describe('Hospitals API', () => {
 
     const boot = await (await fetch(`${baseUrl}/api/hamburg/bootstrap`)).json();
     expect(boot).not.toHaveProperty('hospitals');
+  });
+
+  it('merges the stored sources when serving, and drops the Klinik-Atlas with KLINIK_ATLAS=false', async () => {
+    const base = { children: false, strokeUnit: false, chestPainUnit: false, trauma: false, beds: null, url: null, address: null };
+    const atlas = { ...base, id: 'kla-1', name: 'Atlas site', lat: 53.5780, lon: 10.0540, tier: 'extended' as const, source: 'klinik-atlas' as const };
+    const wfs = { ...base, id: 'hh-1', name: 'WFS record', lat: 53.5782, lon: 10.0541, tier: 'emergency' as const, source: 'hamburg-wfs' as const };
+    appContext.cache.set('hamburg:hospitals', { hospitals: [wfs, atlas], atlasDate: '2026-10-27' } satisfies HospitalData, 60);
+    appContext.cache.set('berlin:hospitals', { hospitals: [{ ...atlas, id: 'kla-2' }], atlasDate: '2026-10-27' } satisfies HospitalData, 60);
+
+    // On by default: the Atlas site wins within 250 m
+    let hh = (await (await fetch(`${baseUrl}/api/hamburg/hospitals`)).json()).data as HospitalData;
+    expect(hh.hospitals.map((h) => h.id)).toEqual(['kla-1']);
+    expect(hh.atlasDate).toBe('2026-10-27');
+
+    vi.stubEnv('KLINIK_ATLAS', 'false');
+    try {
+      hh = (await (await fetch(`${baseUrl}/api/hamburg/hospitals`)).json()).data as HospitalData;
+      expect(hh).toEqual({ hospitals: [wfs], atlasDate: null });
+      const berlin = (await (await fetch(`${baseUrl}/api/berlin/hospitals`)).json()).data as HospitalData;
+      expect(berlin.hospitals).toEqual([]);
+    } finally {
+      vi.stubEnv('KLINIK_ATLAS', '');
+    }
   });
 
   it('GET /api/unknown/hospitals returns 404', async () => {

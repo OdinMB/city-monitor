@@ -135,8 +135,8 @@ export const hamburg: CityConfig = {
     // Transparenzportal "StadtRAD-Stationen Hamburg"): ~360 stations, no docks. No nextbike in Hamburg.
     // Lifts and escalators at DB stations (FaSta, CC BY 4.0); fetched only with DB_API_CLIENT_ID and DB_API_KEY
     stationLifts: { provider: 'db-fasta' },
-    // The city's hospital WFS (dl-de/by-2.0, ER participation, no tier) and, with KLINIK_ATLAS_ENABLED=true,
-    // the Klinik-Atlas tiers, which win where both list a hospital
+    // The city's hospital WFS (dl-de/by-2.0, ER participation, no tier) and, unless KLINIK_ATLAS=false,
+    // the Klinik-Atlas tiers, which win where both list a hospital (within 250 m)
     hospitals: [
       {
         provider: 'hamburg-wfs',

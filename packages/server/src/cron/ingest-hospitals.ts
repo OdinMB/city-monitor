@@ -1,8 +1,8 @@
 /**
  * Hospitals for the emergencies map layer, by emergency tier, from each city's
  * `dataSources.hospitals`: Hamburg's hospital WFS (dl-de/by-2.0), and the
- * Bundes-Klinik-Atlas export (G-BA) for all four cities, which is read only
- * with KLINIK_ATLAS_ENABLED=true because the G-BA states no reuse terms. Both
+ * Bundes-Klinik-Atlas export (G-BA) for all four cities, which the owner can
+ * turn off with KLINIK_ATLAS=false (the G-BA states no reuse terms). Both
  * change a few times a year, so the job runs weekly. See .context/hospitals.md.
  */
 import type { CityConfig, Hospital, HospitalData, HospitalSource } from '@city-monitor/shared';
@@ -13,6 +13,7 @@ import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { listZipEntries, openZipEntry } from '../lib/zip.js';
+import { isSourceEnabled } from '../lib/source-switch.js';
 import { findKlinikAtlasExport, KLINIK_ATLAS_PAGE, mergeHospitals, parseHamburgHospitals, parseKlinikAtlas } from '../lib/hospitals.js';
 
 const log = createLogger('ingest-hospitals');
@@ -21,14 +22,26 @@ const FETCH_TIMEOUT_MS = 60_000;
 /** A day past the weekly run, so a failed run does not empty the layer before the next. */
 export const HOSPITALS_TTL_SECONDS = 8 * 86_400;
 
-/** Whether the owner has switched the Klinik-Atlas on (set only after the G-BA confirms reuse). */
-export function klinikAtlasEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.KLINIK_ATLAS_ENABLED?.trim().toLowerCase() === 'true';
+/** The opt-out switch for the Klinik-Atlas (lib/source-switch.ts): off only with KLINIK_ATLAS=false. */
+export const KLINIK_ATLAS_SWITCH = 'KLINIK_ATLAS';
+
+/** The sources the job reads for the city now: all configured ones, less the Klinik-Atlas when switched off. */
+export function activeHospitalSources(city: CityConfig, env: NodeJS.ProcessEnv = process.env): HospitalSource[] {
+  return (city.dataSources.hospitals ?? []).filter((s) => s.provider !== 'klinik-atlas' || isSourceEnabled(KLINIK_ATLAS_SWITCH, env));
 }
 
-/** The sources the job reads for the city now: the Klinik-Atlas only when enabled. */
-export function activeHospitalSources(city: CityConfig, env: NodeJS.ProcessEnv = process.env): HospitalSource[] {
-  return (city.dataSources.hospitals ?? []).filter((s) => s.provider !== 'klinik-atlas' || klinikAtlasEnabled(env));
+/**
+ * What the API serves from the stored data: the records of the sources active
+ * now, merged (a Klinik-Atlas site wins within 250 m) and sorted. The job
+ * stores every source's records unmerged, so switching the Klinik-Atlas off
+ * takes effect at once and brings back Hamburg's WFS records it had replaced.
+ */
+export function servedHospitals(data: HospitalData, city: CityConfig, env: NodeJS.ProcessEnv = process.env): HospitalData {
+  const active = new Set(activeHospitalSources(city, env).map((s) => s.provider));
+  return {
+    hospitals: mergeHospitals([data.hospitals.filter((h) => active.has(h.source))]),
+    atlasDate: active.has('klinik-atlas') ? data.atlasDate : null,
+  };
 }
 
 const headers = { 'User-Agent': 'CityMonitor/1.0 (+https://citymonitor.app)' };
@@ -81,9 +94,9 @@ let loggedAtlasOff = false;
 export function createHospitalIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestHospitals(): Promise<void> {
     const cities = getActiveCities().filter((c) => (c.dataSources.hospitals?.length ?? 0) > 0);
-    if (cities.some((c) => c.dataSources.hospitals!.some((s) => s.provider === 'klinik-atlas')) && !klinikAtlasEnabled() && !loggedAtlasOff) {
+    if (!isSourceEnabled(KLINIK_ATLAS_SWITCH) && !loggedAtlasOff) {
       loggedAtlasOff = true;
-      log.info('KLINIK_ATLAS_ENABLED not set, skipping the Bundes-Klinik-Atlas (reuse terms unconfirmed)');
+      log.info('KLINIK_ATLAS=false, skipping the Bundes-Klinik-Atlas');
     }
     // One download for every city, only when a city reads it
     let atlas: Promise<{ xml: string; date: string } | null> | null = null;
@@ -130,7 +143,8 @@ export function createHospitalIngestion(cache: Cache, db: Db | null = null) {
           log.warn(`${city.id}: no hospital source could be read, keeping the previous data`);
           continue;
         }
-        const data: HospitalData = { hospitals: mergeHospitals(lists), atlasDate };
+        // Unmerged, so a failed source's records survive and the route can drop a switched-off one
+        const data: HospitalData = { hospitals: lists.flat(), atlasDate };
         cache.set(CK.hospitals(city.id), data, HOSPITALS_TTL_SECONDS);
         if (db) {
           try {
@@ -139,8 +153,9 @@ export function createHospitalIngestion(cache: Cache, db: Db | null = null) {
             log.error(`${city.id} DB write failed`, err);
           }
         }
-        const er = data.hospitals.filter((h) => h.tier !== 'none' && h.tier !== 'specialised').length;
-        log.info(`${city.id}: ${data.hospitals.length} hospitals, ${er} in emergency care (${sources.map((s) => s.provider).join(' + ')})`);
+        const merged = mergeHospitals(lists);
+        const er = merged.filter((h) => h.tier !== 'none' && h.tier !== 'specialised').length;
+        log.info(`${city.id}: ${merged.length} hospitals, ${er} in emergency care (${sources.map((s) => s.provider).join(' + ')})`);
       } catch (err) {
         log.error(`${city.id} hospitals failed`, err);
       }

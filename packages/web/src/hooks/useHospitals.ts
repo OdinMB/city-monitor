@@ -23,7 +23,7 @@ export function useHospitals(cityId: string, enabled = true) {
 /**
  * The city's map layers (`cityLayers`), less the hospitals sub-layer while the
  * server has no hospital for the city: Berlin, Köln and München have only the
- * Klinik-Atlas, which stays off until KLINIK_ATLAS_ENABLED is set.
+ * Klinik-Atlas, which the server leaves out with KLINIK_ATLAS=false.
  */
 export function useCityLayers(city: Pick<WebCityConfig, 'id' | 'features'>): CityLayers {
   const base = useMemo(() => cityLayers(city), [city]);

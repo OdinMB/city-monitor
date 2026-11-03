@@ -92,7 +92,7 @@ export type CityFeature =
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
-  | 'hospitals'       // dataSources.hospitals: hospitals by emergency tier (Hamburg WFS; Bundes-Klinik-Atlas only with KLINIK_ATLAS_ENABLED)
+  | 'hospitals'       // dataSources.hospitals: hospitals by emergency tier (Hamburg WFS; Bundes-Klinik-Atlas unless KLINIK_ATLAS=false)
   // From the political ingestion's own tables
   | 'political'       // PARLIAMENT_CONFIG: Bundestag and state parliament members
   | 'districtMayors'  // BEZIRKSBUERGERMEISTER
@@ -238,7 +238,7 @@ export type HospitalSource =
   /**
    * The Bundes-Klinik-Atlas open-data export (G-BA): every German hospital site
    * with its G-BA emergency tier, kept where `Ort` is one of `places`. Its reuse
-   * terms are unconfirmed, so the job reads it only with KLINIK_ATLAS_ENABLED=true.
+   * terms are not stated; read unless KLINIK_ATLAS=false on the server.
    */
   | { provider: 'klinik-atlas'; places: string[] }
   /** Hamburg's WFS `HH_WFS_Krankenhaeuser` (dl-de/by-2.0): plan hospitals, ER participation but no tier */
@@ -1214,7 +1214,10 @@ export interface Hospital {
 }
 
 export interface HospitalData {
-  /** By tier (comprehensive first), then name. */
+  /**
+   * As stored: every source's records, unmerged. As served by the API (servedHospitals):
+   * the active sources' records merged, by tier (comprehensive first), then name.
+   */
   hospitals: Hospital[];
   /** The Klinik-Atlas export's date (YYYY-MM-DD), when it is a source. */
   atlasDate: string | null;
