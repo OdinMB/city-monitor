@@ -28,6 +28,14 @@ export const hamburg: CityConfig = {
   ],
   dataSources: {
     weather: { provider: 'brightsky', lat: 53.5511, lon: 9.9937 },
+    // The 14 active Hamburger Luftmessnetz stations in the UBA station list (checked
+    // 2026-11-03; Flughafen Nord and the two Finkenwerder stations sent no index values then)
+    airQuality: {
+      ubaStations: [
+        'DEHH008', 'DEHH015', 'DEHH026', 'DEHH033', 'DEHH050', 'DEHH059', 'DEHH064', 'DEHH068',
+        'DEHH070', 'DEHH072', 'DEHH073', 'DEHH079', 'DEHH082', 'DEHH083',
+      ],
+    },
     // HVV's Geofox GTI announcements; runs only with GEOFOX_USER and GEOFOX_PASSWORD set
     // (Hochbahn issues them per operator; a fork requests its own). .context/transit.md#hamburg
     transit: { provider: 'geofox', endpoint: 'https://gti.geofox.de' },

@@ -30,7 +30,9 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   noiseMap: 'sidebar.layers.noise',
   // Refinements: road works and noise sensors are layers of traffic and noise,
   // pharmacies and defibrillators of the emergencies layer, the rent map a
-  // social layer, the rest parts of the political tile.
+  // social layer, official air stations part of air quality (every city's topic),
+  // the rest parts of the political tile.
+  airQualityStations: null,
   roadworks: null,
   pharmacies: null,
   aeds: null,

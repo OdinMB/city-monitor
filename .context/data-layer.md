@@ -114,6 +114,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `lhp-flood` | LHP flood class of state gauges and flood warnings ([water-levels.md](water-levels.md#flood-status-lhp)) |
 | `vbb-disruptions` | VBB/HAFAS transit disruptions |
 | `aqi-grid` | Sensor.Community air quality points; the WAQI stations of the same grid are cached, never stored ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
+| `uba-airquality` | Official state-network air quality stations from the UBA Air Data API ([air-quality-stations.md](air-quality-stations.md)) |
 | `bbk-nina` | BBK NINA civil protection warnings |
 | `abgwatch-*` | Political districts (5 sub-types): `bundestag`, `state`, `state-bezirke` from abgeordnetenwatch; `bezirke` and `mayor` from the hand-kept tables in `ingest-political.ts` |
 
@@ -157,7 +158,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 | History | pegelonline | 30 days (history endpoint) |
 | History | ba-labor-market | 730 days / ~24 months (history endpoints) |
 | Non-history (short-lived) | aqi-grid | 6 hours, the age limit of `loadAirQualityGrid` (`AQ_GRID_MAX_AGE_MS`), newest row included (never `keepLatest`) + 100 row cap. Kept no longer than a read can use it, so no air-quality archive builds up ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
-| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages | 2 days + 100 row cap |
+| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, uba-airquality | 2 days + 100 row cap |
 | Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr | 7 days + 100 row cap |
 | Non-history (infrequent, weekly/monthly jobs) | mss-social-atlas, afstat-population, abgwatch-* | 7 days, newest row per city kept (`keepLatest`) + 100 row cap |
 | Non-snapshot | news, events, safety | 3 days |
@@ -171,4 +172,4 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 - **Append-only writes:** DB writes INSERT new rows without deleting old ones. Historical data is cleaned by the nightly retention cron. Hash-keyed tables (news, events, safety) use UPSERT to avoid duplicates; NINA warnings are a JSONB snapshot like the other snapshot types.
 - **Optional DB:** Everything works without `DATABASE_URL` — cache-only mode with no persistence across restarts.
 - **City isolation:** All cache keys and DB queries are prefixed/filtered by `cityId`. No cross-city data leaks.
-- **Berlin-only domains:** Feuerwehr ingestion hardcodes `'berlin'` as cityId (bathing, wastewater, labour market and population are config-driven since 2026-11-02; their snapshot types `lageso-bathing`, `lageso-wastewater`, `ba-labor-market` and `afstat-population` kept their names, as `mss-social-atlas` did). The job returns before fetching when Berlin is not active, and gets no freshness check or startup run then ([server.md](server.md#jobs-28-defined-in-appts)). Noise sensors are Berlin-only through config (only `berlin.ts` has `dataSources.noiseSensors`). Warm-cache guards all of these with `cityId === 'berlin'`. Council meetings are configured for all four cities ([council-meetings.md](council-meetings.md)) and warm for each.
+- **Berlin-only domains:** Feuerwehr ingestion hardcodes `'berlin'` as cityId (bathing, wastewater, labour market and population are config-driven since 2026-11-02; their snapshot types `lageso-bathing`, `lageso-wastewater`, `ba-labor-market` and `afstat-population` kept their names, as `mss-social-atlas` did). The job returns before fetching when Berlin is not active, and gets no freshness check or startup run then ([server.md](server.md#jobs-29-defined-in-appts)). Noise sensors are Berlin-only through config (only `berlin.ts` has `dataSources.noiseSensors`). Warm-cache guards all of these with `cityId === 'berlin'`. Council meetings are configured for all four cities ([council-meetings.md](council-meetings.md)) and warm for each.

@@ -54,6 +54,12 @@ const SHARED_SOURCES: SourceGroup[] = [
         description: `CAMS European air quality forecasts (ENSEMBLE data), the source of the Open-Meteo air quality values. Contains modified Copernicus Atmosphere Monitoring Service information ${CAMS_NOTICE_YEAR}. Neither the European Commission nor ECMWF is responsible for any use that may be made of the Copernicus information or data it contains.`,
       },
       {
+        name: 'Umweltbundesamt Air Data API',
+        url: 'https://www.umweltbundesamt.de/daten/luft/luftdaten',
+        description: 'Hourly NO2, PM10, PM2.5 and ozone and the UBA air quality index at the official measuring stations of the state networks (Berlin BLUME, Hamburger Luftmessnetz, LANUK NRW, Bayerisches Landesamt für Umwelt), for the air quality map layer and tile. Current-year data are not yet audited and may have gaps. City Monitor averages the urban background stations for the tile. Source: Umweltbundesamt mit Daten der Messnetze der Länder und des Bundes, dl-de/by-2-0.',
+        requires: 'airQualityStations',
+      },
+      {
         name: 'RainViewer',
         url: 'https://www.rainviewer.com/',
         description: 'Precipitation radar tiles for the rain radar map overlay.',

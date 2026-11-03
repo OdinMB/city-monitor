@@ -66,6 +66,11 @@ export const berlin: CityConfig = {
         { sensorId: 3036, name: 'Pankow', fallbackIds: [48036, 18814] },
         { sensorId: 80508, name: 'Französisch Buchholz', fallbackIds: [13090, 43626] },
       ],
+      // The 15 active BLUME stations in the UBA station list (checked 2026-11-03)
+      ubaStations: [
+        'DEBE010', 'DEBE027', 'DEBE032', 'DEBE034', 'DEBE051', 'DEBE056', 'DEBE061', 'DEBE062',
+        'DEBE065', 'DEBE066', 'DEBE068', 'DEBE069', 'DEBE125', 'DEBE126', 'DEBE127',
+      ],
     },
     events: [
       { source: 'kulturdaten', url: 'https://api-v2.kulturdaten.berlin/api/events' },

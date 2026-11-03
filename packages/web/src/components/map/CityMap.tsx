@@ -25,6 +25,8 @@ import { useTrafficIncidents } from '../../hooks/useTraffic.js';
 import { useConstruction } from '../../hooks/useConstruction.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
+import { useAirQualityStations } from '../../hooks/useAirQualityStations.js';
+import { withoutRelayedStations } from '../../lib/aqi.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useBathing } from '../../hooks/useBathing.js';
 import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
@@ -35,7 +37,7 @@ import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
-import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
+import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_UBA, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
 import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle, zoomedInBounds } from './base.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
 import { gestureHintLocale, setCooperativeGestures } from './gestures.js';
@@ -45,7 +47,7 @@ import { updateTransitMarkers } from './layers/transit.js';
 import { updateWarningPolygons } from './layers/warnings.js';
 import { updatePharmacyMarkers, updateAedMarkers } from './layers/emergencies.js';
 import { updateTrafficLayers, updateConstructionLayers } from './layers/traffic.js';
-import { updateAqGridLayer } from './layers/air-quality.js';
+import { updateAqGridLayer, updateUbaStationLayer } from './layers/air-quality.js';
 import { updateWaterLevelMarkers, updateBathingMarkers } from './layers/water.js';
 import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/choropleth.js';
 import { socialAtlasOf } from '../../lib/social-atlas.js';
@@ -61,6 +63,7 @@ const MARKER_LAYERS = [
   'wl-marker-icon',
   'bathing-marker-icon',
   'aq-marker-icon',
+  'aq-uba-icon',
   'noise-sensor-icon',
   'pharmacy-marker-icon',
   'aed-marker-icon',
@@ -141,7 +144,7 @@ function asError(err: unknown): Error {
 export function CityMap() {
   const city = useCityConfig();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isTouchPhone = useIsTouchPhone();
   // Read once when the map is created; a later resize keeps the user's view.
   const isPhoneLayoutRef = useRef(!useIsDesktop());
@@ -161,6 +164,7 @@ export function CityMap() {
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
   const { data: constructionSites } = useConstruction(city.id, available.traffic.includes('roadworks'));
   const { data: aqGrid } = useAirQualityGrid(city.id);
+  const { data: ubaStations } = useAirQualityStations(city.id, city.features.includes('airQualityStations'));
   const { data: noiseSensorData } = useNoiseSensors(city.id, available.noiseLive);
   const { data: waterLevelData } = useWaterLevels(city.id);
   const { data: bathingData } = useBathing(city.id, available.water.includes('bathing'));
@@ -254,7 +258,14 @@ export function CityMap() {
     () => constructionActive ? (constructionSites ?? []) : [],
     [constructionActive, constructionSites],
   );
-  const aqGridItems = activeLayers.has('air-quality') ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
+  const aqActive = activeLayers.has('air-quality');
+  const ubaItems = aqActive ? (ubaStations ?? EMPTY_UBA) : EMPTY_UBA;
+  // An official station shown from UBA is not drawn a second time from WAQI
+  const aqGridItems = useMemo(
+    () => aqActive ? withoutRelayedStations(aqGrid ?? EMPTY_AQ, ubaItems) : EMPTY_AQ,
+    [aqActive, aqGrid, ubaItems],
+  );
+  const lang = i18n.language;
   const noiseSensorItems = useMemo(
     () => (noiseActive && noiseLiveData) ? (noiseSensorData?.data ?? []) : [],
     [noiseActive, noiseLiveData, noiseSensorData?.data],
@@ -298,6 +309,12 @@ export function CityMap() {
   constructionItemsRef.current = constructionItems;
   const aqGridItemsRef = useRef(aqGridItems);
   aqGridItemsRef.current = aqGridItems;
+  const ubaItemsRef = useRef(ubaItems);
+  ubaItemsRef.current = ubaItems;
+  const langRef = useRef(lang);
+  langRef.current = lang;
+  const timeZoneRef = useRef(city.timezone);
+  timeZoneRef.current = city.timezone;
   const noiseSensorItemsRef = useRef(noiseSensorItems);
   noiseSensorItemsRef.current = noiseSensorItems;
   const waterLevelItemsRef = useRef(waterLevelItems);
@@ -382,6 +399,7 @@ export function CityMap() {
         updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
         updateAedMarkers(map, aedItemsRef.current, isDarkRef.current);
         updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current, cityIdRef.current);
+        updateUbaStationLayer(map, ubaItemsRef.current, isDarkRef.current, langRef.current, timeZoneRef.current);
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
@@ -470,6 +488,7 @@ export function CityMap() {
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
       updateAedMarkers(map, aedItemsRef.current, isDark);
       updateAqGridLayer(map, aqGridItemsRef.current, isDark, cityIdRef.current);
+      updateUbaStationLayer(map, ubaItemsRef.current, isDark, langRef.current, timeZoneRef.current);
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
@@ -651,6 +670,16 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
 
   }, [aqGridItems]);
+
+  // Update the official (UBA) station badges; they spell out the class name, so also on a language change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateUbaStationLayer(map, ubaItems, isDarkRef.current, lang, timeZoneRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [ubaItems, lang]);
 
   // Update noise sensor markers (Berlin only — backend returns empty for cities without config)
   useEffect(() => {

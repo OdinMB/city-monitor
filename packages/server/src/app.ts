@@ -33,6 +33,7 @@ import { createPopulationRouter } from './routes/population.js';
 import { createFeuerwehrRouter } from './routes/feuerwehr.js';
 import { createPollenRouter } from './routes/pollen.js';
 import { createFloodStatusRouter } from './routes/flood-status.js';
+import { createAirQualityStationsRouter } from './routes/air-quality-stations.js';
 import { createNoiseSensorsRouter } from './routes/noise-sensors.js';
 import { createCouncilMeetingsRouter } from './routes/council-meetings.js';
 import { createBootstrapRouter } from './routes/bootstrap.js';
@@ -62,6 +63,7 @@ import { createPopulationIngestion } from './cron/ingest-population.js';
 import { createFeuerwehrIngestion } from './cron/ingest-feuerwehr.js';
 import { createPollenIngestion } from './cron/ingest-pollen.js';
 import { createFloodStatusIngestion } from './cron/ingest-flood-status.js';
+import { createUbaAirQualityIngestion } from './cron/ingest-uba-air-quality.js';
 import { createNoiseSensorIngestion } from './cron/ingest-noise-sensors.js';
 import { createCouncilMeetingIngestion } from './cron/ingest-council-meetings.js';
 import { initGeocodeDb } from './lib/geocode.js';
@@ -168,6 +170,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-traffic',      tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'tomtom-traffic' }, serves: () => true },
     { jobName: 'ingest-political',    tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'abgwatch-bundestag' }, serves: hasParliamentConfig },
     // No spec for ingest-aq-grid: it runs on every start (see the job list)
+    { jobName: 'ingest-uba-air-quality', tableName: 'snapshots', maxAgeSeconds: 3600, filter: { column: 'type', value: 'uba-airquality' }, serves: (c) => !!c.dataSources.airQuality?.ubaStations?.length },
     { jobName: 'ingest-construction', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'viz-roadworks' }, serves: (c) => !!c.dataSources.roadworks },
     { jobName: 'ingest-aeds',         tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'osm-aeds' }, serves: inGermany },
     { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' }, serves: (c) => !!c.dataSources.socialAtlas },
@@ -212,6 +215,7 @@ export async function createApp(options?: {
   const ingestTraffic = createTrafficIngestion(cache, db);
   const ingestPolitical = createPoliticalIngestion(cache, db);
   const ingestAqGrid = createAirQualityGridIngestion(cache, db);
+  const ingestUbaAirQuality = createUbaAirQualityIngestion(cache, db);
   const ingestConstruction = createConstructionIngestion(cache, db);
   const ingestAeds = createAedIngestion(cache, db);
   const ingestSocialAtlas = createSocialAtlasIngestion(cache, db);
@@ -247,6 +251,8 @@ export async function createApp(options?: {
     // Always on start: the stored grid holds no WAQI stations (WAQI's terms
     // forbid archiving them), so a fresh row cannot stand in for a run.
     { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid, runOnStart: true },
+    // UBA publishes each hour one to two hours late, not at a fixed minute
+    { name: 'ingest-uba-air-quality', schedule: '10,40 * * * *', handler: ingestUbaAirQuality, runOnStart: s('ingest-uba-air-quality') },
     { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction, runOnStart: s('ingest-construction') },
     { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: s('ingest-aeds') },
     { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },
@@ -305,6 +311,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(300), createSafetyRouter(cache, db));
   app.use('/api', cacheFor(120), createNinaRouter(cache, db));
   app.use('/api', cacheFor(600), createAirQualityRouter(cache, db));
+  app.use('/api', cacheFor(600), createAirQualityStationsRouter(cache, db));
   app.use('/api', cacheFor(3600), createPharmaciesRouter(cache, db));
   app.use('/api', cacheFor(120), createTrafficRouter(cache, db));
   app.use('/api', cacheFor(900), createConstructionRouter(cache, db));

@@ -16,7 +16,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, AirQualityStation } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -113,6 +113,10 @@ export async function savePollen(db: Db, cityId: string, data: PollenForecast): 
 
 export async function saveLiftOutages(db: Db, cityId: string, data: LiftOutageData): Promise<void> {
   await saveSnapshot(db, cityId, 'kvb-lift-outages', data);
+}
+
+export async function saveAirQualityStations(db: Db, cityId: string, data: AirQualityStation[]): Promise<void> {
+  await saveSnapshot(db, cityId, 'uba-airquality', data);
 }
 
 export async function saveFloodStatus(db: Db, cityId: string, data: FloodStatus): Promise<void> {

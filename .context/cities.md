@@ -6,7 +6,7 @@ The research behind the Köln, München and Hamburg rows (licence verdicts, URLs
 
 ## Every city
 
-Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, traffic incidents (TomTom), NINA alerts, DWD pollen, pharmacies (aponet), defibrillators (OSM), roadworks ([roadworks.md](roadworks.md)), the labour-market tile (BA Eckwertetabelle: the Land table for Berlin and Hamburg, the Kreis table for Köln and München; [social-atlas.md](social-atlas.md)), the wastewater tile (RKI AMELAG plants, plus LAGeSo for Berlin's flu and RSV; [wastewater.md](wastewater.md)) and the crisis-line tile (hand-kept directory per city, re-check each November; [new-data-sources.md](new-data-sources.md)).
+Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo, plus the official state-network stations from the UBA Air Data API since 2026-11-03: 15 BLUME stations in Berlin, 14 Hamburger Luftmessnetz stations, 4 LANUK stations in Köln, 5 LfU stations in München; [air-quality-stations.md](air-quality-stations.md)), rain radar, traffic incidents (TomTom), NINA alerts, DWD pollen, pharmacies (aponet), defibrillators (OSM), roadworks ([roadworks.md](roadworks.md)), the labour-market tile (BA Eckwertetabelle: the Land table for Berlin and Hamburg, the Kreis table for Köln and München; [social-atlas.md](social-atlas.md)), the wastewater tile (RKI AMELAG plants, plus LAGeSo for Berlin's flu and RSV; [wastewater.md](wastewater.md)) and the crisis-line tile (hand-kept directory per city, re-check each November; [new-data-sources.md](new-data-sources.md)).
 
 ## Berlin
 

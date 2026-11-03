@@ -5,6 +5,7 @@ export const CK = {
   airQuality: (cityId: string) => `${cityId}:air-quality`,
   airQualityGrid: (cityId: string) => `${cityId}:air-quality:grid`,
   airQualityScCache: (cityId: string) => `${cityId}:air-quality:sc-cache`,
+  airQualityStations: (cityId: string) => `${cityId}:air-quality:stations`,
 
   // Transit & Traffic
   transitAlerts: (cityId: string) => `${cityId}:transit:alerts`,
@@ -69,6 +70,7 @@ export const CK = {
     CK.safetyRecent(cityId),
     CK.ninaWarnings(cityId),
     CK.airQuality(cityId),
+    CK.airQualityStations(cityId),
     CK.pharmacies(cityId),
     CK.aedLocations(cityId),
     CK.trafficIncidents(cityId),

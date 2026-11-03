@@ -116,6 +116,25 @@ export const AirQualityGridPointSchema = z.object({
 
 export const AirQualityGridSchema = z.array(AirQualityGridPointSchema);
 
+// --- Official air quality stations (UBA) ---
+
+export const AirQualityStationSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  lat: z.number(),
+  lon: z.number(),
+  setting: z.enum(['traffic', 'background', 'industrial']),
+  network: z.string(),
+  measuredAt: z.string(),
+  index: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).nullable(),
+  no2: z.number().nullable(),
+  pm10: z.number().nullable(),
+  pm25: z.number().nullable(),
+  o3: z.number().nullable(),
+});
+
+export const AirQualityStationsSchema = z.array(AirQualityStationSchema);
+
 // --- Budget ---
 
 export const BudgetCategoryAmountSchema = z.object({

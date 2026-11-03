@@ -187,7 +187,29 @@
         "veryUnhealthy": "Sehr ungesund",
         "hazardous": "Gef\u00e4hrlich"
       },
-      "stationCredit": "Messstationen: World Air Quality Index Project und die Messnetzbetreiber"
+      "stationCredit": "Messstationen: World Air Quality Index Project und die Messnetzbetreiber",
+      "ubaLevel": {
+        "veryGood": "Sehr gut",
+        "good": "Gut",
+        "moderate": "Mäßig",
+        "poor": "Schlecht",
+        "veryPoor": "Sehr schlecht",
+        "unknown": "Kein Index"
+      },
+      "ubaIndex": "Luftqualitätsindex (UBA)",
+      "officialStation": "Amtliche Messstation",
+      "officialStations": "Amtliche Messstationen (Luftqualitätsindex des UBA)",
+      "officialCredit": "Quelle:",
+      "setting": {
+        "traffic": "Verkehr",
+        "background": "Hintergrund",
+        "industrial": "Industrie"
+      },
+      "hourEnding": "Stunde bis {{time}}",
+      "model": "Modell",
+      "modelled": "Modellvorhersage (CAMS)",
+      "measuredBackground": "Gemessen an den amtlichen städtischen Hintergrundstationen, Stunde bis {{time}}",
+      "measuredAll": "Gemessen an den amtlichen Messstationen, Stunde bis {{time}}"
     },
     "map": {
       "title": "Karte",

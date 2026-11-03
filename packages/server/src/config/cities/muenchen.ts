@@ -46,6 +46,8 @@ export const muenchen: CityConfig = {
     // 109184000; dwd:Warngebiete_Kreise 909184999, checked 2026-11-01). The older
     // cap_warncellids_csv.csv still lists a "Stadt München" (109162000) DWD no longer uses.
     weather: { provider: 'brightsky', lat: 48.1374, lon: 11.5755, dwdWarnRegion: 'Kreis und Stadt München' },
+    // The five LÜB stations (Bayerisches Landesamt für Umwelt) in the city, from the UBA station list (checked 2026-11-03)
+    airQuality: { ubaStations: ['DEBY037', 'DEBY039', 'DEBY089', 'DEBY115', 'DEBY189'] },
     nina: { ars: '091620000000' }, // kreisfreie Stadt München, AGS 09162000
     aeds: { adminLevel: 6 },       // OSM boundary "München" of the kreisfreie Stadt
     pollen: {

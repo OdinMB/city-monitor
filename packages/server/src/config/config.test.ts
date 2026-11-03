@@ -161,8 +161,10 @@ describe('Köln config', () => {
     // The kreisfreie Stadt's own BA table and AMELAG plant
     expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' });
     expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['Köln'] });
+    // The four LANUK stations inside the city, through the UBA Air Data API
+    expect(config.dataSources.airQuality).toEqual({ ubaStations: ['DENW053', 'DENW059', 'DENW211', 'DENW212'] });
     const {
-      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
+      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water, airQuality: _airQuality,
       police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council,
       liftOutages: _lifts, laborMarket: _labor, wastewater: _wastewater,
       socialAtlas: _socialAtlas, population: _population, ...rest
@@ -254,9 +256,11 @@ describe('München config', () => {
     // The city's Kreis table, not the wider Agentur für Arbeit München
     expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' });
     expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['München'] });
+    // The LfU's stations in the city, through the UBA Air Data API
+    expect(config.dataSources.airQuality).toEqual({ ubaStations: ['DEBY037', 'DEBY039', 'DEBY089', 'DEBY115', 'DEBY189'] });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
-      floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population, ...rest
+      airQuality: _airQuality, floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });
