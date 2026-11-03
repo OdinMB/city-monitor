@@ -31,6 +31,7 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['roadworks', (c) => c.dataSources.roadworks !== undefined],
   ['bathing', (c) => c.dataSources.bathing !== undefined],
   ['liftOutages', (c) => c.dataSources.liftOutages !== undefined],
+  ['electricity', (c) => c.dataSources.electricity !== undefined],
   ['socialAtlas', (c) => c.dataSources.socialAtlas !== undefined],
   ['population', (c) => c.dataSources.population !== undefined],
   ['laborMarket', (c) => c.dataSources.laborMarket !== undefined],

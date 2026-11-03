@@ -20,6 +20,7 @@ const mockBootstrap = {
   appointments: null,
   laborMarket: null,
   wastewater: null,
+  electricity: null,
 };
 
 function createWrapper() {

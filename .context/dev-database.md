@@ -73,7 +73,7 @@ The data is dated when you seed it. Once the cache-warm TTLs expire, the routes 
 |---|---|
 | Flood status (München) | 30 min |
 | Lift outages (Köln), noise sensors | 2h |
-| NINA warnings | 3h |
+| NINA warnings, electricity | 3h |
 | AQ grid | 6h |
 | Pollen, council meetings, events | 48h |
 

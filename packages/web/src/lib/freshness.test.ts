@@ -20,6 +20,7 @@ const CRON_INTERVAL: Record<Feed, number> = {
   waterLevels: 15 * MIN,  // ingest-water-levels   */15 * * * *
   floodStatus: 5 * MIN,   // ingest-flood-status   */5 * * * *
   liftOutages: 15 * MIN,  // ingest-lift-outages   */15 * * * *
+  electricity: 15 * MIN,  // ingest-electricity    2,17,32,47 * * * *
   events: 6 * HOUR,       // ingest-events         0 */6 * * *
   appointments: 12 * HOUR, // ingest-appointments  0 6,18 * * *
   pollen: 6 * HOUR,       // ingest-pollen         0 */6 * * *

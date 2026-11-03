@@ -342,6 +342,37 @@
       "asOf": "Durum:",
       "empty": "Taşkın verisi yok"
     },
+    "electricity": {
+      "title": "Elektrik",
+      "renewableShare": "{{area}} şebeke bölgesinde {{time}} itibarıyla üretimdeki yenilenebilir payı",
+      "mixLabel": "{{area}} şebeke bölgesinde üretim karışımı",
+      "kind": {
+        "wind": "Rüzgâr",
+        "solar": "Güneş",
+        "biomass": "Biyokütle",
+        "hydro": "Hidroelektrik",
+        "gas": "Doğal gaz",
+        "coal": "Kömür",
+        "other": "Diğer"
+      },
+      "co2": "CO₂ yoğunluğu, Almanya",
+      "forecast": "tahmin",
+      "signal": "Şebeke sinyali, Almanya",
+      "signalLevel": {
+        "2": "Yeşil: elektrik kullanmak için iyi bir zaman",
+        "1": "Sarı: ortalama yenilenebilir payı",
+        "0": "Kırmızı: düşük yenilenebilir payı",
+        "-1": "Kırmızı: şebekede darboğaz"
+      },
+      "greenUntil": "{{end}} saatine kadar yeşil",
+      "greenWindow": "Yeşil: {{start}}–{{end}}",
+      "noGreen": "Yeşil dönem öngörülmüyor",
+      "history": "{{area}} şebeke bölgesinde yenilenebilir payı, son 24 saat",
+      "signalTimeline": "Şebeke sinyali, Almanya, bugün",
+      "greenestHour": "Önümüzdeki en yeşil saat: {{time}} ({{share}} yenilenebilir)",
+      "germanyShare": "Almanya şu anda: tüketimin {{share}} kadarı yenilenebilir kaynaklardan",
+      "empty": "Elektrik verisi yok"
+    },
     "liftOutages": {
       "title": "Asansörler ve Yürüyen Merdivenler",
       "lifts": "Arızalı asansörler: {{n}}",

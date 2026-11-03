@@ -181,6 +181,7 @@ const FEATURE_TILES: ReadonlyArray<[CityFeature, string]> = [
   ['transit', 'panel.transit.title'],
   ['pollen', 'panel.pollen.title'],
   ['wastewater', 'panel.wastewater.title'],
+  ['electricity', 'panel.electricity.title'],
   ['feuerwehr', 'panel.feuerwehr.title'],
   ['bathing', 'panel.bathing.title'],
   ['events', 'panel.events.title'],

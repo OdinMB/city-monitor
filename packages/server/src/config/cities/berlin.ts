@@ -116,6 +116,8 @@ export const berlin: CityConfig = {
       xlsxUrl: 'https://download.statistik-berlin-brandenburg.de/fca0a030166493d0/1289b0921aa2/SB_A01-16-00_2026h01_BE.xlsx',
     },
     laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Berlin' },
+    // Berlin's grid is in 50Hertz's control area (SMARD, CC BY 4.0)
+    electricity: { provider: 'smard', controlArea: '50Hertz' },
     // Influenza A/B and RSV from LAGeSo (dl-de/by-2.0); SARS-CoV-2 from the same three plants in AMELAG
     wastewater: {
       provider: 'lageso',

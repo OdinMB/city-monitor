@@ -9,14 +9,14 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, ElectricityData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
-  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema,
+  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, ElectricityDataSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -189,6 +189,11 @@ export async function loadPollen(db: Db, cityId: string): Promise<DbResult<Polle
 /** At most 2 hours old: an outage list from a stopped job would show lifts long repaired (the job runs every 15 min). */
 export async function loadLiftOutages(db: Db, cityId: string): Promise<DbResult<LiftOutageData>> {
   return loadSnapshot(db, cityId, 'kvb-lift-outages', { schema: LiftOutageDataSchema, maxAgeMs: 2 * 3600_000 });
+}
+
+/** At most 3 hours old: "now" on the electricity tile must not be the morning's mix (the job runs every 15 min). */
+export async function loadElectricity(db: Db, cityId: string): Promise<DbResult<ElectricityData>> {
+  return loadSnapshot(db, cityId, 'smard-electricity', { schema: ElectricityDataSchema, maxAgeMs: 3 * 3600_000 });
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {

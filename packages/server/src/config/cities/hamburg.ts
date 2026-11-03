@@ -95,6 +95,8 @@ export const hamburg: CityConfig = {
       },
     },
     laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Hamburg' },
+    // 50Hertz, not TenneT: its grid area takes in the city-states Berlin and Hamburg (50hertz.com)
+    electricity: { provider: 'smard', controlArea: '50Hertz' },
     // RKI AMELAG (CC BY 4.0): Hamburg's two plants, serving about 0.58 and 1.46 million people
     wastewater: { provider: 'amelag', sites: ['Hamburg 01', 'Hamburg 02'] },
     waterLevels: {

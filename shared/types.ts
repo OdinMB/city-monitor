@@ -67,6 +67,7 @@ export type CityFeature =
   | 'councilMeetings'
   | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
   | 'liftOutages'     // dataSources.liftOutages: lift and escalator outages (KVB Köln)
+  | 'electricity'     // dataSources.electricity: generation mix of the grid control area, grid CO₂ and signal
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -196,6 +197,24 @@ export type LiftOutageSource =
   /** KVB's open-data service: `<url>/aufzugsstoerung/json` and `<url>/fahrtreppenstoerung/json` */
   { provider: 'kvb'; url: string };
 
+/**
+ * A German transmission system operator's control area (Regelzone), spelled as
+ * SMARD names its region: 50Hertz (Berlin, Hamburg and the east), Amprion (the
+ * west, Köln), TenneT (a north–south band, Bavaria with München), TransnetBW
+ * (Baden-Württemberg).
+ */
+export type ControlArea = '50Hertz' | 'Amprion' | 'TenneT' | 'TransnetBW';
+
+/**
+ * The electricity tile's sources (.context/electricity.md): SMARD's generation
+ * for the control area whose grid serves the city, and Energy-Charts' Germany-wide
+ * grid signal and CO₂ intensity, which have no regional values.
+ */
+export interface ElectricitySource {
+  provider: 'smard';
+  controlArea: ControlArea;
+}
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -240,6 +259,7 @@ export interface CityDataSources {
   roadworks?: RoadworksSource;
   bathing?: BathingSource;
   liftOutages?: LiftOutageSource;
+  electricity?: ElectricitySource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -737,6 +757,51 @@ export interface LiftOutageData {
   updated: string | null;
 }
 
+// Electricity (SMARD for the control area, Energy-Charts for Germany)
+/** SMARD's generation series, grouped as the tile shows them. */
+export type GenerationKind =
+  | 'windOffshore' | 'windOnshore' | 'solar' | 'biomass' | 'hydro' | 'otherRenewable'
+  | 'lignite' | 'hardCoal' | 'gas' | 'pumpedStorage' | 'otherConventional';
+
+/**
+ * Energy-Charts' traffic light: 2 green (high renewable share), 1 yellow
+ * (average), 0 red (low renewable share), -1 red (grid congestion).
+ */
+export type GridSignal = -1 | 0 | 1 | 2;
+
+/** The control area's generation in one quarter-hour (SMARD). */
+export interface ElectricityMix {
+  /** Start of the quarter-hour (ISO 8601, UTC). */
+  at: string;
+  /** Average output in that quarter-hour in MW, by kind; a kind the area does not report is left out. */
+  mw: Partial<Record<GenerationKind, number>>;
+  /** Renewable share of the area's generation in %, one decimal. */
+  renewableShare: number;
+}
+
+/** One quarter-hour of Germany's grid (Energy-Charts). */
+export interface GridPoint {
+  /** Start of the quarter-hour (ISO 8601, UTC). */
+  t: string;
+  /** Germany's renewable share of load in %, measured or forecast. */
+  share: number | null;
+  signal: GridSignal | null;
+  /** Measured CO₂ intensity of German generation, g/kWh; null until it is published. */
+  co2: number | null;
+  /** Energy-Charts' forecast of it, g/kWh. */
+  co2Forecast: number | null;
+}
+
+export interface ElectricityData {
+  controlArea: ControlArea;
+  /** The newest quarter-hour every series of the area has reached, null when SMARD failed. */
+  mix: ElectricityMix | null;
+  /** The area's renewable share of generation per hour over the last 24 hours, oldest first. */
+  renewableHistory: Array<{ t: string; share: number }>;
+  /** Germany's grid by quarter-hour, today in German time and later quarter-hours once forecast; empty when Energy-Charts failed. */
+  grid: GridPoint[];
+}
+
 // Flood status (LHP public API): flood classes at state gauges and regional flood warnings
 /**
  * LHP's nationwide flood class at a gauge: 0 no flood, 1 minor … 4 very severe flood.
@@ -876,6 +941,7 @@ export interface BootstrapData {
   waterLevels: ApiResponse<WaterLevelData> | null;
   floodStatus: ApiResponse<FloodStatus | null> | null;
   liftOutages: ApiResponse<LiftOutageData | null> | null;
+  electricity: ApiResponse<ElectricityData | null> | null;
   budget: ApiResponse<BudgetSummary | null> | null;
   appointments: ApiResponse<BuergeramtData> | null;
   laborMarket: ApiResponse<LaborMarketSummary | null> | null;

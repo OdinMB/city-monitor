@@ -55,6 +55,7 @@ export const muenchen: CityConfig = {
     },
     // The Kreis table of the kreisfreie Stadt; AA München's district is wider than the city
     laborMarket: { provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' },
+    electricity: { provider: 'smard', controlArea: 'TenneT' },
     wastewater: { provider: 'amelag', sites: ['München'] }, // RKI AMELAG (CC BY 4.0), about 1.24 million people
     // The Isar's flood class (Meldestufe) from the LHP public API (CC BY 4.0): the HND gauge
     // München (16005701, Meldestufen at 240/300/380 cm and a 4th) and Puppling, the last
