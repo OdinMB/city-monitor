@@ -248,6 +248,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'VIZ Berlin', url: 'https://viz.berlin.de/', description: 'Berlin traffic information center — construction sites and road closures. Source: Digitale Plattform Stadtverkehr Berlin, dl-de/by-2-0.' },
       nextbikeSource('nextbike Berlin'),
       UNFALLATLAS_SOURCE,
+      { name: 'Berlin zählt Mobilität (Telraam)', url: 'https://berlin-zaehlt.de/', description: 'Cars, bikes, pedestrians and buses and lorries counted on about a hundred Berlin streets by Telraam sensors that residents run in their windows, most of them in daylight only. City Monitor shows the previous day\'s totals per street with the share of bikes, compared with the median of the same weekday in the four weeks before. Source: Berlin zählt Mobilität / Telraam, CC BY 4.0.' },
     ],
   },
   {

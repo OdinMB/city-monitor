@@ -11,6 +11,7 @@ import { pharmacyPopupHtml, aedPopupHtml, formatPharmacyDuty } from './emergenci
 import { noisePopupHtml } from './noise-sensors';
 import { bikeStationPopupHtml } from './bike-sharing';
 import { accidentPopupHtml } from './traffic-accidents';
+import { telraamPopupHtml } from './telraam-counts';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
@@ -71,6 +72,12 @@ const NOISE = { id: 4711, laeq: 58.2, laMin: 40.1, laMax: 75.3 };
 const BIKE = { name: 'S Halensee (Kurfürstendamm)', bikes: 3, docks: 5, reportedAt: Date.UTC(2026, 2, 3, 8, 0) / 1000, system: 'nextbike Berlin', operator: 'nextbike' };
 // Seriously injured, May, Friday (6) 17–18 h, turning accident with a turning/crossing vehicle, bicycle and car
 const ACCIDENT = { s: 2, m: 5, w: 6, h: 17, k: 5, t: 2, p: 1 | 2 };
+// A Telraam segment on Monday 2 November 2026, with its usual Monday
+const TELRAAM = {
+  id: 9000001786, street: 'Oranienstraße', district: 'Kreuzberg', date: '2026-11-02', hours: 8,
+  cars: 2300, bikes: 700, pedestrians: 300, heavy: 400,
+  usualCars: 2000, usualBikes: 800, usualPedestrians: 300, usualHeavy: 400, usualDays: 3,
+};
 const SOCIAL: SocialAtlasFeatureProps = {
   plrId: '01100101', plrName: 'Stülerstraße', bezId: '01', population: 3400, statusIndex: 2, statusLabel: 'mittel',
   unemployment: 5.2, singleParent: 20.1, welfare: 10.3, childPoverty: 15.4,
@@ -101,6 +108,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['noise sensor', () => noisePopupHtml(NOISE, false)],
   ['bike station', () => bikeStationPopupHtml(BIKE, false)],
   ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false)],
+  ['street counts', () => telraamPopupHtml(TELRAAM, false)],
   ['social atlas', () => socialAtlasPopupHtml(SOCIAL)],
   ['population', () => populationPopupHtml(POPULATION)],
   ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS)],
@@ -125,6 +133,7 @@ const ENGLISH_ONLY = [
   'Roadworks', 'planned work', 'Severe', 'Reported', 'In progress', "city's portal", 'Bikes available', 'Free docks', 'Updated',
   'Roadworks', 'planned work', 'Severe', 'Bikes available', 'Free docks', 'Updated',
   'Accident with', 'Turning accident', 'Collision', 'Involved', 'bicycle', 'Friday',
+  'Cars', 'Pedestrians', 'lorries', 'counted', 'Monday', 'Citizen sensor', 'weekday',
 ];
 
 afterEach(async () => {
@@ -165,6 +174,7 @@ describe('map popups in German', () => {
     ['news', () => newsPopupHtml(NEWS), ['Weiterlesen →']],
     ['police', () => safetyPopupHtml(SAFETY), ['Details →']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['US AQI: 85 (Mäßig)']],
+    ['street counts', () => telraamPopupHtml(TELRAAM, false), ['Oranienstraße', 'Montag, 2. November · 8 Std. gezählt', 'Pkw2.300+15 %', 'Räder700−12 %', 'Busse und Lkw400±0 %', 'Radanteil am Fahrzeugverkehr: 21 %', 'Bürgersensor']],
     ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)'), ['Wilder Müll', 'In Bearbeitung', 'Gemeldet: ', 'Aktualisiert: ', 'Im Portal der Stadt ansehen ↗']],
   ] as const)('%s popup', async (_name, build, expected) => {
     await i18n.changeLanguage('de');

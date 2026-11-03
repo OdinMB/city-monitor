@@ -44,6 +44,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:electricity` | 1800s (30 min) | ingest-electricity |
 | `{cityId}:citizen-reports` | 1800s (30 min) | ingest-citizen-reports (Köln, München); not in bootstrap |
 | `{cityId}:traffic-accidents` | 3214080s (37.2 days) | ingest-traffic-accidents (not in bootstrap) |
+| `{cityId}:telraam-counts` | 129600s (36h) | ingest-telraam-counts (Berlin; not in bootstrap) |
 | `{cityId}:political:{level}` | 604800s (7 days) | ingest-political |
 | `{cityId}:budget` | 86400s (24h) | ingest-budget |
 | `{cityId}:traffic:incidents` | 300s (5 min) | ingest-traffic |
@@ -113,6 +114,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `smard-electricity` | Control-area generation mix (SMARD) and Germany's grid signal and CO₂ (Energy-Charts) ([electricity.md](electricity.md)) |
 | `open311-reports` | Open311 citizen reports, Köln and München ([citizen-reports.md](citizen-reports.md)); written at most hourly |
 | `unfallatlas-accidents` | Last year's injury accidents from the Unfallatlas ([traffic-accidents.md](traffic-accidents.md)) |
+| `telraam-counts` | Yesterday's Telraam street counts, Berlin ([telraam-counts.md](telraam-counts.md)) |
 | `ba-labor-market` | Bundesagentur für Arbeit unemployment |
 | `afstat-population` | Population of every provider (Amt für Statistik EWR, Hamburg Stadtteile, Köln Datenkatalog) |
 | `bf-feuerwehr` | Berliner Feuerwehr operations CSV |
@@ -168,7 +170,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 | Non-history (short-lived) | aqi-grid | 6 hours, the age limit of `loadAirQualityGrid` (`AQ_GRID_MAX_AGE_MS`), newest row included (never `keepLatest`) + 100 row cap. Kept no longer than a read can use it, so no air-quality archive builds up ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
 | Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, bike-sharing, smard-electricity, uba-airquality | 2 days + 100 row cap |
 | Non-history (large, hourly) | open311-reports | 1 day + 100 row cap |
-| Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr | 7 days + 100 row cap |
+| Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr, telraam-counts | 7 days + 100 row cap |
 | Non-history (infrequent, weekly/monthly jobs) | mss-social-atlas, afstat-population, unfallatlas-accidents, abgwatch-* | 7 days, newest row per city kept (`keepLatest`) + 100 row cap |
 | Non-snapshot | news, events, safety | 3 days |
 | Summaries | AI summaries; also any whose city has no news items left | 7 days |

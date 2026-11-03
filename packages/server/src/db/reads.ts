@@ -18,6 +18,8 @@ import {
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
   TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema,
 } from '@city-monitor/shared/schemas.js';
+import type { TelraamCountsData } from '@city-monitor/shared';
+import { TelraamCountsDataSchema } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
@@ -214,6 +216,11 @@ export async function loadCitizenReports(db: Db, cityId: string): Promise<DbResu
 /** No age limit: the accidents are a year's record, whose newest row retention keeps. */
 export async function loadTrafficAccidents(db: Db, cityId: string): Promise<DbResult<TrafficAccidentData>> {
   return loadSnapshot(db, cityId, 'unfallatlas-accidents', { schema: TrafficAccidentDataSchema });
+}
+
+/** At most 3 days old: the counts describe one day, and the job runs twice a day. */
+export async function loadTelraamCounts(db: Db, cityId: string): Promise<DbResult<TelraamCountsData>> {
+  return loadSnapshot(db, cityId, 'telraam-counts', { schema: TelraamCountsDataSchema, maxAgeMs: 3 * 86400_000 });
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {

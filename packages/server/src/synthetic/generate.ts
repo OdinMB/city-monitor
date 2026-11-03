@@ -21,7 +21,7 @@ import type {
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
-  TrafficAccident, TrafficAccidentData, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
+  TelraamCountsData, TelraamSegmentCount, TrafficAccident, TrafficAccidentData, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
@@ -93,6 +93,7 @@ export interface SyntheticData {
   /** Not in Berlin's data set: only Köln and München have an Open311 server (NOT_IN_BERLIN). */
   citizenReports?: CitizenReportData;
   trafficAccidents: TrafficAccidentData;
+  telraamCounts: TelraamCountsData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -153,6 +154,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   airQualityStations: (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0,
   citizenReports: (c) => c.dataSources.citizenReports !== undefined,
   trafficAccidents: (c) => c.dataSources.trafficAccidents !== undefined,
+  telraamCounts: (c) => c.dataSources.telraamCounts !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -269,6 +271,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('airQualityStations')) sets.airQualityStations = generateAirQualityStations(rng, now, place);
   if (has.has('citizenReports')) sets.citizenReports = generateCitizenReports(rng, now, place);
   if (has.has('trafficAccidents')) sets.trafficAccidents = generateTrafficAccidents(rng, now, place);
+  if (has.has('telraamCounts')) sets.telraamCounts = generateTelraamCounts(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1664,6 +1667,35 @@ function generateTrafficAccidents(rng: Rng, now: Date, place: Place): TrafficAcc
     }
   });
   return { year, accidents, published: `${year + 1}-07-07T07:47:16` };
+}
+
+/**
+ * Yesterday's counts at two Telraam segments per anchor: daylight-only
+ * sensors (8 hours), busy and quiet streets, most with a usual Monday-style
+ * value to compare with, one without.
+ */
+function generateTelraamCounts(rng: Rng, now: Date, place: Place): TelraamCountsData {
+  const date = local(new Date(now.getTime() - DAY)).date;
+  const segments: TelraamSegmentCount[] = [];
+  place.anchors.forEach((a, i) => {
+    for (let k = 0; k < 2; k++) {
+      const cars = rng.int(150, 6000);
+      const bikes = rng.int(50, 2500);
+      const pedestrians = rng.int(20, 1500);
+      const heavy = Math.round(cars * rng.float(0.05, 0.2));
+      const usual = (n: number) => Math.round(n * rng.float(0.8, 1.2));
+      segments.push({
+        id: 9_900_000_000 + i * 10 + k,
+        ...near(rng, a, 0.01),
+        street: `Teststraße ${i * 2 + k + 1}`,
+        district: a.name,
+        cars, bikes, pedestrians, heavy,
+        hours: 8,
+        usual: segments.length === 0 ? null : { cars: usual(cars), bikes: usual(bikes), pedestrians: usual(pedestrians), heavy: usual(heavy), days: 4 },
+      });
+    }
+  });
+  return { date, segments };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

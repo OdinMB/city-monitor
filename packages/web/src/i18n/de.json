@@ -589,7 +589,8 @@
     "traffic": {
       "public-transport": "Nahverkehr",
       "incidents": "Verkehrslage",
-      "roadworks": "Baustellen"
+      "roadworks": "Baustellen",
+      "telraam": "Straßenzählungen (Telraam)"
     },
     "emergencies": {
       "pharmacies": "Apotheken",
@@ -617,6 +618,15 @@
       "good": "Gute Wohnlage",
       "normal": "Normale Wohnlage",
       "unrated": "Nicht bewertet"
+    },
+    "telraamLegend": {
+      "title": "Radanteil am gezählten Fahrzeugverkehr",
+      "low": "Unter 10 % Räder",
+      "some": "10–25 % Räder",
+      "high": "25–50 % Räder",
+      "most": "Die Hälfte oder mehr Räder",
+      "day": "{{day}} · Sensoren: {{segments}}",
+      "citizen": "Telraam-Sensoren von Bürgerinnen und Bürgern (Berlin zählt Mobilität). Die meisten zählen nur bei Tageslicht."
     },
     "bikeLegend": {
       "title": "Verfügbare Räder an der Station",
@@ -715,6 +725,18 @@
         "loud": "Laut",
         "veryLoud": "Sehr laut"
       }
+    },
+    "telraam": {
+      "unnamed": "Straße ohne Namen",
+      "day": "{{day}} · {{hours}} Std. gezählt",
+      "cars": "Pkw",
+      "bikes": "Räder",
+      "pedestrians": "Zu Fuß",
+      "heavy": "Busse und Lkw",
+      "bikeShare": "Radanteil am Fahrzeugverkehr",
+      "vsUsual": "Veränderung gegenüber dem Median desselben Wochentags der 4 Wochen davor",
+      "noUsual": "Kein üblicher Wert zum Vergleich",
+      "citizen": "Bürgersensor"
     },
     "bike": {
       "bikes": "Verfügbare Räder",

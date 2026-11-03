@@ -45,7 +45,9 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
   const news = present<NewsSubLayer>([['news', has('news')], ['police', has('police')]]);
   const emergencies = present<EmergencySubLayer>([['pharmacies', has('pharmacies')], ['aeds', has('aeds')]]);
   // TomTom traffic incidents cover every city.
-  const traffic = present<TrafficSubLayer>([['public-transport', has('transit')], ['incidents', true], ['roadworks', has('roadworks')]]);
+  const traffic = present<TrafficSubLayer>([
+    ['public-transport', has('transit')], ['incidents', true], ['roadworks', has('roadworks')], ['telraam', has('telraamCounts')],
+  ]);
   const water = present<WaterSubLayer>([['levels', has('waterLevels')], ['bathing', has('bathing')]]);
   const noise = present<NoiseLayer>([
     ['total', has('noiseTotal')], ['road', has('noiseMap')], ['rail', has('noiseMap')], ['air', has('noiseMap')],

@@ -8,6 +8,7 @@ import {
   PopulationSummarySchema, TrafficIncidentSchema, TransitAlertSchema, WastewaterSummarySchema,
   WaterLevelDataSchema, WeatherDataSchema,
 } from '@city-monitor/shared/schemas.js';
+import { TelraamCountsDataSchema } from '@city-monitor/shared/schemas.js';
 import type { AirQuality, CityConfig } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
@@ -55,6 +56,7 @@ function points(d: CitySyntheticData): Array<{ what: string; lat: number; lon: n
   d.bikeSharing?.stations.forEach((s) => add('bike sharing', s));
   d.citizenReports?.reports.forEach((r) => add('citizen report', r));
   d.trafficAccidents?.accidents.forEach(([lon, lat]) => add('traffic accidents', { lat, lon }));
+  d.telraamCounts?.segments.forEach((s) => add('telraam counts', s));
   d.nina?.forEach((w) => addCoords('nina', (w.area?.geometry as { coordinates?: unknown } | undefined)?.coordinates));
   return out;
 }
@@ -100,6 +102,7 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['aq stations', AirQualityStationsSchema, d.airQualityStations],
     ['citizen reports', CitizenReportDataSchema, d.citizenReports],
     ['traffic accidents', TrafficAccidentDataSchema, d.trafficAccidents],
+    ['telraam counts', TelraamCountsDataSchema, d.telraamCounts],
     ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
       [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
   ];
@@ -187,7 +190,7 @@ describe('generateSyntheticData', () => {
 
   it('passes the Zod schemas the database reads validate with', () => {
     const checks = schemaChecks(data);
-    expect(checks).toHaveLength(23 + 4);
+    expect(checks).toHaveLength(24 + 4);
     for (const [name, schema, value] of checks) {
       expect(schema.safeParse(value).error, name).toBeUndefined();
     }

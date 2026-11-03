@@ -11,7 +11,8 @@ export type NoiseWmsLayer = NoiseLayer | null;
 export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
-export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks';
+/** `telraam`: yesterday's citizen street counts (Berlin), off until chosen (not in ALL_TRAFFIC_SUBS). */
+export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks' | 'telraam';
 
 interface CommandCenterState {
   singleView: boolean;

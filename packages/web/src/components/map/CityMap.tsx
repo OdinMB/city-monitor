@@ -35,6 +35,7 @@ import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
 import { useBikeSharing } from '../../hooks/useBikeSharing.js';
 import { useCitizenReports } from '../../hooks/useCitizenReports.js';
 import { useTrafficAccidents } from '../../hooks/useTrafficAccidents.js';
+import { useTelraamCounts } from '../../hooks/useTelraamCounts.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
@@ -58,6 +59,7 @@ import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 import { updateBikeSharingMarkers } from './layers/bike-sharing.js';
 import { updateCitizenReportMarkers } from './layers/citizen-reports.js';
 import { updateTrafficAccidentLayer } from './layers/traffic-accidents.js';
+import { updateTelraamMarkers } from './layers/telraam-counts.js';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -230,6 +232,9 @@ export function CityMap() {
   const accidentsActive = activeLayers.has('accidents');
   const accidentFilter = useCommandCenter((s) => s.accidentFilter);
   const { data: accidentData } = useTrafficAccidents(city.id, accidentsActive);
+  // Lazy: yesterday's Telraam counts, fetched only while their traffic sub-layer is on
+  const telraamActive = activeLayers.has('traffic') && trafficSubLayers.has('telraam');
+  const { data: telraamData } = useTelraamCounts(city.id, telraamActive);
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke', available.political.includes('bezirke'));
   const { data: bundestagData } = usePolitical(city.id, 'bundestag', available.political.includes('bundestag'));
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke', available.political.includes('landesparlament'));
@@ -299,6 +304,7 @@ export function CityMap() {
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
   const bikeSharingItems = bikeSharingActive ? (bikeSharingData?.data ?? null) : null;
   const accidentItems = accidentsActive ? (accidentData?.data ?? null) : null;
+  const telraamItems = telraamActive ? (telraamData?.data ?? null) : null;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -345,6 +351,8 @@ export function CityMap() {
   accidentItemsRef.current = accidentItems;
   const accidentFilterRef = useRef(accidentFilter);
   accidentFilterRef.current = accidentFilter;
+  const telraamItemsRef = useRef(telraamItems);
+  telraamItemsRef.current = telraamItems;
   const waterLevelItemsRef = useRef(waterLevelItems);
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
@@ -433,6 +441,7 @@ export function CityMap() {
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDarkRef.current);
         updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDarkRef.current);
+        updateTelraamMarkers(map, telraamItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
         updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDarkRef.current, cityIdRef.current);
@@ -525,6 +534,7 @@ export function CityMap() {
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDark);
       updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDark);
+      updateTelraamMarkers(map, telraamItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
       updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDark, cityIdRef.current);
@@ -592,7 +602,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, accidentItems, waterLevelItems, bathingItems, citizenReportItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, accidentItems, telraamItems, waterLevelItems, bathingItems, citizenReportItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -746,6 +756,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [accidentItems, accidentFilter]);
+
+  // Update the Telraam street counts (lazy: data only while their sub-layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateTelraamMarkers(map, telraamItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [telraamItems]);
 
   // Update water level markers
   useEffect(() => {

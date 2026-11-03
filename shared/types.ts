@@ -72,6 +72,7 @@ export type CityFeature =
   | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
   | 'citizenReports'  // dataSources.citizenReports: citizen issue reports (Open311), the reports map layer
   | 'trafficAccidents' // dataSources.trafficAccidents: last year's injury accidents on the map (Unfallatlas)
+  | 'telraamCounts'   // dataSources.telraamCounts: yesterday's street counts of citizen Telraam sensors (Berlin zählt Mobilität)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -261,6 +262,19 @@ export type TrafficAccidentSource = {
   ags: string;
 };
 
+/**
+ * Street counts of citizen-run Telraam sensors as a project republishes them:
+ * monthly hourly CSVs and a segment GeoJSON in one folder
+ * (.context/telraam-counts.md).
+ */
+export type TelraamCountsSource = {
+  provider: 'berlin-zaehlt';
+  /** The folder holding `bzm_telraam_YYYY_MM.csv.gz` and `bzm_telraam_segments.geojson`, with a trailing slash. */
+  baseUrl: string;
+  /** The ISO 3166-2 code a segment's OSM address must carry ("DE-BE"): the files also cover the surrounding Land. */
+  region: string;
+};
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -315,6 +329,7 @@ export interface CityDataSources {
   electricity?: ElectricitySource;
   citizenReports?: CitizenReportSource;
   trafficAccidents?: TrafficAccidentSource;
+  telraamCounts?: TelraamCountsSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -980,6 +995,43 @@ export interface TrafficAccidentData {
   accidents: TrafficAccident[];
   /** When the statistical offices published the file (ISO 8601), null when the index gave no time. */
   published: string | null;
+}
+
+// Street counts (Telraam sensors, Berlin zählt Mobilität)
+/** A street's counts on one day, summed over its hours. */
+export interface TelraamDayCounts {
+  cars: number;
+  bikes: number;
+  pedestrians: number;
+  /** Buses and lorries. */
+  heavy: number;
+}
+
+/** One counted street segment on the day shown. */
+export interface TelraamSegmentCount extends TelraamDayCounts {
+  /** Telraam's segment id: its page is telraam.net/en/location/{id}. */
+  id: number;
+  /** A point halfway along the segment. */
+  lon: number;
+  lat: number;
+  /** The street's OSM name, null where it has none. */
+  street: string | null;
+  /** The Ortsteil (or Bezirk) from the segment's OSM address. */
+  district: string | null;
+  /** Hours of the day the sensor was up at least half the time. Most sensors see only in daylight. */
+  hours: number;
+  /**
+   * The median of the same weekday in the four weeks before, from at least two
+   * such days. null when there were fewer, or when the day shown was counted
+   * for clearly fewer hours than usual (an outage would read as a drop).
+   */
+  usual: (TelraamDayCounts & { days: number }) | null;
+}
+
+export interface TelraamCountsData {
+  /** The local day counted (YYYY-MM-DD), normally yesterday. */
+  date: string;
+  segments: TelraamSegmentCount[];
 }
 
 // Flood status (LHP public API): flood classes at state gauges and regional flood warnings

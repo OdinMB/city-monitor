@@ -29,7 +29,7 @@ describe('cityLayers', () => {
     ]);
     expect(all.news).toEqual(['news', 'police']);
     expect(all.emergencies).toEqual(['pharmacies', 'aeds']);
-    expect(all.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
+    expect(all.traffic).toEqual(['public-transport', 'incidents', 'roadworks', 'telraam']);
     expect(all.water).toEqual(['levels', 'bathing']);
     expect(all.noise).toEqual(['total', 'road', 'rail', 'air']);
     expect(all.noiseLive).toBe(true);

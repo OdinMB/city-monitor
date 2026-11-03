@@ -159,6 +159,18 @@ export const ACCIDENT_SEVERITY: ReadonlyArray<{ severity: 1 | 2 | 3; key: 'kille
   { severity: 3, key: 'slight', color: '#f59e0b' },
 ];
 
+/**
+ * The share of bikes among the vehicles a Telraam sensor counted (bikes, cars,
+ * heavy vehicles), for the street-count circles and the sidebar legend; each
+ * class starts at `from` (a fraction). `key` names its `sidebar.telraamLegend` label.
+ */
+export const TELRAAM_BIKE_SHARE: ReadonlyArray<{ from: number; key: 'low' | 'some' | 'high' | 'most'; color: string }> = [
+  { from: 0, key: 'low', color: '#94a3b8' },
+  { from: 0.1, key: 'some', color: '#86efac' },
+  { from: 0.25, key: 'high', color: '#22c55e' },
+  { from: 0.5, key: 'most', color: '#15803d' },
+];
+
 /** The classes of the city's rent map, for the sidebar legend (empty without one). */
 export function getRentMapLegend(cityId: string): readonly RentMapClass[] {
   return RENT_MAP_WMS[cityId]?.legend ?? [];

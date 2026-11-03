@@ -587,7 +587,8 @@
     "traffic": {
       "public-transport": "Public Transport",
       "incidents": "Incidents",
-      "roadworks": "Roadworks"
+      "roadworks": "Roadworks",
+      "telraam": "Street counts (Telraam)"
     },
     "emergencies": {
       "pharmacies": "Pharmacies",
@@ -615,6 +616,15 @@
       "good": "Good location",
       "normal": "Normal location",
       "unrated": "Not rated"
+    },
+    "telraamLegend": {
+      "title": "Share of bikes among the vehicles counted",
+      "low": "Under 10 % bikes",
+      "some": "10–25 % bikes",
+      "high": "25–50 % bikes",
+      "most": "Half or more bikes",
+      "day": "{{day}} · Sensors: {{segments}}",
+      "citizen": "Citizen-run Telraam sensors (Berlin zählt Mobilität). Most count in daylight only."
     },
     "bikeLegend": {
       "title": "Bikes available at a station",
@@ -709,6 +719,18 @@
         "loud": "Loud",
         "veryLoud": "Very Loud"
       }
+    },
+    "telraam": {
+      "unnamed": "Unnamed street",
+      "day": "{{day}} · {{hours}} h counted",
+      "cars": "Cars",
+      "bikes": "Bikes",
+      "pedestrians": "Pedestrians",
+      "heavy": "Buses and lorries",
+      "bikeShare": "Bikes among vehicles",
+      "vsUsual": "Changes against the median of the same weekday in the 4 weeks before",
+      "noUsual": "No usual value to compare with",
+      "citizen": "Citizen sensor"
     },
     "bike": {
       "bikes": "Bikes available",
