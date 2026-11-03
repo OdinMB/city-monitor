@@ -253,18 +253,29 @@ describe('ingest-transit for Hamburg (Geofox)', () => {
     expect(info.mock.calls.filter((c) => String(c[0]).includes('GEOFOX_USER'))).toHaveLength(1);
   });
 
+  const announcementsOk = () =>
+    new Response(JSON.stringify({ returnCode: 'OK', announcements: [inForce], lastUpdate: '2026-11-02T10:00:00.000+0100' }), { status: 200 });
+  const stationsOk = () => new Response(JSON.stringify({
+    returnCode: 'OK',
+    dataReleaseID: '63.11.01',
+    stations: [{ id: 'Master:90003', name: 'Barmbek', city: 'Hamburg', coordinate: { x: 10.0445, y: 53.5873, type: 'EPSG_4326' } }],
+  }), { status: 200 });
+
+  /** A fetch mock answering by GTI method: getAnnouncements, then listStations as given. */
+  function mockGti(stations: () => Response | Promise<Response>) {
+    return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) =>
+      String(input).endsWith('/listStations') ? stations() : announcementsOk());
+  }
+
   it('posts one signed getAnnouncements request and caches the alerts in force', async () => {
     vi.stubEnv('GEOFOX_USER', 'example-user');
     vi.stubEnv('GEOFOX_PASSWORD', 'test-password');
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ returnCode: 'OK', announcements: [inForce], lastUpdate: '2026-11-02T10:00:00.000+0100' }), { status: 200 }),
-    );
+    const fetchSpy = mockGti(stationsOk);
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
     const cache = createCache();
     await createTransitIngestion(cache)();
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url, init] = fetchSpy.mock.calls[0]!;
     expect(url).toBe('https://gti.geofox.de/gti/public/getAnnouncements');
     expect(init?.method).toBe('POST');
@@ -275,6 +286,42 @@ describe('ingest-transit for Hamburg (Geofox)', () => {
     const alerts = cache.get<TransitAlert[]>('hamburg:transit:alerts')!;
     expect(alerts).toHaveLength(1);
     expect(alerts[0]).toMatchObject({ lines: ['U3'], severity: 'high', station: 'Barmbek – Kellinghusenstraße' });
+  });
+
+  it('fetches the signed station list once a day and places the alerts with it', async () => {
+    vi.stubEnv('GEOFOX_USER', 'example-user');
+    vi.stubEnv('GEOFOX_PASSWORD', 'test-password');
+    const fetchSpy = mockGti(stationsOk);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const cache = createCache();
+    const ingest = createTransitIngestion(cache);
+    await ingest();
+    await ingest();
+
+    const stationCalls = fetchSpy.mock.calls.filter(([u]) => String(u) === 'https://gti.geofox.de/gti/public/listStations');
+    expect(stationCalls).toHaveLength(1);
+    const init = stationCalls[0]![1];
+    expect(JSON.parse(String(init?.body))).toMatchObject({ coordinateType: 'EPSG_4326' });
+    expect((init?.headers as Record<string, string>)['geofox-auth-signature']).toBe(geofoxSignature(String(init?.body), 'test-password'));
+
+    const alerts = cache.get<TransitAlert[]>('hamburg:transit:alerts')!;
+    expect(alerts[0].location).toEqual({ lat: 53.5873, lon: 10.0445 });
+  });
+
+  it('still caches the alerts, without locations, when the station list fails', async () => {
+    vi.stubEnv('GEOFOX_USER', 'example-user');
+    vi.stubEnv('GEOFOX_PASSWORD', 'test-password');
+    mockGti(() => { throw new Error('socket hang up'); });
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const cache = createCache();
+    await createTransitIngestion(cache)();
+
+    const alerts = cache.get<TransitAlert[]>('hamburg:transit:alerts')!;
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0].location).toBeNull();
   });
 
   it('keeps the cache untouched on an authentication error', async () => {

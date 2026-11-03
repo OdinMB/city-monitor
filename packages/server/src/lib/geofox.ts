@@ -1,6 +1,7 @@
 /**
- * HVV's Geofox Thin Interface (GTI): request signing and the mapping of
- * `getAnnouncements` onto TransitAlert. Hamburg's transit source
+ * HVV's Geofox Thin Interface (GTI): request signing, the mapping of
+ * `getAnnouncements` onto TransitAlert, and the `listStations` index that
+ * places rail and ferry alerts on the map. Hamburg's transit source
  * (.context/transit.md#hamburg).
  *
  * The API description is the GTI Anwenderhandbuch (https://gti.geofox.de,
@@ -69,13 +70,46 @@ export function announcementRequestBody(): string {
   return JSON.stringify({ language: 'de', version: GEOFOX_API_VERSION, full: true, filterPlanned: 'NO_FILTER' });
 }
 
-// --- Response types (Anwenderhandbuch §2.9, tables 45–47) ---
+/**
+ * The listStations request (Anwenderhandbuch §2.7.1, table 36): the whole
+ * station list, as no `dataReleaseID` is sent, with WGS84 coordinates and
+ * equivalent stops kept apart ("Rödingsmarkt" and "U Rödingsmarkt" each keep
+ * their own entry, so either name matches).
+ */
+export function stationListRequestBody(): string {
+  return JSON.stringify({ language: 'de', version: GEOFOX_API_VERSION, coordinateType: 'EPSG_4326', filterEquivalent: false });
+}
+
+// --- Response types (Anwenderhandbuch §2.9, tables 45–47; §2.7.2, tables 37–38) ---
 
 interface GtiTimeRange { begin?: string; end?: string }
 
+interface GtiCoordinate { x?: number; y?: number; type?: string }
+
 interface GtiSDName {
   name?: string;
-  coordinate?: { x?: number; y?: number; type?: string };
+  city?: string;
+  id?: string;
+  coordinate?: GtiCoordinate;
+}
+
+export interface GtiStationListEntry {
+  id?: string;
+  name?: string;
+  city?: string;
+  combinedName?: string;
+  aliasses?: string[];
+  coordinate?: GtiCoordinate;
+  /** false on a deleted station, which then carries only its id */
+  exists?: boolean;
+}
+
+export interface GtiStationListResponse {
+  returnCode?: string;
+  errorText?: string;
+  errorDevInfo?: string;
+  dataReleaseID?: string;
+  stations?: GtiStationListEntry[];
 }
 
 interface GtiLocation {
@@ -197,12 +231,146 @@ function sectionOf(location: GtiLocation | undefined): string {
   return names.join(' – ');
 }
 
-/** WGS84 point of a stop: GTI's x is the longitude, y the latitude (listing 3); other systems are skipped. */
-function pointOf(stop: GtiSDName | undefined): TransitAlert['location'] {
-  const c = stop?.coordinate;
+type Point = NonNullable<TransitAlert['location']>;
+
+/** WGS84 point of a coordinate: GTI's x is the longitude, y the latitude (listing 3); other systems are skipped. */
+function pointOf(c: GtiCoordinate | undefined): Point | null {
   if (!c || typeof c.x !== 'number' || typeof c.y !== 'number') return null;
   if (c.type && c.type !== 'EPSG_4326') return null;
   return { lat: c.y, lon: c.x };
+}
+
+// --- Station list: coordinates for the stops announcements name ---
+
+interface StationCandidate { city: string; point: Point }
+
+/**
+ * The station list, reduced to what placing an alert needs: the point of each
+ * GTI station id, and the stations under each name (exact, and loose).
+ */
+export interface StationIndex {
+  byId: Map<string, Point>;
+  exact: Map<string, StationCandidate[]>;
+  loose: Map<string, StationCandidate[]>;
+}
+
+/** Case, Unicode form, dashes and spacing evened out: "Alte  Wöhr" = "alte wöhr". */
+function exactKey(name: string): string {
+  return name.normalize('NFC').toLowerCase().replace(/[‐-―]/g, '-').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * A looser key, compared only with other loose keys: without a mode prefix
+ * ("S Nettelnburg", "U/S Barmbek"), a leading "Hamburg" ("Hamburg-Harburg",
+ * DB's spelling in regional-train announcements), a bracketed suffix, and with
+ * "Hbf" read as GTI's "Hauptbahnhof".
+ */
+function looseKey(name: string): string {
+  return exactKey(name)
+    .replace(/^(?:[usa]|[us]\s?[+/]\s?[us]|bf\.?)\s+/, '')
+    .replace(/^hamburg[- ]/, '')
+    .replace(/\s*\([^)]*\)$/, '')
+    .replace(/^hbf\.?$/, 'hauptbahnhof')
+    .trim();
+}
+
+function addCandidate(map: Map<string, StationCandidate[]>, key: string, candidate: StationCandidate): void {
+  if (!key) return;
+  const list = map.get(key);
+  if (!list) map.set(key, [candidate]);
+  else if (!list.includes(candidate)) list.push(candidate);
+}
+
+/**
+ * The index of a listStations response. Deleted stations and those without a
+ * WGS84 coordinate are left out. Each station is found under its name, its
+ * combined name and its aliases.
+ */
+export function buildStationIndex(response: GtiStationListResponse): StationIndex {
+  const index: StationIndex = { byId: new Map(), exact: new Map(), loose: new Map() };
+  for (const s of response.stations ?? []) {
+    if (s.exists === false) continue;
+    const point = pointOf(s.coordinate);
+    if (!point) continue;
+    if (s.id) index.byId.set(s.id, point);
+    const candidate: StationCandidate = { city: s.city?.trim() ?? '', point };
+    for (const name of [s.name, s.combinedName, ...(s.aliasses ?? [])]) {
+      if (!name?.trim()) continue;
+      addCandidate(index.exact, exactKey(name), candidate);
+      addCandidate(index.loose, looseKey(name), candidate);
+    }
+  }
+  return index;
+}
+
+/** Of several stations with one name: the one in the stop's own city, else Hamburg's, else the first. */
+function pick(candidates: StationCandidate[] | undefined, city: string | undefined): Point | null {
+  if (!candidates || candidates.length === 0) return null;
+  const want = city?.trim().toLowerCase();
+  const inCity = want ? candidates.find((c) => c.city.toLowerCase() === want) : undefined;
+  return (inCity ?? candidates.find((c) => c.city === 'Hamburg') ?? candidates[0]).point;
+}
+
+/** A stop's point: its own WGS84 coordinate, else its station id's, else its name's. */
+function locateStop(stop: GtiSDName, stations: StationIndex | null | undefined): Point | null {
+  const own = pointOf(stop.coordinate);
+  if (own || !stations) return own;
+  const byId = stop.id ? stations.byId.get(stop.id) : undefined;
+  if (byId) return byId;
+  const name = stop.name?.trim();
+  if (!name) return null;
+  return pick(stations.exact.get(exactKey(name)), stop.city) ?? pick(stations.loose.get(looseKey(name)), stop.city);
+}
+
+type Bounds = [[number, number], [number, number]];
+
+function inside(point: Point, bounds: Bounds | undefined): boolean {
+  if (!bounds) return true;
+  const [[west, south], [east, north]] = bounds;
+  return point.lon >= west && point.lon <= east && point.lat >= south && point.lat <= north;
+}
+
+/**
+ * Where the alert goes on the map: the first stop, in the order the locations
+ * name them (begin, then end), that has a point inside the map's bounds. A
+ * point outside them could never be seen, as the map does not pan past them.
+ */
+function placeOf(locations: GtiLocation[], places: GeofoxPlaces): Point | null {
+  for (const location of locations) {
+    for (const stop of [location.begin, location.end]) {
+      if (!stop) continue;
+      const point = locateStop(stop, places.stations);
+      if (point && inside(point, places.bounds)) return point;
+    }
+  }
+  return null;
+}
+
+/**
+ * HADAG harbour ferries, whose numbers read like buses. The same set as
+ * FERRIES in the web app's lib/hvv-lines.ts; change both together.
+ */
+const HVV_FERRIES = new Set(['61', '62', '64', '65', '68', '72', '73', '75']);
+
+/** U-Bahn, S-Bahn, AKN and regional trains, also their replacement buses (`U3-SEV`), and ferries. */
+function isRailOrFerry(line: string): boolean {
+  const name = line.trim().toUpperCase();
+  return /^(?:[USA]|R[EB])\d+(?:-SEV)?$/.test(name) || HVV_FERRIES.has(name);
+}
+
+/**
+ * The owner's map scope (.context/transit.md#hamburg): cancellations,
+ * disruptions and planned works touching rail or a ferry go on the map. Bus-only
+ * alerts, most of them planned diversions and moved stops, stay in the tile.
+ */
+function belongsOnMap(type: TransitAlert['type'], lines: string[]): boolean {
+  return type !== 'delay' && lines.some(isRailOrFerry);
+}
+
+/** What placing alerts on the map takes: the station list (null when it failed) and the map's bounds. */
+export interface GeofoxPlaces {
+  stations?: StationIndex | null;
+  bounds?: Bounds;
 }
 
 function uniquePush(list: string[], value: string | undefined): void {
@@ -212,9 +380,12 @@ function uniquePush(list: string[], value: string | undefined): void {
 /**
  * The announcements in force at `now` as transit alerts, one per message and
  * affected section: the same text for the same section on several lines
- * becomes one alert listing each line, as VBB remarks do.
+ * becomes one alert listing each line, as VBB remarks do. With `places`, an
+ * alert in the map scope (`belongsOnMap`) gets its first stop's point.
  */
-export function parseGeofoxAnnouncements(response: GtiAnnouncementResponse, now: Date): TransitAlert[] {
+export function parseGeofoxAnnouncements(
+  response: GtiAnnouncementResponse, now: Date, places: GeofoxPlaces = {},
+): TransitAlert[] {
   const at = now.getTime();
   const alerts = new Map<string, TransitAlert>();
 
@@ -271,7 +442,7 @@ export function parseGeofoxAnnouncements(response: GtiAnnouncementResponse, now:
       message,
       detail: description || message,
       station,
-      location: pointOf(first?.begin),
+      location: belongsOnMap(type, lines) ? placeOf(locations, places) : null,
       affectedStops: stops.length > 0 ? stops : extractStops(message),
     });
   }
