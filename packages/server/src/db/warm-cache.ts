@@ -9,6 +9,7 @@ import { loadParking, loadWaterTemperature } from './reads.js';
 import { WATER_TEMPERATURE_TTL_SECONDS } from '../cron/ingest-water-temperature.js';
 import { PARKING_TTL_SECONDS } from '../cron/ingest-parking.js';
 import { loadElectionResults } from './reads.js';
+import { loadPoliticalVotes, loadCrimeAtlas } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
@@ -16,6 +17,7 @@ import { TRAFFIC_ACCIDENTS_TTL_SECONDS } from '../cron/ingest-traffic-accidents.
 import { loadTelraamCounts } from './reads.js';
 import { TELRAAM_COUNTS_TTL_SECONDS } from '../cron/ingest-telraam-counts.js';
 import { ELECTION_RESULTS_TTL_SECONDS } from '../cron/ingest-election-results.js';
+import { CRIME_ATLAS_TTL_SECONDS } from '../cron/ingest-crime-atlas.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
 import { loadHeatRelief } from './reads.js';
 import { HEAT_RELIEF_TTL_SECONDS } from '../cron/ingest-heat-relief.js';
@@ -108,6 +110,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
         if (r) cache.set(CK.political(cityId, level), r.data, 604800, r.fetchedAt);
       })().catch((err) => log.error(`${cityId} political:${level} failed`, err)),
     ),
+
+    (async () => {
+      const r = await loadPoliticalVotes(db, cityId);
+      if (r) cache.set(CK.politicalVotes(cityId), r.data, 604800, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} political votes failed`, err)),
 
     (async () => {
       const r = await loadBudget(db, cityId);
@@ -214,6 +221,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadTrafficAccidents(db, cityId);
       if (r) cache.set(CK.trafficAccidents(cityId), r.data, TRAFFIC_ACCIDENTS_TTL_SECONDS, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} traffic accidents failed`, err)),
+
+    (async () => {
+      const r = await loadCrimeAtlas(db, cityId);
+      if (r) cache.set(CK.crimeAtlas(cityId), r.data, CRIME_ATLAS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} crime atlas failed`, err)),
 
     (async () => {
       const r = await loadTrafficCounts(db, cityId);

@@ -13,6 +13,7 @@ const FILES: Array<[string, CityConfig, number]> = [
   ['hamburg-stadtteile.geojson', hamburg, 99],
   ['muenchen-stadtbezirke.geojson', muenchen, 25],
   ['berlin-agh2026-wahlkreise.geojson', berlin, 78],
+  ['berlin-bezirksregionen.geojson', berlin, 143],
 ];
 
 function* positions(coords: unknown): Generator<[number, number]> {
@@ -40,7 +41,7 @@ describe('shipped area outlines', () => {
 
   it('names the outline files the city configs use', () => {
     const named = [berlin, koeln, hamburg, muenchen]
-      .flatMap((c) => [c.dataSources.socialAtlas, c.dataSources.population, c.dataSources.electionResults])
+      .flatMap((c) => [c.dataSources.socialAtlas, c.dataSources.population, c.dataSources.electionResults, c.dataSources.crimeAtlas])
       .flatMap((s) => (s && 'outlines' in s ? [s.outlines] : []));
     expect(new Set(named)).toEqual(new Set(FILES.map(([f]) => f)));
   });
@@ -69,6 +70,14 @@ describe('shipped area outlines', () => {
     // The Indikatorenatlas gives the city 310.7 km²
     const total = [...outlines.values()].reduce((s, o) => s + o.areaKm2!, 0);
     expect(total).toBeCloseTo(310.7, 0);
+  });
+
+  it('keys Berlin\'s Bezirksregionen by their 6-digit LOR key, with Bezirk and area', async () => {
+    const outlines = await loadAreaOutlines('berlin-bezirksregionen.geojson');
+    expect(outlines.get('011001')).toMatchObject({ name: 'Tiergarten Süd', district: 'Mitte', areaKm2: 5.172 });
+    // Berlin is 891 km²
+    const total = [...outlines.values()].reduce((s, o) => s + o.areaKm2!, 0);
+    expect(total).toBeCloseTo(891.1, 0);
   });
 
   it('refuses a path instead of a file name', () => {

@@ -34,6 +34,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   parking: 'sidebar.layers.parking',
   citizenReports: 'sidebar.layers.reports',
   trafficAccidents: 'sidebar.layers.accidents',
+  crimeAtlas: 'sidebar.layers.crime',
   streetTrees: 'sidebar.layers.trees',
   evCharging: 'sidebar.layers.ev-charging',
   // Every city with a heat-relief layer has fountains; cool places and toilets

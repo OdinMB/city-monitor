@@ -91,6 +91,8 @@ Each panel has a dedicated hook that polls its endpoint independently after boot
 | `useWaterLevels` | `['water-levels', cityId]` | 15 min | 5 min |
 | `useAppointments` | `['appointments', cityId]` | 30 min | 15 min |
 
+`usePoliticalVotes` reads `/political-votes` for `PoliticalVotes.tsx`, shown under `PoliticalStrip`'s state and Bundestag views (each its own parliament's votes; the newest only while collapsed, all three expanded, each poll's members behind a toggle); it is enabled only in those two views and does not poll while empty.
+
 The other domains (NINA, air quality, pharmacies, AEDs, traffic, budget, labor market, wastewater, bathing, population, Feuerwehr, pollen, noise sensors, council meetings, political, social atlas) have hooks of the same shape in `packages/web/src/hooks/`. Most use `keepPreviousData` as placeholder during refetch and `retry: 2`, and most polling ones set `refetchIntervalInBackground: false` (`usePolitical` and `useNoiseSensors` leave React Query's default, also false); `useNewsSummary` retries once and keeps no placeholder.
 
 #### History Hooks (Lazy-loaded)

@@ -89,6 +89,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'dwd-soil-moisture',  retentionMs: 7 * DAY_MS },                   // twice a day
   { type: 'afstat-population',  retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
   { type: 'unfallatlas-accidents', retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
+  { type: 'kriminalitaetsatlas', retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
   { type: 'bnetza-charging',    retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'heat-relief',        retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'telraam-counts',     retentionMs: 7 * DAY_MS }, // twice daily, ~20 KB a row
@@ -98,6 +99,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'abgwatch-bundestag',     retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-state',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-state-bezirke', retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'abgwatch-votes',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
 ];
 
 export async function runDataRetention(db: Db) {

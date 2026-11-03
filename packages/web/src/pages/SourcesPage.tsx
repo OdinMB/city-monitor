@@ -133,7 +133,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'abgeordnetenwatch.de',
         url: 'https://www.abgeordnetenwatch.de/',
-        description: 'Members of the Bundestag and the state parliament for the city\'s constituencies. Licensed CC0 1.0.',
+        description: 'Members of the Bundestag and the state parliament for the city\'s constituencies, and the three latest roll-call votes of each parliament with how those members voted, refreshed weekly. Licensed CC0 1.0.',
         requires: 'political',
       },
     ],
@@ -264,6 +264,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
     category: 'Safety & Emergency',
     sources: [
       { name: 'Berlin Police', url: 'https://www.berlin.de/polizei/', description: 'Police incident reports via RSS feed.' },
+      { name: 'Kriminalitätsatlas Berlin (Polizei Berlin)', url: 'https://daten.berlin.de/datensaetze/kriminalitatsatlas-berlin', description: 'Offences recorded by the police (Polizeiliche Kriminalstatistik) per Bezirksregion for the latest year published: case counts and cases per 100,000 residents for all offences, assault, robbery, domestic burglary, bicycle theft and the police\'s "Kieztaten". City Monitor shows them on the crime map, compared with the city average, with the rates rounded to one decimal. Source: Polizei Berlin, Kriminalitätsatlas, CC BY-SA. The map\'s derived data is shared under the same licence (CC BY-SA). Bezirksregion outlines (LOR 2021, simplified): Amt für Statistik Berlin-Brandenburg, CC BY 3.0 DE.' },
       { name: 'Berliner Feuerwehr Open Data', url: 'https://github.com/Berliner-Feuerwehr/BF-Open-Data', description: 'Monthly fire department statistics — mission counts, EMS and fire response times.' },
       { name: 'Berliner Krisendienst', url: 'https://www.berliner-krisendienst.de/', description: 'Crisis counseling hotlines — 9 regional offices and city-wide emergency numbers.' },
     ],

@@ -77,6 +77,7 @@ vi.mock('../../hooks/useCouncilMeetings.js', () => ({ useCouncilMeetings: () => 
 vi.mock('../../hooks/useEvents.js', () => ({ useEvents: () => fixtures.loaded(fixtures.events) }));
 vi.mock('../../hooks/usePolitical.js', () => ({ usePolitical: () => fixtures.loaded(fixtures.political) }));
 vi.mock('../../hooks/useElectionResults.js', () => ({ useElectionResults: () => fixtures.loaded(undefined) }));
+vi.mock('../../hooks/usePoliticalVotes.js', () => ({ usePoliticalVotes: () => ({ data: [] }) }));
 
 function expectClasses(el: Element, classes: string[]) {
   for (const cls of classes) {

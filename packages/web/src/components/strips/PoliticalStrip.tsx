@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import type { CityFeature } from '@city-monitor/shared';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
+import { usePoliticalVotes } from '../../hooks/usePoliticalVotes.js';
+import { PoliticalVotes } from './PoliticalVotes.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
 import { useTabKeys } from '../../hooks/useTabKeys.js';
@@ -289,6 +291,10 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
   const electionResults = election.data?.data ?? null;
   // A final election result has no staleness to show
   const fetchedAt = isElection ? null : political.fetchedAt;
+  // Roll-call votes belong to a parliament: the state and Bundestag views only
+  const votesParliament = view === 'state' || view === 'bundestag' ? view : null;
+  const { data: votes } = usePoliticalVotes(cityId, votesParliament !== null);
+  const parliamentVotes = votesParliament ? (votes ?? []).filter((v) => v.parliament === votesParliament) : [];
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
   const viewIdx = views.indexOf(current);
@@ -355,6 +361,7 @@ export function PoliticalStrip({ expanded, onExpand }: { expanded: boolean; onEx
             <RepList districts={data} limit={expanded ? undefined : PREVIEW_COUNT} onExpand={onExpand} />
           </>
         )}
+        <PoliticalVotes votes={parliamentVotes} expanded={expanded} onExpand={onExpand} />
       </div>
       {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </div>

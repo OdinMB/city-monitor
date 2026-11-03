@@ -17,6 +17,7 @@ import {
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
 import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData, RespiratoryCases } from '@city-monitor/shared';
+import type { PoliticalVote, CrimeAtlasData } from '@city-monitor/shared';
 import type { HeatReliefData } from '@city-monitor/shared';
 import type { TelraamCountsData } from '@city-monitor/shared';
 import type { ParkingData, WaterTemperatureData } from '@city-monitor/shared';
@@ -156,6 +157,10 @@ export async function saveTrafficAccidents(db: Db, cityId: string, data: Traffic
   await saveSnapshot(db, cityId, 'unfallatlas-accidents', data);
 }
 
+export async function saveCrimeAtlas(db: Db, cityId: string, data: CrimeAtlasData): Promise<void> {
+  await saveSnapshot(db, cityId, 'kriminalitaetsatlas', data);
+}
+
 export async function saveTrafficCounts(db: Db, cityId: string, data: TrafficCountData): Promise<void> {
   await saveSnapshot(db, cityId, 'traffic-counts', data);
 }
@@ -214,6 +219,10 @@ export async function savePoliticalDistricts(
   districts: PoliticalDistrict[],
 ): Promise<void> {
   await saveSnapshot(db, cityId, `abgwatch-${level}` as SnapshotType, districts);
+}
+
+export async function savePoliticalVotes(db: Db, cityId: string, votes: PoliticalVote[]): Promise<void> {
+  await saveSnapshot(db, cityId, 'abgwatch-votes', votes);
 }
 
 // ---------------------------------------------------------------------------

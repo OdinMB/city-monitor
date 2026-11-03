@@ -32,6 +32,7 @@ export type {
   AirQualityStation, UbaAirIndex,
   CitizenReport, CitizenReportData, CitizenReportGroup, CitizenReportStatus,
   TrafficAccident, TrafficAccidentData, AccidentSeverity,
+  CrimeAtlasData, CrimeAreaProps, CrimeIndicator,
   TrafficCountMode, TrafficCountSite, TrafficCountData,
   EvChargingData, EvChargingStation, EvLivePoint, EvPlug, EvPointStatus,
   ElectionResults, ElectionAreaResult, ElectionShare, ElectionFeatureProps, ElectionKind, ElectionAreaLevel,
@@ -54,6 +55,9 @@ import type {
   ElectionResults,
 } from '@city-monitor/shared';
 import type { EvChargingData } from '@city-monitor/shared';
+import type { CrimeAtlasData } from '@city-monitor/shared';
+export type { PoliticalVote, VoteChoice, VoteCounts } from '@city-monitor/shared';
+import type { PoliticalVote } from '@city-monitor/shared';
 export type { HeatReliefData, HeatReliefPlace, HeatReliefKind, DwdHeatTrend } from '@city-monitor/shared';
 import type { HeatReliefData } from '@city-monitor/shared';
 
@@ -87,6 +91,7 @@ export const api = {
   getSoilMoisture: (city: string) => fetchJson<ApiResponse<SoilMoistureData | null>>(`${API_BASE}/${city}/soil-moisture`),
   getCitizenReports: (city: string) => fetchJson<ApiResponse<CitizenReportData | null>>(`${API_BASE}/${city}/citizen-reports`),
   getTrafficAccidents: (city: string) => fetchJson<ApiResponse<TrafficAccidentData | null>>(`${API_BASE}/${city}/traffic-accidents`),
+  getCrimeAtlas: (city: string) => fetchJson<ApiResponse<CrimeAtlasData | null>>(`${API_BASE}/${city}/crime-atlas`),
   getTrafficCounts: (city: string) => fetchJson<ApiResponse<TrafficCountData | null>>(`${API_BASE}/${city}/traffic-counts`),
   getEvCharging: (city: string) => fetchJson<ApiResponse<EvChargingData | null>>(`${API_BASE}/${city}/ev-charging`),
   getHeatRelief: (city: string) => fetchJson<ApiResponse<HeatReliefData | null>>(`${API_BASE}/${city}/heat-relief`),
@@ -94,6 +99,7 @@ export const api = {
   getElectionResults: (city: string) => fetchJson<ApiResponse<ElectionResults | null>>(`${API_BASE}/${city}/election-results`),
   getElectionGeojson: (city: string) => fetchJson<ApiResponse<GeoJSON.FeatureCollection | null>>(`${API_BASE}/${city}/election-results/geojson`),
   getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
+  getPoliticalVotes: (city: string) => fetchJson<ApiResponse<PoliticalVote[]>>(`${API_BASE}/${city}/political-votes`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),
   getSocialAtlas: (city: string) => fetchJson<ApiResponse<GeoJSON.FeatureCollection | null>>(`${API_BASE}/${city}/social-atlas`),

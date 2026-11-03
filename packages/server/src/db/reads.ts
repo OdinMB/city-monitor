@@ -11,9 +11,10 @@ import {
 import type { SnapshotType } from './schema.js';
 import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, RespiratoryCases, SoilMoistureData } from '@city-monitor/shared';
 import type { ElectionResults } from '@city-monitor/shared';
+import type { PoliticalVote, CrimeAtlasData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
-  PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
+  PoliticalDistrictSchema, PoliticalVoteSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
@@ -245,6 +246,11 @@ export async function loadTrafficAccidents(db: Db, cityId: string): Promise<DbRe
   return loadSnapshot(db, cityId, 'unfallatlas-accidents', { schema: TrafficAccidentDataSchema });
 }
 
+/** No age limit and no schema (GeoJSON, like the population layer's): a year's record, whose newest row retention keeps. */
+export async function loadCrimeAtlas(db: Db, cityId: string): Promise<DbResult<CrimeAtlasData>> {
+  return loadSnapshot<CrimeAtlasData>(db, cityId, 'kriminalitaetsatlas');
+}
+
 /** At most 3 hours old: the counts are hourly and a row is stored when a new hour comes in. */
 export async function loadTrafficCounts(db: Db, cityId: string): Promise<DbResult<TrafficCountData>> {
   return loadSnapshot(db, cityId, 'traffic-counts', { schema: TrafficCountDataSchema, maxAgeMs: 3 * 3600_000 });
@@ -323,6 +329,10 @@ export async function loadPoliticalDistricts(
   level: string,
 ): Promise<DbResult<PoliticalDistrict[]>> {
   return loadSnapshot(db, cityId, `abgwatch-${level}` as SnapshotType, { schema: z.array(PoliticalDistrictSchema) });
+}
+
+export async function loadPoliticalVotes(db: Db, cityId: string): Promise<DbResult<PoliticalVote[]>> {
+  return loadSnapshot(db, cityId, 'abgwatch-votes', { schema: z.array(PoliticalVoteSchema) });
 }
 
 export async function loadPoliticalFetchedAt(

@@ -20,9 +20,10 @@ import type {
   ElectionAreaResult, ElectionFeatureProps, ElectionResults, ElectionShare,
   FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
   LiftOutageData, NinaWarning,
-  NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
+  NoiseSensor, PoliticalDistrict, PoliticalVote, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
   TelraamCountsData, TelraamSegmentCount, TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, RespiratoryCases, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
+  CrimeAreaProps, CrimeAtlasData, CrimeIndicator,
 } from '@city-monitor/shared';
 import type { HeatReliefData, HeatReliefPlace } from '@city-monitor/shared';
 import type { ParkingData, ParkingFacility, WaterTemperatureData } from '@city-monitor/shared';
@@ -89,6 +90,8 @@ export interface SyntheticData {
   councilMeetings: CouncilMeeting[];
   /** Berlin's full set has every level but `mayor`, which only a city inside a state has. */
   political: Record<Exclude<PoliticalLevel, 'mayor'>, PoliticalDistrict[]> & { mayor?: PoliticalDistrict[] };
+  /** Roll-call votes of the Bundestag and the state parliament, cast by the synthetic members above. */
+  politicalVotes: PoliticalVote[];
   /** Not in Berlin's data set: Berlin has no LHP gauges configured (NOT_IN_BERLIN). */
   floodStatus?: FloodStatus;
   /** Not in Berlin's data set: only Köln's KVB publishes lift outages (NOT_IN_BERLIN). */
@@ -100,6 +103,7 @@ export interface SyntheticData {
   /** Not in Berlin's data set: only Köln and München have an Open311 server (NOT_IN_BERLIN). */
   citizenReports?: CitizenReportData;
   trafficAccidents: TrafficAccidentData;
+  crimeAtlas: CrimeAtlasData;
   /** Not in Berlin's data set: only Hamburg's counters are configured (NOT_IN_BERLIN). */
   trafficCounts?: TrafficCountData;
   /** The register only: the live status (Hamburg) is never stored, so the seed has none. */
@@ -172,6 +176,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   airQualityStations: (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0,
   citizenReports: (c) => c.dataSources.citizenReports !== undefined,
   trafficAccidents: (c) => c.dataSources.trafficAccidents !== undefined,
+  crimeAtlas: (c) => c.dataSources.crimeAtlas !== undefined,
   trafficCounts: (c) => (c.dataSources.trafficCounts?.modes.length ?? 0) > 0,
   evCharging: (c) => c.dataSources.evCharging !== undefined,
   heatRelief: (c) => (c.dataSources.heatRelief?.length ?? 0) > 0,
@@ -181,6 +186,8 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   waterTemperature: (c) => (c.dataSources.waterTemperature?.stations.length ?? 0) > 0,
   parking: (c) => c.dataSources.parking !== undefined,
   electionResults: (c) => c.dataSources.electionResults !== undefined,
+  // Last, like its draw in generateSyntheticCityData
+  politicalVotes: hasParliamentConfig,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -306,6 +313,8 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('waterTemperature')) sets.waterTemperature = generateWaterTemperature(rng, now, city);
   if (has.has('parking')) sets.parking = generateParking(rng, now, place);
   if (has.has('electionResults')) sets.electionResults = generateElectionResults(rng, city, place);
+  if (has.has('crimeAtlas')) sets.crimeAtlas = generateCrimeAtlas(rng, now, place);
+  if (has.has('politicalVotes')) sets.politicalVotes = generatePoliticalVotes(rng, now, sets.political ?? {});
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1761,6 +1770,64 @@ function generateCitizenReports(rng: Rng, now: Date, place: Place): CitizenRepor
   return buildCitizenReportData(reports);
 }
 
+/** Each indicator's synthetic city-wide rate per 100,000 residents, near Berlin's 2025 figures. */
+const SYNTHETIC_CRIME_RATES: ReadonlyArray<[CrimeIndicator, number]> = [
+  ['total', 12900], ['assault', 1280], ['robbery', 124], ['burglary', 272], ['bikeTheft', 580], ['kiez', 3170],
+];
+
+/**
+ * Stand-ins for the Bezirksregionen: the city's ellipse tiled into ~6×8
+ * rectangles, rates highest in the centre and falling off outwards, each
+ * area named after its nearest anchor.
+ */
+function generateCrimeAtlas(rng: Rng, now: Date, place: Place): CrimeAtlasData {
+  const { north, south, east, west } = place.city.boundingBox;
+  const rows = 6;
+  const cols = 8;
+  const dLat = (north - south) / rows;
+  const dLon = (east - west) / cols;
+  const features: CrimeAtlasData['geojson']['features'] = [];
+  const residents = 25000;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const lat0 = south + row * dLat;
+      const lon0 = west + col * dLon;
+      const centre = { lat: lat0 + dLat / 2, lon: lon0 + dLon / 2 };
+      const r = Math.hypot((centre.lat - (north + south) / 2) / ((north - south) / 2), (centre.lon - (east + west) / 2) / ((east - west) / 2));
+      if (r > 1) continue;
+      const anchor = place.anchors[nearestDistrict(centre, place.anchors)]!;
+      const factor = (0.4 + 1.8 * Math.exp(-((r / 0.4) ** 2))) * rng.float(0.8, 1.2);
+      const props: Record<string, number | string | null> = {
+        areaId: `${pad(nearestDistrict(centre, place.anchors) + 1)}99${pad(features.length + 1)}`,
+        name: `Synthetische Region ${features.length + 1}`,
+        district: anchor.name,
+      };
+      for (const [indicator, rate] of SYNTHETIC_CRIME_RATES) {
+        const value = round(rate * factor * rng.float(0.85, 1.15), 1);
+        props[indicator] = value;
+        props[`${indicator}Count`] = Math.round((value * residents) / 100000);
+      }
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[lon0, lat0], [lon0 + dLon, lat0], [lon0 + dLon, lat0 + dLat], [lon0, lat0 + dLat], [lon0, lat0]]
+            .map(([lon, lat]) => [round(lon!, 5), round(lat!, 5)])],
+        },
+        properties: props as unknown as CrimeAreaProps,
+      });
+    }
+  }
+  const city: Record<string, number> = {};
+  for (const [indicator, rate] of SYNTHETIC_CRIME_RATES) {
+    city[indicator] = rate;
+    city[`${indicator}Count`] = Math.round((rate * residents * features.length) / 100000);
+  }
+  // The atlas for a year comes out the following September
+  const year = now.getUTCFullYear() - (now.getUTCMonth() >= 9 ? 1 : 2);
+  return { year, city: city as unknown as CrimeAtlasData['city'], geojson: { type: 'FeatureCollection', features } };
+}
+
 /**
  * A last year's worth of accidents in miniature: a dozen around each anchor,
  * mostly slight, a few serious, one killed per city, with bicycles and
@@ -2126,6 +2193,48 @@ function generatePolitical(rng: Rng, place: Place): Partial<Record<PoliticalLeve
     }));
   }
   return political;
+}
+
+const VOTE_CHOICES = ['yes', 'yes', 'yes', 'no', 'no', 'abstain', 'no_show'] as const;
+
+/**
+ * Three roll-call votes per parliament, a week apart, cast by the city's
+ * synthetic members (the Bundestag's and the state parliament's levels); the
+ * parliament's totals are the city's plus invented others.
+ */
+function generatePoliticalVotes(rng: Rng, now: Date, political: Partial<Record<PoliticalLevel, PoliticalDistrict[]>>): PoliticalVote[] {
+  const votes: PoliticalVote[] = [];
+  const parliaments = [['bundestag', political.bundestag, 630], ['state', political.state, 150]] as const;
+  for (const [parliament, districts, seats] of parliaments) {
+    const reps = (districts ?? []).flatMap((d) => d.representatives);
+    if (reps.length === 0) continue;
+    for (let i = 0; i < 3; i++) {
+      const members = reps
+        .map((r) => ({ name: r.name, party: r.party, vote: rng.pick(VOTE_CHOICES) }))
+        .sort((a, b) => a.party.localeCompare(b.party, 'de') || a.name.localeCompare(b.name, 'de'));
+      const city = { yes: 0, no: 0, abstain: 0, noShow: 0 };
+      for (const m of members) city[m.vote === 'no_show' ? 'noShow' : m.vote]++;
+      const others = Math.max(0, seats - members.length);
+      const yes = city.yes + Math.round(others * rng.float(0.3, 0.6));
+      const abstain = city.abstain + Math.round(others * 0.05);
+      const noShow = city.noShow + Math.round(others * 0.08);
+      const totals = { yes, no: seats - yes - abstain - noShow, abstain, noShow };
+      const id = (parliament === 'bundestag' ? 9000 : 9100) + i;
+      votes.push({
+        id,
+        parliament,
+        title: `${MARK} Antrag ${id}`,
+        date: shiftDate(local(now).date, -(i * 7 + 2)),
+        accepted: totals.yes > totals.no,
+        topics: [rng.pick(['Energie', 'Verkehr', 'Wohnen', 'Bildung'])],
+        url: `${EXAMPLE}/polls/${id}`,
+        totals,
+        city,
+        members,
+      });
+    }
+  }
+  return votes;
 }
 
 // ---------------------------------------------------------------------------

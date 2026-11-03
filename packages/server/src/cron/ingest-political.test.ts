@@ -37,10 +37,11 @@ vi.mock('../db/reads.js', () => ({
 
 vi.mock('../db/writes.js', () => ({
   savePoliticalDistricts: vi.fn().mockResolvedValue(undefined),
+  savePoliticalVotes: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { loadPoliticalFetchedAt } from '../db/reads.js';
-import { savePoliticalDistricts } from '../db/writes.js';
+import { savePoliticalDistricts, savePoliticalVotes } from '../db/writes.js';
 
 describe('preCacheBezirke', () => {
   afterEach(() => {
@@ -358,6 +359,106 @@ describe('createPoliticalIngestion — weekly refresh', () => {
     expect(cache.get('berlin:political:state')).toEqual(previous);
     expect(cache.get('berlin:political:state-bezirke')).toEqual(previous);
     expect(savedLevels()).toEqual(['bezirke', 'bundestag']);
+  });
+
+  describe('roll-call votes', () => {
+    const poll = (id: number) => ({
+      id, label: `Antrag ${id}`, abgeordnetenwatch_url: `https://www.abgeordnetenwatch.de/p/${id}`,
+      field_accepted: true, field_poll_date: '2026-10-16', field_topics: [{ label: 'Energie' }],
+    });
+    // Mandate 1 is the city's (Berlin-Mitte); 900 and 901 are elsewhere.
+    const pollVotes = ok({
+      data: [
+        { mandate: { id: 1 }, vote: 'no' },
+        { mandate: { id: 900 }, vote: 'yes' },
+        { mandate: { id: 901 }, vote: 'no_show' },
+      ],
+      meta: { result: { total: 3, count: 3 } },
+    });
+
+    function mockWithPolls(polls: (url: string) => Response) {
+      return mockAbgeordnetenwatch((url) => {
+        if (url.includes('/polls?')) return polls(url);
+        if (url.includes('/votes?')) return pollVotes.clone();
+        return onePage();
+      });
+    }
+
+    it('tallies the latest Bundestag and state polls and the city member votes', async () => {
+      vi.mocked(loadPoliticalFetchedAt).mockResolvedValue(null);
+      mockWithPolls((url) => ok({ data: [poll(url.includes('field_legislature=111&') ? 10 : 20)] }));
+      const cache = createCache();
+
+      await createPoliticalIngestion(cache, null)();
+
+      const votes = cache.get<Array<Record<string, unknown>>>('berlin:political-votes');
+      expect(votes?.map((v) => [v.id, v.parliament])).toEqual([[10, 'bundestag'], [20, 'state']]);
+      expect(votes?.[0]).toMatchObject({
+        title: 'Antrag 10', date: '2026-10-16', accepted: true, topics: ['Energie'],
+        totals: { yes: 1, no: 1, abstain: 0, noShow: 1 },
+        city: { yes: 0, no: 1, abstain: 0, noShow: 0 },
+        members: [{ name: 'Max Mustermann', party: 'SPD', vote: 'no' }],
+      });
+    });
+
+    it('asks for each period\'s polls once per run, however many cities share it', async () => {
+      vi.stubEnv('ACTIVE_CITIES', 'berlin,hamburg');
+      vi.mocked(loadPoliticalFetchedAt).mockResolvedValue(null);
+      const hamburgMandate = makeMandateObj({
+        id: 2, politicianId: 2, fractionLabel: 'Fraktion der SPD', constituencyLabel: '18 - Hamburg-Mitte (Bundestag 2025 - 2029)',
+      });
+      const fetchSpy = mockAbgeordnetenwatch((url) => {
+        if (url.includes('/polls?')) return ok({ data: [poll(url.includes('field_legislature=111&') ? 10 : 20)] });
+        if (url.includes('/votes?')) return pollVotes.clone();
+        return ok({ data: [mitteMandate(), hamburgMandate], meta: { result: { total: 2, count: 2 } } });
+      });
+      const cache = createCache();
+
+      await createPoliticalIngestion(cache, null)();
+
+      const urls = fetchSpy.mock.calls.map((c) => String(c[0]));
+      expect(urls.filter((u) => u.includes('/polls?field_legislature=111&'))).toHaveLength(1);
+      expect(urls.filter((u) => u.includes('/votes?poll=10&'))).toHaveLength(1);
+      expect(cache.get<unknown[]>('hamburg:political-votes')?.length).toBeGreaterThan(0);
+      vi.unstubAllEnvs();
+    });
+
+    it('keeps the previous votes when a poll list fails', async () => {
+      vi.mocked(loadPoliticalFetchedAt).mockResolvedValue(null);
+      mockWithPolls((url) => (url.includes('field_legislature=111&') ? ok({ data: [poll(10)] }) : unavailable()));
+      const cache = createCache();
+      cache.set('berlin:political-votes', previous, 604800);
+      vi.mocked(savePoliticalVotes).mockClear();
+
+      await createPoliticalIngestion(cache, db)();
+
+      expect(cache.get('berlin:political-votes')).toEqual(previous);
+      expect(savePoliticalVotes).not.toHaveBeenCalled();
+    });
+
+    it('leaves out a poll whose votes arrive incomplete', async () => {
+      vi.mocked(loadPoliticalFetchedAt).mockResolvedValue(null);
+      mockAbgeordnetenwatch((url) => {
+        if (url.includes('/polls?')) return ok({ data: url.includes('field_legislature=111&') ? [poll(10)] : [] });
+        if (url.includes('/votes?')) return ok({ data: [], meta: { result: { total: 630, count: 0 } } });
+        return onePage();
+      });
+      const cache = createCache();
+
+      await createPoliticalIngestion(cache, null)();
+
+      expect(cache.get('berlin:political-votes')).toEqual([]);
+    });
+
+    it('fetches again while the members are fresh but no votes are stored yet', async () => {
+      vi.mocked(loadPoliticalFetchedAt).mockImplementation(async (_db, _city, level) =>
+        (level === 'votes' ? null : new Date(Date.now() - 3600_000)));
+      const fetchSpy = mockWithPolls(() => ok({ data: [] }));
+
+      await createPoliticalIngestion(createCache(), db)();
+
+      expect(fetchSpy).toHaveBeenCalled();
+    });
   });
 });
 

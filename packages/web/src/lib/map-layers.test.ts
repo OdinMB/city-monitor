@@ -25,7 +25,7 @@ describe('cityLayers', () => {
   it('gives Berlin, which has every feature, every layer and sub-layer', () => {
     const all = cityLayers(berlin);
     expect([...all.layers].sort()).toEqual([
-      'accidents', 'air-quality', 'bike-sharing', 'emergencies', 'ev-charging', 'heat-relief', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'trees', 'warnings', 'water', 'weather',
+      'accidents', 'air-quality', 'bike-sharing', 'crime', 'emergencies', 'ev-charging', 'heat-relief', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'trees', 'warnings', 'water', 'weather',
     ]);
     expect(all.heatRelief).toEqual(['cool', 'fountains', 'toilets']);
     expect(all.news).toEqual(['news', 'police']);
@@ -111,6 +111,12 @@ describe('cityLayers', () => {
     for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('accidents'), city.id).toBe(true);
     expect(withFeatures('trafficAccidents').layers.has('accidents')).toBe(true);
     expect(withFeatures().layers.has('accidents')).toBe(false);
+  });
+
+  it('shows the crime layer only where the city has a crime atlas (Berlin)', () => {
+    expect(cityLayers(berlin).layers.has('crime')).toBe(true);
+    for (const city of [hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('crime'), city.id).toBe(false);
+    expect(withFeatures('crimeAtlas').layers.has('crime')).toBe(true);
   });
 
   it('shows the EV charging layer in every city with the register, and not without it', () => {

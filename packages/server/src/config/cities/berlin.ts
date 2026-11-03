@@ -200,6 +200,14 @@ export const berlin: CityConfig = {
       date: '2026-09-20',
       outlines: 'berlin-agh2026-wahlkreise.geojson',
     },
+    // Kriminalitätsatlas Berlin (Polizei Berlin, CC BY-SA): cases and rates per Bezirksregion,
+    // 2016–2025 in one file. The name carries the year range: copy the new link from
+    // daten.berlin.de "Kriminalitätsatlas Berlin" when the next year appears (checked 2026-11-03).
+    crimeAtlas: {
+      provider: 'polizei-berlin',
+      xlsxUrl: 'https://www.berlin.de/polizei/_assets/dienststellen/lka/fallzahlen_hz-2016-2025.xlsx',
+      outlines: 'berlin-bezirksregionen.geojson',
+    },
     appointments: {
       provider: 'service-berlin',
       // Ids are service.berlin.de/dienstleistung/{id}/: open that page to check

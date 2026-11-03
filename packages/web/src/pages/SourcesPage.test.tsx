@@ -110,6 +110,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
   ['nextbike (GBFS)', (c) => c.dataSources.bikeSharing?.provider === 'gbfs'],
   ['Unfallatlas (Statistische Ämter des Bundes und der Länder)', (c) => c.dataSources.trafficAccidents?.provider === 'unfallatlas'],
+  ['Kriminalitätsatlas Berlin (Polizei Berlin)', (c) => c.dataSources.crimeAtlas?.provider === 'polizei-berlin'],
   ['StadtRAD Hamburg (Urban Data Platform)', (c) => c.dataSources.bikeSharing?.provider === 'hamburg-sta'],
   ['Parkhäuser Hamburg (Urban Data Platform)', (c) => c.dataSources.parking?.provider === 'hamburg-wfs'],
   // ingest-electricity: SMARD for the city's control area, Energy-Charts for Germany
@@ -228,6 +229,8 @@ describe('SourcesPage licence credits', () => {
    * contributors, ODbL".
    */
   const LICENCE_CREDITS: Record<string, string> = {
+    // CC BY-SA: the credit, and the share-alike licence of the derived map data
+    'Kriminalitätsatlas Berlin (Polizei Berlin)': 'Source: Polizei Berlin, Kriminalitätsatlas, CC BY-SA. The map\'s derived data is shared under the same licence (CC BY-SA).',
     'OpenStreetMap': '© OpenStreetMap contributors, ODbL.',
     'Sensor.Community': '© Sensor.Community contributors, ODbL.',
     'Sensor.Community DNMS': '© Sensor.Community contributors, ODbL.',

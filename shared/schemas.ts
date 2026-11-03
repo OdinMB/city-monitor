@@ -330,6 +330,30 @@ export const PoliticalDistrictSchema = z.object({
   representatives: z.array(RepresentativeSchema),
 });
 
+const VoteCountsSchema = z.object({
+  yes: z.number(),
+  no: z.number(),
+  abstain: z.number(),
+  noShow: z.number(),
+});
+
+export const PoliticalVoteSchema = z.object({
+  id: z.number(),
+  parliament: z.enum(['bundestag', 'state']),
+  title: z.string(),
+  date: z.string(),
+  accepted: z.boolean().nullable(),
+  topics: z.array(z.string()),
+  url: z.string(),
+  totals: VoteCountsSchema,
+  city: VoteCountsSchema,
+  members: z.array(z.object({
+    name: z.string(),
+    party: z.string(),
+    vote: z.enum(['yes', 'no', 'abstain', 'no_show']),
+  })),
+});
+
 // --- Feuerwehr ---
 
 export const FeuerwehrMonthDataSchema = z.object({

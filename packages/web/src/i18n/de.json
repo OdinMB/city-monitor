@@ -249,7 +249,17 @@
       "seats_one": "Sitz",
       "seats_other": "Sitze",
       "showMore": "+{{count}} weitere…",
-      "profileLink": "Profil von {{name}}"
+      "profileLink": "Profil von {{name}}",
+      "votes": {
+        "title": "Letzte namentliche Abstimmungen",
+        "accepted": "Angenommen",
+        "rejected": "Abgelehnt",
+        "overall": "Ganzes Parlament: {{yes}} Ja, {{no}} Nein",
+        "cityMembers": "Abgeordnete der Stadt:",
+        "showMembers": "Wer wie abgestimmt hat",
+        "hideMembers": "Abgeordnete ausblenden",
+        "choice": { "yes": "Ja", "no": "Nein", "abstain": "Enthalten", "no_show": "Nicht beteiligt" }
+      }
     },
     "budget": {
       "title": "Stadthaushalt",
@@ -644,6 +654,7 @@
       "bike-sharing": "Leihräder",
       "parking": "Parkhäuser",
       "accidents": "Unfälle",
+      "crime": "Kriminalität",
       "ev-charging": "E-Ladesäulen",
       "heat-relief": "Hitzeschutz",
       "water": "Wasser",
@@ -740,6 +751,25 @@
       "strongest_wahlkreis": "Stärkste Partei je Wahlkreis",
       "strongest_stadtteil": "Stärkste Partei je Stadtteil",
       "strongest_stadtbezirk": "Stärkste Partei je Stadtbezirk"
+    },
+    "crime": {
+      "total": "Straftaten insgesamt",
+      "assault": "Körperverletzung",
+      "robbery": "Raub",
+      "burglary": "Wohnungseinbruch",
+      "bikeTheft": "Fahrraddiebstahl",
+      "kiez": "Kieztaten"
+    },
+    "crimeLegend": {
+      "title": "Häufigkeit je 100.000 Einwohner im Vergleich zum Stadtdurchschnitt",
+      "year": "Erfasst {{year}} (Polizeiliche Kriminalstatistik)",
+      "cityRate": "Stadtdurchschnitt: {{rate}} je 100.000",
+      "muchLower": "Weniger als die Hälfte des Durchschnitts",
+      "lower": "Unter dem Durchschnitt (0,5–0,8×)",
+      "average": "Etwa im Durchschnitt (0,8–1,25×)",
+      "higher": "Über dem Durchschnitt (1,25–2×)",
+      "muchHigher": "Doppelter Durchschnitt oder mehr",
+      "note": "Straftaten zählen am Tatort und je Einwohner: Gebiete mit wenigen Bewohnern und vielen Besuchern wie die Innenstadt haben hohe Werte."
     },
     "accidentLegend": {
       "title": "Unfälle mit Personenschaden {{year}} nach der schwersten Unfallfolge",
@@ -914,6 +944,14 @@
         "closed": "Geschlossen",
         "fault": "Keine aktuelle Zählung (Störung)"
       }
+    },
+    "crime": {
+      "year": "Polizeiliche Kriminalstatistik {{year}}",
+      "area": "Gebiet",
+      "city": "Stadt",
+      "ratio": "ggü. Stadt",
+      "per100k": "Fälle je 100.000 Einwohner",
+      "cases": "Erfasste Fälle"
     },
     "accident": {
       "severity": {

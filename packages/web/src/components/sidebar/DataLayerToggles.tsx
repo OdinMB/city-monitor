@@ -19,7 +19,10 @@ import {
   ACCIDENT_SEVERITY, BIKE_AVAILABILITY, TRAFFIC_COUNT_LEVELS, TRAFFIC_COUNT_NONE_COLOR, getNoiseWmsMinZoom, getRentMapLegend, getTrafficFlowLegend,
   getTrafficFlowMinZoom,
 } from '../map/constants.js';
-import { EvCharger } from 'lucide';
+import { EvCharger, ShieldAlert, HandFist, Wallet, DoorOpen } from 'lucide';
+import { CRIME_CLASSES, CRIME_INDICATORS } from '../map/layers/crime-atlas.js';
+import { useCrimeAtlas } from '../../hooks/useCrimeAtlas.js';
+import type { CrimeLayer } from '../../hooks/useCommandCenter.js';
 import { EV_LIVE_STATES, EV_POWER_CLASSES } from '../map/constants.js';
 import { useTelraamCounts } from '../../hooks/useTelraamCounts.js';
 import { TELRAAM_BIKE_SHARE } from '../map/constants.js';
@@ -43,6 +46,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'bike-sharing', icon: Bike as IconNode, color: '#16a34a' },
   { layer: 'parking', icon: SquareParking as IconNode, color: '#2563eb' },
   { layer: 'accidents', icon: CarFront as IconNode, color: '#dc2626' },
+  { layer: 'crime', icon: ShieldAlert as IconNode, color: '#b91c1c' },
   { layer: 'ev-charging', icon: EvCharger as IconNode, color: '#0ea5e9' },
   { layer: 'heat-relief', icon: ThermometerSun as IconNode, color: '#f97316' },
   { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
@@ -100,6 +104,17 @@ const ACCIDENT_FILTER_META: { key: AccidentFilter; icon: IconNode; color: string
   { key: 'bike', icon: Bike as IconNode, color: '#dc2626' },
   { key: 'pedestrian', icon: Footprints as IconNode, color: '#dc2626' },
 ];
+
+const CRIME_ICONS: Record<CrimeLayer, IconNode> = {
+  total: ShieldAlert as IconNode,
+  assault: HandFist as IconNode,
+  robbery: Wallet as IconNode,
+  burglary: DoorOpen as IconNode,
+  bikeTheft: Bike as IconNode,
+  kiez: Siren as IconNode,
+};
+const CRIME_SUB_META: { key: CrimeLayer; icon: IconNode; color: string }[] =
+  CRIME_INDICATORS.map((key) => ({ key, icon: CRIME_ICONS[key], color: '#b91c1c' }));
 
 const SOCIAL_SUB_META:{ key: SocialLayer; icon: IconNode; color: string }[] = [
   { key: 'unemployment', icon: Briefcase as IconNode, color: '#ef4444' },
@@ -328,6 +343,37 @@ export function AccidentLegend({ cityId, filter }: { cityId: string; filter: Acc
 }
 
 /**
+ * The crime map's year and what its colours mean: an area's rate of the
+ * chosen offence group against the city's, with the city's rate. Shares the
+ * map's query, so it fetches nothing of its own.
+ */
+export function CrimeLegend({ cityId, indicator }: { cityId: string; indicator: CrimeLayer }) {
+  const { t, i18n } = useTranslation();
+  const { data } = useCrimeAtlas(cityId, true);
+  const atlas = data?.data;
+  const cityRate = atlas?.city[indicator];
+  return (
+    <div className="ps-9 pe-2 py-1">
+      {atlas && (
+        <p className="text-[12px] text-muted mb-0.5">
+          {t('sidebar.crimeLegend.year', { year: atlas.year })}
+          {typeof cityRate === 'number' && <> · {t('sidebar.crimeLegend.cityRate', { rate: Math.round(cityRate).toLocaleString(i18n.language) })}</>}
+        </p>
+      )}
+      <ul aria-label={t('sidebar.crimeLegend.title')} className="space-y-0.5">
+        {CRIME_CLASSES.map(({ key, color }) => (
+          <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+            <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-sm border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
+            {t(`sidebar.crimeLegend.${key}`)}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-[11px] text-muted">{t('sidebar.crimeLegend.note')}</p>
+    </div>
+  );
+}
+
+/**
  * What the charging circles mean: their colour the power class, and in a city
  * with a live feed (`live`) their ring the charge points' status.
  */
@@ -447,6 +493,8 @@ export function DataLayerToggles() {
   const setPopulationLayer = useCommandCenter((s) => s.setPopulationLayer);
   const accidentFilter = useCommandCenter((s) => s.accidentFilter);
   const setAccidentFilter = useCommandCenter((s) => s.setAccidentFilter);
+  const crimeLayer = useCommandCenter((s) => s.crimeLayer);
+  const setCrimeLayer = useCommandCenter((s) => s.setCrimeLayer);
   // With the single-key shortcuts switched off, the number badges would point to keys that do nothing.
   const shortcutsOn = useShortcutSettings((s) => s.enabled);
   const setHintsOpen = useShortcutSettings((s) => s.setHintsOpen);
@@ -535,6 +583,14 @@ export function DataLayerToggles() {
                 <SubLayerList meta={ACCIDENT_FILTER_META} available={ACCIDENT_FILTER_META.map((m) => m.key)} parentColor={color}
                   isActive={(key) => accidentFilter === key} onSelect={setAccidentFilter} label={(key) => t(`sidebar.accidents.${key}`)} />
                 <AccidentLegend cityId={city.id} filter={accidentFilter} />
+              </>
+            );
+          } else if (layer === 'crime' && active) {
+            subItems = (
+              <>
+                <SubLayerList meta={CRIME_SUB_META} available={CRIME_INDICATORS} parentColor={color}
+                  isActive={(key) => crimeLayer === key} onSelect={setCrimeLayer} label={(key) => t(`sidebar.crime.${key}`)} />
+                <CrimeLegend cityId={city.id} indicator={crimeLayer} />
               </>
             );
           } else if (layer === 'ev-charging' && active) {

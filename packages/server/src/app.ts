@@ -34,6 +34,7 @@ import { createParkingRouter } from './routes/parking.js';
 import { createElectricityRouter } from './routes/electricity.js';
 import { createCitizenReportsRouter } from './routes/citizen-reports.js';
 import { createTrafficAccidentsRouter } from './routes/traffic-accidents.js';
+import { createCrimeAtlasRouter } from './routes/crime-atlas.js';
 import { createTrafficCountsRouter } from './routes/traffic-counts.js';
 import { createEvChargingRouter } from './routes/ev-charging.js';
 import { createSoilMoistureRouter } from './routes/soil-moisture.js';
@@ -77,6 +78,7 @@ import { createParkingIngestion } from './cron/ingest-parking.js';
 import { createElectricityIngestion } from './cron/ingest-electricity.js';
 import { createCitizenReportIngestion } from './cron/ingest-citizen-reports.js';
 import { createTrafficAccidentIngestion } from './cron/ingest-traffic-accidents.js';
+import { createCrimeAtlasIngestion } from './cron/ingest-crime-atlas.js';
 import { createTrafficCountIngestion } from './cron/ingest-traffic-counts.js';
 import { createEvChargingIngestion, createEvChargingStatusIngestion } from './cron/ingest-ev-charging.js';
 import { createSoilMoistureIngestion } from './cron/ingest-soil-moisture.js';
@@ -230,6 +232,7 @@ export async function createApp(options?: {
     // A day: each run counts yesterday, so a row from before today's first run is a day behind
     { jobName: 'ingest-telraam-counts', tableName: 'snapshots', maxAgeSeconds: 86400, filter: { column: 'type', value: 'telraam-counts' }, serves: (c) => !!c.dataSources.telraamCounts },
     { jobName: 'ingest-election-results', tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'election-results' }, serves: (c) => !!c.dataSources.electionResults },
+    { jobName: 'ingest-crime-atlas', tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'kriminalitaetsatlas' }, serves: (c) => !!c.dataSources.crimeAtlas },
     { jobName: 'ingest-feuerwehr',    tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'bf-feuerwehr' }, serves: inBerlin },
     { jobName: 'ingest-pollen',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'dwd-pollen' }, serves: (c) => !!c.dataSources.pollen },
     { jobName: 'ingest-noise-sensors', tableName: 'snapshots', maxAgeSeconds: 1800,   filter: { column: 'type', value: 'sc-dnms' }, serves: (c) => !!c.dataSources.noiseSensors },
@@ -276,6 +279,7 @@ export async function createApp(options?: {
   const ingestElectricity = createElectricityIngestion(cache, db);
   const ingestCitizenReports = createCitizenReportIngestion(cache, db);
   const ingestTrafficAccidents = createTrafficAccidentIngestion(cache, db);
+  const ingestCrimeAtlas = createCrimeAtlasIngestion(cache, db);
   const ingestTrafficCounts = createTrafficCountIngestion(cache, db);
   const ingestEvCharging = createEvChargingIngestion(cache, db);
   const ingestEvChargingStatus = createEvChargingStatusIngestion(cache);
@@ -354,6 +358,8 @@ export async function createApp(options?: {
     { name: 'ingest-telraam-counts', schedule: '25 4,11 * * *', handler: ingestTelraamCounts, runOnStart: s('ingest-telraam-counts') },
     // Final election results change only with a correction: monthly is plenty
     { name: 'ingest-election-results', schedule: '30 5 3 * *', handler: ingestElectionResults, runOnStart: s('ingest-election-results') },
+    // The Kriminalitätsatlas adds one year each autumn: a monthly run picks it up within weeks
+    { name: 'ingest-crime-atlas', schedule: '0 5 3 * *', handler: ingestCrimeAtlas, runOnStart: s('ingest-crime-atlas') },
     { name: 'ingest-feuerwehr', schedule: '0 8 * * *', handler: ingestFeuerwehr, runOnStart: s('ingest-feuerwehr') },
     { name: 'ingest-pollen', schedule: '0 */6 * * *', handler: ingestPollen, runOnStart: s('ingest-pollen') },
     { name: 'ingest-noise-sensors', schedule: '*/10 * * * *', handler: ingestNoiseSensors, runOnStart: s('ingest-noise-sensors') },
@@ -390,6 +396,7 @@ export async function createApp(options?: {
     app.use('/api/:city/aeds', heavyPayloadLimit);
     app.use('/api/:city/bike-sharing', heavyPayloadLimit);
     app.use('/api/:city/traffic-accidents', heavyPayloadLimit);
+    app.use('/api/:city/crime-atlas', heavyPayloadLimit);
     app.use('/api/:city/traffic-counts', heavyPayloadLimit);
     app.use('/api/:city/ev-charging', heavyPayloadLimit);
     app.use('/api/:city/election-results', heavyPayloadLimit);
@@ -434,6 +441,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(43200), createTrafficAccidentsRouter(cache, db));
   app.use('/api', cacheFor(3600), createTelraamCountsRouter(cache, db));
   app.use('/api', cacheFor(43200), createElectionResultsRouter(cache, db));
+  app.use('/api', cacheFor(43200), createCrimeAtlasRouter(cache, db));
   app.use('/api', cacheFor(43200), createFeuerwehrRouter(cache, db));
   app.use('/api', cacheFor(43200), createPollenRouter(cache, db));
   app.use('/api', cacheFor(300), createNoiseSensorsRouter(cache, db));

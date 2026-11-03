@@ -37,6 +37,7 @@ import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
 import { useBikeSharing } from '../../hooks/useBikeSharing.js';
 import { useCitizenReports } from '../../hooks/useCitizenReports.js';
 import { useTrafficAccidents } from '../../hooks/useTrafficAccidents.js';
+import { useCrimeAtlas } from '../../hooks/useCrimeAtlas.js';
 import { useTrafficCounts } from '../../hooks/useTrafficCounts.js';
 import { useHeatRelief } from '../../hooks/useHeatRelief.js';
 import { useTelraamCounts } from '../../hooks/useTelraamCounts.js';
@@ -68,6 +69,7 @@ import { updateParkingMarkers } from './layers/parking.js';
 import { useParking } from '../../hooks/useParking.js';
 import { updateCitizenReportMarkers } from './layers/citizen-reports.js';
 import { updateTrafficAccidentLayer } from './layers/traffic-accidents.js';
+import { updateCrimeAtlasLayer } from './layers/crime-atlas.js';
 import { updateTrafficCountMarkers } from './layers/traffic-counts.js';
 import { updateEvChargingMarkers } from './layers/ev-charging.js';
 import { useEvCharging } from '../../hooks/useEvCharging.js';
@@ -273,6 +275,10 @@ export function CityMap() {
   const accidentsActive = activeLayers.has('accidents');
   const accidentFilter = useCommandCenter((s) => s.accidentFilter);
   const { data: accidentData } = useTrafficAccidents(city.id, accidentsActive);
+  // Lazy: Berlin's 143 Bezirksregionen with outlines are about 200 KB
+  const crimeActive = activeLayers.has('crime');
+  const crimeLayer = useCommandCenter((s) => s.crimeLayer);
+  const { data: crimeData } = useCrimeAtlas(city.id, crimeActive);
   // Lazy as well: Berlin's ~3,500 charging stations are about 600 KB
   const evChargingActive = activeLayers.has('ev-charging');
   const { data: evChargingData } = useEvCharging(city.id, evChargingActive, city.features.includes('evChargingLive'));
@@ -363,6 +369,7 @@ export function CityMap() {
   const bikeSharingItems = bikeSharingActive ? (bikeSharingData?.data ?? null) : null;
   const parkingItems = parkingActive ? (parkingData?.data ?? null) : null;
   const accidentItems = accidentsActive ? (accidentData?.data ?? null) : null;
+  const crimeAtlas = crimeActive ? (crimeData?.data ?? null) : null;
   const trafficCountItems = trafficCountModes.size > 0 ? (trafficCountData?.data ?? null) : null;
   const evChargingItems = evChargingActive ? (evChargingData?.data ?? null) : null;
   const heatReliefItems = heatReliefActive ? (heatReliefData?.data ?? null) : null;
@@ -415,6 +422,10 @@ export function CityMap() {
   accidentItemsRef.current = accidentItems;
   const accidentFilterRef = useRef(accidentFilter);
   accidentFilterRef.current = accidentFilter;
+  const crimeAtlasRef = useRef(crimeAtlas);
+  crimeAtlasRef.current = crimeAtlas;
+  const crimeLayerRef = useRef(crimeLayer);
+  crimeLayerRef.current = crimeLayer;
   const trafficCountItemsRef = useRef(trafficCountItems);
   trafficCountItemsRef.current = trafficCountItems;
   const trafficCountModesRef = useRef(trafficCountModes);
@@ -540,6 +551,7 @@ export function CityMap() {
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
         updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
         updateElectionLayer(map, electionGeoJsonRef.current, electionResultsRef.current, isDarkRef.current);
+        updateCrimeAtlasLayer(map, crimeAtlasRef.current, crimeLayerRef.current, isDarkRef.current);
         setWeatherOverlay(map, weatherActiveRef.current);
         setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
         setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
@@ -661,6 +673,7 @@ export function CityMap() {
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
       updateElectionLayer(map, electionGeoJsonRef.current, electionResultsRef.current, isDark);
+      updateCrimeAtlasLayer(map, crimeAtlasRef.current, crimeLayerRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
       setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
@@ -1032,6 +1045,15 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [electionGeoJson, electionResults]);
+  // Update the crime choropleth (lazy: data only while the layer is on) and its offence group
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateCrimeAtlasLayer(map, crimeAtlas, crimeLayer, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [crimeAtlas, crimeLayer]);
 
   // Political layer: swap GeoJSON source + apply/reset styling
   const politicalData = politicalLayer === 'bundestag'
