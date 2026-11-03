@@ -14,7 +14,7 @@ import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { loadAreaOutlines } from '../lib/area-outlines.js';
-import { loadWorkbook, sheetToAoa } from '../lib/xlsx.js';
+import { readSheets } from '../lib/xlsx.js';
 import { buildCrimeAtlas, newestCrimeYear, parseCrimeSheet } from '../lib/crime-atlas.js';
 
 const log = createLogger('ingest-crime-atlas');
@@ -51,14 +51,16 @@ async function ingestCityCrimeAtlas(city: CityConfig, source: CrimeAtlasSource, 
     log.warn(`${city.id}: crime atlas XLSX returned ${res.status}`);
     return;
   }
-  const wb = await loadWorkbook(await res.arrayBuffer());
-  const year = newestCrimeYear(wb.worksheets.map((ws) => ws.name));
+  // Every year's two sheets are kept (about 150 rows each); the newest pair is picked from the names
+  const { names, sheets } = await readSheets(await res.arrayBuffer(), (name) => /^(Fallzahlen|HZ)_\d{4}$/.test(name.trim()));
+  const year = newestCrimeYear(names);
   if (year === null) {
     log.warn(`${city.id}: no Fallzahlen_<year> and HZ_<year> sheets in the crime atlas`);
     return;
   }
-  const counts = parseCrimeSheet(sheetToAoa(wb.getWorksheet(`Fallzahlen_${year}`)!));
-  const rates = parseCrimeSheet(sheetToAoa(wb.getWorksheet(`HZ_${year}`)!));
+  const sheet = (prefix: string) => [...sheets].find(([name]) => name.trim() === `${prefix}_${year}`)![1];
+  const counts = parseCrimeSheet(sheet('Fallzahlen'));
+  const rates = parseCrimeSheet(sheet('HZ'));
   const built = buildCrimeAtlas(year, counts, rates, await loadAreaOutlines(source.outlines));
   if (!built || built.data.geojson.features.length === 0) {
     log.warn(`${city.id}: no crime atlas areas for ${year} (missing Berlin row or outlines)`);

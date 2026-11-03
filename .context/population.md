@@ -66,7 +66,7 @@ Config-driven: the job runs for every active city with `dataSources.population`,
 
 ### Ingestion Flow
 
-1. Fetch the source named in the city config (60s timeout) and parse it with the provider's parser (Berlin: sheets T2 and Schlüssel via ExcelJS, `lib/xlsx.ts`)
+1. Fetch the source named in the city config (60s timeout) and parse it with the provider's parser (Berlin: sheets T2 and Schlüssel, streamed with `readSheets` in `lib/xlsx.ts`, which keeps only those two and fills merged ranges; a heavy job, see [server.md](server.md#memory-at-startup))
 2. For each area: total, youth (0-17), elderly (65+), foreign count, and the area if the source gives one
 3. Polygons: Berlin from the social atlas cache (`CK.socialAtlasGeojson`), the others from their outline file (`lib/area-outlines.ts`; München's carries the area too)
 4. Area: the source's, else the outline's, else the polygon's via the geodetic Shoelace formula (`polygonAreaKm2`)

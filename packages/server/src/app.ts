@@ -321,10 +321,10 @@ export async function createApp(options?: {
     { name: 'ingest-uba-air-quality', schedule: '10,40 * * * *', handler: ingestUbaAirQuality, runOnStart: s('ingest-uba-air-quality') },
     { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction, runOnStart: s('ingest-construction') },
     { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: s('ingest-aeds') },
-    { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },
+    { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas'), heavy: true },
     // Static lists (cool places, fountains, toilets) that change a few times a year
     { name: 'ingest-heat-relief', schedule: '30 5 * * 1', handler: ingestHeatRelief, runOnStart: s('ingest-heat-relief') },
-    { name: 'ingest-hospitals', schedule: '45 5 * * 1', handler: ingestHospitals, runOnStart: s('ingest-hospitals') },
+    { name: 'ingest-hospitals', schedule: '45 5 * * 1', handler: ingestHospitals, runOnStart: s('ingest-hospitals'), heavy: true },
     { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: s('ingest-water-levels') },
     // The Wasserportal's online stations send 15-minute values; off the quarter hour so the newest has landed
     { name: 'ingest-water-temperature', schedule: '4,19,34,49 * * * *', handler: ingestWaterTemperature, runOnStart: s('ingest-water-temperature') },
@@ -347,24 +347,24 @@ export async function createApp(options?: {
     // Hourly counts that arrive over one to two hours: every 15 min picks up a new hour soon after most counters have it
     { name: 'ingest-traffic-counts', schedule: '*/15 * * * *', handler: ingestTrafficCounts, runOnStart: s('ingest-traffic-counts') },
     // The BNetzA register is monthly (a 55 MB CSV); a weekly look picks up a new edition within days
-    { name: 'ingest-ev-charging', schedule: '30 4 * * 3', handler: ingestEvCharging, runOnStart: s('ingest-ev-charging') },
+    { name: 'ingest-ev-charging', schedule: '30 4 * * 3', handler: ingestEvCharging, runOnStart: s('ingest-ev-charging'), heavy: true },
     // Hamburg's live charge-point status, not stored, so always on start
     { name: 'ingest-ev-charging-status', schedule: '*/5 * * * *', handler: ingestEvChargingStatus, runOnStart: true },
     // The DWD regenerates its soil files once a day, around 09:00 UTC; the afternoon run catches a late one
-    { name: 'ingest-soil-moisture', schedule: '30 10,16 * * *', handler: ingestSoilMoisture, runOnStart: s('ingest-soil-moisture') },
-    { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
+    { name: 'ingest-soil-moisture', schedule: '30 10,16 * * *', handler: ingestSoilMoisture, runOnStart: s('ingest-soil-moisture'), heavy: true },
+    { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater'), heavy: true },
     // The RKI overwrites both files once a week (data cut Wednesday 0:00); a daily run picks them up within a day
     { name: 'ingest-respiratory-cases', schedule: '15 6 * * *', handler: ingestRespiratoryCases, runOnStart: s('ingest-respiratory-cases') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
-    { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
+    { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'], heavy: true },
     // The Unfallatlas publishes one year each July: a monthly run picks it up within weeks
-    { name: 'ingest-traffic-accidents', schedule: '0 5 2 * *', handler: ingestTrafficAccidents, runOnStart: s('ingest-traffic-accidents') },
+    { name: 'ingest-traffic-accidents', schedule: '0 5 2 * *', handler: ingestTrafficAccidents, runOnStart: s('ingest-traffic-accidents'), heavy: true },
     // Berlin zählt Mobilität rebuilds its files at about 02:15 local time; the second run catches a late night
-    { name: 'ingest-telraam-counts', schedule: '25 4,11 * * *', handler: ingestTelraamCounts, runOnStart: s('ingest-telraam-counts') },
+    { name: 'ingest-telraam-counts', schedule: '25 4,11 * * *', handler: ingestTelraamCounts, runOnStart: s('ingest-telraam-counts'), heavy: true },
     // Final election results change only with a correction: monthly is plenty
-    { name: 'ingest-election-results', schedule: '30 5 3 * *', handler: ingestElectionResults, runOnStart: s('ingest-election-results') },
+    { name: 'ingest-election-results', schedule: '30 5 3 * *', handler: ingestElectionResults, runOnStart: s('ingest-election-results'), heavy: true },
     // The Kriminalitätsatlas adds one year each autumn: a monthly run picks it up within weeks
-    { name: 'ingest-crime-atlas', schedule: '0 5 3 * *', handler: ingestCrimeAtlas, runOnStart: s('ingest-crime-atlas') },
+    { name: 'ingest-crime-atlas', schedule: '0 5 3 * *', handler: ingestCrimeAtlas, runOnStart: s('ingest-crime-atlas'), heavy: true },
     { name: 'ingest-feuerwehr', schedule: '0 8 * * *', handler: ingestFeuerwehr, runOnStart: s('ingest-feuerwehr') },
     { name: 'ingest-pollen', schedule: '0 */6 * * *', handler: ingestPollen, runOnStart: s('ingest-pollen') },
     { name: 'ingest-noise-sensors', schedule: '*/10 * * * *', handler: ingestNoiseSensors, runOnStart: s('ingest-noise-sensors') },

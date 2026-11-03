@@ -2,10 +2,11 @@ import { gzipSync } from 'node:zlib';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SoilMoistureData } from '@city-monitor/shared';
 import { createCache } from '../lib/cache.js';
+import { responseLines } from '../lib/stream-lines.js';
 import type { Db } from '../db/index.js';
 import { berlin } from '../config/cities/berlin.js';
 import {
-  createSoilMoistureIngestion, meanHistory, parseDwdSoilFile, parseWateringCsv, stationFileUrl, summarizeWatering,
+  createSoilMoistureIngestion, meanHistory, parseDwdSoilFile, parseWateringCsv, parseWateringLines, stationFileUrl, summarizeWatering,
 } from './ingest-soil-moisture.js';
 
 const mockSave = vi.fn().mockResolvedValue(undefined);
@@ -100,6 +101,20 @@ describe('Gieß den Kiez waterings', () => {
   it('gives nothing without rows and throws without its columns', () => {
     expect(summarizeWatering([], NOW)).toBeNull();
     expect(() => parseWateringCsv('a;b;c\n1;2;3')).toThrow(/timestamp/);
+  });
+
+  it('parses a response streamed in small chunks to the same rows', async () => {
+    // 7-byte chunks cut lines, the CRLF pairs and the multi-byte "ö" of Neukölln
+    const bytes = Buffer.from(String.fromCharCode(0xfeff) + csv, 'utf8');
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (let i = 0; i < bytes.length; i += 7) controller.enqueue(new Uint8Array(bytes.subarray(i, i + 7)));
+        controller.close();
+      },
+    });
+    const rows = await parseWateringLines(responseLines(new Response(body)));
+    expect(rows).toEqual(parseWateringCsv(csv));
+    expect(rows.find((r) => r.tree === 't4')?.district).toBe('Neukölln');
   });
 });
 

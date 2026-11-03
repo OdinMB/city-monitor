@@ -169,6 +169,94 @@ describe('Scheduler', () => {
     expect(jobInfo?.lastRun).toBeNull(); // lastRun only updated on success
   });
 
+  it('runs heavy startup jobs one at a time, light ones alongside', async () => {
+    let heavyActive = 0;
+    let maxHeavy = 0;
+    const order: string[] = [];
+    const heavy = (name: string) => vi.fn(async () => {
+      heavyActive++;
+      maxHeavy = Math.max(maxHeavy, heavyActive);
+      order.push(`${name}-start`);
+      await new Promise((r) => setTimeout(r, 20));
+      order.push(`${name}-end`);
+      heavyActive--;
+    });
+    const light = vi.fn(async () => { order.push('light'); });
+
+    createScheduler([
+      { name: 'h1', schedule: '* * * * *', handler: heavy('h1'), runOnStart: true, heavy: true },
+      { name: 'h2', schedule: '* * * * *', handler: heavy('h2'), runOnStart: true, heavy: true },
+      { name: 'h3', schedule: '* * * * *', handler: heavy('h3'), runOnStart: true, heavy: true },
+      { name: 'l', schedule: '* * * * *', handler: light, runOnStart: true },
+    ]);
+    await new Promise((r) => setTimeout(r, 150));
+
+    expect(maxHeavy).toBe(1);
+    expect(order.filter((e) => e !== 'light')).toEqual(['h1-start', 'h1-end', 'h2-start', 'h2-end', 'h3-start', 'h3-end']);
+    // The light job did not wait for the heavy queue
+    expect(order.indexOf('light')).toBeLessThan(order.indexOf('h1-end'));
+  });
+
+  it('keeps startup runs to the concurrency limit, and heavy jobs waiting for the lock hold no slot', async () => {
+    let active = 0;
+    let maxActive = 0;
+    const started: string[] = [];
+    const job = (name: string, heavy = false): ScheduledJob => ({
+      name, schedule: '* * * * *', runOnStart: true, heavy,
+      handler: async () => {
+        active++;
+        maxActive = Math.max(maxActive, active);
+        started.push(name);
+        await new Promise((r) => setTimeout(r, 20));
+        active--;
+      },
+    });
+
+    createScheduler([job('h1', true), job('h2', true), job('h3', true), job('a'), job('b'), job('c')], { startupConcurrency: 2 });
+    await new Promise((r) => setTimeout(r, 200));
+    expect(maxActive).toBe(2);
+    expect(started).toHaveLength(6);
+    // h2 and h3 wait for the heavy lock without taking a slot, so the light jobs are not starved behind them
+    expect(started.indexOf('c')).toBeLessThan(started.indexOf('h3'));
+  });
+
+  it('serialises a heavy cron run behind a heavy startup run', async () => {
+    let release: (() => void) | null = null;
+    const order: string[] = [];
+    const slow = vi.fn(async () => {
+      order.push('slow-start');
+      await new Promise<void>((r) => { release = r; });
+      order.push('slow-end');
+    });
+    const other = vi.fn(async () => { order.push('other'); });
+
+    createScheduler([
+      { name: 'slow', schedule: '* * * * *', handler: slow, runOnStart: true, heavy: true },
+      { name: 'other', schedule: '* * * * *', handler: other, heavy: true },
+    ]);
+    await new Promise((r) => setTimeout(r, 10));
+
+    const { default: nodeCron } = await import('node-cron');
+    const otherCron = vi.mocked(nodeCron.schedule).mock.calls[1]![1] as () => Promise<void>;
+    const run = otherCron();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(other).not.toHaveBeenCalled();
+
+    release!();
+    await run;
+    expect(order).toEqual(['slow-start', 'slow-end', 'other']);
+  });
+
+  it('keeps the heavy queue going after a heavy job fails', async () => {
+    const after = vi.fn().mockResolvedValue(undefined);
+    createScheduler([
+      { name: 'bad', schedule: '* * * * *', handler: vi.fn().mockRejectedValue(new Error('boom')), runOnStart: true, heavy: true },
+      { name: 'after', schedule: '* * * * *', handler: after, runOnStart: true, heavy: true },
+    ]);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(after).toHaveBeenCalledOnce();
+  });
+
   it('handles errors in dependency — dependent still runs', async () => {
     const feedsHandler = vi.fn().mockRejectedValue(new Error('feeds failed'));
     const summarizeHandler = vi.fn().mockResolvedValue(undefined);

@@ -6,7 +6,7 @@ import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { loadAreaOutlines } from '../lib/area-outlines.js';
-import { loadWorkbook, sheetToAoa } from '../lib/xlsx.js';
+import { readSheets } from '../lib/xlsx.js';
 import { fetchIndikatorCsv } from '../lib/muenchen-indikatorenatlas.js';
 import {
   mssLayerNames, parseHamburgSozialmonitoring, parseKoelnSocialAtlas, parseMss, parseMuenchenSocialAtlas,
@@ -85,11 +85,11 @@ async function fetchAreas(cityId: string, source: SocialAtlasSource): Promise<So
     case 'hh-sozialmonitoring': {
       const res = await fetchOk(cityId, source.xlsxUrl, 'Sozialmonitoring XLSX');
       if (!res) return null;
-      const wb = await loadWorkbook(await res.arrayBuffer());
-      const indexSheet = wb.getWorksheet('I_Indizes');
-      const indicatorSheet = wb.getWorksheet('II_Indikatoren');
+      const { sheets } = await readSheets(await res.arrayBuffer(), (name) => name === 'I_Indizes' || name === 'II_Indikatoren');
+      const indexSheet = sheets.get('I_Indizes');
+      const indicatorSheet = sheets.get('II_Indikatoren');
       if (!indexSheet || !indicatorSheet) throw new Error('Sozialmonitoring XLSX lacks I_Indizes or II_Indikatoren');
-      return parseHamburgSozialmonitoring(sheetToAoa(indexSheet), sheetToAoa(indicatorSheet));
+      return parseHamburgSozialmonitoring(indexSheet, indicatorSheet);
     }
     case 'muenchen-indikatorenatlas': {
       // One dataset per indicator; a failed one fails the run, so no slot silently goes blank.

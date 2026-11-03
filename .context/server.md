@@ -12,7 +12,7 @@
 4. Warm cache from Postgres if DB connected — reads run **in parallel** across cities and within each city via `Promise.allSettled`
 5. Run freshness check (`findStaleJobs`) — queries the newest `fetched_at` of each domain's table for every active city the job serves. A job is fresh when each of those cities has data newer than its cron interval; a job with any city stale or missing is flagged for startup ingestion ([data-layer.md](data-layer.md#freshness-checks-warm-cachets)). When Berlin is not active, the Berlin-only jobs (`BERLIN_ONLY_JOBS`, see below) are left out of the check
 6. Create ingestion functions — each receives cache and optionally db
-7. Create scheduler with cron jobs. Only stale domains get `runOnStart: true`; fresh domains skip startup API calls. The exception is `ingest-aq-grid`, which has no freshness spec and always runs on start: its stored grid holds no WAQI stations (see weather.md). Without a DB, all domains are marked stale (preserves cache-only behavior). Startup runs execute **in parallel**, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`)
+7. Create scheduler with cron jobs. Only stale domains get `runOnStart: true`; fresh domains skip startup API calls. The exception is `ingest-aq-grid`, which has no freshness spec and always runs on start: its stored grid holds no WAQI stations (see weather.md). Without a DB, all domains are marked stale (preserves cache-only behavior). Startup runs execute in parallel, at most `STARTUP_CONCURRENCY` (4) at a time, jobs marked `heavy` one at a time, respecting `dependsOn` ordering (e.g. `summarize-news` waits for `ingest-feeds`). See [Memory at startup](#memory-at-startup)
 8. Mount routers under `/api` with per-route Cache-Control headers
 9. Return `{ app, cache, db, scheduler }`
 
@@ -74,7 +74,30 @@ Applied via middleware per route tier:
 
 ## Scheduler (`packages/server/src/lib/scheduler.ts`)
 
-Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: string[]` for startup ordering — jobs with unmet dependencies wait; all others run in parallel.
+Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: string[]` for startup ordering — jobs with unmet dependencies wait; all others run in parallel, up to `STARTUP_CONCURRENCY` startup runs at once (option `startupConcurrency`). `heavy: true` puts a job behind one FIFO lock shared by every heavy job, for its startup, cron and manual (`triggerJob`) runs alike; at startup a heavy job takes the lock before a concurrency slot, so heavy jobs waiting their turn never block light ones.
+
+### Memory at startup
+
+The starter instance has 512 MB and V8 sizes the heap to about 256 MB from it. In 2026-11, after ~17 sources were added, a fresh instance found nearly every job stale, ran all of them at once and died 8 seconds in ("Ineffective mark-compacts near heap limit"); Render kept the old instance, so every deploy failed. Measured with `--max-old-space-size=256`, live sources, each job alone (heap growth over a 34 MB baseline):
+
+| Job | Before | After |
+|-----|--------|-------|
+| `ingest-election-results` (Berlin's 2.5 MB XLSX) | +202 MB | +38 MB |
+| `ingest-crime-atlas` | +70 MB | +22 MB |
+| `ingest-population` | +59 MB | +38 MB |
+| `ingest-hospitals` | +62 MB | (unchanged) |
+| `ingest-social-atlas` | +46 MB | (unchanged) |
+| `ingest-soil-moisture` (Gieß den Kiez CSV) | +31 MB | +33 MB |
+| `ingest-telraam-counts`, `ingest-ev-charging`, `ingest-wastewater`, `ingest-traffic-accidents` | +15 to +27 MB | (unchanged) |
+| every other job | +0 to +20 MB | (unchanged) |
+| **cold start: all 43 ingestion jobs through the scheduler, no DB** | heap out of memory after 7.5 s | 135 MB peak heap (+101), done in 142 s |
+
+What keeps it down:
+
+- **XLSX is read as a stream** (`readSheets` in `lib/xlsx.ts`, ExcelJS's `WorkbookReader`): only the wanted sheets' rows are kept. Loading the whole workbook built a cell object for every cell of every sheet. The stream reader skips merged ranges, so `readSheets` reads them from the sheet XML and copies the top-left value across, as a loaded workbook did; it also reads the sheet list, styles and shared strings first (`primeReader`), because the reader otherwise spills sheets to temp files or loses their names when a file stores those parts after the sheets. Never `new ExcelJS.Workbook().xlsx.load` in a job.
+- **Large text files are read line by line** (`responseLines`/`streamLines` in `lib/stream-lines.ts`, or a streaming CSV reader), keeping only the rows of the configured cities: never `await res.text()` on a file of several MB.
+- **Heavy jobs run one at a time** (`heavy: true` in app.ts): social atlas, hospitals, EV charging register, soil moisture, wastewater, population, traffic accidents, Telraam, election results, crime atlas. Mark a new job heavy when it downloads more than a few MB or parses a spreadsheet, and measure it alone with `--max-old-space-size=256` before adding it.
+- **At most 4 startup runs at once**, so a cold start's 40-odd responses and parse results are never alive together.
 
 ### Jobs (defined in app.ts)
 
