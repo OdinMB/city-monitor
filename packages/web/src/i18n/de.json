@@ -540,7 +540,8 @@
       "road": "Straßenverkehr",
       "rail": "Schienenverkehr",
       "air": "Flugverkehr",
-      "live": "Live-Sensoren"
+      "live": "Live-Sensoren",
+      "zoomIn": "Zum Anzeigen der Lärmkarte bis auf Straßenebene hineinzoomen."
     },
     "water": {
       "levels": "Pegelstände",
