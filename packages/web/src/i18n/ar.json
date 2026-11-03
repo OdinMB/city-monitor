@@ -191,7 +191,29 @@
         "veryUnhealthy": "غير صحي جداً",
         "hazardous": "خطير"
       },
-      "stationCredit": "المحطات: World Air Quality Index Project والجهات المصدرة للبيانات"
+      "stationCredit": "المحطات: World Air Quality Index Project والجهات المصدرة للبيانات",
+      "ubaLevel": {
+        "veryGood": "جيدة جدًا",
+        "good": "جيدة",
+        "moderate": "متوسطة",
+        "poor": "سيئة",
+        "veryPoor": "سيئة جدًا",
+        "unknown": "لا يوجد مؤشر"
+      },
+      "ubaIndex": "مؤشر جودة الهواء (UBA)",
+      "officialStation": "محطة قياس رسمية",
+      "officialStations": "محطات القياس الرسمية (مؤشر جودة الهواء من UBA)",
+      "officialCredit": "المصدر:",
+      "setting": {
+        "traffic": "مرور",
+        "background": "خلفية",
+        "industrial": "صناعية"
+      },
+      "hourEnding": "الساعة المنتهية في {{time}}",
+      "model": "نموذج",
+      "modelled": "توقعات النموذج (CAMS)",
+      "measuredBackground": "مقيسة في محطات الخلفية الحضرية الرسمية، الساعة المنتهية في {{time}}",
+      "measuredAll": "مقيسة في محطات القياس الرسمية، الساعة المنتهية في {{time}}"
     },
     "map": {
       "title": "الخريطة",

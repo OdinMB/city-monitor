@@ -58,9 +58,13 @@
 - **Route on a cache miss**: `GET /api/:city/air-quality` calls Open-Meteo itself when `{cityId}:air-quality` is empty (TTL `AIR_QUALITY_TTL_SECONDS`, 3600s, no longer than the hourly weather run's interval, so it can lapse briefly while a run is under way; while BrightSky fails the run never reaches air quality, which then only this route refills). The call goes through `cache.fetch`: all concurrent requests share it, and a failure is negative-cached for 30s, during which the route answers `{ data: null, fetchedAt: null }` without calling upstream ([data-layer.md](data-layer.md#patterns)).
 - **Upstream data and attribution**: Open-Meteo serves the CAMS European air quality forecast (Copernicus Atmosphere Monitoring Service, ENSEMBLE data) and computes the European AQI from it. Open-Meteo asks users to credit both itself and the CAMS data provider, and the Copernicus licence asks for the notice "Contains modified Copernicus Atmosphere Monitoring Service information [year]" plus a statement that neither the European Commission nor ECMWF is responsible for its use. Both credits are on the Sources page (`packages/web/src/pages/SourcesPage.tsx`); keep them there while this endpoint is in use.
 
+### Official stations (UBA)
+
+Every city also has its state network's official stations from the Umweltbundesamt's Air Data API (dl-de/by-2-0), stored and archivable unlike WAQI. They are badges on the same air-quality map layer, feed the tile's pollutant values and replace its WAQI station list; on the map a WAQI point within 300 m of a UBA station is hidden as a duplicate. See [air-quality-stations.md](air-quality-stations.md).
+
 ### AQI scales on screen
 
-Two index scales are on screen. `packages/web/src/lib/aqi.ts` holds both band sets; never colour or name a value with the other scale's bands.
+Two index scales are on screen, plus UBA's five-class index at the official stations (`getUbaLevel`, `panel.airQuality.ubaLevel.*`; map badges, popups and the tile's official station list). `packages/web/src/lib/aqi.ts` holds both band sets; never colour or name a value with the other scale's bands.
 
 | Display | Values from | Scale |
 |---|---|---|

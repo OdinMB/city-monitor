@@ -14,7 +14,7 @@
 
 import SunCalc from 'suncalc';
 import type {
-  AedLocation, AirQuality, AirQualityGridPoint, BathingSpot, BikeSharingData, BikeStation, BudgetSummary, BuergeramtData,
+  AedLocation, AirQuality, AirQualityGridPoint, AirQualityStation, BathingSpot, BikeSharingData, BikeStation, BudgetSummary, BuergeramtData,
   CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, ElectricityData, EmergencyPharmacy,
   GridPoint, GridSignal,
   FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
@@ -87,6 +87,8 @@ export interface SyntheticData {
   liftOutages?: LiftOutageData;
   bikeSharing: BikeSharingData;
   electricity: ElectricityData;
+  /** Official stations (UBA), one per configured station code. */
+  airQualityStations: AirQualityStation[];
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -144,6 +146,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   liftOutages: (c) => c.dataSources.liftOutages !== undefined,
   bikeSharing: (c) => c.dataSources.bikeSharing !== undefined,
   electricity: (c) => c.dataSources.electricity !== undefined,
+  airQualityStations: (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -257,6 +260,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('liftOutages')) sets.liftOutages = generateLiftOutages(rng, now, place);
   if (has.has('bikeSharing')) sets.bikeSharing = generateBikeSharing(rng, now, city, place);
   if (has.has('electricity')) sets.electricity = generateElectricity(rng, now, city.dataSources.electricity!.controlArea);
+  if (has.has('airQualityStations')) sets.airQualityStations = generateAirQualityStations(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1569,6 +1573,36 @@ function generateElectricity(rng: Rng, now: Date, controlArea: ElectricityData['
     renewableHistory,
     grid,
   };
+}
+
+/**
+ * One made-up station per configured UBA code, near the city's anchors, the
+ * last hour fully measured. Every third is a traffic station, with more NO₂.
+ */
+function generateAirQualityStations(rng: Rng, now: Date, place: Place): AirQualityStation[] {
+  const codes = place.city.dataSources.airQuality?.ubaStations ?? [];
+  const { anchors } = place;
+  const measuredAt = new Date(Math.floor(now.getTime() / HOUR) * HOUR - HOUR).toISOString();
+  return codes.map((code, i): AirQualityStation => {
+    const anchor = anchors[i % anchors.length]!;
+    const traffic = i % 3 === 2;
+    const no2 = Math.round(rng.float(10, 30) + (traffic ? 20 : 0));
+    const pm10 = Math.round(rng.float(8, 30));
+    const pm25 = Math.round(pm10 * rng.float(0.5, 0.8));
+    const o3 = traffic ? null : Math.round(rng.float(5, 60));
+    // UBA's bands for the overall index, roughly: NO₂ and PM decide it here
+    const index = (no2 > 100 || pm10 > 50 ? 3 : no2 > 40 || pm10 > 35 || pm25 > 20 ? 2 : no2 > 20 || pm10 > 20 || pm25 > 10 ? 1 : 0) as AirQualityStation['index'];
+    return {
+      code,
+      name: `Synthetische Messstation ${anchor.name}${i >= anchors.length ? ' 2' : ''}`,
+      ...near(rng, anchor, 0.01),
+      setting: traffic ? 'traffic' : 'background',
+      network: 'XX',
+      measuredAt,
+      index,
+      no2, pm10, pm25, o3,
+    };
+  });
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

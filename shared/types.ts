@@ -69,6 +69,7 @@ export type CityFeature =
   | 'liftOutages'     // dataSources.liftOutages: lift and escalator outages (KVB Köln)
   | 'bikeSharing'     // dataSources.bikeSharing: bike-sharing stations on the map (nextbike GBFS, StadtRAD)
   | 'electricity'     // dataSources.electricity: generation mix of the grid control area, grid CO₂ and signal
+  | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -241,6 +242,12 @@ export interface CityDataSources {
   };
   airQuality?: {
     sensorCommunityStations?: Array<{ sensorId: number; name: string; fallbackIds?: number[] }>;
+    /**
+     * Official measuring stations of the state networks, by their UBA station code
+     * ("DEBE010"), read hourly from the Umweltbundesamt's Air Data API
+     * (.context/air-quality-stations.md). A station without a recent reading is left out.
+     */
+    ubaStations?: string[];
   };
   transit?:
     | {
@@ -496,6 +503,32 @@ export interface AirQualityGridPoint {
   station: string;
   /** Link to station detail page */
   url?: string;
+}
+
+// Official air quality stations (UBA Air Data API, state networks)
+/** UBA air quality index class: 0 very good, 1 good, 2 moderate, 3 poor, 4 very poor. */
+export type UbaAirIndex = 0 | 1 | 2 | 3 | 4;
+
+export interface AirQualityStation {
+  /** UBA station code, e.g. "DEBE010". */
+  code: string;
+  /** Station name as UBA gives it ("Berlin Wedding", "München/Stachus"). */
+  name: string;
+  lat: number;
+  lon: number;
+  /** UBA station type: Verkehr (traffic), Hintergrund (background) or Industrie (industrial). */
+  setting: 'traffic' | 'background' | 'industrial';
+  /** State network code from UBA ("BE", "HH", "NW", "BY"). */
+  network: string;
+  /** End of the latest measured hour, UTC ISO 8601. */
+  measuredAt: string;
+  /** Overall index of that hour, the worst of its components' indices. */
+  index: UbaAirIndex | null;
+  /** One-hour means of that hour in µg/m³, null when the station does not measure the component. */
+  no2: number | null;
+  pm10: number | null;
+  pm25: number | null;
+  o3: number | null;
 }
 
 // Construction / roadworks (VIZ Berlin, Hamburg, Köln, München; see RoadworksSource)
@@ -972,6 +1005,7 @@ export interface BootstrapData {
   safety: ApiResponse<SafetyReport[]> | null;
   nina: ApiResponse<NinaWarning[]> | null;
   airQuality: ApiResponse<AirQuality | null> | null;
+  airQualityStations: ApiResponse<AirQualityStation[] | null> | null;
   pharmacies: ApiResponse<EmergencyPharmacy[]> | null;
   aeds: ApiResponse<AedLocation[]> | null;
   traffic: ApiResponse<TrafficIncident[]> | null;

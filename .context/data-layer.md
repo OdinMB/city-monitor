@@ -118,6 +118,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `lhp-flood` | LHP flood class of state gauges and flood warnings ([water-levels.md](water-levels.md#flood-status-lhp)) |
 | `vbb-disruptions` | VBB/HAFAS transit disruptions |
 | `aqi-grid` | Sensor.Community air quality points; the WAQI stations of the same grid are cached, never stored ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
+| `uba-airquality` | Official state-network air quality stations from the UBA Air Data API ([air-quality-stations.md](air-quality-stations.md)) |
 | `bbk-nina` | BBK NINA civil protection warnings |
 | `abgwatch-*` | Political districts (5 sub-types): `bundestag`, `state`, `state-bezirke` from abgeordnetenwatch; `bezirke` and `mayor` from the hand-kept tables in `ingest-political.ts` |
 
@@ -161,8 +162,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 | History | pegelonline | 30 days (history endpoint) |
 | History | ba-labor-market | 730 days / ~24 months (history endpoints) |
 | Non-history (short-lived) | aqi-grid | 6 hours, the age limit of `loadAirQualityGrid` (`AQ_GRID_MAX_AGE_MS`), newest row included (never `keepLatest`) + 100 row cap. Kept no longer than a read can use it, so no air-quality archive builds up ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
-| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, bike-sharing | 2 days + 100 row cap |
-| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, smard-electricity | 2 days + 100 row cap |
+| Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, bike-sharing, smard-electricity, uba-airquality | 2 days + 100 row cap |
 | Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr | 7 days + 100 row cap |
 | Non-history (infrequent, weekly/monthly jobs) | mss-social-atlas, afstat-population, abgwatch-* | 7 days, newest row per city kept (`keepLatest`) + 100 row cap |
 | Non-snapshot | news, events, safety | 3 days |

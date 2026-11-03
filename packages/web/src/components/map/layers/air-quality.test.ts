@@ -1,9 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import i18n from 'i18next';
 import type * as maplibregl from 'maplibre-gl';
-import type { AirQualityGridPoint } from '../../../lib/api.js';
+import type { AirQualityGridPoint, AirQualityStation } from '../../../lib/api.js';
 import { createVerticalBadgeIcon } from '../../../lib/map-icons.js';
-import { aqPopupHtml, updateAqGridLayer } from './air-quality';
+import { aqPopupHtml, ubaPopupHtml, updateAqGridLayer, updateUbaStationLayer } from './air-quality';
 
 // jsdom has no canvas text measurement; the badge drawing itself is tested in map-icons.test.ts.
 vi.mock('../../../lib/map-icons.js', async (importOriginal) => ({
@@ -182,5 +182,70 @@ describe('updateAqGridLayer attribution', () => {
     const map = fakeMap();
     updateAqGridLayer(map as unknown as maplibregl.Map, [], false, 'berlin');
     expect(map.addSource).not.toHaveBeenCalled();
+  });
+});
+
+const UBA_STATION: AirQualityStation = {
+  code: 'DEBE065', name: 'Berlin Frankfurter Allee', lat: 52.5141, lon: 13.4699, setting: 'traffic', network: 'BE',
+  measuredAt: '2026-11-02T23:00:00.000Z', index: 3, no2: 80, pm10: 25, pm25: 18, o3: null,
+};
+
+describe('updateUbaStationLayer', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('draws a landmark badge per class in the UBA colour, named in the UI language, with UBA’s source line', () => {
+    const map = fakeMap();
+    vi.mocked(createVerticalBadgeIcon).mockClear();
+    updateUbaStationLayer(map as unknown as maplibregl.Map, [UBA_STATION, { ...UBA_STATION, code: 'X', index: null }], false, 'en', 'Europe/Berlin');
+
+    expect(vi.mocked(createVerticalBadgeIcon).mock.calls.map(([, bg, , text]) => ({ bg, text }))).toEqual([
+      { bg: '#FF5050', text: 'Poor' },
+      { bg: '#9ca3af', text: 'No index' },
+    ]);
+    expect(map.addImage.mock.calls.map(([id]) => id)).toEqual(['uba-badge-poor-en', 'uba-badge-unknown-en']);
+    const spec = map.addSource.mock.calls[0][1] as { attribution: string; data: GeoJSON.FeatureCollection };
+    expect(parse(spec.attribution).textContent).toBe('Umweltbundesamt mit Daten der Messnetze der Länder und des Bundes (dl-de/by-2-0)');
+    expect(spec.data.features[0].properties).toMatchObject({ name: 'Berlin Frankfurter Allee', index: 3, no2: 80, o3: -1 });
+  });
+
+  it('adds nothing for no stations', () => {
+    const map = fakeMap();
+    updateUbaStationLayer(map as unknown as maplibregl.Map, [], false, 'en', 'Europe/Berlin');
+    expect(map.addSource).not.toHaveBeenCalled();
+  });
+});
+
+describe('ubaPopupHtml', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  const props = {
+    name: 'Berlin Frankfurter Allee', setting: 'traffic', measuredAt: '2026-11-02T23:00:00.000Z', timeZone: 'Europe/Berlin',
+    index: 3, no2: 80, pm10: 25, pm25: 18, o3: -1,
+  };
+
+  it('marks the station as official, gives its class, the measured values and the hour on the city’s clock', () => {
+    const el = parse(ubaPopupHtml(props));
+    const text = el.textContent!.replace(/\s+/g, ' ');
+    expect(text).toContain('Official measuring station · Traffic');
+    expect(text).toContain('UBA air quality index: Poor');
+    expect([...el.querySelectorAll('tr')].map((r) => r.textContent)).toEqual(['NO₂80 µg/m³', 'PM1025 µg/m³', 'PM2.518 µg/m³']);
+    expect(text).toContain('Hour ending');
+    expect(text).toContain('Umweltbundesamt mit Daten der Messnetze der Länder und des Bundes');
+  });
+
+  it('follows the UI language', async () => {
+    await i18n.changeLanguage('de');
+    const text = parse(ubaPopupHtml(props)).textContent!;
+    expect(text).toContain('Amtliche Messstation · Verkehr');
+    expect(text).toContain('Schlecht');
+  });
+
+  it('escapes a hostile station name', () => {
+    const el = parse(ubaPopupHtml({ ...props, name: MALICIOUS }));
+    expect(el.querySelector('img, script')).toBeNull();
   });
 });

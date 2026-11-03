@@ -72,6 +72,8 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['WAQI (World Air Quality Index Project)', () => true],
   ['Sensor.Community', (c) => (c.dataSources.airQuality?.sensorCommunityStations?.length ?? 0) > 0],
   ['Sensor.Community DNMS', (c) => c.dataSources.noiseSensors !== undefined],
+  // ingest-uba-air-quality: the state-network stations a city lists
+  ['Umweltbundesamt Air Data API', (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0],
   ['NINA (BBK)', (c) => c.country === 'DE' && c.dataSources.nina !== undefined],
   ['OpenStreetMap', (c) => c.country === 'DE'],
   ['TomTom Traffic', () => true],
@@ -191,6 +193,8 @@ describe('SourcesPage licence credits', () => {
     'OpenStreetMap': '© OpenStreetMap contributors, ODbL.',
     'Sensor.Community': '© Sensor.Community contributors, ODbL.',
     'Sensor.Community DNMS': '© Sensor.Community contributors, ODbL.',
+    // The source line the UBA Air Data API's OpenAPI spec asks for, dl-de/by-2-0
+    'Umweltbundesamt Air Data API': 'Source: Umweltbundesamt mit Daten der Messnetze der Länder und des Bundes, dl-de/by-2-0.',
     'RKI AMELAG Wastewater Surveillance': 'Source: Robert Koch-Institut, CC BY 4.0.',
     // smard.de/home/datennutzung names the credit "Bundesnetzagentur | SMARD.de"
     'SMARD (Bundesnetzagentur)': 'Source: Bundesnetzagentur | SMARD.de, CC BY 4.0.',

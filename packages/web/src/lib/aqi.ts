@@ -8,7 +8,12 @@
  * - US EPA AQI (bands at 50/100/150/200/300): the WAQI stations (aqicn.org).
  *   WAQI reports this scale and the server stores it unconverted in the grid's
  *   `europeanAqi` field, so a grid point's scale comes from `gridPointScale`.
+ *
+ * The official UBA stations carry a third one, UBA's five-class index
+ * (`getUbaLevel` below).
  */
+
+import type { AirQualityStation } from '@city-monitor/shared';
 
 export type AqiScale = 'eu' | 'us';
 
@@ -81,6 +86,105 @@ export function isWaqiStation(point: { url?: string }): boolean {
 /** Scale of an air quality grid point's value: US AQI for WAQI stations, European otherwise. */
 export function gridPointScale(point: { url?: string }): AqiScale {
   return isWaqiStation(point) ? 'us' : 'eu';
+}
+
+/* ── UBA air quality index (official stations) ─────────────────────────── */
+
+/**
+ * The Umweltbundesamt's air quality index of an official station: five classes
+ * (0 very good … 4 very poor), the worst of its NO₂, PM10, PM2.5 and O₃ classes.
+ * A third scale beside the two above, with its own names
+ * (`panel.airQuality.ubaLevel.*`) and a five-step ramp after the EEA's former
+ * index colours. Text on the three light colours is dark.
+ */
+const UBA_LEVELS: readonly AqiLevel[] = [
+  { label: 'veryGood', color: '#50F0E6', textColor: DARK },
+  { label: 'good', color: '#50CCAA', textColor: DARK },
+  { label: 'moderate', color: '#F0E641', textColor: DARK },
+  { label: 'poor', color: '#FF5050', textColor: DARK },
+  { label: 'veryPoor', color: '#960032', textColor: WHITE },
+].map((l) => ({ ...l, labelKey: `panel.airQuality.ubaLevel.${l.label}` }));
+
+/** Colour shown for a station whose hour has no overall index. */
+const UBA_UNKNOWN: AqiLevel = { label: 'unknown', labelKey: 'panel.airQuality.ubaLevel.unknown', color: '#9ca3af', textColor: DARK };
+
+/** Band of a UBA index class, or a grey "no index" band for null. */
+export function getUbaLevel(index: number | null): AqiLevel {
+  return index !== null && Number.isInteger(index) && index >= 0 && index <= 4 ? UBA_LEVELS[index]! : UBA_UNKNOWN;
+}
+
+/** The source line the UBA Air Data API asks for (dl-de/by-2-0), in its own German wording. */
+export const UBA_SOURCE_LINE = 'Umweltbundesamt mit Daten der Messnetze der Länder und des Bundes';
+
+/** Map attribution of the official stations' source. Fixed markup with no feed data in it. */
+export const UBA_MAP_ATTRIBUTION =
+  `<a href="https://www.umweltbundesamt.de/daten/luft/luftdaten" target="_blank" rel="noopener">${UBA_SOURCE_LINE}</a> (dl-de/by-2-0)`;
+
+/** "Berlin Wedding" → "Wedding", "München/Stachus" → "Stachus", "Köln-Chorweiler" → "Chorweiler". */
+export function shortStationName(name: string, cityName: string): string {
+  const short = name.startsWith(cityName) ? name.slice(cityName.length).replace(/^[\s/-]+/, '') : name;
+  return short || name;
+}
+
+type Pollutant = 'no2' | 'pm10' | 'pm25' | 'o3';
+
+export interface MeasuredValue {
+  /** Mean over the stations that measured it, rounded to one decimal. */
+  value: number;
+  stations: number;
+}
+
+export interface MeasuredSummary {
+  values: Record<Pollutant, MeasuredValue | null>;
+  /** Which stations the means are over: the urban background ones when there are any. */
+  basis: 'background' | 'all';
+  /** End of the newest measured hour among them. */
+  measuredAt: string;
+}
+
+/**
+ * City-wide measured concentrations: per pollutant, the mean over the
+ * background stations (those away from busy roads and industry, which is what
+ * a city-wide value describes and what the CAMS model resolves), or over all
+ * stations when none is a background station. Only stations reporting the
+ * newest hour count, so a station that stopped sending does not hold the
+ * mean back. Null without stations.
+ */
+export function measuredSummary(stations: readonly Pick<AirQualityStation, Pollutant | 'setting' | 'measuredAt'>[]): MeasuredSummary | null {
+  if (stations.length === 0) return null;
+  const background = stations.filter((s) => s.setting === 'background');
+  const basis = background.length > 0 ? 'background' : 'all';
+  const pool = basis === 'background' ? background : stations;
+  const measuredAt = pool.reduce((latest, s) => (s.measuredAt > latest ? s.measuredAt : latest), pool[0]!.measuredAt);
+  const current = pool.filter((s) => s.measuredAt === measuredAt);
+  const mean = (key: Pollutant): MeasuredValue | null => {
+    const vals = current.map((s) => s[key]).filter((v): v is number => v !== null);
+    if (vals.length === 0) return null;
+    return { value: Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10, stations: vals.length };
+  };
+  return { values: { no2: mean('no2'), pm10: mean('pm10'), pm25: mean('pm25'), o3: mean('o3') }, basis, measuredAt };
+}
+
+/** Distance in metres between two points (equirectangular, fine at city scale). */
+function metresBetween(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const k = Math.PI / 180;
+  const x = (b.lon - a.lon) * k * Math.cos(((a.lat + b.lat) / 2) * k);
+  const y = (b.lat - a.lat) * k;
+  return Math.sqrt(x * x + y * y) * 6_371_000;
+}
+
+/**
+ * The grid without the WAQI points that relay an official station the map
+ * already shows from UBA (a WAQI point within `radius` metres of one), so a
+ * station is not drawn twice. Sensor.Community points stay.
+ */
+export function withoutRelayedStations<T extends { lat: number; lon: number; url?: string }>(
+  grid: readonly T[],
+  stations: readonly { lat: number; lon: number }[],
+  radius = 300,
+): T[] {
+  if (stations.length === 0) return grid as T[];
+  return grid.filter((p) => !isWaqiStation(p) || !stations.some((s) => metresBetween(p, s) <= radius));
 }
 
 /** Agencies that run the official stations WAQI relays for a city. */

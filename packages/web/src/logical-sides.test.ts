@@ -96,6 +96,16 @@ const IN_PAGE_DIRECTION: { file: string; found: string; reason: string }[] = [
     found: '<a href=',
     reason: 'the link holds only an inline-block icon, placed as one character in the page direction after the station name',
   },
+  {
+    file: 'components/map/layers/air-quality.ts',
+    found: 'background-color:${};box-shadow:0 0 0 1px rgba(0,0,0,.3);margin-inline-end:4px',
+    reason: 'the UBA class swatch sits between the translated index label and the translated class name, all in the page direction',
+  },
+  {
+    file: 'components/strips/AirQualityStrip.tsx',
+    found: 'ms-1 text-[9px] font-normal',
+    reason: 'the translated "(model)" tag follows the pollutant label, in the page direction',
+  },
 ];
 
 /**

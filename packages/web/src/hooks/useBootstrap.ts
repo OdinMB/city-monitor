@@ -23,6 +23,7 @@ export function useBootstrap(cityId: string) {
     if (data.safety) queryClient.setQueryData(['safety', cityId], data.safety);
     if (data.nina) queryClient.setQueryData(['nina', cityId], data.nina);
     if (data.airQuality) queryClient.setQueryData(['air-quality', cityId], data.airQuality);
+    if (data.airQualityStations) queryClient.setQueryData(['air-quality-stations', cityId], data.airQualityStations);
     if (data.pharmacies) queryClient.setQueryData(['pharmacies', cityId], data.pharmacies);
     if (data.aeds) queryClient.setQueryData(['aeds', cityId], data.aeds);
     if (data.traffic) queryClient.setQueryData(['traffic', cityId], data.traffic);

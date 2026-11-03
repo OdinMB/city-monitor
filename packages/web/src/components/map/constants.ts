@@ -2,12 +2,13 @@
  * Map constants, color ramps, and shared type aliases.
  */
 
-import type { AirQualityGridPoint, WaterLevelStation } from '../../lib/api.js';
+import type { AirQualityGridPoint, AirQualityStation, WaterLevelStation } from '../../lib/api.js';
 
 export const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 export const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
 export const EMPTY_AQ: AirQualityGridPoint[] = [];
+export const EMPTY_UBA: AirQualityStation[] = [];
 export const EMPTY_WL: WaterLevelStation[] = [];
 
 /** Layers to KEEP — everything else gets hidden */

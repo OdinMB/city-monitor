@@ -30,6 +30,7 @@ export function createBootstrapRouter(cache: Cache) {
       safety: data[CK.safetyRecent(city.id)] ?? null,
       nina: nina ? { data: currentWarnings(nina.data), fetchedAt: nina.fetchedAt } : null,
       airQuality: data[CK.airQuality(city.id)] ?? null,
+      airQualityStations: data[CK.airQualityStations(city.id)] ?? null,
       pharmacies: data[CK.pharmacies(city.id)] ?? null,
       aeds: data[CK.aedLocations(city.id)] ?? null,
       traffic: data[CK.trafficIncidents(city.id)] ?? null,

@@ -27,6 +27,7 @@ export type {
   FloodStatus, FloodGauge, FloodAlert, FloodClass, LiftOutage, LiftOutageData,
   BikeStation, BikeSharingData,
   ElectricityData, ElectricityMix, GenerationKind, GridPoint, GridSignal, ControlArea,
+  AirQualityStation, UbaAirIndex,
 } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
@@ -38,7 +39,7 @@ import type {
   PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor,
   CouncilMeeting, NinaWarning, TrafficIncident, EmergencyPharmacy,
   PoliticalDistrict, TransitAlert, AirQuality, BootstrapData,
-  NewsSummaryData, FloodStatus, LiftOutageData, BikeSharingData, ElectricityData,
+  NewsSummaryData, FloodStatus, LiftOutageData, AirQualityStation, BikeSharingData, ElectricityData,
 } from '@city-monitor/shared';
 
 /** The levels `GET /api/:city/political/:level` serves (packages/server/src/routes/political.ts). */
@@ -55,6 +56,7 @@ export const api = {
   getNina: (city: string) => fetchJson<ApiResponse<NinaWarning[]>>(`${API_BASE}/${city}/nina`),
   getAirQuality: (city: string) => fetchJson<ApiResponse<AirQuality | null>>(`${API_BASE}/${city}/air-quality`),
   getAirQualityGrid: (city: string) => fetchJson<ApiResponse<AirQualityGridPoint[]>>(`${API_BASE}/${city}/air-quality/grid`),
+  getAirQualityStations: (city: string) => fetchJson<ApiResponse<AirQualityStation[] | null>>(`${API_BASE}/${city}/air-quality/stations`),
   getPharmacies: (city: string) => fetchJson<ApiResponse<EmergencyPharmacy[]>>(`${API_BASE}/${city}/pharmacies`),
   getTraffic: (city: string) => fetchJson<ApiResponse<TrafficIncident[]>>(`${API_BASE}/${city}/traffic`),
   getConstruction: (city: string) => fetchJson<ApiResponse<ConstructionSite[]>>(`${API_BASE}/${city}/construction`),

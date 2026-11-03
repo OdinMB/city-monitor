@@ -93,6 +93,8 @@ export const koeln: CityConfig = {
     },
     // DWD warn cell 105315000, by its name: warnings for this region alone.
     weather: { provider: 'brightsky', lat: 50.9375, lon: 6.9603, dwdWarnRegion: 'Stadt Köln' },
+    // The four LANUK (LUQS) stations inside the city in the UBA station list (checked 2026-11-03)
+    airQuality: { ubaStations: ['DENW053', 'DENW059', 'DENW211', 'DENW212'] },
     nina: { ars: '053150000000' }, // kreisfreie Stadt Köln, AGS 05315000
     aeds: { adminLevel: 6 },       // OSM boundary "Köln" of the kreisfreie Stadt
     pollen: {
