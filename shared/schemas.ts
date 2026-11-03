@@ -359,6 +359,29 @@ export const BikeSharingDataSchema = z.object({
   updated: z.string().nullable(),
 });
 
+// --- EV Charging (BNetzA Ladesäulenregister) ---
+
+/**
+ * The stored register of a city (`bnetza-charging` snapshot). `evse` holds the
+ * station ids of the place's EVSE ids ("DEHHME1011"), kept only in a city with
+ * a live status feed to merge on; the route drops it.
+ */
+export const EvChargingRegisterSchema = z.object({
+  edition: z.string(),
+  stations: z.array(z.object({
+    id: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    operator: z.string(),
+    address: z.string(),
+    points: z.number(),
+    maxKw: z.number().nullable(),
+    fast: z.boolean(),
+    plugs: z.array(z.enum(['type2', 'ccs', 'chademo', 'schuko', 'type1', 'mcs'])),
+    evse: z.array(z.string()).optional(),
+  })),
+});
+
 // --- Flood Status (LHP) ---
 
 export const FloodStatusSchema = z.object({

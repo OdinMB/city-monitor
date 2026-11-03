@@ -518,6 +518,7 @@
       "emergencies": "Notfall",
       "traffic": "Verkehr",
       "bike-sharing": "Leihräder",
+      "ev-charging": "E-Ladesäulen",
       "water": "Wasser",
       "social": "Soziales",
       "population": "Bevölkerung",
@@ -564,6 +565,16 @@
       "none": "Keine Räder",
       "few": "1–2 Räder",
       "many": "3 und mehr Räder"
+    },
+    "evLegend": {
+      "title": "Ladeleistung",
+      "normal": "Normal (bis 22 kW)",
+      "fast": "Schnell (über 22 kW)",
+      "hpc": "Ultraschnell (ab 150 kW)",
+      "liveTitle": "Live-Status (Ring)",
+      "available": "Ladepunkt frei",
+      "occupied": "Alle belegt",
+      "outOfOrder": "Außer Betrieb"
     },
     "population": {
       "pop-density": "Bevölkerungsdichte",
@@ -639,6 +650,28 @@
       "bikes": "Verfügbare Räder",
       "docks": "Freie Stellplätze",
       "updated": "Stand"
+    },
+    "ev": {
+      "points": "Ladepunkte",
+      "plugs": "Stecker",
+      "upTo": "bis",
+      "live": "Live: {{free}} von {{total}} frei",
+      "since": "seit",
+      "register": "Ladesäulenregister der BNetzA vom",
+      "status": {
+        "available": "Frei",
+        "occupied": "Belegt",
+        "outOfOrder": "Außer Betrieb",
+        "unknown": "Unbekannt"
+      },
+      "plug": {
+        "type2": "Typ 2",
+        "ccs": "CCS",
+        "chademo": "CHAdeMO",
+        "schuko": "Schuko",
+        "type1": "Typ 1",
+        "mcs": "MCS"
+      }
     }
   },
   "socialAtlas": {

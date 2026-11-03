@@ -8,6 +8,8 @@ import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } 
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
 import { BIKE_AVAILABILITY, getNoiseWmsMinZoom, getRentMapLegend } from '../map/constants.js';
+import { EvCharger } from 'lucide';
+import { EV_LIVE_STATES, EV_POWER_CLASSES } from '../map/constants.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -22,6 +24,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6' },
   // After the nine layers with a number key, so the badges stay in order
   { layer: 'bike-sharing', icon: Bike as IconNode, color: '#16a34a' },
+  { layer: 'ev-charging', icon: EvCharger as IconNode, color: '#0ea5e9' },
   { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
 ];
@@ -155,6 +158,37 @@ export function BikeSharingLegend() {
 }
 
 /**
+ * What the charging circles mean: their colour the power class, and in a city
+ * with a live feed (`live`) their ring the charge points' status.
+ */
+export function EvChargingLegend({ live }: { live: boolean }) {
+  const { t } = useTranslation();
+  const swatch = 'inline-block w-2.5 h-2.5 rounded-full shrink-0';
+  return (
+    <div className="ps-9 pe-2 py-1 space-y-1">
+      <ul aria-label={t('sidebar.evLegend.title')} className="space-y-0.5">
+        {EV_POWER_CLASSES.map(({ key, color }) => (
+          <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+            <span aria-hidden="true" className={`${swatch} border border-gray-400/60`} style={{ backgroundColor: color }} />
+            {t(`sidebar.evLegend.${key}`)}
+          </li>
+        ))}
+      </ul>
+      {live && (
+        <ul aria-label={t('sidebar.evLegend.liveTitle')} className="space-y-0.5">
+          {EV_LIVE_STATES.map(({ key, color }) => (
+            <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+              <span aria-hidden="true" className={`${swatch} border-2 bg-transparent`} style={{ borderColor: color }} />
+              {t(`sidebar.evLegend.${key}`)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/**
  * A layer's sub-layer buttons for the ones the city has, or nothing when it
  * has one or none: a lone sub-layer is the layer itself. `minItems` is 1 where
  * another button sits beside the list (noise's live sensors).
@@ -277,6 +311,8 @@ export function DataLayerToggles() {
             );
           } else if (layer === 'bike-sharing' && active) {
             subItems = <BikeSharingLegend />;
+          } else if (layer === 'ev-charging' && active) {
+            subItems = <EvChargingLegend live={city.features.includes('evChargingLive')} />;
           } else if (layer === 'emergencies' && active) {
             subItems = (
               <SubLayerList meta={EMERGENCY_SUB_META} available={available.emergencies} parentColor={color}

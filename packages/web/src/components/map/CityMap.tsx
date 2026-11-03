@@ -52,6 +52,8 @@ import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/chorople
 import { socialAtlasOf } from '../../lib/social-atlas.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 import { updateBikeSharingMarkers } from './layers/bike-sharing.js';
+import { updateEvChargingMarkers } from './layers/ev-charging.js';
+import { useEvCharging } from '../../hooks/useEvCharging.js';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -215,6 +217,9 @@ export function CityMap() {
   // Lazy: Berlin's stations are about 150 KB, fetched only while the layer is on
   const bikeSharingActive = activeLayers.has('bike-sharing');
   const { data: bikeSharingData } = useBikeSharing(city.id, bikeSharingActive);
+  // Lazy as well: Berlin's ~3,500 charging stations are about 600 KB
+  const evChargingActive = activeLayers.has('ev-charging');
+  const { data: evChargingData } = useEvCharging(city.id, evChargingActive, city.features.includes('evChargingLive'));
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke', available.political.includes('bezirke'));
   const { data: bundestagData } = usePolitical(city.id, 'bundestag', available.political.includes('bundestag'));
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke', available.political.includes('landesparlament'));
@@ -272,6 +277,7 @@ export function CityMap() {
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
   const bikeSharingItems = bikeSharingActive ? (bikeSharingData?.data ?? null) : null;
+  const evChargingItems = evChargingActive ? (evChargingData?.data ?? null) : null;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -308,6 +314,8 @@ export function CityMap() {
   noiseSensorItemsRef.current = noiseSensorItems;
   const bikeSharingItemsRef = useRef(bikeSharingItems);
   bikeSharingItemsRef.current = bikeSharingItems;
+  const evChargingItemsRef = useRef(evChargingItems);
+  evChargingItemsRef.current = evChargingItems;
   const waterLevelItemsRef = useRef(waterLevelItems);
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
@@ -392,6 +400,7 @@ export function CityMap() {
         updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDarkRef.current);
+        updateEvChargingMarkers(map, evChargingItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
@@ -481,6 +490,7 @@ export function CityMap() {
       updateAqGridLayer(map, aqGridItemsRef.current, isDark, cityIdRef.current);
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDark);
+      updateEvChargingMarkers(map, evChargingItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
@@ -547,7 +557,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, waterLevelItems, bathingItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, evChargingItems, waterLevelItems, bathingItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -681,6 +691,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [bikeSharingItems]);
+
+  // Update EV charging stations (lazy: data only while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateEvChargingMarkers(map, evChargingItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [evChargingItems]);
 
   // Update water level markers
   useEffect(() => {

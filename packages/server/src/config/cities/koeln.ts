@@ -94,6 +94,8 @@ export const koeln: CityConfig = {
     // DWD warn cell 105315000, by its name: warnings for this region alone.
     weather: { provider: 'brightsky', lat: 50.9375, lon: 6.9603, dwdWarnRegion: 'Stadt Köln' },
     nina: { ars: '053150000000' }, // kreisfreie Stadt Köln, AGS 05315000
+    // BNetzA Ladesäulenregister (CC BY 4.0): ~1,480 charging devices, ~770 places
+    evCharging: { provider: 'bnetza', kreis: 'Kreisfreie Stadt Köln' },
     aeds: { adminLevel: 6 },       // OSM boundary "Köln" of the kreisfreie Stadt
     pollen: {
       provider: 'dwd',

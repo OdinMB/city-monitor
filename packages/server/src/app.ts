@@ -28,6 +28,7 @@ import { createBudgetRouter } from './routes/budget.js';
 import { createBathingRouter } from './routes/bathing.js';
 import { createLiftOutagesRouter } from './routes/lift-outages.js';
 import { createBikeSharingRouter } from './routes/bike-sharing.js';
+import { createEvChargingRouter } from './routes/ev-charging.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
 import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createPopulationRouter } from './routes/population.js';
@@ -58,6 +59,7 @@ import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
 import { createLiftOutageIngestion } from './cron/ingest-lift-outages.js';
 import { createBikeSharingIngestion } from './cron/ingest-bike-sharing.js';
+import { createEvChargingIngestion, createEvChargingStatusIngestion } from './cron/ingest-ev-charging.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { createPopulationIngestion } from './cron/ingest-population.js';
@@ -184,6 +186,8 @@ export async function createApp(options?: {
     { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => !!c.dataSources.liftOutages },
     // 30 min: the job stores a row that often (BIKE_SHARING_DB_INTERVAL_MS), though it runs every 5
     { jobName: 'ingest-bike-sharing', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'bike-sharing' }, serves: (c) => !!c.dataSources.bikeSharing },
+    // Weekly job on a monthly register. No spec for ingest-ev-charging-status: cache only, it runs on every start
+    { jobName: 'ingest-ev-charging',  tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'bnetza-charging' }, serves: (c) => !!c.dataSources.evCharging },
     { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'lageso-wastewater' }, serves: (c) => !!c.dataSources.wastewater },
     { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' }, serves: (c) => !!c.dataSources.laborMarket },
     { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: (c) => !!c.dataSources.population },
@@ -226,6 +230,8 @@ export async function createApp(options?: {
   const ingestBathing = createBathingIngestion(cache, db);
   const ingestLiftOutages = createLiftOutageIngestion(cache, db);
   const ingestBikeSharing = createBikeSharingIngestion(cache, db);
+  const ingestEvCharging = createEvChargingIngestion(cache, db);
+  const ingestEvChargingStatus = createEvChargingStatusIngestion(cache);
   const ingestWastewater = createWastewaterIngestion(cache, db);
   const ingestLaborMarket = createLaborMarketIngestion(cache, db);
   const ingestPopulation = createPopulationIngestion(cache, db);
@@ -265,6 +271,10 @@ export async function createApp(options?: {
     { name: 'ingest-lift-outages', schedule: '*/15 * * * *', handler: ingestLiftOutages, runOnStart: s('ingest-lift-outages') },
     // GBFS updates every 60 s; the store gets a row at most every 30 min (BIKE_SHARING_DB_INTERVAL_MS)
     { name: 'ingest-bike-sharing', schedule: '*/5 * * * *', handler: ingestBikeSharing, runOnStart: s('ingest-bike-sharing') },
+    // The BNetzA register is monthly (a 55 MB CSV); a weekly look picks up a new edition within days
+    { name: 'ingest-ev-charging', schedule: '30 4 * * 3', handler: ingestEvCharging, runOnStart: s('ingest-ev-charging') },
+    // Hamburg's live charge-point status, not stored, so always on start
+    { name: 'ingest-ev-charging-status', schedule: '*/5 * * * *', handler: ingestEvChargingStatus, runOnStart: true },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
     { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
@@ -302,6 +312,7 @@ export async function createApp(options?: {
     app.use('/api/:city/population', heavyPayloadLimit);
     app.use('/api/:city/aeds', heavyPayloadLimit);
     app.use('/api/:city/bike-sharing', heavyPayloadLimit);
+    app.use('/api/:city/ev-charging', heavyPayloadLimit);
     app.use('/api/:city/budget', heavyPayloadLimit);
   }
 
@@ -326,6 +337,8 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
   app.use('/api', cacheFor(300), createLiftOutagesRouter(cache, db));
   app.use('/api', cacheFor(120), createBikeSharingRouter(cache, db));
+  // Short for Hamburg's live status (every 5 min); the register itself changes monthly
+  app.use('/api', cacheFor(120), createEvChargingRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
   app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));

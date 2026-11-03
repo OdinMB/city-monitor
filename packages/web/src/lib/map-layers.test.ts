@@ -25,7 +25,7 @@ describe('cityLayers', () => {
   it('gives Berlin, which has every feature, every layer and sub-layer', () => {
     const all = cityLayers(berlin);
     expect([...all.layers].sort()).toEqual([
-      'air-quality', 'bike-sharing', 'emergencies', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'warnings', 'water', 'weather',
+      'air-quality', 'bike-sharing', 'emergencies', 'ev-charging', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'warnings', 'water', 'weather',
     ]);
     expect(all.news).toEqual(['news', 'police']);
     expect(all.emergencies).toEqual(['pharmacies', 'aeds']);
@@ -73,6 +73,12 @@ describe('cityLayers', () => {
     for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('bike-sharing'), city.id).toBe(true);
     expect(withFeatures('bikeSharing').layers.has('bike-sharing')).toBe(true);
     expect(withFeatures().layers.has('bike-sharing')).toBe(false);
+  });
+
+  it('shows the EV charging layer in every city with the register, and not without it', () => {
+    for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('ev-charging'), city.id).toBe(true);
+    expect(withFeatures('evCharging').layers.has('ev-charging')).toBe(true);
+    expect(withFeatures().layers.has('ev-charging')).toBe(false);
   });
 
   it('shows the political layer only with political data, and the district-mayor and state views only with theirs', () => {

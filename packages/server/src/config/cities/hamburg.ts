@@ -76,6 +76,15 @@ export const hamburg: CityConfig = {
       ],
     },
     nina: { ars: '020000000000' },
+    // BNetzA Ladesäulenregister (CC BY 4.0), plus the live status of the ~2,540 public charge
+    // points of Hamburger Energiewerke Mobil (EVSE operator DE*HHM) on the Urban Data Platform's
+    // SensorThings API (dl-de/by-2.0, Transparenzportal "Elektro Ladestandorte Hamburg").
+    // `operator` is the register's name for DE*HHM, for the ~105 live stations it lacks.
+    evCharging: {
+      provider: 'bnetza',
+      kreis: 'Kreisfreie Stadt Hamburg',
+      liveStatus: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', operator: 'HEnW-Mobil' },
+    },
     // Bauweiser construction sites on main roads (dl-de/by-2.0). The Transparenzportal's
     // baustellen-hamburg WFS is an archive frozen in 2020.
     roadworks: { provider: 'hamburg-ogc', url: 'https://api.hamburg.de/datasets/v1/baustellen/collections/baustelle/items?f=json&limit=1000' },

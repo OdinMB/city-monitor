@@ -47,6 +47,8 @@ export const muenchen: CityConfig = {
     // cap_warncellids_csv.csv still lists a "Stadt München" (109162000) DWD no longer uses.
     weather: { provider: 'brightsky', lat: 48.1374, lon: 11.5755, dwdWarnRegion: 'Kreis und Stadt München' },
     nina: { ars: '091620000000' }, // kreisfreie Stadt München, AGS 09162000
+    // BNetzA Ladesäulenregister (CC BY 4.0): ~2,390 devices, ~970 places; not "Landkreis München"
+    evCharging: { provider: 'bnetza', kreis: 'Kreisfreie Stadt München' },
     aeds: { adminLevel: 6 },       // OSM boundary "München" of the kreisfreie Stadt
     pollen: {
       provider: 'dwd',

@@ -68,6 +68,8 @@ export type CityFeature =
   | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
   | 'liftOutages'     // dataSources.liftOutages: lift and escalator outages (KVB Köln)
   | 'bikeSharing'     // dataSources.bikeSharing: bike-sharing stations on the map (nextbike GBFS, StadtRAD)
+  | 'evCharging'      // dataSources.evCharging: public charging stations on the map (BNetzA Ladesäulenregister)
+  | 'evChargingLive'  // dataSources.evCharging.liveStatus: their charge points' live status (Hamburg)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -208,6 +210,23 @@ export type BikeSharingSource =
   /** Hamburg's StadtRAD on the Urban Data Platform's SensorThings API (`…/v1.1`) */
   | { provider: 'hamburg-sta'; url: string; system: string; operator: string };
 
+/**
+ * A city's public charging stations from the Bundesnetzagentur's
+ * Ladesäulenregister (one national CSV, read once per run for every city), with
+ * an optional live status per charge point (.context/ev-charging.md).
+ */
+export interface EvChargingSource {
+  provider: 'bnetza';
+  /** The register's `Kreis/kreisfreie Stadt` value for the city, exactly as spelt there ("Kreisfreie Stadt Köln") */
+  kreis: string;
+  /**
+   * Live status per charge point, merged onto the register's stations by EVSE id.
+   * `hamburg-sta`: the Urban Data Platform's SensorThings API (`…/v1.1`), layer `Status_E-Ladepunkt`.
+   * `operator` names the operator of a live station the register lacks.
+   */
+  liveStatus?: { provider: 'hamburg-sta'; url: string; operator: string };
+}
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -253,6 +272,7 @@ export interface CityDataSources {
   bathing?: BathingSource;
   liftOutages?: LiftOutageSource;
   bikeSharing?: BikeSharingSource;
+  evCharging?: EvChargingSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -773,6 +793,54 @@ export interface BikeSharingData {
   stations: BikeStation[];
   /** When the feed was last updated (ISO 8601), null when it gave no time. */
   updated: string | null;
+}
+
+// EV charging (BNetzA Ladesäulenregister, Hamburg live status)
+/** Plug types as the map names them; the register's and Hamburg's spellings are mapped onto these. */
+export type EvPlug = 'type2' | 'ccs' | 'chademo' | 'schuko' | 'type1' | 'mcs';
+
+/**
+ * A charge point's live status, from OCPP's: `available`; `occupied` while a
+ * car is plugged in (PREPARING, CHARGING, SUSPENDEDEV, SUSPENDEDEVSE,
+ * FINISHING, RESERVED, OCCUPIED); `outOfOrder` (FAULTED, UNAVAILABLE);
+ * `unknown` without a status or with UNKNOWN.
+ */
+export type EvPointStatus = 'available' | 'occupied' | 'outOfOrder' | 'unknown';
+
+export interface EvLivePoint {
+  /** The charge point's EVSE id ("DE*HHM*E1011*02"). */
+  id: string;
+  status: EvPointStatus;
+  /** When the status was reported (it is written on change), Unix seconds; null without one. */
+  since: number | null;
+}
+
+export interface EvChargingStation {
+  /** The register's first Ladeeinrichtungs-ID at this place, or `live:<asset id>` for a station only the live feed has. */
+  id: string;
+  lat: number;
+  lon: number;
+  /** The operator's name on the BNetzA map (`Anzeigename (Karte)`), else its company name. */
+  operator: string;
+  /** Street and house number. */
+  address: string;
+  /** Charge points at this place (several charging devices of one operator at one spot are one station). */
+  points: number;
+  /** The highest rated power of a plug here, kW; null where unknown (stations only the live feed has). */
+  maxKw: number | null;
+  /** A fast charger (a Schnellladeeinrichtung, over 22 kW, or a DC plug). */
+  fast: boolean;
+  plugs: EvPlug[];
+  /** Live status of the charge points, in cities with `dataSources.evCharging.liveStatus`. */
+  live?: EvLivePoint[];
+}
+
+export interface EvChargingData {
+  /** The register edition's date (YYYY-MM-DD, from its file name). */
+  edition: string;
+  stations: EvChargingStation[];
+  /** When the live status was last fetched (ISO 8601); absent in a city without one. */
+  liveUpdated?: string | null;
 }
 
 // Flood status (LHP public API): flood classes at state gauges and regional flood warnings

@@ -10,6 +10,8 @@ import { waterLevelPopupHtml, bathingPopupHtml } from './water';
 import { pharmacyPopupHtml, aedPopupHtml, formatPharmacyDuty } from './emergencies';
 import { noisePopupHtml } from './noise-sensors';
 import { bikeStationPopupHtml } from './bike-sharing';
+import { evStationPopupHtml } from './ev-charging';
+import type { EvChargingStation } from '../../../lib/api.js';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
@@ -67,6 +69,16 @@ const AED = { indoor: true, description: 'Im Foyer', operator: 'Bezirksamt Mitte
 const NOISE = { id: 4711, laeq: 58.2, laMin: 40.1, laMax: 75.3 };
 // A Unix time on an earlier day, so the popup shows the date with the time
 const BIKE = { name: 'S Halensee (Kurfürstendamm)', bikes: 3, docks: 5, reportedAt: Date.UTC(2026, 2, 3, 8, 0) / 1000, system: 'nextbike Berlin', operator: 'nextbike' };
+// A fast charger with a live status, its second point busy since an earlier day
+const EV: EvChargingStation = {
+  id: '1009424', lat: 53.54938, lon: 10.00471, operator: 'HEnW-Mobil', address: 'Altstädter Str. 2', points: 2, maxKw: 150, fast: true,
+  plugs: ['ccs', 'type2'],
+  live: [
+    { id: 'DE*HHM*E977*01', status: 'available', since: null },
+    { id: 'DE*HHM*E977*02', status: 'occupied', since: Date.UTC(2026, 2, 3, 8, 0) / 1000 },
+  ],
+};
+const EV_NORMAL: EvChargingStation = { ...EV, maxKw: 22, fast: false, plugs: ['type2'], live: undefined };
 const SOCIAL: SocialAtlasFeatureProps = {
   plrId: '01100101', plrName: 'Stülerstraße', bezId: '01', population: 3400, statusIndex: 2, statusLabel: 'mittel',
   unemployment: 5.2, singleParent: 20.1, welfare: 10.3, childPoverty: 15.4,
@@ -92,6 +104,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['AED', () => aedPopupHtml(AED, COORDS)],
   ['noise sensor', () => noisePopupHtml(NOISE, false)],
   ['bike station', () => bikeStationPopupHtml(BIKE, false)],
+  ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false)],
   ['social atlas', () => socialAtlasPopupHtml(SOCIAL)],
   ['population', () => populationPopupHtml(POPULATION)],
   ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS)],
@@ -113,6 +126,7 @@ const ENGLISH_ONLY = [
   'Noise Sensor', 'Quiet', 'Moderate', 'Loud', 'Min:', 'Max:', 'Unemployment', 'Single-parent', 'Welfare',
   'Child poverty', 'Population', 'Density', 'Foreign', 'Aged 65', 'Under 18', 'Traffic jam', 'Road closure',
   'Roadworks', 'planned work', 'Severe', 'Bikes available', 'Free docks', 'Updated',
+  'Charge points', 'Plugs', 'up to', 'In use', 'Available', 'Fast (', 'charging register',
 ];
 
 afterEach(async () => {
@@ -143,6 +157,10 @@ describe('map popups in German', () => {
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Innen', 'Zugang: nur für Kunden', 'Route ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Lärmsensor #4711', '58.2 dB (Laut)', 'Min.: 40.1 dB · Max.: 75.3 dB']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Verfügbare Räder: 3', 'Freie Stellplätze: 5', `Stand: 3. ${GERMAN_MARCH}`, 'nextbike Berlin · nextbike']],
+    ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), [
+      'Ultraschnell (ab 150 kW) · bis 150 kW', 'Ladepunkte: 2', 'Stecker: CCS, Typ 2', 'Live: 1 von 2 frei', '01: Frei', `02: Belegt seit 3. ${GERMAN_MARCH}`,
+      'Ladesäulenregister der BNetzA vom',
+    ]],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Kinder Alleinerziehender20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%', 'MSS-Statusindexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Arbeitslosenquote5.2%', 'Alleinerziehenden-Haushalte20.1%', 'SGB-II-Leistungsberechtigte10.3%']],
     ['Hamburg social atlas', () => socialAtlasPopupHtml(SOCIAL, SOCIAL_ATLAS.hamburg), ['SGB-II- und AsylbLG-Empfänger10.3%', 'Kinder in Mindestsicherung15.4%', 'Statusindex (Sozialmonitoring)mittel']],
@@ -243,6 +261,7 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['police', () => safetyPopupHtml(SAFETY), ['Einbruch in Wohnung', 'Mitte']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['Berlin Mitte']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['S Halensee (Kurfürstendamm)', 'nextbike Berlin', 'nextbike']],
+    ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), ['HEnW-Mobil', 'Altstädter Str. 2']],
   ] as const)('%s popup isolates its feed text', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     expect(sourceTexts(build())).toEqual(values);
@@ -336,6 +355,8 @@ describe('map popups in English', () => {
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Noise Sensor #4711', '58.2 dB (Loud)', 'Min: 40.1 dB · Max: 75.3 dB']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Bikes available: 3', 'Free docks: 5']],
     ['bike station without docks', () => bikeStationPopupHtml({ ...BIKE, docks: null }, false), ['Bikes available: 3']],
+    ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), ['High power (150 kW and up) · up to 150 kW', 'Charge points: 2', 'Plugs: CCS, Type 2', 'Live: 1 of 2 free', '01: Available', '02: In use since']],
+    ['EV charging station without live status', () => evStationPopupHtml(EV_NORMAL, null, false), ['Normal (up to 22 kW) · up to 22 kW', 'Plugs: Type 2']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Children of single parents20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%', 'MSS status indexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Unemployment rate5.2%', 'Single-parent households20.1%', 'SGB II recipients10.3%']],
     ['population', () => populationPopupHtml(POPULATION), ['Population3,400', 'Density12,000/km²', 'Aged 65+15.2%', 'Under 1812.1%']],

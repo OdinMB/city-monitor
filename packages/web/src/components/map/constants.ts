@@ -147,6 +147,27 @@ export const BIKE_AVAILABILITY: ReadonlyArray<{ key: 'none' | 'few' | 'many'; co
   { key: 'many', color: '#16a34a' },
 ];
 
+/**
+ * EV charging stations by power class, for the circles and the sidebar legend;
+ * `key` names the `sidebar.evLegend` label. Normal: up to 22 kW AC; fast: a
+ * Schnellladeeinrichtung or DC plug below 150 kW; high power (HPC): 150 kW and up.
+ */
+export const EV_POWER_CLASSES: ReadonlyArray<{ key: 'normal' | 'fast' | 'hpc'; color: string }> = [
+  { key: 'normal', color: '#0ea5e9' },
+  { key: 'fast', color: '#f97316' },
+  { key: 'hpc', color: '#c026d3' },
+];
+
+/**
+ * A station's live status as the ring around its circle shows it (cities with
+ * a live feed); `key` names the `sidebar.evLegend` label.
+ */
+export const EV_LIVE_STATES: ReadonlyArray<{ key: 'available' | 'occupied' | 'outOfOrder'; color: string }> = [
+  { key: 'available', color: '#16a34a' },
+  { key: 'occupied', color: '#f59e0b' },
+  { key: 'outOfOrder', color: '#dc2626' },
+];
+
 /** The classes of the city's rent map, for the sidebar legend (empty without one). */
 export function getRentMapLegend(cityId: string): readonly RentMapClass[] {
   return RENT_MAP_WMS[cityId]?.legend ?? [];

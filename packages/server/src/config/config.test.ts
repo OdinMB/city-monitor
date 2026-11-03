@@ -165,7 +165,8 @@ describe('Köln config', () => {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
       police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council,
       liftOutages: _lifts, laborMarket: _labor, wastewater: _wastewater,
-      socialAtlas: _socialAtlas, population: _population, bikeSharing: _bikes, ...rest
+      socialAtlas: _socialAtlas, population: _population, bikeSharing: _bikes,
+      evCharging: _ev, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });
@@ -257,7 +258,7 @@ describe('München config', () => {
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
       floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population,
-      bikeSharing: _bikes, ...rest
+      bikeSharing: _bikes, evCharging: _ev, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });

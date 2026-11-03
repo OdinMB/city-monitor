@@ -27,6 +27,10 @@ export const CK = {
   aedLocations: (cityId: string) => `${cityId}:aed:locations`,
   /** Not bootstrapped: Berlin's ~1,070 stations are about 150 KB, so the map fetches them when the layer is on. */
   bikeSharing: (cityId: string) => `${cityId}:bike-sharing`,
+  /** The city's stations from the BNetzA register (with EVSE ids where a live feed merges on them). Not bootstrapped: Berlin's ~3,500 stations are several hundred KB. */
+  evChargingRegister: (cityId: string) => `${cityId}:ev-charging:register`,
+  /** Live charge-point status (Hamburg), cache only; the route merges it onto the register. */
+  evChargingStatus: (cityId: string) => `${cityId}:ev-charging:status`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

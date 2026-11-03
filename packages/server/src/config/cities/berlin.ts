@@ -84,6 +84,8 @@ export const berlin: CityConfig = {
       ],
     },
     nina: { ars: '110000000000' },
+    // BNetzA Ladesäulenregister (CC BY 4.0): ~4,950 charging devices, ~3,460 places (2026-09-01 edition)
+    evCharging: { provider: 'bnetza', kreis: 'Kreisfreie Stadt Berlin' },
     roadworks: { provider: 'viz-berlin', url: 'https://api.viz.berlin.de/daten/baustellen_sperrungen.json' },
     // LAGeSo's latest sample per bathing spot (seasonal; the URL is stable)
     bathing: { provider: 'lageso', url: 'https://data.lageso.de/baden/0_letzte/letzte.csv' },

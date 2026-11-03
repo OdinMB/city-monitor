@@ -94,6 +94,7 @@ describe('data-retention: snapshots', () => {
   const KEEP_LATEST_TYPES = [
     'mss-social-atlas',        // weekly, 7 days
     'afstat-population',       // monthly, 7 days
+    'bnetza-charging',         // weekly, 7 days
     'abgwatch-bezirke',        // weekly, 7 days
     'abgwatch-mayor',          // weekly, 7 days
     'abgwatch-bundestag',      // weekly, 7 days
