@@ -431,7 +431,8 @@
     },
     "electricity": {
       "title": "الكهرباء",
-      "renewableCaption": "حصة الطاقة المتجددة من التوليد · منطقة شبكة {{area}} · {{time}}",
+      "renewableWord": "متجددة",
+      "renewableCaption": "الحصة من الكهرباء المولّدة · منطقة شبكة {{area}} · {{time}}",
       "renewables": "متجددة",
       "conventional": "أحفورية وغيرها",
       "mixLabel": "مزيج التوليد في منطقة شبكة {{area}}",

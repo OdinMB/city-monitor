@@ -408,7 +408,8 @@
     },
     "electricity": {
       "title": "Strom",
-      "renewableCaption": "Erneuerbaren-Anteil an der Erzeugung · Netzgebiet {{area}} · {{time}}",
+      "renewableWord": "erneuerbar",
+      "renewableCaption": "Anteil am erzeugten Strom · Netzgebiet {{area}} · {{time}}",
       "renewables": "Erneuerbar",
       "conventional": "Fossil & Sonstige",
       "mixLabel": "Strommix im Netzgebiet {{area}}",

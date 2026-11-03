@@ -407,7 +407,8 @@
     },
     "electricity": {
       "title": "Elektrik",
-      "renewableCaption": "üretimdeki yenilenebilir payı · {{area}} şebeke bölgesi · {{time}}",
+      "renewableWord": "yenilenebilir",
+      "renewableCaption": "üretilen elektrikteki pay · {{area}} şebeke bölgesi · {{time}}",
       "renewables": "Yenilenebilir",
       "conventional": "Fosil ve diğer",
       "mixLabel": "{{area}} şebeke bölgesinde üretim karışımı",

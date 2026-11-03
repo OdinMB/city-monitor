@@ -52,7 +52,8 @@ describe('ElectricityStrip', () => {
     const { container } = render(<ElectricityStrip />);
     const text = plain(container.textContent);
     expect(text).toContain('45%');
-    expect(text).toContain('renewable share of generation · 50Hertz grid area · 05:15');
+    expect(text).toContain('45%renewable');
+    expect(text).toContain('share of power generated · 50Hertz grid area · 05:15');
     expect(text).toContain('Renewable45%');
     expect(text).toContain('Fossil & other55%');
     expect(screen.getByRole('img', { name: 'Generation mix in the 50Hertz grid area' })).toBeTruthy();

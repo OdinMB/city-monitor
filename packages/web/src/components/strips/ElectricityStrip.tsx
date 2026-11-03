@@ -10,7 +10,7 @@ import { isolate } from '../../lib/bidi.js';
 import {
   co2Now, gridPointAt, greenestHour, groupMix, nextGreenWindow, SIGNAL_COLORS, type MixShare,
 } from '../../lib/electricity.js';
-import type { ElectricityData, GridPoint, GridSignal } from '../../lib/api.js';
+import type { ElectricityData, GridPoint } from '../../lib/api.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Ltr } from '../Ltr.js';
 import { Skeleton } from '../layout/Skeleton.js';
@@ -85,14 +85,6 @@ function MixLegend({ groups, withPower }: { groups: MixShare[]; withPower: boole
     </div>
   );
 }
-
-/** Tinted box per traffic-light colour. */
-const SIGNAL_BOX: Record<GridSignal, string> = {
-  2: 'badge-good',
-  1: 'badge-fair',
-  0: 'badge-severe',
-  [-1]: 'badge-severe',
-};
 
 /** The control area's hourly renewable share, on a 0–100 % scale. */
 const ShareSparkline = memo(function ShareSparkline({ history, label, lang, timeZone }: {
@@ -186,8 +178,9 @@ export function ElectricityStrip({ expanded = false }: { expanded?: boolean }) {
         {data.mix && (
           <div>
             <div className="text-center">
-              <div className="text-4xl font-extrabold tabular-nums leading-none text-green-600 dark:text-green-400">
-                {formatPercent(Math.round(data.mix.renewableShare))}
+              <div className="flex items-baseline justify-center gap-2 text-green-600 dark:text-green-400">
+                <span className="text-4xl font-extrabold tabular-nums leading-none">{formatPercent(Math.round(data.mix.renewableShare))}</span>
+                <span className="text-lg font-bold">{t('panel.electricity.renewableWord')}</span>
               </div>
               <div className="mt-1 text-[11px] text-muted">
                 {t('panel.electricity.renewableCaption', { area: data.controlArea, time: clock(data.mix.at) })}
@@ -201,8 +194,8 @@ export function ElectricityStrip({ expanded = false }: { expanded?: boolean }) {
         )}
 
         {data.grid.length > 0 && (
-          <div className={`rounded-md px-3 py-2 ${current?.signal != null ? SIGNAL_BOX[current.signal] : 'badge-neutral'}`}>
-            <div className="flex items-baseline justify-between gap-2 text-[10px] font-medium uppercase tracking-wide opacity-80">
+          <div className="rounded-md px-3 py-2 bg-gray-50 dark:bg-gray-800/60 border border-border-subtle text-gray-900 dark:text-gray-100">
+            <div className="flex items-baseline justify-between gap-2 text-[10px] font-medium uppercase tracking-wide text-muted">
               <span>{t('panel.electricity.signal')}</span>
               {co2 && (
                 <span className="normal-case tracking-normal tabular-nums">
@@ -217,7 +210,7 @@ export function ElectricityStrip({ expanded = false }: { expanded?: boolean }) {
                 <span className="leading-snug">{t(`panel.electricity.signalLevel.${current.signal}`)}</span>
               </div>
             )}
-            <div className="text-[11px] mt-0.5 opacity-90">
+            <div className="text-[11px] mt-0.5 text-muted">
               {green
                 ? Date.parse(green.start) <= now
                   ? t('panel.electricity.greenUntil', { end: clock(green.end) })
