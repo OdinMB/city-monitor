@@ -19,6 +19,8 @@ import {
 } from '../map/constants.js';
 import { EvCharger } from 'lucide';
 import { EV_LIVE_STATES, EV_POWER_CLASSES } from '../map/constants.js';
+import { useTelraamCounts } from '../../hooks/useTelraamCounts.js';
+import { TELRAAM_BIKE_SHARE } from '../map/constants.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -82,6 +84,7 @@ const TRAFFIC_SUB_META: { key: TrafficSubLayer; icon: IconNode; color: string }[
   { key: 'roadworks', icon: Construction as IconNode, color: '#d97706' },
   { key: 'car-counts', icon: CarFront as IconNode, color: '#64748b' },
   { key: 'bike-counts', icon: Bike as IconNode, color: '#16a34a' },
+  { key: 'telraam', icon: Activity as IconNode, color: '#16a34a' },
 ];
 
 const ACCIDENT_FILTER_META: { key: AccidentFilter; icon: IconNode; color: string }[] = [
@@ -217,6 +220,34 @@ export function TrafficCountLegend() {
     { key: 'none', color: TRAFFIC_COUNT_NONE_COLOR },
   ].map(({ key, color }) => ({ key, color, label: t(`sidebar.trafficCountLegend.${key}`) }));
   return <DotLegend title={t('sidebar.trafficCountLegend.title')} items={items} />;
+}
+
+/**
+ * What the street-count circles' colours mean (the share of bikes among the
+ * vehicles counted), the day counted, and that the sensors are citizens'.
+ * Shares the map's query, so it fetches nothing of its own.
+ */
+export function TelraamLegend({ cityId }: { cityId: string }) {
+  const { t, i18n } = useTranslation();
+  const { data } = useTelraamCounts(cityId, true);
+  const counts = data?.data;
+  const day = counts
+    ? new Date(`${counts.date}T12:00:00Z`).toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+    : null;
+  return (
+    <div className="ps-9 pe-2 py-1">
+      {day && <p className="text-[12px] text-muted mb-0.5">{t('sidebar.telraamLegend.day', { day, segments: counts!.segments.length })}</p>}
+      <ul aria-label={t('sidebar.telraamLegend.title')} className="space-y-0.5">
+        {TELRAAM_BIKE_SHARE.map(({ key, color }) => (
+          <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+            <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
+            {t(`sidebar.telraamLegend.${key}`)}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-[11px] text-muted">{t('sidebar.telraamLegend.citizen')}</p>
+    </div>
+  );
 }
 
 /**
@@ -439,6 +470,7 @@ export function DataLayerToggles() {
                   </>
                 )}
                 {showsCounts && <TrafficCountLegend />}
+                {traffic.has('telraam') && <TelraamLegend cityId={city.id} />}
               </>
             );
           } else if (layer === 'bike-sharing' && active) {

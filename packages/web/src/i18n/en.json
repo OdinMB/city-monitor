@@ -640,7 +640,8 @@
       "roadworks": "Roadworks",
       "car-counts": "Car counts",
       "bike-counts": "Bicycle counts",
-      "zoomIn": "Zoom in to see the congestion map"
+      "zoomIn": "Zoom in to see the congestion map",
+      "telraam": "Street counts (Telraam)"
     },
     "emergencies": {
       "pharmacies": "Pharmacies",
@@ -677,6 +678,15 @@
       "cool": "Cool Places",
       "fountains": "Drinking Fountains",
       "toilets": "Public Toilets"
+    },
+    "telraamLegend": {
+      "title": "Share of bikes among the vehicles counted",
+      "low": "Under 10 % bikes",
+      "some": "10–25 % bikes",
+      "high": "25–50 % bikes",
+      "most": "Half or more bikes",
+      "day": "{{day}} · Sensors: {{segments}}",
+      "citizen": "Citizen-run Telraam sensors (Berlin zählt Mobilität). Most count in daylight only."
     },
     "bikeLegend": {
       "title": "Bikes available at a station",
@@ -817,6 +827,18 @@
       "height": "Height",
       "crown": "Crown diameter",
       "girth": "Trunk girth"
+    },
+    "telraam": {
+      "unnamed": "Unnamed street",
+      "day": "{{day}} · {{hours}} h counted",
+      "cars": "Cars",
+      "bikes": "Bikes",
+      "pedestrians": "Pedestrians",
+      "heavy": "Buses and lorries",
+      "bikeShare": "Bikes among vehicles",
+      "vsUsual": "Changes against the median of the same weekday in the 4 weeks before",
+      "noUsual": "No usual value to compare with",
+      "citizen": "Citizen sensor"
     },
     "bike": {
       "bikes": "Bikes available",

@@ -50,6 +50,7 @@ Factory: `createCache()` returns a `Cache` object. Adapted from worldmonitor's R
 | `{cityId}:ev-charging:register` | 1209600s (14 days) | ingest-ev-charging (not in bootstrap; with EVSE ids in a live-status city, dropped by the route) |
 | `{cityId}:ev-charging:status` | 900s (15 min) | ingest-ev-charging-status (Hamburg; cache only, never stored) |
 | `{cityId}:heat-relief` | 691200s (8 days) | ingest-heat-relief (not in bootstrap) |
+| `{cityId}:telraam-counts` | 129600s (36h) | ingest-telraam-counts (Berlin; not in bootstrap) |
 | `{cityId}:political:{level}` | 604800s (7 days) | ingest-political |
 | `{cityId}:budget` | 86400s (24h) | ingest-budget |
 | `{cityId}:traffic:incidents` | 300s (5 min) | ingest-traffic |
@@ -123,6 +124,7 @@ The `snapshots.type` column uses concrete data source names (not categories), so
 | `traffic-counts` | Traffic counting sites (Hamburg's car and bicycle counters), a row when a new hour comes in ([traffic-counts.md](traffic-counts.md)) |
 | `bnetza-charging` | EV charging stations of the BNetzA Ladesäulenregister, one row per city a week ([ev-charging.md](ev-charging.md)) |
 | `heat-relief` | Cool places, drinking fountains and public toilets, all of a city's lists in one row ([heat-relief.md](heat-relief.md)) |
+| `telraam-counts` | Yesterday's Telraam street counts, Berlin ([telraam-counts.md](telraam-counts.md)) |
 | `ba-labor-market` | Bundesagentur für Arbeit unemployment |
 | `afstat-population` | Population of every provider (Amt für Statistik EWR, Hamburg Stadtteile, Köln Datenkatalog) |
 | `bf-feuerwehr` | Berliner Feuerwehr operations CSV |
@@ -178,7 +180,7 @@ Nightly cron (3am) prunes old data in two phases. Phase 1: time-based deletion f
 | Non-history (short-lived) | aqi-grid | 6 hours, the age limit of `loadAirQualityGrid` (`AQ_GRID_MAX_AGE_MS`), newest row included (never `keepLatest`) + 100 row cap. Kept no longer than a read can use it, so no air-quality archive builds up ([weather.md](weather.md#waqi-terms-shown-live-not-archived-credited)) |
 | Non-history (high/med freq) | vbb-disruptions, tomtom-traffic, viz-roadworks, bbk-nina, aponet, service-berlin, lageso-wastewater, lageso-bathing, dwd-pollen, sc-dnms, oparl-meetings, lhp-flood, kvb-lift-outages, bike-sharing, smard-electricity, uba-airquality, traffic-counts | 2 days + 100 row cap |
 | Non-history (large, hourly) | open311-reports | 1 day + 100 row cap |
-| Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr, dwd-soil-moisture | 7 days + 100 row cap |
+| Non-history (infrequent, daily jobs) | berlin-haushalt, osm-aeds, bf-feuerwehr, dwd-soil-moisture, telraam-counts | 7 days + 100 row cap |
 | Non-history (infrequent, weekly/monthly jobs) | mss-social-atlas, afstat-population, unfallatlas-accidents, bnetza-charging, heat-relief, abgwatch-* | 7 days, newest row per city kept (`keepLatest`) + 100 row cap |
 | Non-snapshot | news, events, safety | 3 days |
 | Summaries | AI summaries; also any whose city has no news items left | 7 days |

@@ -40,6 +40,8 @@ export const CK = {
   evChargingStatus: (cityId: string) => `${cityId}:ev-charging:status`,
   /** Not bootstrapped: Berlin's ~900 cool places, fountains and toilets are about 165 KB, fetched when the layer is on. */
   heatRelief: (cityId: string) => `${cityId}:heat-relief`,
+  /** Not bootstrapped: ~100 Telraam segments (about 20 KB) for a sub-layer that is off by default. */
+  telraamCounts: (cityId: string) => `${cityId}:telraam-counts`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

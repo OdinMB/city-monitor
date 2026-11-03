@@ -50,6 +50,7 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['publicToilets', (c) => hasHeatRelief(c, 'toilet')],
   ['soilMoisture', (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0],
   ['treeWatering', (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0 && c.dataSources.soilMoisture?.treeWatering !== undefined],
+  ['telraamCounts', (c) => c.dataSources.telraamCounts !== undefined],
   ['socialAtlas', (c) => c.dataSources.socialAtlas !== undefined],
   ['population', (c) => c.dataSources.population !== undefined],
   ['laborMarket', (c) => c.dataSources.laborMarket !== undefined],

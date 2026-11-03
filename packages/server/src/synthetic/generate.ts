@@ -21,7 +21,7 @@ import type {
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
-  TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
+  TelraamCountsData, TelraamSegmentCount, TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
 import type { HeatReliefData, HeatReliefPlace } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
@@ -102,6 +102,7 @@ export interface SyntheticData {
   heatRelief: HeatReliefData;
   /** Soil moisture at the configured DWD stations; Gieß den Kiez waterings where the city has them. */
   soilMoisture: SoilMoistureData;
+  telraamCounts: TelraamCountsData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -166,6 +167,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   evCharging: (c) => c.dataSources.evCharging !== undefined,
   heatRelief: (c) => (c.dataSources.heatRelief?.length ?? 0) > 0,
   soilMoisture: (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0,
+  telraamCounts: (c) => c.dataSources.telraamCounts !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -286,6 +288,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('evCharging')) sets.evCharging = generateEvCharging(rng, place);
   if (has.has('heatRelief')) sets.heatRelief = generateHeatRelief(rng, city, place);
   if (has.has('soilMoisture')) sets.soilMoisture = generateSoilMoisture(rng, now, city, place);
+  if (has.has('telraamCounts')) sets.telraamCounts = generateTelraamCounts(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1794,6 +1797,35 @@ function generateSoilMoisture(rng: Rng, now: Date, city: CityConfig, place: Plac
     };
   }
   return { stations, history, watering };
+}
+
+/**
+ * Yesterday's counts at two Telraam segments per anchor: daylight-only
+ * sensors (8 hours), busy and quiet streets, most with a usual Monday-style
+ * value to compare with, one without.
+ */
+function generateTelraamCounts(rng: Rng, now: Date, place: Place): TelraamCountsData {
+  const date = local(new Date(now.getTime() - DAY)).date;
+  const segments: TelraamSegmentCount[] = [];
+  place.anchors.forEach((a, i) => {
+    for (let k = 0; k < 2; k++) {
+      const cars = rng.int(150, 6000);
+      const bikes = rng.int(50, 2500);
+      const pedestrians = rng.int(20, 1500);
+      const heavy = Math.round(cars * rng.float(0.05, 0.2));
+      const usual = (n: number) => Math.round(n * rng.float(0.8, 1.2));
+      segments.push({
+        id: 9_900_000_000 + i * 10 + k,
+        ...near(rng, a, 0.01),
+        street: `Teststraße ${i * 2 + k + 1}`,
+        district: a.name,
+        cars, bikes, pedestrians, heavy,
+        hours: 8,
+        usual: segments.length === 0 ? null : { cars: usual(cars), bikes: usual(bikes), pedestrians: usual(pedestrians), heavy: usual(heavy), days: 4 },
+      });
+    }
+  });
+  return { date, segments };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

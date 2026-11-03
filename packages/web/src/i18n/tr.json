@@ -636,7 +636,8 @@
       "roadworks": "Yol Çalışmaları",
       "car-counts": "Araç Sayımları",
       "bike-counts": "Bisiklet Sayımları",
-      "zoomIn": "Trafik yoğunluğu haritası için yakınlaştırın"
+      "zoomIn": "Trafik yoğunluğu haritası için yakınlaştırın",
+      "telraam": "Sokak sayımları (Telraam)"
     },
     "emergencies": {
       "pharmacies": "Eczaneler",
@@ -673,6 +674,15 @@
       "cool": "Serin Yerler",
       "fountains": "İçme Çeşmeleri",
       "toilets": "Umumi Tuvaletler"
+    },
+    "telraamLegend": {
+      "title": "Sayılan araçlar içinde bisiklet payı",
+      "low": "%10'un altında bisiklet",
+      "some": "%10–25 bisiklet",
+      "high": "%25–50 bisiklet",
+      "most": "Yarısı veya daha fazlası bisiklet",
+      "day": "{{day}} · Sensör: {{segments}}",
+      "citizen": "Vatandaşların işlettiği Telraam sensörleri (Berlin zählt Mobilität). Çoğu yalnızca gün ışığında sayar."
     },
     "bikeLegend": {
       "title": "İstasyondaki kullanılabilir bisikletler",
@@ -813,6 +823,18 @@
       "height": "Boy",
       "crown": "Taç çapı",
       "girth": "Gövde çevresi"
+    },
+    "telraam": {
+      "unnamed": "Adsız sokak",
+      "day": "{{day}} · {{hours}} sa sayıldı",
+      "cars": "Otomobil",
+      "bikes": "Bisiklet",
+      "pedestrians": "Yaya",
+      "heavy": "Otobüs ve kamyon",
+      "bikeShare": "Araçlar içinde bisiklet payı",
+      "vsUsual": "Değişim: önceki 4 haftada aynı haftanın gününün medyanına göre",
+      "noUsual": "Karşılaştırılacak olağan değer yok",
+      "citizen": "Vatandaş sensörü"
     },
     "bike": {
       "bikes": "Kullanılabilir bisiklet",

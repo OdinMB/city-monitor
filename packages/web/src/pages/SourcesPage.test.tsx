@@ -82,6 +82,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   // ingest-transit: Geofox when its credentials are set; credited wherever the config names it
   ['HVV / Hamburger Hochbahn, Geofox GTI', (c) => c.dataSources.transit?.provider === 'geofox'],
   ['VIZ Berlin', (c) => c.dataSources.roadworks?.provider === 'viz-berlin'],
+  ['Berlin zählt Mobilität (Telraam)', (c) => c.dataSources.telraamCounts?.provider === 'berlin-zaehlt'],
   ['Baustellen Hamburg (Bauweiser)', (c) => c.dataSources.roadworks?.provider === 'hamburg-ogc'],
   ['Baustellen Köln (Offene Daten Köln)', (c) => c.dataSources.roadworks?.provider === 'koeln-wfs'],
   ['Baustellen München (Geoportal)', (c) => c.dataSources.roadworks?.provider === 'muenchen-wfs'],
@@ -258,7 +259,9 @@ describe('SourcesPage licence credits', () => {
     'KVB Open Data (Aufzüge, Fahrtreppen)': 'Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.',
     // CC0 asks for no credit; the feed's operator is named anyway
     'nextbike (GBFS)': 'Data: nextbike GmbH, CC0 1.0.',
-    'Unfallatlas (Statistische Ämter des Bundes und der Länder)': 'Source: Statistische Ämter des Bundes und der Länder, Unfallatlas, dl-de/by-2-0.',
+    // The attribution berlin-zaehlt.de's CC BY 4.0 data names
+    'Berlin zählt Mobilität (Telraam)': 'Source: Berlin zählt Mobilität / Telraam, CC BY 4.0.',
+    'Unfallatlas (Statistische Ämter des Bundes und der Länder)':'Source: Statistische Ämter des Bundes und der Länder, Unfallatlas, dl-de/by-2-0.',
     'StadtRAD Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
     'Sag’s uns (Offene Daten Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
     'Mach München besser': 'Source: Landeshauptstadt München, IT-Referat, CC0 1.0.',

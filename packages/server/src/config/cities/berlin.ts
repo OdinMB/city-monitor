@@ -167,6 +167,8 @@ export const berlin: CityConfig = {
     bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bn/gbfs.json', system: 'nextbike Berlin', operator: 'nextbike' },
     // Unfallatlas (dl-de/by-2.0): the whole Land, ~13,300 injury accidents in 2025
     trafficAccidents: { provider: 'unfallatlas', ags: '11000000' },
+    // Berlin zählt Mobilität (CC BY 4.0): citizen Telraam sensors, ~100 Berlin segments counting each day
+    telraamCounts: { provider: 'berlin-zaehlt', baseUrl: 'https://berlin-zaehlt.de/csv/', region: 'DE-BE' },
     appointments: {
       provider: 'service-berlin',
       // Ids are service.berlin.de/dienstleistung/{id}/: open that page to check

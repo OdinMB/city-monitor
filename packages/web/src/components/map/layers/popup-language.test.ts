@@ -15,6 +15,7 @@ import { trafficCountPopupHtml } from './traffic-counts';
 import { evStationPopupHtml } from './ev-charging';
 import type { EvChargingStation } from '../../../lib/api.js';
 import { heatReliefPopupHtml } from './heat-relief';
+import { telraamPopupHtml } from './telraam-counts';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
@@ -95,6 +96,12 @@ const TOILET = { kind: 'toilet', name: 'City-Toilette Hackescher Markt', hours: 
 const COOL = { kind: 'cool', name: '', setting: 'air-conditioned', address: 'Rathaus Köln', lat: 50.94, lon: 6.96 };
 const JULY = new Date(2026, 6, 15);
 const NOVEMBER = new Date(2026, 10, 3);
+// A Telraam segment on Monday 2 November 2026, with its usual Monday
+const TELRAAM = {
+  id: 9000001786, street: 'Oranienstraße', district: 'Kreuzberg', date: '2026-11-02', hours: 8,
+  cars: 2300, bikes: 700, pedestrians: 300, heavy: 400,
+  usualCars: 2000, usualBikes: 800, usualPedestrians: 300, usualHeavy: 400, usualDays: 3,
+};
 const SOCIAL: SocialAtlasFeatureProps = {
   plrId: '01100101', plrName: 'Stülerstraße', bezId: '01', population: 3400, statusIndex: 2, statusLabel: 'mittel',
   unemployment: 5.2, singleParent: 20.1, welfare: 10.3, childPoverty: 15.4,
@@ -137,6 +144,7 @@ const POPUPS: Array<[string, () => string]> = [
   ['fountain', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER)],
   ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER)],
   ['cool place', () => heatReliefPopupHtml(COOL, NOVEMBER)],
+  ['street counts', () => telraamPopupHtml(TELRAAM, false)],
   ['social atlas', () => socialAtlasPopupHtml(SOCIAL)],
   ['population', () => populationPopupHtml(POPULATION)],
   ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS)],
@@ -167,6 +175,7 @@ const ENGLISH_ONLY = [
   'Drinking fountain', 'Public toilet', 'Cool place', 'Air-conditioned', 'Off season', 'Runs from', 'Hours',
   'Wheelchair', 'changing table', 'Free of charge',
   'Planted', 'years old', 'Height', 'Crown diameter', 'Trunk girth',
+  'Cars', 'Pedestrians', 'lorries', 'counted', 'Monday', 'Citizen sensor', 'weekday',
 ];
 
 afterEach(async () => {
@@ -217,6 +226,7 @@ describe('map popups in German', () => {
     ['news', () => newsPopupHtml(NEWS), ['Weiterlesen →']],
     ['police', () => safetyPopupHtml(SAFETY), ['Details →']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['US AQI: 85 (Mäßig)']],
+    ['street counts', () => telraamPopupHtml(TELRAAM, false), ['Oranienstraße', 'Montag, 2. November · 8 Std. gezählt', 'Pkw2.300+15 %', 'Räder700−12 %', 'Busse und Lkw400±0 %', 'Radanteil am Fahrzeugverkehr: 21 %', 'Bürgersensor']],
     ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)'), ['Wilder Müll', 'In Bearbeitung', 'Gemeldet: ', 'Aktualisiert: ', 'Im Portal der Stadt ansehen ↗']],
     ['street tree', () => streetTreePopupHtml(TREE, false, 'Baumbestand Berlin', TREE_NOW), ['Silber-Linde', 'Tilia tomentosa', 'Gepflanzt: 1985 (41 Jahre alt)', 'Höhe: 13 m', 'Kronendurchmesser: 6,5 m', 'Stammumfang: 104 cm', 'Unter den Linden · Mitte', 'Baumbestand Berlin']],
   ] as const)('%s popup', async (_name, build, expected) => {

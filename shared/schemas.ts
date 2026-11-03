@@ -521,6 +521,29 @@ export const HeatReliefDataSchema = z.object({
   })),
 });
 
+// --- Street counts (Telraam, Berlin zählt Mobilität) ---
+
+const TelraamDayCountsShape = {
+  cars: z.number(),
+  bikes: z.number(),
+  pedestrians: z.number(),
+  heavy: z.number(),
+};
+
+export const TelraamCountsDataSchema = z.object({
+  date: z.string(),
+  segments: z.array(z.object({
+    ...TelraamDayCountsShape,
+    id: z.number(),
+    lon: z.number(),
+    lat: z.number(),
+    street: z.string().nullable(),
+    district: z.string().nullable(),
+    hours: z.number(),
+    usual: z.object({ ...TelraamDayCountsShape, days: z.number() }).nullable(),
+  })),
+});
+
 // --- Flood Status (LHP) ---
 
 export const FloodStatusSchema = z.object({

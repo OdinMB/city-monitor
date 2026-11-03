@@ -34,6 +34,8 @@ export type {
   TrafficCountMode, TrafficCountSite, TrafficCountData,
   EvChargingData, EvChargingStation, EvLivePoint, EvPlug, EvPointStatus,
 } from '@city-monitor/shared';
+export type { TelraamCountsData, TelraamSegmentCount, TelraamDayCounts } from '@city-monitor/shared';
+import type { TelraamCountsData } from '@city-monitor/shared';
 
 // Import types used locally in api object definitions
 import type {
@@ -81,6 +83,7 @@ export const api = {
   getTrafficCounts: (city: string) => fetchJson<ApiResponse<TrafficCountData | null>>(`${API_BASE}/${city}/traffic-counts`),
   getEvCharging: (city: string) => fetchJson<ApiResponse<EvChargingData | null>>(`${API_BASE}/${city}/ev-charging`),
   getHeatRelief: (city: string) => fetchJson<ApiResponse<HeatReliefData | null>>(`${API_BASE}/${city}/heat-relief`),
+  getTelraamCounts: (city: string) => fetchJson<ApiResponse<TelraamCountsData | null>>(`${API_BASE}/${city}/telraam-counts`),
   getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),

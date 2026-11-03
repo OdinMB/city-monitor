@@ -11,7 +11,8 @@ export type NoiseWmsLayer = NoiseLayer | null;
 export type NewsSubLayer = 'news' | 'police';
 export type EmergencySubLayer = 'pharmacies' | 'aeds';
 export type WaterSubLayer = 'levels' | 'bathing';
-export type TrafficSubLayer = 'public-transport' | 'incidents' | 'congestion' | 'roadworks' | 'car-counts' | 'bike-counts';
+/** `telraam`: yesterday's citizen street counts (Berlin), off until chosen (not in DEFAULT_TRAFFIC_SUBS). */
+export type TrafficSubLayer = 'public-transport' | 'incidents' | 'congestion' | 'roadworks' | 'car-counts' | 'bike-counts' | 'telraam';
 export type HeatReliefSubLayer = 'cool' | 'fountains' | 'toilets';
 
 interface CommandCenterState {
