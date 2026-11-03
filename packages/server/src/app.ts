@@ -28,6 +28,7 @@ import { createBudgetRouter } from './routes/budget.js';
 import { createBathingRouter } from './routes/bathing.js';
 import { createLiftOutagesRouter } from './routes/lift-outages.js';
 import { createBikeSharingRouter } from './routes/bike-sharing.js';
+import { createElectricityRouter } from './routes/electricity.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
 import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createPopulationRouter } from './routes/population.js';
@@ -58,6 +59,7 @@ import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
 import { createLiftOutageIngestion } from './cron/ingest-lift-outages.js';
 import { createBikeSharingIngestion } from './cron/ingest-bike-sharing.js';
+import { createElectricityIngestion } from './cron/ingest-electricity.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { createPopulationIngestion } from './cron/ingest-population.js';
@@ -184,7 +186,8 @@ export async function createApp(options?: {
     { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => !!c.dataSources.liftOutages },
     // 30 min: the job stores a row that often (BIKE_SHARING_DB_INTERVAL_MS), though it runs every 5
     { jobName: 'ingest-bike-sharing', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'bike-sharing' }, serves: (c) => !!c.dataSources.bikeSharing },
-    { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'lageso-wastewater' }, serves: (c) => !!c.dataSources.wastewater },
+    { jobName: 'ingest-electricity',  tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'smard-electricity' }, serves: (c) => !!c.dataSources.electricity },
+    { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' }, serves: (c) => !!c.dataSources.wastewater },
     { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' }, serves: (c) => !!c.dataSources.laborMarket },
     { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: (c) => !!c.dataSources.population },
     { jobName: 'ingest-feuerwehr',    tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'bf-feuerwehr' }, serves: inBerlin },
@@ -226,6 +229,7 @@ export async function createApp(options?: {
   const ingestBathing = createBathingIngestion(cache, db);
   const ingestLiftOutages = createLiftOutageIngestion(cache, db);
   const ingestBikeSharing = createBikeSharingIngestion(cache, db);
+  const ingestElectricity = createElectricityIngestion(cache, db);
   const ingestWastewater = createWastewaterIngestion(cache, db);
   const ingestLaborMarket = createLaborMarketIngestion(cache, db);
   const ingestPopulation = createPopulationIngestion(cache, db);
@@ -265,6 +269,9 @@ export async function createApp(options?: {
     { name: 'ingest-lift-outages', schedule: '*/15 * * * *', handler: ingestLiftOutages, runOnStart: s('ingest-lift-outages') },
     // GBFS updates every 60 s; the store gets a row at most every 30 min (BIKE_SHARING_DB_INTERVAL_MS)
     { name: 'ingest-bike-sharing', schedule: '*/5 * * * *', handler: ingestBikeSharing, runOnStart: s('ingest-bike-sharing') },
+    // SMARD and Energy-Charts publish quarter-hours; minute 2 of each lets the newest one land.
+    // Energy-Charts allows about 2 requests per minute per endpoint: one call each per run.
+    { name: 'ingest-electricity', schedule: '2,17,32,47 * * * *', handler: ingestElectricity, runOnStart: s('ingest-electricity') },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
     { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
@@ -326,6 +333,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
   app.use('/api', cacheFor(300), createLiftOutagesRouter(cache, db));
   app.use('/api', cacheFor(120), createBikeSharingRouter(cache, db));
+  app.use('/api', cacheFor(300), createElectricityRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
   app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));

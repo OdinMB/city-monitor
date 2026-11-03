@@ -34,6 +34,7 @@ export const CK = {
   wastewaterSummary: (cityId: string) => `${cityId}:wastewater:summary`,
   bathingSpots: (cityId: string) => `${cityId}:bathing:spots`,
   liftOutages: (cityId: string) => `${cityId}:lift-outages`,
+  electricity: (cityId: string) => `${cityId}:electricity`,
 
   // Political
   political: (cityId: string, level: string) => `${cityId}:political:${level}`,
@@ -78,6 +79,7 @@ export const CK = {
     CK.waterLevels(cityId),
     CK.floodStatus(cityId),
     CK.liftOutages(cityId),
+    CK.electricity(cityId),
     CK.budget(cityId),
     CK.appointments(cityId),
     CK.feuerwehr(cityId),

@@ -21,6 +21,7 @@ import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
 import { FloodStatusStrip } from '../strips/FloodStatusStrip.js';
 import { LiftOutagesStrip } from '../strips/LiftOutagesStrip.js';
+import { ElectricityStrip } from '../strips/ElectricityStrip.js';
 import { BathingStrip } from '../strips/BathingStrip.js';
 import { useBathingOffSeason } from '../../hooks/useBathingOffSeason.js';
 import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
@@ -207,6 +208,11 @@ export function CommandLayout() {
           {has('wastewater') && (
             <Tile title={t('panel.wastewater.title')} span={1} expandable>
               {(expanded) => <WastewaterStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {has('electricity') && (
+            <Tile title={t('panel.electricity.title')} span={1} expandable>
+              {(expanded) => <ElectricityStrip expanded={expanded} />}
             </Tile>
           )}
           {has('feuerwehr') && (

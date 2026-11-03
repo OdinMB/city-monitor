@@ -50,6 +50,7 @@ App (HelmetProvider)
                     Tile → support tile (Ko-fi link)
                     Tile(expandable) → PollenStrip
                     Tile(expandable) → WastewaterStrip
+                    Tile(expandable) → ElectricityStrip (control-area mix, Germany's CO₂ and grid signal)
                     Tile(expandable) → FeuerwehrStrip †
                     Tile(expandable) → BathingStrip (off-season badge in the heading)
                     Tile(span=2, ≥ sm only) → NewsStrip (category tabs + headlines)

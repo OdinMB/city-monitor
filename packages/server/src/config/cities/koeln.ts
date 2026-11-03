@@ -102,6 +102,7 @@ export const koeln: CityConfig = {
     },
     // The Kreis table of the kreisfreie Stadt, not the wider Agentur für Arbeit district
     laborMarket: { provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' },
+    electricity: { provider: 'smard', controlArea: 'Amprion' },
     wastewater: { provider: 'amelag', sites: ['Köln'] }, // RKI AMELAG (CC BY 4.0), about 0.86 million people
     waterLevels: {
       provider: 'pegelonline',

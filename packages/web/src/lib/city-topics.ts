@@ -19,6 +19,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   pollen: 'panel.pollen.title',
   nina: 'sidebar.layers.warnings',
   wastewater: 'panel.wastewater.title',
+  electricity: 'panel.electricity.title',
   councilMeetings: 'panel.councilMeetings.title',
   budget: 'panel.budget.title',
   laborMarket: 'panel.laborMarket.title',

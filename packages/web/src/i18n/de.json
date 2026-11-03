@@ -343,6 +343,37 @@
       "asOf": "Stand:",
       "empty": "Keine Hochwasserdaten"
     },
+    "electricity": {
+      "title": "Strom",
+      "renewableShare": "Erneuerbaren-Anteil an der Erzeugung im Netzgebiet {{area}} um {{time}}",
+      "mixLabel": "Strommix im Netzgebiet {{area}}",
+      "kind": {
+        "wind": "Wind",
+        "solar": "Solar",
+        "biomass": "Biomasse",
+        "hydro": "Wasserkraft",
+        "gas": "Erdgas",
+        "coal": "Kohle",
+        "other": "Sonstige"
+      },
+      "co2": "CO₂-Intensität, Deutschland",
+      "forecast": "Prognose",
+      "signal": "Stromampel, Deutschland",
+      "signalLevel": {
+        "2": "Grün: guter Zeitpunkt zum Stromverbrauch",
+        "1": "Gelb: durchschnittlicher Ökostromanteil",
+        "0": "Rot: wenig Ökostrom",
+        "-1": "Rot: Netzengpass"
+      },
+      "greenUntil": "Grün bis {{end}}",
+      "greenWindow": "Grün {{start}}–{{end}}",
+      "noGreen": "Keine grüne Phase vorhergesagt",
+      "history": "Erneuerbaren-Anteil im Netzgebiet {{area}}, letzte 24 Stunden",
+      "signalTimeline": "Stromampel, Deutschland, heute",
+      "greenestHour": "Grünste Stunde: {{time}} ({{share}} erneuerbar)",
+      "germanyShare": "Deutschland jetzt: {{share}} des Verbrauchs aus Erneuerbaren",
+      "empty": "Keine Stromdaten"
+    },
     "liftOutages": {
       "title": "Aufzüge & Fahrtreppen",
       "lifts": "Aufzüge außer Betrieb: {{n}}",

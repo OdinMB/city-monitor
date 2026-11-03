@@ -147,9 +147,9 @@ describe('seedDatabase', () => {
     expect(new Set(current.map((r) => r.type))).toEqual(new Set([
       'open-meteo', 'vbb-disruptions', 'aqi-grid', 'bbk-nina', 'pegelonline', 'tomtom-traffic', 'viz-roadworks', 'aponet', 'osm-aeds',
       'lageso-bathing', 'lageso-wastewater', 'ba-labor-market', 'dwd-pollen', 'abgwatch-bundestag', 'abgwatch-state', 'oparl-meetings',
-      'mss-social-atlas', 'afstat-population', 'bike-sharing',
+      'mss-social-atlas', 'afstat-population', 'bike-sharing', 'smard-electricity',
     ]));
-    expect(current).toHaveLength(19);
+    expect(current).toHaveLength(20);
     expect(snapshots.length - current.length).toBe(data.history.length);
     expect(rows.events).toBeUndefined();
     expect(rows.news_items).toHaveLength(data.news!.length);

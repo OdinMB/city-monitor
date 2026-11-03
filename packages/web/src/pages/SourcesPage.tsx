@@ -66,6 +66,23 @@ const SHARED_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Energy',
+    sources: [
+      {
+        name: 'SMARD (Bundesnetzagentur)',
+        url: 'https://www.smard.de/',
+        description: 'Electricity generation by source every quarter-hour in the control area whose grid serves the city (50Hertz for Berlin and Hamburg, Amprion for Köln, TenneT for München). City Monitor groups the sources and derives the renewable share and its hourly course. Source: Bundesnetzagentur | SMARD.de, CC BY 4.0.',
+        requires: 'electricity',
+      },
+      {
+        name: 'Energy-Charts (Fraunhofer ISE)',
+        url: 'https://www.energy-charts.info/',
+        description: 'Germany\'s grid traffic light and renewable share of load with their forecast, and the CO₂ intensity of German electricity generation, measured and forecast. Germany-wide values: the API has none per region. City Monitor derives the next green period and the greenest hour. Source: Energy-Charts.info (Fraunhofer ISE), CC BY 4.0.',
+        requires: 'electricity',
+      },
+    ],
+  },
+  {
     category: 'Safety & Emergencies',
     sources: [
       {

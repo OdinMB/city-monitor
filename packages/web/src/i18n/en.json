@@ -345,6 +345,37 @@
       "asOf": "As of",
       "empty": "No flood data"
     },
+    "electricity": {
+      "title": "Electricity",
+      "renewableShare": "renewable share of generation in the {{area}} grid area at {{time}}",
+      "mixLabel": "Generation mix in the {{area}} grid area",
+      "kind": {
+        "wind": "Wind",
+        "solar": "Solar",
+        "biomass": "Biomass",
+        "hydro": "Hydro",
+        "gas": "Gas",
+        "coal": "Coal",
+        "other": "Other"
+      },
+      "co2": "CO₂ intensity, Germany",
+      "forecast": "forecast",
+      "signal": "Grid signal, Germany",
+      "signalLevel": {
+        "2": "Green: a good time to use power",
+        "1": "Yellow: average renewable share",
+        "0": "Red: low renewable share",
+        "-1": "Red: grid congestion"
+      },
+      "greenUntil": "Green until {{end}}",
+      "greenWindow": "Green {{start}}–{{end}}",
+      "noGreen": "No green period forecast",
+      "history": "Renewable share in the {{area}} grid area, last 24 hours",
+      "signalTimeline": "Grid signal, Germany, today",
+      "greenestHour": "Greenest hour ahead: {{time}} ({{share}} renewable)",
+      "germanyShare": "Germany now: {{share}} of consumption from renewables",
+      "empty": "No electricity data"
+    },
     "liftOutages": {
       "title": "Lifts & Escalators",
       "lifts": "Lifts out of service: {{n}}",

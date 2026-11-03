@@ -359,6 +359,30 @@ export const BikeSharingDataSchema = z.object({
   updated: z.string().nullable(),
 });
 
+// --- Electricity (SMARD, Energy-Charts) ---
+
+const GENERATION_KINDS = [
+  'windOffshore', 'windOnshore', 'solar', 'biomass', 'hydro', 'otherRenewable',
+  'lignite', 'hardCoal', 'gas', 'pumpedStorage', 'otherConventional',
+] as const;
+
+export const ElectricityDataSchema = z.object({
+  controlArea: z.enum(['50Hertz', 'Amprion', 'TenneT', 'TransnetBW']),
+  mix: z.object({
+    at: z.string(),
+    mw: z.partialRecord(z.enum(GENERATION_KINDS), z.number()),
+    renewableShare: z.number(),
+  }).nullable(),
+  renewableHistory: z.array(z.object({ t: z.string(), share: z.number() })),
+  grid: z.array(z.object({
+    t: z.string(),
+    share: z.number().nullable(),
+    signal: z.union([z.literal(-1), z.literal(0), z.literal(1), z.literal(2)]).nullable(),
+    co2: z.number().nullable(),
+    co2Forecast: z.number().nullable(),
+  })),
+});
+
 // --- Flood Status (LHP) ---
 
 export const FloodStatusSchema = z.object({

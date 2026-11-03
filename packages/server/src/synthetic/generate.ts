@@ -15,7 +15,8 @@
 import SunCalc from 'suncalc';
 import type {
   AedLocation, AirQuality, AirQualityGridPoint, BathingSpot, BikeSharingData, BikeStation, BudgetSummary, BuergeramtData,
-  CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, EmergencyPharmacy,
+  CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, ElectricityData, EmergencyPharmacy,
+  GridPoint, GridSignal,
   FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
@@ -85,6 +86,7 @@ export interface SyntheticData {
   /** Not in Berlin's data set: only Köln's KVB publishes lift outages (NOT_IN_BERLIN). */
   liftOutages?: LiftOutageData;
   bikeSharing: BikeSharingData;
+  electricity: ElectricityData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -141,6 +143,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   floodStatus: (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0,
   liftOutages: (c) => c.dataSources.liftOutages !== undefined,
   bikeSharing: (c) => c.dataSources.bikeSharing !== undefined,
+  electricity: (c) => c.dataSources.electricity !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -253,6 +256,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('floodStatus')) sets.floodStatus = generateFloodStatus(rng, now, city);
   if (has.has('liftOutages')) sets.liftOutages = generateLiftOutages(rng, now, place);
   if (has.has('bikeSharing')) sets.bikeSharing = generateBikeSharing(rng, now, city, place);
+  if (has.has('electricity')) sets.electricity = generateElectricity(rng, now, city.dataSources.electricity!.controlArea);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1511,6 +1515,60 @@ function generateBikeSharing(rng: Rng, now: Date, city: CityConfig, place: Place
     }
   });
   return { system: source.system, operator: source.operator, stations, updated: new Date(reportedAt * 1000).toISOString() };
+}
+
+/**
+ * A made-up generation mix for the control area 45 minutes ago, the hourly
+ * renewable share of the day before it, and Germany's grid for today in German
+ * time: a solar bump around noon drives the share, signal and CO₂.
+ */
+function generateElectricity(rng: Rng, now: Date, controlArea: ElectricityData['controlArea']): ElectricityData {
+  const QH = 15 * 60_000;
+  const at = new Date(Math.floor((now.getTime() - 45 * 60_000) / QH) * QH);
+  const sun = (t: Date) => Math.max(0, Math.sin(((t.getUTCHours() + t.getUTCMinutes() / 60 - 5) / 14) * Math.PI));
+  const wind = rng.float(0.2, 0.8);
+  const shareAt = (t: Date) => clamp(20 + wind * 40 + sun(t) * 30, 5, 95);
+
+  const solar = Math.round(sun(at) * rng.float(6000, 12_000));
+  const windOnshore = Math.round(wind * rng.float(6000, 14_000));
+  const mw = {
+    windOnshore, solar,
+    windOffshore: controlArea === 'Amprion' ? undefined : Math.round(wind * rng.float(500, 2500)),
+    biomass: rng.int(900, 1600), hydro: rng.int(50, 600), otherRenewable: rng.int(10, 60),
+    lignite: rng.int(1500, 5000), hardCoal: rng.int(200, 1500), gas: rng.int(1000, 4000),
+    pumpedStorage: rng.int(0, 400), otherConventional: rng.int(300, 800),
+  };
+  const total = Object.values(mw).reduce<number>((s, v) => s + (v ?? 0), 0);
+  const renewable = mw.windOnshore + mw.solar + (mw.windOffshore ?? 0) + mw.biomass + mw.hydro + mw.otherRenewable;
+
+  const renewableHistory = Array.from({ length: 24 }, (_, i) => {
+    const t = new Date(Math.floor(at.getTime() / 3600_000) * 3600_000 - (23 - i) * 3600_000);
+    return { t: t.toISOString(), share: round(shareAt(t) + rng.float(-3, 3), 1) };
+  });
+
+  const dayStart = new Date(`${local(now).date}T00:00:00${berlinUtcOffset(`${local(now).date} 12:00:00`)}`);
+  const grid = Array.from({ length: 96 }, (_, i): GridPoint => {
+    const t = new Date(dayStart.getTime() + i * QH);
+    const share = round(shareAt(t), 1);
+    const signal: GridSignal = share >= 60 ? 2 : share >= 40 ? 1 : 0;
+    const co2Forecast = Math.round(650 - share * 5.5);
+    return {
+      t: t.toISOString(), share, signal,
+      co2: t.getTime() <= at.getTime() ? co2Forecast + rng.int(-15, 15) : null,
+      co2Forecast,
+    };
+  });
+
+  return {
+    controlArea,
+    mix: {
+      at: at.toISOString(),
+      mw: Object.fromEntries(Object.entries(mw).filter(([, v]) => v !== undefined)),
+      renewableShare: round((renewable / total) * 100, 1),
+    },
+    renewableHistory,
+    grid,
+  };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {
