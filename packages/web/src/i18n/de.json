@@ -517,6 +517,7 @@
       "noise": "L\u00e4rm",
       "emergencies": "Notfall",
       "traffic": "Verkehr",
+      "bike-sharing": "Leihräder",
       "water": "Wasser",
       "social": "Soziales",
       "population": "Bevölkerung",
@@ -557,6 +558,12 @@
       "good": "Gute Wohnlage",
       "normal": "Normale Wohnlage",
       "unrated": "Nicht bewertet"
+    },
+    "bikeLegend": {
+      "title": "Verfügbare Räder an der Station",
+      "none": "Keine Räder",
+      "few": "1–2 Räder",
+      "many": "3 und mehr Räder"
     },
     "population": {
       "pop-density": "Bevölkerungsdichte",
@@ -627,6 +634,11 @@
         "loud": "Laut",
         "veryLoud": "Sehr laut"
       }
+    },
+    "bike": {
+      "bikes": "Verfügbare Räder",
+      "docks": "Freie Stellplätze",
+      "updated": "Stand"
     }
   },
   "socialAtlas": {

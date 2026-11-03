@@ -25,6 +25,8 @@ export const CK = {
   appointments: (cityId: string) => `${cityId}:appointments`,
   constructionSites: (cityId: string) => `${cityId}:construction:sites`,
   aedLocations: (cityId: string) => `${cityId}:aed:locations`,
+  /** Not bootstrapped: Berlin's ~1,070 stations are about 150 KB, so the map fetches them when the layer is on. */
+  bikeSharing: (cityId: string) => `${cityId}:bike-sharing`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

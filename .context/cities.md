@@ -1,12 +1,12 @@
 # Cities: what each one has, what is missing, what is pending
 
-_Last updated: 2026-11-02._ One overview per city: which sources it has, what was looked for and not found (or ruled out), and which requests to data owners are still unanswered. The details live in the topic files linked from `CLAUDE.md`; this file is the map. Update it in the same change whenever a city gains or loses a source, a request is answered, or a search comes up empty.
+_Last updated: 2026-11-03._ One overview per city: which sources it has, what was looked for and not found (or ruled out), and which requests to data owners are still unanswered. The details live in the topic files linked from `CLAUDE.md`; this file is the map. Update it in the same change whenever a city gains or loses a source, a request is answered, or a search comes up empty.
 
 The research behind the Köln, München and Hamburg rows (licence verdicts, URLs, dead ends) is in the PM repo: `city-monitor-pm/references/engineering/2026-11-01_koeln-muenchen-hamburg-sources.md`. Feed licence verdicts are in [news.md](news.md) ("Feed status").
 
 ## Every city
 
-Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, traffic incidents (TomTom), NINA alerts, DWD pollen, pharmacies (aponet), defibrillators (OSM), roadworks ([roadworks.md](roadworks.md)), the labour-market tile (BA Eckwertetabelle: the Land table for Berlin and Hamburg, the Kreis table for Köln and München; [social-atlas.md](social-atlas.md)), the wastewater tile (RKI AMELAG plants, plus LAGeSo for Berlin's flu and RSV; [wastewater.md](wastewater.md)) and the crisis-line tile (hand-kept directory per city, re-check each November; [new-data-sources.md](new-data-sources.md)).
+Weather (BrightSky), DWD warnings, air quality (WAQI/Open-Meteo), rain radar, traffic incidents (TomTom), NINA alerts, DWD pollen, pharmacies (aponet), defibrillators (OSM), roadworks ([roadworks.md](roadworks.md)), the labour-market tile (BA Eckwertetabelle: the Land table for Berlin and Hamburg, the Kreis table for Köln and München; [social-atlas.md](social-atlas.md)), the wastewater tile (RKI AMELAG plants, plus LAGeSo for Berlin's flu and RSV; [wastewater.md](wastewater.md)) and the crisis-line tile (hand-kept directory per city, re-check each November; [new-data-sources.md](new-data-sources.md)). Since 2026-11-03 also the bike-sharing map layer, one system per city ([bike-sharing.md](bike-sharing.md)): nextbike's GBFS feeds (CC0-1.0) for nextbike Berlin, KVB-Rad in Köln and MyRadl in München (its stations inside the city only), and StadtRAD from Hamburg's SensorThings API (dl-de/by-2.0). Not added: Call a Bike (DB Connect, via MobiData BW; the feed states no licence, so it waits for a confirmation) and Dott's public GBFS (no licence stated).
 
 ## Berlin
 

@@ -1,13 +1,13 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity } from 'lucide';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Bike } from 'lucide';
 import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
-import { getNoiseWmsMinZoom, getRentMapLegend } from '../map/constants.js';
+import { BIKE_AVAILABILITY, getNoiseWmsMinZoom, getRentMapLegend } from '../map/constants.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -20,6 +20,8 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'water', icon: Droplets as IconNode, color: '#3b82f6' },
   { layer: 'emergencies', icon: HeartPulse as IconNode, color: '#ef4444' },
   { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6' },
+  // After the nine layers with a number key, so the badges stay in order
+  { layer: 'bike-sharing', icon: Bike as IconNode, color: '#16a34a' },
   { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
 ];
@@ -131,6 +133,21 @@ export function RentMapLegend({ cityId }: { cityId: string }) {
         <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
           <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
           {t(`sidebar.rentLegend.${key}`)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** What the bike-sharing circles' colours mean: the bikes available at a station. */
+export function BikeSharingLegend() {
+  const { t } = useTranslation();
+  return (
+    <ul aria-label={t('sidebar.bikeLegend.title')} className="ps-9 pe-2 py-1 space-y-0.5">
+      {BIKE_AVAILABILITY.map(({ key, color }) => (
+        <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+          <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
+          {t(`sidebar.bikeLegend.${key}`)}
         </li>
       ))}
     </ul>
@@ -258,6 +275,8 @@ export function DataLayerToggles() {
               <SubLayerList meta={TRAFFIC_SUB_META} available={available.traffic} parentColor={color}
                 isActive={(key) => traffic.has(key)} onSelect={toggleTrafficSubLayer} label={(key) => t(`sidebar.traffic.${key}`)} />
             );
+          } else if (layer === 'bike-sharing' && active) {
+            subItems = <BikeSharingLegend />;
           } else if (layer === 'emergencies' && active) {
             subItems = (
               <SubLayerList meta={EMERGENCY_SUB_META} available={available.emergencies} parentColor={color}

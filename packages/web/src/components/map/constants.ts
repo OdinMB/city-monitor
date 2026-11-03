@@ -136,6 +136,17 @@ export function getRentMapAttribution(cityId: string): string | undefined {
   return RENT_MAP_WMS[cityId]?.attribution;
 }
 
+/**
+ * Bike-sharing availability bands, for the station circles and the sidebar
+ * legend; `key` names the `sidebar.bikeLegend` label. 1–2 bikes is "few", 3 and
+ * more "many".
+ */
+export const BIKE_AVAILABILITY: ReadonlyArray<{ key: 'none' | 'few' | 'many'; color: string }> = [
+  { key: 'none', color: '#94a3b8' },
+  { key: 'few', color: '#f59e0b' },
+  { key: 'many', color: '#16a34a' },
+];
+
 /** The classes of the city's rent map, for the sidebar legend (empty without one). */
 export function getRentMapLegend(cityId: string): readonly RentMapClass[] {
   return RENT_MAP_WMS[cityId]?.legend ?? [];

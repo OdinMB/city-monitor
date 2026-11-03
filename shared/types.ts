@@ -67,6 +67,7 @@ export type CityFeature =
   | 'councilMeetings'
   | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
   | 'liftOutages'     // dataSources.liftOutages: lift and escalator outages (KVB Köln)
+  | 'bikeSharing'     // dataSources.bikeSharing: bike-sharing stations on the map (nextbike GBFS, StadtRAD)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -196,6 +197,17 @@ export type LiftOutageSource =
   /** KVB's open-data service: `<url>/aufzugsstoerung/json` and `<url>/fahrtreppenstoerung/json` */
   { provider: 'kvb'; url: string };
 
+/**
+ * A city's bike-sharing system, by the provider whose format it is in. Each
+ * provider has its own parser in packages/server/src/lib/bike-sharing-parsers.ts
+ * (.context/bike-sharing.md). `system` and `operator` are shown in the map popup.
+ */
+export type BikeSharingSource =
+  /** A GBFS 2.x system's auto-discovery file (`…/gbfs.json`); stations only, no free-floating bikes */
+  | { provider: 'gbfs'; url: string; system: string; operator: string }
+  /** Hamburg's StadtRAD on the Urban Data Platform's SensorThings API (`…/v1.1`) */
+  | { provider: 'hamburg-sta'; url: string; system: string; operator: string };
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -240,6 +252,7 @@ export interface CityDataSources {
   roadworks?: RoadworksSource;
   bathing?: BathingSource;
   liftOutages?: LiftOutageSource;
+  bikeSharing?: BikeSharingSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -734,6 +747,31 @@ export interface LiftOutageData {
   /** Out of service now, lifts first, each kind by station. */
   outages: LiftOutage[];
   /** When the operator last updated its lists (ISO 8601 with offset), null when it gave no time. */
+  updated: string | null;
+}
+
+// Bike sharing (nextbike GBFS, Hamburg StadtRAD)
+export interface BikeStation {
+  /** The operator's station id. */
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  /** Bikes available to rent now. */
+  bikes: number;
+  /** Free docks; null where the station has no fixed docks or the feed gives no capacity. */
+  docks: number | null;
+  /** When the station last reported (GBFS) or its count last changed (StadtRAD), Unix seconds. */
+  reportedAt: number | null;
+}
+
+export interface BikeSharingData {
+  /** The system as its operator brands it ("nextbike Berlin", "KVB-Rad", "StadtRAD Hamburg"). */
+  system: string;
+  operator: string;
+  /** Stations inside the city's bounding box that are installed and renting. */
+  stations: BikeStation[];
+  /** When the feed was last updated (ISO 8601), null when it gave no time. */
   updated: string | null;
 }
 

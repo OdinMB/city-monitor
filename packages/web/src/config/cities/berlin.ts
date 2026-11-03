@@ -25,7 +25,7 @@ export const berlin: WebCityConfig = {
     'news', 'police', 'nina', 'pollen', 'waterLevels', 'transit', 'events', 'appointments',
     'budget', 'roadworks', 'socialAtlas', 'laborMarket', 'wastewater', 'noiseSensors', 'councilMeetings', 'pharmacies', 'aeds',
     'political', 'districtMayors', 'stateByDistrict',
-    'bathing', 'population', 'feuerwehr',
+    'bathing', 'population', 'feuerwehr', 'bikeSharing',
     'crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap', 'bundestagByDistrict',
   ],
 };

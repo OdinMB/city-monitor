@@ -342,6 +342,23 @@ export const LiftOutageDataSchema = z.object({
   updated: z.string().nullable(),
 });
 
+// --- Bike Sharing ---
+
+export const BikeSharingDataSchema = z.object({
+  system: z.string(),
+  operator: z.string(),
+  stations: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    bikes: z.number(),
+    docks: z.number().nullable(),
+    reportedAt: z.number().nullable(),
+  })),
+  updated: z.string().nullable(),
+});
+
 // --- Flood Status (LHP) ---
 
 export const FloodStatusSchema = z.object({

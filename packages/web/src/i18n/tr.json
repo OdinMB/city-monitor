@@ -511,6 +511,7 @@
       "noise": "G\u00fcr\u00fclt\u00fc",
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
+      "bike-sharing": "Bisiklet Paylaşımı",
       "water": "Su",
       "social": "Sosyal",
       "population": "Nüfus",
@@ -551,6 +552,12 @@
       "good": "İyi konum",
       "normal": "Normal konum",
       "unrated": "Değerlendirilmedi"
+    },
+    "bikeLegend": {
+      "title": "İstasyondaki kullanılabilir bisikletler",
+      "none": "Bisiklet yok",
+      "few": "1–2 bisiklet",
+      "many": "3 veya daha fazla bisiklet"
     },
     "population": {
       "pop-density": "Nüfus Yoğunluğu",
@@ -617,6 +624,11 @@
         "loud": "Gürültülü",
         "veryLoud": "Çok gürültülü"
       }
+    },
+    "bike": {
+      "bikes": "Kullanılabilir bisiklet",
+      "docks": "Boş park yeri",
+      "updated": "Güncelleme"
     }
   },
   "socialAtlas": {

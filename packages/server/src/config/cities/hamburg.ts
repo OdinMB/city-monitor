@@ -97,6 +97,9 @@ export const hamburg: CityConfig = {
     laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Hamburg' },
     // RKI AMELAG (CC BY 4.0): Hamburg's two plants, serving about 0.58 and 1.46 million people
     wastewater: { provider: 'amelag', sites: ['Hamburg 01', 'Hamburg 02'] },
+    // StadtRAD's bikes per station on the Urban Data Platform's SensorThings API (dl-de/by-2.0,
+    // Transparenzportal "StadtRAD-Stationen Hamburg"): ~360 stations, no docks. No nextbike in Hamburg.
+    bikeSharing: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', system: 'StadtRAD Hamburg', operator: 'DB Connect' },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

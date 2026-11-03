@@ -14,7 +14,7 @@
 
 import SunCalc from 'suncalc';
 import type {
-  AedLocation, AirQuality, AirQualityGridPoint, BathingSpot, BudgetSummary, BuergeramtData,
+  AedLocation, AirQuality, AirQualityGridPoint, BathingSpot, BikeSharingData, BikeStation, BudgetSummary, BuergeramtData,
   CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, EmergencyPharmacy,
   FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
   LiftOutageData, NinaWarning,
@@ -84,6 +84,7 @@ export interface SyntheticData {
   floodStatus?: FloodStatus;
   /** Not in Berlin's data set: only Köln's KVB publishes lift outages (NOT_IN_BERLIN). */
   liftOutages?: LiftOutageData;
+  bikeSharing: BikeSharingData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -139,6 +140,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   political: (c) => politicalLevels(c).length > 0,
   floodStatus: (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0,
   liftOutages: (c) => c.dataSources.liftOutages !== undefined,
+  bikeSharing: (c) => c.dataSources.bikeSharing !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -250,6 +252,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   // Drawn last, so adding it left the other data sets' values as they were
   if (has.has('floodStatus')) sets.floodStatus = generateFloodStatus(rng, now, city);
   if (has.has('liftOutages')) sets.liftOutages = generateLiftOutages(rng, now, place);
+  if (has.has('bikeSharing')) sets.bikeSharing = generateBikeSharing(rng, now, city, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1485,6 +1488,29 @@ function generateLiftOutages(rng: Rng, now: Date, place: Place): LiftOutageData 
   });
   const updated = new Date(Math.floor(now.getTime() / (15 * 60_000)) * 15 * 60_000);
   return { outages, updated: `${localIso(updated)}:00${berlinUtcOffset(`${local(updated).date} 12:00:00`)}` };
+}
+
+/** Bike-sharing stations around the city's anchors, some empty; docks only where the real system has them. */
+function generateBikeSharing(rng: Rng, now: Date, city: CityConfig, place: Place): BikeSharingData {
+  const source = city.dataSources.bikeSharing!;
+  const docked = source.provider === 'gbfs';
+  const reportedAt = Math.floor(now.getTime() / 1000) - 60;
+  const stations: BikeStation[] = [];
+  place.anchors.forEach((a, i) => {
+    for (let k = 1; k <= 4; k++) {
+      const bikes = rng.int(0, 3) === 0 ? 0 : rng.int(1, 9);
+      const capacity = 10;
+      stations.push({
+        id: `syn-${i + 1}-${k}`,
+        name: `${MARK} ${a.name} ${k}`,
+        ...near(rng, a, 0.01),
+        bikes,
+        docks: docked ? capacity - Math.min(bikes, capacity) : null,
+        reportedAt,
+      });
+    }
+  });
+  return { system: source.system, operator: source.operator, stations, updated: new Date(reportedAt * 1000).toISOString() };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

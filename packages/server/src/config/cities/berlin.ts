@@ -133,6 +133,8 @@ export const berlin: CityConfig = {
       lon: 13.405,
       radius: 15,
     },
+    // nextbike Berlin's GBFS (CC0-1.0, stated in its system_information): ~1,080 stations
+    bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bn/gbfs.json', system: 'nextbike Berlin', operator: 'nextbike' },
     appointments: {
       provider: 'service-berlin',
       // Ids are service.berlin.de/dienstleistung/{id}/: open that page to check

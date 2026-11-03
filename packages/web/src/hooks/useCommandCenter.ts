@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'water' | 'social' | 'population' | 'political';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'water' | 'social' | 'population' | 'political';
 export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
 export type SocialLayer = 'unemployment' | 'single-parent' | 'welfare' | 'child-poverty' | 'rent';
 export type PopulationLayer = 'pop-density' | 'pop-elderly' | 'pop-foreign';
