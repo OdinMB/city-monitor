@@ -8,7 +8,7 @@ import {
   PopulationSummarySchema, TrafficIncidentSchema, TransitAlertSchema, WastewaterSummarySchema,
   WaterLevelDataSchema, WeatherDataSchema,
 } from '@city-monitor/shared/schemas.js';
-import { WaterTemperatureDataSchema } from '@city-monitor/shared/schemas.js';
+import { ParkingDataSchema, WaterTemperatureDataSchema } from '@city-monitor/shared/schemas.js';
 import type { AirQuality, CityConfig } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
@@ -57,6 +57,7 @@ function points(d: CitySyntheticData): Array<{ what: string; lat: number; lon: n
   d.citizenReports?.reports.forEach((r) => add('citizen report', r));
   d.trafficAccidents?.accidents.forEach(([lon, lat]) => add('traffic accidents', { lat, lon }));
   d.waterTemperature?.stations.forEach((s) => add('water temperature', s));
+  d.parking?.facilities.forEach((f) => add('parking', f));
   d.nina?.forEach((w) => addCoords('nina', (w.area?.geometry as { coordinates?: unknown } | undefined)?.coordinates));
   return out;
 }
@@ -103,6 +104,7 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['citizen reports', CitizenReportDataSchema, d.citizenReports],
     ['traffic accidents', TrafficAccidentDataSchema, d.trafficAccidents],
     ['water temperature', WaterTemperatureDataSchema, d.waterTemperature],
+    ['parking', ParkingDataSchema, d.parking],
     ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
       [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
   ];
@@ -318,7 +320,7 @@ describe('generateSyntheticCityData', () => {
       // Sozialmonitoring.
       expect([...held].sort()).toEqual([
         'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electricity', 'laborMarket', 'news', 'nina',
-        'pharmacies', 'political', 'pollen', 'population', 'safety', 'socialAtlas', 'summary', 'traffic', 'trafficAccidents', 'transit',
+        'parking', 'pharmacies', 'political', 'pollen', 'population', 'safety', 'socialAtlas', 'summary', 'traffic', 'trafficAccidents', 'transit',
         'wastewater', 'waterLevels', 'weather',
       ]);
       // Geofox announcements have no reporting station or map point
@@ -345,7 +347,7 @@ describe('generateSyntheticCityData', () => {
     it('passes the Zod schemas the database reads validate with', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
-        'aeds', 'aq grid', 'aq stations', 'bathing', 'bike sharing', 'construction', 'council', 'electricity', 'labor market', 'nina', 'pharmacies', 'political bundestag',
+        'aeds', 'aq grid', 'aq stations', 'bathing', 'bike sharing', 'construction', 'council', 'electricity', 'labor market', 'nina', 'parking', 'pharmacies', 'political bundestag',
         'political state', 'pollen', 'population', 'traffic', 'traffic accidents', 'transit', 'wastewater', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {

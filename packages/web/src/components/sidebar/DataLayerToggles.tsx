@@ -1,7 +1,7 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints } from 'lucide';
-import { Thermometer } from 'lucide';
+import { SquareParking, Thermometer } from 'lucide';
 import { useCommandCenter, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
@@ -9,6 +9,7 @@ import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } 
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
 import { ACCIDENT_SEVERITY, BIKE_AVAILABILITY, getNoiseWmsMinZoom, getRentMapLegend } from '../map/constants.js';
+import { PARKING_OCCUPANCY } from '../map/constants.js';
 import { REPORT_STATUS_COLORS } from '../map/layers/citizen-reports.js';
 import { useCitizenReports } from '../../hooks/useCitizenReports.js';
 import type { CitizenReportStatus } from '../../lib/api.js';
@@ -28,6 +29,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'social', icon: BarChart3 as IconNode, color: '#8b5cf6' },
   // After the nine layers with a number key, so the badges stay in order
   { layer: 'bike-sharing', icon: Bike as IconNode, color: '#16a34a' },
+  { layer: 'parking', icon: SquareParking as IconNode, color: '#2563eb' },
   { layer: 'accidents', icon: CarFront as IconNode, color: '#dc2626' },
   { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
@@ -148,6 +150,21 @@ export function RentMapLegend({ cityId }: { cityId: string }) {
         <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
           <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
           {t(`sidebar.rentLegend.${key}`)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** What the parking circles' colours mean: the share of a car park's spaces free. */
+export function ParkingLegend() {
+  const { t } = useTranslation();
+  return (
+    <ul aria-label={t('sidebar.parkingLegend.title')} className="ps-9 pe-2 py-1 space-y-0.5">
+      {PARKING_OCCUPANCY.map(({ key, color }) => (
+        <li key={key} className="flex items-center gap-2 text-[12px] text-muted">
+          <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: color }} />
+          {t(`sidebar.parkingLegend.${key}`)}
         </li>
       ))}
     </ul>
@@ -347,6 +364,8 @@ export function DataLayerToggles() {
             );
           } else if (layer === 'bike-sharing' && active) {
             subItems = <BikeSharingLegend />;
+          } else if (layer === 'parking' && active) {
+            subItems = <ParkingLegend />;
           } else if (layer === 'accidents' && active) {
             subItems = (
               <>

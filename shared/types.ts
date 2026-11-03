@@ -73,6 +73,7 @@ export type CityFeature =
   | 'citizenReports'  // dataSources.citizenReports: citizen issue reports (Open311), the reports map layer
   | 'trafficAccidents' // dataSources.trafficAccidents: last year's injury accidents on the map (Unfallatlas)
   | 'waterTemperature' // dataSources.waterTemperature: the water layer's temperature sub-layer (Wasserportal Berlin)
+  | 'parking'         // dataSources.parking: car parks with live free spaces, the parking map layer (Hamburg)
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -214,6 +215,14 @@ export type BikeSharingSource =
   | { provider: 'hamburg-sta'; url: string; system: string; operator: string };
 
 /**
+ * A city's car parks with live occupancy, by provider (.context/parking.md).
+ * `hamburg-wfs`: the Urban Data Platform's car-park WFS (`…/wfs_parkhaeuser`),
+ * fed by the city's Parkleitsystem; only the car parks that report free spaces
+ * are kept.
+ */
+export type ParkingSource = { provider: 'hamburg-wfs'; url: string };
+
+/**
  * A German transmission system operator's control area (Regelzone), spelled as
  * SMARD names its region: 50Hertz (Berlin, Hamburg and the east), Amprion (the
  * west, Köln), TenneT (a north–south band, Bavaria with München), TransnetBW
@@ -313,6 +322,7 @@ export interface CityDataSources {
   bathing?: BathingSource;
   liftOutages?: LiftOutageSource;
   bikeSharing?: BikeSharingSource;
+  parking?: ParkingSource;
   electricity?: ElectricitySource;
   citizenReports?: CitizenReportSource;
   trafficAccidents?: TrafficAccidentSource;
@@ -892,6 +902,38 @@ export interface BikeSharingData {
   /** Stations inside the city's bounding box that are installed and renting. */
   stations: BikeStation[];
   /** When the feed was last updated (ISO 8601), null when it gave no time. */
+  updated: string | null;
+}
+
+// Parking (Hamburg car-park WFS)
+export interface ParkingFacility {
+  /** The provider's id ("1012"). */
+  id: string;
+  name: string;
+  /** Multi-storey car park, underground garage or surface car park. */
+  kind: 'garage' | 'underground' | 'lot';
+  lat: number;
+  lon: number;
+  /** Free spaces now. */
+  free: number;
+  /** Spaces in all, as the car park reports them with its free count. */
+  total: number;
+  /** `closed` and `fault` as the guidance system reports them; `free` then means little. */
+  status: 'open' | 'closed' | 'fault';
+  /**
+   * Free spaces against about 10–30 minutes earlier, as the job saw them:
+   * `filling` (fewer free), `emptying` (more free), `steady`; null until the job
+   * has an earlier reading (after a restart) or when the car park did not report.
+   */
+  trend: 'filling' | 'emptying' | 'steady' | null;
+  /** When the car park last reported (ISO 8601 with offset), null when unknown. */
+  updated: string | null;
+}
+
+export interface ParkingData {
+  /** Car parks with live occupancy, by name. */
+  facilities: ParkingFacility[];
+  /** The newest report among them (ISO 8601), null when none gave a time. */
   updated: string | null;
 }
 

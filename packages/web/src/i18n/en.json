@@ -569,6 +569,7 @@
       "emergencies": "Emergencies",
       "traffic": "Traffic",
       "bike-sharing": "Bike Sharing",
+      "parking": "Car Parks",
       "accidents": "Accidents",
       "water": "Water",
       "social": "Social",
@@ -622,6 +623,13 @@
       "none": "No bikes",
       "few": "1–2 bikes",
       "many": "3 or more bikes"
+    },
+    "parkingLegend": {
+      "title": "Free spaces in a car park",
+      "plenty": "30% or more free",
+      "some": "10–30% free",
+      "few": "Under 10% free",
+      "closed": "Closed or no data"
     },
     "accidents": {
       "all": "All accidents",
@@ -720,6 +728,24 @@
       "temperature": "Water temperature",
       "measured": "Measured",
       "source": "Wasserportal Berlin"
+    },
+    "parking": {
+      "free": "Free spaces",
+      "updated": "Updated",
+      "kind": {
+        "garage": "Multi-storey car park",
+        "underground": "Underground car park",
+        "lot": "Car park"
+      },
+      "trend": {
+        "filling": "Filling up",
+        "emptying": "Emptying",
+        "steady": "Steady"
+      },
+      "status": {
+        "closed": "Closed",
+        "fault": "No current count (fault)"
+      }
     },
     "accident": {
       "severity": {

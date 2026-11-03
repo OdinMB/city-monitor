@@ -57,6 +57,8 @@ import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/chorople
 import { socialAtlasOf } from '../../lib/social-atlas.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 import { updateBikeSharingMarkers } from './layers/bike-sharing.js';
+import { updateParkingMarkers } from './layers/parking.js';
+import { useParking } from '../../hooks/useParking.js';
 import { updateCitizenReportMarkers } from './layers/citizen-reports.js';
 import { updateTrafficAccidentLayer } from './layers/traffic-accidents.js';
 
@@ -229,6 +231,9 @@ export function CityMap() {
   // Lazy: Berlin's stations are about 150 KB, fetched only while the layer is on
   const bikeSharingActive = activeLayers.has('bike-sharing');
   const { data: bikeSharingData } = useBikeSharing(city.id, bikeSharingActive);
+  // Lazy: fetched only while the parking layer is on
+  const parkingActive = activeLayers.has('parking');
+  const { data: parkingData } = useParking(city.id, parkingActive);
   // Lazy: Berlin's year of accidents is about 470 KB, fetched only while the layer is on
   const accidentsActive = activeLayers.has('accidents');
   const accidentFilter = useCommandCenter((s) => s.accidentFilter);
@@ -305,6 +310,7 @@ export function CityMap() {
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
   const bikeSharingItems = bikeSharingActive ? (bikeSharingData?.data ?? null) : null;
+  const parkingItems = parkingActive ? (parkingData?.data ?? null) : null;
   const accidentItems = accidentsActive ? (accidentData?.data ?? null) : null;
 
   // Keep current values in refs so the style.load handler always reads fresh values
@@ -348,6 +354,8 @@ export function CityMap() {
   noiseSensorItemsRef.current = noiseSensorItems;
   const bikeSharingItemsRef = useRef(bikeSharingItems);
   bikeSharingItemsRef.current = bikeSharingItems;
+  const parkingItemsRef = useRef(parkingItems);
+  parkingItemsRef.current = parkingItems;
   const accidentItemsRef = useRef(accidentItems);
   accidentItemsRef.current = accidentItems;
   const accidentFilterRef = useRef(accidentFilter);
@@ -441,6 +449,7 @@ export function CityMap() {
         updateUbaStationLayer(map, ubaItemsRef.current, isDarkRef.current, langRef.current, timeZoneRef.current);
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
         updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDarkRef.current);
+        updateParkingMarkers(map, parkingItemsRef.current, isDarkRef.current);
         updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
@@ -534,6 +543,7 @@ export function CityMap() {
       updateUbaStationLayer(map, ubaItemsRef.current, isDark, langRef.current, timeZoneRef.current);
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
       updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDark);
+      updateParkingMarkers(map, parkingItemsRef.current, isDark);
       updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
@@ -603,7 +613,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, accidentItems, waterLevelItems, bathingItems, waterTemperatureItems, citizenReportItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, parkingItems, accidentItems, waterLevelItems, bathingItems, waterTemperatureItems, citizenReportItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -747,6 +757,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [bikeSharingItems]);
+
+  // Update car parks (lazy: data only while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateParkingMarkers(map, parkingItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [parkingItems]);
 
   // Update the accident layer (lazy: data only while the layer is on) and its filter
   useEffect(() => {

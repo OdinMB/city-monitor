@@ -19,7 +19,7 @@ type Row = Record<string, unknown>;
 
 /** Snapshot types of sources Berlin's config lacks: München's seed writes them instead. */
 // Berlin has no LHP gauges, and no Oberbürgermeister: only a city inside a state has one.
-const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood', 'abgwatch-mayor', 'kvb-lift-outages', 'open311-reports'];
+const NOT_IN_BERLIN: readonly SnapshotType[] = ['lhp-flood', 'abgwatch-mayor', 'kvb-lift-outages', 'open311-reports', 'parking'];
 
 /** Records what the write functions insert, per table name. */
 function fakeDb() {
@@ -148,8 +148,9 @@ describe('seedDatabase', () => {
       'open-meteo', 'vbb-disruptions', 'aqi-grid', 'bbk-nina', 'pegelonline', 'tomtom-traffic', 'viz-roadworks', 'aponet', 'osm-aeds',
       'lageso-bathing', 'lageso-wastewater', 'ba-labor-market', 'dwd-pollen', 'abgwatch-bundestag', 'abgwatch-state', 'oparl-meetings',
       'mss-social-atlas', 'afstat-population', 'bike-sharing', 'smard-electricity', 'uba-airquality', 'unfallatlas-accidents',
+      'parking',
     ]));
-    expect(current).toHaveLength(22);
+    expect(current).toHaveLength(23);
     expect(snapshots.length - current.length).toBe(data.history.length);
     expect(rows.events).toBeUndefined();
     expect(rows.news_items).toHaveLength(data.news!.length);
@@ -160,7 +161,7 @@ describe('seedDatabase', () => {
 
   it('writes the snapshot types Berlin lacks for a city that has their source', async () => {
     const types = new Set<unknown>();
-    for (const city of [muenchen, koeln]) {
+    for (const city of [muenchen, koeln, hamburg]) {
       const { local, rows } = fakeDb();
       await seedDatabase(local, generateSyntheticCityData({ now: new Date(), city }));
       for (const r of rows.snapshots ?? []) types.add(r.type);

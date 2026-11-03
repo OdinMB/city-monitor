@@ -82,6 +82,7 @@ const MARKER_LAYER_IDS = [
   'construction-points', 'political-markers',
   'traffic-incidents-circle', 'traffic-incidents-label',
   'bike-station-circle',
+  'parking-circle',
   'accident-heat', 'accident-circle', 'accident-fatal',
 ];
 

@@ -83,6 +83,12 @@ describe('cityLayers', () => {
     expect(withFeatures().layers.has('bike-sharing')).toBe(false);
   });
 
+  it('shows the parking layer only in Hamburg, the one city with a live car-park feed', () => {
+    expect(cityLayers(hamburg).layers.has('parking')).toBe(true);
+    for (const city of [berlin, koeln, muenchen]) expect(cityLayers(city).layers.has('parking'), city.id).toBe(false);
+    expect(withFeatures('parking').layers.has('parking')).toBe(true);
+  });
+
   it('shows the accident layer in every city with Unfallatlas data, and not without', () => {
     for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('accidents'), city.id).toBe(true);
     expect(withFeatures('trafficAccidents').layers.has('accidents')).toBe(true);

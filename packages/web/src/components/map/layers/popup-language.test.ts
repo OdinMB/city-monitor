@@ -17,6 +17,7 @@ import { buildPoliticalPopupHtml } from './political';
 import { newsPopupHtml, safetyPopupHtml } from './news-safety';
 import { aqPopupHtml } from './air-quality';
 import { citizenReportPopupHtml } from './citizen-reports';
+import { parkingPopupHtml } from './parking';
 
 /**
  * Map popups are HTML strings built outside React, so they look their words
@@ -88,6 +89,10 @@ const DISTRICTS: PoliticalDistrict[] = [{
 const NEWS = { title: 'Tram M10 eingestellt', sourceName: 'rbb24', categoryLabel: 'Verkehr', url: 'https://www.rbb24.de/a/1', locationLabel: '', importance: 0.5 };
 const SAFETY = { title: 'Einbruch in Wohnung', district: 'Mitte', url: 'https://www.berlin.de/polizei/1', locationLabel: '' };
 const AQ_STATION = { aqi: 85, station: 'Berlin Mitte', url: 'https://aqicn.org/station/@6132/' };
+// Updated on an earlier day, so the popup shows the date with the time
+const PARKING = {
+  name: 'Europa Passage', kind: 'garage', free: 120, total: 400, status: 'open', trend: 'filling', updated: '2026-03-03T08:05:00+01:00',
+};
 const REPORT = {
   category: 'Wilder Müll', status: 'in_progress', statusLabel: 'In Bearbeitung', requestedAt: '2026-11-02T12:26:50+01:00',
   updatedAt: '2026-11-02T17:01:17+01:00', url: 'https://sags-uns.stadt-koeln.de/node/95349',
@@ -115,6 +120,8 @@ const POPUPS: Array<[string, () => string]> = [
   ['police', () => safetyPopupHtml(SAFETY)],
   ['air quality station', () => aqPopupHtml(AQ_STATION)],
   ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)')],
+  ['car park', () => parkingPopupHtml(PARKING, false)],
+  ['car park, fault', () => parkingPopupHtml({ ...PARKING, status: 'fault', trend: null }, false)],
 ];
 
 /**
@@ -131,6 +138,7 @@ const ENGLISH_ONLY = [
   'Roadworks', 'planned work', 'Severe', 'Reported', 'In progress', "city's portal", 'Bikes available', 'Free docks', 'Updated',
   'Roadworks', 'planned work', 'Severe', 'Bikes available', 'Free docks', 'Updated',
   'Accident with', 'Turning accident', 'Collision', 'Involved', 'bicycle', 'Friday',
+  'Free spaces', 'Multi-storey', 'Filling up', 'Closed', 'fault',
 ];
 
 afterEach(async () => {
@@ -173,6 +181,8 @@ describe('map popups in German', () => {
     ['police', () => safetyPopupHtml(SAFETY), ['Details →']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['US AQI: 85 (Mäßig)']],
     ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)'), ['Wilder Müll', 'In Bearbeitung', 'Gemeldet: ', 'Aktualisiert: ', 'Im Portal der Stadt ansehen ↗']],
+    ['car park', () => parkingPopupHtml(PARKING, false), ['Europa Passage', 'Parkhaus', 'Freie Plätze: 120 / 400', '↘ Füllt sich', 'Stand: 3. M', ', 08:05']],
+    ['car park, fault', () => parkingPopupHtml({ ...PARKING, status: 'fault', trend: null }, false), ['Keine aktuelle Zählung (Störung)']],
   ] as const)('%s popup', async (_name, build, expected) => {
     await i18n.changeLanguage('de');
     const text = textOf(build());
@@ -230,6 +240,7 @@ describe('numbers that stay left-to-right in Arabic (right-to-left)', () => {
     ['social atlas values', () => socialAtlasPopupHtml(SOCIAL), ['5.2%', '20.1%', '10.3%', '15.4%']],
     ['population density', () => populationPopupHtml(POPULATION), [`${(12000).toLocaleString('ar')}/km²`]],
     ['accident hour', () => accidentPopupHtml(ACCIDENT, 2025, false), ['17:00–18:00']],
+    ['car park spaces', () => parkingPopupHtml(PARKING, false), [`${(120).toLocaleString('ar')} / ${(400).toLocaleString('ar')}`]],
   ] as const)('%s stay left-to-right', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     const texts = ltrTexts(build());
@@ -267,6 +278,7 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['police', () => safetyPopupHtml(SAFETY), ['Einbruch in Wohnung', 'Mitte']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['Berlin Mitte']],
     ['bike station', () => bikeStationPopupHtml(BIKE, false), ['S Halensee (Kurfürstendamm)', 'nextbike Berlin', 'nextbike']],
+    ['car park', () => parkingPopupHtml(PARKING, false), ['Europa Passage']],
   ] as const)('%s popup isolates its feed text', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     expect(sourceTexts(build())).toEqual(values);
@@ -358,6 +370,9 @@ describe('map popups in English', () => {
     ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP), ['Water temperature: 9.3 °C', 'Measured: Mar 3, 02:45', 'Wasserportal Berlin ↗']],
     ['water temperature today, as a time', () => waterTemperaturePopupHtml(WATER_TEMP, new Date('2026-03-03T12:00:00Z')), ['Measured: 02:45']],
     ['water temperature with an unsafe link', () => waterTemperaturePopupHtml({ ...WATER_TEMP, url: 'javascript:alert(1)' }), ['Water temperature: 9.3 °C']],
+    ['car park', () => parkingPopupHtml(PARKING, false), ['Multi-storey car park', 'Free spaces: 120 / 400', '↘ Filling up', 'Updated: Mar 3, 08:05']],
+    ['car park updated today, as a time', () => parkingPopupHtml(PARKING, false, new Date('2026-03-03T12:00:00Z')), ['Updated: 08:05']],
+    ['closed car park', () => parkingPopupHtml({ ...PARKING, status: 'closed', free: 0, trend: null }, false), ['Closed']],
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Tel: 030 123456', 'Directions ↗']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Indoor', 'Access: customers only', 'Directions ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Noise Sensor #4711', '58.2 dB (Loud)', 'Min: 40.1 dB · Max: 75.3 dB']],

@@ -29,6 +29,7 @@ import { createBudgetRouter } from './routes/budget.js';
 import { createBathingRouter } from './routes/bathing.js';
 import { createLiftOutagesRouter } from './routes/lift-outages.js';
 import { createBikeSharingRouter } from './routes/bike-sharing.js';
+import { createParkingRouter } from './routes/parking.js';
 import { createElectricityRouter } from './routes/electricity.js';
 import { createCitizenReportsRouter } from './routes/citizen-reports.js';
 import { createTrafficAccidentsRouter } from './routes/traffic-accidents.js';
@@ -64,6 +65,7 @@ import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
 import { createLiftOutageIngestion } from './cron/ingest-lift-outages.js';
 import { createBikeSharingIngestion } from './cron/ingest-bike-sharing.js';
+import { createParkingIngestion } from './cron/ingest-parking.js';
 import { createElectricityIngestion } from './cron/ingest-electricity.js';
 import { createCitizenReportIngestion } from './cron/ingest-citizen-reports.js';
 import { createTrafficAccidentIngestion } from './cron/ingest-traffic-accidents.js';
@@ -196,6 +198,8 @@ export async function createApp(options?: {
     { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => !!c.dataSources.liftOutages },
     // 30 min: the job stores a row that often (BIKE_SHARING_DB_INTERVAL_MS), though it runs every 5
     { jobName: 'ingest-bike-sharing', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'bike-sharing' }, serves: (c) => !!c.dataSources.bikeSharing },
+    // 15 min: the job stores a row that often (PARKING_DB_INTERVAL_MS), though it runs every 5
+    { jobName: 'ingest-parking',      tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'parking' }, serves: (c) => !!c.dataSources.parking },
     { jobName: 'ingest-electricity',  tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'smard-electricity' }, serves: (c) => !!c.dataSources.electricity },
     { jobName: 'ingest-citizen-reports', tableName: 'snapshots', maxAgeSeconds: 900, filter: { column: 'type', value: 'open311-reports' }, serves: (c) => !!c.dataSources.citizenReports },
     { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' }, serves: (c) => !!c.dataSources.wastewater },
@@ -243,6 +247,7 @@ export async function createApp(options?: {
   const ingestBathing = createBathingIngestion(cache, db);
   const ingestLiftOutages = createLiftOutageIngestion(cache, db);
   const ingestBikeSharing = createBikeSharingIngestion(cache, db);
+  const ingestParking = createParkingIngestion(cache, db);
   const ingestElectricity = createElectricityIngestion(cache, db);
   const ingestCitizenReports = createCitizenReportIngestion(cache, db);
   const ingestTrafficAccidents = createTrafficAccidentIngestion(cache, db);
@@ -289,6 +294,8 @@ export async function createApp(options?: {
     { name: 'ingest-lift-outages', schedule: '*/15 * * * *', handler: ingestLiftOutages, runOnStart: s('ingest-lift-outages') },
     // GBFS updates every 60 s; the store gets a row at most every 30 min (BIKE_SHARING_DB_INTERVAL_MS)
     { name: 'ingest-bike-sharing', schedule: '*/5 * * * *', handler: ingestBikeSharing, runOnStart: s('ingest-bike-sharing') },
+    // Hamburg's Parkleitsystem reports every 5 minutes; the store gets a row at most every 15 (PARKING_DB_INTERVAL_MS)
+    { name: 'ingest-parking', schedule: '1-59/5 * * * *', handler: ingestParking, runOnStart: s('ingest-parking') },
     // SMARD and Energy-Charts publish quarter-hours; minute 2 of each lets the newest one land.
     // Energy-Charts allows about 2 requests per minute per endpoint: one call each per run.
     { name: 'ingest-electricity', schedule: '2,17,32,47 * * * *', handler: ingestElectricity, runOnStart: s('ingest-electricity') },
@@ -360,6 +367,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
   app.use('/api', cacheFor(300), createLiftOutagesRouter(cache, db));
   app.use('/api', cacheFor(120), createBikeSharingRouter(cache, db));
+  app.use('/api', cacheFor(120), createParkingRouter(cache, db));
   app.use('/api', cacheFor(300), createElectricityRouter(cache, db));
   app.use('/api', cacheFor(300), createCitizenReportsRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));

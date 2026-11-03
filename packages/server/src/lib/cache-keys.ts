@@ -28,6 +28,8 @@ export const CK = {
   aedLocations: (cityId: string) => `${cityId}:aed:locations`,
   /** Not bootstrapped: Berlin's ~1,070 stations are about 150 KB, so the map fetches them when the layer is on. */
   bikeSharing: (cityId: string) => `${cityId}:bike-sharing`,
+  /** Not bootstrapped: the map fetches the car parks when the parking layer is on. */
+  parking: (cityId: string) => `${cityId}:parking`,
   /** Not bootstrapped: Berlin's ~13,000 accidents a year are about 450 KB, fetched when the map layer is on. */
   trafficAccidents: (cityId: string) => `${cityId}:traffic-accidents`,
 

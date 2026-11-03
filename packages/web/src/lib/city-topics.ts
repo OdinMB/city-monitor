@@ -30,6 +30,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   socialAtlas: 'sidebar.layers.social',
   noiseMap: 'sidebar.layers.noise',
   bikeSharing: 'sidebar.layers.bike-sharing',
+  parking: 'sidebar.layers.parking',
   citizenReports: 'sidebar.layers.reports',
   trafficAccidents: 'sidebar.layers.accidents',
   // Refinements: road works and noise sensors are layers of traffic and noise,

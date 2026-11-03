@@ -23,7 +23,7 @@ import type {
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
   TrafficAccident, TrafficAccidentData, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
-import type { WaterTemperatureData } from '@city-monitor/shared';
+import type { ParkingData, ParkingFacility, WaterTemperatureData } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
 import type { PersistedNewsItem } from '../db/writes.js';
@@ -95,6 +95,8 @@ export interface SyntheticData {
   citizenReports?: CitizenReportData;
   trafficAccidents: TrafficAccidentData;
   waterTemperature: WaterTemperatureData;
+  /** Not in Berlin's data set: Berlin has no Parkleitsystem with open data (NOT_IN_BERLIN). */
+  parking?: ParkingData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -156,10 +158,11 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   citizenReports: (c) => c.dataSources.citizenReports !== undefined,
   trafficAccidents: (c) => c.dataSources.trafficAccidents !== undefined,
   waterTemperature: (c) => (c.dataSources.waterTemperature?.stations.length ?? 0) > 0,
+  parking: (c) => c.dataSources.parking !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
-const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages', 'citizenReports'];
+const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages', 'citizenReports', 'parking'];
 
 /** The data sets the synthetic seed writes for `city`: those production would hold for it. */
 export function syntheticCoverage(city: CityConfig): SyntheticDataSet[] {
@@ -273,6 +276,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('citizenReports')) sets.citizenReports = generateCitizenReports(rng, now, place);
   if (has.has('trafficAccidents')) sets.trafficAccidents = generateTrafficAccidents(rng, now, place);
   if (has.has('waterTemperature')) sets.waterTemperature = generateWaterTemperature(rng, now, city);
+  if (has.has('parking')) sets.parking = generateParking(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1531,6 +1535,31 @@ function generateWaterTemperature(rng: Rng, now: Date, city: CityConfig): WaterT
     url: `${EXAMPLE}/water-temperature/${s.id}`,
   }));
   return { stations };
+}
+
+/** Car parks by the city's first anchors, one nearly full, one closed, each trend once. */
+function generateParking(rng: Rng, now: Date, place: Place): ParkingData {
+  const kinds: ParkingFacility['kind'][] = ['garage', 'underground', 'lot'];
+  const trends: ParkingFacility['trend'][] = ['filling', 'emptying', 'steady', null];
+  const reported = new Date(Math.floor(now.getTime() / (5 * 60_000)) * 5 * 60_000);
+  const updated = `${localIso(reported)}:00${berlinUtcOffset(`${local(reported).date} 12:00:00`)}`;
+  const facilities: ParkingFacility[] = place.anchors.slice(0, 8).map((a, i) => {
+    const total = rng.int(4, 40) * 20;
+    const free = i === 0 ? rng.int(0, 5) : rng.int(0, total);
+    const status: ParkingFacility['status'] = i === 1 ? 'closed' : 'open';
+    return {
+      id: `syn-${i + 1}`,
+      name: `${MARK} Parkhaus ${a.name}`,
+      kind: kinds[i % kinds.length]!,
+      ...near(rng, a, 0.004),
+      free,
+      total,
+      status,
+      trend: status === 'open' ? trends[i % trends.length]! : null,
+      updated,
+    };
+  });
+  return { facilities, updated };
 }
 
 /** Bike-sharing stations around the city's anchors, some empty; docks only where the real system has them. */

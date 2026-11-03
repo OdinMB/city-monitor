@@ -565,6 +565,7 @@
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
       "bike-sharing": "Bisiklet Paylaşımı",
+      "parking": "Otoparklar",
       "accidents": "Kazalar",
       "water": "Su",
       "social": "Sosyal",
@@ -618,6 +619,13 @@
       "none": "Bisiklet yok",
       "few": "1–2 bisiklet",
       "many": "3 veya daha fazla bisiklet"
+    },
+    "parkingLegend": {
+      "title": "Otoparktaki boş yerler",
+      "plenty": "%30 veya daha fazla boş",
+      "some": "%10–30 boş",
+      "few": "%10'dan az boş",
+      "closed": "Kapalı veya veri yok"
     },
     "accidents": {
       "all": "Tüm kazalar",
@@ -716,6 +724,24 @@
       "temperature": "Su sıcaklığı",
       "measured": "Ölçüm",
       "source": "Wasserportal Berlin"
+    },
+    "parking": {
+      "free": "Boş yerler",
+      "updated": "Güncelleme",
+      "kind": {
+        "garage": "Katlı otopark",
+        "underground": "Yeraltı otoparkı",
+        "lot": "Açık otopark"
+      },
+      "trend": {
+        "filling": "Doluyor",
+        "emptying": "Boşalıyor",
+        "steady": "Sabit"
+      },
+      "status": {
+        "closed": "Kapalı",
+        "fault": "Güncel sayım yok (arıza)"
+      }
     },
     "accident": {
       "severity": {

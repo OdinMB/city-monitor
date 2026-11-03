@@ -391,6 +391,24 @@ export const BikeSharingDataSchema = z.object({
   updated: z.string().nullable(),
 });
 
+// --- Parking ---
+
+export const ParkingDataSchema = z.object({
+  facilities: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    kind: z.enum(['garage', 'underground', 'lot']),
+    lat: z.number(),
+    lon: z.number(),
+    free: z.number(),
+    total: z.number(),
+    status: z.enum(['open', 'closed', 'fault']),
+    trend: z.enum(['filling', 'emptying', 'steady']).nullable(),
+    updated: z.string().nullable(),
+  })),
+  updated: z.string().nullable(),
+});
+
 // --- Electricity (SMARD, Energy-Charts) ---
 
 const GENERATION_KINDS = [

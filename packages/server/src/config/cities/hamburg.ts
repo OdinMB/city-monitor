@@ -110,6 +110,9 @@ export const hamburg: CityConfig = {
     // StadtRAD's bikes per station on the Urban Data Platform's SensorThings API (dl-de/by-2.0,
     // Transparenzportal "StadtRAD-Stationen Hamburg"): ~360 stations, no docks. No nextbike in Hamburg.
     bikeSharing: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', system: 'StadtRAD Hamburg', operator: 'DB Connect' },
+    // Car parks from the Parkleitsystem on the Urban Data Platform's WFS (dl-de/by-2.0, Transparenzportal
+    // "Parkhäuser Hamburg"): 127 car parks, 45 of them with live free spaces, which the job keeps (2026-11-03)
+    parking: { provider: 'hamburg-wfs', url: 'https://geodienste.hamburg.de/wfs_parkhaeuser' },
     // Unfallatlas (dl-de/by-2.0): the whole Land, ~7,100 injury accidents in 2025
     trafficAccidents: { provider: 'unfallatlas', ags: '02000000' },
     waterLevels: {

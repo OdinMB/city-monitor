@@ -114,7 +114,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
       vi.stubEnv('ACTIVE_CITIES', activeCities);
       await createApp();
 
-      expect(scheduled.jobs).toHaveLength(34);
+      expect(scheduled.jobs).toHaveLength(35);
       for (const name of BERLIN_ONLY) expect(names(scheduled.jobs)).toContain(name);
       expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
         .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention')));
@@ -125,7 +125,7 @@ describe('createApp startup runs for Berlin-only jobs', () => {
     vi.stubEnv('ACTIVE_CITIES', 'hamburg');
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(34);
+    expect(scheduled.jobs).toHaveLength(35);
     expect(names(scheduled.jobs.filter((j) => j.runOnStart)))
       .toEqual(names(scheduled.jobs.filter((j) => j.name !== 'data-retention' && !BERLIN_ONLY.includes(j.name))));
   });
@@ -162,7 +162,7 @@ describe('createApp startup runs with fresh stored data', () => {
   it('still runs the air-quality grid job on start, since the stored grid has no WAQI stations', async () => {
     await createApp();
 
-    expect(scheduled.jobs).toHaveLength(34);
+    expect(scheduled.jobs).toHaveLength(35);
     const startup = scheduled.jobs.filter((j) => j.runOnStart).map((j) => j.name);
     expect(startup).toEqual(['ingest-aq-grid']);
   });
@@ -196,9 +196,10 @@ describe('createApp startup runs per active city', () => {
     stored.execute = rowsFreshFor([]);
     await createApp();
 
-    // Berlin has no LHP gauges (its rivers are on PEGELONLINE), no KVB lifts and no Open311 server
+    // Berlin has no LHP gauges (its rivers are on PEGELONLINE), no KVB lifts, no Open311 server
+    // and no car parks with open live counts
     expect(startupRuns()).toEqual(ingestionJobs().filter((name) =>
-      name !== 'ingest-flood-status' && name !== 'ingest-lift-outages' && name !== 'ingest-citizen-reports'));
+      name !== 'ingest-flood-status' && name !== 'ingest-lift-outages' && name !== 'ingest-citizen-reports' && name !== 'ingest-parking'));
   });
 
   it('runs the citizen-reports job for Köln and München without data', async () => {
@@ -241,7 +242,7 @@ describe('createApp startup runs per active city', () => {
     expect(startupRuns()).toEqual([
       'ingest-feeds', 'summarize-news', 'ingest-weather', 'ingest-safety', 'ingest-nina',
       'ingest-pharmacies', 'ingest-traffic', 'ingest-political', 'ingest-aq-grid', 'ingest-uba-air-quality', 'ingest-construction', 'ingest-aeds',
-      'ingest-social-atlas', 'ingest-water-levels', 'ingest-bathing', 'ingest-bike-sharing', 'ingest-electricity', 'ingest-wastewater', 'ingest-labor-market',
+      'ingest-social-atlas', 'ingest-water-levels', 'ingest-bathing', 'ingest-bike-sharing', 'ingest-parking', 'ingest-electricity', 'ingest-wastewater', 'ingest-labor-market',
       'ingest-population', 'ingest-traffic-accidents', 'ingest-pollen', 'ingest-council-meetings',
     ]);
   });

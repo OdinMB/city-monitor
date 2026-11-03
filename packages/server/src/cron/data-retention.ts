@@ -72,6 +72,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'lhp-flood',          retentionMs: 2 * DAY_MS },
   { type: 'kvb-lift-outages',   retentionMs: 2 * DAY_MS },
   { type: 'wasserportal-temp',  retentionMs: 2 * DAY_MS },
+  { type: 'parking',            retentionMs: 2 * DAY_MS },
   { type: 'bike-sharing',       retentionMs: 2 * DAY_MS },
   { type: 'smard-electricity',  retentionMs: 2 * DAY_MS },
   { type: 'uba-airquality',     retentionMs: 2 * DAY_MS },

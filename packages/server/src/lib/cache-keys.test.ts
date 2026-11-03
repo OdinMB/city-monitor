@@ -39,6 +39,7 @@ describe('CK (cache keys)', () => {
   it('water and environmental keys', () => {
     expect(CK.waterLevels('berlin')).toBe('berlin:water-levels');
     expect(CK.waterTemperature('berlin')).toBe('berlin:water-temperature');
+    expect(CK.parking('hamburg')).toBe('hamburg:parking');
     expect(CK.wastewaterSummary('berlin')).toBe('berlin:wastewater:summary');
     expect(CK.bathingSpots('berlin')).toBe('berlin:bathing:spots');
     expect(CK.liftOutages('koeln')).toBe('koeln:lift-outages');

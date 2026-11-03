@@ -149,6 +149,19 @@ export const BIKE_AVAILABILITY: ReadonlyArray<{ key: 'none' | 'few' | 'many'; co
 ];
 
 /**
+ * Car-park bands by the share of spaces free, for the parking circles and the
+ * sidebar legend; `key` names the `sidebar.parkingLegend` label. `minShare` is
+ * the lowest free share of the band; `closed` is a closed car park or one whose
+ * guidance system reports a fault, whatever its count.
+ */
+export const PARKING_OCCUPANCY: ReadonlyArray<{ key: 'plenty' | 'some' | 'few' | 'closed'; color: string; minShare: number | null }> = [
+  { key: 'plenty', color: '#16a34a', minShare: 0.3 },
+  { key: 'some', color: '#f59e0b', minShare: 0.1 },
+  { key: 'few', color: '#dc2626', minShare: 0 },
+  { key: 'closed', color: '#94a3b8', minShare: null },
+];
+
+/**
  * Accident severity (the worst injury: 1 killed, 2 seriously, 3 slightly
  * injured), for the accident circles and the sidebar legend; `key` names the
  * `sidebar.accidentLegend` label.

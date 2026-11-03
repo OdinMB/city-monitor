@@ -109,6 +109,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['nextbike (GBFS)', (c) => c.dataSources.bikeSharing?.provider === 'gbfs'],
   ['Unfallatlas (Statistische Ämter des Bundes und der Länder)', (c) => c.dataSources.trafficAccidents?.provider === 'unfallatlas'],
   ['StadtRAD Hamburg (Urban Data Platform)', (c) => c.dataSources.bikeSharing?.provider === 'hamburg-sta'],
+  ['Parkhäuser Hamburg (Urban Data Platform)', (c) => c.dataSources.parking?.provider === 'hamburg-wfs'],
   // ingest-electricity: SMARD for the city's control area, Energy-Charts for Germany
   ['SMARD (Bundesnetzagentur)', (c) => c.dataSources.electricity !== undefined],
   ['Energy-Charts (Fraunhofer ISE)', (c) => c.dataSources.electricity !== undefined],
@@ -230,6 +231,7 @@ describe('SourcesPage licence credits', () => {
     'nextbike (GBFS)': 'Data: nextbike GmbH, CC0 1.0.',
     'Unfallatlas (Statistische Ämter des Bundes und der Länder)': 'Source: Statistische Ämter des Bundes und der Länder, Unfallatlas, dl-de/by-2-0.',
     'StadtRAD Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    'Parkhäuser Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
     'Sag’s uns (Offene Daten Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
     'Mach München besser': 'Source: Landeshauptstadt München, IT-Referat, CC0 1.0.',
     'Indikatorenatlas München': 'Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0.',
