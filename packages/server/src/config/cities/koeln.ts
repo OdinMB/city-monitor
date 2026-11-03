@@ -128,6 +128,13 @@ export const koeln: CityConfig = {
     liftOutages: { provider: 'kvb', url: 'https://data.webservice-kvb.koeln/service/opendata' },
     // KVB-Rad, run by nextbike: its GBFS (CC0-1.0), ~310 stations, 120 of them virtual (no docks)
     bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_kg/gbfs.json', system: 'KVB-Rad', operator: 'nextbike' },
+    // "Sag's uns" citizen reports, Open311 on Mark-a-Spot (dl-de/zero-2.0). A request's page
+    // is its Drupal node, which only the extensions name.
+    citizenReports: {
+      provider: 'open311',
+      baseUrl: 'https://sags-uns.stadt-koeln.de/georeport/v2',
+      requestUrl: 'https://sags-uns.stadt-koeln.de/node/{nid}',
+    },
     // The city's own events (Stadt Köln open data, dl-de/zero-2.0)
     events: [
       { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },

@@ -42,6 +42,7 @@ describe('CK (cache keys)', () => {
     expect(CK.bathingSpots('berlin')).toBe('berlin:bathing:spots');
     expect(CK.liftOutages('koeln')).toBe('koeln:lift-outages');
     expect(CK.electricity('koeln')).toBe('koeln:electricity');
+    expect(CK.citizenReports('muenchen')).toBe('muenchen:citizen-reports');
   });
 
   it('political keys', () => {

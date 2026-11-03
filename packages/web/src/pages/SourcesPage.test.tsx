@@ -110,6 +110,9 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   // ingest-electricity: SMARD for the city's control area, Energy-Charts for Germany
   ['SMARD (Bundesnetzagentur)', (c) => c.dataSources.electricity !== undefined],
   ['Energy-Charts (Fraunhofer ISE)', (c) => c.dataSources.electricity !== undefined],
+  // ingest-citizen-reports: each city's Open311 server, credited by its host
+  ['Sag’s uns (Offene Daten Köln)', (c) => c.dataSources.citizenReports?.baseUrl.startsWith('https://sags-uns.stadt-koeln.de/') === true],
+  ['Mach München besser', (c) => c.dataSources.citizenReports?.baseUrl.startsWith('https://machmuenchenbesser.de/') === true],
   ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
   // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
@@ -223,6 +226,8 @@ describe('SourcesPage licence credits', () => {
     // CC0 asks for no credit; the feed's operator is named anyway
     'nextbike (GBFS)': 'Data: nextbike GmbH, CC0 1.0.',
     'StadtRAD Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    'Sag’s uns (Offene Daten Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
+    'Mach München besser': 'Source: Landeshauptstadt München, IT-Referat, CC0 1.0.',
     'Indikatorenatlas München': 'Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0.',
     'Stadtbezirke München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
   };

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   AedLocationSchema, AirQualityGridSchema, BathingSpotSchema, BudgetSummarySchema, BuergeramtDataSchema,
-  ConstructionSiteSchema, CouncilMeetingSchema, ElectricityDataSchema, EmergencyPharmacySchema, FeuerwehrSummarySchema, FloodStatusSchema,
+  CitizenReportDataSchema, ConstructionSiteSchema, CouncilMeetingSchema, ElectricityDataSchema, EmergencyPharmacySchema, FeuerwehrSummarySchema, FloodStatusSchema,
   BikeSharingDataSchema, LaborMarketSummarySchema, LiftOutageDataSchema, AirQualityStationsSchema, NinaWarningSchema, NoiseSensorSchema, PoliticalDistrictSchema, PollenForecastSchema,
   PopulationSummarySchema, TrafficIncidentSchema, TransitAlertSchema, WastewaterSummarySchema,
   WaterLevelDataSchema, WeatherDataSchema,
@@ -53,6 +53,7 @@ function points(d: CitySyntheticData): Array<{ what: string; lat: number; lon: n
   d.bathing?.forEach((b) => add('bathing', b));
   d.noiseSensors?.forEach((s) => add('noise', s));
   d.bikeSharing?.stations.forEach((s) => add('bike sharing', s));
+  d.citizenReports?.reports.forEach((r) => add('citizen report', r));
   d.nina?.forEach((w) => addCoords('nina', (w.area?.geometry as { coordinates?: unknown } | undefined)?.coordinates));
   return out;
 }
@@ -96,6 +97,7 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['bike sharing', BikeSharingDataSchema, d.bikeSharing],
     ['electricity', ElectricityDataSchema, d.electricity],
     ['aq stations', AirQualityStationsSchema, d.airQualityStations],
+    ['citizen reports', CitizenReportDataSchema, d.citizenReports],
     ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
       [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
   ];
@@ -417,6 +419,7 @@ describe('generateSyntheticCityData', () => {
       expect(d.waterLevels === undefined).toBe(city.dataSources.waterLevels === undefined);
       expect(d.floodStatus === undefined).toBe(city.dataSources.floodStatus === undefined);
       expect(d.liftOutages === undefined).toBe(city.dataSources.liftOutages === undefined);
+      expect(d.citizenReports === undefined).toBe(city.dataSources.citizenReports === undefined);
       for (const [name, schema, value] of schemaChecks(d)) expect(schema.safeParse(value).error, name).toBeUndefined();
       expectInside(d, city, 20);
       expect(JSON.stringify(d)).not.toMatch(/Berlin|Hamburg/);

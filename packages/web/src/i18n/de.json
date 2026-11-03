@@ -574,7 +574,12 @@
       "water": "Wasser",
       "social": "Soziales",
       "population": "Bevölkerung",
-      "political": "Vertretung"
+      "political": "Vertretung",
+      "reports": "Bürgermeldungen"
+    },
+    "reports": {
+      "legend": "Stand der Bürgermeldungen",
+      "window": "Meldungen der letzten {{days}} Tage"
     },
     "news": {
       "news": "Nachrichten",
@@ -676,6 +681,16 @@
         "permissive": "gestattet",
         "no": "nicht öffentlich"
       }
+    },
+    "reports": {
+      "status": {
+        "open": "Offen",
+        "in_progress": "In Bearbeitung",
+        "closed": "Erledigt"
+      },
+      "reported": "Gemeldet",
+      "updated": "Aktualisiert",
+      "viewOnPortal": "Im Portal der Stadt ansehen"
     },
     "noise": {
       "sensor": "Lärmsensor #{{id}}",

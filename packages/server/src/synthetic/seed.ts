@@ -12,7 +12,7 @@ import postgres from 'postgres';
 import type { Db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import {
-  saveAeds, saveAirQualityGrid, saveAirQualityStations, saveAppointments, saveBathingSpots, saveBudget, saveConstructionSites,
+  saveAeds, saveAirQualityGrid, saveAirQualityStations, saveAppointments, saveBathingSpots, saveBudget, saveCitizenReports, saveConstructionSites,
   saveBikeSharing, saveCouncilMeetings, saveElectricity, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
   saveNoiseSensors, savePharmacies, savePoliticalDistricts, savePollen, savePopulation, saveSafetyReports,
   saveSocialAtlas, saveSummary, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
@@ -119,6 +119,7 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.bikeSharing) await saveBikeSharing(db, cityId, data.bikeSharing);
   if (data.electricity) await saveElectricity(db, cityId, data.electricity);
   if (data.airQualityStations) await saveAirQualityStations(db, cityId, data.airQualityStations);
+  if (data.citizenReports) await saveCitizenReports(db, cityId, data.citizenReports);
   for (const [level, districts] of Object.entries(data.political ?? {})) {
     await savePoliticalDistricts(db, cityId, level, districts);
   }

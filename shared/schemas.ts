@@ -402,6 +402,28 @@ export const ElectricityDataSchema = z.object({
   })),
 });
 
+// --- Citizen issue reports (Open311) ---
+
+const CitizenReportStatusSchema = z.enum(['open', 'in_progress', 'closed']);
+
+export const CitizenReportDataSchema = z.object({
+  reports: z.array(z.object({
+    id: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    category: z.string(),
+    group: z.enum(['waste', 'lighting', 'traffic', 'roads', 'green', 'vehicles', 'graffiti', 'other']),
+    status: CitizenReportStatusSchema,
+    statusLabel: z.string().nullable(),
+    requestedAt: z.string(),
+    updatedAt: z.string().nullable(),
+    url: z.string().nullable(),
+  })),
+  windowDays: z.number(),
+  total: z.number(),
+  counts: z.object({ open: z.number(), in_progress: z.number(), closed: z.number() }),
+});
+
 // --- Flood Status (LHP) ---
 
 export const FloodStatusSchema = z.object({

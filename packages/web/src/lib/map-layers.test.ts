@@ -58,6 +58,13 @@ describe('cityLayers', () => {
     expect(cityLayers(muenchen).layers.has('population')).toBe(true);
   });
 
+  it('gives the citizen-reports layer to the cities with an Open311 source, Köln and München', () => {
+    expect(cityLayers(koeln).layers.has('reports')).toBe(true);
+    expect(cityLayers(muenchen).layers.has('reports')).toBe(true);
+    expect(cityLayers(berlin).layers.has('reports')).toBe(false);
+    expect(cityLayers(hamburg).layers.has('reports')).toBe(false);
+  });
+
   it('shows a parent layer when any one of its sub-layers is there', () => {
     expect(withFeatures('police').layers.has('news')).toBe(true);
     expect(withFeatures('police').news).toEqual(['police']);

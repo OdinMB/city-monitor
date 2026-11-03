@@ -33,6 +33,7 @@ import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { usePopulation } from '../../hooks/usePopulation.js';
 import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
 import { useBikeSharing } from '../../hooks/useBikeSharing.js';
+import { useCitizenReports } from '../../hooks/useCitizenReports.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
 import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
@@ -54,6 +55,7 @@ import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/chorople
 import { socialAtlasOf } from '../../lib/social-atlas.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
 import { updateBikeSharingMarkers } from './layers/bike-sharing.js';
+import { updateCitizenReportMarkers } from './layers/citizen-reports.js';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -175,6 +177,9 @@ export function CityMap() {
     () => new Set([...selectedLayers].filter((layer) => available.layers.has(layer))),
     [selectedLayers, available],
   );
+  // Lazy: fetched only while the layer is on (a fortnight of reports is too large for bootstrap)
+  const reportsActive = activeLayers.has('reports');
+  const { data: citizenReportData } = useCitizenReports(city.id, reportsActive);
   const selectedNews = useCommandCenter((s) => s.newsSubLayers);
   const newsSubLayers = useMemo(() => effectiveSubLayers(selectedNews, available.news), [selectedNews, available]);
   const selectedEmergencies = useCommandCenter((s) => s.emergencySubLayers);
@@ -280,6 +285,10 @@ export function CityMap() {
     () => (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [],
     [waterActive, waterSubLayers, bathingData],
   );
+  const citizenReportItems = useMemo(
+    () => reportsActive ? (citizenReportData?.data?.reports ?? []) : [],
+    [reportsActive, citizenReportData?.data?.reports],
+  );
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
   const bikeSharingItems = bikeSharingActive ? (bikeSharingData?.data ?? null) : null;
@@ -329,6 +338,8 @@ export function CityMap() {
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
   bathingItemsRef.current = bathingItems;
+  const citizenReportItemsRef = useRef(citizenReportItems);
+  citizenReportItemsRef.current = citizenReportItems;
   const socialAtlasGeoJsonRef = useRef(socialAtlasGeoJson);
   socialAtlasGeoJsonRef.current = socialAtlasGeoJson;
   const socialAtlasMetricRef = useRef(socialAtlasMetric);
@@ -412,6 +423,7 @@ export function CityMap() {
         updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
+        updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
         updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
         setWeatherOverlay(map, weatherActiveRef.current);
@@ -502,6 +514,7 @@ export function CityMap() {
       updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
+      updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDark, cityIdRef.current);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
@@ -566,7 +579,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, waterLevelItems, bathingItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, waterLevelItems, bathingItems, citizenReportItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -731,6 +744,16 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [bathingItems]);
+
+  // Update citizen report markers (lazy — fetched only while the reports layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateCitizenReportMarkers(map, citizenReportItems, isDarkRef.current, cityIdRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [citizenReportItems]);
 
   // Update social atlas choropleth (lazy — geojson only available when layer is toggled on)
   useEffect(() => {

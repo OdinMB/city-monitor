@@ -70,6 +70,7 @@ export type CityFeature =
   | 'bikeSharing'     // dataSources.bikeSharing: bike-sharing stations on the map (nextbike GBFS, StadtRAD)
   | 'electricity'     // dataSources.electricity: generation mix of the grid control area, grid CO₂ and signal
   | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
+  | 'citizenReports'  // dataSources.citizenReports: citizen issue reports (Open311), the reports map layer
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
@@ -228,6 +229,22 @@ export interface ElectricitySource {
   controlArea: ControlArea;
 }
 
+/**
+ * A city's citizen issue reports (litter, broken street lights, potholes), by
+ * provider. `open311` is a GeoReport v2 server, both of today's on Mark-a-Spot
+ * (.context/citizen-reports.md).
+ */
+export type CitizenReportSource = {
+  provider: 'open311';
+  /** The GeoReport v2 base, without a trailing slash (`…/georeport/v2`); `/requests.json` is appended. */
+  baseUrl: string;
+  /**
+   * A request's page on the city's portal: `{id}` is replaced by the
+   * service_request_id, `{nid}` by Mark-a-Spot's node id (its extensions).
+   */
+  requestUrl: string;
+};
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -280,6 +297,7 @@ export interface CityDataSources {
   liftOutages?: LiftOutageSource;
   bikeSharing?: BikeSharingSource;
   electricity?: ElectricitySource;
+  citizenReports?: CitizenReportSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
@@ -871,6 +889,46 @@ export interface ElectricityData {
   renewableHistory: Array<{ t: string; share: number }>;
   /** Germany's grid by quarter-hour, today in German time and later quarter-hours once forecast; empty when Energy-Charts failed. */
   grid: GridPoint[];
+}
+
+// Citizen issue reports (Open311 GeoReport v2)
+export type CitizenReportStatus = 'open' | 'in_progress' | 'closed';
+
+/** The map's coarse grouping of a portal's categories, for the marker icon. */
+export type CitizenReportGroup = 'waste' | 'lighting' | 'traffic' | 'roads' | 'green' | 'vehicles' | 'graffiti' | 'other';
+
+/**
+ * One report, without anything that could name the person who made it: no
+ * description, address, photo or official reply (.context/citizen-reports.md).
+ */
+export interface CitizenReport {
+  /** The portal's service_request_id ("26227-2026"). */
+  id: string;
+  /** Rounded to four decimals (about 10 m). */
+  lat: number;
+  lon: number;
+  /** The portal's category as it names it ("Wilder Müll"). */
+  category: string;
+  group: CitizenReportGroup;
+  status: CitizenReportStatus;
+  /** The portal's own name for the status ("In Bearbeitung", "Erledigt/Beauftragt"), when it gives one. */
+  statusLabel: string | null;
+  /** ISO 8601 with offset. */
+  requestedAt: string;
+  updatedAt: string | null;
+  /** The request's page on the portal. */
+  url: string | null;
+}
+
+export interface CitizenReportData {
+  /** Newest first, at most the cap. */
+  reports: CitizenReport[];
+  /** How many days back the reports reach. */
+  windowDays: number;
+  /** Reports in the window before the cap. */
+  total: number;
+  /** Of `reports`, by status. */
+  counts: Record<CitizenReportStatus, number>;
 }
 
 // Flood status (LHP public API): flood classes at state gauges and regional flood warnings

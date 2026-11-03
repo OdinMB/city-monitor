@@ -16,7 +16,7 @@ import SunCalc from 'suncalc';
 import type {
   AedLocation, AirQuality, AirQualityGridPoint, AirQualityStation, BathingSpot, BikeSharingData, BikeStation, BudgetSummary, BuergeramtData,
   CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, ElectricityData, EmergencyPharmacy,
-  GridPoint, GridSignal,
+  CitizenReport, CitizenReportData, GridPoint, GridSignal,
   FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
@@ -35,6 +35,7 @@ import {
   PARLIAMENT_CONFIG, groupsStateMembersByBezirk, handKeptAreas, hasDistrictMayors, hasMayor, hasParliamentConfig,
 } from '../cron/ingest-political.js';
 import { computeLevel, computeTrend } from '../cron/ingest-wastewater.js';
+import { REPORT_WINDOW_DAYS, buildCitizenReportData, reportGroup, reportStatus, requestPageUrl } from '../cron/ingest-citizen-reports.js';
 import { hashString } from '../lib/hash.js';
 import { SOCIAL_ATLAS_HAS_STATUS_INDEX, SOCIAL_ATLAS_METRICS } from '../lib/social-atlas-parsers.js';
 
@@ -89,6 +90,8 @@ export interface SyntheticData {
   electricity: ElectricityData;
   /** Official stations (UBA), one per configured station code. */
   airQualityStations: AirQualityStation[];
+  /** Not in Berlin's data set: only Köln and München have an Open311 server (NOT_IN_BERLIN). */
+  citizenReports?: CitizenReportData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -147,10 +150,11 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   bikeSharing: (c) => c.dataSources.bikeSharing !== undefined,
   electricity: (c) => c.dataSources.electricity !== undefined,
   airQualityStations: (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0,
+  citizenReports: (c) => c.dataSources.citizenReports !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
-const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages'];
+const NOT_IN_BERLIN: readonly SyntheticDataSet[] = ['floodStatus', 'liftOutages', 'citizenReports'];
 
 /** The data sets the synthetic seed writes for `city`: those production would hold for it. */
 export function syntheticCoverage(city: CityConfig): SyntheticDataSet[] {
@@ -261,6 +265,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('bikeSharing')) sets.bikeSharing = generateBikeSharing(rng, now, city, place);
   if (has.has('electricity')) sets.electricity = generateElectricity(rng, now, city.dataSources.electricity!.controlArea);
   if (has.has('airQualityStations')) sets.airQualityStations = generateAirQualityStations(rng, now, place);
+  if (has.has('citizenReports')) sets.citizenReports = generateCitizenReports(rng, now, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1603,6 +1608,38 @@ function generateAirQualityStations(rng: Rng, now: Date, place: Place): AirQuali
       no2, pm10, pm25, o3,
     };
   });
+}
+
+const REPORT_CATEGORIES = [
+  'Wilder Müll', 'Leuchte ausgefallen', 'Ampel ausgefallen', 'Defekte Oberfläche', 'Spielplatz beschädigt',
+  'Schrottfahrräder', 'Graffiti', 'Mülleimer überfüllt',
+];
+
+/** Two weeks of made-up citizen reports around the city's anchors, older ones mostly closed. */
+function generateCitizenReports(rng: Rng, now: Date, place: Place): CitizenReportData {
+  const reports: CitizenReport[] = [];
+  for (let i = 0; i < 60; i++) {
+    const at = new Date(now.getTime() - rng.float(0, REPORT_WINDOW_DAYS * DAY));
+    const ageDays = (now.getTime() - at.getTime()) / DAY;
+    const closed = rng.chance(Math.min(0.9, 0.2 + ageDays / 8));
+    const statusLabel = closed ? 'Abgeschlossen' : rng.chance(0.4) ? 'In Bearbeitung' : 'Neu';
+    const category = rng.pick(REPORT_CATEGORIES);
+    const id = `${90_001 + i}-synth`;
+    const p = near(rng, rng.pick(place.anchors), 0.01);
+    reports.push({
+      id,
+      lat: round(p.lat, 4),
+      lon: round(p.lon, 4),
+      category,
+      group: reportGroup(category),
+      status: reportStatus(closed ? 'closed' : 'open', statusLabel),
+      statusLabel,
+      requestedAt: at.toISOString(),
+      updatedAt: new Date(Math.min(now.getTime(), at.getTime() + rng.float(1, 48) * HOUR)).toISOString(),
+      url: requestPageUrl(`${EXAMPLE}/meldung/{id}`, id, null),
+    });
+  }
+  return buildCitizenReportData(reports);
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

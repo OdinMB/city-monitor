@@ -1,6 +1,6 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Bike } from 'lucide';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike } from 'lucide';
 import { useCommandCenter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
@@ -8,6 +8,9 @@ import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } 
 import { indicatorOf, socialAtlasOf } from '../../lib/social-atlas.js';
 import type { IconNode } from '../../lib/map-icons.js';
 import { BIKE_AVAILABILITY, getNoiseWmsMinZoom, getRentMapLegend } from '../map/constants.js';
+import { REPORT_STATUS_COLORS } from '../map/layers/citizen-reports.js';
+import { useCitizenReports } from '../../hooks/useCitizenReports.js';
+import type { CitizenReportStatus } from '../../lib/api.js';
 
 // Each city sees only the layers and sub-layers it has data for (cityLayers).
 const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
@@ -24,6 +27,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'bike-sharing', icon: Bike as IconNode, color: '#16a34a' },
   { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
+  { layer: 'reports', icon: Megaphone as IconNode, color: '#e11d48' },
 ];
 
 const INACTIVE_COLOR = '#9ca3af';
@@ -151,6 +155,32 @@ export function BikeSharingLegend() {
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * The reports layer's status colours, with how many of the city's reports of
+ * the last days have each (the same query as the map, so no extra request).
+ */
+export function CitizenReportLegend({ cityId }: { cityId: string }) {
+  const { t } = useTranslation();
+  const { data } = useCitizenReports(cityId);
+  const reports = data?.data;
+  return (
+    <div className="ps-9 pe-2 py-1">
+      <ul aria-label={t('sidebar.reports.legend')} className="space-y-0.5">
+        {(Object.keys(REPORT_STATUS_COLORS) as CitizenReportStatus[]).map((status) => (
+          <li key={status} className="flex items-center gap-2 text-[12px] text-muted">
+            <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full border border-gray-400/60 shrink-0" style={{ backgroundColor: REPORT_STATUS_COLORS[status] }} />
+            <span>{t(`mapPopup.reports.status.${status}`)}</span>
+            {reports && <span className="ms-auto tabular-nums">{reports.counts[status]}</span>}
+          </li>
+        ))}
+      </ul>
+      {reports && (
+        <p className="mt-1 text-[11px] text-muted">{t('sidebar.reports.window', { days: reports.windowDays })}</p>
+      )}
+    </div>
   );
 }
 
@@ -326,6 +356,8 @@ export function DataLayerToggles() {
               <SubLayerList meta={POPULATION_SUB_META} available={POPULATION_SUB_META.map((m) => m.key)} parentColor={color}
                 isActive={(key) => populationLayer === key} onSelect={setPopulationLayer} label={(key) => t(`sidebar.population.${key}`)} />
             );
+          } else if (layer === 'reports' && active) {
+            subItems = <CitizenReportLegend cityId={city.id} />;
           } else if (layer === 'political' && active) {
             // The state parliament has its own name per city (the `_<city id>` keys).
             subItems = (

@@ -612,7 +612,12 @@
       "water": "المياه",
       "social": "اجتماعي",
       "population": "السكان",
-      "political": "تمثيل"
+      "political": "تمثيل",
+      "reports": "بلاغات المواطنين"
+    },
+    "reports": {
+      "legend": "حالة بلاغات المواطنين",
+      "window": "بلاغات آخر {{days}} يومًا"
     },
     "news": {
       "news": "الأخبار",
@@ -715,6 +720,16 @@
         "permissive": "مسموح",
         "no": "غير عام"
       }
+    },
+    "reports": {
+      "status": {
+        "open": "مفتوح",
+        "in_progress": "قيد المعالجة",
+        "closed": "مغلق"
+      },
+      "reported": "تاريخ البلاغ",
+      "updated": "آخر تحديث",
+      "viewOnPortal": "عرض على بوابة المدينة"
     },
     "noise": {
       "sensor": "مستشعر الضوضاء #{{id}}",

@@ -163,10 +163,16 @@ describe('Köln config', () => {
     expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['Köln'] });
     // The four LANUK stations inside the city, through the UBA Air Data API
     expect(config.dataSources.airQuality).toEqual({ ubaStations: ['DENW053', 'DENW059', 'DENW211', 'DENW212'] });
+    // "Sag's uns" (dl-de/zero-2.0); a request's page is its Drupal node
+    expect(config.dataSources.citizenReports).toEqual({
+      provider: 'open311',
+      baseUrl: 'https://sags-uns.stadt-koeln.de/georeport/v2',
+      requestUrl: 'https://sags-uns.stadt-koeln.de/node/{nid}',
+    });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water, airQuality: _airQuality,
       police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council,
-      liftOutages: _lifts, laborMarket: _labor, wastewater: _wastewater,
+      liftOutages: _lifts, laborMarket: _labor, wastewater: _wastewater, citizenReports: _reports,
       socialAtlas: _socialAtlas, population: _population, bikeSharing: _bikes, electricity: _electricity, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
@@ -258,10 +264,16 @@ describe('München config', () => {
     expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['München'] });
     // The LfU's stations in the city, through the UBA Air Data API
     expect(config.dataSources.airQuality).toEqual({ ubaStations: ['DEBY037', 'DEBY039', 'DEBY089', 'DEBY115', 'DEBY189'] });
+    // "Mach München besser" (CC0): the /api prefix, as the dataset's own URLs answer 404
+    expect(config.dataSources.citizenReports).toEqual({
+      provider: 'open311',
+      baseUrl: 'https://machmuenchenbesser.de/api/georeport/v2',
+      requestUrl: 'https://machmuenchenbesser.de/requests/{id}',
+    });
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
       airQuality: _airQuality, floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population,
-      bikeSharing: _bikes, electricity: _electricity, ...rest
+      bikeSharing: _bikes, electricity: _electricity, citizenReports: _reports, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });

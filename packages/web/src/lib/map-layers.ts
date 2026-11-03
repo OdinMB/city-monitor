@@ -75,6 +75,7 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
     ['social', social.length > 0],
     ['population', has('population')],
     ['political', political.length > 0],
+    ['reports', has('citizenReports')],
   ]));
 
   return { layers, news, emergencies, traffic, water, noise, noiseLive, social, political };
