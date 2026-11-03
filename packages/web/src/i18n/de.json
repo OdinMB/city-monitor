@@ -402,6 +402,46 @@
       "germanyShare": "Deutschland jetzt: {{share}} des Verbrauchs aus Erneuerbaren",
       "empty": "Keine Stromdaten"
     },
+    "soilMoisture": {
+      "title": "Bodenfeuchte",
+      "headline": "des pflanzenverfügbaren Wassers unter Gras auf Sandboden, {{date}}",
+      "level": {
+        "very-dry": "Sehr trocken",
+        "dry": "Trocken",
+        "moderate": "Ausreichend",
+        "moist": "Feucht",
+        "wet": "Nass"
+      },
+      "hint": {
+        "very-dry": "Trockenstress: Pflanzen und junge Straßenbäume leiden unter Wassermangel",
+        "dry": "Pflanzen wird das Wasser knapp",
+        "moderate": "Pflanzen sind gut versorgt",
+        "moist": "Reichlich Wasser im Boden",
+        "wet": "Der Boden hält mehr Wasser, als er speichern kann"
+      },
+      "change": "{{change}} Pkt. in {{days}} Tagen",
+      "history": "Letzte 90 Tage",
+      "historyMean": "Letzte 90 Tage, Mittel aus {{n}} DWD-Stationen",
+      "historyLabel": "Bodenfeuchte unter Gras auf Sandboden, letzte 90 Tage",
+      "loamy": "Auf lehmigem Boden: {{value}}",
+      "station": "DWD-Station {{name}}",
+      "explain": "Tageswerte des agrarmeteorologischen Modells des DWD für 0–60 cm, in % der nutzbaren Feldkapazität (nFK); unter 30 % leiden Pflanzen unter Trockenstress.",
+      "watering": {
+        "title": "Von Anwohnenden gegossene Straßenbäume (Gieß den Kiez)",
+        "teaser": "Gieß den Kiez: {{litres}} für Straßenbäume in den 30 Tagen bis {{date}}",
+        "last30": "30 Tage bis {{date}}",
+        "litresValue": "{{n}} Liter",
+        "litres": "Liter",
+        "trees": "Bäume",
+        "waterings": "Gießvorgänge",
+        "season": "{{year}} bisher: {{litres}} für {{trees}} Bäume",
+        "previous": "{{year}}: {{litres}} für {{trees}} Bäume",
+        "top": "Meistgegossen in diesem Jahr: {{districts}}",
+        "none": "In den 30 Tagen bis {{date}} wurde kein Gießen eingetragen; die Gießsaison reicht vom Frühjahr bis in den Herbst.",
+        "cadence": "Wird etwa einmal im Monat veröffentlicht."
+      },
+      "empty": "Keine Bodenfeuchte-Daten"
+    },
     "liftOutages": {
       "title": "Aufzüge & Fahrtreppen",
       "lifts": "Aufzüge außer Betrieb: {{n}}",

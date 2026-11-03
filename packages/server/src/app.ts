@@ -34,6 +34,7 @@ import { createCitizenReportsRouter } from './routes/citizen-reports.js';
 import { createTrafficAccidentsRouter } from './routes/traffic-accidents.js';
 import { createTrafficCountsRouter } from './routes/traffic-counts.js';
 import { createEvChargingRouter } from './routes/ev-charging.js';
+import { createSoilMoistureRouter } from './routes/soil-moisture.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
 import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createPopulationRouter } from './routes/population.js';
@@ -71,6 +72,7 @@ import { createCitizenReportIngestion } from './cron/ingest-citizen-reports.js';
 import { createTrafficAccidentIngestion } from './cron/ingest-traffic-accidents.js';
 import { createTrafficCountIngestion } from './cron/ingest-traffic-counts.js';
 import { createEvChargingIngestion, createEvChargingStatusIngestion } from './cron/ingest-ev-charging.js';
+import { createSoilMoistureIngestion } from './cron/ingest-soil-moisture.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { createPopulationIngestion } from './cron/ingest-population.js';
@@ -202,6 +204,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-bike-sharing', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'bike-sharing' }, serves: (c) => !!c.dataSources.bikeSharing },
     { jobName: 'ingest-electricity',  tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'smard-electricity' }, serves: (c) => !!c.dataSources.electricity },
     { jobName: 'ingest-citizen-reports', tableName: 'snapshots', maxAgeSeconds: 900, filter: { column: 'type', value: 'open311-reports' }, serves: (c) => !!c.dataSources.citizenReports },
+    { jobName: 'ingest-soil-moisture', tableName: 'snapshots', maxAgeSeconds: 43200, filter: { column: 'type', value: 'dwd-soil-moisture' }, serves: (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0 },
     { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' }, serves: (c) => !!c.dataSources.wastewater },
     // 2 h: the counts are hourly, and a row is stored when a new hour comes in
     { jobName: 'ingest-traffic-counts', tableName: 'snapshots', maxAgeSeconds: 7200,  filter: { column: 'type', value: 'traffic-counts' }, serves: (c) => !!c.dataSources.trafficCounts },
@@ -257,6 +260,7 @@ export async function createApp(options?: {
   const ingestTrafficCounts = createTrafficCountIngestion(cache, db);
   const ingestEvCharging = createEvChargingIngestion(cache, db);
   const ingestEvChargingStatus = createEvChargingStatusIngestion(cache);
+  const ingestSoilMoisture = createSoilMoistureIngestion(cache, db);
   const ingestWastewater = createWastewaterIngestion(cache, db);
   const ingestLaborMarket = createLaborMarketIngestion(cache, db);
   const ingestPopulation = createPopulationIngestion(cache, db);
@@ -311,6 +315,8 @@ export async function createApp(options?: {
     { name: 'ingest-ev-charging', schedule: '30 4 * * 3', handler: ingestEvCharging, runOnStart: s('ingest-ev-charging') },
     // Hamburg's live charge-point status, not stored, so always on start
     { name: 'ingest-ev-charging-status', schedule: '*/5 * * * *', handler: ingestEvChargingStatus, runOnStart: true },
+    // The DWD regenerates its soil files once a day, around 09:00 UTC; the afternoon run catches a late one
+    { name: 'ingest-soil-moisture', schedule: '30 10,16 * * *', handler: ingestSoilMoisture, runOnStart: s('ingest-soil-moisture') },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
     { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
@@ -385,6 +391,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(300), createTrafficCountsRouter(cache, db));
   // Short for Hamburg's live status (every 5 min); the register itself changes monthly
   app.use('/api', cacheFor(120), createEvChargingRouter(cache, db));
+  app.use('/api', cacheFor(3600), createSoilMoistureRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
   app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));

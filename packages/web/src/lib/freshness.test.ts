@@ -26,6 +26,7 @@ const CRON_INTERVAL: Record<Feed, number> = {
   pollen: 6 * HOUR,       // ingest-pollen         0 */6 * * *
   councilMeetings: 6 * HOUR, // ingest-council-meetings 0 */6 * * *
   bathing: DAY,           // ingest-bathing        0 6 * * *
+  soilMoisture: 18 * HOUR, // ingest-soil-moisture 30 10,16 * * * (the longer gap)
   laborMarket: DAY,       // ingest-labor-market   0 7 * * *
   budget: DAY,            // ingest-budget         0 6 * * *
   feuerwehr: DAY,         // ingest-feuerwehr      0 8 * * *

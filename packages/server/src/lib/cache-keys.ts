@@ -46,6 +46,7 @@ export const CK = {
   bathingSpots: (cityId: string) => `${cityId}:bathing:spots`,
   liftOutages: (cityId: string) => `${cityId}:lift-outages`,
   electricity: (cityId: string) => `${cityId}:electricity`,
+  soilMoisture: (cityId: string) => `${cityId}:soil-moisture`,
 
   // Citizen reports (lazy: too large for bootstrap)
   citizenReports: (cityId: string) => `${cityId}:citizen-reports`,
@@ -95,6 +96,7 @@ export const CK = {
     CK.floodStatus(cityId),
     CK.liftOutages(cityId),
     CK.electricity(cityId),
+    CK.soilMoisture(cityId),
     CK.budget(cityId),
     CK.appointments(cityId),
     CK.feuerwehr(cityId),

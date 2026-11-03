@@ -117,6 +117,8 @@ export const koeln: CityConfig = {
     // The Kreis table of the kreisfreie Stadt, not the wider Agentur für Arbeit district
     laborMarket: { provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' },
     electricity: { provider: 'smard', controlArea: 'Amprion' },
+    // DWD soil moisture (CC BY 4.0) at Köln/Bonn airport (Porz), the city's one station in the dataset
+    soilMoisture: { provider: 'dwd', stations: [{ id: '2667', name: 'Köln/Bonn' }] },
     wastewater: { provider: 'amelag', sites: ['Köln'] }, // RKI AMELAG (CC BY 4.0), about 0.86 million people
     waterLevels: {
       provider: 'pegelonline',

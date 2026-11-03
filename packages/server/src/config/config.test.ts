@@ -173,7 +173,7 @@ describe('Köln config', () => {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, heatRelief: _heat, waterLevels: _water, airQuality: _airQuality,
       police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council,
       liftOutages: _lifts, laborMarket: _labor, wastewater: _wastewater, citizenReports: _reports,
-      socialAtlas: _socialAtlas, population: _population, bikeSharing: _bikes, trafficAccidents: _accidents, electricity: _electricity, evCharging: _ev, ...rest
+      socialAtlas: _socialAtlas, population: _population, bikeSharing: _bikes, trafficAccidents: _accidents, electricity: _electricity, soilMoisture: _soil, evCharging: _ev, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });
@@ -273,7 +273,7 @@ describe('München config', () => {
     const {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, heatRelief: _heat, roadworks: _roadworks, councilMeetings: _council,
       airQuality: _airQuality, floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population,
-      bikeSharing: _bikes, trafficAccidents: _accidents, electricity: _electricity, citizenReports: _reports, evCharging: _ev, ...rest
+      bikeSharing: _bikes, trafficAccidents: _accidents, electricity: _electricity, citizenReports: _reports, soilMoisture: _soil, evCharging: _ev, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });

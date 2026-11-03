@@ -401,6 +401,46 @@
       "germanyShare": "Almanya şu anda: tüketimin {{share}} kadarı yenilenebilir kaynaklardan",
       "empty": "Elektrik verisi yok"
     },
+    "soilMoisture": {
+      "title": "Toprak Nemi",
+      "headline": "bitkilerin kullanabileceği su, kumlu toprakta çim altında, {{date}}",
+      "level": {
+        "very-dry": "Çok kuru",
+        "dry": "Kuru",
+        "moderate": "Yeterli",
+        "moist": "Nemli",
+        "wet": "Islak"
+      },
+      "hint": {
+        "very-dry": "Kuraklık stresi: bitkiler ve genç sokak ağaçları susuz kalıyor",
+        "dry": "Bitkilerin suyu azalmaya başlıyor",
+        "moderate": "Bitkiler yeterince su alıyor",
+        "moist": "Toprakta bol su var",
+        "wet": "Toprak tutabileceğinden fazla su içeriyor"
+      },
+      "change": "{{days}} günde {{change}} puan",
+      "history": "Son 90 gün",
+      "historyMean": "Son 90 gün, {{n}} DWD istasyonunun ortalaması",
+      "historyLabel": "Kumlu toprakta çim altındaki toprak nemi, son 90 gün",
+      "loamy": "Tınlı toprakta: {{value}}",
+      "station": "DWD istasyonu {{name}}",
+      "explain": "DWD'nin tarımsal meteoroloji modelinin 0–60 cm için günlük değerleri, kullanılabilir tarla kapasitesinin yüzdesi (nFK) olarak; %30'un altında bitkiler kuraklık stresi yaşar.",
+      "watering": {
+        "title": "Sakinlerin suladığı sokak ağaçları (Gieß den Kiez)",
+        "teaser": "Gieß den Kiez: {{date}} tarihine kadarki 30 günde sokak ağaçlarına {{litres}} su",
+        "last30": "{{date}} tarihine kadar 30 gün",
+        "litresValue": "{{n}} litre",
+        "litres": "Litre",
+        "trees": "Ağaç",
+        "waterings": "Sulama",
+        "season": "{{year}} şimdiye kadar: {{trees}} ağaca {{litres}}",
+        "previous": "{{year}}: {{trees}} ağaca {{litres}}",
+        "top": "Bu yıl en çok sulanan: {{districts}}",
+        "none": "{{date}} tarihine kadarki 30 günde sulama kaydedilmedi; sulama sezonu ilkbahardan sonbahara kadar sürer.",
+        "cadence": "Yaklaşık ayda bir yayımlanır."
+      },
+      "empty": "Toprak nemi verisi yok"
+    },
     "liftOutages": {
       "title": "Asansörler ve Yürüyen Merdivenler",
       "lifts": "Arızalı asansörler: {{n}}",

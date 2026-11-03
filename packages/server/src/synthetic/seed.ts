@@ -15,7 +15,7 @@ import {
   saveAeds, saveAirQualityGrid, saveAirQualityStations, saveAppointments, saveBathingSpots, saveBudget, saveCitizenReports, saveConstructionSites,
   saveBikeSharing, saveTrafficAccidents, saveCouncilMeetings, saveElectricity, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
   saveNoiseSensors, savePharmacies, savePoliticalDistricts, savePollen, savePopulation, saveSafetyReports,
-  saveSocialAtlas, saveSummary, saveTrafficCounts, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
+  saveSocialAtlas, saveSoilMoisture, saveSummary, saveTrafficCounts, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
   saveWeather,
 } from '../db/writes.js';
 import { saveEvChargingRegister } from '../db/writes.js';
@@ -126,6 +126,7 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.trafficCounts) await saveTrafficCounts(db, cityId, data.trafficCounts);
   if (data.evCharging) await saveEvChargingRegister(db, cityId, data.evCharging);
   if (data.heatRelief) await saveHeatRelief(db, cityId, data.heatRelief);
+  if (data.soilMoisture) await saveSoilMoisture(db, cityId, data.soilMoisture);
   for (const [level, districts] of Object.entries(data.political ?? {})) {
     await savePoliticalDistricts(db, cityId, level, districts);
   }

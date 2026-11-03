@@ -16,7 +16,7 @@ import SunCalc from 'suncalc';
 import type {
   AedLocation, AirQuality, AirQualityGridPoint, AirQualityStation, BathingSpot, BikeSharingData, BikeStation, BudgetSummary, BuergeramtData,
   CityConfig, CityEvent, ConstructionSite, CouncilMeeting, CurrentWeather, DailyForecast, ElectricityData, EmergencyPharmacy,
-  CitizenReport, CitizenReportData, GridPoint, GridSignal,
+  CitizenReport, CitizenReportData, GridPoint, GridSignal, SoilMoistureData,
   FeuerwehrMonthData, FloodClass, FloodStatus, FeuerwehrSummary, HourlyForecast, LaborMarketSummary, LiftOutage,
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
@@ -100,6 +100,8 @@ export interface SyntheticData {
   /** The register only: the live status (Hamburg) is never stored, so the seed has none. */
   evCharging: EvChargingRegister;
   heatRelief: HeatReliefData;
+  /** Soil moisture at the configured DWD stations; Gieß den Kiez waterings where the city has them. */
+  soilMoisture: SoilMoistureData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
   history: SyntheticSnapshot[];
 }
@@ -163,6 +165,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   trafficCounts: (c) => (c.dataSources.trafficCounts?.modes.length ?? 0) > 0,
   evCharging: (c) => c.dataSources.evCharging !== undefined,
   heatRelief: (c) => (c.dataSources.heatRelief?.length ?? 0) > 0,
+  soilMoisture: (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -282,6 +285,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('trafficCounts')) sets.trafficCounts = generateTrafficCounts(rng, now, city, place);
   if (has.has('evCharging')) sets.evCharging = generateEvCharging(rng, place);
   if (has.has('heatRelief')) sets.heatRelief = generateHeatRelief(rng, city, place);
+  if (has.has('soilMoisture')) sets.soilMoisture = generateSoilMoisture(rng, now, city, place);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1750,6 +1754,46 @@ function generateHeatRelief(rng: Rng, city: CityConfig, place: Place): HeatRelie
     }
   });
   return { places };
+}
+
+/**
+ * 90 made-up days of soil moisture up to two days ago (the DWD's lag), drying
+ * through the period with a few rain bumps, each station a little apart; and
+ * for a city with Gieß den Kiez, made-up watering totals up to the end of last month.
+ */
+function generateSoilMoisture(rng: Rng, now: Date, city: CityConfig, place: Place): SoilMoistureData {
+  const source = city.dataSources.soilMoisture!;
+  const end = Date.parse(`${now.toISOString().slice(0, 10)}T00:00:00Z`) - 2 * DAY;
+  const start = rng.float(70, 95);
+  const fall = rng.float(20, 50);
+  const history = Array.from({ length: 90 }, (_, i) => {
+    const sandy = clamp(start - (fall * i) / 89 + Math.sin(i / 6) * 4 + rng.float(-1, 1), 5, 105);
+    return { date: new Date(end - (89 - i) * DAY).toISOString().slice(0, 10), sandy: round(sandy, 1), loamy: round(clamp(sandy + 8, 5, 120), 1) };
+  });
+  const last = history.at(-1)!;
+  const stations = source.stations.map((s) => {
+    const offset = rng.float(-6, 6);
+    return { id: s.id, name: s.name, date: last.date, sandy: Math.round(last.sandy + offset), loamy: Math.round(last.loamy + offset) };
+  });
+
+  let watering: SoilMoistureData['watering'] = null;
+  if (source.treeWatering) {
+    const through = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0));
+    const year = through.getUTCFullYear();
+    const litres = (n: number) => n * rng.int(15, 40);
+    const recent = rng.int(80, 400);
+    const season = recent + rng.int(2000, 4000);
+    const first = rng.int(0, place.anchors.length - 1);
+    const districts = [0, 1, 2].map((i) => place.anchors[(first + i) % place.anchors.length]!);
+    watering = {
+      dataThrough: through.toISOString().slice(0, 10),
+      last30Days: { waterings: recent, litres: litres(recent), trees: Math.round(recent * 0.6) },
+      season: { year, waterings: season, litres: litres(season), trees: Math.round(season * 0.4) },
+      previousSeason: { year: year - 1, waterings: season + 900, litres: litres(season + 900), trees: Math.round(season * 0.45) },
+      topDistricts: districts.map((d, i) => ({ district: d.name, litres: (3 - i) * rng.int(8000, 15_000) })),
+    };
+  }
+  return { stations, history, watering };
 }
 
 function generateNoiseSensors(rng: Rng, place: Place): NoiseSensor[] {

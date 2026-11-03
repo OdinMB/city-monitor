@@ -9,14 +9,14 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
-  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema,
+  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema, SoilMoistureDataSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { HeatReliefData } from '@city-monitor/shared';
 import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
@@ -203,6 +203,11 @@ export async function loadBikeSharing(db: Db, cityId: string): Promise<DbResult<
 /** At most 3 hours old: "now" on the electricity tile must not be the morning's mix (the job runs every 15 min). */
 export async function loadElectricity(db: Db, cityId: string): Promise<DbResult<ElectricityData>> {
   return loadSnapshot(db, cityId, 'smard-electricity', { schema: ElectricityDataSchema, maxAgeMs: 3 * 3600_000 });
+}
+
+/** At most 7 days old: daily values the tile dates itself, but not a stopped job's (it runs twice a day). */
+export async function loadSoilMoisture(db: Db, cityId: string): Promise<DbResult<SoilMoistureData>> {
+  return loadSnapshot(db, cityId, 'dwd-soil-moisture', { schema: SoilMoistureDataSchema, maxAgeMs: 7 * 24 * 3600_000 });
 }
 
 /** At most 6 hours old: older readings no longer describe the air now (the job runs every 30 min). */

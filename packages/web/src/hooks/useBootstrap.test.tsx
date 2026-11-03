@@ -21,6 +21,7 @@ const mockBootstrap = {
   laborMarket: null,
   wastewater: null,
   electricity: null,
+  soilMoisture: null,
 };
 
 function createWrapper() {

@@ -128,6 +128,9 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['Öffentliche Toiletten Köln (AWB)', (c) => usesHeatRelief(c, 'koeln-toilets')],
   ['Trinkbrunnen München (Geoportal)', (c) => usesHeatRelief(c, 'muenchen-fountains')],
   ['Öffentliche Toiletten München (GeodatenService)', (c) => usesHeatRelief(c, 'muenchen-toilets')],
+  // ingest-soil-moisture: the DWD stations a city lists, and Gieß den Kiez where it has treeWatering
+  ['DWD Soil Moisture (Climate Data Center)', (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0],
+  ['Gieß den Kiez (Open Data)', (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0 && c.dataSources.soilMoisture?.treeWatering !== undefined],
   ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
   // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
@@ -215,6 +218,8 @@ describe('SourcesPage licence credits', () => {
     // The source line the UBA Air Data API's OpenAPI spec asks for, dl-de/by-2-0
     'Umweltbundesamt Air Data API': 'Source: Umweltbundesamt mit Daten der Messnetze der Länder und des Bundes, dl-de/by-2-0.',
     'RKI AMELAG Wastewater Surveillance': 'Source: Robert Koch-Institut, CC BY 4.0.',
+    // dwd.de/DE/service/rechtliche_hinweise: CC BY 4.0, the DWD named as the source
+    'DWD Soil Moisture (Climate Data Center)': 'Source: Deutscher Wetterdienst, CC BY 4.0.',
     // smard.de/home/datennutzung names the credit "Bundesnetzagentur | SMARD.de"
     'SMARD (Bundesnetzagentur)': 'Source: Bundesnetzagentur | SMARD.de, CC BY 4.0.',
     // The Energy-Charts API description: "Proper attribution to Energy-Charts.info as the source is required."

@@ -16,7 +16,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData } from '@city-monitor/shared';
 import type { HeatReliefData } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { EvChargingRegister } from '../lib/ev-charging.js';
@@ -123,6 +123,10 @@ export async function saveBikeSharing(db: Db, cityId: string, data: BikeSharingD
 
 export async function saveElectricity(db: Db, cityId: string, data: ElectricityData): Promise<void> {
   await saveSnapshot(db, cityId, 'smard-electricity', data);
+}
+
+export async function saveSoilMoisture(db: Db, cityId: string, data: SoilMoistureData): Promise<void> {
+  await saveSnapshot(db, cityId, 'dwd-soil-moisture', data);
 }
 
 export async function saveAirQualityStations(db: Db, cityId: string, data: AirQualityStation[]): Promise<void> {

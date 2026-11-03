@@ -22,6 +22,7 @@ import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
 import { FloodStatusStrip } from '../strips/FloodStatusStrip.js';
 import { LiftOutagesStrip } from '../strips/LiftOutagesStrip.js';
 import { ElectricityStrip } from '../strips/ElectricityStrip.js';
+import { SoilMoistureStrip } from '../strips/SoilMoistureStrip.js';
 import { BathingStrip } from '../strips/BathingStrip.js';
 import { useBathingOffSeason } from '../../hooks/useBathingOffSeason.js';
 import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
@@ -213,6 +214,11 @@ export function CommandLayout() {
           {has('electricity') && (
             <Tile title={t('panel.electricity.title')} span={1} expandable>
               {(expanded) => <ElectricityStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {has('soilMoisture') && (
+            <Tile title={t('panel.soilMoisture.title')} span={1} expandable>
+              {(expanded) => <SoilMoistureStrip expanded={expanded} />}
             </Tile>
           )}
           {has('feuerwehr') && (

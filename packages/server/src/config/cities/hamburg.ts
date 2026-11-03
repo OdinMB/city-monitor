@@ -119,6 +119,14 @@ export const hamburg: CityConfig = {
     laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Hamburg' },
     // 50Hertz, not TenneT: its grid area takes in the city-states Berlin and Hamburg (50hertz.com)
     electricity: { provider: 'smard', controlArea: '50Hertz' },
+    // DWD soil moisture (CC BY 4.0), the city's two stations north and south of the Elbe
+    soilMoisture: {
+      provider: 'dwd',
+      stations: [
+        { id: '1975', name: 'Hamburg-Fuhlsbüttel' },
+        { id: '1981', name: 'Hamburg-Neuwiedenthal' },
+      ],
+    },
     // RKI AMELAG (CC BY 4.0): Hamburg's two plants, serving about 0.58 and 1.46 million people
     wastewater: { provider: 'amelag', sites: ['Hamburg 01', 'Hamburg 02'] },
     // StadtRAD's bikes per station on the Urban Data Platform's SensorThings API (dl-de/by-2.0,

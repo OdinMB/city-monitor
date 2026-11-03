@@ -404,6 +404,46 @@
       "germanyShare": "Germany now: {{share}} of consumption from renewables",
       "empty": "No electricity data"
     },
+    "soilMoisture": {
+      "title": "Soil Moisture",
+      "headline": "of the water the soil can hold for plants, under grass on sandy soil, {{date}}",
+      "level": {
+        "very-dry": "Very dry",
+        "dry": "Dry",
+        "moderate": "Adequate",
+        "moist": "Moist",
+        "wet": "Wet"
+      },
+      "hint": {
+        "very-dry": "Drought stress: plants and young street trees run short of water",
+        "dry": "Plants are starting to run short of water",
+        "moderate": "Plants are well supplied",
+        "moist": "Plenty of water in the soil",
+        "wet": "The soil holds more water than it can keep"
+      },
+      "change": "{{change}} pts in {{days}} days",
+      "history": "Last 90 days",
+      "historyMean": "Last 90 days, mean of {{n}} DWD stations",
+      "historyLabel": "Soil moisture under grass on sandy soil, last 90 days",
+      "loamy": "On loamy soil: {{value}}",
+      "station": "DWD station {{name}}",
+      "explain": "Daily values of the DWD's agrometeorological model for 0–60 cm, in % of usable field capacity (nFK); below 30% plants suffer drought stress.",
+      "watering": {
+        "title": "Street trees watered by residents (Gieß den Kiez)",
+        "teaser": "Gieß den Kiez: residents watered street trees with {{litres}} in the 30 days to {{date}}",
+        "last30": "30 days to {{date}}",
+        "litresValue": "{{n}} litres",
+        "litres": "Litres",
+        "trees": "Trees",
+        "waterings": "Waterings",
+        "season": "{{year}} so far: {{litres}} for {{trees}} trees",
+        "previous": "{{year}}: {{litres}} for {{trees}} trees",
+        "top": "Most watered this year: {{districts}}",
+        "none": "No waterings logged in the 30 days to {{date}}; watering season runs from spring to autumn.",
+        "cadence": "Published about once a month."
+      },
+      "empty": "No soil moisture data"
+    },
     "liftOutages": {
       "title": "Lifts & Escalators",
       "lifts": "Lifts out of service: {{n}}",

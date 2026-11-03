@@ -76,6 +76,7 @@ The data is dated when you seed it. Once the cache-warm TTLs expire, the routes 
 | NINA warnings, electricity | 3h |
 | AQ grid | 6h |
 | Pollen, council meetings, events | 48h |
+| Soil moisture | 7 days |
 
 After that those tiles go empty. Run `npm run db:seed` again and restart `dev:synthetic`.
 

@@ -409,6 +409,23 @@ export const ElectricityDataSchema = z.object({
   })),
 });
 
+// --- Soil moisture (DWD) and street-tree watering (Gieß den Kiez) ---
+
+const SoilMoistureDaySchema = z.object({ date: z.string(), sandy: z.number(), loamy: z.number() });
+const TreeWateringPeriodSchema = z.object({ litres: z.number(), waterings: z.number(), trees: z.number() });
+
+export const SoilMoistureDataSchema = z.object({
+  stations: z.array(SoilMoistureDaySchema.extend({ id: z.string(), name: z.string() })),
+  history: z.array(SoilMoistureDaySchema),
+  watering: z.object({
+    dataThrough: z.string(),
+    last30Days: TreeWateringPeriodSchema,
+    season: TreeWateringPeriodSchema.extend({ year: z.number() }),
+    previousSeason: TreeWateringPeriodSchema.extend({ year: z.number() }),
+    topDistricts: z.array(z.object({ district: z.string(), litres: z.number() })),
+  }).nullable(),
+});
+
 // --- Citizen issue reports (Open311) ---
 
 const CitizenReportStatusSchema = z.enum(['open', 'in_progress', 'closed']);

@@ -125,6 +125,20 @@ export const berlin: CityConfig = {
     laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Berlin' },
     // Berlin's grid is in 50Hertz's control area (SMARD, CC BY 4.0)
     electricity: { provider: 'smard', controlArea: '50Hertz' },
+    // DWD soil moisture (CC BY 4.0) at three stations across the city, and the
+    // street-tree waterings logged on Gieß den Kiez (CC0, daten.berlin.de "gdk-nutzungsdaten")
+    soilMoisture: {
+      provider: 'dwd',
+      stations: [
+        { id: '433', name: 'Berlin-Tempelhof' },
+        { id: '403', name: 'Berlin-Dahlem (FU)' },
+        { id: '400', name: 'Berlin-Buch' },
+      ],
+      treeWatering: {
+        provider: 'giessdenkiez',
+        csvUrl: 'https://raw.githubusercontent.com/technologiestiftung/giessdenkiez-de-opendata/main/daten/giessdenkiez_bew%C3%A4sserungsdaten.csv',
+      },
+    },
     // Influenza A/B and RSV from LAGeSo (dl-de/by-2.0); SARS-CoV-2 from the same three plants in AMELAG
     wastewater: {
       provider: 'lageso',
