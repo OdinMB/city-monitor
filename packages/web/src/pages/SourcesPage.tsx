@@ -114,6 +114,14 @@ const SHARED_SOURCES: SourceGroup[] = [
         url: 'https://www.openstreetmap.org/copyright',
         description: 'Automated external defibrillator (AED) locations (via the Overpass API), and the place search (Nominatim) that puts news items and police reports on the map. © OpenStreetMap contributors, ODbL.',
       },
+      {
+        // Credited wherever the config names it; the job reads it only with KLINIK_ATLAS_ENABLED=true
+        name: 'Bundes-Klinik-Atlas (G-BA)',
+        url: 'https://bundes-klinik-atlas.de/open-data/',
+        description: 'Hospital sites with their emergency tier under the G-BA\'s emergency-care rules (basic, extended, comprehensive), children\'s emergency care, stroke and chest-pain units, from the open-data export, for the emergencies map layer. Source: Gemeinsamer Bundesausschuss (G-BA), Bundes-Klinik-Atlas.',
+        requires: 'hospitals',
+        cities: ['berlin', 'hamburg', 'koeln', 'muenchen'],
+      },
     ],
   },
   {
@@ -368,6 +376,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Safety',
     sources: [
       { name: 'Hamburg Police (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/6337', description: 'Hamburg police press releases.' },
+      { name: 'Krankenhäuser Hamburg (Geodienste)', url: 'https://suche.transparenz.hamburg.de/dataset/krankenhaeuser-hamburg', description: 'Hospitals in the city\'s hospital plan, with whether each takes part in emergency care, for the emergencies map layer. Source: Freie und Hansestadt Hamburg, Behörde für Gesundheit und Verbraucherschutz, dl-de/by-2-0.' },
       { name: 'Hamburgisches Krisentelefon', url: 'https://www.hamburg.de/politik-und-verwaltung/bezirke/altona/themen/gesundheit/krisentelefon-61202', description: 'Crisis line for acute psychological crises (evenings, nights, weekends) and nationwide hotlines in the Crisis Services tile.' },
     ],
   },

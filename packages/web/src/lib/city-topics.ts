@@ -58,6 +58,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   evChargingLive: null,
   pharmacies: null,
   aeds: null,
+  hospitals: null,
   noiseSensors: null,
   noiseTotal: null,
   rentMap: null,

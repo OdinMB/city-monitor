@@ -40,6 +40,8 @@ export const CK = {
   evChargingStatus: (cityId: string) => `${cityId}:ev-charging:status`,
   /** Not bootstrapped: Berlin's ~900 cool places, fountains and toilets are about 165 KB, fetched when the layer is on. */
   heatRelief: (cityId: string) => `${cityId}:heat-relief`,
+  /** Not bootstrapped (~60 hospitals, ~15 KB): fetched for the emergencies layer's hospital toggle. */
+  hospitals: (cityId: string) => `${cityId}:hospitals`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,

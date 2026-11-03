@@ -23,6 +23,7 @@ import { createConstructionRouter } from './routes/construction.js';
 import { createAedsRouter } from './routes/aeds.js';
 import { createSocialAtlasRouter } from './routes/social-atlas.js';
 import { createHeatReliefRouter } from './routes/heat-relief.js';
+import { createHospitalsRouter } from './routes/hospitals.js';
 import { createAppointmentsRouter } from './routes/appointments.js';
 import { createWaterLevelsRouter } from './routes/water-levels.js';
 import { createBudgetRouter } from './routes/budget.js';
@@ -61,6 +62,7 @@ import { createConstructionIngestion } from './cron/ingest-construction.js';
 import { createAedIngestion } from './cron/ingest-aeds.js';
 import { createSocialAtlasIngestion } from './cron/ingest-social-atlas.js';
 import { createHeatReliefIngestion } from './cron/ingest-heat-relief.js';
+import { activeHospitalSources, createHospitalIngestion } from './cron/ingest-hospitals.js';
 import { createWaterLevelIngestion } from './cron/ingest-water-levels.js';
 import { createBudgetIngestion } from './cron/ingest-budget.js';
 import { createAppointmentIngestion } from './cron/ingest-appointments.js';
@@ -191,6 +193,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-aeds',         tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'osm-aeds' }, serves: inGermany },
     { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' }, serves: (c) => !!c.dataSources.socialAtlas },
     { jobName: 'ingest-heat-relief',  tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'heat-relief' }, serves: (c) => !!c.dataSources.heatRelief?.length },
+    { jobName: 'ingest-hospitals',    tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'hospitals' }, serves: (c) => activeHospitalSources(c).length > 0 },
     { jobName: 'ingest-water-levels', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'pegelonline' }, serves: (c) => !!c.dataSources.waterLevels?.stations.length },
     { jobName: 'ingest-flood-status', tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'lhp-flood' }, serves: (c) => !!c.dataSources.floodStatus?.stations.length },
     { jobName: 'ingest-budget',       tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'berlin-haushalt' }, serves: (c) => !!c.dataSources.budget },
@@ -247,6 +250,7 @@ export async function createApp(options?: {
   const ingestAeds = createAedIngestion(cache, db);
   const ingestSocialAtlas = createSocialAtlasIngestion(cache, db);
   const ingestHeatRelief = createHeatReliefIngestion(cache, db);
+  const ingestHospitals = createHospitalIngestion(cache, db);
   const ingestWaterLevels = createWaterLevelIngestion(cache, db);
   const ingestFloodStatus = createFloodStatusIngestion(cache, db);
   const ingestBudget = createBudgetIngestion(cache, db);
@@ -294,6 +298,7 @@ export async function createApp(options?: {
     { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },
     // Static lists (cool places, fountains, toilets) that change a few times a year
     { name: 'ingest-heat-relief', schedule: '30 5 * * 1', handler: ingestHeatRelief, runOnStart: s('ingest-heat-relief') },
+    { name: 'ingest-hospitals', schedule: '45 5 * * 1', handler: ingestHospitals, runOnStart: s('ingest-hospitals') },
     { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: s('ingest-water-levels') },
     // LHP's terms ask for a refresh at least every 10 minutes
     { name: 'ingest-flood-status', schedule: '*/5 * * * *', handler: ingestFloodStatus, runOnStart: s('ingest-flood-status') },
@@ -378,6 +383,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(43200), createAedsRouter(cache, db));
   app.use('/api', cacheFor(43200), createSocialAtlasRouter(cache, db));
   app.use('/api', cacheFor(43200), createHeatReliefRouter(cache, db));
+  app.use('/api', cacheFor(43200), createHospitalsRouter(cache, db));
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
   app.use('/api', cacheFor(120), createFloodStatusRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache, db));

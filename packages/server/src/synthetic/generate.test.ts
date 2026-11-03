@@ -9,7 +9,7 @@ import {
   WaterLevelDataSchema, WeatherDataSchema,
 } from '@city-monitor/shared/schemas.js';
 import { EvChargingRegisterSchema } from '@city-monitor/shared/schemas.js';
-import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
+import { HeatReliefDataSchema, HospitalDataSchema } from '@city-monitor/shared/schemas.js';
 import type { AirQuality, CityConfig } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
@@ -108,6 +108,7 @@ function schemaChecks(d: CitySyntheticData): Array<[string, z.ZodType, unknown]>
     ['traffic counts', TrafficCountDataSchema, d.trafficCounts],
     ['ev charging', EvChargingRegisterSchema, d.evCharging],
     ['heat relief', HeatReliefDataSchema, d.heatRelief],
+    ['hospitals', HospitalDataSchema, d.hospitals],
     ['soil moisture', SoilMoistureDataSchema, d.soilMoisture],
     ...Object.entries(d.political ?? {}).map(([level, districts]): [string, z.ZodType, unknown] =>
       [`political ${level}`, z.array(PoliticalDistrictSchema), districts]),
@@ -196,7 +197,7 @@ describe('generateSyntheticData', () => {
 
   it('passes the Zod schemas the database reads validate with', () => {
     const checks = schemaChecks(data);
-    expect(checks).toHaveLength(27 + 4);
+    expect(checks).toHaveLength(28 + 4);
     for (const [name, schema, value] of checks) {
       expect(schema.safeParse(value).error, name).toBeUndefined();
     }
@@ -323,7 +324,7 @@ describe('generateSyntheticCityData', () => {
       // credentials), bathing water from its own WFS, social atlas from the
       // Sozialmonitoring.
       expect([...held].sort()).toEqual([
-        'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electricity', 'evCharging', 'heatRelief', 'laborMarket', 'liftOutages', 'news', 'nina',
+        'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electricity', 'evCharging', 'heatRelief', 'hospitals', 'laborMarket', 'liftOutages', 'news', 'nina',
         'pharmacies', 'political', 'pollen', 'population', 'safety', 'socialAtlas', 'soilMoisture', 'summary', 'traffic', 'trafficAccidents', 'trafficCounts', 'transit',
         'wastewater', 'waterLevels', 'weather',
       ]);
@@ -354,7 +355,7 @@ describe('generateSyntheticCityData', () => {
     it('passes the Zod schemas the database reads validate with', () => {
       const checks = schemaChecks(data);
       expect(checks.map(([name]) => name).sort()).toEqual([
-        'aeds', 'aq grid', 'aq stations', 'bathing', 'bike sharing', 'construction', 'council', 'electricity', 'ev charging', 'heat relief', 'labor market', 'lift outages', 'nina', 'pharmacies', 'political bundestag',
+        'aeds', 'aq grid', 'aq stations', 'bathing', 'bike sharing', 'construction', 'council', 'electricity', 'ev charging', 'heat relief', 'hospitals', 'labor market', 'lift outages', 'nina', 'pharmacies', 'political bundestag',
         'political state', 'pollen', 'population', 'soil moisture', 'traffic', 'traffic accidents', 'traffic counts', 'transit', 'wastewater', 'water levels', 'weather',
       ]);
       for (const [name, schema, value] of checks) {

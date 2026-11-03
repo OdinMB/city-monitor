@@ -370,6 +370,27 @@ export const LiftOutageDataSchema = z.object({
   updated: z.string().nullable(),
 });
 
+// --- Hospitals (Bundes-Klinik-Atlas, Hamburg WFS) ---
+
+export const HospitalDataSchema = z.object({
+  hospitals: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    address: z.string().nullable(),
+    lat: z.number(),
+    lon: z.number(),
+    tier: z.enum(['comprehensive', 'extended', 'basic', 'emergency', 'limited', 'specialised', 'none']),
+    children: z.boolean(),
+    strokeUnit: z.boolean(),
+    chestPainUnit: z.boolean(),
+    trauma: z.boolean(),
+    beds: z.number().nullable(),
+    url: z.string().nullable(),
+    source: z.enum(['klinik-atlas', 'hamburg-wfs']),
+  })),
+  atlasDate: z.string().nullable(),
+});
+
 // --- Bike Sharing ---
 
 export const BikeSharingDataSchema = z.object({

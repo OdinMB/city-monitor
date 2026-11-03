@@ -73,6 +73,8 @@ export const muenchen: CityConfig = {
     // virtual stations, ~630 of them inside the bounding box, which the job keeps
     // Lifts and escalators at DB stations (FaSta, CC BY 4.0); fetched only with DB_API_CLIENT_ID and DB_API_KEY
     stationLifts: { provider: 'db-fasta' },
+    // Hospitals by G-BA emergency tier; read only with KLINIK_ATLAS_ENABLED=true (reuse terms unconfirmed)
+    hospitals: [{ provider: 'klinik-atlas', places: ['München'] }],
     bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_ml/gbfs.json', system: 'MyRadl', operator: 'nextbike' },
     // Unfallatlas (dl-de/by-2.0): the kreisfreie Stadt, ~5,300 injury accidents in 2025
     trafficAccidents: { provider: 'unfallatlas', ags: '09162000' },

@@ -49,6 +49,8 @@ import type {
 import type { EvChargingData } from '@city-monitor/shared';
 export type { HeatReliefData, HeatReliefPlace, HeatReliefKind, DwdHeatTrend } from '@city-monitor/shared';
 import type { HeatReliefData } from '@city-monitor/shared';
+export type { Hospital, HospitalData, HospitalTier } from '@city-monitor/shared';
+import type { HospitalData } from '@city-monitor/shared';
 
 /** The levels `GET /api/:city/political/:level` serves (packages/server/src/routes/political.ts). */
 export type PoliticalLevel = 'bundestag' | 'state' | 'bezirke' | 'mayor' | 'state-bezirke';
@@ -81,6 +83,7 @@ export const api = {
   getTrafficCounts: (city: string) => fetchJson<ApiResponse<TrafficCountData | null>>(`${API_BASE}/${city}/traffic-counts`),
   getEvCharging: (city: string) => fetchJson<ApiResponse<EvChargingData | null>>(`${API_BASE}/${city}/ev-charging`),
   getHeatRelief: (city: string) => fetchJson<ApiResponse<HeatReliefData | null>>(`${API_BASE}/${city}/heat-relief`),
+  getHospitals: (city: string) => fetchJson<ApiResponse<HospitalData | null>>(`${API_BASE}/${city}/hospitals`),
   getPolitical: (city: string, level: PoliticalLevel) => fetchJson<ApiResponse<PoliticalDistrict[]>>(`${API_BASE}/${city}/political/${level}`),
   getBudget: (city: string) => fetchJson<ApiResponse<BudgetSummary | null>>(`${API_BASE}/${city}/budget`),
   getAppointments: (city: string) => fetchJson<ApiResponse<BuergeramtData>>(`${API_BASE}/${city}/appointments`),

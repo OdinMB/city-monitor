@@ -17,7 +17,7 @@ import {
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
 import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData } from '@city-monitor/shared';
-import type { HeatReliefData } from '@city-monitor/shared';
+import type { HeatReliefData, HospitalData } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
 import type { EvChargingRegister } from '../lib/ev-charging.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
@@ -151,6 +151,10 @@ export async function saveEvChargingRegister(db: Db, cityId: string, data: EvCha
 
 export async function saveHeatRelief(db: Db, cityId: string, data: HeatReliefData): Promise<void> {
   await saveSnapshot(db, cityId, 'heat-relief', data);
+}
+
+export async function saveHospitals(db: Db, cityId: string, data: HospitalData): Promise<void> {
+  await saveSnapshot(db, cityId, 'hospitals', data);
 }
 
 export async function saveFloodStatus(db: Db, cityId: string, data: FloodStatus): Promise<void> {

@@ -86,6 +86,7 @@ export type CityFeature =
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
+  | 'hospitals'       // dataSources.hospitals: hospitals by emergency tier (Hamburg WFS; Bundes-Klinik-Atlas only with KLINIK_ATLAS_ENABLED)
   // From the political ingestion's own tables
   | 'political'       // PARLIAMENT_CONFIG: Bundestag and state parliament members
   | 'districtMayors'  // BEZIRKSBUERGERMEISTER
@@ -221,6 +222,21 @@ export type LiftOutageSource =
  * them (.context/lift-outages.md, "DB stations").
  */
 export type StationLiftSource = { provider: 'db-fasta' };
+
+/**
+ * A source of the emergencies layer's hospitals (.context/hospitals.md). A
+ * city may list several; where two cover the same hospital, the one with the
+ * G-BA emergency tier wins.
+ */
+export type HospitalSource =
+  /**
+   * The Bundes-Klinik-Atlas open-data export (G-BA): every German hospital site
+   * with its G-BA emergency tier, kept where `Ort` is one of `places`. Its reuse
+   * terms are unconfirmed, so the job reads it only with KLINIK_ATLAS_ENABLED=true.
+   */
+  | { provider: 'klinik-atlas'; places: string[] }
+  /** Hamburg's WFS `HH_WFS_Krankenhaeuser` (dl-de/by-2.0): plan hospitals, ER participation but no tier */
+  | { provider: 'hamburg-wfs'; url: string };
 
 /**
  * A city's bike-sharing system, by the provider whose format it is in. Each
@@ -415,6 +431,7 @@ export interface CityDataSources {
   bathing?: BathingSource;
   liftOutages?: LiftOutageSource;
   stationLifts?: StationLiftSource;
+  hospitals?: HospitalSource[];
   bikeSharing?: BikeSharingSource;
   electricity?: ElectricitySource;
   citizenReports?: CitizenReportSource;
@@ -964,6 +981,45 @@ export interface LiftOutageData {
   outages: LiftOutage[];
   /** When the operator last updated its lists (ISO 8601 with offset), null when it gave no time. */
   updated: string | null;
+}
+
+// Hospitals (Bundes-Klinik-Atlas, Hamburg WFS)
+/**
+ * A hospital's part in emergency care. The G-BA tiers (Notfallstufen) from
+ * the Bundes-Klinik-Atlas: `basic` (1), `extended` (2), `comprehensive` (3);
+ * `specialised` a site without a tier that runs a special emergency module
+ * (Spezialversorgung); `none` no tier. Hamburg's WFS has no tier: `emergency`
+ * takes part in emergency care, `limited` takes part with restrictions.
+ */
+export type HospitalTier = 'comprehensive' | 'extended' | 'basic' | 'emergency' | 'limited' | 'specialised' | 'none';
+
+export interface Hospital {
+  /** The source's id: `kla-<STOID>` or `hh-<id>`. */
+  id: string;
+  name: string;
+  /** Street and postcode with town, as the source gives them. */
+  address: string | null;
+  lat: number;
+  lon: number;
+  tier: HospitalTier;
+  /** Children's emergency care (Klinik-Atlas `Kinder` above 0). */
+  children: boolean;
+  strokeUnit: boolean;
+  chestPainUnit: boolean;
+  /** Care of the severely injured (Schwerverletztenversorgung). */
+  trauma: boolean;
+  /** Beds (Klinik-Atlas) or planned beds (Hamburg), when given. */
+  beds: number | null;
+  /** The hospital's own website. */
+  url: string | null;
+  source: 'klinik-atlas' | 'hamburg-wfs';
+}
+
+export interface HospitalData {
+  /** By tier (comprehensive first), then name. */
+  hospitals: Hospital[];
+  /** The Klinik-Atlas export's date (YYYY-MM-DD), when it is a source. */
+  atlasDate: string | null;
 }
 
 // Bike sharing (nextbike GBFS, Hamburg StadtRAD)

@@ -133,6 +133,15 @@ export const hamburg: CityConfig = {
     // Transparenzportal "StadtRAD-Stationen Hamburg"): ~360 stations, no docks. No nextbike in Hamburg.
     // Lifts and escalators at DB stations (FaSta, CC BY 4.0); fetched only with DB_API_CLIENT_ID and DB_API_KEY
     stationLifts: { provider: 'db-fasta' },
+    // The city's hospital WFS (dl-de/by-2.0, ER participation, no tier) and, with KLINIK_ATLAS_ENABLED=true,
+    // the Klinik-Atlas tiers, which win where both list a hospital
+    hospitals: [
+      {
+        provider: 'hamburg-wfs',
+        url: 'https://geodienste.hamburg.de/HH_WFS_Krankenhaeuser?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0&typeNames=de.hh.up:gesundheit_krankenhaeuser&outputFormat=application/geo%2Bjson&srsName=EPSG:4326',
+      },
+      { provider: 'klinik-atlas', places: ['Hamburg'] },
+    ],
     bikeSharing: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', system: 'StadtRAD Hamburg', operator: 'DB Connect' },
     // Unfallatlas (dl-de/by-2.0): the whole Land, ~7,100 injury accidents in 2025
     trafficAccidents: { provider: 'unfallatlas', ags: '02000000' },

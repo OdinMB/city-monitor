@@ -23,7 +23,7 @@ import type {
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
   TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
-import type { HeatReliefData, HeatReliefPlace } from '@city-monitor/shared';
+import type { HeatReliefData, HeatReliefPlace, Hospital, HospitalData, HospitalTier } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
 import type { SnapshotType } from '../db/schema.js';
 import type { PersistedNewsItem } from '../db/writes.js';
@@ -39,6 +39,7 @@ import {
 import { computeLevel, computeTrend } from '../cron/ingest-wastewater.js';
 import { REPORT_WINDOW_DAYS, buildCitizenReportData, reportGroup, reportStatus, requestPageUrl } from '../cron/ingest-citizen-reports.js';
 import { hashString } from '../lib/hash.js';
+import { TIER_ORDER } from '../lib/hospitals.js';
 import { SOCIAL_ATLAS_HAS_STATUS_INDEX, SOCIAL_ATLAS_METRICS } from '../lib/social-atlas-parsers.js';
 
 export interface SyntheticSnapshot {
@@ -100,6 +101,8 @@ export interface SyntheticData {
   /** The register only: the live status (Hamburg) is never stored, so the seed has none. */
   evCharging: EvChargingRegister;
   heatRelief: HeatReliefData;
+  /** As production holds with KLINIK_ATLAS_ENABLED set: hospitals of every tier around the anchors. */
+  hospitals: HospitalData;
   /** Soil moisture at the configured DWD stations; Gieß den Kiez waterings where the city has them. */
   soilMoisture: SoilMoistureData;
   /** Older snapshots behind the history endpoints (weather, water levels, labor market), oldest first. */
@@ -166,6 +169,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   trafficCounts: (c) => (c.dataSources.trafficCounts?.modes.length ?? 0) > 0,
   evCharging: (c) => c.dataSources.evCharging !== undefined,
   heatRelief: (c) => (c.dataSources.heatRelief?.length ?? 0) > 0,
+  hospitals: (c) => (c.dataSources.hospitals?.length ?? 0) > 0,
   soilMoisture: (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0,
 };
 
@@ -286,8 +290,42 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('trafficCounts')) sets.trafficCounts = generateTrafficCounts(rng, now, city, place);
   if (has.has('evCharging')) sets.evCharging = generateEvCharging(rng, place);
   if (has.has('heatRelief')) sets.heatRelief = generateHeatRelief(rng, city, place);
+  if (has.has('hospitals')) sets.hospitals = generateHospitals(city, place);
   if (has.has('soilMoisture')) sets.soilMoisture = generateSoilMoisture(rng, now, city, place);
   return { cityId: city.id, ...sets, history };
+}
+
+const SYNTHETIC_TIERS: readonly HospitalTier[] = ['comprehensive', 'extended', 'basic', 'none', 'specialised', 'basic', 'extended', 'none'];
+
+/**
+ * One made-up hospital per anchor (up to eight), cycling through the tiers,
+ * from the Klinik-Atlas where the city lists it, else its first source. Drawn
+ * without the generator, so the other data sets keep their values.
+ */
+function generateHospitals(city: CityConfig, place: Place): HospitalData {
+  const sources = city.dataSources.hospitals ?? [];
+  const atlas = sources.some((s) => s.provider === 'klinik-atlas');
+  const source: Hospital['source'] = atlas ? 'klinik-atlas' : 'hamburg-wfs';
+  const hospitals = place.anchors.slice(0, 8).map((a, i): Hospital => {
+    const tier = SYNTHETIC_TIERS[i]!;
+    return {
+      id: `syn-hospital-${i + 1}`,
+      name: `${MARK} Klinikum ${a.name}`,
+      address: `${STREETS[i % STREETS.length]} ${i + 1}`,
+      lat: a.lat + 0.002,
+      lon: a.lon - 0.002,
+      tier,
+      children: tier === 'comprehensive',
+      strokeUnit: tier === 'comprehensive' || tier === 'extended',
+      chestPainUnit: tier === 'comprehensive',
+      trauma: tier === 'comprehensive',
+      beds: 100 + i * 75,
+      url: null,
+      source,
+    };
+  });
+  hospitals.sort((x, y) => TIER_ORDER.indexOf(x.tier) - TIER_ORDER.indexOf(y.tier) || x.name.localeCompare(y.name, 'de'));
+  return { hospitals, atlasDate: atlas ? '2026-10-27' : null };
 }
 
 // ---------------------------------------------------------------------------

@@ -10,8 +10,9 @@ import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-f
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
 import { TRAFFIC_ACCIDENTS_TTL_SECONDS } from '../cron/ingest-traffic-accidents.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
-import { loadHeatRelief } from './reads.js';
+import { loadHeatRelief, loadHospitals } from './reads.js';
 import { HEAT_RELIEF_TTL_SECONDS } from '../cron/ingest-heat-relief.js';
+import { HOSPITALS_TTL_SECONDS } from '../cron/ingest-hospitals.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -207,6 +208,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadHeatRelief(db, cityId);
       if (r) cache.set(CK.heatRelief(cityId), r.data, HEAT_RELIEF_TTL_SECONDS, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} heat relief failed`, err)),
+
+    (async () => {
+      const r = await loadHospitals(db, cityId);
+      if (r) cache.set(CK.hospitals(cityId), r.data, HOSPITALS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} hospitals failed`, err)),
 
     (async () => {
       const r = await loadWastewater(db, cityId);

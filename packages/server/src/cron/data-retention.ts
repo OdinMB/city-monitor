@@ -88,6 +88,7 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'unfallatlas-accidents', retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
   { type: 'bnetza-charging',    retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'heat-relief',        retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'hospitals',          retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-bezirke',       retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-mayor',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-bundestag',     retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly

@@ -18,8 +18,8 @@ import {
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
   TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema, SoilMoistureDataSchema,
 } from '@city-monitor/shared/schemas.js';
-import type { HeatReliefData } from '@city-monitor/shared';
-import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
+import type { HeatReliefData, HospitalData } from '@city-monitor/shared';
+import { HeatReliefDataSchema, HospitalDataSchema } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
 import { EvChargingRegisterSchema } from '@city-monitor/shared/schemas.js';
 import type { EvChargingRegister } from '../lib/ev-charging.js';
@@ -242,6 +242,11 @@ export async function loadEvChargingRegister(db: Db, cityId: string): Promise<Db
 /** No age limit: the lists are static, and last month's fountains beat none (the job runs weekly). */
 export async function loadHeatRelief(db: Db, cityId: string): Promise<DbResult<HeatReliefData>> {
   return loadSnapshot(db, cityId, 'heat-relief', { schema: HeatReliefDataSchema });
+}
+
+/** No age limit: hospitals change a few times a year (the job runs weekly). */
+export async function loadHospitals(db: Db, cityId: string): Promise<DbResult<HospitalData>> {
+  return loadSnapshot(db, cityId, 'hospitals', { schema: HospitalDataSchema });
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {

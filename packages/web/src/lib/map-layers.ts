@@ -45,7 +45,7 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
   const has = (feature: CityFeature) => features.includes(feature);
 
   const news = present<NewsSubLayer>([['news', has('news')], ['police', has('police')]]);
-  const emergencies = present<EmergencySubLayer>([['pharmacies', has('pharmacies')], ['aeds', has('aeds')]]);
+  const emergencies = present<EmergencySubLayer>([['pharmacies', has('pharmacies')], ['aeds', has('aeds')], ['hospitals', has('hospitals')]]);
   // TomTom traffic incidents cover every city.
   const traffic = present<TrafficSubLayer>([
     ['public-transport', has('transit')], ['incidents', true], ['congestion', has('trafficFlowMap')], ['roadworks', has('roadworks')],
@@ -91,6 +91,19 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
   ]));
 
   return { layers, news, emergencies, traffic, water, heatRelief, noise, noiseLive, social, political };
+}
+
+/**
+ * The layers without the hospitals sub-layer when the server holds no
+ * hospital for the city (a source switched off, like the Klinik-Atlas without
+ * KLINIK_ATLAS_ENABLED), and without the emergencies layer if that left it empty.
+ */
+export function withoutEmptyHospitals(layers: CityLayers, hasHospitals: boolean): CityLayers {
+  if (hasHospitals || !layers.emergencies.includes('hospitals')) return layers;
+  const emergencies = layers.emergencies.filter((s) => s !== 'hospitals');
+  const kept = new Set(layers.layers);
+  if (emergencies.length === 0) kept.delete('emergencies');
+  return { ...layers, emergencies, layers: kept };
 }
 
 /** The selected sub-layers the city has, or every one it has when none of the selected ones is there. */

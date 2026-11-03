@@ -1,12 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import type { CityFeature } from '@city-monitor/shared';
-import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from './map-layers.js';
+import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers, withoutEmptyHospitals } from './map-layers.js';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
 import { koeln } from '../config/cities/koeln.js';
 import { muenchen } from '../config/cities/muenchen.js';
 
 const withFeatures = (...features: CityFeature[]) => cityLayers({ features });
+
+describe('withoutEmptyHospitals', () => {
+  it('drops the hospitals sub-layer while the server has none, and the layer when nothing is left', () => {
+    const both = withFeatures('pharmacies', 'hospitals');
+    expect(withoutEmptyHospitals(both, true)).toBe(both);
+    expect(withoutEmptyHospitals(both, false).emergencies).toEqual(['pharmacies']);
+    expect(withoutEmptyHospitals(both, false).layers.has('emergencies')).toBe(true);
+    const alone = withoutEmptyHospitals(withFeatures('hospitals'), false);
+    expect(alone.emergencies).toEqual([]);
+    expect(alone.layers.has('emergencies')).toBe(false);
+  });
+});
 
 describe('cityLayers', () => {
   it('gives a city without features only the layers every city has, each with what every city has', () => {
@@ -29,7 +41,7 @@ describe('cityLayers', () => {
     ]);
     expect(all.heatRelief).toEqual(['cool', 'fountains', 'toilets']);
     expect(all.news).toEqual(['news', 'police']);
-    expect(all.emergencies).toEqual(['pharmacies', 'aeds']);
+    expect(all.emergencies).toEqual(['pharmacies', 'aeds', 'hospitals']);
     expect(all.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
     expect(all.water).toEqual(['levels', 'bathing']);
     expect(all.noise).toEqual(['total', 'road', 'rail', 'air']);
