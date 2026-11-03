@@ -46,6 +46,111 @@ export function sourceText(value: unknown): string {
   return `<bdi dir="auto">${escapeHtml(value)}</bdi>`;
 }
 
+// --- Keeping a popup inside the map ------------------------------------------
+//
+// MapLibre picks which side of the point a popup opens on, but a popup taller
+// or wider than the room on that side still runs past the map's edge (on a
+// phone, or near the edge of a short map). Each popup is therefore capped to
+// the room on its roomier side, scrolls inside when its content is longer,
+// and is slid back inside the map when it would still cross an edge.
+
+/** Gap between a popup and the map's edge, in px. */
+export const POPUP_EDGE_GAP = 8;
+/** Height of MapLibre's popup tip (the small triangle), in px. */
+const POPUP_TIP = 10;
+/** The popup box's padding and border around its body (globals.css), in px. */
+const POPUP_CHROME = 24;
+/** Never squeeze a popup below this height or width, in px. */
+const POPUP_MIN_HEIGHT = 80;
+const POPUP_MIN_WIDTH = 160;
+
+/**
+ * Tallest a popup's body may be when it points at `pointY` in a map
+ * `mapHeight` px tall: the room above or below the point, whichever is larger,
+ * less the popup's offset, its tip, its box's padding and the edge gap.
+ */
+export function popupMaxHeight(pointY: number, mapHeight: number, offset: number): number {
+  const reserved = offset + POPUP_TIP + POPUP_CHROME + POPUP_EDGE_GAP;
+  const room = Math.max(pointY - reserved, mapHeight - pointY - reserved);
+  return Math.max(Math.floor(room), POPUP_MIN_HEIGHT);
+}
+
+/** The requested max width (`'300px'`), narrowed to fit a map `mapWidth` px wide. */
+export function popupMaxWidth(requested: string, mapWidth: number): string {
+  const cap = Math.max(Math.floor(mapWidth - 2 * POPUP_EDGE_GAP), POPUP_MIN_WIDTH);
+  const px = parseFloat(requested);
+  return `${Number.isFinite(px) ? Math.min(px, cap) : cap}px`;
+}
+
+interface Box { left: number; top: number; right: number; bottom: number }
+
+function shiftInto(lo: number, hi: number, min: number, max: number): number {
+  if (hi - lo > max - min) return min - lo; // larger than the room: align its start
+  if (lo < min) return min - lo;
+  if (hi > max) return max - hi;
+  return 0;
+}
+
+/** How far to move `inner` so that it sits inside `outer`, `gap` px from each edge. */
+export function nudgeIntoBox(inner: Box, outer: Box, gap = POPUP_EDGE_GAP): { dx: number; dy: number } {
+  return {
+    dx: shiftInto(inner.left, inner.right, outer.left + gap, outer.right - gap),
+    dy: shiftInto(inner.top, inner.bottom, outer.top + gap, outer.bottom - gap),
+  };
+}
+
+/**
+ * Keep `popup` inside its map while it is open: cap its body's height before
+ * MapLibre places it, and slide its box back inside afterwards. Returns the
+ * body element that the popup's markup goes into.
+ */
+function keepInsideMap(
+  map: maplibregl.Map,
+  popup: maplibregl.Popup,
+  lngLat: maplibregl.LngLatLike,
+  html: string,
+  offset: number,
+  maxWidth: string,
+): HTMLElement {
+  const container = map.getContainer();
+  const body = document.createElement('div');
+  body.className = 'map-popup-body';
+  body.innerHTML = html;
+
+  const fitSize = () => {
+    const at = popup.isOpen() ? popup.getLngLat() : lngLat;
+    body.style.maxHeight = `${popupMaxHeight(map.project(at).y, container.clientHeight, offset)}px`;
+    const width = popupMaxWidth(maxWidth, container.clientWidth);
+    if (width !== popup.getMaxWidth()) popup.setMaxWidth(width);
+  };
+
+  const nudge = () => {
+    const box = popup.getElement()?.querySelector<HTMLElement>('.maplibregl-popup-content');
+    if (!box) return;
+    box.style.transform = '';
+    const { dx, dy } = nudgeIntoBox(box.getBoundingClientRect(), container.getBoundingClientRect());
+    if (dx || dy) box.style.transform = `translate(${dx}px, ${dy}px)`;
+  };
+
+  // Sizing runs before MapLibre repositions the popup on a move (its own
+  // listener is added by addTo, after this one); the nudge runs after it.
+  map.on('move', fitSize);
+  map.on('resize', fitSize);
+  fitSize();
+  popup.once('open', () => {
+    map.on('move', nudge);
+    map.on('resize', nudge);
+    nudge();
+  });
+  popup.once('close', () => {
+    map.off('move', fitSize);
+    map.off('resize', fitSize);
+    map.off('move', nudge);
+    map.off('resize', nudge);
+  });
+  return body;
+}
+
 /** Schedule hover popup close after a 300 ms delay (cancels any pending timer). */
 export function scheduleHoverClose() {
   _clearHoverTimer();
@@ -66,10 +171,8 @@ export function showMapPopup(
     maxWidth,
     closeButton: sticky,
     closeOnClick: sticky,
-  })
-    .setLngLat(lngLat)
-    .setHTML(html)
-    .addTo(map);
+  }).setLngLat(lngLat);
+  popup.setDOMContent(keepInsideMap(map, popup, lngLat, html, offset, maxWidth)).addTo(map);
 
   if (!sticky) {
     _hoverPopup = popup;
