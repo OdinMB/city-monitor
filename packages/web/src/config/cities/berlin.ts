@@ -23,9 +23,11 @@ export const berlin: WebCityConfig = {
   // Berlin is the city with every source.
   features: [
     'news', 'police', 'nina', 'pollen', 'waterLevels', 'transit', 'events', 'appointments',
-    'budget', 'roadworks', 'socialAtlas', 'laborMarket', 'wastewater', 'noiseSensors', 'councilMeetings', 'pharmacies', 'aeds',
+    'budget', 'roadworks', 'socialAtlas', 'laborMarket', 'wastewater', 'respiratoryCases', 'noiseSensors', 'councilMeetings', 'pharmacies', 'aeds', 'hospitals',
     'political', 'districtMayors', 'stateByDistrict',
-    'bathing', 'population', 'feuerwehr',
-    'crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap', 'bundestagByDistrict',
+    'bathing', 'population', 'feuerwehr', 'airQualityStations', 'bikeSharing', 'stationLifts', 'trafficAccidents', 'crimeAtlas', 'telraamCounts', 'electricity', 'electionResults',
+    'evCharging', 'coolPlaces', 'drinkingFountains', 'publicToilets', 'soilMoisture', 'treeWatering',
+    'waterTemperature',
+    'crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap', 'bundestagByDistrict', 'streetTrees',
   ],
 };

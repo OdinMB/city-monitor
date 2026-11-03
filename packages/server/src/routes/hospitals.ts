@@ -1,0 +1,47 @@
+import { Router } from 'express';
+import type { Cache } from '../lib/cache.js';
+import type { Db } from '../db/index.js';
+import { loadHospitals } from '../db/reads.js';
+import type { HospitalData } from '@city-monitor/shared';
+import { getCityConfig } from '../config/index.js';
+import { createLogger } from '../lib/logger.js';
+import { CK } from '../lib/cache-keys.js';
+import { HOSPITALS_TTL_SECONDS, servedHospitals } from '../cron/ingest-hospitals.js';
+
+const log = createLogger('route:hospitals');
+
+export function createHospitalsRouter(cache: Cache, db: Db | null = null) {
+  const router = Router();
+
+  router.get('/:city/hospitals', async (req, res) => {
+    const city = getCityConfig(req.params.city);
+    if (!city) {
+      res.status(404).json({ error: 'City not found' });
+      return;
+    }
+
+    // The store holds every source's records; serve those of the sources active now, merged
+    const cached = cache.getWithMeta<HospitalData>(CK.hospitals(city.id));
+    if (cached) {
+      res.json({ ...cached, data: servedHospitals(cached.data, city) });
+      return;
+    }
+
+    if (db) {
+      try {
+        const result = await loadHospitals(db, city.id);
+        if (result) {
+          cache.set(CK.hospitals(city.id), result.data, HOSPITALS_TTL_SECONDS, result.fetchedAt);
+          res.json({ data: servedHospitals(result.data, city), fetchedAt: result.fetchedAt.toISOString() });
+          return;
+        }
+      } catch (err) {
+        log.error(`${city.id} DB read failed`, err);
+      }
+    }
+
+    res.json({ data: null, fetchedAt: null });
+  });
+
+  return router;
+}

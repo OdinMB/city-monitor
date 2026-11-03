@@ -65,12 +65,20 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'aponet',             retentionMs: 2 * DAY_MS },
   { type: 'service-berlin',     retentionMs: 2 * DAY_MS },
   { type: 'lageso-wastewater',  retentionMs: 2 * DAY_MS },
+  { type: 'rki-ifsg-cases',     retentionMs: 2 * DAY_MS },
   { type: 'lageso-bathing',     retentionMs: 2 * DAY_MS },
   { type: 'dwd-pollen',         retentionMs: 2 * DAY_MS },
   { type: 'sc-dnms',            retentionMs: 2 * DAY_MS },
   { type: 'oparl-meetings',     retentionMs: 2 * DAY_MS },
   { type: 'lhp-flood',          retentionMs: 2 * DAY_MS },
   { type: 'kvb-lift-outages',   retentionMs: 2 * DAY_MS },
+  { type: 'wasserportal-temp',  retentionMs: 2 * DAY_MS },
+  { type: 'parking',            retentionMs: 2 * DAY_MS },
+  { type: 'bike-sharing',       retentionMs: 2 * DAY_MS },
+  { type: 'smard-electricity',  retentionMs: 2 * DAY_MS },
+  { type: 'uba-airquality',     retentionMs: 2 * DAY_MS },
+  { type: 'open311-reports',    retentionMs: 1 * DAY_MS }, // ~250 KB a row, written hourly; reads take 2 h at most
+  { type: 'traffic-counts',     retentionMs: 2 * DAY_MS },
 
   // Infrequent (7 days). keepLatest where the job runs weekly or monthly; the
   // daily jobs write a fresh row each run.
@@ -78,12 +86,21 @@ export const CAPPED_RETENTION: SnapshotRetention[] = [
   { type: 'osm-aeds',           retentionMs: 7 * DAY_MS },                   // daily
   { type: 'mss-social-atlas',   retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'bf-feuerwehr',       retentionMs: 7 * DAY_MS },                   // daily
+  { type: 'dwd-soil-moisture',  retentionMs: 7 * DAY_MS },                   // twice a day
   { type: 'afstat-population',  retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
+  { type: 'unfallatlas-accidents', retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
+  { type: 'kriminalitaetsatlas', retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
+  { type: 'bnetza-charging',    retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'heat-relief',        retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'telraam-counts',     retentionMs: 7 * DAY_MS }, // twice daily, ~20 KB a row
+  { type: 'election-results', retentionMs: 7 * DAY_MS, keepLatest: true }, // monthly
+  { type: 'hospitals',          retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-bezirke',       retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-mayor',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-bundestag',     retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-state',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
   { type: 'abgwatch-state-bezirke', retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
+  { type: 'abgwatch-votes',         retentionMs: 7 * DAY_MS, keepLatest: true }, // weekly
 ];
 
 export async function runDataRetention(db: Db) {

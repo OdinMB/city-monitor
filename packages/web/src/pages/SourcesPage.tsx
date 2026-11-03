@@ -54,6 +54,12 @@ const SHARED_SOURCES: SourceGroup[] = [
         description: `CAMS European air quality forecasts (ENSEMBLE data), the source of the Open-Meteo air quality values. Contains modified Copernicus Atmosphere Monitoring Service information ${CAMS_NOTICE_YEAR}. Neither the European Commission nor ECMWF is responsible for any use that may be made of the Copernicus information or data it contains.`,
       },
       {
+        name: 'Umweltbundesamt Air Data API',
+        url: 'https://www.umweltbundesamt.de/daten/luft/luftdaten',
+        description: 'Hourly NO2, PM10, PM2.5 and ozone and the UBA air quality index at the official measuring stations of the state networks (Berlin BLUME, Hamburger Luftmessnetz, LANUK NRW, Bayerisches Landesamt für Umwelt), for the air quality map layer and tile. Current-year data are not yet audited and may have gaps. City Monitor averages the urban background stations for the tile. Source: Umweltbundesamt mit Daten der Messnetze der Länder und des Bundes, dl-de/by-2-0.',
+        requires: 'airQualityStations',
+      },
+      {
         name: 'RainViewer',
         url: 'https://www.rainviewer.com/',
         description: 'Precipitation radar tiles for the rain radar map overlay.',
@@ -61,7 +67,30 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'DWD (Deutscher Wetterdienst)',
         url: 'https://www.dwd.de/',
-        description: 'Weather observations and forecast (via Bright Sky), official severe weather warnings, pollen forecast (Pollenflug-Gefahrenindex), and UV index forecast. Source: Deutscher Wetterdienst. City Monitor derives the daily summaries and feels-like temperature from this data.',
+        description: 'Weather observations and forecast (via Bright Sky), official severe weather warnings, the heat-wave trend (Hitzetrend) that turns on the heat-relief hint, pollen forecast (Pollenflug-Gefahrenindex), and UV index forecast. Source: Deutscher Wetterdienst. City Monitor derives the daily summaries and feels-like temperature from this data.',
+      },
+      {
+        name: 'DWD Soil Moisture (Climate Data Center)',
+        url: 'https://opendata.dwd.de/climate_environment/CDC/derived_germany/soil/daily/recent/',
+        description: 'Daily soil moisture under grass (0–60 cm) at the city\'s DWD climate stations, in % of usable field capacity, computed by the DWD\'s agrometeorological model AMBAV. City Monitor averages the stations and derives the level and trend. Source: Deutscher Wetterdienst, CC BY 4.0.',
+        requires: 'soilMoisture',
+      },
+    ],
+  },
+  {
+    category: 'Energy',
+    sources: [
+      {
+        name: 'SMARD (Bundesnetzagentur)',
+        url: 'https://www.smard.de/',
+        description: 'Electricity generation by source every quarter-hour in the control area whose grid serves the city (50Hertz for Berlin and Hamburg, Amprion for Köln, TenneT for München). City Monitor groups the sources and derives the renewable share and its hourly course. Source: Bundesnetzagentur | SMARD.de, CC BY 4.0.',
+        requires: 'electricity',
+      },
+      {
+        name: 'Energy-Charts (Fraunhofer ISE)',
+        url: 'https://www.energy-charts.info/',
+        description: 'Germany\'s grid traffic light and renewable share of load with their forecast, and the CO₂ intensity of German electricity generation, measured and forecast. Germany-wide values: the API has none per region. City Monitor derives the next green period and the greenest hour. Source: Energy-Charts.info (Fraunhofer ISE), CC BY 4.0.',
+        requires: 'electricity',
       },
     ],
   },
@@ -85,6 +114,26 @@ const SHARED_SOURCES: SourceGroup[] = [
         url: 'https://www.openstreetmap.org/copyright',
         description: 'Automated external defibrillator (AED) locations (via the Overpass API), and the place search (Nominatim) that puts news items and police reports on the map. © OpenStreetMap contributors, ODbL.',
       },
+      {
+        // Credited wherever the config names it; the page cannot see the server's KLINIK_ATLAS opt-out
+        name: 'Bundes-Klinik-Atlas (G-BA)',
+        url: 'https://bundes-klinik-atlas.de/open-data/',
+        description: 'Hospital sites with their emergency tier under the G-BA\'s emergency-care rules (basic, extended, comprehensive), children\'s emergency care, stroke and chest-pain units, from the Bundes-Klinik-Atlas open-data export, for the emergencies map layer. Source: Gemeinsamer Bundesausschuss (G-BA), Bundes-Klinik-Atlas. The export states no licence or reuse terms.',
+        requires: 'hospitals',
+        cities: ['berlin', 'hamburg', 'koeln', 'muenchen'],
+      },
+    ],
+  },
+  {
+    category: 'Transit & Traffic',
+    sources: [
+      {
+        // Credited wherever the config names it, as Geofox: the job also needs DB_API_CLIENT_ID and DB_API_KEY
+        name: 'DB FaSta (Deutsche Bahn)',
+        url: 'https://developers.deutschebahn.com/db-api-marketplace/apis/product/fasta',
+        description: 'Lifts and escalators out of service at DB stations (S-Bahn and regional trains), with the planned return date where DB gives one. Source: Deutsche Bahn AG, CC BY 4.0.',
+        requires: 'stationLifts',
+      },
     ],
   },
   {
@@ -104,7 +153,7 @@ const SHARED_SOURCES: SourceGroup[] = [
       {
         name: 'abgeordnetenwatch.de',
         url: 'https://www.abgeordnetenwatch.de/',
-        description: 'Members of the Bundestag and the state parliament for the city\'s constituencies. Licensed CC0 1.0.',
+        description: 'Members of the Bundestag and the state parliament for the city\'s constituencies, and the three latest roll-call votes of each parliament with how those members voted, refreshed weekly. Licensed CC0 1.0.',
         requires: 'political',
       },
     ],
@@ -182,6 +231,44 @@ function amelagSource(plants: string): Source {
   };
 }
 
+/**
+ * The Bundesnetzagentur's Ladesäulenregister, read for every city with
+ * `dataSources.evCharging`. CC BY 4.0, with "Bundesnetzagentur.de" as the
+ * credit its landing page asks for; City Monitor groups and trims the rows.
+ */
+function bnetzaChargingSource(): Source {
+  return {
+    name: 'Ladesäulenregister (Bundesnetzagentur)',
+    url: 'https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenkarte/start.html',
+    description: 'Public charging stations for electric vehicles in the city, with operator, address, charge points, plug types and power, from the register operators report to the Bundesnetzagentur (monthly; the list is incomplete where an operator has not finished reporting). City Monitor groups one operator\'s devices at one place into a station and checks for a new edition weekly. Source: Bundesnetzagentur.de, CC BY 4.0.',
+  };
+}
+
+/** RKI IfSG notifications, for a city-state: the datasets go down to the Land only. CC BY 4.0, credit the RKI. */
+function rkiIfsgSource(land: string): Source {
+  return {
+    name: 'RKI IfSG Influenza and RSV Cases',
+    url: 'https://github.com/robert-koch-institut/Influenzafaelle_in_Deutschland',
+    description: `Weekly lab-confirmed influenza and RSV cases notified under the Infection Protection Act (IfSG) for the Land ${land}, with the incidence per 100,000, from the datasets "Laborbestätigte Influenzafälle in Deutschland" and "Respiratorische Synzytialvirusfälle in Deutschland". Source: Robert Koch-Institut, CC BY 4.0. City Monitor shows the latest week, the trend against the week before and the last 12 weeks.`,
+  };
+}
+
+/** nextbike's GBFS feed for the city's system. CC0-1.0 (the feed's `license_id`): no credit required, nextbike named as a courtesy. */
+function nextbikeSource(system: string, note = ''): Source {
+  return {
+    name: 'nextbike (GBFS)',
+    url: 'https://gbfs.nextbike.net/maps/gbfs/v2/',
+    description: `Bike-sharing stations of ${system} with the bikes available and, at docked stations, the free docks, from nextbike's public GBFS feed, refreshed every 5 minutes.${note} Free-floating bikes are not shown. Data: nextbike GmbH, CC0 1.0.`,
+  };
+}
+
+/** The Unfallatlas (dl-de/by-2.0), filtered to the city: every city with `dataSources.trafficAccidents`. */
+const UNFALLATLAS_SOURCE: Source = {
+  name: 'Unfallatlas (Statistische Ämter des Bundes und der Länder)',
+  url: 'https://unfallatlas.statistikportal.de/',
+  description: 'Road accidents with personal injury recorded by the police in the latest year published, with their location, month, weekday, hour, kind, type and who was involved; accidents with damage to property only are not included. City Monitor shows the city\'s accidents as a heat map and as points coloured by the worst injury. Downloaded from open.nrw (opengeodata.nrw.de). Source: Statistische Ämter des Bundes und der Länder, Unfallatlas, dl-de/by-2-0.',
+};
+
 const BERLIN_SOURCES: SourceGroup[] = [
   {
     category: 'News',
@@ -197,6 +284,7 @@ const BERLIN_SOURCES: SourceGroup[] = [
     category: 'Safety & Emergency',
     sources: [
       { name: 'Berlin Police', url: 'https://www.berlin.de/polizei/', description: 'Police incident reports via RSS feed.' },
+      { name: 'Kriminalitätsatlas Berlin (Polizei Berlin)', url: 'https://daten.berlin.de/datensaetze/kriminalitatsatlas-berlin', description: 'Offences recorded by the police (Polizeiliche Kriminalstatistik) per Bezirksregion for the latest year published: case counts and cases per 100,000 residents for all offences, assault, robbery, domestic burglary, bicycle theft and the police\'s "Kieztaten". City Monitor shows them on the crime map, compared with the city average, with the rates rounded to one decimal. Source: Polizei Berlin, Kriminalitätsatlas, CC BY-SA. The map\'s derived data is shared under the same licence (CC BY-SA). Bezirksregion outlines (LOR 2021, simplified): Amt für Statistik Berlin-Brandenburg, CC BY 3.0 DE.' },
       { name: 'Berliner Feuerwehr Open Data', url: 'https://github.com/Berliner-Feuerwehr/BF-Open-Data', description: 'Monthly fire department statistics — mission counts, EMS and fire response times.' },
       { name: 'Berliner Krisendienst', url: 'https://www.berliner-krisendienst.de/', description: 'Crisis counseling hotlines — 9 regional offices and city-wide emergency numbers.' },
     ],
@@ -207,6 +295,10 @@ const BERLIN_SOURCES: SourceGroup[] = [
       { name: 'VBB transport.rest', url: 'https://v6.vbb.transport.rest/', description: 'Real-time public transit disruptions from 12 major Berlin stations.' },
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'VIZ Berlin', url: 'https://viz.berlin.de/', description: 'Berlin traffic information center — construction sites and road closures. Source: Digitale Plattform Stadtverkehr Berlin, dl-de/by-2-0.' },
+      nextbikeSource('nextbike Berlin'),
+      UNFALLATLAS_SOURCE,
+      bnetzaChargingSource(),
+      { name: 'Berlin zählt Mobilität (Telraam)', url: 'https://berlin-zaehlt.de/', description: 'Cars, bikes, pedestrians and buses and lorries counted on about a hundred Berlin streets by Telraam sensors that residents run in their windows, most of them in daylight only. City Monitor shows the previous day\'s totals per street with the share of bikes, compared with the median of the same weekday in the four weeks before. Source: Berlin zählt Mobilität / Telraam, CC BY 4.0.' },
     ],
   },
   {
@@ -214,8 +306,19 @@ const BERLIN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time river water levels from Spree, Havel, and Dahme gauges.' },
       { name: 'LAGeSo Bathing Water', url: 'https://data.lageso.de/', description: 'Water quality measurements for Berlin bathing spots.' },
+      { name: 'Wasserportal Berlin', url: 'https://wasserportal.berlin.de/', description: 'Water temperature at ten measuring points on the Spree, Havel, Dahme, canals and lakes, from the Wasserportal\'s CSV export, read every 15 minutes; online stations report every 15 minutes or hourly, others in batches a day or two late, and a station without a reading in the last three days is not shown. Source: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt Berlin – Wasserportal Berlin, dl-de/by-2-0.' },
       { name: 'LAGeSo Wastewater Monitoring', url: 'https://data.lageso.de/', description: 'Weekly viral load measurements (Influenza A/B, RSV) in Berlin wastewater. Source: Lageso Berlin and Berliner Wasserbetriebe, dl-de/by-2-0. City Monitor averages the plants and derives the trend and level.' },
       { name: 'RKI AMELAG Wastewater Surveillance', url: 'https://github.com/robert-koch-institut/Abwassersurveillance_AMELAG', description: 'SARS-CoV-2 viral load at the three Berlin treatment plants. Source: Robert Koch-Institut, CC BY 4.0. City Monitor averages the samples per week and the plants, weighted by the population each serves, and derives the trend and level.' },
+      { name: 'Gieß den Kiez (Open Data)', url: 'https://github.com/technologiestiftung/giessdenkiez-de-opendata', description: 'Street-tree waterings residents log on giessdenkiez.de, a CityLAB Berlin project of the Technologiestiftung Berlin; the file is regenerated about monthly. City Monitor sums the litres, waterings and trees for the last 30 days of data and the year. Data: Technologiestiftung Berlin, CC0 1.0.' },
+    ],
+  },
+  {
+    category: 'Heat Relief',
+    sources: [
+      { name: 'Kühle Räume Berlin (Geoportal)', url: 'https://gdi.berlin.de/services/wfs/kuehle_raeume?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Cool rooms open to the public in hot weather, with opening hours and wheelchair access, for the heat-relief map layer; refreshed weekly. Source: Senatsverwaltung für Wissenschaft, Gesundheit und Pflege, dl-de/zero-2-0.' },
+      { name: 'Trinkbrunnen Berlin (Geoportal)', url: 'https://gdi.berlin.de/services/wfs/trinkwasserbrunnen?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Public drinking fountains with their season and whether one is out of order; refreshed weekly. Source: Berliner Wasserbetriebe, dl-de/zero-2-0.' },
+      { name: 'Öffentliche Toiletten Berlin (Geoportal)', url: 'https://gdi.berlin.de/services/wfs/toiletten?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Public toilets with opening hours, fee, accessibility and changing table; refreshed weekly. Source: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt, dl-de/zero-2-0.' },
+      rkiIfsgSource('Berlin'),
     ],
   },
   {
@@ -248,12 +351,19 @@ const BERLIN_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Politics',
+    sources: [
+      { name: 'Wahlen Berlin (Abgeordnetenhauswahl 2026)', url: 'https://www.wahlen-berlin.de/wahlen/BE2026/AFSPRAES/agh/index.html', description: 'Final result of the Abgeordnetenhaus election of 20 September 2026 per polling district, which City Monitor sums to second-vote shares and turnout per Wahlkreis for the political map and tile. Source: Amt für Statistik Berlin-Brandenburg, CC BY 3.0 DE. Wahlkreis outlines, simplified: Amt für Statistik Berlin-Brandenburg / Wahlgebiete für die Wahl zum 20. Abgeordnetenhaus von Berlin 2026, CC BY 3.0 DE.' },
+    ],
+  },
+  {
     category: 'Maps',
     sources: [
       { name: 'Sensor.Community', url: 'https://sensor.community/', description: 'Citizen-run air quality sensors — PM2.5 and PM10 readings. © Sensor.Community contributors, ODbL.' },
       { name: 'Sensor.Community DNMS', url: 'https://sensor.community/en/sensors/dnms/', description: 'Citizen-run noise sensors — LAeq, LAmin, LAmax readings (Berlin only). © Sensor.Community contributors, ODbL.' },
       { name: 'Berlin Open Data (Rent Map)', url: 'https://daten.berlin.de/', description: 'Residential rent zone map (Wohnlagenkarte 2026) as WMS overlay.' },
       { name: 'Berlin Noise Map (SenMVKU)', url: 'https://gdi.berlin.de/services/wms/ua_stratlaerm_2022', description: 'EU strategic noise map 2022 — total, road, rail, and air noise as WMS overlay.' },
+      { name: 'Baumbestand Berlin (Geoportal Berlin)', url: 'https://gdi.berlin.de/services/wms/baumbestand?REQUEST=GetCapabilities&SERVICE=WMS', description: 'Street and park trees from the city\'s tree register as WMS overlay at street level; a click shows the tree\'s species, planting year, height, crown and trunk girth. Source: Geoportal Berlin / Baumbestand Berlin, dl-de/zero-2-0.' },
     ],
   },
 ];
@@ -266,10 +376,17 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     ],
   },
   {
+    category: 'Politics',
+    sources: [
+      { name: 'Statistikamt Nord (Bürgerschaftswahl 2025)', url: 'https://www.statistik-nord.de/wahlen/wahlen-in-hamburg/buergerschaftswahlen/2025', description: 'Final result of the Bürgerschaft election of 2 March 2025 per Stadtteil (party-list shares and turnout), for the political map and tile; small Stadtteile are reported together. Source: Statistisches Amt für Hamburg und Schleswig-Holstein, reproduced with source attribution as its terms allow.' },
+    ],
+  },
+  {
     category: 'Maps',
     sources: [
       { name: 'Hamburg Noise Map (Geodienste)', url: 'https://geodienste.hamburg.de/wms_strategische_laermkarten', description: 'EU strategic noise map — road, rail, and air noise as WMS overlay. Licensed dl-de/zero-2-0.' },
       { name: 'Hamburger Wohnlagenverzeichnis (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WMS_Wohnlagen?SERVICE=WMS&REQUEST=GetCapabilities', description: 'Residential location (normal or good Wohnlage) of each address, from the Mietenspiegel, as WMS overlay. Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.' },
+      { name: 'Straßenbaumkataster Hamburg (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WMS_Strassenbaumkataster?SERVICE=WMS&REQUEST=GetCapabilities', description: 'Street trees from the city\'s street-tree register as WMS overlay at street level; a click shows the tree\'s species, planting year, crown and trunk girth. Source: Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft, dl-de/by-2-0.' },
     ],
   },
   {
@@ -284,6 +401,7 @@ const HAMBURG_SOURCES: SourceGroup[] = [
     category: 'Safety',
     sources: [
       { name: 'Hamburg Police (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/6337', description: 'Hamburg police press releases.' },
+      { name: 'Krankenhäuser Hamburg (Geodienste)', url: 'https://suche.transparenz.hamburg.de/dataset/krankenhaeuser-hamburg', description: 'Hospitals in the city\'s hospital plan, with whether each takes part in emergency care, for the emergencies map layer. Source: Freie und Hansestadt Hamburg, Behörde für Gesundheit und Verbraucherschutz, dl-de/by-2-0.' },
       { name: 'Hamburgisches Krisentelefon', url: 'https://www.hamburg.de/politik-und-verwaltung/bezirke/altona/themen/gesundheit/krisentelefon-61202', description: 'Crisis line for acute psychological crises (evenings, nights, weekends) and nationwide hotlines in the Crisis Services tile.' },
     ],
   },
@@ -293,6 +411,13 @@ const HAMBURG_SOURCES: SourceGroup[] = [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'HVV / Hamburger Hochbahn, Geofox GTI', url: 'https://www.hvv.de/', description: 'Current disruption and service announcements for hvv lines, from the Geofox Thin Interface (GTI) of HOCHBAHN, used under its terms of access. City Monitor shows the announcements in force now, with their full text; a long one is shortened in the collapsed row. Source: hvv / Hamburger Hochbahn AG. Alle Angaben ohne Gewähr.' },
       { name: 'Baustellen Hamburg (Bauweiser)', url: 'https://api.hamburg.de/datasets/v1/baustellen', description: 'Construction sites on main roads and federal highways, with their traffic impact and construction period. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0. City Monitor shows the sites running now or starting within two weeks and shortens long descriptions.' },
+      { name: 'Verkehrslage Hamburg (Geodienste)', url: 'https://geodienste.hamburg.de/wms_hh_verkehrslage?SERVICE=WMS&REQUEST=GetCapabilities', description: 'Live traffic flow on Hamburg\'s road network and the motorways around it — flowing, heavy, slow-moving or jammed — recomputed every 5 minutes, as WMS overlay, drawn from city-district zoom on. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.' },
+      { name: 'Verkehrsdaten Hamburg (Infrarotdetektoren)', url: 'https://suche.transparenz.hamburg.de/dataset?q=Verkehrsdaten+Infrarotdetektoren', description: 'Hourly counts of motor vehicles and bicycles from the city\'s infrared counters, read from the Urban Data Platform\'s SensorThings API (iot.hamburg.de), with the counting sites\' names from the Verkehrszählstellen WFS. City Monitor sums each site\'s directions and compares the last full hour with the median of the same hour on the same weekday over the four weeks before. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.' },
+      { name: 'StadtRAD Hamburg (Urban Data Platform)', url: 'https://suche.transparenz.hamburg.de/dataset?q=StadtRAD-Stationen', description: 'StadtRAD stations with the bikes available, from the Urban Data Platform\'s SensorThings API (iot.hamburg.de), refreshed every 5 minutes; a station whose count has not changed for a month is not shown. StadtRAD is run by DB Connect. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.' },
+      { name: 'Parkhäuser Hamburg (Urban Data Platform)', url: 'https://suche.transparenz.hamburg.de/dataset/parkhaeuser-hamburg17', description: 'Free and total spaces of the car parks connected to the Parkleitsystem, with their opening status, refreshed every 5 minutes. City Monitor shows the car parks that report a count and works out from its own readings whether one is filling up or emptying. Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.' },
+      UNFALLATLAS_SOURCE,
+      bnetzaChargingSource(),
+      { name: 'E-Ladestationen Hamburg (Urban Data Platform)', url: 'https://suche.transparenz.hamburg.de/dataset?q=Elektro%20Ladestandorte%20Hamburg', description: 'Live status of each public charge point of Hamburger Energiewerke Mobil (available, in use, out of order), from the Urban Data Platform\'s SensorThings API (iot.hamburg.de), refreshed every 5 minutes and matched to the register\'s stations by EVSE id; stations the register lacks are shown from this list. Source: Freie und Hansestadt Hamburg, Behörde für Wirtschaft, Arbeit und Innovation, dl-de/by-2-0.' },
     ],
   },
   {
@@ -301,6 +426,13 @@ const HAMBURG_SOURCES: SourceGroup[] = [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time tidal water levels from Elbe gauges (St. Pauli, Bunthaus, Seemannshöft).' },
       { name: 'Badegewässer Hamburg (Geodienste)', url: 'https://geodienste.hamburg.de/HH_WFS_Badegewaesser?SERVICE=WFS&REQUEST=GetCapabilities', description: 'The 17 EU bathing spots with their latest sample: water temperature, visibility, algae and the health authority\'s remarks. City Monitor rates each spot from those remarks (a bathing ban as poor, a warning or heavy algae as a warning). Source: Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, dl-de/by-2-0.' },
       amelagSource('Hamburg\'s two treatment plants (Hamburg 01 and Hamburg 02)'),
+      rkiIfsgSource('Hamburg'),
+    ],
+  },
+  {
+    category: 'Heat Relief',
+    sources: [
+      { name: 'Trinkwasserbrunnen Hamburg (Geodienste)', url: 'https://geodienste.hamburg.de/wfs_trinkwasserbrunnen?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Public drinking fountains for the heat-relief map layer; refreshed weekly. Source: Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft, dl-de/by-2-0.' },
     ],
   },
   {
@@ -336,6 +468,15 @@ const KOELN_SOURCES: SourceGroup[] = [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'Baustellen Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/baustellen-koeln', description: 'Permitted roadworks on city streets — road, utility, sewer, traffic-light, bridge, track and emergency works. The dates are the permit period, which the works need not fill. Source: Stadt Köln, dl-de/zero-2-0.' },
       { name: 'KVB Open Data (Aufzüge, Fahrtreppen)', url: 'https://www.kvb.koeln/service/open_data.html', description: 'Lifts and escalators out of service at KVB stations, updated about every 15 minutes. Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.' },
+      nextbikeSource('KVB-Rad', ' KVB-Rad is run by nextbike for the KVB.'),
+      UNFALLATLAS_SOURCE,
+      bnetzaChargingSource(),
+    ],
+  },
+  {
+    category: 'Citizen Reports',
+    sources: [
+      { name: 'Sag’s uns (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/sags-uns-anliegenmanagement-koeln', description: 'Issues residents report to the city — illegal dumping, broken street lights and traffic lights, damaged roads — of the last 14 days, with category, status and date, via the portal’s Open311 API every 15 minutes. City Monitor leaves out the reports’ text, address and photos, which may name or show people. Source: Stadt Köln, dl-de/zero-2-0.' },
     ],
   },
   {
@@ -343,6 +484,14 @@ const KOELN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'PEGELONLINE (WSV)', url: 'https://www.pegelonline.wsv.de/', description: 'Real-time Rhine water level from the Köln gauge.' },
       amelagSource('the Köln treatment plant'),
+    ],
+  },
+  {
+    category: 'Heat Relief',
+    sources: [
+      { name: 'Kühle Orte Köln (Geoportal)', url: 'https://geoportal.stadt-koeln.de/wss/service/kuehle_orte_wfs/guest?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Cool places in three lists — indoor spaces, air-conditioned places and places by the water — for the heat-relief map layer; refreshed weekly. Source: Stadt Köln, dl-de/zero-2-0.' },
+      { name: 'Trinkwasserbrunnen Köln (Geoportal)', url: 'https://geoportal.stadt-koeln.de/wss/service/trinkwasserbrunnen_wfs/guest?SERVICE=WFS&REQUEST=GetCapabilities', description: 'Public drinking fountains, converted to WGS84; refreshed weekly. Source: Stadt Köln – Amt für Landschaftspflege und Grünflächen, dl-de/zero-2-0.' },
+      { name: 'Öffentliche Toiletten Köln (AWB)', url: 'https://www.awbkoeln.de/geodaten/toiletten/', description: 'Public toilets with opening hours and fee; refreshed weekly. Source: Abfallwirtschaftsbetriebe Köln, dl-de/zero-2-0.' },
     ],
   },
   {
@@ -368,6 +517,7 @@ const KOELN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'Stadtbezirke Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/stadtbezirke-koeln', description: 'Outlines of the nine Stadtbezirke on the map, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
       { name: 'Umgebungslärmkartierung NRW (LANUV)', url: 'https://www.wms.nrw.de/umwelt/laerm?REQUEST=GetCapabilities&SERVICE=WMS', description: 'EU strategic noise map, 2022 round — road, rail (Stadtbahn and Deutsche Bahn) and air noise (24-hour level Lden) as WMS overlay, drawn at street level only. Source: Land NRW, dl-de/by-2-0.' },
+      { name: 'Baumkataster Köln (Geoportal Stadt Köln)', url: 'https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wms/guest?REQUEST=GetCapabilities&SERVICE=WMS', description: 'Trees in the city\'s tree register as WMS overlay at street level; a click shows the tree\'s species, planting year, height, crown and trunk girth. Source: Stadt Köln, dl-de/zero-2-0.' },
       { name: 'Statistische Quartiere Köln (Offene Daten Köln)', url: 'https://www.offenedaten-koeln.de/dataset/statistische-quartiere-koeln', description: 'Outlines and areas of the 570 Statistische Quartiere for the social atlas and population layers, converted to WGS84 and simplified. Source: Stadt Köln, dl-de/zero-2-0.' },
     ],
   },
@@ -401,6 +551,15 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'TomTom Traffic', url: 'https://www.tomtom.com/', description: 'Real-time traffic incidents — accidents, closures, road works, congestion.' },
       { name: 'Baustellen München (Geoportal)', url: 'https://opendata.muenchen.de/dataset/baustellen_4_weeks_opendata', description: 'Construction works that narrow or close the carriageway, from the city\'s roadworks service map. Source: Landeshauptstadt München – opendata.muenchen.de, dl-de/by-2-0. City Monitor shows each site as a point at the middle of its area.' },
+      nextbikeSource('MyRadl', ' The system also covers the Landkreis München; only the stations inside the city are shown.'),
+      UNFALLATLAS_SOURCE,
+      bnetzaChargingSource(),
+    ],
+  },
+  {
+    category: 'Citizen Reports',
+    sources: [
+      { name: 'Mach München besser', url: 'https://opendata.muenchen.de/dataset/meldungen-der-plattform-machmuenchenbesser-de', description: 'Issues residents report to the city — street lights out, littered parks, damaged playgrounds and traffic lights — of the last 14 days, with category, status and date, via the platform’s Open311 API every 15 minutes. City Monitor leaves out the reports’ text, address and photos, which may name or show people. Source: Landeshauptstadt München, IT-Referat, CC0 1.0.' },
     ],
   },
   {
@@ -408,6 +567,13 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     sources: [
       { name: 'Länderübergreifendes Hochwasserportal (LHP)', url: 'https://www.hochwasserzentralen.de/', description: 'Flood class (Meldestufe) of the Isar gauges München and Puppling, set by the Bavarian flood warning service, and active flood warnings for München, via the LHP public API. Unchecked raw data; no water levels. Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.' },
       amelagSource('the München treatment plant'),
+    ],
+  },
+  {
+    category: 'Heat Relief',
+    sources: [
+      { name: 'Trinkbrunnen München (Geoportal)', url: 'https://opendata.muenchen.de/dataset/opendata_trinkwasserbrunnen', description: 'Public drinking fountains for the heat-relief map layer; refreshed weekly. Source: Landeshauptstadt München – Baureferat, dl-de/by-2-0.' },
+      { name: 'Öffentliche Toiletten München (GeodatenService)', url: 'https://opendata.muenchen.de/dataset/wc_finder', description: 'Public toilets with fee, accessibility and changing table; the rooms at one address are shown as one place. Refreshed weekly. Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.' },
     ],
   },
   {
@@ -427,6 +593,7 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     category: 'Politics',
     sources: [
       { name: 'Landeshauptstadt München (Oberbürgermeister)', url: 'https://stadt.muenchen.de/infos/oberbuergermeister.html', description: 'The Oberbürgermeister, copied by hand from the city\'s page and checked twice a year.' },
+      { name: 'Wahlamt München (Stadtratswahl 2026)', url: 'https://opendata.muenchen.de/dataset/stadtratswahl-2026-ergebnisse-muenchen', description: 'Final result of the Stadtrat election of 8 March 2026 per Stadtbezirk (each party\'s share of all votes cast, and turnout), for the political map and tile. Source: Landeshauptstadt München – Kreisverwaltungsreferat, Wahlamt, dl-de/by-2-0.' },
     ],
   },
   {

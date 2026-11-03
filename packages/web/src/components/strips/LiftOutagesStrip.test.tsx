@@ -62,4 +62,20 @@ describe('LiftOutagesStrip', () => {
     render(<LiftOutagesStrip />);
     expect(screen.getByText('No outage data')).toBeTruthy();
   });
+
+  it('tags DB stations next to KVB\'s, with DB\'s planned return date', () => {
+    const db: LiftOutage = { ...lift(9), id: 'db-1', station: 'Köln Hbf', unit: 'zu Gleis 4/5', operator: 'db', resumeDate: '2026-11-20' };
+    data = { outages: [db, lift(1)], updated: null };
+    render(<LiftOutagesStrip />);
+    const row = screen.getByText('Köln Hbf').closest('li')!;
+    expect(row.textContent).toContain('DB');
+    expect(row.textContent).toContain('back Nov 20');
+    expect(screen.getByText('Station 1').closest('li')!.textContent).not.toContain('DB');
+    cleanup();
+
+    // A list of DB stations alone needs no tag
+    data = { outages: [db], updated: null };
+    render(<LiftOutagesStrip />);
+    expect(screen.getByText('Köln Hbf').closest('li')!.textContent).toBe('Köln Hbfzu Gleis 4/5back Nov 20');
+  });
 });

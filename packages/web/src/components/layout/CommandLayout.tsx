@@ -21,6 +21,9 @@ import { PoliticalStrip } from '../strips/PoliticalStrip.js';
 import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
 import { FloodStatusStrip } from '../strips/FloodStatusStrip.js';
 import { LiftOutagesStrip } from '../strips/LiftOutagesStrip.js';
+import { useLiftOutages } from '../../hooks/useLiftOutages.js';
+import { ElectricityStrip } from '../strips/ElectricityStrip.js';
+import { SoilMoistureStrip } from '../strips/SoilMoistureStrip.js';
 import { BathingStrip } from '../strips/BathingStrip.js';
 import { useBathingOffSeason } from '../../hooks/useBathingOffSeason.js';
 import { AppointmentsStrip } from '../strips/AppointmentsStrip.js';
@@ -58,6 +61,23 @@ function BathingTile() {
   return (
     <Tile title={t('panel.bathing.title')} titleBadge={badge} span={1} expandable>
       {(expanded) => <BathingStrip expanded={expanded} />}
+    </Tile>
+  );
+}
+
+/**
+ * KVB's lists (Köln) and DB stations. A city whose only lift source is DB
+ * FaSta gets no data until the server has the DB API key, so its tile stays
+ * hidden while there is none, rather than saying "no data" for months.
+ */
+export function LiftOutagesTile() {
+  const { t } = useTranslation();
+  const { id: cityId, features } = useCityConfig();
+  const { data, isLoading, isError } = useLiftOutages(cityId);
+  if (!features.includes('liftOutages') && !isError && (isLoading || !data)) return null;
+  return (
+    <Tile title={t('panel.liftOutages.title')} span={1} expandable>
+      {(expanded) => <LiftOutagesStrip expanded={expanded} />}
     </Tile>
   );
 }
@@ -163,11 +183,7 @@ export function CommandLayout() {
             </Tile>
           )}
           {/* Beside transit: where a city has no transit tile (Köln), the station information it has */}
-          {has('liftOutages') && (
-            <Tile title={t('panel.liftOutages.title')} span={1} expandable>
-              {(expanded) => <LiftOutagesStrip expanded={expanded} />}
-            </Tile>
-          )}
+          {(has('liftOutages') || has('stationLifts')) && <LiftOutagesTile />}
           <Tile title={t('support.title')} span={1}>
             <>
               <div className="flex flex-col items-center justify-center gap-6 h-full pb-4">
@@ -207,6 +223,16 @@ export function CommandLayout() {
           {has('wastewater') && (
             <Tile title={t('panel.wastewater.title')} span={1} expandable>
               {(expanded) => <WastewaterStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {has('electricity') && (
+            <Tile title={t('panel.electricity.title')} span={1} expandable>
+              {(expanded) => <ElectricityStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {has('soilMoisture') && (
+            <Tile title={t('panel.soilMoisture.title')} span={1} expandable>
+              {(expanded) => <SoilMoistureStrip expanded={expanded} />}
             </Tile>
           )}
           {has('feuerwehr') && (

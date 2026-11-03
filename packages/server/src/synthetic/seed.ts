@@ -12,12 +12,17 @@ import postgres from 'postgres';
 import type { Db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import {
-  saveAeds, saveAirQualityGrid, saveAppointments, saveBathingSpots, saveBudget, saveConstructionSites,
-  saveCouncilMeetings, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
+  saveAeds, saveAirQualityGrid, saveAirQualityStations, saveAppointments, saveBathingSpots, saveBudget, saveCitizenReports, saveConstructionSites,
+  saveBikeSharing, saveTrafficAccidents, saveTelraamCounts, saveElectionResults, saveCouncilMeetings, saveElectricity, saveEvents, saveFeuerwehr, saveFloodStatus, saveLaborMarket, saveLiftOutages, saveNewsItems, saveNinaWarnings,
   saveNoiseSensors, savePharmacies, savePoliticalDistricts, savePollen, savePopulation, saveSafetyReports,
-  saveSocialAtlas, saveSummary, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
-  saveWeather,
+  saveCrimeAtlas, savePoliticalVotes,
+  saveSocialAtlas, saveSoilMoisture, saveSummary, saveTrafficCounts, saveTrafficIncidents, saveTransitAlerts, saveWastewater, saveWaterLevels,
+  saveWeather, saveRespiratoryCases,
 } from '../db/writes.js';
+import { saveEvChargingRegister } from '../db/writes.js';
+import { saveHeatRelief } from '../db/writes.js';
+import { saveParking, saveWaterTemperature } from '../db/writes.js';
+import { saveHospitals } from '../db/writes.js';
 import type { CitySyntheticData } from './generate.js';
 import { assertLocalDatabaseUrl } from './local-guard.js';
 
@@ -108,6 +113,7 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.socialAtlas) await saveSocialAtlas(db, cityId, data.socialAtlas);
   if (data.population) await savePopulation(db, cityId, data.population.geojson, data.population.summary);
   if (data.wastewater) await saveWastewater(db, cityId, data.wastewater);
+  if (data.respiratoryCases) await saveRespiratoryCases(db, cityId, data.respiratoryCases);
   if (data.bathing) await saveBathingSpots(db, cityId, data.bathing);
   if (data.laborMarket) await saveLaborMarket(db, cityId, data.laborMarket);
   if (data.feuerwehr) await saveFeuerwehr(db, cityId, data.feuerwehr);
@@ -116,7 +122,23 @@ export async function seedDatabase(local: LocalDatabase, data: CitySyntheticData
   if (data.councilMeetings) await saveCouncilMeetings(db, cityId, data.councilMeetings);
   if (data.floodStatus) await saveFloodStatus(db, cityId, data.floodStatus);
   if (data.liftOutages) await saveLiftOutages(db, cityId, data.liftOutages);
+  if (data.bikeSharing) await saveBikeSharing(db, cityId, data.bikeSharing);
+  if (data.electricity) await saveElectricity(db, cityId, data.electricity);
+  if (data.airQualityStations) await saveAirQualityStations(db, cityId, data.airQualityStations);
+  if (data.citizenReports) await saveCitizenReports(db, cityId, data.citizenReports);
+  if (data.trafficAccidents) await saveTrafficAccidents(db, cityId, data.trafficAccidents);
+  if (data.crimeAtlas) await saveCrimeAtlas(db, cityId, data.crimeAtlas);
+  if (data.trafficCounts) await saveTrafficCounts(db, cityId, data.trafficCounts);
+  if (data.evCharging) await saveEvChargingRegister(db, cityId, data.evCharging);
+  if (data.heatRelief) await saveHeatRelief(db, cityId, data.heatRelief);
+  if (data.hospitals) await saveHospitals(db, cityId, data.hospitals);
+  if (data.soilMoisture) await saveSoilMoisture(db, cityId, data.soilMoisture);
+  if (data.telraamCounts) await saveTelraamCounts(db, cityId, data.telraamCounts);
+  if (data.waterTemperature) await saveWaterTemperature(db, cityId, data.waterTemperature);
+  if (data.parking) await saveParking(db, cityId, data.parking);
+  if (data.electionResults) await saveElectionResults(db, cityId, data.electionResults);
   for (const [level, districts] of Object.entries(data.political ?? {})) {
     await savePoliticalDistricts(db, cityId, level, districts);
   }
+  if (data.politicalVotes) await savePoliticalVotes(db, cityId, data.politicalVotes);
 }

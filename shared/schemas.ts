@@ -47,6 +47,12 @@ export const WeatherAlertSchema = z.object({
   severity: z.string(),
   description: z.string(),
   validUntil: z.string(),
+  kind: z.literal('heat').optional(),
+});
+
+export const DwdHeatTrendSchema = z.object({
+  issued: z.string(),
+  days: z.array(z.number()),
 });
 
 export const DwdUvForecastSchema = z.object({
@@ -63,6 +69,7 @@ export const WeatherDataSchema = z.object({
   alerts: z.array(WeatherAlertSchema),
   // A malformed UV forecast is dropped rather than failing the whole weather read.
   dwdUv: DwdUvForecastSchema.optional().catch(undefined),
+  dwdHeatTrend: DwdHeatTrendSchema.optional().catch(undefined),
 });
 
 // --- Water Levels ---
@@ -86,6 +93,19 @@ export const WaterLevelStationSchema = z.object({
 export const WaterLevelDataSchema = z.object({
   stations: z.array(WaterLevelStationSchema),
   fetchedAt: z.string(),
+});
+
+export const WaterTemperatureDataSchema = z.object({
+  stations: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    waterBody: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    temperature: z.number(),
+    measuredAt: z.string(),
+    url: z.string(),
+  })),
 });
 
 // --- Bürgeramt Appointments ---
@@ -115,6 +135,25 @@ export const AirQualityGridPointSchema = z.object({
 });
 
 export const AirQualityGridSchema = z.array(AirQualityGridPointSchema);
+
+// --- Official air quality stations (UBA) ---
+
+export const AirQualityStationSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  lat: z.number(),
+  lon: z.number(),
+  setting: z.enum(['traffic', 'background', 'industrial']),
+  network: z.string(),
+  measuredAt: z.string(),
+  index: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).nullable(),
+  no2: z.number().nullable(),
+  pm10: z.number().nullable(),
+  pm25: z.number().nullable(),
+  o3: z.number().nullable(),
+});
+
+export const AirQualityStationsSchema = z.array(AirQualityStationSchema);
 
 // --- Budget ---
 
@@ -240,6 +279,21 @@ export const WastewaterSummarySchema = z.object({
   plantCount: z.number(),
 });
 
+// --- Respiratory cases (RKI IfSG notifications) ---
+
+export const RespiratoryCasesSchema = z.object({
+  week: z.string(),
+  weekStart: z.string(),
+  pathogens: z.array(z.object({
+    name: z.enum(['Influenza', 'RSV']),
+    cases: z.number(),
+    incidence: z.number(),
+    previousCases: z.number(),
+    trend: z.enum(['rising', 'falling', 'stable', 'new', 'gone']),
+    history: z.array(z.number()),
+  })),
+});
+
 // --- Labor Market ---
 
 export const LaborMarketSummarySchema = z.object({
@@ -274,6 +328,30 @@ export const PoliticalDistrictSchema = z.object({
   name: z.string(),
   level: z.enum(['stadt', 'bezirk', 'bundestag', 'landesparlament']),
   representatives: z.array(RepresentativeSchema),
+});
+
+const VoteCountsSchema = z.object({
+  yes: z.number(),
+  no: z.number(),
+  abstain: z.number(),
+  noShow: z.number(),
+});
+
+export const PoliticalVoteSchema = z.object({
+  id: z.number(),
+  parliament: z.enum(['bundestag', 'state']),
+  title: z.string(),
+  date: z.string(),
+  accepted: z.boolean().nullable(),
+  topics: z.array(z.string()),
+  url: z.string(),
+  totals: VoteCountsSchema,
+  city: VoteCountsSchema,
+  members: z.array(z.object({
+    name: z.string(),
+    party: z.string(),
+    vote: z.enum(['yes', 'no', 'abstain', 'no_show']),
+  })),
 });
 
 // --- Feuerwehr ---
@@ -327,7 +405,7 @@ export const PollenForecastSchema = z.object({
   ),
 });
 
-// --- Lift and escalator outages (KVB) ---
+// --- Lift and escalator outages (KVB, DB FaSta) ---
 
 export const LiftOutageDataSchema = z.object({
   outages: z.array(z.object({
@@ -338,8 +416,245 @@ export const LiftOutageDataSchema = z.object({
     lat: z.number().nullable(),
     lon: z.number().nullable(),
     info: z.string().nullable(),
+    operator: z.literal('db').optional(),
+    resumeDate: z.string().nullable().optional(),
   })),
   updated: z.string().nullable(),
+});
+
+// --- Hospitals (Bundes-Klinik-Atlas, Hamburg WFS) ---
+
+export const HospitalDataSchema = z.object({
+  hospitals: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    address: z.string().nullable(),
+    lat: z.number(),
+    lon: z.number(),
+    tier: z.enum(['comprehensive', 'extended', 'basic', 'emergency', 'limited', 'specialised', 'none']),
+    children: z.boolean(),
+    strokeUnit: z.boolean(),
+    chestPainUnit: z.boolean(),
+    trauma: z.boolean(),
+    beds: z.number().nullable(),
+    url: z.string().nullable(),
+    source: z.enum(['klinik-atlas', 'hamburg-wfs']),
+  })),
+  atlasDate: z.string().nullable(),
+});
+
+// --- Bike Sharing ---
+
+export const BikeSharingDataSchema = z.object({
+  system: z.string(),
+  operator: z.string(),
+  stations: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    bikes: z.number(),
+    docks: z.number().nullable(),
+    reportedAt: z.number().nullable(),
+  })),
+  updated: z.string().nullable(),
+});
+
+// --- Parking ---
+
+export const ParkingDataSchema = z.object({
+  facilities: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    kind: z.enum(['garage', 'underground', 'lot']),
+    lat: z.number(),
+    lon: z.number(),
+    free: z.number(),
+    total: z.number(),
+    status: z.enum(['open', 'closed', 'fault']),
+    trend: z.enum(['filling', 'emptying', 'steady']).nullable(),
+    updated: z.string().nullable(),
+  })),
+  updated: z.string().nullable(),
+});
+
+// --- Electricity (SMARD, Energy-Charts) ---
+
+const GENERATION_KINDS = [
+  'windOffshore', 'windOnshore', 'solar', 'biomass', 'hydro', 'otherRenewable',
+  'lignite', 'hardCoal', 'gas', 'pumpedStorage', 'otherConventional',
+] as const;
+
+export const ElectricityDataSchema = z.object({
+  controlArea: z.enum(['50Hertz', 'Amprion', 'TenneT', 'TransnetBW']),
+  mix: z.object({
+    at: z.string(),
+    mw: z.partialRecord(z.enum(GENERATION_KINDS), z.number()),
+    renewableShare: z.number(),
+  }).nullable(),
+  renewableHistory: z.array(z.object({ t: z.string(), share: z.number() })),
+  grid: z.array(z.object({
+    t: z.string(),
+    share: z.number().nullable(),
+    signal: z.union([z.literal(-1), z.literal(0), z.literal(1), z.literal(2)]).nullable(),
+    co2: z.number().nullable(),
+    co2Forecast: z.number().nullable(),
+  })),
+});
+
+// --- Soil moisture (DWD) and street-tree watering (Gieß den Kiez) ---
+
+const SoilMoistureDaySchema = z.object({ date: z.string(), sandy: z.number(), loamy: z.number() });
+const TreeWateringPeriodSchema = z.object({ litres: z.number(), waterings: z.number(), trees: z.number() });
+
+export const SoilMoistureDataSchema = z.object({
+  stations: z.array(SoilMoistureDaySchema.extend({ id: z.string(), name: z.string() })),
+  history: z.array(SoilMoistureDaySchema),
+  watering: z.object({
+    dataThrough: z.string(),
+    last30Days: TreeWateringPeriodSchema,
+    season: TreeWateringPeriodSchema.extend({ year: z.number() }),
+    previousSeason: TreeWateringPeriodSchema.extend({ year: z.number() }),
+    topDistricts: z.array(z.object({ district: z.string(), litres: z.number() })),
+  }).nullable(),
+});
+
+// --- Citizen issue reports (Open311) ---
+
+const CitizenReportStatusSchema = z.enum(['open', 'in_progress', 'closed']);
+
+export const CitizenReportDataSchema = z.object({
+  reports: z.array(z.object({
+    id: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    category: z.string(),
+    group: z.enum(['waste', 'lighting', 'traffic', 'roads', 'green', 'vehicles', 'graffiti', 'other']),
+    status: CitizenReportStatusSchema,
+    statusLabel: z.string().nullable(),
+    requestedAt: z.string(),
+    updatedAt: z.string().nullable(),
+    url: z.string().nullable(),
+  })),
+  windowDays: z.number(),
+  total: z.number(),
+  counts: z.object({ open: z.number(), in_progress: z.number(), closed: z.number() }),
+});
+
+// --- Traffic Accidents (Unfallatlas) ---
+
+export const TrafficAccidentDataSchema = z.object({
+  year: z.number(),
+  // [lon, lat, severity, month, weekday, hour, kind, type, participants]
+  accidents: z.array(z.tuple([
+    z.number(), z.number(), z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    z.number(), z.number(), z.number(), z.number(), z.number(), z.number(),
+  ])),
+  published: z.string().nullable(),
+});
+
+// --- Traffic Counts ---
+
+export const TrafficCountDataSchema = z.object({
+  sites: z.array(z.object({
+    id: z.string(),
+    mode: z.enum(['car', 'bike']),
+    site: z.string(),
+    name: z.string().nullable(),
+    lat: z.number(),
+    lon: z.number(),
+    hour: z.string(),
+    count: z.number(),
+    typical: z.number().nullable(),
+    counters: z.number(),
+  })),
+  updated: z.string(),
+});
+
+// --- EV Charging (BNetzA Ladesäulenregister) ---
+
+/**
+ * The stored register of a city (`bnetza-charging` snapshot). `evse` holds the
+ * station ids of the place's EVSE ids ("DEHHME1011"), kept only in a city with
+ * a live status feed to merge on; the route drops it.
+ */
+export const EvChargingRegisterSchema = z.object({
+  edition: z.string(),
+  stations: z.array(z.object({
+    id: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    operator: z.string(),
+    address: z.string(),
+    points: z.number(),
+    maxKw: z.number().nullable(),
+    fast: z.boolean(),
+    plugs: z.array(z.enum(['type2', 'ccs', 'chademo', 'schuko', 'type1', 'mcs'])),
+    evse: z.array(z.string()).optional(),
+  })),
+});
+
+// --- Heat Relief ---
+
+export const HeatReliefDataSchema = z.object({
+  places: z.array(z.object({
+    kind: z.enum(['cool', 'fountain', 'toilet']),
+    lat: z.number(),
+    lon: z.number(),
+    name: z.string(),
+    address: z.string().optional(),
+    hours: z.string().optional(),
+    note: z.string().optional(),
+    setting: z.enum(['indoor', 'air-conditioned', 'water']).optional(),
+    season: z.object({ from: z.number(), to: z.number() }).optional(),
+    outOfOrder: z.boolean().optional(),
+    accessible: z.enum(['yes', 'partly', 'no']).optional(),
+    fee: z.number().optional(),
+    changingTable: z.boolean().optional(),
+  })),
+});
+
+// --- Street counts (Telraam, Berlin zählt Mobilität) ---
+
+const TelraamDayCountsShape = {
+  cars: z.number(),
+  bikes: z.number(),
+  pedestrians: z.number(),
+  heavy: z.number(),
+};
+
+export const TelraamCountsDataSchema = z.object({
+  date: z.string(),
+  segments: z.array(z.object({
+    ...TelraamDayCountsShape,
+    id: z.number(),
+    lon: z.number(),
+    lat: z.number(),
+    street: z.string().nullable(),
+    district: z.string().nullable(),
+    hours: z.number(),
+    usual: z.object({ ...TelraamDayCountsShape, days: z.number() }).nullable(),
+  })),
+});
+
+// --- Election results ---
+
+const ElectionAreaResultSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  turnout: z.number().nullable(),
+  shares: z.array(z.object({ party: z.string(), pct: z.number() })),
+  otherPct: z.number(),
+  leader: z.string().nullable(),
+});
+
+export const ElectionResultsSchema = z.object({
+  election: z.enum(['abgeordnetenhaus', 'buergerschaft', 'stadtrat']),
+  date: z.string(),
+  areaLevel: z.enum(['wahlkreis', 'stadtteil', 'stadtbezirk']),
+  total: ElectionAreaResultSchema.extend({ eligible: z.number().nullable(), voters: z.number().nullable() }),
+  areas: z.array(ElectionAreaResultSchema),
+  sourceUrl: z.string(),
 });
 
 // --- Flood Status (LHP) ---

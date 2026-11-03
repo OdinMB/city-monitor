@@ -35,11 +35,14 @@ export const FEED_TIMINGS = {
   waterLevels:     { job: 15 * MIN,  refetch: 15 * MIN, httpMaxAge: 5 * MIN },  // ingest-water-levels */15
   floodStatus:     { job: 5 * MIN,   refetch: 3 * MIN,  httpMaxAge: 2 * MIN },  // ingest-flood-status */5
   liftOutages:     { job: 15 * MIN,  refetch: 5 * MIN,  httpMaxAge: 5 * MIN },  // ingest-lift-outages */15
+  electricity:     { job: 15 * MIN,  refetch: 5 * MIN,  httpMaxAge: 5 * MIN },  // ingest-electricity every 15 min
   events:          { job: 6 * HOUR,  refetch: 30 * MIN, httpMaxAge: 30 * MIN }, // ingest-events every 6 h
   appointments:    { job: 12 * HOUR, refetch: 30 * MIN, httpMaxAge: HOUR },     // ingest-appointments every 12 h
   pollen:          { job: 6 * HOUR,  refetch: HOUR,     httpMaxAge: 12 * HOUR }, // ingest-pollen every 6 h
   councilMeetings: { job: 6 * HOUR,  refetch: HOUR,     httpMaxAge: HOUR },     // ingest-council-meetings every 6 h
   bathing:         { job: DAY,       refetch: DAY,      httpMaxAge: 12 * HOUR }, // ingest-bathing daily
+  // The longer of its two daily runs' gaps (16:30 to 10:30 UTC)
+  soilMoisture:    { job: 18 * HOUR, refetch: HOUR,     httpMaxAge: HOUR },     // ingest-soil-moisture 30 10,16 * * *
   laborMarket:     { job: DAY,       refetch: HOUR,     httpMaxAge: HOUR },     // ingest-labor-market daily
   budget:          { job: DAY,       refetch: HOUR,     httpMaxAge: HOUR },     // ingest-budget daily
   feuerwehr:       { job: DAY,       refetch: DAY,      httpMaxAge: 12 * HOUR }, // ingest-feuerwehr daily

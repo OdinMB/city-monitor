@@ -23,6 +23,7 @@ export function useBootstrap(cityId: string) {
     if (data.safety) queryClient.setQueryData(['safety', cityId], data.safety);
     if (data.nina) queryClient.setQueryData(['nina', cityId], data.nina);
     if (data.airQuality) queryClient.setQueryData(['air-quality', cityId], data.airQuality);
+    if (data.airQualityStations) queryClient.setQueryData(['air-quality-stations', cityId], data.airQualityStations);
     if (data.pharmacies) queryClient.setQueryData(['pharmacies', cityId], data.pharmacies);
     if (data.aeds) queryClient.setQueryData(['aeds', cityId], data.aeds);
     if (data.traffic) queryClient.setQueryData(['traffic', cityId], data.traffic);
@@ -30,10 +31,13 @@ export function useBootstrap(cityId: string) {
     if (data.waterLevels) queryClient.setQueryData(['water-levels', cityId], data.waterLevels);
     if (data.floodStatus) queryClient.setQueryData(['flood-status', cityId], data.floodStatus);
     if (data.liftOutages) queryClient.setQueryData(['lift-outages', cityId], data.liftOutages);
+    if (data.electricity) queryClient.setQueryData(['electricity', cityId], data.electricity);
+    if (data.soilMoisture) queryClient.setQueryData(['soil-moisture', cityId], data.soilMoisture);
     if (data.budget) queryClient.setQueryData(['budget', cityId], data.budget);
     if (data.appointments) queryClient.setQueryData(['appointments', cityId], data.appointments);
     if (data.laborMarket) queryClient.setQueryData(['labor-market', cityId], data.laborMarket);
     if (data.wastewater) queryClient.setQueryData(['wastewater', cityId], data.wastewater);
+    if (data.respiratoryCases) queryClient.setQueryData(['respiratory-cases', cityId], data.respiratoryCases);
     if (data.populationSummary) queryClient.setQueryData(['population-summary', cityId], data.populationSummary);
     if (data.feuerwehr) queryClient.setQueryData(['feuerwehr', cityId], data.feuerwehr);
     if (data.pollen) queryClient.setQueryData(['pollen', cityId], data.pollen);

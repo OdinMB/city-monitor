@@ -28,6 +28,14 @@ export const hamburg: CityConfig = {
   ],
   dataSources: {
     weather: { provider: 'brightsky', lat: 53.5511, lon: 9.9937 },
+    // The 14 active Hamburger Luftmessnetz stations in the UBA station list (checked
+    // 2026-11-03; Flughafen Nord and the two Finkenwerder stations sent no index values then)
+    airQuality: {
+      ubaStations: [
+        'DEHH008', 'DEHH015', 'DEHH026', 'DEHH033', 'DEHH050', 'DEHH059', 'DEHH064', 'DEHH068',
+        'DEHH070', 'DEHH072', 'DEHH073', 'DEHH079', 'DEHH082', 'DEHH083',
+      ],
+    },
     // HVV's Geofox GTI announcements; runs only with GEOFOX_USER and GEOFOX_PASSWORD set
     // (Hochbahn issues them per operator; a fork requests its own). .context/transit.md#hamburg
     transit: { provider: 'geofox', endpoint: 'https://gti.geofox.de' },
@@ -76,6 +84,15 @@ export const hamburg: CityConfig = {
       ],
     },
     nina: { ars: '020000000000' },
+    // BNetzA Ladesäulenregister (CC BY 4.0), plus the live status of the ~2,540 public charge
+    // points of Hamburger Energiewerke Mobil (EVSE operator DE*HHM) on the Urban Data Platform's
+    // SensorThings API (dl-de/by-2.0, Transparenzportal "Elektro Ladestandorte Hamburg").
+    // `operator` is the register's name for DE*HHM, for the ~105 live stations it lacks.
+    evCharging: {
+      provider: 'bnetza',
+      kreis: 'Kreisfreie Stadt Hamburg',
+      liveStatus: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', operator: 'HEnW-Mobil' },
+    },
     // Bauweiser construction sites on main roads (dl-de/by-2.0). The Transparenzportal's
     // baustellen-hamburg WFS is an archive frozen in 2020.
     roadworks: { provider: 'hamburg-ogc', url: 'https://api.hamburg.de/datasets/v1/baustellen/collections/baustelle/items?f=json&limit=1000' },
@@ -86,6 +103,11 @@ export const hamburg: CityConfig = {
       regionId: 10,         // Schleswig-Holstein und Hamburg
       partregionId: 12,     // Geest, Schleswig-Holstein und Hamburg
     },
+    // Heat relief: BUKEA's 10 drinking fountains (dl-de/by-2.0, Transparenzportal, checked
+    // 2026-11-03). No open list of cool places or public toilets was found.
+    heatRelief: [
+      { kind: 'fountain', provider: 'hamburg-fountains', url: 'https://geodienste.hamburg.de/wfs_trinkwasserbrunnen' },
+    ],
     // The Bürgerschaft's committee and plenary sessions from its website calendar
     // (official public records, no licence stated). The Bezirksversammlungen' ALLRIS
     // (sitzungsdienst-<bezirk>.hamburg.de) lists no OParl endpoint: .context/council-meetings.md.
@@ -95,8 +117,58 @@ export const hamburg: CityConfig = {
       },
     },
     laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Hamburg' },
+    // 50Hertz, not TenneT: its grid area takes in the city-states Berlin and Hamburg (50hertz.com)
+    electricity: { provider: 'smard', controlArea: '50Hertz' },
+    // DWD soil moisture (CC BY 4.0), the city's two stations north and south of the Elbe
+    soilMoisture: {
+      provider: 'dwd',
+      stations: [
+        { id: '1975', name: 'Hamburg-Fuhlsbüttel' },
+        { id: '1981', name: 'Hamburg-Neuwiedenthal' },
+      ],
+    },
     // RKI AMELAG (CC BY 4.0): Hamburg's two plants, serving about 0.58 and 1.46 million people
     wastewater: { provider: 'amelag', sites: ['Hamburg 01', 'Hamburg 02'] },
+    // RKI IfSG flu and RSV notifications (CC BY 4.0), by Land: Hamburg is one
+    respiratoryCases: { provider: 'rki-ifsg', regionId: '02' },
+    // StadtRAD's bikes per station on the Urban Data Platform's SensorThings API (dl-de/by-2.0,
+    // Transparenzportal "StadtRAD-Stationen Hamburg"): ~360 stations, no docks. No nextbike in Hamburg.
+    // Lifts and escalators at DB stations (FaSta, CC BY 4.0); fetched only with DB_API_CLIENT_ID and DB_API_KEY
+    stationLifts: { provider: 'db-fasta' },
+    // The city's hospital WFS (dl-de/by-2.0, ER participation, no tier) and, unless KLINIK_ATLAS=false,
+    // the Klinik-Atlas tiers, which win where both list a hospital (within 250 m)
+    hospitals: [
+      {
+        provider: 'hamburg-wfs',
+        url: 'https://geodienste.hamburg.de/HH_WFS_Krankenhaeuser?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0&typeNames=de.hh.up:gesundheit_krankenhaeuser&outputFormat=application/geo%2Bjson&srsName=EPSG:4326',
+      },
+      { provider: 'klinik-atlas', places: ['Hamburg'] },
+    ],
+    bikeSharing: { provider: 'hamburg-sta', url: 'https://iot.hamburg.de/v1.1', system: 'StadtRAD Hamburg', operator: 'DB Connect' },
+    // Car parks from the Parkleitsystem on the Urban Data Platform's WFS (dl-de/by-2.0, Transparenzportal
+    // "Parkhäuser Hamburg"): 127 car parks, 45 of them with live free spaces, which the job keeps (2026-11-03)
+    parking: { provider: 'hamburg-wfs', url: 'https://geodienste.hamburg.de/wfs_parkhaeuser' },
+    // Unfallatlas (dl-de/by-2.0): the whole Land, ~7,100 injury accidents in 2025
+    trafficAccidents: { provider: 'unfallatlas', ags: '02000000' },
+    // Infrared car and bicycle counters on the same SensorThings API, hourly (dl-de/by-2.0,
+    // Transparenzportal "Verkehrsdaten Kfz/Rad (Infrarotdetektoren) Hamburg"): 829 car counters
+    // at 179 sites and 313 bicycle counters at 83 sites on 2026-11-03. The site names come
+    // from the Verkehrszählstellen WFS (dl-de/by-2.0).
+    trafficCounts: {
+      provider: 'hamburg-sta',
+      url: 'https://iot.hamburg.de/v1.1',
+      sitesWfsUrl: 'https://geodienste.hamburg.de/HH_WFS_Verkehrszaehlstellen',
+      modes: ['car', 'bike'],
+    },
+    // Bürgerschaft 2025, final Landesliste shares per Stadtteil (Statistikamt Nord, BUE2025_e_06;
+    // "Verbreitung mit Quellenangabe"), on the Stadtteil outlines the population map uses
+    electionResults: {
+      provider: 'hamburg-stadtteile-xlsx',
+      url: 'https://www.statistik-nord.de/fileadmin/Dokumente/BUE2025_e_06.xlsx',
+      election: 'buergerschaft',
+      date: '2025-03-02',
+      outlines: 'hamburg-stadtteile.geojson',
+    },
     waterLevels: {
       provider: 'pegelonline',
       stations: [

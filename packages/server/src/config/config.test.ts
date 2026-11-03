@@ -161,11 +161,19 @@ describe('Köln config', () => {
     // The kreisfreie Stadt's own BA table and AMELAG plant
     expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' });
     expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['Köln'] });
+    // The four LANUK stations inside the city, through the UBA Air Data API
+    expect(config.dataSources.airQuality).toEqual({ ubaStations: ['DENW053', 'DENW059', 'DENW211', 'DENW212'] });
+    // "Sag's uns" (dl-de/zero-2.0); a request's page is its Drupal node
+    expect(config.dataSources.citizenReports).toEqual({
+      provider: 'open311',
+      baseUrl: 'https://sags-uns.stadt-koeln.de/georeport/v2',
+      requestUrl: 'https://sags-uns.stadt-koeln.de/node/{nid}',
+    });
     const {
-      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, waterLevels: _water,
+      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, heatRelief: _heat, waterLevels: _water, airQuality: _airQuality,
       police: _police, roadworks: _roadworks, events: _events, councilMeetings: _council,
-      liftOutages: _lifts, laborMarket: _labor, wastewater: _wastewater,
-      socialAtlas: _socialAtlas, population: _population, ...rest
+      liftOutages: _lifts, stationLifts: _dbLifts, hospitals: _hospitals, laborMarket: _labor, wastewater: _wastewater, citizenReports: _reports,
+      socialAtlas: _socialAtlas, population: _population, bikeSharing: _bikes, trafficAccidents: _accidents, electricity: _electricity, soilMoisture: _soil, evCharging: _ev, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });
@@ -254,9 +262,19 @@ describe('München config', () => {
     // The city's Kreis table, not the wider Agentur für Arbeit München
     expect(config.dataSources.laborMarket).toEqual({ provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' });
     expect(config.dataSources.wastewater).toEqual({ provider: 'amelag', sites: ['München'] });
+    // The LfU's stations in the city, through the UBA Air Data API
+    expect(config.dataSources.airQuality).toEqual({ ubaStations: ['DEBY037', 'DEBY039', 'DEBY089', 'DEBY115', 'DEBY189'] });
+    // "Mach München besser" (CC0): the /api prefix, as the dataset's own URLs answer 404
+    expect(config.dataSources.citizenReports).toEqual({
+      provider: 'open311',
+      baseUrl: 'https://machmuenchenbesser.de/api/georeport/v2',
+      requestUrl: 'https://machmuenchenbesser.de/requests/{id}',
+    });
     const {
-      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, roadworks: _roadworks, councilMeetings: _council,
-      floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population, ...rest
+      weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, heatRelief: _heat, roadworks: _roadworks, councilMeetings: _council,
+      airQuality: _airQuality, floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population,
+      bikeSharing: _bikes, trafficAccidents: _accidents, electricity: _electricity, citizenReports: _reports, soilMoisture: _soil, evCharging: _ev,
+      electionResults: _elections, stationLifts: _dbLifts, hospitals: _hospitals, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });
@@ -271,6 +289,18 @@ describe('every configured city', () => {
     for (const id of ['berlin', 'hamburg', 'koeln', 'muenchen']) {
       expect(getCityConfig(id)?.id).toBe(id);
     }
+  });
+
+  it('places its water-temperature stations inside its bounding box, each id once', () => {
+    for (const city of getActiveCities()) {
+      const stations = city.dataSources.waterTemperature?.stations ?? [];
+      expect(new Set(stations.map((s) => s.id)).size, city.id).toBe(stations.length);
+      for (const s of stations) {
+        const box = city.boundingBox;
+        expect(box.south < s.lat && s.lat < box.north && box.west < s.lon && s.lon < box.east, `${city.id} ${s.id}`).toBe(true);
+      }
+    }
+    expect(getCityConfig('berlin')?.dataSources.waterTemperature?.stations.length).toBeGreaterThan(0);
   });
 
   it('has its centre inside its bounding box and its weather at its centre', () => {

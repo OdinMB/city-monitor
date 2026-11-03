@@ -5,6 +5,7 @@ export const CK = {
   airQuality: (cityId: string) => `${cityId}:air-quality`,
   airQualityGrid: (cityId: string) => `${cityId}:air-quality:grid`,
   airQualityScCache: (cityId: string) => `${cityId}:air-quality:sc-cache`,
+  airQualityStations: (cityId: string) => `${cityId}:air-quality:stations`,
 
   // Transit & Traffic
   transitAlerts: (cityId: string) => `${cityId}:transit:alerts`,
@@ -27,16 +28,49 @@ export const CK = {
   appointments: (cityId: string) => `${cityId}:appointments`,
   constructionSites: (cityId: string) => `${cityId}:construction:sites`,
   aedLocations: (cityId: string) => `${cityId}:aed:locations`,
+  /** Not bootstrapped: Berlin's ~1,070 stations are about 150 KB, so the map fetches them when the layer is on. */
+  bikeSharing: (cityId: string) => `${cityId}:bike-sharing`,
+  /** Not bootstrapped: the map fetches the car parks when the parking layer is on. */
+  parking: (cityId: string) => `${cityId}:parking`,
+  /** Not bootstrapped: Berlin's ~13,000 accidents a year are about 450 KB, fetched when the map layer is on. */
+  trafficAccidents: (cityId: string) => `${cityId}:traffic-accidents`,
+  /** Not bootstrapped: Berlin's 143 Bezirksregionen with outlines are about 200 KB, fetched when the crime layer is on. */
+  crimeAtlas: (cityId: string) => `${cityId}:crime-atlas`,
+  /** Not bootstrapped: ~260 Hamburg sites are about 50 KB, fetched when a counts sub-layer is on. */
+  trafficCounts: (cityId: string) => `${cityId}:traffic-counts`,
+  /** The city's stations from the BNetzA register (with EVSE ids where a live feed merges on them). Not bootstrapped: Berlin's ~3,500 stations are several hundred KB. */
+  evChargingRegister: (cityId: string) => `${cityId}:ev-charging:register`,
+  /** Live charge-point status (Hamburg), cache only; the route merges it onto the register. */
+  evChargingStatus: (cityId: string) => `${cityId}:ev-charging:status`,
+  /** Not bootstrapped: Berlin's ~900 cool places, fountains and toilets are about 165 KB, fetched when the layer is on. */
+  heatRelief: (cityId: string) => `${cityId}:heat-relief`,
+  /** Not bootstrapped: ~100 Telraam segments (about 20 KB) for a sub-layer that is off by default. */
+  telraamCounts: (cityId: string) => `${cityId}:telraam-counts`,
+  /** Not bootstrapped (~25 KB for Berlin's 78 Wahlkreise): the political tile's Election view and the map popup fetch it. */
+  electionResults: (cityId: string) => `${cityId}:election-results`,
+  /** Not bootstrapped: the election areas' polygons (Berlin ~110 KB), fetched when the map's Election view is on. */
+  electionGeojson: (cityId: string) => `${cityId}:election-results:geojson`,
+  /** Not bootstrapped (~60 hospitals, ~15 KB): fetched for the emergencies layer's hospital toggle. */
+  hospitals: (cityId: string) => `${cityId}:hospitals`,
 
   // Water & Environmental
   waterLevels: (cityId: string) => `${cityId}:water-levels`,
   floodStatus: (cityId: string) => `${cityId}:flood-status`,
+  /** Not bootstrapped: the map fetches it when the water layer's temperature sub-layer is on. */
+  waterTemperature: (cityId: string) => `${cityId}:water-temperature`,
   wastewaterSummary: (cityId: string) => `${cityId}:wastewater:summary`,
+  respiratoryCases: (cityId: string) => `${cityId}:respiratory-cases`,
   bathingSpots: (cityId: string) => `${cityId}:bathing:spots`,
   liftOutages: (cityId: string) => `${cityId}:lift-outages`,
+  electricity: (cityId: string) => `${cityId}:electricity`,
+  soilMoisture: (cityId: string) => `${cityId}:soil-moisture`,
+
+  // Citizen reports (lazy: too large for bootstrap)
+  citizenReports: (cityId: string) => `${cityId}:citizen-reports`,
 
   // Political
   political: (cityId: string, level: string) => `${cityId}:political:${level}`,
+  politicalVotes: (cityId: string) => `${cityId}:political-votes`,
 
   // Emergency Services
   feuerwehr: (cityId: string) => `${cityId}:feuerwehr`,
@@ -71,6 +105,7 @@ export const CK = {
     CK.safetyRecent(cityId),
     CK.ninaWarnings(cityId),
     CK.airQuality(cityId),
+    CK.airQualityStations(cityId),
     CK.pharmacies(cityId),
     CK.aedLocations(cityId),
     CK.trafficIncidents(cityId),
@@ -78,11 +113,14 @@ export const CK = {
     CK.waterLevels(cityId),
     CK.floodStatus(cityId),
     CK.liftOutages(cityId),
+    CK.electricity(cityId),
+    CK.soilMoisture(cityId),
     CK.budget(cityId),
     CK.appointments(cityId),
     CK.feuerwehr(cityId),
     CK.laborMarket(cityId),
     CK.wastewaterSummary(cityId),
+    CK.respiratoryCases(cityId),
     CK.populationSummary(cityId),
     CK.pollen(cityId),
     CK.noiseSensors(cityId),

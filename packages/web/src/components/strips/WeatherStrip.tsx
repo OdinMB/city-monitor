@@ -12,6 +12,7 @@ import { formatDecimal, formatDegrees, formatPercent, withUnit } from '../../lib
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { UvIndexToday } from '../UvIndexToday.js';
 import { WeatherWarningList } from '../WeatherWarnings.js';
+import { HeatReliefHint } from '../HeatReliefHint.js';
 import { Skeleton } from '../layout/Skeleton.js';
 import { TileFooter } from '../layout/TileFooter.js';
 
@@ -74,6 +75,7 @@ export function WeatherStrip({ expanded }: { expanded: boolean }) {
     <>
       <div className={expanded ? '' : 'flex-1 flex flex-col justify-center'}>
         <WeatherWarningList alerts={alerts} className="mb-3 text-xs" />
+        <HeatReliefHint alerts={alerts} trend={data?.dwdHeatTrend} className="mb-3 text-xs" />
 
         {/* Current conditions — 2×2 aligned grid */}
         <div className="flex items-center justify-center gap-4">

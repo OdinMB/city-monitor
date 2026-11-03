@@ -63,13 +63,36 @@ export type CityFeature =
   | 'population'      // dataSources.population: population map layer and tile
   | 'laborMarket'     // dataSources.laborMarket: BA unemployment figures
   | 'wastewater'      // dataSources.wastewater: viral load in wastewater
+  | 'respiratoryCases' // dataSources.respiratoryCases: RKI-notified flu and RSV cases, in the wastewater tile
   | 'noiseSensors'
   | 'councilMeetings'
   | 'bathing'         // dataSources.bathing: bathing-water quality (LAGeSo Berlin, Hamburg WFS)
   | 'liftOutages'     // dataSources.liftOutages: lift and escalator outages (KVB Köln)
+  | 'stationLifts'    // dataSources.stationLifts: lifts and escalators out of service at DB stations (FaSta; needs DB_API_CLIENT_ID and DB_API_KEY)
+  | 'bikeSharing'     // dataSources.bikeSharing: bike-sharing stations on the map (nextbike GBFS, StadtRAD)
+  | 'electricity'     // dataSources.electricity: generation mix of the grid control area, grid CO₂ and signal
+  | 'airQualityStations' // dataSources.airQuality.ubaStations: official state-network stations (UBA)
+  | 'citizenReports'  // dataSources.citizenReports: citizen issue reports (Open311), the reports map layer
+  | 'trafficAccidents' // dataSources.trafficAccidents: last year's injury accidents on the map (Unfallatlas)
+  | 'crimeAtlas'      // dataSources.crimeAtlas: recorded crime per area, the crime map layer (Kriminalitätsatlas Berlin)
+  | 'carCounts'       // dataSources.trafficCounts with mode 'car': car counters on the traffic layer
+  | 'bikeCounts'      // dataSources.trafficCounts with mode 'bike': bicycle counters on the traffic layer
+  | 'evCharging'      // dataSources.evCharging: public charging stations on the map (BNetzA Ladesäulenregister)
+  | 'evChargingLive'  // dataSources.evCharging.liveStatus: their charge points' live status (Hamburg)
+  // The heat-relief map layer's sub-layers (dataSources.heatRelief, one list per kind)
+  | 'coolPlaces'      // cool places of the city's heat-action plan (Kühle Orte)
+  | 'drinkingFountains'
+  | 'publicToilets'
+  | 'soilMoisture'    // dataSources.soilMoisture: DWD soil moisture at the city's stations (drought tile)
+  | 'treeWatering'    // dataSources.soilMoisture.treeWatering: street-tree waterings logged by residents (Gieß den Kiez)
+  | 'telraamCounts'   // dataSources.telraamCounts: yesterday's street counts of citizen Telraam sensors (Berlin zählt Mobilität)
+  | 'waterTemperature' // dataSources.waterTemperature: the water layer's temperature sub-layer (Wasserportal Berlin)
+  | 'parking'         // dataSources.parking: car parks with live free spaces, the parking map layer (Hamburg)
+  | 'electionResults' // dataSources.electionResults: the latest election per area, the political map's Election view
   // The emergencies map layer's sub-layers, which German cities have
   | 'pharmacies'      // emergency pharmacies: a postcode in CITY_PLZ (ingest-pharmacies.ts)
   | 'aeds'            // defibrillators from OpenStreetMap (dataSources.aeds)
+  | 'hospitals'       // dataSources.hospitals: hospitals by emergency tier (Hamburg WFS; Bundes-Klinik-Atlas unless KLINIK_ATLAS=false)
   // From the political ingestion's own tables
   | 'political'       // PARLIAMENT_CONFIG: Bundestag and state parliament members
   | 'districtMayors'  // BEZIRKSBUERGERMEISTER
@@ -82,6 +105,8 @@ export type CityFeature =
   | 'rentMap'         // the rent map WMS
   | 'noiseMap'        // a strategic noise map WMS (road, rail, air)
   | 'noiseTotal'      // its all-sources layer
+  | 'trafficFlowMap'  // a live congestion map WMS, the traffic layer's congestion sub-layer
+  | 'streetTrees'     // the street-tree register WMS (STREET_TREES_WMS), the trees map layer
   | 'politicalMap'    // the political map layer, on the city's district outlines (DISTRICT_URLS)
   | 'bundestagByDistrict'; // its Bundestag view: constituencies named after Bezirke (Berlin, Hamburg)
 
@@ -196,6 +221,228 @@ export type LiftOutageSource =
   /** KVB's open-data service: `<url>/aufzugsstoerung/json` and `<url>/fahrtreppenstoerung/json` */
   { provider: 'kvb'; url: string };
 
+/**
+ * Lifts and escalators at the city's DB stations (S-Bahn and regional), from
+ * Deutsche Bahn's FaSta API on the DB API Marketplace, asked for by the city's
+ * bounding box. The job needs DB_API_CLIENT_ID and DB_API_KEY and skips without
+ * them (.context/lift-outages.md, "DB stations").
+ */
+export type StationLiftSource = { provider: 'db-fasta' };
+
+/**
+ * A source of the emergencies layer's hospitals (.context/hospitals.md). A
+ * city may list several; where two cover the same hospital, the one with the
+ * G-BA emergency tier wins.
+ */
+export type HospitalSource =
+  /**
+   * The Bundes-Klinik-Atlas open-data export (G-BA): every German hospital site
+   * with its G-BA emergency tier, kept where `Ort` is one of `places`. Its reuse
+   * terms are not stated; read unless KLINIK_ATLAS=false on the server.
+   */
+  | { provider: 'klinik-atlas'; places: string[] }
+  /** Hamburg's WFS `HH_WFS_Krankenhaeuser` (dl-de/by-2.0): plan hospitals, ER participation but no tier */
+  | { provider: 'hamburg-wfs'; url: string };
+
+/**
+ * A city's bike-sharing system, by the provider whose format it is in. Each
+ * provider has its own parser in packages/server/src/lib/bike-sharing-parsers.ts
+ * (.context/bike-sharing.md). `system` and `operator` are shown in the map popup.
+ */
+export type BikeSharingSource =
+  /** A GBFS 2.x system's auto-discovery file (`…/gbfs.json`); stations only, no free-floating bikes */
+  | { provider: 'gbfs'; url: string; system: string; operator: string }
+  /** Hamburg's StadtRAD on the Urban Data Platform's SensorThings API (`…/v1.1`) */
+  | { provider: 'hamburg-sta'; url: string; system: string; operator: string };
+
+/**
+ * A city's car parks with live occupancy, by provider (.context/parking.md).
+ * `hamburg-wfs`: the Urban Data Platform's car-park WFS (`…/wfs_parkhaeuser`),
+ * fed by the city's Parkleitsystem; only the car parks that report free spaces
+ * are kept.
+ */
+export type ParkingSource = { provider: 'hamburg-wfs'; url: string };
+
+/**
+ * A German transmission system operator's control area (Regelzone), spelled as
+ * SMARD names its region: 50Hertz (Berlin, Hamburg and the east), Amprion (the
+ * west, Köln), TenneT (a north–south band, Bavaria with München), TransnetBW
+ * (Baden-Württemberg).
+ */
+export type ControlArea = '50Hertz' | 'Amprion' | 'TenneT' | 'TransnetBW';
+
+/**
+ * The electricity tile's sources (.context/electricity.md): SMARD's generation
+ * for the control area whose grid serves the city, and Energy-Charts' Germany-wide
+ * grid signal and CO₂ intensity, which have no regional values.
+ */
+export interface ElectricitySource {
+  provider: 'smard';
+  controlArea: ControlArea;
+}
+
+/**
+ * A city's citizen issue reports (litter, broken street lights, potholes), by
+ * provider. `open311` is a GeoReport v2 server, both of today's on Mark-a-Spot
+ * (.context/citizen-reports.md).
+ */
+export type CitizenReportSource = {
+  provider: 'open311';
+  /** The GeoReport v2 base, without a trailing slash (`…/georeport/v2`); `/requests.json` is appended. */
+  baseUrl: string;
+  /**
+   * A request's page on the city's portal: `{id}` is replaced by the
+   * service_request_id, `{nid}` by Mark-a-Spot's node id (its extensions).
+   */
+  requestUrl: string;
+};
+
+/**
+ * A city's injury accidents from the Unfallatlas of the Statistische Ämter des
+ * Bundes und der Länder: one national file a year, filtered to the city by its
+ * official municipality key (.context/traffic-accidents.md).
+ */
+export type TrafficAccidentSource = {
+  provider: 'unfallatlas';
+  /**
+   * The 8-digit Amtlicher Gemeindeschlüssel: "05315000" for Köln. A city-state's
+   * key ("11000000") matches the whole Land, whose Bezirke the file codes in the
+   * Kreis and Gemeinde digits.
+   */
+  ags: string;
+};
+
+/** What a traffic counter counts: motor vehicles or bicycles. */
+export type TrafficCountMode = 'car' | 'bike';
+
+/**
+ * A city's live traffic counters, by the provider whose format they are in
+ * (packages/server/src/lib/traffic-count-parsers.ts, .context/traffic-counts.md).
+ * `modes` names what the city's counters count; each mode is a sub-layer of
+ * the traffic map layer.
+ */
+export type TrafficCountSource =
+  /**
+   * Hamburg's infrared counters on the Urban Data Platform's SensorThings API
+   * (`url`, `…/v1.1`), hourly; the counting sites' names from the
+   * Verkehrszählstellen WFS (`sitesWfsUrl`).
+   */
+  { provider: 'hamburg-sta'; url: string; sitesWfsUrl: string; modes: readonly TrafficCountMode[] };
+
+/**
+ * A city's public charging stations from the Bundesnetzagentur's
+ * Ladesäulenregister (one national CSV, read once per run for every city), with
+ * an optional live status per charge point (.context/ev-charging.md).
+ */
+export interface EvChargingSource {
+  provider: 'bnetza';
+  /** The register's `Kreis/kreisfreie Stadt` value for the city, exactly as spelt there ("Kreisfreie Stadt Köln") */
+  kreis: string;
+  /**
+   * Live status per charge point, merged onto the register's stations by EVSE id.
+   * `hamburg-sta`: the Urban Data Platform's SensorThings API (`…/v1.1`), layer `Status_E-Ladepunkt`.
+   * `operator` names the operator of a live station the register lacks.
+   */
+  liveStatus?: { provider: 'hamburg-sta'; url: string; operator: string };
+}
+
+/**
+ * A city's recorded crime per small area (.context/crime-atlas.md).
+ * `polizei-berlin`: the Kriminalitätsatlas XLSX of Polizei Berlin (CC BY-SA),
+ * case counts and cases per 100,000 residents per Bezirksregion, the newest
+ * year of the file; `outlines` names the Bezirksregion outline file in
+ * packages/server/data/.
+ */
+export type CrimeAtlasSource = { provider: 'polizei-berlin'; xlsxUrl: string; outlines: string };
+
+/** What a heat-relief place is: a cool place, a drinking fountain or a public toilet. */
+export type HeatReliefKind = 'cool' | 'fountain' | 'toilet';
+
+/**
+ * One list of the heat-relief map layer, by the provider whose format it is in;
+ * each provider has its own parser in packages/server/src/lib/heat-relief-parsers.ts
+ * (.context/heat-relief.md) and gives one kind of place. `url` is the service
+ * without query (the parser adds it).
+ */
+export type HeatReliefSource =
+  /** Berlin's GDI WFS `kuehle_raeume` (Senatsverwaltung für Wissenschaft, Gesundheit und Pflege) */
+  | { kind: 'cool'; provider: 'berlin-cool-rooms'; url: string }
+  /** Berlin's GDI WFS `trinkwasserbrunnen` (Berliner Wasserbetriebe) */
+  | { kind: 'fountain'; provider: 'berlin-fountains'; url: string }
+  /** Berlin's GDI WFS `toiletten` */
+  | { kind: 'toilet'; provider: 'berlin-toilets'; url: string }
+  /** Hamburg's Geodienste WFS `de.hh.up:trinkwasserbrunnen` */
+  | { kind: 'fountain'; provider: 'hamburg-fountains'; url: string }
+  /** Köln's geoportal WFS `kuehle_orte_wfs`, one feature type per kind of cool place */
+  | { kind: 'cool'; provider: 'koeln-cool-places'; url: string; layers: KoelnCoolLayer[] }
+  /** Köln's geoportal WFS `trinkwasserbrunnen_wfs` (EPSG:25832 only) */
+  | { kind: 'fountain'; provider: 'koeln-fountains'; url: string }
+  /** AWB Köln's toilet list (XML) */
+  | { kind: 'toilet'; provider: 'koeln-toilets'; url: string }
+  /** München's GeodatenService WFS `baug_wfs:trinkwasserbrunnen` (Baureferat) */
+  | { kind: 'fountain'; provider: 'muenchen-fountains'; url: string }
+  /** München's GeodatenService WFS `gsm_wfs:wc_finder_opendata` (one row per toilet room) */
+  | { kind: 'toilet'; provider: 'muenchen-toilets'; url: string };
+
+/** The feature types of Köln's cool-places WFS: indoors, air-conditioned, by the water. */
+export type KoelnCoolLayer = 'im_innenraum' | 'klimatisierter_ort' | 'am_wasser';
+
+/**
+ * The drought tile's sources (.context/soil-moisture.md): the DWD's daily soil
+ * moisture per climate station (AMBAV model output, CC BY 4.0), and for Berlin
+ * the street-tree waterings residents log on Gieß den Kiez (CC0).
+ */
+export interface SoilMoistureSource {
+  provider: 'dwd';
+  /**
+   * DWD stations by their Stationsindex (as in the file name, without leading
+   * zeros) and name. The tile shows their daily mean and each one's latest day.
+   */
+  stations: Array<{ id: string; name: string }>;
+  /** Gieß den Kiez's open-data CSV of every logged watering (Technologiestiftung Berlin). */
+  treeWatering?: { provider: 'giessdenkiez'; csvUrl: string };
+}
+
+/**
+ * Street counts of citizen-run Telraam sensors as a project republishes them:
+ * monthly hourly CSVs and a segment GeoJSON in one folder
+ * (.context/telraam-counts.md).
+ */
+export type TelraamCountsSource = {
+  provider: 'berlin-zaehlt';
+  /** The folder holding `bzm_telraam_YYYY_MM.csv.gz` and `bzm_telraam_segments.geojson`, with a trailing slash. */
+  baseUrl: string;
+  /** The ISO 3166-2 code a segment's OSM address must carry ("DE-BE"): the files also cover the surrounding Land. */
+  region: string;
+};
+
+/** The elections the political map can show the result of, by the body elected. */
+export type ElectionKind = 'abgeordnetenhaus' | 'buergerschaft' | 'stadtrat';
+
+/** The areas an election's result is mapped by. */
+export type ElectionAreaLevel = 'wahlkreis' | 'stadtteil' | 'stadtbezirk';
+
+/**
+ * A city's latest election result per area, by the provider whose file it is
+ * (parsers in packages/server/src/lib/election-parsers.ts,
+ * .context/election-results.md). `outlines` names the area polygons in
+ * packages/server/data/; `date` is election day (YYYY-MM-DD).
+ */
+export type ElectionResultSource = {
+  /**
+   * `berlin-agh-xlsx`: the Landeswahlleiterin's XLSX of the Abgeordnetenhaus
+   * election per Wahlbezirk (second votes, summed per Wahlkreis);
+   * `hamburg-stadtteile-xlsx`: Statistikamt Nord's Bürgerschaft result per
+   * Stadtteil (Landesliste shares); `muenchen-stadtrat-zip`: the Wahlamt's
+   * Stadtrat result per Stadtbezirk (CSV in a ZIP).
+   */
+  provider: 'berlin-agh-xlsx' | 'hamburg-stadtteile-xlsx' | 'muenchen-stadtrat-zip';
+  url: string;
+  election: ElectionKind;
+  date: string;
+  outlines: string;
+};
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -210,6 +457,12 @@ export interface CityDataSources {
   };
   airQuality?: {
     sensorCommunityStations?: Array<{ sensorId: number; name: string; fallbackIds?: number[] }>;
+    /**
+     * Official measuring stations of the state networks, by their UBA station code
+     * ("DEBE010"), read hourly from the Umweltbundesamt's Air Data API
+     * (.context/air-quality-stations.md). A station without a recent reading is left out.
+     */
+    ubaStations?: string[];
   };
   transit?:
     | {
@@ -240,10 +493,36 @@ export interface CityDataSources {
   roadworks?: RoadworksSource;
   bathing?: BathingSource;
   liftOutages?: LiftOutageSource;
+  stationLifts?: StationLiftSource;
+  hospitals?: HospitalSource[];
+  bikeSharing?: BikeSharingSource;
+  parking?: ParkingSource;
+  electricity?: ElectricitySource;
+  citizenReports?: CitizenReportSource;
+  trafficAccidents?: TrafficAccidentSource;
+  crimeAtlas?: CrimeAtlasSource;
+  trafficCounts?: TrafficCountSource;
+  evCharging?: EvChargingSource;
+  /** The heat-relief layer's lists, at most one per kind. */
+  heatRelief?: HeatReliefSource[];
+  soilMoisture?: SoilMoistureSource;
+  telraamCounts?: TelraamCountsSource;
+  /** The latest election's result per area, the political map's Election view. */
+  electionResults?: ElectionResultSource;
   openData?: { provider: 'ckan'; baseUrl: string };
   waterLevels?: {
     provider: 'pegelonline';
     stations: Array<{ uuid: string; name: string; waterBody: string; tidal?: boolean }>;
+  };
+  /**
+   * Water temperature at measuring points of a state's hydrological service, for the
+   * water layer's temperature sub-layer (.context/water-levels.md, "Water Temperature").
+   * `wasserportal`: Berlin's Wasserportal CSV export, one request per station. The
+   * portal's CSV gives no coordinates, so each station carries its own (WGS 84).
+   */
+  waterTemperature?: {
+    provider: 'wasserportal';
+    stations: Array<{ id: string; name: string; waterBody: string; lat: number; lon: number }>;
   };
   /**
    * Flood class (Meldestufe or the state's equivalent) of state flood gauges from the
@@ -289,6 +568,13 @@ export interface CityDataSources {
   wastewater?:
     | { provider: 'amelag'; sites: readonly string[] }
     | { provider: 'lageso'; csvUrl: string; sites: readonly string[] };
+  /**
+   * Weekly lab-confirmed influenza and RSV cases notified under the IfSG, from
+   * the RKI's GitHub datasets (packages/server/src/cron/ingest-respiratory-cases.ts).
+   * The data go down to the Bundesland only, so only a city-state has them:
+   * `regionId` is the Land's two-digit key ("11" Berlin, "02" Hamburg).
+   */
+  respiratoryCases?: { provider: 'rki-ifsg'; regionId: string };
   pollen?: {
     provider: 'dwd';
     regionId: number;
@@ -381,6 +667,20 @@ export interface WeatherAlert {
   severity: string;
   description: string;
   validUntil: string;
+  /** 'heat' for DWD's heat warnings (levels 10 and 11); absent for the others and in data stored before 2026-11. */
+  kind?: 'heat';
+}
+
+/**
+ * DWD's heat outlook for the city's warn region (hwtrend_YYYYMMDD.json): one
+ * status per day for 8 days from `issued`. 0 none, 1 warning of strong heat
+ * stress, 2 warning of extreme heat stress (days 1–2 from the warnings), 3 heat
+ * trend active, a warning possible (from day 3).
+ */
+export interface DwdHeatTrend {
+  /** The file's day ("YYYY-MM-DD"), the first of `days`. */
+  issued: string;
+  days: number[];
 }
 
 /** DWD UV index forecast: the expected daily maximum for three days. */
@@ -402,6 +702,7 @@ export interface WeatherData {
   daily: DailyForecast[];
   alerts: WeatherAlert[];
   dwdUv?: DwdUvForecast;
+  dwdHeatTrend?: DwdHeatTrend;
 }
 
 // Political data
@@ -419,6 +720,80 @@ export interface PoliticalDistrict {
   name: string;
   level: 'stadt' | 'bezirk' | 'bundestag' | 'landesparlament';
   representatives: Representative[];
+}
+
+// Election results (dataSources.electionResults)
+
+/** A party's share of the valid votes, in percent. */
+export interface ElectionShare {
+  party: string;
+  pct: number;
+}
+
+/** One area's result, or the city's (`ElectionResults.total`). */
+export interface ElectionAreaResult {
+  /** The outline's ID ("0101", "05"; a Hamburg Stadtteil group by its outlines' IDs joined with "+"). */
+  id: string;
+  /** As the source names it ("Mitte 1", "Billbrook/Rothenburgsort", "Altstadt-Lehel"). */
+  name: string;
+  /** Voters per 100 eligible; null where the source gives none. */
+  turnout: number | null;
+  /** The parties with at least 1 % city-wide, in the city's order (strongest first), each with its share here. */
+  shares: ElectionShare[];
+  /** Every other party's share together. */
+  otherPct: number;
+  /** The strongest party here (the shares' maximum), null if none has votes. */
+  leader: string | null;
+}
+
+export interface ElectionResults {
+  election: ElectionKind;
+  /** Election day, YYYY-MM-DD. */
+  date: string;
+  areaLevel: ElectionAreaLevel;
+  /** The city-wide result (`id` "total"), with the eligible and voters counts where the source has them. */
+  total: ElectionAreaResult & { eligible: number | null; voters: number | null };
+  areas: ElectionAreaResult[];
+  /** The official file the result was read from. */
+  sourceUrl: string;
+}
+
+/** The properties of an election map area: the result is looked up by `id` in `ElectionResults.areas`. */
+export interface ElectionFeatureProps {
+  id: string;
+  name: string;
+  leader: string | null;
+  leaderPct: number | null;
+}
+
+/** One member's vote in a roll-call vote, as abgeordnetenwatch.de records it. */
+export type VoteChoice = 'yes' | 'no' | 'abstain' | 'no_show';
+
+export interface VoteCounts {
+  yes: number;
+  no: number;
+  abstain: number;
+  noShow: number;
+}
+
+/**
+ * A roll-call vote (abgeordnetenwatch "poll") in the Bundestag or the city's
+ * state parliament: the whole parliament's result and how the city's members
+ * (the same ones as the political tile's member list) voted.
+ */
+export interface PoliticalVote {
+  id: number;
+  parliament: 'bundestag' | 'state';
+  title: string;
+  /** YYYY-MM-DD */
+  date: string;
+  /** Whether the motion was adopted; null when abgeordnetenwatch has no result. */
+  accepted: boolean | null;
+  topics: string[];
+  url: string;
+  totals: VoteCounts;
+  city: VoteCounts;
+  members: Array<{ name: string; party: string; vote: VoteChoice }>;
 }
 
 // Traffic incidents
@@ -463,6 +838,32 @@ export interface AirQualityGridPoint {
   station: string;
   /** Link to station detail page */
   url?: string;
+}
+
+// Official air quality stations (UBA Air Data API, state networks)
+/** UBA air quality index class: 0 very good, 1 good, 2 moderate, 3 poor, 4 very poor. */
+export type UbaAirIndex = 0 | 1 | 2 | 3 | 4;
+
+export interface AirQualityStation {
+  /** UBA station code, e.g. "DEBE010". */
+  code: string;
+  /** Station name as UBA gives it ("Berlin Wedding", "München/Stachus"). */
+  name: string;
+  lat: number;
+  lon: number;
+  /** UBA station type: Verkehr (traffic), Hintergrund (background) or Industrie (industrial). */
+  setting: 'traffic' | 'background' | 'industrial';
+  /** State network code from UBA ("BE", "HH", "NW", "BY"). */
+  network: string;
+  /** End of the latest measured hour, UTC ISO 8601. */
+  measuredAt: string;
+  /** Overall index of that hour, the worst of its components' indices. */
+  index: UbaAirIndex | null;
+  /** One-hour means of that hour in µg/m³, null when the station does not measure the component. */
+  no2: number | null;
+  pm10: number | null;
+  pm25: number | null;
+  o3: number | null;
 }
 
 // Construction / roadworks (VIZ Berlin, Hamburg, Köln, München; see RoadworksSource)
@@ -536,6 +937,27 @@ export interface WaterLevelStation {
 export interface WaterLevelData {
   stations: WaterLevelStation[];
   fetchedAt: string;
+}
+
+// Water temperature (Berlin Wasserportal)
+export interface WaterTemperatureStation {
+  /** The provider's station number ("139"). */
+  id: string;
+  name: string;
+  waterBody: string;
+  lat: number;
+  lon: number;
+  /** The newest valid reading, °C. */
+  temperature: number;
+  /** When it was measured (ISO 8601 with offset). */
+  measuredAt: string;
+  /** The station's page on the provider's portal. */
+  url: string;
+}
+
+export interface WaterTemperatureData {
+  /** The configured stations with a reading of the last few days, in config order. */
+  stations: WaterTemperatureStation[];
 }
 
 // Budget data (Berlin Doppelhaushalt)
@@ -645,6 +1067,24 @@ export interface WastewaterSummary {
   plantCount: number;
 }
 
+// Lab-confirmed influenza and RSV cases notified under the IfSG (RKI), shown in the wastewater tile
+export interface RespiratoryCaseSeries {
+  name: 'Influenza' | 'RSV';
+  cases: number;            // notified cases in the latest Meldewoche
+  incidence: number;        // cases per 100,000 residents in that week
+  previousCases: number;    // the week before
+  trend: 'rising' | 'falling' | 'stable' | 'new' | 'gone';
+  history: number[];        // cases in the last 12 weeks, oldest first, 7 days apart
+}
+
+export interface RespiratoryCases {
+  /** The latest Meldewoche in the RKI files, "2026-W43". */
+  week: string;
+  /** Monday of that week, "2026-10-19": the sparkline's end date. */
+  weekStart: string;
+  pathogens: RespiratoryCaseSeries[];
+}
+
 // Feuerwehr (Berlin Fire Department) monthly operations
 export interface FeuerwehrMonthData {
   reportMonth: string;                      // "2026-02"
@@ -728,6 +1168,10 @@ export interface LiftOutage {
   lon: number | null;
   /** The operator's note on the outage, when it gives one. */
   info: string | null;
+  /** Who runs the unit: 'db' for a DB station (FaSta); absent for the city's transit operator (KVB). */
+  operator?: 'db';
+  /** When DB plans the unit back in service (YYYY-MM-DD), when it gives a date. */
+  resumeDate?: string | null;
 }
 
 export interface LiftOutageData {
@@ -735,6 +1179,463 @@ export interface LiftOutageData {
   outages: LiftOutage[];
   /** When the operator last updated its lists (ISO 8601 with offset), null when it gave no time. */
   updated: string | null;
+}
+
+// Hospitals (Bundes-Klinik-Atlas, Hamburg WFS)
+/**
+ * A hospital's part in emergency care. The G-BA tiers (Notfallstufen) from
+ * the Bundes-Klinik-Atlas: `basic` (1), `extended` (2), `comprehensive` (3);
+ * `specialised` a site without a tier that runs a special emergency module
+ * (Spezialversorgung); `none` no tier. Hamburg's WFS has no tier: `emergency`
+ * takes part in emergency care, `limited` takes part with restrictions.
+ */
+export type HospitalTier = 'comprehensive' | 'extended' | 'basic' | 'emergency' | 'limited' | 'specialised' | 'none';
+
+export interface Hospital {
+  /** The source's id: `kla-<STOID>` or `hh-<id>`. */
+  id: string;
+  name: string;
+  /** Street and postcode with town, as the source gives them. */
+  address: string | null;
+  lat: number;
+  lon: number;
+  tier: HospitalTier;
+  /** Children's emergency care (Klinik-Atlas `Kinder` above 0). */
+  children: boolean;
+  strokeUnit: boolean;
+  chestPainUnit: boolean;
+  /** Care of the severely injured (Schwerverletztenversorgung). */
+  trauma: boolean;
+  /** Beds (Klinik-Atlas) or planned beds (Hamburg), when given. */
+  beds: number | null;
+  /** The hospital's own website. */
+  url: string | null;
+  source: 'klinik-atlas' | 'hamburg-wfs';
+}
+
+export interface HospitalData {
+  /**
+   * As stored: every source's records, unmerged. As served by the API (servedHospitals):
+   * the active sources' records merged, by tier (comprehensive first), then name.
+   */
+  hospitals: Hospital[];
+  /** The Klinik-Atlas export's date (YYYY-MM-DD), when it is a source. */
+  atlasDate: string | null;
+}
+
+// Bike sharing (nextbike GBFS, Hamburg StadtRAD)
+export interface BikeStation {
+  /** The operator's station id. */
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  /** Bikes available to rent now. */
+  bikes: number;
+  /** Free docks; null where the station has no fixed docks or the feed gives no capacity. */
+  docks: number | null;
+  /** When the station last reported (GBFS) or its count last changed (StadtRAD), Unix seconds. */
+  reportedAt: number | null;
+}
+
+export interface BikeSharingData {
+  /** The system as its operator brands it ("nextbike Berlin", "KVB-Rad", "StadtRAD Hamburg"). */
+  system: string;
+  operator: string;
+  /** Stations inside the city's bounding box that are installed and renting. */
+  stations: BikeStation[];
+  /** When the feed was last updated (ISO 8601), null when it gave no time. */
+  updated: string | null;
+}
+
+// Parking (Hamburg car-park WFS)
+export interface ParkingFacility {
+  /** The provider's id ("1012"). */
+  id: string;
+  name: string;
+  /** Multi-storey car park, underground garage or surface car park. */
+  kind: 'garage' | 'underground' | 'lot';
+  lat: number;
+  lon: number;
+  /** Free spaces now. */
+  free: number;
+  /** Spaces in all, as the car park reports them with its free count. */
+  total: number;
+  /** `closed` and `fault` as the guidance system reports them; `free` then means little. */
+  status: 'open' | 'closed' | 'fault';
+  /**
+   * Free spaces against about 10–30 minutes earlier, as the job saw them:
+   * `filling` (fewer free), `emptying` (more free), `steady`; null until the job
+   * has an earlier reading (after a restart) or when the car park did not report.
+   */
+  trend: 'filling' | 'emptying' | 'steady' | null;
+  /** When the car park last reported (ISO 8601 with offset), null when unknown. */
+  updated: string | null;
+}
+
+export interface ParkingData {
+  /** Car parks with live occupancy, by name. */
+  facilities: ParkingFacility[];
+  /** The newest report among them (ISO 8601), null when none gave a time. */
+  updated: string | null;
+}
+
+// Electricity (SMARD for the control area, Energy-Charts for Germany)
+/** SMARD's generation series, grouped as the tile shows them. */
+export type GenerationKind =
+  | 'windOffshore' | 'windOnshore' | 'solar' | 'biomass' | 'hydro' | 'otherRenewable'
+  | 'lignite' | 'hardCoal' | 'gas' | 'pumpedStorage' | 'otherConventional';
+
+/**
+ * Energy-Charts' traffic light: 2 green (high renewable share), 1 yellow
+ * (average), 0 red (low renewable share), -1 red (grid congestion).
+ */
+export type GridSignal = -1 | 0 | 1 | 2;
+
+/** The control area's generation in one quarter-hour (SMARD). */
+export interface ElectricityMix {
+  /** Start of the quarter-hour (ISO 8601, UTC). */
+  at: string;
+  /** Average output in that quarter-hour in MW, by kind; a kind the area does not report is left out. */
+  mw: Partial<Record<GenerationKind, number>>;
+  /** Renewable share of the area's generation in %, one decimal. */
+  renewableShare: number;
+}
+
+/** One quarter-hour of Germany's grid (Energy-Charts). */
+export interface GridPoint {
+  /** Start of the quarter-hour (ISO 8601, UTC). */
+  t: string;
+  /** Germany's renewable share of load in %, measured or forecast. */
+  share: number | null;
+  signal: GridSignal | null;
+  /** Measured CO₂ intensity of German generation, g/kWh; null until it is published. */
+  co2: number | null;
+  /** Energy-Charts' forecast of it, g/kWh. */
+  co2Forecast: number | null;
+}
+
+export interface ElectricityData {
+  controlArea: ControlArea;
+  /** The newest quarter-hour every series of the area has reached, null when SMARD failed. */
+  mix: ElectricityMix | null;
+  /** The area's renewable share of generation per hour over the last 24 hours, oldest first. */
+  renewableHistory: Array<{ t: string; share: number }>;
+  /** Germany's grid by quarter-hour, today in German time and later quarter-hours once forecast; empty when Energy-Charts failed. */
+  grid: GridPoint[];
+}
+
+// Soil moisture (DWD, per station) and street-tree watering (Gieß den Kiez)
+/**
+ * One day's soil moisture under grass, 0–60 cm, in % of usable field capacity
+ * (% nFK, "plant-available water"; above 100 the soil holds more than it can
+ * keep). `sandy` is DWD's BFGS_AG (loamy sand), `loamy` its BFGL_AG (loamy silt).
+ */
+export interface SoilMoistureDay {
+  /** The day (YYYY-MM-DD). */
+  date: string;
+  sandy: number;
+  loamy: number;
+}
+
+/** One station's newest day. */
+export interface SoilMoistureStation extends SoilMoistureDay {
+  /** DWD Stationsindex. */
+  id: string;
+  name: string;
+}
+
+/** Street-tree waterings in a period: total litres, logged waterings and distinct trees watered. */
+export interface TreeWateringPeriod {
+  litres: number;
+  waterings: number;
+  trees: number;
+}
+
+export interface TreeWateringSummary {
+  /** The newest day with a logged watering (YYYY-MM-DD); the file is regenerated about monthly. */
+  dataThrough: string;
+  /** The 30 days up to and including `dataThrough`. */
+  last30Days: TreeWateringPeriod;
+  /** The calendar year of `dataThrough` so far. */
+  season: TreeWateringPeriod & { year: number };
+  /** The whole calendar year before, for comparison. */
+  previousSeason: TreeWateringPeriod & { year: number };
+  /** The Bezirke with the most litres this season, most first (at most 3). */
+  topDistricts: Array<{ district: string; litres: number }>;
+}
+
+export interface SoilMoistureData {
+  /** Each configured station's newest day; a station whose file failed is left out. */
+  stations: SoilMoistureStation[];
+  /** The stations' daily mean over the last 90 days, oldest first (one decimal). */
+  history: SoilMoistureDay[];
+  /** Gieß den Kiez waterings (Berlin); null for a city without them or when the CSV failed. */
+  watering: TreeWateringSummary | null;
+}
+
+// Citizen issue reports (Open311 GeoReport v2)
+export type CitizenReportStatus = 'open' | 'in_progress' | 'closed';
+
+/** The map's coarse grouping of a portal's categories, for the marker icon. */
+export type CitizenReportGroup = 'waste' | 'lighting' | 'traffic' | 'roads' | 'green' | 'vehicles' | 'graffiti' | 'other';
+
+/**
+ * One report, without anything that could name the person who made it: no
+ * description, address, photo or official reply (.context/citizen-reports.md).
+ */
+export interface CitizenReport {
+  /** The portal's service_request_id ("26227-2026"). */
+  id: string;
+  /** Rounded to four decimals (about 10 m). */
+  lat: number;
+  lon: number;
+  /** The portal's category as it names it ("Wilder Müll"). */
+  category: string;
+  group: CitizenReportGroup;
+  status: CitizenReportStatus;
+  /** The portal's own name for the status ("In Bearbeitung", "Erledigt/Beauftragt"), when it gives one. */
+  statusLabel: string | null;
+  /** ISO 8601 with offset. */
+  requestedAt: string;
+  updatedAt: string | null;
+  /** The request's page on the portal. */
+  url: string | null;
+}
+
+export interface CitizenReportData {
+  /** Newest first, at most the cap. */
+  reports: CitizenReport[];
+  /** How many days back the reports reach. */
+  windowDays: number;
+  /** Reports in the window before the cap. */
+  total: number;
+  /** Of `reports`, by status. */
+  counts: Record<CitizenReportStatus, number>;
+}
+
+// Traffic accidents (Unfallatlas, Statistische Ämter des Bundes und der Länder)
+/** The worst outcome of an accident: 1 someone killed, 2 seriously injured, 3 slightly injured (UKATEGORIE). */
+export type AccidentSeverity = 1 | 2 | 3;
+
+/**
+ * One accident with personal injury, as a tuple to keep Berlin's ~13,000 small.
+ * `kind` is the Unfallart (UART: 0 other, 1–9 collision kinds), `type` the
+ * Unfalltyp (UTYP1: 1–7). `participants` is a bitmask of who was involved:
+ * 1 bicycle, 2 car, 4 pedestrian, 8 motorcycle, 16 goods vehicle, 32 other
+ * (bus, tram …); `ACCIDENT_PARTICIPANTS` in the server parser and the web layer.
+ */
+export type TrafficAccident = [
+  lon: number,
+  lat: number,
+  severity: AccidentSeverity,
+  /** 1–12 */
+  month: number,
+  /** 1 Sunday … 7 Saturday, as the Unfallatlas counts (UWOCHENTAG) */
+  weekday: number,
+  /** 0–23: the accident happened between this hour and the next */
+  hour: number,
+  kind: number,
+  type: number,
+  participants: number,
+];
+
+export interface TrafficAccidentData {
+  /** The year the accidents happened in. */
+  year: number;
+  accidents: TrafficAccident[];
+  /** When the statistical offices published the file (ISO 8601), null when the index gave no time. */
+  published: string | null;
+}
+
+// Crime atlas (Kriminalitätsatlas Berlin, Polizei Berlin, CC BY-SA)
+/**
+ * The offence groups the crime map shows, each a column of the
+ * Kriminalitätsatlas: all offences, assault (Körperverletzungen insgesamt),
+ * robbery (Raub, street robbery included), domestic burglary
+ * (Wohnraumeinbruch), bicycle theft and the police's "Kieztaten", offences
+ * residents notice in their neighbourhood. The server's parser
+ * (`CRIME_COLUMNS` in lib/crime-atlas.ts) and the web layer list them in this order.
+ */
+export type CrimeIndicator = 'total' | 'assault' | 'robbery' | 'burglary' | 'bikeTheft' | 'kiez';
+
+/** Cases per 100,000 residents of each offence group (the atlas's Häufigkeitszahl), null where the atlas gives none. */
+export type CrimeRates = Record<CrimeIndicator, number | null>;
+/** Recorded cases of each offence group, null where the atlas gives none. */
+export type CrimeCounts = { [K in CrimeIndicator as `${K}Count`]: number | null };
+
+/** One Bezirksregion on the crime map: flat, so the map's expressions can read each rate. */
+export type CrimeAreaProps = CrimeRates & CrimeCounts & {
+  /** The 6-digit LOR key of the Bezirksregion ("011001") */
+  areaId: string;
+  name: string;
+  /** Its Bezirk */
+  district: string;
+};
+
+export interface CrimeAtlasData {
+  /** The year the offences were recorded in (PKS year). */
+  year: number;
+  /** The city as a whole: its rates are the averages the map compares each area with. */
+  city: CrimeRates & CrimeCounts;
+  geojson: {
+    type: 'FeatureCollection';
+    features: Array<{ type: 'Feature'; geometry: unknown; properties: CrimeAreaProps }>;
+  };
+}
+
+// Traffic counts (Hamburg infrared counters)
+/**
+ * One counting site (a junction or road section with several directional
+ * counters) for one mode: the vehicles or bikes its counters counted in the
+ * hour, and what they usually count in that hour of that weekday.
+ */
+export interface TrafficCountSite {
+  /** `<mode>-<site>`: unique across both modes. */
+  id: string;
+  mode: TrafficCountMode;
+  /** The operator's site number ("0248"). */
+  site: string;
+  /** The junction or road ("Poppenbütteler Chaussee / Specksaalredder"), null when the site list lacks it. */
+  name: string | null;
+  lat: number;
+  lon: number;
+  /** Start of the hour counted (ISO 8601, UTC). */
+  hour: string;
+  /** Vehicles or bikes counted in that hour, summed over the counters compared. */
+  count: number;
+  /**
+   * The same counters' usual count: the median of the same local hour on the
+   * same weekday in the four weeks before, summed. Null when no counter has two
+   * such weeks.
+   */
+  typical: number | null;
+  /** How many directional counters the numbers sum. */
+  counters: number;
+}
+
+export interface TrafficCountData {
+  sites: TrafficCountSite[];
+  /** When the job read the counts (ISO 8601). */
+  updated: string;
+}
+
+// EV charging (BNetzA Ladesäulenregister, Hamburg live status)
+/** Plug types as the map names them; the register's and Hamburg's spellings are mapped onto these. */
+export type EvPlug = 'type2' | 'ccs' | 'chademo' | 'schuko' | 'type1' | 'mcs';
+
+/**
+ * A charge point's live status, from OCPP's: `available`; `occupied` while a
+ * car is plugged in (PREPARING, CHARGING, SUSPENDEDEV, SUSPENDEDEVSE,
+ * FINISHING, RESERVED, OCCUPIED); `outOfOrder` (FAULTED, UNAVAILABLE);
+ * `unknown` without a status or with UNKNOWN.
+ */
+export type EvPointStatus = 'available' | 'occupied' | 'outOfOrder' | 'unknown';
+
+export interface EvLivePoint {
+  /** The charge point's EVSE id ("DE*HHM*E1011*02"). */
+  id: string;
+  status: EvPointStatus;
+  /** When the status was reported (it is written on change), Unix seconds; null without one. */
+  since: number | null;
+}
+
+export interface EvChargingStation {
+  /** The register's first Ladeeinrichtungs-ID at this place, or `live:<asset id>` for a station only the live feed has. */
+  id: string;
+  lat: number;
+  lon: number;
+  /** The operator's name on the BNetzA map (`Anzeigename (Karte)`), else its company name. */
+  operator: string;
+  /** Street and house number. */
+  address: string;
+  /** Charge points at this place (several charging devices of one operator at one spot are one station). */
+  points: number;
+  /** The highest rated power of a plug here, kW; null where unknown (stations only the live feed has). */
+  maxKw: number | null;
+  /** A fast charger (a Schnellladeeinrichtung, over 22 kW, or a DC plug). */
+  fast: boolean;
+  plugs: EvPlug[];
+  /** Live status of the charge points, in cities with `dataSources.evCharging.liveStatus`. */
+  live?: EvLivePoint[];
+}
+
+export interface EvChargingData {
+  /** The register edition's date (YYYY-MM-DD, from its file name). */
+  edition: string;
+  stations: EvChargingStation[];
+  /** When the live status was last fetched (ISO 8601); absent in a city without one. */
+  liveUpdated?: string | null;
+}
+
+// Heat relief (cool places, drinking fountains, public toilets)
+/**
+ * One place of the heat-relief layer. Text fields are the source's German, as
+ * given (trimmed, notes clipped); a field the source lacks is left out, to keep
+ * Berlin's ~900 places compact.
+ */
+export interface HeatReliefPlace {
+  kind: HeatReliefKind;
+  lat: number;
+  lon: number;
+  /** Name or location; '' where the source has none (Köln's cool places: the popup names the kind). */
+  name: string;
+  address?: string;
+  /** Opening hours as free text. */
+  hours?: string;
+  /** The source's remark: restrictions, a description, the toilet type. */
+  note?: string;
+  /** Köln's cool places: indoors, air-conditioned or by the water. */
+  setting?: 'indoor' | 'air-conditioned' | 'water';
+  /** Months the place runs, 1–12, where the source states them (Berlin's fountains: May to October). */
+  season?: { from: number; to: number };
+  /** The source says it is out of order now. */
+  outOfOrder?: boolean;
+  accessible?: 'yes' | 'partly' | 'no';
+  /** Fee in euros, 0 when free. */
+  fee?: number;
+  changingTable?: boolean;
+}
+
+export interface HeatReliefData {
+  places: HeatReliefPlace[];
+}
+
+// Street counts (Telraam sensors, Berlin zählt Mobilität)
+/** A street's counts on one day, summed over its hours. */
+export interface TelraamDayCounts {
+  cars: number;
+  bikes: number;
+  pedestrians: number;
+  /** Buses and lorries. */
+  heavy: number;
+}
+
+/** One counted street segment on the day shown. */
+export interface TelraamSegmentCount extends TelraamDayCounts {
+  /** Telraam's segment id: its page is telraam.net/en/location/{id}. */
+  id: number;
+  /** A point halfway along the segment. */
+  lon: number;
+  lat: number;
+  /** The street's OSM name, null where it has none. */
+  street: string | null;
+  /** The Ortsteil (or Bezirk) from the segment's OSM address. */
+  district: string | null;
+  /** Hours of the day the sensor was up at least half the time. Most sensors see only in daylight. */
+  hours: number;
+  /**
+   * The median of the same weekday in the four weeks before, from at least two
+   * such days. null when there were fewer, or when the day shown was counted
+   * for clearly fewer hours than usual (an outage would read as a drop).
+   */
+  usual: (TelraamDayCounts & { days: number }) | null;
+}
+
+export interface TelraamCountsData {
+  /** The local day counted (YYYY-MM-DD), normally yesterday. */
+  date: string;
+  segments: TelraamSegmentCount[];
 }
 
 // Flood status (LHP public API): flood classes at state gauges and regional flood warnings
@@ -869,6 +1770,7 @@ export interface BootstrapData {
   safety: ApiResponse<SafetyReport[]> | null;
   nina: ApiResponse<NinaWarning[]> | null;
   airQuality: ApiResponse<AirQuality | null> | null;
+  airQualityStations: ApiResponse<AirQualityStation[] | null> | null;
   pharmacies: ApiResponse<EmergencyPharmacy[]> | null;
   aeds: ApiResponse<AedLocation[]> | null;
   traffic: ApiResponse<TrafficIncident[]> | null;
@@ -876,10 +1778,13 @@ export interface BootstrapData {
   waterLevels: ApiResponse<WaterLevelData> | null;
   floodStatus: ApiResponse<FloodStatus | null> | null;
   liftOutages: ApiResponse<LiftOutageData | null> | null;
+  electricity: ApiResponse<ElectricityData | null> | null;
+  soilMoisture: ApiResponse<SoilMoistureData | null> | null;
   budget: ApiResponse<BudgetSummary | null> | null;
   appointments: ApiResponse<BuergeramtData> | null;
   laborMarket: ApiResponse<LaborMarketSummary | null> | null;
   wastewater: ApiResponse<WastewaterSummary | null> | null;
+  respiratoryCases: ApiResponse<RespiratoryCases | null> | null;
   populationSummary: ApiResponse<PopulationSummary | null> | null;
   feuerwehr: ApiResponse<FeuerwehrSummary | null> | null;
   pollen: ApiResponse<PollenForecast | null> | null;

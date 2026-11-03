@@ -1,10 +1,12 @@
 /**
- * Lift and escalator outages at a city's transit stations. Today only KVB
- * Köln publishes them: two GeoJSON lists on its open-data service, updated
- * about every 15 minutes, dl-de/zero-2.0 (open.nrw datasets "Aufzüge KVB
- * Köln" and "Fahrtreppen KVB Köln"). See .context/lift-outages.md.
+ * Lift and escalator outages at a city's transit stations. KVB Köln publishes
+ * its own: two GeoJSON lists on its open-data service, updated about every 15
+ * minutes, dl-de/zero-2.0 (open.nrw datasets "Aufzüge KVB Köln" and
+ * "Fahrtreppen KVB Köln"). Deutsche Bahn's FaSta API (CC BY 4.0) adds the DB
+ * stations in every city, but only with DB_API_CLIENT_ID and DB_API_KEY set.
+ * See .context/lift-outages.md.
  */
-import type { LiftOutage, LiftOutageData, LiftOutageSource } from '@city-monitor/shared';
+import type { CityConfig, LiftOutage, LiftOutageData, LiftOutageSource } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveLiftOutages } from '../db/writes.js';
@@ -101,6 +103,121 @@ export function buildLiftOutages(lists: ReadonlyArray<{ outages: LiftOutage[]; u
   return { outages, updated };
 }
 
+// --- DB FaSta (lifts and escalators at DB stations) ---
+
+/** FaSta v2 on the DB API Marketplace (OpenAPI 3.0.1 "FaSta - Station Facilities Status"). */
+export const DB_FASTA_BASE = 'https://apis.deutschebahn.com/db-api-marketplace/apis/fasta/v2';
+
+/**
+ * The DB API Marketplace credentials (subscription to FaSta's free plan), or
+ * null when either is missing or blank: the job then skips DB stations.
+ */
+export function dbFastaCredentials(env: NodeJS.ProcessEnv = process.env): { clientId: string; apiKey: string } | null {
+  const clientId = env.DB_API_CLIENT_ID?.trim();
+  const apiKey = env.DB_API_KEY?.trim();
+  return clientId && apiKey ? { clientId, apiKey } : null;
+}
+
+/**
+ * The out-of-service units in the city's bounding box: `state=INACTIVE` (not
+ * UNKNOWN, which is a unit whose monitoring is down, not one known to be
+ * broken). Array parameters are comma-separated (`style: form, explode: false`),
+ * the area as west, south, east, north.
+ */
+export function fastaFacilitiesUrl(box: CityConfig['boundingBox'], base = DB_FASTA_BASE): string {
+  const area = [box.west, box.south, box.east, box.north].join(',');
+  return `${base}/facilities?type=ELEVATOR,ESCALATOR&state=INACTIVE&area=${area}`;
+}
+
+/** A FaSta `facility` as the OpenAPI schema describes it (only `equipmentnumber`, `state`, `stationnumber`, `type` are required). */
+interface FastaFacility {
+  equipmentnumber?: unknown;
+  type?: unknown;
+  state?: unknown;
+  description?: unknown;
+  stateExplanation?: unknown;
+  stationnumber?: unknown;
+  geocoordX?: unknown;
+  geocoordY?: unknown;
+  operationalResumeDate?: unknown;
+}
+
+const finite = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+const text = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+
+/**
+ * FaSta's `/facilities` answer as outages: the INACTIVE elevators and escalators,
+ * each named after its station (`stationNames`, from `/stations/{n}`; the
+ * station number while a name is unknown). Null when the body is not an array.
+ * Built from the published OpenAPI spec: not yet checked against live data.
+ */
+export function parseFastaFacilities(json: unknown, stationNames: ReadonlyMap<number, string>): LiftOutage[] | null {
+  if (!Array.isArray(json)) return null;
+  const outages: LiftOutage[] = [];
+  for (const f of json as FastaFacility[]) {
+    const id = finite(f.equipmentnumber);
+    const station = finite(f.stationnumber);
+    if (id === null || station === null || f.state !== 'INACTIVE') continue;
+    const kind = f.type === 'ELEVATOR' ? 'lift' : f.type === 'ESCALATOR' ? 'escalator' : null;
+    if (!kind) continue;
+    const resume = text(f.operationalResumeDate);
+    const explanation = text(f.stateExplanation);
+    outages.push({
+      id: `db-${id}`,
+      kind,
+      station: stationNames.get(station) ?? `DB ${station}`,
+      unit: text(f.description),
+      lat: finite(f.geocoordY),
+      lon: finite(f.geocoordX),
+      // FaSta's stock texts ("not available") add nothing to "out of service"
+      info: explanation && !/^not available$/i.test(explanation) ? explanation : null,
+      operator: 'db',
+      resumeDate: /^\d{4}-\d{2}-\d{2}$/.test(resume) ? resume : null,
+    });
+  }
+  return outages;
+}
+
+/** Station names by FaSta station number, kept for the process: names hardly change. */
+const stationNameCache = new Map<number, string>();
+
+function fastaHeaders(creds: { clientId: string; apiKey: string }): Record<string, string> {
+  return { 'DB-Client-ID': creds.clientId, 'DB-Api-Key': creds.apiKey, Accept: 'application/json', 'User-Agent': 'CityMonitor/1.0' };
+}
+
+/** Looks up the names of stations not yet known (`/stations/{n}`); a failed lookup leaves the number. */
+async function resolveStationNames(numbers: Iterable<number>, creds: { clientId: string; apiKey: string }): Promise<void> {
+  for (const n of numbers) {
+    if (stationNameCache.has(n)) continue;
+    try {
+      const res = await log.fetch(`${DB_FASTA_BASE}/stations/${n}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), headers: fastaHeaders(creds) });
+      if (!res.ok) continue;
+      const body = await res.json() as { name?: unknown };
+      if (typeof body.name === 'string' && body.name.trim()) stationNameCache.set(n, body.name.trim());
+    } catch {
+      // the station number stands in until a later run finds the name
+    }
+  }
+}
+
+let warnedNoDbCredentials = false;
+
+async function fetchFastaOutages(city: CityConfig, creds: { clientId: string; apiKey: string }): Promise<LiftOutage[] | null> {
+  const res = await log.fetch(fastaFacilitiesUrl(city.boundingBox), { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), headers: fastaHeaders(creds) });
+  if (!res.ok) {
+    log.warn(`${city.id}: DB FaSta returned ${res.status}`);
+    return null;
+  }
+  const json: unknown = await res.json();
+  if (!Array.isArray(json)) {
+    log.warn(`${city.id}: DB FaSta answer is not a list of facilities`);
+    return null;
+  }
+  const stations = new Set((json as FastaFacility[]).map((f) => finite(f.stationnumber)).filter((n): n is number => n !== null));
+  await resolveStationNames(stations, creds);
+  return parseFastaFacilities(json, stationNameCache);
+}
+
 async function fetchKvbList(cityId: string, url: string, kind: LiftOutage['kind']) {
   const response = await log.fetch(url, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -115,24 +232,58 @@ async function fetchKvbList(cityId: string, url: string, kind: LiftOutage['kind'
   return parsed;
 }
 
-/** The city's outages, or null when a list failed: a missing list must not read as "all working". */
-async function fetchOutages(cityId: string, source: LiftOutageSource): Promise<LiftOutageData | null> {
+type OutageList = { outages: LiftOutage[]; updated: string | null };
+
+/** The KVB lists, or null when one failed. */
+async function fetchKvbOutages(cityId: string, source: LiftOutageSource): Promise<OutageList[] | null> {
   switch (source.provider) {
     case 'kvb': {
       const lists = await Promise.all(KVB_LISTS.map(([kind, slug]) => fetchKvbList(cityId, `${source.url}/${slug}/json`, kind)));
-      if (lists.some((l) => l === null)) return null;
-      return buildLiftOutages(lists as Array<{ outages: LiftOutage[]; updated: string | null }>);
+      return lists.some((l) => l === null) ? null : lists as OutageList[];
     }
   }
 }
 
+/**
+ * Whether the job fetches anything for the city: KVB's lists, or DB FaSta when
+ * its credentials are set (the city feature `stationLifts` follows the config
+ * alone, as Geofox's transit does).
+ */
+export function ingestsLiftOutages(city: CityConfig, env: NodeJS.ProcessEnv = process.env): boolean {
+  return city.dataSources.liftOutages !== undefined || (city.dataSources.stationLifts !== undefined && dbFastaCredentials(env) !== null);
+}
+
+/**
+ * The city's outages from every source it has, or null when one failed: a
+ * missing list must not read as "all working".
+ */
+async function fetchOutages(city: CityConfig, creds: { clientId: string; apiKey: string } | null): Promise<LiftOutageData | null> {
+  const lists: OutageList[] = [];
+  if (city.dataSources.liftOutages) {
+    const kvb = await fetchKvbOutages(city.id, city.dataSources.liftOutages);
+    if (!kvb) return null;
+    lists.push(...kvb);
+  }
+  if (city.dataSources.stationLifts && creds) {
+    const db = await fetchFastaOutages(city, creds);
+    if (!db) return null;
+    // FaSta gives no list time
+    lists.push({ outages: db, updated: null });
+  }
+  return buildLiftOutages(lists);
+}
+
 export function createLiftOutageIngestion(cache: Cache, db: Db | null = null) {
   return async function ingestLiftOutages(): Promise<void> {
+    const creds = dbFastaCredentials();
     for (const city of getActiveCities()) {
-      const source = city.dataSources.liftOutages;
-      if (!source) continue;
+      if (city.dataSources.stationLifts && !creds && !warnedNoDbCredentials) {
+        warnedNoDbCredentials = true;
+        log.info('DB_API_CLIENT_ID or DB_API_KEY not set, skipping DB station lifts (FaSta)');
+      }
+      if (!ingestsLiftOutages(city)) continue;
       try {
-        const data = await fetchOutages(city.id, source);
+        const data = await fetchOutages(city, creds);
         if (!data) continue;
         cache.set(CK.liftOutages(city.id), data, LIFT_OUTAGES_TTL_SECONDS);
         if (db) {
@@ -143,6 +294,7 @@ export function createLiftOutageIngestion(cache: Cache, db: Db | null = null) {
           }
         }
         const lifts = data.outages.filter((o) => o.kind === 'lift').length;
+        if (city.dataSources.stationLifts && creds) log.info(`${city.id}: ${data.outages.filter((o) => o.operator === 'db').length} at DB stations`);
         log.info(`${city.id}: ${lifts} lift(s) and ${data.outages.length - lifts} escalator(s) out of service`);
       } catch (err) {
         log.error(`${city.id} lift outages failed`, err);

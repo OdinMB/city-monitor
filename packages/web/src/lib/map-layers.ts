@@ -1,6 +1,6 @@
 import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
 import type {
-  DataLayer, EmergencySubLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
+  DataLayer, EmergencySubLayer, HeatReliefSubLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
 } from '../hooks/useCommandCenter.js';
 import { METRIC_LAYER, socialAtlasOf } from './social-atlas.js';
 
@@ -15,6 +15,8 @@ export interface CityLayers {
   emergencies: readonly EmergencySubLayer[];
   traffic: readonly TrafficSubLayer[];
   water: readonly WaterSubLayer[];
+  /** Cool places, drinking fountains, public toilets: the lists the city has. */
+  heatRelief: readonly HeatReliefSubLayer[];
   /** The noise maps (WMS). */
   noise: readonly NoiseLayer[];
   /** Live noise sensors. */
@@ -43,29 +45,41 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
   const has = (feature: CityFeature) => features.includes(feature);
 
   const news = present<NewsSubLayer>([['news', has('news')], ['police', has('police')]]);
-  const emergencies = present<EmergencySubLayer>([['pharmacies', has('pharmacies')], ['aeds', has('aeds')]]);
+  const emergencies = present<EmergencySubLayer>([['pharmacies', has('pharmacies')], ['aeds', has('aeds')], ['hospitals', has('hospitals')]]);
   // TomTom traffic incidents cover every city.
-  const traffic = present<TrafficSubLayer>([['public-transport', has('transit')], ['incidents', true], ['roadworks', has('roadworks')]]);
-  const water = present<WaterSubLayer>([['levels', has('waterLevels')], ['bathing', has('bathing')]]);
+  const traffic = present<TrafficSubLayer>([
+    ['public-transport', has('transit')], ['incidents', true], ['congestion', has('trafficFlowMap')], ['roadworks', has('roadworks')],
+    ['car-counts', has('carCounts')], ['bike-counts', has('bikeCounts')], ['telraam', has('telraamCounts')],
+  ]);
+  const water = present<WaterSubLayer>([['levels', has('waterLevels')], ['bathing', has('bathing')], ['temperature', has('waterTemperature')]]);
+  const heatRelief = present<HeatReliefSubLayer>([
+    ['cool', has('coolPlaces')], ['fountains', has('drinkingFountains')], ['toilets', has('publicToilets')],
+  ]);
   const noise = present<NoiseLayer>([
     ['total', has('noiseTotal')], ['road', has('noiseMap')], ['rail', has('noiseMap')], ['air', has('noiseMap')],
   ]);
   const noiseLive = has('noiseSensors');
   const social = present<SocialLayer>([...socialAtlasLayers(id).map((key) => [key, has('socialAtlas')] as const), ['rent', has('rentMap')]]);
-  // The political layer colours district outlines, which only some cities ship,
-  // and each view only where its members map onto Bezirke: district mayors,
+  // The representatives' views colour district outlines, which only some cities
+  // ship, and each only where its members map onto Bezirke: district mayors,
   // Bundestag constituencies named after Bezirke (not Köln's "Köln I"), state
-  // members grouped by Bezirk.
-  const political = has('political') && has('politicalMap')
-    ? present<PoliticalLayer>([
-      ['bezirke', has('districtMayors')], ['bundestag', has('bundestagByDistrict')], ['landesparlament', has('stateByDistrict')],
-    ])
-    : [];
+  // members grouped by Bezirk. The election view brings its own areas.
+  const onDistricts = has('political') && has('politicalMap');
+  const political = present<PoliticalLayer>([
+    ['bezirke', onDistricts && has('districtMayors')], ['bundestag', onDistricts && has('bundestagByDistrict')],
+    ['landesparlament', onDistricts && has('stateByDistrict')], ['elections', has('electionResults')],
+  ]);
 
   const layers = new Set(present<DataLayer>([
     ['warnings', has('nina')],
     ['news', news.length > 0],
     ['traffic', true],
+    ['bike-sharing', has('bikeSharing')],
+    ['parking', has('parking')],
+    ['accidents', has('trafficAccidents')],
+    ['crime', has('crimeAtlas')],
+    ['ev-charging', has('evCharging')],
+    ['heat-relief', heatRelief.length > 0],
     ['weather', true],
     ['air-quality', true],
     ['noise', noise.length > 0 || noiseLive],
@@ -74,9 +88,24 @@ export function cityLayers({ id, features }: Pick<WebCityConfig, 'features'> & {
     ['social', social.length > 0],
     ['population', has('population')],
     ['political', political.length > 0],
+    ['reports', has('citizenReports')],
+    ['trees', has('streetTrees')],
   ]));
 
-  return { layers, news, emergencies, traffic, water, noise, noiseLive, social, political };
+  return { layers, news, emergencies, traffic, water, heatRelief, noise, noiseLive, social, political };
+}
+
+/**
+ * The layers without the hospitals sub-layer when the server holds no
+ * hospital for the city (a source switched off, like the Klinik-Atlas with
+ * KLINIK_ATLAS=false), and without the emergencies layer if that left it empty.
+ */
+export function withoutEmptyHospitals(layers: CityLayers, hasHospitals: boolean): CityLayers {
+  if (hasHospitals || !layers.emergencies.includes('hospitals')) return layers;
+  const emergencies = layers.emergencies.filter((s) => s !== 'hospitals');
+  const kept = new Set(layers.layers);
+  if (emergencies.length === 0) kept.delete('emergencies');
+  return { ...layers, emergencies, layers: kept };
 }
 
 /** The selected sub-layers the city has, or every one it has when none of the selected ones is there. */

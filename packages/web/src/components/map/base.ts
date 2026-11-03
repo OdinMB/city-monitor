@@ -20,6 +20,16 @@ import {
   getNoiseWmsUrl,
   getNoiseWmsAttribution,
   getNoiseWmsMinZoom,
+  TRAFFIC_FLOW_SOURCE,
+  TRAFFIC_FLOW_LAYER,
+  getTrafficFlowWmsUrl,
+  getTrafficFlowAttribution,
+  getTrafficFlowMinZoom,
+  STREET_TREES_SOURCE,
+  STREET_TREES_LAYER,
+  STREET_TREES_MIN_ZOOM,
+  getStreetTreesWmsUrl,
+  getStreetTreesAttribution,
 } from './constants.js';
 import { API_BASE } from '../../lib/api.js';
 
@@ -46,6 +56,7 @@ function isKeptLayer(layer: LayerSpecification): boolean {
     id.startsWith('weather-') ||
     id.startsWith('rent-map-') ||
     id.startsWith('noise-') ||
+    id.startsWith('street-trees-') ||
     id.startsWith('social-atlas-') ||
     id.startsWith('population-')
   );
@@ -122,6 +133,7 @@ export function simplifyMap(map: maplibregl.Map) {
       !layer.id.startsWith('weather-') &&
       !layer.id.startsWith('rent-map-') &&
       !layer.id.startsWith('noise-') &&
+      !layer.id.startsWith('street-trees-') &&
       !layer.id.startsWith('social-atlas-') &&
       !layer.id.startsWith('population-')
     ) {
@@ -212,6 +224,82 @@ export function setNoiseOverlay(map: maplibregl.Map, visible: boolean, cityId: s
       source: NOISE_SOURCE,
       paint: {
         'raster-opacity': 0.7,
+      },
+    }, beforeId);
+  }
+}
+
+/**
+ * The city's live congestion map (the traffic layer's congestion sub-layer).
+ * A new `refresh` swaps the tile URL in place so the map shows the newest
+ * state without the layer blinking out; another city's map is replaced.
+ */
+export function setTrafficFlowOverlay(map: maplibregl.Map, visible: boolean, cityId: string, refresh: number) {
+  const url = visible ? getTrafficFlowWmsUrl(cityId, refresh) : null;
+  const source = map.getSource(TRAFFIC_FLOW_SOURCE) as maplibregl.RasterTileSource | undefined;
+  const base = (u: string | undefined) => u?.replace(/&t=\d+$/, '');
+  if (source && (!url || base(source.tiles?.[0]) !== base(url))) {
+    if (map.getLayer(TRAFFIC_FLOW_LAYER)) map.removeLayer(TRAFFIC_FLOW_LAYER);
+    map.removeSource(TRAFFIC_FLOW_SOURCE);
+  }
+  if (!url) return;
+  const current = map.getSource(TRAFFIC_FLOW_SOURCE) as maplibregl.RasterTileSource | undefined;
+  if (current) {
+    if (current.tiles?.[0] !== url) current.setTiles([url]);
+  } else {
+    const minzoom = getTrafficFlowMinZoom(cityId);
+    map.addSource(TRAFFIC_FLOW_SOURCE, {
+      type: 'raster',
+      tiles: [url],
+      tileSize: 256,
+      attribution: getTrafficFlowAttribution(cityId),
+      ...(minzoom !== undefined && { minzoom }),
+    });
+  }
+  if (!map.getLayer(TRAFFIC_FLOW_LAYER)) {
+    // Under the incident lines and roadworks, which say why a road is slow
+    const beforeId = ['traffic-line-casing', 'construction-line-casing', 'construction-points'].find((id) => map.getLayer(id));
+    map.addLayer({
+      id: TRAFFIC_FLOW_LAYER,
+      type: 'raster',
+      source: TRAFFIC_FLOW_SOURCE,
+      paint: { 'raster-opacity': 0.85 },
+    }, beforeId);
+  }
+}
+
+/**
+ * The city's street-tree register as a raster, from STREET_TREES_MIN_ZOOM on
+ * (no tiles are requested further out). Kept while it shows this city's
+ * register, replaced on a city switch.
+ */
+export function setStreetTreesOverlay(map: maplibregl.Map, visible: boolean, cityId: string) {
+  const url = visible ? getStreetTreesWmsUrl(cityId) : null;
+  const source = map.getSource(STREET_TREES_SOURCE) as maplibregl.RasterTileSource | undefined;
+  if (source && (!url || source.tiles?.[0] !== url)) {
+    if (map.getLayer(STREET_TREES_LAYER)) map.removeLayer(STREET_TREES_LAYER);
+    map.removeSource(STREET_TREES_SOURCE);
+  }
+  if (!url) return;
+  if (!map.getSource(STREET_TREES_SOURCE)) {
+    map.addSource(STREET_TREES_SOURCE, {
+      type: 'raster',
+      tiles: [url],
+      tileSize: 256,
+      minzoom: STREET_TREES_MIN_ZOOM,
+      attribution: getStreetTreesAttribution(cityId),
+    });
+  }
+  if (!map.getLayer(STREET_TREES_LAYER)) {
+    // Beneath the first point layer, so markers of other layers stay clickable on top of the dots
+    const beforeId = map.getStyle()?.layers?.find((l) => l.type === 'symbol' || l.type === 'circle')?.id;
+    map.addLayer({
+      id: STREET_TREES_LAYER,
+      type: 'raster',
+      source: STREET_TREES_SOURCE,
+      minzoom: STREET_TREES_MIN_ZOOM,
+      paint: {
+        'raster-opacity': 0.85,
       },
     }, beforeId);
   }

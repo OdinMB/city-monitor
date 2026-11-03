@@ -41,9 +41,9 @@ const SERVICES: Service[] = [
   },
   {
     name: 'City geodata services',
-    hosts: ['gdi.berlin.de', 'geodienste.hamburg.de', 'www.wms.nrw.de'],
-    purpose: 'Noise and rent map layers',
-    data: "Only while the noise map or the rent map layer is switched on, your browser loads those map images directly from the official geodata service of the city or its state, exposing your IP address to it.",
+    hosts: ['gdi.berlin.de', 'geodienste.hamburg.de', 'www.wms.nrw.de', 'geoportal.stadt-koeln.de'],
+    purpose: 'Noise, rent, traffic-flow map and street tree layers',
+    data: "Only while the noise map, the rent map, the live traffic-flow map or the street tree layer is switched on, your browser loads those map images directly from the official geodata service of the city or its state, exposing your IP address to it. When you click a tree, your browser asks the city's service for that tree's details, which tells it the map position you clicked.",
   },
 ];
 

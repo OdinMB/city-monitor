@@ -16,8 +16,15 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData, RespiratoryCases } from '@city-monitor/shared';
+import type { PoliticalVote, CrimeAtlasData } from '@city-monitor/shared';
+import type { HeatReliefData } from '@city-monitor/shared';
+import type { TelraamCountsData } from '@city-monitor/shared';
+import type { ParkingData, WaterTemperatureData } from '@city-monitor/shared';
+import type { ElectionResults } from '@city-monitor/shared';
+import type { HospitalData } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
+import type { EvChargingRegister } from '../lib/ev-charging.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
@@ -91,6 +98,10 @@ export async function saveWastewater(db: Db, cityId: string, data: WastewaterSum
   await saveSnapshot(db, cityId, 'lageso-wastewater', data);
 }
 
+export async function saveRespiratoryCases(db: Db, cityId: string, data: RespiratoryCases): Promise<void> {
+  await saveSnapshot(db, cityId, 'rki-ifsg-cases', data);
+}
+
 export async function saveBathingSpots(db: Db, cityId: string, spots: BathingSpot[]): Promise<void> {
   await saveSnapshot(db, cityId, 'lageso-bathing', spots);
 }
@@ -113,6 +124,66 @@ export async function savePollen(db: Db, cityId: string, data: PollenForecast): 
 
 export async function saveLiftOutages(db: Db, cityId: string, data: LiftOutageData): Promise<void> {
   await saveSnapshot(db, cityId, 'kvb-lift-outages', data);
+}
+
+export async function saveWaterTemperature(db: Db, cityId: string, data: WaterTemperatureData): Promise<void> {
+  await saveSnapshot(db, cityId, 'wasserportal-temp', data);
+}
+
+export async function saveParking(db: Db, cityId: string, data: ParkingData): Promise<void> {
+  await saveSnapshot(db, cityId, 'parking', data);
+}
+
+export async function saveBikeSharing(db: Db, cityId: string, data: BikeSharingData): Promise<void> {
+  await saveSnapshot(db, cityId, 'bike-sharing', data);
+}
+
+export async function saveElectricity(db: Db, cityId: string, data: ElectricityData): Promise<void> {
+  await saveSnapshot(db, cityId, 'smard-electricity', data);
+}
+
+export async function saveSoilMoisture(db: Db, cityId: string, data: SoilMoistureData): Promise<void> {
+  await saveSnapshot(db, cityId, 'dwd-soil-moisture', data);
+}
+
+export async function saveAirQualityStations(db: Db, cityId: string, data: AirQualityStation[]): Promise<void> {
+  await saveSnapshot(db, cityId, 'uba-airquality', data);
+}
+
+export async function saveCitizenReports(db: Db, cityId: string, data: CitizenReportData): Promise<void> {
+  await saveSnapshot(db, cityId, 'open311-reports', data);
+}
+
+export async function saveTrafficAccidents(db: Db, cityId: string, data: TrafficAccidentData): Promise<void> {
+  await saveSnapshot(db, cityId, 'unfallatlas-accidents', data);
+}
+
+export async function saveCrimeAtlas(db: Db, cityId: string, data: CrimeAtlasData): Promise<void> {
+  await saveSnapshot(db, cityId, 'kriminalitaetsatlas', data);
+}
+
+export async function saveTrafficCounts(db: Db, cityId: string, data: TrafficCountData): Promise<void> {
+  await saveSnapshot(db, cityId, 'traffic-counts', data);
+}
+
+export async function saveEvChargingRegister(db: Db, cityId: string, data: EvChargingRegister): Promise<void> {
+  await saveSnapshot(db, cityId, 'bnetza-charging', data);
+}
+
+export async function saveHeatRelief(db: Db, cityId: string, data: HeatReliefData): Promise<void> {
+  await saveSnapshot(db, cityId, 'heat-relief', data);
+}
+
+export async function saveTelraamCounts(db: Db, cityId: string, data: TelraamCountsData): Promise<void> {
+  await saveSnapshot(db, cityId, 'telraam-counts', data);
+}
+
+export async function saveElectionResults(db: Db, cityId: string, data: { results: ElectionResults; geojson: unknown }): Promise<void> {
+  await saveSnapshot(db, cityId, 'election-results', data);
+}
+
+export async function saveHospitals(db: Db, cityId: string, data: HospitalData): Promise<void> {
+  await saveSnapshot(db, cityId, 'hospitals', data);
 }
 
 export async function saveFloodStatus(db: Db, cityId: string, data: FloodStatus): Promise<void> {
@@ -153,6 +224,10 @@ export async function savePoliticalDistricts(
   districts: PoliticalDistrict[],
 ): Promise<void> {
   await saveSnapshot(db, cityId, `abgwatch-${level}` as SnapshotType, districts);
+}
+
+export async function savePoliticalVotes(db: Db, cityId: string, votes: PoliticalVote[]): Promise<void> {
+  await saveSnapshot(db, cityId, 'abgwatch-votes', votes);
 }
 
 // ---------------------------------------------------------------------------

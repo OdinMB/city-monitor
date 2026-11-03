@@ -1,12 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import type { CityFeature } from '@city-monitor/shared';
-import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from './map-layers.js';
+import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers, withoutEmptyHospitals } from './map-layers.js';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
 import { koeln } from '../config/cities/koeln.js';
 import { muenchen } from '../config/cities/muenchen.js';
 
 const withFeatures = (...features: CityFeature[]) => cityLayers({ features });
+
+describe('withoutEmptyHospitals', () => {
+  it('drops the hospitals sub-layer while the server has none, and the layer when nothing is left', () => {
+    const both = withFeatures('pharmacies', 'hospitals');
+    expect(withoutEmptyHospitals(both, true)).toBe(both);
+    expect(withoutEmptyHospitals(both, false).emergencies).toEqual(['pharmacies']);
+    expect(withoutEmptyHospitals(both, false).layers.has('emergencies')).toBe(true);
+    const alone = withoutEmptyHospitals(withFeatures('hospitals'), false);
+    expect(alone.emergencies).toEqual([]);
+    expect(alone.layers.has('emergencies')).toBe(false);
+  });
+});
 
 describe('cityLayers', () => {
   it('gives a city without features only the layers every city has, each with what every city has', () => {
@@ -25,16 +37,17 @@ describe('cityLayers', () => {
   it('gives Berlin, which has every feature, every layer and sub-layer', () => {
     const all = cityLayers(berlin);
     expect([...all.layers].sort()).toEqual([
-      'air-quality', 'emergencies', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'warnings', 'water', 'weather',
+      'accidents', 'air-quality', 'bike-sharing', 'crime', 'emergencies', 'ev-charging', 'heat-relief', 'news', 'noise', 'political', 'population', 'social', 'traffic', 'trees', 'warnings', 'water', 'weather',
     ]);
+    expect(all.heatRelief).toEqual(['cool', 'fountains', 'toilets']);
     expect(all.news).toEqual(['news', 'police']);
-    expect(all.emergencies).toEqual(['pharmacies', 'aeds']);
-    expect(all.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
-    expect(all.water).toEqual(['levels', 'bathing']);
+    expect(all.emergencies).toEqual(['pharmacies', 'aeds', 'hospitals']);
+    expect(all.traffic).toEqual(['public-transport', 'incidents', 'roadworks', 'telraam']);
+    expect(all.water).toEqual(['levels', 'bathing', 'temperature']);
     expect(all.noise).toEqual(['total', 'road', 'rail', 'air']);
     expect(all.noiseLive).toBe(true);
     expect(all.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty', 'rent']);
-    expect(all.political).toEqual(['bezirke', 'bundestag', 'landesparlament']);
+    expect(all.political).toEqual(['bezirke', 'bundestag', 'landesparlament', 'elections']);
   });
 
   it('leaves out what Hamburg has no source for', () => {
@@ -42,12 +55,13 @@ describe('cityLayers', () => {
     // The Sozialmonitoring has all four indicators, and Hamburg has a rent map
     expect(hh.social).toEqual(['unemployment', 'single-parent', 'welfare', 'child-poverty', 'rent']);
     expect(hh.layers.has('population')).toBe(true);
-    // Geofox transit: a marker where an announcement's first stop has a coordinate
-    expect(hh.traffic).toEqual(['public-transport', 'incidents', 'roadworks']);
+    // Geofox transit: a marker where an announcement's first stop has a coordinate; the
+    // Verkehrslage congestion map and the car and bicycle counters
+    expect(hh.traffic).toEqual(['public-transport', 'incidents', 'congestion', 'roadworks', 'car-counts', 'bike-counts']);
     expect(hh.water).toEqual(['levels', 'bathing']);
     expect(hh.noise).toEqual(['road', 'rail', 'air']);
     expect(hh.noiseLive).toBe(false);
-    expect(hh.political).toEqual(['bundestag']);
+    expect(hh.political).toEqual(['bundestag', 'elections']);
   });
 
   it('leaves out the social-atlas indicators a city\'s source lacks', () => {
@@ -58,15 +72,78 @@ describe('cityLayers', () => {
     expect(cityLayers(muenchen).layers.has('population')).toBe(true);
   });
 
+  it('gives the citizen-reports layer to the cities with an Open311 source, Köln and München', () => {
+    expect(cityLayers(koeln).layers.has('reports')).toBe(true);
+    expect(cityLayers(muenchen).layers.has('reports')).toBe(true);
+    expect(cityLayers(berlin).layers.has('reports')).toBe(false);
+    expect(cityLayers(hamburg).layers.has('reports')).toBe(false);
+  });
+
+  it('gives the trees layer to the cities with a tree register, all but München', () => {
+    expect(cityLayers(berlin).layers.has('trees')).toBe(true);
+    expect(cityLayers(hamburg).layers.has('trees')).toBe(true);
+    expect(cityLayers(koeln).layers.has('trees')).toBe(true);
+    expect(cityLayers(muenchen).layers.has('trees')).toBe(false);
+  });
+
   it('shows a parent layer when any one of its sub-layers is there', () => {
     expect(withFeatures('police').layers.has('news')).toBe(true);
     expect(withFeatures('police').news).toEqual(['police']);
     expect(withFeatures('bathing').layers.has('water')).toBe(true);
+    expect(withFeatures('waterTemperature').water).toEqual(['temperature']);
     expect(withFeatures('noiseSensors').layers.has('noise')).toBe(true);
     expect(withFeatures('rentMap').social).toEqual(['rent']);
     expect(withFeatures('aeds').layers.has('emergencies')).toBe(true);
     expect(withFeatures('aeds').emergencies).toEqual(['aeds']);
     expect(withFeatures('pharmacies').emergencies).toEqual(['pharmacies']);
+  });
+
+  it('gives the traffic layer a congestion map and counters only where the city has them', () => {
+    expect(withFeatures('trafficFlowMap').traffic).toEqual(['incidents', 'congestion']);
+    expect(withFeatures('bikeCounts').traffic).toEqual(['incidents', 'bike-counts']);
+    expect(withFeatures('carCounts', 'bikeCounts').traffic).toEqual(['incidents', 'car-counts', 'bike-counts']);
+    for (const city of [berlin, koeln, muenchen]) {
+      expect(cityLayers(city).traffic.filter((s) => ['congestion', 'car-counts', 'bike-counts'].includes(s)), city.id).toEqual([]);
+    }
+  });
+
+  it('shows the bike-sharing layer in every city that has a system, and not without one', () => {
+    for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('bike-sharing'), city.id).toBe(true);
+    expect(withFeatures('bikeSharing').layers.has('bike-sharing')).toBe(true);
+    expect(withFeatures().layers.has('bike-sharing')).toBe(false);
+  });
+
+  it('shows the parking layer only in Hamburg, the one city with a live car-park feed', () => {
+    expect(cityLayers(hamburg).layers.has('parking')).toBe(true);
+    for (const city of [berlin, koeln, muenchen]) expect(cityLayers(city).layers.has('parking'), city.id).toBe(false);
+    expect(withFeatures('parking').layers.has('parking')).toBe(true);
+  });
+
+  it('shows the accident layer in every city with Unfallatlas data, and not without', () => {
+    for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('accidents'), city.id).toBe(true);
+    expect(withFeatures('trafficAccidents').layers.has('accidents')).toBe(true);
+    expect(withFeatures().layers.has('accidents')).toBe(false);
+  });
+
+  it('shows the crime layer only where the city has a crime atlas (Berlin)', () => {
+    expect(cityLayers(berlin).layers.has('crime')).toBe(true);
+    for (const city of [hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('crime'), city.id).toBe(false);
+    expect(withFeatures('crimeAtlas').layers.has('crime')).toBe(true);
+  });
+
+  it('shows the EV charging layer in every city with the register, and not without it', () => {
+    for (const city of [berlin, hamburg, koeln, muenchen]) expect(cityLayers(city).layers.has('ev-charging'), city.id).toBe(true);
+    expect(withFeatures('evCharging').layers.has('ev-charging')).toBe(true);
+    expect(withFeatures().layers.has('ev-charging')).toBe(false);
+  });
+
+  it('gives each city the heat-relief lists it has, and no layer without one', () => {
+    expect(cityLayers(koeln).heatRelief).toEqual(['cool', 'fountains', 'toilets']);
+    expect(cityLayers(muenchen).heatRelief).toEqual(['fountains', 'toilets']);
+    expect(cityLayers(hamburg).heatRelief).toEqual(['fountains']);
+    expect(withFeatures('publicToilets').layers.has('heat-relief')).toBe(true);
+    expect(withFeatures().layers.has('heat-relief')).toBe(false);
+    expect(withFeatures().heatRelief).toEqual([]);
   });
 
   it('shows the political layer only with political data, and the district-mayor and state views only with theirs', () => {
@@ -79,6 +156,13 @@ describe('cityLayers', () => {
   it('leaves out the Bundestag view where constituencies are not named after Bezirke', () => {
     expect(withFeatures('political', 'districtMayors', 'mayor', 'politicalMap').political).toEqual(['bezirke']);
     expect(withFeatures('political', 'politicalMap').layers.has('political')).toBe(false);
+  });
+
+  it('shows the election view wherever there are election results, which bring their own areas', () => {
+    expect(withFeatures('electionResults').political).toEqual(['elections']);
+    expect(withFeatures('electionResults').layers.has('political')).toBe(true);
+    expect(cityLayers(muenchen).political).toEqual(['elections']);
+    expect(cityLayers(koeln).political).not.toContain('elections');
   });
 
   it('shows no political layer without district outlines', () => {

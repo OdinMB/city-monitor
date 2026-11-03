@@ -6,14 +6,25 @@ import { isolate } from '../../../lib/bidi.js';
 import { trafficPopupHtml, constructionPopupHtml } from './traffic';
 import { transitPopupHtml } from './transit';
 import { warningPopupHtml } from './warnings';
-import { waterLevelPopupHtml, bathingPopupHtml } from './water';
-import { pharmacyPopupHtml, aedPopupHtml, formatPharmacyDuty } from './emergencies';
+import { waterLevelPopupHtml, bathingPopupHtml, waterTemperaturePopupHtml } from './water';
+import { pharmacyPopupHtml, aedPopupHtml, hospitalPopupHtml, formatPharmacyDuty } from './emergencies';
 import { noisePopupHtml } from './noise-sensors';
+import { bikeStationPopupHtml } from './bike-sharing';
+import { accidentPopupHtml } from './traffic-accidents';
+import { trafficCountPopupHtml } from './traffic-counts';
+import { evStationPopupHtml } from './ev-charging';
+import type { EvChargingStation } from '../../../lib/api.js';
+import { heatReliefPopupHtml } from './heat-relief';
+import { telraamPopupHtml } from './telraam-counts';
 import { socialAtlasPopupHtml, populationPopupHtml } from './choropleth';
 import { SOCIAL_ATLAS } from '../../../lib/social-atlas.js';
 import { buildPoliticalPopupHtml } from './political';
 import { newsPopupHtml, safetyPopupHtml } from './news-safety';
 import { aqPopupHtml } from './air-quality';
+import { citizenReportPopupHtml } from './citizen-reports';
+import { streetTreePopupHtml } from './street-trees';
+import type { StreetTree } from '../../../lib/street-trees.js';
+import { parkingPopupHtml } from './parking';
 
 /**
  * Map popups are HTML strings built outside React, so they look their words
@@ -61,9 +72,46 @@ const BATHING = {
   waterTemp: 21, visibility: 1.5, quality: 'good', algae: null, advisory: null, classification: 'ausgezeichnet',
   detailUrl: 'https://www.berlin.de/lageso/gesundheit/gesundheitsschutz/badegewaesser/', inSeason: false,
 };
+// Measured on an earlier day, so the popup shows the date with the time
+const WATER_TEMP = {
+  name: 'Fischerinsel', waterBody: 'Spree', temperature: 9.3, measuredAt: '2026-03-03T02:45:00+01:00',
+  url: 'https://wasserportal.berlin.de/station.php?anzeige=g&thema=owt&station=139',
+};
 const PHARMACY = { name: 'Apotheke am Markt', address: 'Marktstraße 1', phone: '030 123456', validFrom: '2026-03-03T09:00:00', validUntil: '2026-03-04T09:00:00' };
 const AED = { indoor: true, description: 'Im Foyer', operator: 'Bezirksamt Mitte', openingHours: 'Mo-Fr 08:00-18:00', access: 'customers' };
+const HOSPITAL = {
+  name: 'Klinikum Nord', address: 'Tangstedter Landstraße 400, 22417 Hamburg', tier: 'extended', url: 'https://example.org/',
+  beds: 820, children: true, strokeUnit: true, chestPainUnit: true, trauma: true, source: 'klinik-atlas', atlasDate: '2026-10-27',
+};
 const NOISE = { id: 4711, laeq: 58.2, laMin: 40.1, laMax: 75.3 };
+// A Unix time on an earlier day, so the popup shows the date with the time
+const BIKE = { name: 'S Halensee (Kurfürstendamm)', bikes: 3, docks: 5, reportedAt: Date.UTC(2026, 2, 3, 8, 0) / 1000, system: 'nextbike Berlin', operator: 'nextbike' };
+// Seriously injured, May, Friday (6) 17–18 h, turning accident with a turning/crossing vehicle, bicycle and car
+const ACCIDENT = { s: 2, m: 5, w: 6, h: 17, k: 5, t: 2, p: 1 | 2 };
+// An hour on an earlier day, 64 vehicles where 137 are usual (-53 %)
+const COUNT = { mode: 'car', site: '0113', name: 'Shanghaiallee / Überseeallee', hour: '2026-03-03T08:00:00.000Z', count: 64, typical: 137, counters: 3 };
+// A fast charger with a live status, its second point busy since an earlier day
+const EV: EvChargingStation = {
+  id: '1009424', lat: 53.54938, lon: 10.00471, operator: 'HEnW-Mobil', address: 'Altstädter Str. 2', points: 2, maxKw: 150, fast: true,
+  plugs: ['ccs', 'type2'],
+  live: [
+    { id: 'DE*HHM*E977*01', status: 'available', since: null },
+    { id: 'DE*HHM*E977*02', status: 'occupied', since: Date.UTC(2026, 2, 3, 8, 0) / 1000 },
+  ],
+};
+const EV_NORMAL: EvChargingStation = { ...EV, maxKw: 22, fast: false, plugs: ['type2'], live: undefined };
+// Heat-relief places as their map features carry them; a summer and a winter day for the fountain's season
+const FOUNTAIN = { kind: 'fountain', name: 'Trinkbrunnen Alexanderplatz', address: 'Alexanderplatz', seasonFrom: 4, seasonTo: 10, outOfOrder: false, lat: 52.52, lon: 13.41 };
+const TOILET = { kind: 'toilet', name: 'City-Toilette Hackescher Markt', hours: 'Mo-So 0-24 Uhr', note: 'Münzeinwurf', fee: 0.5, accessible: 'yes', changingTable: true, lat: 52.52, lon: 13.4 };
+const COOL = { kind: 'cool', name: '', setting: 'air-conditioned', address: 'Rathaus Köln', lat: 50.94, lon: 6.96 };
+const JULY = new Date(2026, 6, 15);
+const NOVEMBER = new Date(2026, 10, 3);
+// A Telraam segment on Monday 2 November 2026, with its usual Monday
+const TELRAAM = {
+  id: 9000001786, street: 'Oranienstraße', district: 'Kreuzberg', date: '2026-11-02', hours: 8,
+  cars: 2300, bikes: 700, pedestrians: 300, heavy: 400,
+  usualCars: 2000, usualBikes: 800, usualPedestrians: 300, usualHeavy: 400, usualDays: 3,
+};
 const SOCIAL: SocialAtlasFeatureProps = {
   plrId: '01100101', plrName: 'Stülerstraße', bezId: '01', population: 3400, statusIndex: 2, statusLabel: 'mittel',
   unemployment: 5.2, singleParent: 20.1, welfare: 10.3, childPoverty: 15.4,
@@ -76,6 +124,20 @@ const DISTRICTS: PoliticalDistrict[] = [{
 const NEWS = { title: 'Tram M10 eingestellt', sourceName: 'rbb24', categoryLabel: 'Verkehr', url: 'https://www.rbb24.de/a/1', locationLabel: '', importance: 0.5 };
 const SAFETY = { title: 'Einbruch in Wohnung', district: 'Mitte', url: 'https://www.berlin.de/polizei/1', locationLabel: '' };
 const AQ_STATION = { aqi: 85, station: 'Berlin Mitte', url: 'https://aqicn.org/station/@6132/' };
+// Updated on an earlier day, so the popup shows the date with the time
+const PARKING = {
+  name: 'Europa Passage', kind: 'garage', free: 120, total: 400, status: 'open', trend: 'filling', updated: '2026-03-03T08:05:00+01:00',
+};
+const REPORT = {
+  category: 'Wilder Müll', status: 'in_progress', statusLabel: 'In Bearbeitung', requestedAt: '2026-11-02T12:26:50+01:00',
+  updatedAt: '2026-11-02T17:01:17+01:00', url: 'https://sags-uns.stadt-koeln.de/node/95349',
+};
+
+const TREE: StreetTree = {
+  species: 'Silber-Linde', botanical: 'Tilia tomentosa', plantedYear: 1985, heightM: 13, crownM: 6.5, girthCm: 104,
+  location: 'Unter den Linden', district: 'Mitte',
+};
+const TREE_NOW = new Date(2026, 10, 3);
 
 /** Every popup builder, rendered from its fixture. */
 const POPUPS: Array<[string, () => string]> = [
@@ -85,9 +147,20 @@ const POPUPS: Array<[string, () => string]> = [
   ['warning', () => warningPopupHtml(WARNING)],
   ['water level', () => waterLevelPopupHtml(GAUGE)],
   ['bathing', () => bathingPopupHtml(BATHING)],
+  ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP)],
   ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS)],
   ['AED', () => aedPopupHtml(AED, COORDS)],
+  ['hospital', () => hospitalPopupHtml(HOSPITAL, COORDS)],
   ['noise sensor', () => noisePopupHtml(NOISE, false)],
+  ['bike station', () => bikeStationPopupHtml(BIKE, false)],
+  ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false)],
+  ['traffic count', () => trafficCountPopupHtml(COUNT, false)],
+  ['traffic count without a usual count', () => trafficCountPopupHtml({ ...COUNT, name: null, typical: null }, false)],
+  ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false)],
+  ['fountain', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER)],
+  ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER)],
+  ['cool place', () => heatReliefPopupHtml(COOL, NOVEMBER)],
+  ['street counts', () => telraamPopupHtml(TELRAAM, false)],
   ['social atlas', () => socialAtlasPopupHtml(SOCIAL)],
   ['population', () => populationPopupHtml(POPULATION)],
   ['political', () => buildPoliticalPopupHtml('Mitte', DISTRICTS)],
@@ -95,6 +168,10 @@ const POPUPS: Array<[string, () => string]> = [
   ['news', () => newsPopupHtml(NEWS)],
   ['police', () => safetyPopupHtml(SAFETY)],
   ['air quality station', () => aqPopupHtml(AQ_STATION)],
+  ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)')],
+  ['street tree', () => streetTreePopupHtml(TREE, false, 'Baumbestand Berlin', TREE_NOW)],
+  ['car park', () => parkingPopupHtml(PARKING, false)],
+  ['car park, fault', () => parkingPopupHtml({ ...PARKING, status: 'fault', trend: null }, false)],
 ];
 
 /**
@@ -108,7 +185,17 @@ const ENGLISH_ONLY = [
   'Quality', 'Water temp', 'Visibility', 'Measured', 'Off-season', 'Indoor', 'Outdoor', 'Access',
   'Noise Sensor', 'Quiet', 'Moderate', 'Loud', 'Min:', 'Max:', 'Unemployment', 'Single-parent', 'Welfare',
   'Child poverty', 'Population', 'Density', 'Foreign', 'Aged 65', 'Under 18', 'Traffic jam', 'Road closure',
-  'Roadworks', 'planned work', 'Severe',
+  'Roadworks', 'planned work', 'Severe', 'Reported', 'In progress', "city's portal", 'Bikes available', 'Free docks', 'Updated',
+  'Roadworks', 'planned work', 'Severe', 'Bikes available', 'Free docks', 'Updated',
+  'Accident with', 'Turning accident', 'Collision', 'Involved', 'bicycle', 'Friday',
+  'Motor vehicles', 'Counted', 'Usual', 'counter', 'Counting site', 'No usual',
+  'Charge points', 'Plugs', 'up to', 'In use', 'Available', 'Fast (', 'charging register',
+  'Drinking fountain', 'Public toilet', 'Cool place', 'Air-conditioned', 'Off season', 'Runs from', 'Hours',
+  'Wheelchair', 'changing table', 'Free of charge',
+  'Planted', 'years old', 'Height', 'Crown diameter', 'Trunk girth',
+  'Cars', 'Pedestrians', 'lorries', 'counted', 'Monday', 'Citizen sensor', 'weekday',
+  'Free spaces', 'Multi-storey', 'Filling up', 'Closed', 'fault',
+  'emergency care', "Children's", 'Severe injuries', ' beds',
 ];
 
 afterEach(async () => {
@@ -135,9 +222,22 @@ describe('map popups in German', () => {
     ['warning', () => warningPopupHtml(WARNING), ['Unwetterwarnung', 'Schwer']],
     ['water level', () => waterLevelPopupHtml(GAUGE), ['Spree (Tide)', 'Pegel: 412 cm', 'Sehr hoch']],
     ['bathing', () => bathingPopupHtml(BATHING), ['Außerhalb der Saison', 'Gemessen: 2026-08-20', 'Qualität: Gut (EU: ausgezeichnet)', 'Wassertemperatur: 21°C', 'Sichttiefe: 1.5m', 'Details (LAGeSo) ↗']],
+    ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP), ['Fischerinsel', 'Spree', 'Wassertemperatur: 9,3 °C', 'Gemessen: 3. M', ', 02:45', 'Wasserportal Berlin ↗']],
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Tel.: 030 123456', `3 ${GERMAN_MARCH} 09:00 – 4 ${GERMAN_MARCH} 09:00`, 'Route ↗']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Innen', 'Zugang: nur für Kunden', 'Route ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Lärmsensor #4711', '58.2 dB (Laut)', 'Min.: 40.1 dB · Max.: 75.3 dB']],
+    ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Verfügbare Räder: 3', 'Freie Stellplätze: 5', `Stand: 3. ${GERMAN_MARCH}`, 'nextbike Berlin · nextbike']],
+    ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false), ['Unfall mit Schwerverletzten', 'Abbiegeunfall', 'Zusammenstoß mit einbiegendem oder kreuzendem Fahrzeug', 'Mai 2025 · Freitag, 17:00–18:00', 'Beteiligt: Fahrrad, Pkw', 'Unfallatlas 2025']],
+    ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Kraftfahrzeuge', 'Gezählt in der Stunde: 64', 'Üblich zu dieser Stunde: 137 (-53 %)', '3 Zähler']],
+    ['traffic count without a usual count', () => trafficCountPopupHtml({ ...COUNT, name: null, typical: null }, false), ['Zählstelle 0113', 'Noch kein üblicher Wert für diese Stunde']],
+    ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), [
+      'Ultraschnell (ab 150 kW) · bis 150 kW', 'Ladepunkte: 2', 'Stecker: CCS, Typ 2', 'Live: 1 von 2 frei', '01: Frei', `02: Belegt seit 3. ${GERMAN_MARCH}`,
+      'Ladesäulenregister der BNetzA vom',
+    ]],
+    ['fountain in season', () => heatReliefPopupHtml(FOUNTAIN, JULY), ['Trinkbrunnen Alexanderplatz', 'In Betrieb von April bis Oktober', 'Route ↗']],
+    ['fountain off season', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER), ['Außerhalb der Saison']],
+    ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER), ['Öffentliche Toilette', 'Öffnungszeiten: Mo-So 0-24 Uhr', 'Gebühr: 0,50', 'Rollstuhlgerecht', 'Wickeltisch']],
+    ['cool place', () => heatReliefPopupHtml(COOL, NOVEMBER), ['Klimatisiert', 'Kühler Ort', 'Rathaus Köln']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Arbeitslosigkeit5.2%', 'Kinder Alleinerziehender20.1%', 'Transferbezug10.3%', 'Kinderarmut15.4%', 'MSS-Statusindexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Arbeitslosenquote5.2%', 'Alleinerziehenden-Haushalte20.1%', 'SGB-II-Leistungsberechtigte10.3%']],
     ['Hamburg social atlas', () => socialAtlasPopupHtml(SOCIAL, SOCIAL_ATLAS.hamburg), ['SGB-II- und AsylbLG-Empfänger10.3%', 'Kinder in Mindestsicherung15.4%', 'Statusindex (Sozialmonitoring)mittel']],
@@ -147,6 +247,11 @@ describe('map popups in German', () => {
     ['news', () => newsPopupHtml(NEWS), ['Weiterlesen →']],
     ['police', () => safetyPopupHtml(SAFETY), ['Details →']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['US AQI: 85 (Mäßig)']],
+    ['street counts', () => telraamPopupHtml(TELRAAM, false), ['Oranienstraße', 'Montag, 2. November · 8 Std. gezählt', 'Pkw2.300+15 %', 'Räder700−12 %', 'Busse und Lkw400±0 %', 'Radanteil am Fahrzeugverkehr: 21 %', 'Bürgersensor']],
+    ['citizen report', () => citizenReportPopupHtml(REPORT, false, 'Sag’s uns (Stadt Köln)'), ['Wilder Müll', 'In Bearbeitung', 'Gemeldet: ', 'Aktualisiert: ', 'Im Portal der Stadt ansehen ↗']],
+    ['street tree', () => streetTreePopupHtml(TREE, false, 'Baumbestand Berlin', TREE_NOW), ['Silber-Linde', 'Tilia tomentosa', 'Gepflanzt: 1985 (41 Jahre alt)', 'Höhe: 13 m', 'Kronendurchmesser: 6,5 m', 'Stammumfang: 104 cm', 'Unter den Linden · Mitte', 'Baumbestand Berlin']],
+    ['car park', () => parkingPopupHtml(PARKING, false), ['Europa Passage', 'Parkhaus', 'Freie Plätze: 120 / 400', '↘ Füllt sich', 'Stand: 3. M', ', 08:05']],
+    ['car park, fault', () => parkingPopupHtml({ ...PARKING, status: 'fault', trend: null }, false), ['Keine aktuelle Zählung (Störung)']],
   ] as const)('%s popup', async (_name, build, expected) => {
     await i18n.changeLanguage('de');
     const text = textOf(build());
@@ -199,9 +304,12 @@ describe('numbers that stay left-to-right in Arabic (right-to-left)', () => {
     ['roadworks start date alone', () => constructionPopupHtml({ ...CONSTRUCTION, validUntil: '' }), ['01.10.2026']],
     ['water level', () => waterLevelPopupHtml(GAUGE), ['412 cm']],
     ['bathing temperature and visibility', () => bathingPopupHtml(BATHING), ['21°C', '1.5m']],
+    ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP), [`${(9.3).toLocaleString('ar', { minimumFractionDigits: 1 })} °C`]],
     ['noise readings', () => noisePopupHtml(NOISE, false), ['58.2 dB', '40.1 dB', '75.3 dB']],
     ['social atlas values', () => socialAtlasPopupHtml(SOCIAL), ['5.2%', '20.1%', '10.3%', '15.4%']],
     ['population density', () => populationPopupHtml(POPULATION), [`${(12000).toLocaleString('ar')}/km²`]],
+    ['accident hour', () => accidentPopupHtml(ACCIDENT, 2025, false), ['17:00–18:00']],
+    ['car park spaces', () => parkingPopupHtml(PARKING, false), [`${(120).toLocaleString('ar')} / ${(400).toLocaleString('ar')}`]],
   ] as const)('%s stay left-to-right', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     const texts = ltrTexts(build());
@@ -227,6 +335,7 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['transit', () => transitPopupHtml(TRANSIT), ['S Ostkreuz', 'S3', 'Ersatzverkehr mit Bussen', 'M10', 'Unregelmäßige Abfahrten']],
     ['warning', () => warningPopupHtml(WARNING), ['Unwetterwarnung']],
     ['water level', () => waterLevelPopupHtml(GAUGE), ['Mühlendamm', 'Spree']],
+    ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP), ['Fischerinsel', 'Spree']],
     ['bathing', () => bathingPopupHtml({ ...BATHING, algae: 'Blaualgen', advisory: 'Baden nicht empfohlen.' }), ['Strandbad Wannsee', 'Wannsee', 'Steglitz-Zehlendorf', 'Blaualgen', 'Baden nicht empfohlen.']],
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Apotheke am Markt', 'Marktstraße 1']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['Im Foyer', 'Bezirksamt Mitte', 'Mo-Fr 08:00-18:00']],
@@ -237,6 +346,12 @@ describe('feed text keeps its own direction in Arabic', () => {
     ['news', () => newsPopupHtml({ ...NEWS, locationLabel: 'Frankfurter Allee' }), ['Tram M10 eingestellt', 'rbb24', 'Frankfurter Allee']],
     ['police', () => safetyPopupHtml(SAFETY), ['Einbruch in Wohnung', 'Mitte']],
     ['air quality station', () => aqPopupHtml(AQ_STATION), ['Berlin Mitte']],
+    ['bike station', () => bikeStationPopupHtml(BIKE, false), ['S Halensee (Kurfürstendamm)', 'nextbike Berlin', 'nextbike']],
+    ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Shanghaiallee / Überseeallee']],
+    ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), ['HEnW-Mobil', 'Altstädter Str. 2']],
+    ['fountain', () => heatReliefPopupHtml(FOUNTAIN, NOVEMBER), ['Trinkbrunnen Alexanderplatz', 'Alexanderplatz']],
+    ['toilet', () => heatReliefPopupHtml(TOILET, NOVEMBER), ['City-Toilette Hackescher Markt', 'Mo-So 0-24 Uhr', 'Münzeinwurf']],
+    ['car park', () => parkingPopupHtml(PARKING, false), ['Europa Passage']],
   ] as const)('%s popup isolates its feed text', async (_name, build, values) => {
     await i18n.changeLanguage('ar');
     expect(sourceTexts(build())).toEqual(values);
@@ -325,9 +440,28 @@ describe('map popups in English', () => {
     ['transit', () => transitPopupHtml(TRANSIT), ['S3 planned work', 'M10 delay']],
     ['water level', () => waterLevelPopupHtml(GAUGE), ['Spree (Tidal)', 'Level: 412 cm', 'Very High']],
     ['bathing', () => bathingPopupHtml(BATHING), ['Off-season', 'Measured: 2026-08-20', 'Quality: Good (EU: ausgezeichnet)', 'Water temp: 21°C', 'Visibility: 1.5m', 'Details (LAGeSo) ↗']],
+    ['water temperature', () => waterTemperaturePopupHtml(WATER_TEMP), ['Water temperature: 9.3 °C', 'Measured: Mar 3, 02:45', 'Wasserportal Berlin ↗']],
+    ['water temperature today, as a time', () => waterTemperaturePopupHtml(WATER_TEMP, new Date('2026-03-03T12:00:00Z')), ['Measured: 02:45']],
+    ['water temperature with an unsafe link', () => waterTemperaturePopupHtml({ ...WATER_TEMP, url: 'javascript:alert(1)' }), ['Water temperature: 9.3 °C']],
+    ['car park', () => parkingPopupHtml(PARKING, false), ['Multi-storey car park', 'Free spaces: 120 / 400', '↘ Filling up', 'Updated: Mar 3, 08:05']],
+    ['car park updated today, as a time', () => parkingPopupHtml(PARKING, false, new Date('2026-03-03T12:00:00Z')), ['Updated: 08:05']],
+    ['closed car park', () => parkingPopupHtml({ ...PARKING, status: 'closed', free: 0, trend: null }, false), ['Closed']],
     ['pharmacy', () => pharmacyPopupHtml(PHARMACY, COORDS), ['Tel: 030 123456', 'Directions ↗']],
     ['AED', () => aedPopupHtml(AED, COORDS), ['AED / Defibrillator', 'Indoor', 'Access: customers only', 'Directions ↗']],
     ['noise sensor', () => noisePopupHtml(NOISE, false), ['Noise Sensor #4711', '58.2 dB (Loud)', 'Min: 40.1 dB · Max: 75.3 dB']],
+    ['bike station', () => bikeStationPopupHtml(BIKE, false), ['Bikes available: 3', 'Free docks: 5']],
+    ['bike station without docks', () => bikeStationPopupHtml({ ...BIKE, docks: null }, false), ['Bikes available: 3']],
+    ['accident', () => accidentPopupHtml(ACCIDENT, 2025, false), ['Accident with serious injuries', 'Turning accident', 'May 2025 · Friday, 17:00–18:00', 'Involved: bicycle, car']],
+    // Weekday 1 is Sunday; hour 23 runs to midnight
+    ['fatal accident with a pedestrian', () => accidentPopupHtml({ ...ACCIDENT, s: 1, w: 1, h: 23, k: 6, t: 4, p: 4 }, 2025, false), ['Accident with fatalities', 'Pedestrian crossing the road', 'Sunday, 23:00–24:00', 'Involved: pedestrian']],
+    ['traffic count', () => trafficCountPopupHtml(COUNT, false), ['Motor vehicles', 'Counted in the hour: 64', 'Usual for this hour: 137 (-53%)', '3 counters']],
+    ['traffic count at night', () => trafficCountPopupHtml({ ...COUNT, count: 12, typical: 20 }, false), ['Usual for this hour: 20', 'Too little traffic to compare']],
+    ['EV charging station', () => evStationPopupHtml(EV, '2026-09-01', false), ['High power (150 kW and up) · up to 150 kW', 'Charge points: 2', 'Plugs: CCS, Type 2', 'Live: 1 of 2 free', '01: Available', '02: In use since']],
+    ['EV charging station without live status', () => evStationPopupHtml(EV_NORMAL, null, false), ['Normal (up to 22 kW) · up to 22 kW', 'Plugs: Type 2']],
+    ['fountain', () => heatReliefPopupHtml(FOUNTAIN, JULY), ['Drinking fountain', 'Runs from April to October', 'Directions ↗']],
+    ['out-of-order fountain', () => heatReliefPopupHtml({ ...FOUNTAIN, outOfOrder: true }, JULY), ['Out of order']],
+    ['toilet', () => heatReliefPopupHtml(TOILET, JULY), ['Hours: Mo-So 0-24 Uhr', 'Fee: €0.50', 'Wheelchair accessible', 'Baby changing table']],
+    ['free toilet', () => heatReliefPopupHtml({ ...TOILET, fee: 0 }, JULY), ['Free of charge']],
     ['social atlas', () => socialAtlasPopupHtml(SOCIAL), ['Unemployment5.2%', 'Children of single parents20.1%', 'Welfare recipients10.3%', 'Child poverty15.4%', 'MSS status indexmittel']],
     ['Köln social atlas', () => socialAtlasPopupHtml({ ...SOCIAL, childPoverty: null, statusIndex: null, statusLabel: null }, SOCIAL_ATLAS.koeln), ['Unemployment rate5.2%', 'Single-parent households20.1%', 'SGB II recipients10.3%']],
     ['population', () => populationPopupHtml(POPULATION), ['Population3,400', 'Density12,000/km²', 'Aged 65+15.2%', 'Under 1812.1%']],
@@ -339,6 +473,17 @@ describe('map popups in English', () => {
   ] as const)('%s popup', (_name, build, expected) => {
     const text = textOf(build());
     for (const s of expected) expect(text).toContain(s);
+  });
+
+  it('marks a seasonal fountain off season only outside its months', () => {
+    expect(textOf(heatReliefPopupHtml(FOUNTAIN, JULY))).not.toContain('Off season');
+    expect(textOf(heatReliefPopupHtml(FOUNTAIN, NOVEMBER))).toContain('Off season');
+  });
+
+  it('names a nameless cool place by its setting', () => {
+    const text = textOf(heatReliefPopupHtml(COOL, JULY));
+    expect(text).toContain('Air-conditioned');
+    expect(text).toContain('Cool place');
   });
 
   it('names only the indicators a city\'s social atlas has', () => {

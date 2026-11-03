@@ -3,9 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useAirQuality } from '../../hooks/useAirQuality.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
+import { useAirQualityStations } from '../../hooks/useAirQualityStations.js';
 import { useFreshness } from '../../hooks/useFreshness.js';
 import { staleAfter } from '../../lib/freshness.js';
-import { AQI_SCALE_NAME, getAqiLevel, getUsAqiLevel, isWaqiStation } from '../../lib/aqi.js';
+import { formatClockTime } from '../../lib/format-time.js';
+import type { AirQualityStation } from '../../lib/api.js';
+import {
+  AQI_SCALE_NAME, UBA_SOURCE_LINE, getAqiLevel, getUbaLevel, getUsAqiLevel, isWaqiStation, measuredSummary, shortStationName,
+} from '../../lib/aqi.js';
 import { StripErrorFallback } from '../ErrorFallback.js';
 import { Ltr } from '../Ltr.js';
 import { SourceText } from '../SourceText.js';
@@ -62,19 +67,32 @@ function AqiScale({ aqi, t }: { aqi: number; t: (k: string) => string }) {
 
 /* ── Pollutant mini-card ──────────────────────────────────── */
 
+const POLLUTANTS = [
+  { key: 'pm25', label: 'PM2.5', max: 75 },
+  { key: 'no2', label: 'NO₂', max: 200 },
+  { key: 'pm10', label: 'PM10', max: 150 },
+  { key: 'o3', label: 'O₃', max: 180 },
+] as const;
+
 interface PollutantCardProps {
   label: string;
   value: number;
   max: number;
   color: string;
+  /** The model's value standing in where the official stations measured none. */
+  modelled?: boolean;
+  modelLabel?: string;
 }
 
-const PollutantCard = memo(function PollutantCard({ label, value, max, color }: PollutantCardProps) {
+const PollutantCard = memo(function PollutantCard({ label, value, max, color, modelled, modelLabel }: PollutantCardProps) {
   const pct = Math.min((value / max) * 100, 100);
   return (
     <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-1 mb-0.5">
-        <span className="text-[11px] text-muted font-medium">{label}</span>
+        <span className="text-[11px] text-muted font-medium">
+          {label}
+          {modelled && <span className="ms-1 text-[9px] font-normal">({modelLabel})</span>}
+        </span>
         {/* <Ltr>: the number and its unit run left to right in Arabic too, and
             the unit's ms-0.5 has to follow that direction to land between them. */}
         <span className="text-[11px] tabular-nums text-gray-700 dark:text-gray-200 font-semibold">
@@ -110,25 +128,56 @@ const StationEntry = memo(function StationEntry({ name, aqi }: { name: string; a
   );
 });
 
+/** An official (UBA) station; its colour and name are UBA's index class. */
+const OfficialStationEntry = memo(function OfficialStationEntry({ name, index, setting, t }: {
+  name: string;
+  index: number | null;
+  setting: string;
+  t: (k: string) => string;
+}) {
+  const level = getUbaLevel(index);
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <div className="w-2 h-2 rounded-full shrink-0 ring-1 ring-black/20 dark:ring-white/20" style={{ backgroundColor: level.color }} />
+      <SourceText as="span" className="text-[11px] text-gray-600 dark:text-gray-400 truncate">{name}</SourceText>
+      {setting === 'traffic' && (
+        <span className="text-[9px] text-muted shrink-0">{t('panel.airQuality.setting.traffic')}</span>
+      )}
+      <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-200 ms-auto shrink-0">
+        {t(level.labelKey)}
+      </span>
+    </div>
+  );
+});
+
 /* ── Main component ───────────────────────────────────────── */
 
 const FRESH_MAX_AGE = staleAfter('airQuality');
 
+/** Worst index first, then by name: the stations to worry about lead the list. */
+function byIndexThenName(a: AirQualityStation, b: AirQualityStation): number {
+  return (b.index ?? -1) - (a.index ?? -1) || a.name.localeCompare(b.name);
+}
+
 export function AirQualityStrip({ expanded }: { expanded: boolean }) {
-  const { id: cityId } = useCityConfig();
+  const { id: cityId, name: cityName, timezone, features } = useCityConfig();
   const { data, fetchedAt, isLoading, isError, refetch } = useAirQuality(cityId);
   const { data: gridData } = useAirQualityGrid(cityId);
-  const { t } = useTranslation();
+  const { data: ubaData } = useAirQualityStations(cityId, features?.includes('airQualityStations') ?? false);
+  const { t, i18n } = useTranslation();
   const { isStale, agoText } = useFreshness(fetchedAt, FRESH_MAX_AGE);
 
-  // Filter to WAQI stations, sort by name for stable order, take 8
   // Must be above early returns to satisfy Rules of Hooks
+  const official = useMemo(() => [...(ubaData ?? [])].sort(byIndexThenName), [ubaData]);
+  const measured = useMemo(() => measuredSummary(ubaData ?? []), [ubaData]);
+  // WAQI stations, the fallback while the city has no fresh official readings (the server
+  // then sends no UBA stations and the grid's WAQI points): sorted by name, take 8
   const stations = useMemo(
-    () => (gridData ?? [])
+    () => official.length > 0 ? [] : (gridData ?? [])
       .filter((s) => isWaqiStation(s))
       .sort((a, b) => a.station.localeCompare(b.station))
       .slice(0, 8),
-    [gridData],
+    [gridData, official.length],
   );
 
   if (isLoading) {
@@ -161,15 +210,57 @@ export function AirQualityStrip({ expanded }: { expanded: boolean }) {
       {/* Expanded: trend → pollutants → stations */}
       {expanded && (
         <>
-          {/* Pollutant grid */}
+          {/* Pollutant grid: measured at the official stations where they have the
+              value, else the model's (CAMS forecast) */}
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2">
-            <PollutantCard label="PM2.5" value={data.current.pm25} max={75} color={level.color} />
-            <PollutantCard label="NO&#x2082;" value={data.current.no2} max={200} color={level.color} />
-            <PollutantCard label="PM10" value={data.current.pm10} max={150} color={level.color} />
-            <PollutantCard label="O&#x2083;" value={data.current.o3} max={180} color={level.color} />
+            {POLLUTANTS.map(({ key, label, max }) => {
+              const m = measured?.values[key];
+              return (
+                <PollutantCard
+                  key={key}
+                  label={label}
+                  value={m ? m.value : data.current[key]}
+                  max={max}
+                  color={level.color}
+                  modelled={measured !== null && !m}
+                  modelLabel={t('panel.airQuality.model')}
+                />
+              );
+            })}
           </div>
+          <p className="mt-1.5 text-[10px] text-muted">
+            {measured
+              ? t(measured.basis === 'background' ? 'panel.airQuality.measuredBackground' : 'panel.airQuality.measuredAll', {
+                time: formatClockTime(measured.measuredAt, i18n.language, timezone ?? 'Europe/Berlin'),
+              })
+              : t('panel.airQuality.modelled')}
+          </p>
 
-          {/* Station measurements (WAQI, US AQI) */}
+          {/* Official stations (UBA index) */}
+          {official.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <div className="mb-1.5 text-[10px] font-medium text-muted">
+                {t('panel.airQuality.officialStations')}
+              </div>
+              <div className="grid grid-cols-1 gap-y-1.5">
+                {official.map((s) => (
+                  <OfficialStationEntry
+                    key={s.code}
+                    name={shortStationName(s.name, cityName)}
+                    index={s.index}
+                    setting={s.setting}
+                    t={t}
+                  />
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] text-muted">
+                {t('panel.airQuality.officialCredit')}{' '}
+                <SourceText as="span" lang="de">{UBA_SOURCE_LINE}</SourceText>
+              </p>
+            </div>
+          )}
+
+          {/* Station measurements (WAQI, US AQI), for a city without official stations */}
           {stations.length > 0 && (
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
               <div className="mb-1.5 text-[10px] font-medium text-muted">

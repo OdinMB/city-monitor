@@ -10,12 +10,14 @@ import { koeln } from './cities/koeln.js';
 import { muenchen } from './cities/muenchen.js';
 import {
   DISTRICT_URLS, getNoiseWmsAttribution, getNoiseWmsUrl, getRentMapAttribution, getRentMapLegend, getRentMapWmsUrl,
+  getTrafficFlowAttribution, getTrafficFlowLegend, getTrafficFlowWmsUrl,
+  getStreetTreesAttribution, getStreetTreesWmsUrl,
 } from '../components/map/constants.js';
 import { getCrisisDirectory } from '../components/strips/crisis-services.js';
 import { SOCIAL_ATLAS } from '../lib/social-atlas.js';
 
 /** Features the web app holds itself, which the server knows nothing about. */
-const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'politicalMap', 'bundestagByDistrict'];
+const WEB_ONLY_FEATURES: readonly CityFeature[] = ['crisis', 'rentMap', 'noiseMap', 'noiseTotal', 'trafficFlowMap', 'politicalMap', 'bundestagByDistrict', 'streetTrees'];
 
 const ALL_CONFIGURED = [berlin, hamburg, koeln, muenchen];
 
@@ -184,6 +186,27 @@ describe('the web app\'s own features', () => {
     const wmsHost = new URL(url).hostname;
     const credited = [...getRentMapAttribution(id)!.matchAll(/href="([^"]+)"/g)].map((m) => new URL(m[1]!).hostname);
     expect(credited.some((host) => host.split('.').slice(-2).join('.') === wmsHost.split('.').slice(-2).join('.')), id).toBe(true);
+  });
+
+  // The live congestion maps are WMS layers too, with their classes and credit.
+  it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists a congestion map exactly when it has one, with a legend', (id, city) => {
+    const url = getTrafficFlowWmsUrl(id);
+    expect(city.features.includes('trafficFlowMap'), id).toBe(url !== null);
+    if (url === null) return;
+    expect(getTrafficFlowLegend(id).length, id).toBeGreaterThan(0);
+    const wmsHost = new URL(url).hostname;
+    const credited = [...getTrafficFlowAttribution(id)!.matchAll(/href="([^"]+)"/g)].map((m) => new URL(m[1]!).hostname);
+    expect(credited).toContain(wmsHost);
+  });
+
+  // The trees layer is the city's tree-register WMS (STREET_TREES_WMS), credited to its provider.
+  it.each(ALL_CONFIGURED.map((c) => [c.id, c] as const))('%s lists street trees exactly when it has a tree register', (id, city) => {
+    const url = getStreetTreesWmsUrl(id);
+    expect(city.features.includes('streetTrees'), id).toBe(url !== null);
+    if (url === null) return;
+    const wmsHost = new URL(url).hostname;
+    const credited = [...getStreetTreesAttribution(id)!.matchAll(/href="([^"]+)"/g)].map((m) => new URL(m[1]!).hostname);
+    expect(credited, id).toContain(wmsHost);
   });
 
   // The crisis tile shows the city's own directory (crisis-services.ts), so a

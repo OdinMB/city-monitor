@@ -2,11 +2,26 @@ import { sql, type SQL } from 'drizzle-orm';
 import type { Db } from './index.js';
 import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages } from './reads.js';
+import { loadEvChargingRegister } from './reads.js';
+import { EV_CHARGING_REGISTER_TTL_SECONDS } from '../cron/ingest-ev-charging.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficCounts, loadTrafficAccidents, loadElectricity, loadSoilMoisture, loadRespiratoryCases } from './reads.js';
+import { loadParking, loadWaterTemperature } from './reads.js';
+import { WATER_TEMPERATURE_TTL_SECONDS } from '../cron/ingest-water-temperature.js';
+import { PARKING_TTL_SECONDS } from '../cron/ingest-parking.js';
+import { loadElectionResults } from './reads.js';
+import { loadPoliticalVotes, loadCrimeAtlas } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
+import { TRAFFIC_ACCIDENTS_TTL_SECONDS } from '../cron/ingest-traffic-accidents.js';
+import { loadTelraamCounts } from './reads.js';
+import { TELRAAM_COUNTS_TTL_SECONDS } from '../cron/ingest-telraam-counts.js';
+import { ELECTION_RESULTS_TTL_SECONDS } from '../cron/ingest-election-results.js';
+import { CRIME_ATLAS_TTL_SECONDS } from '../cron/ingest-crime-atlas.js';
 import { AQ_GRID_TTL_SECONDS } from '../cron/ingest-air-quality-grid.js';
+import { loadHeatRelief, loadHospitals } from './reads.js';
+import { HEAT_RELIEF_TTL_SECONDS } from '../cron/ingest-heat-relief.js';
+import { HOSPITALS_TTL_SECONDS } from '../cron/ingest-hospitals.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
@@ -98,6 +113,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
     ),
 
     (async () => {
+      const r = await loadPoliticalVotes(db, cityId);
+      if (r) cache.set(CK.politicalVotes(cityId), r.data, 604800, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} political votes failed`, err)),
+
+    (async () => {
       const r = await loadBudget(db, cityId);
       if (r) cache.set(CK.budget(cityId), r.data, 86400, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} budget failed`, err)),
@@ -143,6 +163,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
     })().catch((err) => log.error(`${cityId} pollen failed`, err)),
 
     (async () => {
+      const r = await loadAirQualityStations(db, cityId);
+      if (r) cache.set(CK.airQualityStations(cityId), r.data, 7200, r.fetchedAt); // AIR_QUALITY_STATIONS_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} air quality stations failed`, err)),
+
+    (async () => {
       const r = await loadFloodStatus(db, cityId);
       if (r) cache.set(CK.floodStatus(cityId), r.data, 600, r.fetchedAt); // FLOOD_STATUS_TTL_SECONDS
     })().catch((err) => log.error(`${cityId} flood status failed`, err)),
@@ -158,9 +183,87 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
     })().catch((err) => log.error(`${cityId} lift outages failed`, err)),
 
     (async () => {
+      const r = await loadWaterTemperature(db, cityId);
+      if (r) cache.set(CK.waterTemperature(cityId), r.data, WATER_TEMPERATURE_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} water temperature failed`, err)),
+
+    (async () => {
+      const r = await loadParking(db, cityId);
+      if (r) cache.set(CK.parking(cityId), r.data, PARKING_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} parking failed`, err)),
+
+    (async () => {
+      const r = await loadBikeSharing(db, cityId);
+      if (r) cache.set(CK.bikeSharing(cityId), r.data, 600, r.fetchedAt); // BIKE_SHARING_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} bike sharing failed`, err)),
+
+    // The register only: the live status is not stored, and comes with the status job's start-up run
+    (async () => {
+      const r = await loadEvChargingRegister(db, cityId);
+      if (r) cache.set(CK.evChargingRegister(cityId), r.data, EV_CHARGING_REGISTER_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} EV charging failed`, err)),
+
+    (async () => {
+      const r = await loadElectricity(db, cityId);
+      if (r) cache.set(CK.electricity(cityId), r.data, 1800, r.fetchedAt); // ELECTRICITY_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} electricity failed`, err)),
+
+    (async () => {
+      const r = await loadSoilMoisture(db, cityId);
+      if (r) cache.set(CK.soilMoisture(cityId), r.data, 172_800, r.fetchedAt); // SOIL_MOISTURE_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} soil moisture failed`, err)),
+
+    (async () => {
+      const r = await loadCitizenReports(db, cityId);
+      if (r) cache.set(CK.citizenReports(cityId), r.data, 1800, r.fetchedAt); // CITIZEN_REPORTS_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} citizen reports failed`, err)),
+
+    (async () => {
+      const r = await loadTrafficAccidents(db, cityId);
+      if (r) cache.set(CK.trafficAccidents(cityId), r.data, TRAFFIC_ACCIDENTS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} traffic accidents failed`, err)),
+
+    (async () => {
+      const r = await loadCrimeAtlas(db, cityId);
+      if (r) cache.set(CK.crimeAtlas(cityId), r.data, CRIME_ATLAS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} crime atlas failed`, err)),
+
+    (async () => {
+      const r = await loadTrafficCounts(db, cityId);
+      if (r) cache.set(CK.trafficCounts(cityId), r.data, 1800, r.fetchedAt); // TRAFFIC_COUNTS_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} traffic counts failed`, err)),
+
+    (async () => {
+      const r = await loadHeatRelief(db, cityId);
+      if (r) cache.set(CK.heatRelief(cityId), r.data, HEAT_RELIEF_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} heat relief failed`, err)),
+
+    (async () => {
+      const r = await loadTelraamCounts(db, cityId);
+      if (r) cache.set(CK.telraamCounts(cityId), r.data, TELRAAM_COUNTS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} Telraam counts failed`, err)),
+
+    (async () => {
+      const r = await loadElectionResults(db, cityId);
+      if (!r) return;
+      cache.set(CK.electionResults(cityId), r.data.results, ELECTION_RESULTS_TTL_SECONDS, r.fetchedAt);
+      cache.set(CK.electionGeojson(cityId), r.data.geojson, ELECTION_RESULTS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} election results failed`, err)),
+
+    (async () => {
+      const r = await loadHospitals(db, cityId);
+      if (r) cache.set(CK.hospitals(cityId), r.data, HOSPITALS_TTL_SECONDS, r.fetchedAt);
+    })().catch((err) => log.error(`${cityId} hospitals failed`, err)),
+
+    (async () => {
       const r = await loadWastewater(db, cityId);
       if (r) cache.set(CK.wastewaterSummary(cityId), r.data, 604800, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} wastewater failed`, err)),
+
+    (async () => {
+      const r = await loadRespiratoryCases(db, cityId);
+      if (r) cache.set(CK.respiratoryCases(cityId), r.data, 604800, r.fetchedAt); // RESPIRATORY_CASES_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} respiratory cases failed`, err)),
 
     (async () => {
       const r = await loadLaborMarket(db, cityId);

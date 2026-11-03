@@ -9,16 +9,29 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, RespiratoryCases, SoilMoistureData } from '@city-monitor/shared';
+import type { ElectionResults } from '@city-monitor/shared';
+import type { PoliticalVote, CrimeAtlasData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
-  PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
+  PoliticalDistrictSchema, PoliticalVoteSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
-  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema,
+  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema, RespiratoryCasesSchema, SoilMoistureDataSchema,
+  ElectionResultsSchema,
 } from '@city-monitor/shared/schemas.js';
+import type { HeatReliefData } from '@city-monitor/shared';
+import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
+import type { TelraamCountsData } from '@city-monitor/shared';
+import { TelraamCountsDataSchema } from '@city-monitor/shared/schemas.js';
+import type { ParkingData, WaterTemperatureData } from '@city-monitor/shared';
+import { ParkingDataSchema, WaterTemperatureDataSchema } from '@city-monitor/shared/schemas.js';
+import type { HospitalData } from '@city-monitor/shared';
+import { HospitalDataSchema } from '@city-monitor/shared/schemas.js';
 import type { GeocodeResult } from '../lib/geocode.js';
+import { EvChargingRegisterSchema } from '@city-monitor/shared/schemas.js';
+import type { EvChargingRegister } from '../lib/ev-charging.js';
 import type { WeatherData } from '../cron/ingest-weather.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 import type { SafetyReport } from '../cron/ingest-safety.js';
@@ -156,6 +169,10 @@ export async function loadWastewater(db: Db, cityId: string): Promise<DbResult<W
   return loadSnapshot(db, cityId, 'lageso-wastewater', { schema: WastewaterSummarySchema });
 }
 
+export async function loadRespiratoryCases(db: Db, cityId: string): Promise<DbResult<RespiratoryCases>> {
+  return loadSnapshot(db, cityId, 'rki-ifsg-cases', { schema: RespiratoryCasesSchema });
+}
+
 export async function loadBathingSpots(db: Db, cityId: string): Promise<DbResult<BathingSpot[]>> {
   return loadSnapshot(db, cityId, 'lageso-bathing', { schema: z.array(BathingSpotSchema) });
 }
@@ -189,6 +206,91 @@ export async function loadPollen(db: Db, cityId: string): Promise<DbResult<Polle
 /** At most 2 hours old: an outage list from a stopped job would show lifts long repaired (the job runs every 15 min). */
 export async function loadLiftOutages(db: Db, cityId: string): Promise<DbResult<LiftOutageData>> {
   return loadSnapshot(db, cityId, 'kvb-lift-outages', { schema: LiftOutageDataSchema, maxAgeMs: 2 * 3600_000 });
+}
+
+/** At most 6 hours old: water warms and cools slowly, and the readings themselves can be a day or two late (the job runs every 15 min). */
+export async function loadWaterTemperature(db: Db, cityId: string): Promise<DbResult<WaterTemperatureData>> {
+  return loadSnapshot(db, cityId, 'wasserportal-temp', { schema: WaterTemperatureDataSchema, maxAgeMs: 6 * 3600_000 });
+}
+
+/** At most 30 minutes old: free spaces change by the minute (the job runs every 5 min, stores every 15). */
+export async function loadParking(db: Db, cityId: string): Promise<DbResult<ParkingData>> {
+  return loadSnapshot(db, cityId, 'parking', { schema: ParkingDataSchema, maxAgeMs: 30 * 60_000 });
+}
+
+/** At most 2 hours old: older counts say nothing about bikes there now (the job runs every 5 min, stores every 30). */
+export async function loadBikeSharing(db: Db, cityId: string): Promise<DbResult<BikeSharingData>> {
+  return loadSnapshot(db, cityId, 'bike-sharing', { schema: BikeSharingDataSchema, maxAgeMs: 2 * 3600_000 });
+}
+
+/** At most 3 hours old: "now" on the electricity tile must not be the morning's mix (the job runs every 15 min). */
+export async function loadElectricity(db: Db, cityId: string): Promise<DbResult<ElectricityData>> {
+  return loadSnapshot(db, cityId, 'smard-electricity', { schema: ElectricityDataSchema, maxAgeMs: 3 * 3600_000 });
+}
+
+/** At most 7 days old: daily values the tile dates itself, but not a stopped job's (it runs twice a day). */
+export async function loadSoilMoisture(db: Db, cityId: string): Promise<DbResult<SoilMoistureData>> {
+  return loadSnapshot(db, cityId, 'dwd-soil-moisture', { schema: SoilMoistureDataSchema, maxAgeMs: 7 * 24 * 3600_000 });
+}
+
+/** At most 6 hours old: older readings no longer describe the air now (the job runs every 30 min). */
+export async function loadAirQualityStations(db: Db, cityId: string): Promise<DbResult<AirQualityStation[]>> {
+  return loadSnapshot(db, cityId, 'uba-airquality', { schema: AirQualityStationsSchema, maxAgeMs: 6 * 3600_000 });
+}
+
+/** At most 2 hours old: statuses change within hours (the job runs every 15 min). */
+export async function loadCitizenReports(db: Db, cityId: string): Promise<DbResult<CitizenReportData>> {
+  return loadSnapshot(db, cityId, 'open311-reports', { schema: CitizenReportDataSchema, maxAgeMs: 2 * 3600_000 });
+}
+
+/** No age limit: the accidents are a year's record, whose newest row retention keeps. */
+export async function loadTrafficAccidents(db: Db, cityId: string): Promise<DbResult<TrafficAccidentData>> {
+  return loadSnapshot(db, cityId, 'unfallatlas-accidents', { schema: TrafficAccidentDataSchema });
+}
+
+/** No age limit and no schema (GeoJSON, like the population layer's): a year's record, whose newest row retention keeps. */
+export async function loadCrimeAtlas(db: Db, cityId: string): Promise<DbResult<CrimeAtlasData>> {
+  return loadSnapshot<CrimeAtlasData>(db, cityId, 'kriminalitaetsatlas');
+}
+
+/** At most 3 hours old: the counts are hourly and a row is stored when a new hour comes in. */
+export async function loadTrafficCounts(db: Db, cityId: string): Promise<DbResult<TrafficCountData>> {
+  return loadSnapshot(db, cityId, 'traffic-counts', { schema: TrafficCountDataSchema, maxAgeMs: 3 * 3600_000 });
+}
+
+/**
+ * At most 90 days old: the register is monthly and its CSV can lag a month or
+ * two behind (2026-09-01 was still the newest on 2026-11-03), so a weekly job
+ * that keeps failing leaves the last edition up for a while, but not for ever.
+ */
+export async function loadEvChargingRegister(db: Db, cityId: string): Promise<DbResult<EvChargingRegister>> {
+  return loadSnapshot(db, cityId, 'bnetza-charging', { schema: EvChargingRegisterSchema, maxAgeMs: 90 * 86_400_000 });
+}
+
+/** No age limit: the lists are static, and last month's fountains beat none (the job runs weekly). */
+export async function loadHeatRelief(db: Db, cityId: string): Promise<DbResult<HeatReliefData>> {
+  return loadSnapshot(db, cityId, 'heat-relief', { schema: HeatReliefDataSchema });
+}
+
+/** At most 3 days old: the counts describe one day, and the job runs twice a day. */
+export async function loadTelraamCounts(db: Db, cityId: string): Promise<DbResult<TelraamCountsData>> {
+  return loadSnapshot(db, cityId, 'telraam-counts', { schema: TelraamCountsDataSchema, maxAgeMs: 3 * 86400_000 });
+}
+
+/**
+ * No age limit: a final result stands until the next election. The results are
+ * validated; the polygons are passed on as stored, as the population ones are.
+ */
+export async function loadElectionResults(db: Db, cityId: string): Promise<DbResult<{ results: ElectionResults; geojson: unknown }>> {
+  const result = await loadSnapshot<{ results: unknown; geojson: unknown }>(db, cityId, 'election-results');
+  if (!result) return null;
+  const results = validateJsonb(ElectionResultsSchema, result.data.results, 'election-results');
+  return results ? { data: { results, geojson: result.data.geojson }, fetchedAt: result.fetchedAt } : null;
+}
+
+/** No age limit: hospitals change a few times a year (the job runs weekly). */
+export async function loadHospitals(db: Db, cityId: string): Promise<DbResult<HospitalData>> {
+  return loadSnapshot(db, cityId, 'hospitals', { schema: HospitalDataSchema });
 }
 
 export async function loadFloodStatus(db: Db, cityId: string): Promise<DbResult<FloodStatus>> {
@@ -234,6 +336,10 @@ export async function loadPoliticalDistricts(
   level: string,
 ): Promise<DbResult<PoliticalDistrict[]>> {
   return loadSnapshot(db, cityId, `abgwatch-${level}` as SnapshotType, { schema: z.array(PoliticalDistrictSchema) });
+}
+
+export async function loadPoliticalVotes(db: Db, cityId: string): Promise<DbResult<PoliticalVote[]>> {
+  return loadSnapshot(db, cityId, 'abgwatch-votes', { schema: z.array(PoliticalVoteSchema) });
 }
 
 export async function loadPoliticalFetchedAt(

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AQ_GRID_TTL_SECONDS, createAirQualityGridIngestion, pmToEuropeanAqi } from './ingest-air-quality-grid.js';
 import { createCache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
-import type { AirQualityGridPoint } from '@city-monitor/shared';
+import type { AirQualityGridPoint, AirQualityStation } from '@city-monitor/shared';
 
 const mockSaveAirQualityGrid = vi.fn().mockResolvedValue(undefined);
 vi.mock('../db/writes.js', () => ({
@@ -88,6 +88,34 @@ describe('createAirQualityGridIngestion', () => {
     expect(grid![0].europeanAqi).toBe(42);
     expect(grid![0].station).toBe('Berlin Mitte');
     expect(grid![1].europeanAqi).toBe(35);
+  });
+
+  const ubaStation = (measuredAt: string): AirQualityStation => ({
+    code: 'DEBE010', name: 'Wedding', lat: 52.54, lon: 13.35, setting: 'background', network: 'BE',
+    measuredAt, index: 1, no2: 20, pm10: 15, pm25: 8, o3: 40,
+  });
+
+  it('does not ask WAQI while the city\'s UBA readings are fresh, and keeps the Sensor.Community points', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      new Response(JSON.stringify(mockScSensorResponse), { status: 200 }));
+    const cache = createCache();
+    cache.set('berlin:air-quality:stations', [ubaStation(new Date(Date.now() - 90 * 60_000).toISOString())], 7200);
+    await createAirQualityGridIngestion(cache)();
+
+    expect(spy.mock.calls.some(([u]) => String(u).startsWith('https://api.waqi.info/'))).toBe(false);
+    const grid = cache.get<AirQualityGridPoint[]>('berlin:air-quality:grid')!;
+    expect(grid.length).toBeGreaterThan(0);
+    expect(grid.every((p) => p.url?.startsWith('https://maps.sensor.community/'))).toBe(true);
+  });
+
+  it('asks WAQI when the UBA readings are stale', async () => {
+    const spy = mockFetchWaqiThenSc();
+    const cache = createCache();
+    cache.set('berlin:air-quality:stations', [ubaStation(new Date(Date.now() - 5 * 3600_000).toISOString())], 7200);
+    await createAirQualityGridIngestion(cache)();
+
+    expect(String(spy.mock.calls[0]![0])).toMatch(/^https:\/\/api\.waqi\.info\//);
+    expect(cache.get<AirQualityGridPoint[]>('berlin:air-quality:grid')![0]!.station).toBe('Berlin Mitte');
   });
 
   it('caches the grid for the cron interval + 20%, so a slow run does not let it expire', async () => {

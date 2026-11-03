@@ -68,6 +68,12 @@
       "humidity": "Luftfeuchtigkeit",
       "wind": "Wind",
       "feelsLike": "Gefühlt",
+      "heatRelief": {
+        "warning": "Hitzewarnung in Kraft",
+        "outlook": "Hitze in den nächsten Tagen erwartet",
+        "onMap": "Auf der Karte: {{places}}",
+        "show": "Auf der Karte zeigen"
+      },
       "hourly": "Stündlich",
       "daily": "Täglich",
       "high": "H",
@@ -187,7 +193,29 @@
         "veryUnhealthy": "Sehr ungesund",
         "hazardous": "Gef\u00e4hrlich"
       },
-      "stationCredit": "Messstationen: World Air Quality Index Project und die Messnetzbetreiber"
+      "stationCredit": "Messstationen: World Air Quality Index Project und die Messnetzbetreiber",
+      "ubaLevel": {
+        "veryGood": "Sehr gut",
+        "good": "Gut",
+        "moderate": "Mäßig",
+        "poor": "Schlecht",
+        "veryPoor": "Sehr schlecht",
+        "unknown": "Kein Index"
+      },
+      "ubaIndex": "Luftqualitätsindex (UBA)",
+      "officialStation": "Amtliche Messstation",
+      "officialStations": "Amtliche Messstationen (Luftqualitätsindex des UBA)",
+      "officialCredit": "Quelle:",
+      "setting": {
+        "traffic": "Verkehr",
+        "background": "Hintergrund",
+        "industrial": "Industrie"
+      },
+      "hourEnding": "Stunde bis {{time}}",
+      "model": "Modell",
+      "modelled": "Modellvorhersage (CAMS)",
+      "measuredBackground": "Gemessen an den amtlichen städtischen Hintergrundstationen, Stunde bis {{time}}",
+      "measuredAll": "Gemessen an den amtlichen Messstationen, Stunde bis {{time}}"
     },
     "map": {
       "title": "Karte",
@@ -197,6 +225,22 @@
         "cmdScroll": "Karte mit ⌘ + Scrollen zoomen"
       }
     },
+    "elections": {
+      "tab": "Wahl",
+      "title": "{{election}}, {{date}}",
+      "kind": {
+        "abgeordnetenhaus": "Abgeordnetenhauswahl",
+        "buergerschaft": "Bürgerschaftswahl",
+        "stadtrat": "Stadtratswahl"
+      },
+      "vote": {
+        "abgeordnetenhaus": "Zweitstimmen",
+        "buergerschaft": "Landeslistenstimmen",
+        "stadtrat": "Anteil aller Stimmen"
+      },
+      "others": "Sonstige",
+      "turnout": "Wahlbeteiligung"
+    },
     "political": {
       "empty": "Keine Daten verfügbar",
       "districts": "Wahlkreise",
@@ -205,7 +249,17 @@
       "seats_one": "Sitz",
       "seats_other": "Sitze",
       "showMore": "+{{count}} weitere…",
-      "profileLink": "Profil von {{name}}"
+      "profileLink": "Profil von {{name}}",
+      "votes": {
+        "title": "Letzte namentliche Abstimmungen",
+        "accepted": "Angenommen",
+        "rejected": "Abgelehnt",
+        "overall": "Ganzes Parlament: {{yes}} Ja, {{no}} Nein",
+        "cityMembers": "Abgeordnete der Stadt:",
+        "showMembers": "Wer wie abgestimmt hat",
+        "hideMembers": "Abgeordnete ausblenden",
+        "choice": { "yes": "Ja", "no": "Nein", "abstain": "Enthalten", "no_show": "Nicht beteiligt" }
+      }
     },
     "budget": {
       "title": "Stadthaushalt",
@@ -308,6 +362,15 @@
         "low": "Niedrig",
         "moderate": "Mittel",
         "high": "Hoch"
+      },
+      "cases": {
+        "title": "Gemeldete Fälle",
+        "week": "KW {{week}}",
+        "flu": "Influenza",
+        "rsv": "RSV",
+        "incidence": "{{value}} je 100.000",
+        "trendLabel": "Verlauf gemeldete Fälle {{pathogen}}",
+        "source": "Laborbestätigte Fälle, gemeldet nach dem Infektionsschutzgesetz (RKI)"
       }
     },
     "waterLevels": {
@@ -343,6 +406,77 @@
       "asOf": "Stand:",
       "empty": "Keine Hochwasserdaten"
     },
+    "electricity": {
+      "title": "Strom",
+      "renewableShare": "Erneuerbaren-Anteil an der Erzeugung im Netzgebiet {{area}} um {{time}}",
+      "mixLabel": "Strommix im Netzgebiet {{area}}",
+      "kind": {
+        "wind": "Wind",
+        "solar": "Solar",
+        "biomass": "Biomasse",
+        "hydro": "Wasserkraft",
+        "gas": "Erdgas",
+        "coal": "Kohle",
+        "other": "Sonstige"
+      },
+      "co2": "CO₂-Intensität, Deutschland",
+      "forecast": "Prognose",
+      "signal": "Stromampel, Deutschland",
+      "signalLevel": {
+        "2": "Grün: guter Zeitpunkt zum Stromverbrauch",
+        "1": "Gelb: durchschnittlicher Ökostromanteil",
+        "0": "Rot: wenig Ökostrom",
+        "-1": "Rot: Netzengpass"
+      },
+      "greenUntil": "Grün bis {{end}}",
+      "greenWindow": "Grün {{start}}–{{end}}",
+      "noGreen": "Keine grüne Phase vorhergesagt",
+      "history": "Erneuerbaren-Anteil im Netzgebiet {{area}}, letzte 24 Stunden",
+      "signalTimeline": "Stromampel, Deutschland, heute",
+      "greenestHour": "Grünste Stunde: {{time}} ({{share}} erneuerbar)",
+      "germanyShare": "Deutschland jetzt: {{share}} des Verbrauchs aus Erneuerbaren",
+      "empty": "Keine Stromdaten"
+    },
+    "soilMoisture": {
+      "title": "Bodenfeuchte",
+      "headline": "des pflanzenverfügbaren Wassers unter Gras auf Sandboden, {{date}}",
+      "level": {
+        "very-dry": "Sehr trocken",
+        "dry": "Trocken",
+        "moderate": "Ausreichend",
+        "moist": "Feucht",
+        "wet": "Nass"
+      },
+      "hint": {
+        "very-dry": "Trockenstress: Pflanzen und junge Straßenbäume leiden unter Wassermangel",
+        "dry": "Pflanzen wird das Wasser knapp",
+        "moderate": "Pflanzen sind gut versorgt",
+        "moist": "Reichlich Wasser im Boden",
+        "wet": "Der Boden hält mehr Wasser, als er speichern kann"
+      },
+      "change": "{{change}} Pkt. in {{days}} Tagen",
+      "history": "Letzte 90 Tage",
+      "historyMean": "Letzte 90 Tage, Mittel aus {{n}} DWD-Stationen",
+      "historyLabel": "Bodenfeuchte unter Gras auf Sandboden, letzte 90 Tage",
+      "loamy": "Auf lehmigem Boden: {{value}}",
+      "station": "DWD-Station {{name}}",
+      "explain": "Tageswerte des agrarmeteorologischen Modells des DWD für 0–60 cm, in % der nutzbaren Feldkapazität (nFK); unter 30 % leiden Pflanzen unter Trockenstress.",
+      "watering": {
+        "title": "Von Anwohnenden gegossene Straßenbäume (Gieß den Kiez)",
+        "teaser": "Gieß den Kiez: {{litres}} für Straßenbäume in den 30 Tagen bis {{date}}",
+        "last30": "30 Tage bis {{date}}",
+        "litresValue": "{{n}} Liter",
+        "litres": "Liter",
+        "trees": "Bäume",
+        "waterings": "Gießvorgänge",
+        "season": "{{year}} bisher: {{litres}} für {{trees}} Bäume",
+        "previous": "{{year}}: {{litres}} für {{trees}} Bäume",
+        "top": "Meistgegossen in diesem Jahr: {{districts}}",
+        "none": "In den 30 Tagen bis {{date}} wurde kein Gießen eingetragen; die Gießsaison reicht vom Frühjahr bis in den Herbst.",
+        "cadence": "Wird etwa einmal im Monat veröffentlicht."
+      },
+      "empty": "Keine Bodenfeuchte-Daten"
+    },
     "liftOutages": {
       "title": "Aufzüge & Fahrtreppen",
       "lifts": "Aufzüge außer Betrieb: {{n}}",
@@ -352,6 +486,8 @@
       "allWorking": "Alle Aufzüge und Fahrtreppen in Betrieb",
       "more": "+{{n}} weitere",
       "atStations": "Betroffene Haltestellen: {{n}}",
+      "db": "DB",
+      "until": "ab {{date}} wieder",
       "asOf": "Stand:",
       "empty": "Keine Störungsdaten"
     },
@@ -517,10 +653,22 @@
       "noise": "L\u00e4rm",
       "emergencies": "Notfall",
       "traffic": "Verkehr",
+      "bike-sharing": "Leihräder",
+      "parking": "Parkhäuser",
+      "accidents": "Unfälle",
+      "crime": "Kriminalität",
+      "ev-charging": "E-Ladesäulen",
+      "heat-relief": "Hitzeschutz",
       "water": "Wasser",
       "social": "Soziales",
       "population": "Bevölkerung",
-      "political": "Vertretung"
+      "political": "Vertretung",
+      "reports": "Bürgermeldungen",
+      "trees": "Straßenbäume"
+    },
+    "reports": {
+      "legend": "Stand der Bürgermeldungen",
+      "window": "Meldungen der letzten {{days}} Tage"
     },
     "news": {
       "news": "Nachrichten",
@@ -529,12 +677,19 @@
     "traffic": {
       "public-transport": "Nahverkehr",
       "incidents": "Verkehrslage",
-      "roadworks": "Baustellen"
+      "congestion": "Verkehrsfluss (live)",
+      "roadworks": "Baustellen",
+      "car-counts": "Kfz-Zählstellen",
+      "bike-counts": "Rad-Zählstellen",
+      "zoomIn": "Zum Anzeigen des Verkehrsflusses hineinzoomen",
+      "telraam": "Straßenzählungen (Telraam)"
     },
     "emergencies": {
       "pharmacies": "Apotheken",
-      "aeds": "Defibrillatoren"
+      "aeds": "Defibrillatoren",
+      "hospitals": "Krankenhäuser"
     },
+    "hospitalLegend": "Krankenhäuser nach Notfallversorgung",
     "noise": {
       "total": "Alle Quellen",
       "road": "Straßenverkehr",
@@ -543,9 +698,14 @@
       "live": "Live-Sensoren",
       "zoomIn": "Zum Anzeigen der Lärmkarte bis auf Straßenebene hineinzoomen."
     },
+    "trees": {
+      "zoomIn": "Zum Anzeigen der Bäume bis auf Straßenebene hineinzoomen.",
+      "hint": "Einen Baum anklicken für Art, Alter und Größe."
+    },
     "water": {
       "levels": "Pegelstände",
-      "bathing": "Badegewässer"
+      "bathing": "Badegewässer",
+      "temperature": "Wassertemperatur"
     },
     "social": {
       "rent": "Mietspiegel"
@@ -557,6 +717,96 @@
       "good": "Gute Wohnlage",
       "normal": "Normale Wohnlage",
       "unrated": "Nicht bewertet"
+    },
+    "heatRelief": {
+      "cool": "Kühle Orte",
+      "fountains": "Trinkbrunnen",
+      "toilets": "Öffentliche Toiletten"
+    },
+    "telraamLegend": {
+      "title": "Radanteil am gezählten Fahrzeugverkehr",
+      "low": "Unter 10 % Räder",
+      "some": "10–25 % Räder",
+      "high": "25–50 % Räder",
+      "most": "Die Hälfte oder mehr Räder",
+      "day": "{{day}} · Sensoren: {{segments}}",
+      "citizen": "Telraam-Sensoren von Bürgerinnen und Bürgern (Berlin zählt Mobilität). Die meisten zählen nur bei Tageslicht."
+    },
+    "bikeLegend": {
+      "title": "Verfügbare Räder an der Station",
+      "none": "Keine Räder",
+      "few": "1–2 Räder",
+      "many": "3 und mehr Räder"
+    },
+    "parkingLegend": {
+      "title": "Freie Plätze im Parkhaus",
+      "plenty": "30 % oder mehr frei",
+      "some": "10–30 % frei",
+      "few": "Unter 10 % frei",
+      "closed": "Geschlossen oder keine Daten"
+    },
+    "accidents": {
+      "all": "Alle Unfälle",
+      "bike": "Mit Fahrrad",
+      "pedestrian": "Mit Fußgängern"
+    },
+    "electionLegend": {
+      "strongest": "Stärkste Partei je Gebiet",
+      "strongest_wahlkreis": "Stärkste Partei je Wahlkreis",
+      "strongest_stadtteil": "Stärkste Partei je Stadtteil",
+      "strongest_stadtbezirk": "Stärkste Partei je Stadtbezirk"
+    },
+    "crime": {
+      "total": "Straftaten insgesamt",
+      "assault": "Körperverletzung",
+      "robbery": "Raub",
+      "burglary": "Wohnungseinbruch",
+      "bikeTheft": "Fahrraddiebstahl",
+      "kiez": "Kieztaten"
+    },
+    "crimeLegend": {
+      "title": "Häufigkeit je 100.000 Einwohner im Vergleich zum Stadtdurchschnitt",
+      "year": "Erfasst {{year}} (Polizeiliche Kriminalstatistik)",
+      "cityRate": "Stadtdurchschnitt: {{rate}} je 100.000",
+      "muchLower": "Weniger als die Hälfte des Durchschnitts",
+      "lower": "Unter dem Durchschnitt (0,5–0,8×)",
+      "average": "Etwa im Durchschnitt (0,8–1,25×)",
+      "higher": "Über dem Durchschnitt (1,25–2×)",
+      "muchHigher": "Doppelter Durchschnitt oder mehr",
+      "note": "Straftaten zählen am Tatort und je Einwohner: Gebiete mit wenigen Bewohnern und vielen Besuchern wie die Innenstadt haben hohe Werte."
+    },
+    "accidentLegend": {
+      "title": "Unfälle mit Personenschaden {{year}} nach der schwersten Unfallfolge",
+      "year": "Unfälle mit Personenschaden {{year}}",
+      "killed": "Mit Getöteten",
+      "serious": "Mit Schwerverletzten",
+      "slight": "Mit Leichtverletzten"
+    },
+    "trafficFlowLegend": {
+      "title": "Verkehrsfluss",
+      "flowing": "Fließend",
+      "dense": "Dicht",
+      "slow": "Zäh",
+      "jammed": "Gestaut"
+    },
+    "trafficCountLegend": {
+      "title": "Letzte Stunde im Vergleich zum Üblichen für diese Stunde",
+      "wellBelow": "Viel weniger als üblich",
+      "below": "Weniger als üblich",
+      "usual": "Wie üblich",
+      "above": "Mehr als üblich",
+      "wellAbove": "Viel mehr als üblich",
+      "none": "Kein Vergleich möglich"
+    },
+    "evLegend": {
+      "title": "Ladeleistung",
+      "normal": "Normal (bis 22 kW)",
+      "fast": "Schnell (über 22 kW)",
+      "hpc": "Ultraschnell (ab 150 kW)",
+      "liveTitle": "Live-Status (Ring)",
+      "available": "Ladepunkt frei",
+      "occupied": "Alle belegt",
+      "outOfOrder": "Außer Betrieb"
     },
     "population": {
       "pop-density": "Bevölkerungsdichte",
@@ -571,13 +821,26 @@
       "landesparlament_berlin": "Abgeordnetenhaus",
       "landesparlament_hamburg": "Bürgerschaft",
       "landesparlament_koeln": "Landtag",
-      "landesparlament_muenchen": "Landtag"
+      "landesparlament_muenchen": "Landtag",
+      "elections": "Wahlergebnisse"
     }
   },
   "mapPopup": {
     "readMore": "Weiterlesen",
     "details": "Details",
     "directions": "Route",
+    "heatRelief": {
+      "kind": { "cool": "Kühler Ort", "fountain": "Trinkbrunnen", "toilet": "Öffentliche Toilette" },
+      "setting": { "indoor": "Kühler Innenraum", "air-conditioned": "Klimatisiert", "water": "Am Wasser" },
+      "outOfOrder": "Außer Betrieb",
+      "offSeason": "Außerhalb der Saison",
+      "hours": "Öffnungszeiten",
+      "season": "In Betrieb von {{from}} bis {{to}}",
+      "free": "Kostenlos",
+      "fee": "Gebühr",
+      "accessible": { "yes": "Rollstuhlgerecht", "partly": "Eingeschränkt rollstuhlgerecht", "no": "Nicht rollstuhlgerecht" },
+      "changingTable": "Wickeltisch"
+    },
     "profile": "Profil",
     "phone": "Tel.",
     "today": "Heute",
@@ -604,6 +867,27 @@
       "visibility": "Sichttiefe",
       "euClass": "EU: {{value}}"
     },
+    "hospital": {
+      "tier": {
+        "comprehensive": "Umfassende Notfallversorgung",
+        "extended": "Erweiterte Notfallversorgung",
+        "basic": "Basisnotfallversorgung",
+        "emergency": "Nimmt an der Notfallversorgung teil",
+        "limited": "Eingeschränkte Notfallversorgung",
+        "specialised": "Nur spezielle Notfallversorgung",
+        "none": "Keine Notaufnahme"
+      },
+      "unit": {
+        "children": "Kindernotfall",
+        "strokeUnit": "Stroke Unit",
+        "chestPainUnit": "Chest Pain Unit",
+        "trauma": "Schwerverletzte"
+      },
+      "beds": "{{n}} Betten",
+      "website": "Website",
+      "sourceAtlas": "Bundes-Klinik-Atlas (G-BA)",
+      "sourceHamburg": "Krankenhausverzeichnis Hamburg"
+    },
     "aed": {
       "title": "AED / Defibrillator",
       "indoor": "Innen",
@@ -617,6 +901,16 @@
         "no": "nicht öffentlich"
       }
     },
+    "reports": {
+      "status": {
+        "open": "Offen",
+        "in_progress": "In Bearbeitung",
+        "closed": "Erledigt"
+      },
+      "reported": "Gemeldet",
+      "updated": "Aktualisiert",
+      "viewOnPortal": "Im Portal der Stadt ansehen"
+    },
     "noise": {
       "sensor": "Lärmsensor #{{id}}",
       "min": "Min.",
@@ -626,6 +920,133 @@
         "moderate": "Mäßig",
         "loud": "Laut",
         "veryLoud": "Sehr laut"
+      }
+    },
+    "tree": {
+      "planted": "Gepflanzt",
+      "age_one": "{{count}} Jahr alt",
+      "age_other": "{{count}} Jahre alt",
+      "height": "Höhe",
+      "crown": "Kronendurchmesser",
+      "girth": "Stammumfang"
+    },
+    "telraam": {
+      "unnamed": "Straße ohne Namen",
+      "day": "{{day}} · {{hours}} Std. gezählt",
+      "cars": "Pkw",
+      "bikes": "Räder",
+      "pedestrians": "Zu Fuß",
+      "heavy": "Busse und Lkw",
+      "bikeShare": "Radanteil am Fahrzeugverkehr",
+      "vsUsual": "Veränderung gegenüber dem Median desselben Wochentags der 4 Wochen davor",
+      "noUsual": "Kein üblicher Wert zum Vergleich",
+      "citizen": "Bürgersensor"
+    },
+    "bike": {
+      "bikes": "Verfügbare Räder",
+      "docks": "Freie Stellplätze",
+      "updated": "Stand"
+    },
+    "waterTemperature": {
+      "temperature": "Wassertemperatur",
+      "measured": "Gemessen",
+      "source": "Wasserportal Berlin"
+    },
+    "parking": {
+      "free": "Freie Plätze",
+      "updated": "Stand",
+      "kind": {
+        "garage": "Parkhaus",
+        "underground": "Tiefgarage",
+        "lot": "Parkplatz"
+      },
+      "trend": {
+        "filling": "Füllt sich",
+        "emptying": "Leert sich",
+        "steady": "Gleichbleibend"
+      },
+      "status": {
+        "closed": "Geschlossen",
+        "fault": "Keine aktuelle Zählung (Störung)"
+      }
+    },
+    "crime": {
+      "year": "Polizeiliche Kriminalstatistik {{year}}",
+      "area": "Gebiet",
+      "city": "Stadt",
+      "ratio": "ggü. Stadt",
+      "per100k": "Fälle je 100.000 Einwohner",
+      "cases": "Erfasste Fälle"
+    },
+    "accident": {
+      "severity": {
+        "1": "Unfall mit Getöteten",
+        "2": "Unfall mit Schwerverletzten",
+        "3": "Unfall mit Leichtverletzten"
+      },
+      "type": {
+        "1": "Fahrunfall",
+        "2": "Abbiegeunfall",
+        "3": "Einbiegen-/Kreuzen-Unfall",
+        "4": "Überschreiten-Unfall",
+        "5": "Unfall durch ruhenden Verkehr",
+        "6": "Unfall im Längsverkehr",
+        "7": "Sonstiger Unfall"
+      },
+      "kind": {
+        "0": "Unfall anderer Art",
+        "1": "Zusammenstoß mit anfahrendem, anhaltendem oder ruhendem Fahrzeug",
+        "2": "Zusammenstoß mit vorausfahrendem oder wartendem Fahrzeug",
+        "3": "Zusammenstoß mit seitlich in gleicher Richtung fahrendem Fahrzeug",
+        "4": "Zusammenstoß mit entgegenkommendem Fahrzeug",
+        "5": "Zusammenstoß mit einbiegendem oder kreuzendem Fahrzeug",
+        "6": "Zusammenstoß zwischen Fahrzeug und Fußgänger",
+        "7": "Aufprall auf Fahrbahnhindernis",
+        "8": "Abkommen von der Fahrbahn nach rechts",
+        "9": "Abkommen von der Fahrbahn nach links"
+      },
+      "participant": {
+        "bike": "Fahrrad",
+        "car": "Pkw",
+        "pedestrian": "Fußgänger",
+        "motorcycle": "Kraftrad",
+        "goods": "Güterkraftfahrzeug",
+        "other": "Sonstige (Bus, Straßenbahn …)"
+      },
+      "involved": "Beteiligt",
+      "source": "Unfallatlas {{year}}"
+    },
+    "trafficCount": {
+      "car": "Kraftfahrzeuge",
+      "bike": "Fahrräder",
+      "site": "Zählstelle {{site}}",
+      "count": "Gezählt in der Stunde",
+      "typical": "Üblich zu dieser Stunde",
+      "noTypical": "Noch kein üblicher Wert für diese Stunde",
+      "tooFew": "Zu wenig Verkehr für einen Vergleich",
+      "counters_one": "{{count}} Zähler",
+      "counters_other": "{{count}} Zähler"
+    },
+    "ev": {
+      "points": "Ladepunkte",
+      "plugs": "Stecker",
+      "upTo": "bis",
+      "live": "Live: {{free}} von {{total}} frei",
+      "since": "seit",
+      "register": "Ladesäulenregister der BNetzA vom",
+      "status": {
+        "available": "Frei",
+        "occupied": "Belegt",
+        "outOfOrder": "Außer Betrieb",
+        "unknown": "Unbekannt"
+      },
+      "plug": {
+        "type2": "Typ 2",
+        "ccs": "CCS",
+        "chademo": "CHAdeMO",
+        "schuko": "Schuko",
+        "type1": "Typ 1",
+        "mcs": "MCS"
       }
     }
   },

@@ -66,6 +66,11 @@ export const berlin: CityConfig = {
         { sensorId: 3036, name: 'Pankow', fallbackIds: [48036, 18814] },
         { sensorId: 80508, name: 'Französisch Buchholz', fallbackIds: [13090, 43626] },
       ],
+      // The 15 active BLUME stations in the UBA station list (checked 2026-11-03)
+      ubaStations: [
+        'DEBE010', 'DEBE027', 'DEBE032', 'DEBE034', 'DEBE051', 'DEBE056', 'DEBE061', 'DEBE062',
+        'DEBE065', 'DEBE066', 'DEBE068', 'DEBE069', 'DEBE125', 'DEBE126', 'DEBE127',
+      ],
     },
     events: [
       { source: 'kulturdaten', url: 'https://api-v2.kulturdaten.berlin/api/events' },
@@ -84,6 +89,8 @@ export const berlin: CityConfig = {
       ],
     },
     nina: { ars: '110000000000' },
+    // BNetzA Ladesäulenregister (CC BY 4.0): ~4,950 charging devices, ~3,460 places (2026-09-01 edition)
+    evCharging: { provider: 'bnetza', kreis: 'Kreisfreie Stadt Berlin' },
     roadworks: { provider: 'viz-berlin', url: 'https://api.viz.berlin.de/daten/baustellen_sperrungen.json' },
     // LAGeSo's latest sample per bathing spot (seasonal; the URL is stable)
     bathing: { provider: 'lageso', url: 'https://data.lageso.de/baden/0_letzte/letzte.csv' },
@@ -95,6 +102,26 @@ export const berlin: CityConfig = {
         { uuid: '47d3e815-c556-4e1b-93de-9fe07329fb00', name: 'Köpenick', waterBody: 'Spree' },
         { uuid: '2c68509c-bf1e-4866-9ec4-b26b231e5e04', name: 'Spandau', waterBody: 'Havel' },
         { uuid: '6b595707-8c47-4bc7-a803-dbc327775c26', name: 'Schmöckwitz', waterBody: 'Dahme' },
+      ],
+    },
+    // Water temperature from the Wasserportal Berlin (dl-de/by-2.0, datenregister "Gewässerkundliche
+    // Messdaten"), every 15 min where the station sends online, otherwise in batches a day or two late.
+    // Ids are station numbers (wasserportal.berlin.de/messwerte.php?anzeige=tabelle&thema=owt lists all
+    // ~65); the first four are quality stations (MS/MPS, coordinates converted from the portal's UTM 33N),
+    // the rest gauges, located from the pegelstandorte WFS (checked 2026-11-03).
+    waterTemperature: {
+      provider: 'wasserportal',
+      stations: [
+        { id: '139', name: 'Fischerinsel', waterBody: 'Spree', lat: 52.51393, lon: 13.41077 },
+        { id: '161', name: 'Sophienwerder', waterBody: 'Spree', lat: 52.53615, lon: 13.21628 },
+        { id: '111', name: 'Rahnsdorf', waterBody: 'Müggelspree', lat: 52.42973, lon: 13.68895 },
+        { id: '211', name: 'Schmöckwitz', waterBody: 'Dahme', lat: 52.3743, lon: 13.65347 },
+        { id: '5803500', name: 'Pfaueninsel', waterBody: 'Havel', lat: 52.43028, lon: 13.12392 },
+        { id: '5870100', name: 'Lichterfelde', waterBody: 'Teltowkanal', lat: 52.41998, lon: 13.30320 },
+        { id: '5866301', name: 'Zoo', waterBody: 'Landwehrkanal', lat: 52.51045, lon: 13.33857 },
+        { id: '5800312', name: 'Plötzensee', waterBody: 'Plötzensee', lat: 52.5427, lon: 13.3308 },
+        { id: '5800107', name: 'Am Wolfsschluchtkanal', waterBody: 'Krumme Lanke', lat: 52.44738, lon: 13.23039 },
+        { id: '5800305', name: 'Groß Glienicker See', waterBody: 'Groß Glienicker See', lat: 52.4592, lon: 13.11282 },
       ],
     },
     budget: {
@@ -116,22 +143,74 @@ export const berlin: CityConfig = {
       xlsxUrl: 'https://download.statistik-berlin-brandenburg.de/fca0a030166493d0/1289b0921aa2/SB_A01-16-00_2026h01_BE.xlsx',
     },
     laborMarket: { provider: 'ba', scope: 'bundesland', name: 'Berlin' },
+    // Berlin's grid is in 50Hertz's control area (SMARD, CC BY 4.0)
+    electricity: { provider: 'smard', controlArea: '50Hertz' },
+    // DWD soil moisture (CC BY 4.0) at three stations across the city, and the
+    // street-tree waterings logged on Gieß den Kiez (CC0, daten.berlin.de "gdk-nutzungsdaten")
+    soilMoisture: {
+      provider: 'dwd',
+      stations: [
+        { id: '433', name: 'Berlin-Tempelhof' },
+        { id: '403', name: 'Berlin-Dahlem (FU)' },
+        { id: '400', name: 'Berlin-Buch' },
+      ],
+      treeWatering: {
+        provider: 'giessdenkiez',
+        csvUrl: 'https://raw.githubusercontent.com/technologiestiftung/giessdenkiez-de-opendata/main/daten/giessdenkiez_bew%C3%A4sserungsdaten.csv',
+      },
+    },
     // Influenza A/B and RSV from LAGeSo (dl-de/by-2.0); SARS-CoV-2 from the same three plants in AMELAG
     wastewater: {
       provider: 'lageso',
       csvUrl: 'https://data.lageso.de/infektionsschutz/opendata/abwassermonitoring/BEWAC_abwassermonitoring_berlin.csv',
       sites: ['Berlin Ruhleben', 'Berlin Schönerlinde', 'Berlin Waßmannsdorf'],
     },
+    // RKI IfSG flu and RSV notifications (CC BY 4.0), by Land: Berlin is one
+    respiratoryCases: { provider: 'rki-ifsg', regionId: '11' },
     pollen: {
       provider: 'dwd',
       regionId: 50,         // Brandenburg und Berlin
       partregionId: -1,     // no sub-regions
     },
+    // Heat relief from GDI Berlin's WFS, all dl-de/zero-2.0 (daten.berlin.de, checked 2026-11-03):
+    // 126 cool rooms of the Hitzeschutz plan, 242 BWB fountains (May–October), 525 toilets
+    heatRelief: [
+      { kind: 'cool', provider: 'berlin-cool-rooms', url: 'https://gdi.berlin.de/services/wfs/kuehle_raeume' },
+      { kind: 'fountain', provider: 'berlin-fountains', url: 'https://gdi.berlin.de/services/wfs/trinkwasserbrunnen' },
+      { kind: 'toilet', provider: 'berlin-toilets', url: 'https://gdi.berlin.de/services/wfs/toiletten' },
+    ],
     noiseSensors: {
       provider: 'sensor-community',
       lat: 52.52,
       lon: 13.405,
       radius: 15,
+    },
+    // nextbike Berlin's GBFS (CC0-1.0, stated in its system_information): ~1,080 stations
+    // Lifts and escalators at DB stations (FaSta, CC BY 4.0); fetched only with DB_API_CLIENT_ID and DB_API_KEY
+    stationLifts: { provider: 'db-fasta' },
+    // Hospitals by G-BA emergency tier; on unless KLINIK_ATLAS=false (reuse terms not stated)
+    hospitals: [{ provider: 'klinik-atlas', places: ['Berlin'] }],
+    bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bn/gbfs.json', system: 'nextbike Berlin', operator: 'nextbike' },
+    // Unfallatlas (dl-de/by-2.0): the whole Land, ~13,300 injury accidents in 2025
+    trafficAccidents: { provider: 'unfallatlas', ags: '11000000' },
+    // Berlin zählt Mobilität (CC BY 4.0): citizen Telraam sensors, ~100 Berlin segments counting each day
+    telraamCounts: { provider: 'berlin-zaehlt', baseUrl: 'https://berlin-zaehlt.de/csv/', region: 'DE-BE' },
+    // Abgeordnetenhaus 2026, final result per Wahlbezirk (Amt für Statistik Berlin-Brandenburg,
+    // CC BY 3.0 DE), summed to the 78 Wahlkreise of the outlines (WFS wahlgebiete_agh2026, CC BY 3.0)
+    electionResults: {
+      provider: 'berlin-agh-xlsx',
+      url: 'https://www.wahlen-berlin.de/wahlen/BE2026/Afspraes/AGH/DL/DL_BE_AGHBVV2026.xlsx',
+      election: 'abgeordnetenhaus',
+      date: '2026-09-20',
+      outlines: 'berlin-agh2026-wahlkreise.geojson',
+    },
+    // Kriminalitätsatlas Berlin (Polizei Berlin, CC BY-SA): cases and rates per Bezirksregion,
+    // 2016–2025 in one file. The name carries the year range: copy the new link from
+    // daten.berlin.de "Kriminalitätsatlas Berlin" when the next year appears (checked 2026-11-03).
+    crimeAtlas: {
+      provider: 'polizei-berlin',
+      xlsxUrl: 'https://www.berlin.de/polizei/_assets/dienststellen/lka/fallzahlen_hz-2016-2025.xlsx',
+      outlines: 'berlin-bezirksregionen.geojson',
     },
     appointments: {
       provider: 'service-berlin',

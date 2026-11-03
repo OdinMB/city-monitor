@@ -93,15 +93,32 @@ export const koeln: CityConfig = {
     },
     // DWD warn cell 105315000, by its name: warnings for this region alone.
     weather: { provider: 'brightsky', lat: 50.9375, lon: 6.9603, dwdWarnRegion: 'Stadt Köln' },
+    // The four LANUK (LUQS) stations inside the city in the UBA station list (checked 2026-11-03)
+    airQuality: { ubaStations: ['DENW053', 'DENW059', 'DENW211', 'DENW212'] },
     nina: { ars: '053150000000' }, // kreisfreie Stadt Köln, AGS 05315000
+    // BNetzA Ladesäulenregister (CC BY 4.0): ~1,480 charging devices, ~770 places
+    evCharging: { provider: 'bnetza', kreis: 'Kreisfreie Stadt Köln' },
     aeds: { adminLevel: 6 },       // OSM boundary "Köln" of the kreisfreie Stadt
     pollen: {
       provider: 'dwd',
       regionId: 40,         // Nordrhein-Westfalen
       partregionId: 41,     // Rhein.-Westfäl. Tiefland
     },
+    // Heat relief, all dl-de/zero-2.0 (GovData, checked 2026-11-03): the city's cool places
+    // (73 indoors, 24 air-conditioned, 45 by the water), 16 fountains, AWB's 180 toilets
+    heatRelief: [
+      {
+        kind: 'cool', provider: 'koeln-cool-places', url: 'https://geoportal.stadt-koeln.de/wss/service/kuehle_orte_wfs/guest',
+        layers: ['im_innenraum', 'klimatisierter_ort', 'am_wasser'],
+      },
+      { kind: 'fountain', provider: 'koeln-fountains', url: 'https://geoportal.stadt-koeln.de/wss/service/trinkwasserbrunnen_wfs/guest' },
+      { kind: 'toilet', provider: 'koeln-toilets', url: 'https://www.awbkoeln.de/geodaten/toiletten/' },
+    ],
     // The Kreis table of the kreisfreie Stadt, not the wider Agentur für Arbeit district
     laborMarket: { provider: 'ba', scope: 'kreis', name: 'Köln, Stadt' },
+    electricity: { provider: 'smard', controlArea: 'Amprion' },
+    // DWD soil moisture (CC BY 4.0) at Köln/Bonn airport (Porz), the city's one station in the dataset
+    soilMoisture: { provider: 'dwd', stations: [{ id: '2667', name: 'Köln/Bonn' }] },
     wastewater: { provider: 'amelag', sites: ['Köln'] }, // RKI AMELAG (CC BY 4.0), about 0.86 million people
     waterLevels: {
       provider: 'pegelonline',
@@ -123,6 +140,21 @@ export const koeln: CityConfig = {
     // KVB's lifts and escalators out of service (dl-de/zero-2.0 on open.nrw), every 15 min.
     // KVB publishes no line disruptions as data, so this is Köln's only transit signal.
     liftOutages: { provider: 'kvb', url: 'https://data.webservice-kvb.koeln/service/opendata' },
+    // DB stations (FaSta, CC BY 4.0) merged into the same tile; fetched only with DB_API_CLIENT_ID and DB_API_KEY
+    stationLifts: { provider: 'db-fasta' },
+    // Hospitals by G-BA emergency tier; on unless KLINIK_ATLAS=false (reuse terms not stated)
+    hospitals: [{ provider: 'klinik-atlas', places: ['Köln'] }],
+    // KVB-Rad, run by nextbike: its GBFS (CC0-1.0), ~310 stations, 120 of them virtual (no docks)
+    bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_kg/gbfs.json', system: 'KVB-Rad', operator: 'nextbike' },
+    // "Sag's uns" citizen reports, Open311 on Mark-a-Spot (dl-de/zero-2.0). A request's page
+    // is its Drupal node, which only the extensions name.
+    citizenReports: {
+      provider: 'open311',
+      baseUrl: 'https://sags-uns.stadt-koeln.de/georeport/v2',
+      requestUrl: 'https://sags-uns.stadt-koeln.de/node/{nid}',
+    },
+    // Unfallatlas (dl-de/by-2.0): the kreisfreie Stadt, ~4,900 injury accidents in 2025
+    trafficAccidents: { provider: 'unfallatlas', ags: '05315000' },
     // The city's own events (Stadt Köln open data, dl-de/zero-2.0)
     events: [
       { source: 'stadt-koeln', url: 'https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php' },

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import i18n from 'i18next';
 import type { WebCityConfig } from '@city-monitor/shared';
-import type { PoliticalDistrict } from '../../lib/api.js';
+import type { ElectionResults, PoliticalDistrict, PoliticalVote } from '../../lib/api.js';
 import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
 import { koeln } from '../../config/cities/koeln.js';
@@ -33,9 +33,52 @@ vi.mock('../../hooks/usePolitical.js', () => ({
   },
 }));
 
+const ELECTION: ElectionResults = {
+  election: 'abgeordnetenhaus',
+  date: '2026-09-20',
+  areaLevel: 'wahlkreis',
+  sourceUrl: 'https://example.org/results.xlsx',
+  total: {
+    id: 'total', name: 'Berlin', turnout: 74.2, otherPct: 4.9, leader: 'Die Linke', eligible: null, voters: null,
+    shares: [
+      { party: 'Die Linke', pct: 25.7 }, { party: 'CDU', pct: 18.8 }, { party: 'AfD', pct: 16.3 },
+      { party: 'Grüne', pct: 14.3 }, { party: 'SPD', pct: 12.1 }, { party: 'BSW', pct: 4.0 }, { party: 'FDP', pct: 3.9 },
+    ],
+  },
+  areas: [
+    { id: '0101', name: 'Mitte 1', turnout: 70, otherPct: 5, leader: 'Die Linke', shares: [] },
+    { id: '0102', name: 'Mitte 2', turnout: 71, otherPct: 5, leader: 'Die Linke', shares: [] },
+    { id: '0201', name: 'Friedrichshain-Kreuzberg 1', turnout: 72, otherPct: 5, leader: 'Grüne', shares: [] },
+  ],
+};
+
+vi.mock('../../hooks/useElectionResults.js', () => ({
+  useElectionResults: (_cityId: string, enabled: boolean) => ({
+    data: enabled ? { data: ELECTION, fetchedAt: null } : undefined, isLoading: false, isError: false, refetch: vi.fn(),
+  }),
+}));
+
+const votes = vi.hoisted(() => ({ data: [] as PoliticalVote[], enabled: [] as boolean[] }));
+
+vi.mock('../../hooks/usePoliticalVotes.js', () => ({
+  usePoliticalVotes: (_cityId: string, enabled: boolean) => {
+    votes.enabled.push(enabled);
+    return { data: votes.data };
+  },
+}));
+
+const counts = (yes: number, no: number, abstain: number, noShow: number) => ({ yes, no, abstain, noShow });
+const poll = (id: number, parliament: PoliticalVote['parliament'], accepted: boolean): PoliticalVote => ({
+  id, parliament, title: `Antrag ${id}`, date: '2026-10-16', accepted, topics: [], url: `https://www.abgeordnetenwatch.de/p/${id}`,
+  totals: counts(303, 210, 52, 65), city: counts(1, 1, 0, 0),
+  members: [{ name: 'Anna Alpha', party: 'SPD', vote: 'yes' }, { name: 'Carl Cee', party: 'CDU', vote: 'no' }],
+});
+
 beforeEach(() => {
   state.city = berlin;
   state.levels = [];
+  votes.data = [];
+  votes.enabled = [];
 });
 
 describe('PoliticalStrip views per city', () => {
@@ -44,16 +87,16 @@ describe('PoliticalStrip views per city', () => {
     await i18n.changeLanguage('en');
   });
 
-  it('gives Berlin its state members by Bezirk, its district mayors and the Bundestag', () => {
+  it('gives Berlin its state members by Bezirk, its district mayors, the Bundestag and the election', () => {
     render(<PoliticalStrip expanded={false} />);
-    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
     expect(state.levels.at(-1)).toBe('state-bezirke');
   });
 
-  it('gives Hamburg its state parliament by constituency and the Bundestag, with no district-mayor view', () => {
+  it('gives Hamburg its state parliament by constituency, the Bundestag and the election, with no district-mayor view', () => {
     state.city = hamburg;
     render(<PoliticalStrip expanded={false} />);
-    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
     expect(screen.queryByRole('tab', { name: i18n.t('sidebar.political.bezirke') })).toBeNull();
     expect(state.levels.at(-1)).toBe('state');
   });
@@ -74,11 +117,28 @@ describe('PoliticalStrip views per city', () => {
     expect(screen.queryByText(i18n.t('panel.political.representatives', { count: 1 }))).toBeNull();
   });
 
-  it('gives München its Landtag, its Oberbürgermeister and the Bundestag, with no district-mayor view', () => {
+  it('gives München its Landtag, its Oberbürgermeister, the Bundestag and the election, with no district-mayor view', () => {
     state.city = muenchen;
     render(<PoliticalStrip expanded={false} />);
-    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
     expect(screen.queryByRole('tab', { name: i18n.t('sidebar.political.bezirke') })).toBeNull();
+  });
+
+  it('shows the city-wide election result: five parties collapsed, every party and the strongest per area expanded', () => {
+    const { unmount } = render(<PoliticalStrip expanded={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('panel.elections.tab') }));
+    expect(screen.getByText('Die Linke')).toBeTruthy();
+    expect(screen.getByText('SPD')).toBeTruthy();
+    expect(screen.queryByText('BSW')).toBeNull();
+    expect(screen.getByText(i18n.t('panel.political.showMore', { count: 2 }))).toBeTruthy();
+    expect(screen.getByText('74.2 %')).toBeTruthy();
+    expect(screen.queryByText(i18n.t('sidebar.electionLegend.strongest', { context: 'wahlkreis' }))).toBeNull();
+    unmount();
+
+    render(<PoliticalStrip expanded />);
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('panel.elections.tab') }));
+    expect(screen.getByText('FDP')).toBeTruthy();
+    expect(screen.getByText(i18n.t('sidebar.electionLegend.strongest', { context: 'wahlkreis' }))).toBeTruthy();
   });
 
   it('calls Köln\'s and München\'s state parliament the Landtag in German', async () => {
@@ -101,6 +161,62 @@ describe('PoliticalStrip views per city', () => {
       return name;
     });
     expect(new Set(names).size).toBe(2);
+  });
+});
+
+describe('PoliticalStrip roll-call votes', () => {
+  afterEach(async () => {
+    cleanup();
+    await i18n.changeLanguage('en');
+  });
+
+  it('shows each parliament its own votes, the newest only while collapsed', () => {
+    state.city = hamburg;
+    votes.data = [poll(1, 'bundestag', true), poll(2, 'bundestag', false), poll(3, 'state', true)];
+    render(<PoliticalStrip expanded={false} />);
+
+    expect(screen.getByText('Antrag 3')).toBeTruthy();
+    expect(screen.queryByText('Antrag 1')).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('sidebar.political.bundestag') }));
+    expect(screen.getByText('Antrag 1')).toBeTruthy();
+    expect(screen.queryByText('Antrag 2')).toBeNull();
+    expect(screen.getByText(i18n.t('panel.political.showMore', { count: 1 }))).toBeTruthy();
+    expect(screen.getByText(i18n.t('panel.political.votes.accepted'))).toBeTruthy();
+  });
+
+  it('lists all votes when expanded and opens the members of one', () => {
+    state.city = hamburg;
+    votes.data = [poll(1, 'bundestag', true), poll(2, 'bundestag', false)];
+    render(<PoliticalStrip expanded />);
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('sidebar.political.bundestag') }));
+
+    expect(screen.getByText('Antrag 2')).toBeTruthy();
+    expect(screen.getByText(i18n.t('panel.political.votes.rejected'))).toBeTruthy();
+    expect(screen.queryByText('Carl Cee')).toBeNull();
+    const [first] = screen.getAllByRole('button', { name: i18n.t('panel.political.votes.showMembers') });
+    fireEvent.click(first!);
+    expect(first!.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByText('Carl Cee')).toBeTruthy();
+  });
+
+  it('asks for the votes only in the state and Bundestag views', () => {
+    votes.data = [poll(3, 'state', true)];
+    render(<PoliticalStrip expanded={false} />);
+    expect(votes.enabled.at(-1)).toBe(true);
+    expect(screen.getByText(i18n.t('panel.political.votes.accepted'))).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('sidebar.political.bezirke') }));
+    expect(votes.enabled.at(-1)).toBe(false);
+    fireEvent.click(screen.getByRole('tab', { name: i18n.t('panel.elections.tab') }));
+    expect(votes.enabled.at(-1)).toBe(false);
+    expect(screen.queryByText(i18n.t('panel.political.votes.accepted'))).toBeNull();
+  });
+
+  it.each(['de', 'tr', 'ar'])('labels the vote values in %s', async (lang) => {
+    await i18n.changeLanguage(lang);
+    for (const choice of ['yes', 'no', 'abstain', 'no_show']) {
+      const key = `panel.political.votes.choice.${choice}`;
+      expect(i18n.t(key)).not.toBe(i18n.t(key, { lng: 'en' }));
+    }
   });
 });
 

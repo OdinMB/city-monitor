@@ -5,6 +5,7 @@ import { saveAirQualityGrid } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { ubaIsFreshInCache } from '../lib/air-quality-sources.js';
 
 export type { AirQualityGridPoint } from '@city-monitor/shared';
 
@@ -205,11 +206,16 @@ async function fetchConfiguredSensorCommunityStations(city: CityConfig): Promise
 // ---------------------------------------------------------------------------
 
 export async function ingestCityAirQualityGrid(city: CityConfig, cache: Cache, db: Db | null = null): Promise<void> {
+  // WAQI is only the fallback for the official UBA stations: while those are
+  // fresh nothing would show it, so it is not asked (lib/air-quality-sources.ts)
+  const ubaFresh = ubaIsFreshInCache(cache, city.id);
   let waqiPoints: AirQualityGridPoint[] = [];
-  try {
-    waqiPoints = await fetchWaqiGrid(city);
-  } catch {
-    log.warn(`${city.id}: WAQI fetch failed`);
+  if (!ubaFresh) {
+    try {
+      waqiPoints = await fetchWaqiGrid(city);
+    } catch {
+      log.warn(`${city.id}: WAQI fetch failed`);
+    }
   }
 
   // Fetch fresh SC stations
@@ -258,7 +264,7 @@ export async function ingestCityAirQualityGrid(city: CityConfig, cache: Cache, d
     }
   }
 
-  log.info(`${city.id}: air quality grid updated (${waqiPoints.length} WAQI + ${scPoints.length} SC [${freshScPoints.length} fresh])`);
+  log.info(`${city.id}: air quality grid updated (${ubaFresh ? 'WAQI skipped, UBA fresh' : `${waqiPoints.length} WAQI`} + ${scPoints.length} SC [${freshScPoints.length} fresh])`);
 }
 
 export function createAirQualityGridIngestion(cache: Cache, db: Db | null = null) {

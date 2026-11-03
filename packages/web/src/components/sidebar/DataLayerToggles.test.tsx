@@ -1,9 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from 'i18next';
 import type { WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../../hooks/CityProvider.js';
 import { CityContext } from '../../hooks/CityContext.js';
+import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
 import { koeln } from '../../config/cities/koeln.js';
 import { muenchen } from '../../config/cities/muenchen.js';
@@ -117,9 +119,11 @@ describe('DataLayerToggles shortcuts', () => {
 describe('DataLayerToggles per city', () => {
   function renderFor(city: WebCityConfig) {
     return render(
-      <CityContext.Provider value={city}>
-        <DataLayerToggles />
-      </CityContext.Provider>,
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <CityContext.Provider value={city}>
+          <DataLayerToggles />
+        </CityContext.Provider>
+      </QueryClientProvider>,
     );
   }
   const shown = (label: string) => screen.queryAllByText(label, { exact: true }).length > 0;
@@ -127,9 +131,23 @@ describe('DataLayerToggles per city', () => {
   it('lists only the layers the city has', () => {
     renderFor(hamburg);
     const expected = cityLayers(hamburg).layers;
-    for (const layer of ['warnings', 'news', 'traffic', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political']) {
+    for (const layer of ['warnings', 'news', 'traffic', 'bike-sharing', 'parking', 'ev-charging', 'heat-relief', 'accidents', 'crime', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political']) {
       expect(shown(i18n.t(`sidebar.layers.${layer}`)), layer).toBe(expected.has(layer as DataLayer));
     }
+  });
+
+  it('lists the heat-relief lists a city has, and none for a city with one list', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['heat-relief']) });
+    renderFor(muenchen);
+    expect(shown(i18n.t('sidebar.heatRelief.fountains'))).toBe(true);
+    expect(shown(i18n.t('sidebar.heatRelief.toilets'))).toBe(true);
+    expect(shown(i18n.t('sidebar.heatRelief.cool'))).toBe(false);
+    cleanup();
+    // Hamburg has fountains alone: the layer is that list
+    renderFor(hamburg);
+    expect(shown(i18n.t('sidebar.layers.heat-relief'))).toBe(true);
+    expect(shown(i18n.t('sidebar.heatRelief.fountains'))).toBe(false);
+    cleanup();
   });
 
   it('names each social-atlas indicator the way the city\'s source defines it, with its edition', () => {
@@ -159,8 +177,9 @@ describe('DataLayerToggles per city', () => {
   it('lists a layer\'s sub-layers only when the city has more than one', () => {
     useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic', 'water', 'noise', 'political', 'news']) });
     renderFor(hamburg);
-    // Hamburg has only the Bundestag view; its water layer has gauges and bathing spots.
-    expect(shown(i18n.t('sidebar.political.bundestag'))).toBe(false);
+    // Hamburg has the Bundestag and election views; its water layer has gauges and bathing spots.
+    expect(shown(i18n.t('sidebar.political.bundestag'))).toBe(true);
+    expect(shown(i18n.t('sidebar.political.elections'))).toBe(true);
     expect(shown(i18n.t('sidebar.water.levels'))).toBe(true);
     expect(shown(i18n.t('sidebar.water.bathing'))).toBe(true);
     // It has traffic incidents and roadworks, news and police, and three noise maps without
@@ -174,20 +193,71 @@ describe('DataLayerToggles per city', () => {
   });
 
   it('lists the emergencies layer only with pharmacies or defibrillators, and only the ones the city has', () => {
+    // No hospitals stored: the hospitals sub-layer stays hidden
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ data: null, fetchedAt: null })));
     useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['emergencies']), emergencySubLayers: new Set(['pharmacies']) });
-    renderFor(hamburg);
+    const noHospitals = (f: string) => f !== 'hospitals';
+    renderFor({ ...hamburg, features: hamburg.features.filter(noHospitals) });
     expect(shown(i18n.t('sidebar.emergencies.pharmacies'))).toBe(true);
     expect(shown(i18n.t('sidebar.emergencies.aeds'))).toBe(true);
     cleanup();
 
-    renderFor({ ...hamburg, features: hamburg.features.filter((f) => f !== 'pharmacies') });
+    renderFor({ ...hamburg, features: hamburg.features.filter((f) => noHospitals(f) && f !== 'pharmacies') });
     expect(shown(i18n.t('sidebar.layers.emergencies'))).toBe(true);
     // A lone sub-layer is the layer itself.
     expect(shown(i18n.t('sidebar.emergencies.pharmacies'))).toBe(false);
     cleanup();
 
-    renderFor({ ...hamburg, features: hamburg.features.filter((f) => f !== 'pharmacies' && f !== 'aeds') });
+    renderFor({ ...hamburg, features: hamburg.features.filter((f) => noHospitals(f) && f !== 'pharmacies' && f !== 'aeds') });
     expect(shown(i18n.t('sidebar.layers.emergencies'))).toBe(false);
+    fetchSpy.mockRestore();
+  });
+
+  it('offers hospitals as an emergencies sub-layer only once the server has some, with the tier legend once on', async () => {
+    const hospital = {
+      id: 'hh-1', name: 'Klinik Nord', address: 'Weg 1, 22000 Hamburg', lat: 53.6, lon: 10, tier: 'emergency',
+      children: false, strokeUnit: false, chestPainUnit: false, trauma: false, beds: null, url: null, source: 'hamburg-wfs',
+    };
+    let hospitals: unknown[] = [];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      new Response(JSON.stringify({ data: { hospitals, atlasDate: null }, fetchedAt: '2026-11-03T12:00:00Z' })));
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['emergencies']), emergencySubLayers: new Set(['pharmacies']) });
+    renderFor(hamburg);
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    expect(shown(i18n.t('sidebar.emergencies.hospitals'))).toBe(false);
+    cleanup();
+
+    hospitals = [hospital];
+    renderFor(hamburg);
+    expect(await screen.findByText(i18n.t('sidebar.emergencies.hospitals'))).toBeTruthy();
+    expect(String(fetchSpy.mock.calls.at(-1)![0])).toContain('/hamburg/hospitals');
+    fireEvent.click(buttonWith(i18n.t('sidebar.emergencies.hospitals')));
+    expect(await screen.findByLabelText(i18n.t('sidebar.hospitalLegend'))).toBeTruthy();
+    expect(shown(i18n.t('mapPopup.hospital.tier.emergency'))).toBe(true);
+    expect(shown(i18n.t('mapPopup.hospital.tier.comprehensive'))).toBe(false);
+    fetchSpy.mockRestore();
+  });
+
+  it('offers Hamburg\'s congestion map and counters as traffic sub-layers, each with its legend once on', () => {
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['traffic']), trafficSubLayers: new Set(['incidents']) });
+    renderFor(hamburg);
+    expect(shown(i18n.t('sidebar.traffic.congestion'))).toBe(true);
+    expect(shown(i18n.t('sidebar.traffic.car-counts'))).toBe(true);
+    expect(shown(i18n.t('sidebar.traffic.bike-counts'))).toBe(true);
+    expect(shown(i18n.t('sidebar.trafficFlowLegend.jammed'))).toBe(false);
+    expect(shown(i18n.t('sidebar.trafficCountLegend.usual'))).toBe(false);
+
+    fireEvent.click(buttonWith(i18n.t('sidebar.traffic.congestion')));
+    expect(shown(i18n.t('sidebar.trafficFlowLegend.jammed'))).toBe(true);
+    // The Verkehrslage draws nothing at the zoom Hamburg opens with
+    expect(shown(i18n.t('sidebar.traffic.zoomIn'))).toBe(true);
+    fireEvent.click(buttonWith(i18n.t('sidebar.traffic.bike-counts')));
+    expect(shown(i18n.t('sidebar.trafficCountLegend.usual'))).toBe(true);
+    cleanup();
+
+    renderFor(berlin);
+    expect(shown(i18n.t('sidebar.traffic.congestion'))).toBe(false);
+    expect(shown(i18n.t('sidebar.traffic.car-counts'))).toBe(false);
   });
 
   it('shows each city\'s own rent-map legend under its rent map', () => {
@@ -199,6 +269,43 @@ describe('DataLayerToggles per city', () => {
     expect(shown(i18n.t('sidebar.rentLegend.normal'))).toBe(true);
     expect(shown(i18n.t('sidebar.rentLegend.good'))).toBe(true);
     expect(shown(i18n.t('sidebar.rentLegend.simple'))).toBe(false);
+  });
+
+  it('lists citizen reports for Köln only, with the status legend and counts once the layer is on', async () => {
+    renderFor(hamburg);
+    expect(shown(i18n.t('sidebar.layers.reports'))).toBe(false);
+    cleanup();
+
+    const data = {
+      reports: [], windowDays: 14, total: 9, counts: { open: 4, in_progress: 2, closed: 3 },
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ data, fetchedAt: '2026-11-03T12:00:00Z' })));
+    useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['reports']) });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <CityContext.Provider value={koeln}>
+          <DataLayerToggles />
+        </CityContext.Provider>
+      </QueryClientProvider>,
+    );
+    expect(layerButton('reports').getAttribute('aria-pressed')).toBe('true');
+    expect(shown(i18n.t('mapPopup.reports.status.in_progress'))).toBe(true);
+    expect(await screen.findByText(i18n.t('sidebar.reports.window', { days: 14 }))).toBeTruthy();
+    expect(shown('4') && shown('2') && shown('3')).toBe(true);
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('/koeln/citizen-reports'))).toBe(true);
+    fetchSpy.mockRestore();
+  });
+
+  it('lists street trees where a city has a tree register, with the zoom and click hints once on', () => {
+    renderFor(muenchen);
+    expect(shown(i18n.t('sidebar.layers.trees'))).toBe(false);
+    cleanup();
+    renderFor(koeln);
+    expect(shown(i18n.t('sidebar.trees.zoomIn'))).toBe(false);
+    fireEvent.click(layerButton('trees'));
+    expect(layerButton('trees').getAttribute('aria-pressed')).toBe('true');
+    expect(shown(i18n.t('sidebar.trees.zoomIn'))).toBe(true);
+    expect(shown(i18n.t('sidebar.trees.hint'))).toBe(true);
   });
 
   it('marks the noise map shown where the selected one is missing', () => {

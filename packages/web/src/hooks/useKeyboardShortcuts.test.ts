@@ -26,7 +26,7 @@ vi.mock('./useCommandCenter.js', () => ({
 // --- Helpers ---
 
 const ALL_LAYERS: ReadonlySet<DataLayer> = new Set<DataLayer>([
-  'warnings', 'news', 'traffic', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political',
+  'warnings', 'news', 'traffic', 'bike-sharing', 'ev-charging', 'heat-relief', 'accidents', 'crime', 'weather', 'air-quality', 'noise', 'water', 'emergencies', 'social', 'population', 'political',
 ]);
 
 function fireKey(key: string, opts: Partial<KeyboardEventInit> = {}) {

@@ -4,7 +4,10 @@ import en from '../i18n/en.json';
 import de from '../i18n/de.json';
 import tr from '../i18n/tr.json';
 import ar from '../i18n/ar.json';
-import { getAqiLevel, getUsAqiLevel, getAqiLevelOnScale, gridPointScale, isWaqiStation, waqiAgencies } from './aqi.js';
+import {
+  getAqiLevel, getUsAqiLevel, getAqiLevelOnScale, gridPointScale, isWaqiStation, waqiAgencies,
+  getUbaLevel, measuredSummary, shortStationName,
+} from './aqi.js';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
 import { koeln } from '../config/cities/koeln.js';
@@ -77,6 +80,62 @@ describe('US band names', () => {
     expect(US_LABELS.map((l) => i18n.t(`panel.airQuality.usLevel.${l}`))).toEqual([
       'Good', 'Moderate', 'Unhealthy for Sensitive Groups', 'Unhealthy', 'Very Unhealthy', 'Hazardous',
     ]);
+  });
+});
+
+describe('getUbaLevel', () => {
+  const UBA_LABELS = [0, 1, 2, 3, 4, null].map((i) => getUbaLevel(i).label);
+
+  it('names the five UBA classes and a grey band for no index', () => {
+    expect(UBA_LABELS).toEqual(['veryGood', 'good', 'moderate', 'poor', 'veryPoor', 'unknown']);
+    expect(getUbaLevel(7).label).toBe('unknown');
+    expect(getUbaLevel(4).textColor).toBe('#ffffff');
+    expect(getUbaLevel(0).textColor).toBe('#1f2937');
+  });
+
+  it.each([['en', en], ['de', de], ['tr', tr], ['ar', ar]] as const)('are all translated in %s', (_lang, bundle) => {
+    const names = bundle.panel.airQuality.ubaLevel as Record<string, string>;
+    expect(Object.keys(names).sort()).toEqual([...UBA_LABELS].sort());
+    for (const label of UBA_LABELS) expect(names[label], label).toMatch(/\S/);
+  });
+
+  it('reads UBA’s own class names in German', async () => {
+    await i18n.changeLanguage('de');
+    expect(UBA_LABELS.slice(0, 5).map((l) => i18n.t(`panel.airQuality.ubaLevel.${l}`))).toEqual([
+      'Sehr gut', 'Gut', 'Mäßig', 'Schlecht', 'Sehr schlecht',
+    ]);
+  });
+});
+
+describe('measuredSummary', () => {
+  const s = (setting: 'background' | 'traffic', no2: number | null, measuredAt = '2026-11-02T23:00:00.000Z') =>
+    ({ setting, measuredAt, no2, pm10: null, pm25: null, o3: null });
+
+  it('averages the background stations of the newest hour', () => {
+    const summary = measuredSummary([
+      s('background', 30), s('background', 41), s('traffic', 90), s('background', 10, '2026-11-02T22:00:00.000Z'),
+    ])!;
+    expect(summary.basis).toBe('background');
+    expect(summary.measuredAt).toBe('2026-11-02T23:00:00.000Z');
+    expect(summary.values.no2).toEqual({ value: 35.5, stations: 2 });
+    expect(summary.values.o3).toBeNull();
+  });
+
+  it('falls back to all stations when none is a background station, and to null without stations', () => {
+    expect(measuredSummary([s('traffic', 50)])!.basis).toBe('all');
+    expect(measuredSummary([])).toBeNull();
+  });
+});
+
+describe('shortStationName', () => {
+  it.each([
+    ['Berlin Wedding', 'Berlin', 'Wedding'],
+    ['München/Stachus', 'München', 'Stachus'],
+    ['Köln-Chorweiler', 'Köln', 'Chorweiler'],
+    ['Hamburg Max-Brauer-Allee II (Straße)', 'Hamburg', 'Max-Brauer-Allee II (Straße)'],
+    ['Barsbüttel', 'Hamburg', 'Barsbüttel'],
+  ])('%s in %s → %s', (name, city, short) => {
+    expect(shortStationName(name, city)).toBe(short);
   });
 });
 

@@ -13,7 +13,7 @@ import { CityContext } from '../../hooks/CityContext.js';
 import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
 import { muenchen } from '../../config/cities/muenchen.js';
-import { CommandLayout } from './CommandLayout.js';
+import { CommandLayout, LiftOutagesTile } from './CommandLayout.js';
 
 // Only where the warnings sit matters here, not the map itself.
 vi.mock('../map/CityMap.js', () => ({ CityMap: () => <div /> }));
@@ -181,6 +181,8 @@ const FEATURE_TILES: ReadonlyArray<[CityFeature, string]> = [
   ['transit', 'panel.transit.title'],
   ['pollen', 'panel.pollen.title'],
   ['wastewater', 'panel.wastewater.title'],
+  ['electricity', 'panel.electricity.title'],
+  ['soilMoisture', 'panel.soilMoisture.title'],
   ['feuerwehr', 'panel.feuerwehr.title'],
   ['bathing', 'panel.bathing.title'],
   ['events', 'panel.events.title'],
@@ -237,5 +239,38 @@ describe('CommandLayout tiles', { timeout: 30_000 }, () => {
     }
     // Every city has weather and air quality.
     expect(titles).toEqual(expect.arrayContaining([i18n.t('panel.weather.title'), i18n.t('panel.airQuality.title')]));
+  });
+});
+
+describe('LiftOutagesTile', () => {
+  function renderTile(city: WebCityConfig, data: unknown) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    queryClient.setQueryData(['lift-outages', city.id], { data, fetchedAt: data ? new Date().toISOString() : null });
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <CityContext.Provider value={city}>
+          <LiftOutagesTile />
+        </CityContext.Provider>
+      </QueryClientProvider>,
+    );
+  }
+  const title = () => screen.queryByRole('heading', { level: 2, name: i18n.t('panel.liftOutages.title') });
+  const dbOutage = { id: 'db-1', kind: 'lift', station: 'Berlin Hbf', unit: '', lat: null, lon: null, info: null, operator: 'db' };
+
+  it('stays hidden in a city with DB stations only while the server has no data (no DB key)', () => {
+    renderTile(berlin, null);
+    expect(title()).toBeNull();
+  });
+
+  it('shows once DB stations have data', () => {
+    renderTile(berlin, { outages: [dbOutage], updated: null });
+    expect(title()).not.toBeNull();
+    expect(screen.getByText('Berlin Hbf')).toBeTruthy();
+  });
+
+  it('keeps Köln\'s KVB tile, which says when there is no data', () => {
+    renderTile({ ...hamburg, id: 'koeln', features: ['liftOutages', 'stationLifts'] }, null);
+    expect(title()).not.toBeNull();
+    expect(screen.getByText(i18n.t('panel.liftOutages.empty'))).toBeTruthy();
   });
 });

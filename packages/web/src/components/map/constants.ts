@@ -2,12 +2,13 @@
  * Map constants, color ramps, and shared type aliases.
  */
 
-import type { AirQualityGridPoint, WaterLevelStation } from '../../lib/api.js';
+import type { AirQualityGridPoint, AirQualityStation, WaterLevelStation } from '../../lib/api.js';
 
 export const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 export const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
 export const EMPTY_AQ: AirQualityGridPoint[] = [];
+export const EMPTY_UBA: AirQualityStation[] = [];
 export const EMPTY_WL: WaterLevelStation[] = [];
 
 /** Layers to KEEP — everything else gets hidden */
@@ -136,6 +137,74 @@ export function getRentMapAttribution(cityId: string): string | undefined {
   return RENT_MAP_WMS[cityId]?.attribution;
 }
 
+/**
+ * Bike-sharing availability bands, for the station circles and the sidebar
+ * legend; `key` names the `sidebar.bikeLegend` label. 1–2 bikes is "few", 3 and
+ * more "many".
+ */
+export const BIKE_AVAILABILITY: ReadonlyArray<{ key: 'none' | 'few' | 'many'; color: string }> = [
+  { key: 'none', color: '#94a3b8' },
+  { key: 'few', color: '#f59e0b' },
+  { key: 'many', color: '#16a34a' },
+];
+
+/**
+ * Car-park bands by the share of spaces free, for the parking circles and the
+ * sidebar legend; `key` names the `sidebar.parkingLegend` label. `minShare` is
+ * the lowest free share of the band; `closed` is a closed car park or one whose
+ * guidance system reports a fault, whatever its count.
+ */
+export const PARKING_OCCUPANCY: ReadonlyArray<{ key: 'plenty' | 'some' | 'few' | 'closed'; color: string; minShare: number | null }> = [
+  { key: 'plenty', color: '#16a34a', minShare: 0.3 },
+  { key: 'some', color: '#f59e0b', minShare: 0.1 },
+  { key: 'few', color: '#dc2626', minShare: 0 },
+  { key: 'closed', color: '#94a3b8', minShare: null },
+];
+
+/**
+ * Accident severity (the worst injury: 1 killed, 2 seriously, 3 slightly
+ * injured), for the accident circles and the sidebar legend; `key` names the
+ * `sidebar.accidentLegend` label.
+ */
+export const ACCIDENT_SEVERITY: ReadonlyArray<{ severity: 1 | 2 | 3; key: 'killed' | 'serious' | 'slight'; color: string }> = [
+  { severity: 1, key: 'killed', color: '#991b1b' },
+  { severity: 2, key: 'serious', color: '#ef4444' },
+  { severity: 3, key: 'slight', color: '#f59e0b' },
+];
+
+/**
+ * EV charging stations by power class, for the circles and the sidebar legend;
+ * `key` names the `sidebar.evLegend` label. Normal: up to 22 kW AC; fast: a
+ * Schnellladeeinrichtung or DC plug below 150 kW; high power (HPC): 150 kW and up.
+ */
+export const EV_POWER_CLASSES: ReadonlyArray<{ key: 'normal' | 'fast' | 'hpc'; color: string }> = [
+  { key: 'normal', color: '#0ea5e9' },
+  { key: 'fast', color: '#f97316' },
+  { key: 'hpc', color: '#c026d3' },
+];
+
+/**
+ * A station's live status as the ring around its circle shows it (cities with
+ * a live feed); `key` names the `sidebar.evLegend` label.
+ */
+export const EV_LIVE_STATES: ReadonlyArray<{ key: 'available' | 'occupied' | 'outOfOrder'; color: string }> = [
+  { key: 'available', color: '#16a34a' },
+  { key: 'occupied', color: '#f59e0b' },
+  { key: 'outOfOrder', color: '#dc2626' },
+];
+
+/**
+ * The share of bikes among the vehicles a Telraam sensor counted (bikes, cars,
+ * heavy vehicles), for the street-count circles and the sidebar legend; each
+ * class starts at `from` (a fraction). `key` names its `sidebar.telraamLegend` label.
+ */
+export const TELRAAM_BIKE_SHARE: ReadonlyArray<{ from: number; key: 'low' | 'some' | 'high' | 'most'; color: string }> = [
+  { from: 0, key: 'low', color: '#94a3b8' },
+  { from: 0.1, key: 'some', color: '#86efac' },
+  { from: 0.25, key: 'high', color: '#22c55e' },
+  { from: 0.5, key: 'most', color: '#15803d' },
+];
+
 /** The classes of the city's rent map, for the sidebar legend (empty without one). */
 export function getRentMapLegend(cityId: string): readonly RentMapClass[] {
   return RENT_MAP_WMS[cityId]?.legend ?? [];
@@ -213,6 +282,218 @@ export function getNoiseWmsUrl(cityId: string, noiseLayer: string): string | nul
   return `${base}?service=WMS&version=1.1.1&request=GetMap` +
     `&layers=${layer}&styles=&format=image/png&transparent=true` +
     `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}`;
+}
+
+export const TRAFFIC_FLOW_SOURCE = 'traffic-flow-wms';
+export const TRAFFIC_FLOW_LAYER = 'traffic-flow-layer';
+
+/** One class of a city's congestion map: the i18n key under `sidebar.trafficFlowLegend` and the colour its WMS draws. */
+export interface TrafficFlowClass {
+  key: 'flowing' | 'dense' | 'slow' | 'jammed';
+  color: string;
+}
+
+interface TrafficFlowWms {
+  /** The WMS endpoint, without query. */
+  base: string;
+  layer: string;
+  /** The map credit, as the provider and licence ask. */
+  attribution: string;
+  /** The classes the WMS draws, from free-flowing to jammed. */
+  legend: readonly TrafficFlowClass[];
+  /** The zoom from which the WMS draws anything (it renders empty tiles further out). */
+  minZoom?: number;
+}
+
+/**
+ * How often the congestion map is asked for new tiles. Hamburg's Verkehrslage
+ * is recomputed every 5 minutes; the service sends no-cache.
+ */
+export const TRAFFIC_FLOW_REFRESH_MS = 5 * 60_000;
+
+/**
+ * Each city's live congestion map, the `congestion` sub-layer of the traffic
+ * layer. A city lists the `trafficFlowMap` feature exactly when it has an
+ * entry (config/index.test.ts checks).
+ */
+const TRAFFIC_FLOW_WMS: Record<string, TrafficFlowWms> = {
+  // Verkehrslage Hamburg: the road network's state every 5 minutes, out to the
+  // motorways towards Lüneburg, Bremen, Flensburg and Lübeck. GetCapabilities
+  // <Fees>: dl-de/by-2.0 with this credit line (checked 2026-11-03). It draws
+  // nothing at 1:270,000 (zoom 11) and starts at zoom 12. Colours sampled from
+  // its GetLegendGraphic.
+  hamburg: {
+    base: 'https://geodienste.hamburg.de/wms_hh_verkehrslage',
+    layer: 'verkehrslage',
+    attribution:
+      '<a href="https://geodienste.hamburg.de/wms_hh_verkehrslage?SERVICE=WMS&amp;REQUEST=GetCapabilities" target="_blank">Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende</a>, ' +
+      '<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank">dl-de/by-2-0</a>',
+    legend: [
+      { key: 'flowing', color: '#2ca62c' },
+      { key: 'dense', color: '#e88528' },
+      { key: 'slow', color: '#e70104' },
+      { key: 'jammed', color: '#971718' },
+    ],
+    minZoom: 12,
+  },
+};
+
+/**
+ * The city's congestion map tile URL template, or null when it has none.
+ * `refresh` changes the URL (and so the tiles) every refresh period.
+ */
+export function getTrafficFlowWmsUrl(cityId: string, refresh = 0): string | null {
+  const wms = TRAFFIC_FLOW_WMS[cityId];
+  if (!wms) return null;
+  return `${wms.base}?service=WMS&version=1.1.1&request=GetMap` +
+    `&layers=${wms.layer}&styles=&format=image/png&transparent=true` +
+    `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}&t=${refresh}`;
+}
+
+export function getTrafficFlowAttribution(cityId: string): string | undefined {
+  return TRAFFIC_FLOW_WMS[cityId]?.attribution;
+}
+
+/** The classes of the city's congestion map, for the sidebar legend (empty without one). */
+export function getTrafficFlowLegend(cityId: string): readonly TrafficFlowClass[] {
+  return TRAFFIC_FLOW_WMS[cityId]?.legend ?? [];
+}
+
+/** The zoom from which the city's congestion map shows, or undefined when it shows at every zoom. */
+export function getTrafficFlowMinZoom(cityId: string): number | undefined {
+  return TRAFFIC_FLOW_WMS[cityId]?.minZoom;
+}
+
+/**
+ * Bands of a counting site's count against its usual count for that hour, for
+ * the site circles and the sidebar legend; `key` names the
+ * `sidebar.trafficCountLegend` label. `below` is the upper bound of the
+ * count / usual ratio. Blue for less traffic than usual, orange to red for
+ * more; grey where there is nothing to compare.
+ */
+export const TRAFFIC_COUNT_LEVELS: ReadonlyArray<{ key: 'wellBelow' | 'below' | 'usual' | 'above' | 'wellAbove'; below: number; color: string }> = [
+  { key: 'wellBelow', below: 0.6, color: '#1d4ed8' },
+  { key: 'below', below: 0.85, color: '#60a5fa' },
+  { key: 'usual', below: 1.15, color: '#a8a29e' },
+  { key: 'above', below: 1.4, color: '#fb923c' },
+  { key: 'wellAbove', below: Infinity, color: '#dc2626' },
+];
+export const TRAFFIC_COUNT_NONE_COLOR = '#e5e7eb';
+
+/**
+ * Below this usual count per hour a site is not compared: at night a few
+ * vehicles more or less double or halve the count.
+ */
+export const TRAFFIC_COUNT_MIN_TYPICAL: Record<'car' | 'bike', number> = { car: 50, bike: 10 };
+
+export type TrafficCountLevel = (typeof TRAFFIC_COUNT_LEVELS)[number]['key'] | 'none';
+
+/** A site's band, or 'none' without a usual count or with too little traffic to compare. */
+export function trafficCountLevel(count: number, typical: number | null, mode: 'car' | 'bike'): TrafficCountLevel {
+  if (typical === null || typical < TRAFFIC_COUNT_MIN_TYPICAL[mode]) return 'none';
+  const ratio = count / typical;
+  return TRAFFIC_COUNT_LEVELS.find((l) => ratio < l.below)!.key;
+}
+
+export const STREET_TREES_SOURCE = 'street-trees-wms';
+export const STREET_TREES_LAYER = 'street-trees-wms-layer';
+
+/**
+ * From this zoom the trees layer requests tiles. The registers hold one dot per
+ * tree (Berlin about 900,000), which merge into a green carpet further out, and
+ * Köln's service draws nothing beyond about 1:50,000.
+ */
+export const STREET_TREES_MIN_ZOOM = 15;
+
+/** How a register's GetFeatureInfo answers: GeoServer's GeoJSON, or a GML feature collection. */
+export type StreetTreeInfoFormat = 'application/json' | 'text/xml';
+
+interface StreetTreesWms {
+  base: string;
+  /** The WMS layers to draw and query, comma-separated. */
+  layers: string;
+  infoFormat: StreetTreeInfoFormat;
+  attribution: string;
+}
+
+/**
+ * Each city's street-tree register as a WMS, drawn from STREET_TREES_MIN_ZOOM
+ * and queried for one tree on a click (lib/street-trees.ts). A city lists the
+ * `streetTrees` feature exactly when it has an entry here (config/index.test.ts).
+ * München publishes no tree register (.context/street-trees.md).
+ */
+const STREET_TREES_WMS: Record<string, StreetTreesWms> = {
+  // Street and park trees (Straßen- und Anlagenbäume). GetCapabilities <Fees>:
+  // dl-de/zero-2.0 (checked 2026-11-03); Zero asks for no credit, kept as a courtesy.
+  berlin: {
+    base: 'https://gdi.berlin.de/services/wms/baumbestand',
+    layers: 'strassenbaeume,anlagenbaeume',
+    infoFormat: 'application/json',
+    attribution:
+      '<a href="https://gdi.berlin.de/services/wms/baumbestand?REQUEST=GetCapabilities&amp;SERVICE=WMS" target="_blank">Baumbestand Berlin</a>, ' +
+      '<a href="https://www.govdata.de/dl-de/zero-2-0" target="_blank">dl-de/zero-2-0</a>',
+  },
+  // GetCapabilities <Fees>: dl-de/by-2.0 with this source line (checked 2026-11-03).
+  hamburg: {
+    base: 'https://geodienste.hamburg.de/HH_WMS_Strassenbaumkataster',
+    layers: 'strassenbaumkataster',
+    infoFormat: 'text/xml',
+    attribution:
+      '<a href="https://geodienste.hamburg.de/HH_WMS_Strassenbaumkataster?REQUEST=GetCapabilities&amp;SERVICE=WMS" target="_blank">Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft</a>, ' +
+      '<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank">dl-de/by-2-0</a>',
+  },
+  // GetCapabilities <AccessConstraints>: dl-de/zero-2.0 (checked 2026-11-03).
+  koeln: {
+    base: 'https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wms/guest',
+    layers: 'baumkataster',
+    infoFormat: 'text/xml',
+    attribution:
+      '<a href="https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wms/guest?REQUEST=GetCapabilities&amp;SERVICE=WMS" target="_blank">Stadt Köln</a>, ' +
+      '<a href="https://www.govdata.de/dl-de/zero-2-0" target="_blank">dl-de/zero-2-0</a>',
+  },
+};
+
+/** The city's street-tree tile URL template, or null when it has no tree register. */
+export function getStreetTreesWmsUrl(cityId: string): string | null {
+  const wms = STREET_TREES_WMS[cityId];
+  if (!wms) return null;
+  return `${wms.base}?service=WMS&version=1.1.1&request=GetMap` +
+    `&layers=${wms.layers}&styles=&format=image/png&transparent=true` +
+    `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}`;
+}
+
+export function getStreetTreesAttribution(cityId: string): string | undefined {
+  return STREET_TREES_WMS[cityId]?.attribution;
+}
+
+/**
+ * Half the side of the window a tree query asks about, in screen pixels: a dot
+ * is about 8 px across. Each service then applies its own pixel tolerance; all
+ * three found a tree 8 px off its centre (checked 2026-11-03).
+ */
+const TREE_QUERY_HALF = 6;
+
+/**
+ * A GetFeatureInfo request for the tree under a point, as its format, or null
+ * for a city without a register. `x`/`y` are web-mercator metres, `metresPerPixel`
+ * the map's scale there: the request covers a small window around the point and
+ * asks about its centre pixel.
+ */
+export function getStreetTreeInfoRequest(
+  cityId: string, x: number, y: number, metresPerPixel: number,
+): { url: string; format: StreetTreeInfoFormat } | null {
+  const wms = STREET_TREES_WMS[cityId];
+  if (!wms) return null;
+  const size = TREE_QUERY_HALF * 2 + 1;
+  const half = (size / 2) * metresPerPixel;
+  const bbox = [x - half, y - half, x + half, y + half].map((v) => v.toFixed(2)).join(',');
+  // WMS 1.3.0: Berlin's GeoServer JSON template fails without its CRS parameter.
+  // EPSG:3857 keeps easting-northing axis order in 1.3.0 too.
+  const url = `${wms.base}?service=WMS&version=1.3.0&request=GetFeatureInfo` +
+    `&layers=${wms.layers}&query_layers=${wms.layers}&styles=&crs=EPSG:3857` +
+    `&bbox=${bbox}&width=${size}&height=${size}&i=${TREE_QUERY_HALF}&j=${TREE_QUERY_HALF}` +
+    `&info_format=${encodeURIComponent(wms.infoFormat)}&feature_count=1`;
+  return { url, format: wms.infoFormat };
 }
 
 export const POLITICAL_MARKER_LAYER = 'political-marker-icon';

@@ -22,17 +22,33 @@ import { createWeatherTilesRouter } from './routes/weather-tiles.js';
 import { createConstructionRouter } from './routes/construction.js';
 import { createAedsRouter } from './routes/aeds.js';
 import { createSocialAtlasRouter } from './routes/social-atlas.js';
+import { createHeatReliefRouter } from './routes/heat-relief.js';
+import { createHospitalsRouter } from './routes/hospitals.js';
 import { createAppointmentsRouter } from './routes/appointments.js';
 import { createWaterLevelsRouter } from './routes/water-levels.js';
+import { createWaterTemperatureRouter } from './routes/water-temperature.js';
 import { createBudgetRouter } from './routes/budget.js';
 import { createBathingRouter } from './routes/bathing.js';
 import { createLiftOutagesRouter } from './routes/lift-outages.js';
+import { createBikeSharingRouter } from './routes/bike-sharing.js';
+import { createParkingRouter } from './routes/parking.js';
+import { createElectricityRouter } from './routes/electricity.js';
+import { createCitizenReportsRouter } from './routes/citizen-reports.js';
+import { createTrafficAccidentsRouter } from './routes/traffic-accidents.js';
+import { createCrimeAtlasRouter } from './routes/crime-atlas.js';
+import { createTrafficCountsRouter } from './routes/traffic-counts.js';
+import { createEvChargingRouter } from './routes/ev-charging.js';
+import { createSoilMoistureRouter } from './routes/soil-moisture.js';
+import { createTelraamCountsRouter } from './routes/telraam-counts.js';
+import { createElectionResultsRouter } from './routes/election-results.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
+import { createRespiratoryCasesRouter } from './routes/respiratory-cases.js';
 import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createPopulationRouter } from './routes/population.js';
 import { createFeuerwehrRouter } from './routes/feuerwehr.js';
 import { createPollenRouter } from './routes/pollen.js';
 import { createFloodStatusRouter } from './routes/flood-status.js';
+import { createAirQualityStationsRouter } from './routes/air-quality-stations.js';
 import { createNoiseSensorsRouter } from './routes/noise-sensors.js';
 import { createCouncilMeetingsRouter } from './routes/council-meetings.js';
 import { createBootstrapRouter } from './routes/bootstrap.js';
@@ -51,17 +67,33 @@ import { createAirQualityGridIngestion } from './cron/ingest-air-quality-grid.js
 import { createConstructionIngestion } from './cron/ingest-construction.js';
 import { createAedIngestion } from './cron/ingest-aeds.js';
 import { createSocialAtlasIngestion } from './cron/ingest-social-atlas.js';
+import { createHeatReliefIngestion } from './cron/ingest-heat-relief.js';
+import { activeHospitalSources, createHospitalIngestion } from './cron/ingest-hospitals.js';
 import { createWaterLevelIngestion } from './cron/ingest-water-levels.js';
+import { createWaterTemperatureIngestion } from './cron/ingest-water-temperature.js';
 import { createBudgetIngestion } from './cron/ingest-budget.js';
 import { createAppointmentIngestion } from './cron/ingest-appointments.js';
 import { createBathingIngestion } from './cron/ingest-bathing.js';
-import { createLiftOutageIngestion } from './cron/ingest-lift-outages.js';
+import { createLiftOutageIngestion, ingestsLiftOutages } from './cron/ingest-lift-outages.js';
+import { createBikeSharingIngestion } from './cron/ingest-bike-sharing.js';
+import { createParkingIngestion } from './cron/ingest-parking.js';
+import { createElectricityIngestion } from './cron/ingest-electricity.js';
+import { createCitizenReportIngestion } from './cron/ingest-citizen-reports.js';
+import { createTrafficAccidentIngestion } from './cron/ingest-traffic-accidents.js';
+import { createCrimeAtlasIngestion } from './cron/ingest-crime-atlas.js';
+import { createTrafficCountIngestion } from './cron/ingest-traffic-counts.js';
+import { createEvChargingIngestion, createEvChargingStatusIngestion } from './cron/ingest-ev-charging.js';
+import { createSoilMoistureIngestion } from './cron/ingest-soil-moisture.js';
+import { createTelraamCountsIngestion } from './cron/ingest-telraam-counts.js';
+import { createElectionResultsIngestion } from './cron/ingest-election-results.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
+import { createRespiratoryCasesIngestion } from './cron/ingest-respiratory-cases.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { createPopulationIngestion } from './cron/ingest-population.js';
 import { createFeuerwehrIngestion } from './cron/ingest-feuerwehr.js';
 import { createPollenIngestion } from './cron/ingest-pollen.js';
 import { createFloodStatusIngestion } from './cron/ingest-flood-status.js';
+import { createUbaAirQualityIngestion } from './cron/ingest-uba-air-quality.js';
 import { createNoiseSensorIngestion } from './cron/ingest-noise-sensors.js';
 import { createCouncilMeetingIngestion } from './cron/ingest-council-meetings.js';
 import { initGeocodeDb } from './lib/geocode.js';
@@ -168,10 +200,14 @@ export async function createApp(options?: {
     { jobName: 'ingest-traffic',      tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'tomtom-traffic' }, serves: () => true },
     { jobName: 'ingest-political',    tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'abgwatch-bundestag' }, serves: hasParliamentConfig },
     // No spec for ingest-aq-grid: it runs on every start (see the job list)
+    { jobName: 'ingest-uba-air-quality', tableName: 'snapshots', maxAgeSeconds: 3600, filter: { column: 'type', value: 'uba-airquality' }, serves: (c) => !!c.dataSources.airQuality?.ubaStations?.length },
     { jobName: 'ingest-construction', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'viz-roadworks' }, serves: (c) => !!c.dataSources.roadworks },
     { jobName: 'ingest-aeds',         tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'osm-aeds' }, serves: inGermany },
     { jobName: 'ingest-social-atlas', tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'mss-social-atlas' }, serves: (c) => !!c.dataSources.socialAtlas },
+    { jobName: 'ingest-heat-relief',  tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'heat-relief' }, serves: (c) => !!c.dataSources.heatRelief?.length },
+    { jobName: 'ingest-hospitals',    tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'hospitals' }, serves: (c) => activeHospitalSources(c).length > 0 },
     { jobName: 'ingest-water-levels', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'pegelonline' }, serves: (c) => !!c.dataSources.waterLevels?.stations.length },
+    { jobName: 'ingest-water-temperature', tableName: 'snapshots', maxAgeSeconds: 900, filter: { column: 'type', value: 'wasserportal-temp' }, serves: (c) => !!c.dataSources.waterTemperature?.stations.length },
     { jobName: 'ingest-flood-status', tableName: 'snapshots', maxAgeSeconds: 300,     filter: { column: 'type', value: 'lhp-flood' }, serves: (c) => !!c.dataSources.floodStatus?.stations.length },
     { jobName: 'ingest-budget',       tableName: 'snapshots', maxAgeSeconds: 86400,  filter: { column: 'type', value: 'berlin-haushalt' }, serves: (c) => !!c.dataSources.budget },
     // No `serves`: table-wide, so a fresh row of any city skips the startup run.
@@ -179,10 +215,27 @@ export async function createApp(options?: {
     { jobName: 'ingest-appointments', tableName: 'snapshots', maxAgeSeconds: 43200,   filter: { column: 'type', value: 'service-berlin' } },
     // The type is lageso-bathing for every provider, as viz-roadworks is for every roadworks feed
     { jobName: 'ingest-bathing',      tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-bathing' }, serves: (c) => !!c.dataSources.bathing },
-    { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => !!c.dataSources.liftOutages },
+    { jobName: 'ingest-lift-outages', tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'kvb-lift-outages' }, serves: (c) => ingestsLiftOutages(c) },
+    // 30 min: the job stores a row that often (BIKE_SHARING_DB_INTERVAL_MS), though it runs every 5
+    { jobName: 'ingest-bike-sharing', tableName: 'snapshots', maxAgeSeconds: 1800,    filter: { column: 'type', value: 'bike-sharing' }, serves: (c) => !!c.dataSources.bikeSharing },
+    // 15 min: the job stores a row that often (PARKING_DB_INTERVAL_MS), though it runs every 5
+    { jobName: 'ingest-parking',      tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'parking' }, serves: (c) => !!c.dataSources.parking },
+    { jobName: 'ingest-electricity',  tableName: 'snapshots', maxAgeSeconds: 900,     filter: { column: 'type', value: 'smard-electricity' }, serves: (c) => !!c.dataSources.electricity },
+    { jobName: 'ingest-citizen-reports', tableName: 'snapshots', maxAgeSeconds: 900, filter: { column: 'type', value: 'open311-reports' }, serves: (c) => !!c.dataSources.citizenReports },
+    { jobName: 'ingest-soil-moisture', tableName: 'snapshots', maxAgeSeconds: 43200, filter: { column: 'type', value: 'dwd-soil-moisture' }, serves: (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0 },
     { jobName: 'ingest-wastewater',   tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'lageso-wastewater' }, serves: (c) => !!c.dataSources.wastewater },
+    // 2 h: the counts are hourly, and a row is stored when a new hour comes in
+    { jobName: 'ingest-traffic-counts', tableName: 'snapshots', maxAgeSeconds: 7200,  filter: { column: 'type', value: 'traffic-counts' }, serves: (c) => !!c.dataSources.trafficCounts },
+    // Weekly job on a monthly register. No spec for ingest-ev-charging-status: cache only, it runs on every start
+    { jobName: 'ingest-ev-charging',  tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'bnetza-charging' }, serves: (c) => !!c.dataSources.evCharging },
+    { jobName: 'ingest-respiratory-cases', tableName: 'snapshots', maxAgeSeconds: 86400, filter: { column: 'type', value: 'rki-ifsg-cases' }, serves: (c) => !!c.dataSources.respiratoryCases },
     { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' }, serves: (c) => !!c.dataSources.laborMarket },
     { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: (c) => !!c.dataSources.population },
+    { jobName: 'ingest-traffic-accidents', tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'unfallatlas-accidents' }, serves: (c) => !!c.dataSources.trafficAccidents },
+    // A day: each run counts yesterday, so a row from before today's first run is a day behind
+    { jobName: 'ingest-telraam-counts', tableName: 'snapshots', maxAgeSeconds: 86400, filter: { column: 'type', value: 'telraam-counts' }, serves: (c) => !!c.dataSources.telraamCounts },
+    { jobName: 'ingest-election-results', tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'election-results' }, serves: (c) => !!c.dataSources.electionResults },
+    { jobName: 'ingest-crime-atlas', tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'kriminalitaetsatlas' }, serves: (c) => !!c.dataSources.crimeAtlas },
     { jobName: 'ingest-feuerwehr',    tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'bf-feuerwehr' }, serves: inBerlin },
     { jobName: 'ingest-pollen',       tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'dwd-pollen' }, serves: (c) => !!c.dataSources.pollen },
     { jobName: 'ingest-noise-sensors', tableName: 'snapshots', maxAgeSeconds: 1800,   filter: { column: 'type', value: 'sc-dnms' }, serves: (c) => !!c.dataSources.noiseSensors },
@@ -212,16 +265,33 @@ export async function createApp(options?: {
   const ingestTraffic = createTrafficIngestion(cache, db);
   const ingestPolitical = createPoliticalIngestion(cache, db);
   const ingestAqGrid = createAirQualityGridIngestion(cache, db);
+  const ingestUbaAirQuality = createUbaAirQualityIngestion(cache, db);
   const ingestConstruction = createConstructionIngestion(cache, db);
   const ingestAeds = createAedIngestion(cache, db);
   const ingestSocialAtlas = createSocialAtlasIngestion(cache, db);
+  const ingestHeatRelief = createHeatReliefIngestion(cache, db);
+  const ingestHospitals = createHospitalIngestion(cache, db);
   const ingestWaterLevels = createWaterLevelIngestion(cache, db);
+  const ingestWaterTemperature = createWaterTemperatureIngestion(cache, db);
   const ingestFloodStatus = createFloodStatusIngestion(cache, db);
   const ingestBudget = createBudgetIngestion(cache, db);
   const ingestAppointments = createAppointmentIngestion(cache, db);
   const ingestBathing = createBathingIngestion(cache, db);
   const ingestLiftOutages = createLiftOutageIngestion(cache, db);
+  const ingestBikeSharing = createBikeSharingIngestion(cache, db);
+  const ingestParking = createParkingIngestion(cache, db);
+  const ingestElectricity = createElectricityIngestion(cache, db);
+  const ingestCitizenReports = createCitizenReportIngestion(cache, db);
+  const ingestTrafficAccidents = createTrafficAccidentIngestion(cache, db);
+  const ingestCrimeAtlas = createCrimeAtlasIngestion(cache, db);
+  const ingestTrafficCounts = createTrafficCountIngestion(cache, db);
+  const ingestEvCharging = createEvChargingIngestion(cache, db);
+  const ingestEvChargingStatus = createEvChargingStatusIngestion(cache);
+  const ingestSoilMoisture = createSoilMoistureIngestion(cache, db);
+  const ingestTelraamCounts = createTelraamCountsIngestion(cache, db);
+  const ingestElectionResults = createElectionResultsIngestion(cache, db);
   const ingestWastewater = createWastewaterIngestion(cache, db);
+  const ingestRespiratoryCases = createRespiratoryCasesIngestion(cache, db);
   const ingestLaborMarket = createLaborMarketIngestion(cache, db);
   const ingestPopulation = createPopulationIngestion(cache, db);
   const ingestFeuerwehr = createFeuerwehrIngestion(cache, db);
@@ -247,10 +317,17 @@ export async function createApp(options?: {
     // Always on start: the stored grid holds no WAQI stations (WAQI's terms
     // forbid archiving them), so a fresh row cannot stand in for a run.
     { name: 'ingest-aq-grid', schedule: '*/30 * * * *', handler: ingestAqGrid, runOnStart: true },
+    // UBA publishes each hour one to two hours late, not at a fixed minute
+    { name: 'ingest-uba-air-quality', schedule: '10,40 * * * *', handler: ingestUbaAirQuality, runOnStart: s('ingest-uba-air-quality') },
     { name: 'ingest-construction', schedule: '*/30 * * * *', handler: ingestConstruction, runOnStart: s('ingest-construction') },
     { name: 'ingest-aeds', schedule: '0 0 * * *', handler: ingestAeds, runOnStart: s('ingest-aeds') },
     { name: 'ingest-social-atlas', schedule: '0 5 * * 0', handler: ingestSocialAtlas, runOnStart: s('ingest-social-atlas') },
+    // Static lists (cool places, fountains, toilets) that change a few times a year
+    { name: 'ingest-heat-relief', schedule: '30 5 * * 1', handler: ingestHeatRelief, runOnStart: s('ingest-heat-relief') },
+    { name: 'ingest-hospitals', schedule: '45 5 * * 1', handler: ingestHospitals, runOnStart: s('ingest-hospitals') },
     { name: 'ingest-water-levels', schedule: '*/15 * * * *', handler: ingestWaterLevels, runOnStart: s('ingest-water-levels') },
+    // The Wasserportal's online stations send 15-minute values; off the quarter hour so the newest has landed
+    { name: 'ingest-water-temperature', schedule: '4,19,34,49 * * * *', handler: ingestWaterTemperature, runOnStart: s('ingest-water-temperature') },
     // LHP's terms ask for a refresh at least every 10 minutes
     { name: 'ingest-flood-status', schedule: '*/5 * * * *', handler: ingestFloodStatus, runOnStart: s('ingest-flood-status') },
     { name: 'ingest-budget', schedule: '0 6 * * *', handler: ingestBudget, runOnStart: s('ingest-budget') },
@@ -258,9 +335,36 @@ export async function createApp(options?: {
     { name: 'ingest-bathing', schedule: '0 6 * * *', handler: ingestBathing, runOnStart: s('ingest-bathing') },
     // KVB updates its outage lists about every 15 minutes
     { name: 'ingest-lift-outages', schedule: '*/15 * * * *', handler: ingestLiftOutages, runOnStart: s('ingest-lift-outages') },
+    // GBFS updates every 60 s; the store gets a row at most every 30 min (BIKE_SHARING_DB_INTERVAL_MS)
+    { name: 'ingest-bike-sharing', schedule: '*/5 * * * *', handler: ingestBikeSharing, runOnStart: s('ingest-bike-sharing') },
+    // Hamburg's Parkleitsystem reports every 5 minutes; the store gets a row at most every 15 (PARKING_DB_INTERVAL_MS)
+    { name: 'ingest-parking', schedule: '1-59/5 * * * *', handler: ingestParking, runOnStart: s('ingest-parking') },
+    // SMARD and Energy-Charts publish quarter-hours; minute 2 of each lets the newest one land.
+    // Energy-Charts allows about 2 requests per minute per endpoint: one call each per run.
+    { name: 'ingest-electricity', schedule: '2,17,32,47 * * * *', handler: ingestElectricity, runOnStart: s('ingest-electricity') },
+    // Citizen reports: the last fortnight every 15 min, off the quarter hour, paged gently
+    { name: 'ingest-citizen-reports', schedule: '7,22,37,52 * * * *', handler: ingestCitizenReports, runOnStart: s('ingest-citizen-reports') },
+    // Hourly counts that arrive over one to two hours: every 15 min picks up a new hour soon after most counters have it
+    { name: 'ingest-traffic-counts', schedule: '*/15 * * * *', handler: ingestTrafficCounts, runOnStart: s('ingest-traffic-counts') },
+    // The BNetzA register is monthly (a 55 MB CSV); a weekly look picks up a new edition within days
+    { name: 'ingest-ev-charging', schedule: '30 4 * * 3', handler: ingestEvCharging, runOnStart: s('ingest-ev-charging') },
+    // Hamburg's live charge-point status, not stored, so always on start
+    { name: 'ingest-ev-charging-status', schedule: '*/5 * * * *', handler: ingestEvChargingStatus, runOnStart: true },
+    // The DWD regenerates its soil files once a day, around 09:00 UTC; the afternoon run catches a late one
+    { name: 'ingest-soil-moisture', schedule: '30 10,16 * * *', handler: ingestSoilMoisture, runOnStart: s('ingest-soil-moisture') },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
+    // The RKI overwrites both files once a week (data cut Wednesday 0:00); a daily run picks them up within a day
+    { name: 'ingest-respiratory-cases', schedule: '15 6 * * *', handler: ingestRespiratoryCases, runOnStart: s('ingest-respiratory-cases') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
     { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
+    // The Unfallatlas publishes one year each July: a monthly run picks it up within weeks
+    { name: 'ingest-traffic-accidents', schedule: '0 5 2 * *', handler: ingestTrafficAccidents, runOnStart: s('ingest-traffic-accidents') },
+    // Berlin zählt Mobilität rebuilds its files at about 02:15 local time; the second run catches a late night
+    { name: 'ingest-telraam-counts', schedule: '25 4,11 * * *', handler: ingestTelraamCounts, runOnStart: s('ingest-telraam-counts') },
+    // Final election results change only with a correction: monthly is plenty
+    { name: 'ingest-election-results', schedule: '30 5 3 * *', handler: ingestElectionResults, runOnStart: s('ingest-election-results') },
+    // The Kriminalitätsatlas adds one year each autumn: a monthly run picks it up within weeks
+    { name: 'ingest-crime-atlas', schedule: '0 5 3 * *', handler: ingestCrimeAtlas, runOnStart: s('ingest-crime-atlas') },
     { name: 'ingest-feuerwehr', schedule: '0 8 * * *', handler: ingestFeuerwehr, runOnStart: s('ingest-feuerwehr') },
     { name: 'ingest-pollen', schedule: '0 */6 * * *', handler: ingestPollen, runOnStart: s('ingest-pollen') },
     { name: 'ingest-noise-sensors', schedule: '*/10 * * * *', handler: ingestNoiseSensors, runOnStart: s('ingest-noise-sensors') },
@@ -292,8 +396,15 @@ export async function createApp(options?: {
     // Stricter rate limit for heavy payloads (GeoJSON, large data objects)
     const heavyPayloadLimit = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
     app.use('/api/:city/social-atlas', heavyPayloadLimit);
+    app.use('/api/:city/heat-relief', heavyPayloadLimit);
     app.use('/api/:city/population', heavyPayloadLimit);
     app.use('/api/:city/aeds', heavyPayloadLimit);
+    app.use('/api/:city/bike-sharing', heavyPayloadLimit);
+    app.use('/api/:city/traffic-accidents', heavyPayloadLimit);
+    app.use('/api/:city/crime-atlas', heavyPayloadLimit);
+    app.use('/api/:city/traffic-counts', heavyPayloadLimit);
+    app.use('/api/:city/ev-charging', heavyPayloadLimit);
+    app.use('/api/:city/election-results', heavyPayloadLimit);
     app.use('/api/:city/budget', heavyPayloadLimit);
   }
 
@@ -305,21 +416,38 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(300), createSafetyRouter(cache, db));
   app.use('/api', cacheFor(120), createNinaRouter(cache, db));
   app.use('/api', cacheFor(600), createAirQualityRouter(cache, db));
+  app.use('/api', cacheFor(600), createAirQualityStationsRouter(cache, db));
   app.use('/api', cacheFor(3600), createPharmaciesRouter(cache, db));
   app.use('/api', cacheFor(120), createTrafficRouter(cache, db));
   app.use('/api', cacheFor(900), createConstructionRouter(cache, db));
   app.use('/api', cacheFor(43200), createAedsRouter(cache, db));
   app.use('/api', cacheFor(43200), createSocialAtlasRouter(cache, db));
+  app.use('/api', cacheFor(43200), createHeatReliefRouter(cache, db));
+  app.use('/api', cacheFor(43200), createHospitalsRouter(cache, db));
   app.use('/api', cacheFor(300), createWaterLevelsRouter(cache, db));
+  app.use('/api', cacheFor(300), createWaterTemperatureRouter(cache, db));
   app.use('/api', cacheFor(120), createFloodStatusRouter(cache, db));
   app.use('/api', cacheFor(3600), createPoliticalRouter(cache, db));
   app.use('/api', cacheFor(3600), createBudgetRouter(cache, db));
   app.use('/api', cacheFor(3600), createAppointmentsRouter(cache, db));
   app.use('/api', cacheFor(43200), createBathingRouter(cache, db));
   app.use('/api', cacheFor(300), createLiftOutagesRouter(cache, db));
+  app.use('/api', cacheFor(120), createBikeSharingRouter(cache, db));
+  app.use('/api', cacheFor(120), createParkingRouter(cache, db));
+  app.use('/api', cacheFor(300), createElectricityRouter(cache, db));
+  app.use('/api', cacheFor(300), createCitizenReportsRouter(cache, db));
+  app.use('/api', cacheFor(300), createTrafficCountsRouter(cache, db));
+  // Short for Hamburg's live status (every 5 min); the register itself changes monthly
+  app.use('/api', cacheFor(120), createEvChargingRouter(cache, db));
+  app.use('/api', cacheFor(3600), createSoilMoistureRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
+  app.use('/api', cacheFor(43200), createRespiratoryCasesRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
   app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));
+  app.use('/api', cacheFor(43200), createTrafficAccidentsRouter(cache, db));
+  app.use('/api', cacheFor(3600), createTelraamCountsRouter(cache, db));
+  app.use('/api', cacheFor(43200), createElectionResultsRouter(cache, db));
+  app.use('/api', cacheFor(43200), createCrimeAtlasRouter(cache, db));
   app.use('/api', cacheFor(43200), createFeuerwehrRouter(cache, db));
   app.use('/api', cacheFor(43200), createPollenRouter(cache, db));
   app.use('/api', cacheFor(300), createNoiseSensorsRouter(cache, db));

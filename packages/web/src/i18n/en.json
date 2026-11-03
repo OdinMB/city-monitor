@@ -68,6 +68,12 @@
       "humidity": "Humidity",
       "wind": "Wind",
       "feelsLike": "Feels like",
+      "heatRelief": {
+        "warning": "Heat warning in force",
+        "outlook": "Heat expected in the coming days",
+        "onMap": "On the map: {{places}}",
+        "show": "Show on the map"
+      },
       "hourly": "Hourly",
       "daily": "Daily",
       "high": "H",
@@ -187,7 +193,29 @@
         "veryUnhealthy": "Very Unhealthy",
         "hazardous": "Hazardous"
       },
-      "stationCredit": "Stations: World Air Quality Index Project and originating agencies"
+      "stationCredit": "Stations: World Air Quality Index Project and originating agencies",
+      "ubaLevel": {
+        "veryGood": "Very good",
+        "good": "Good",
+        "moderate": "Moderate",
+        "poor": "Poor",
+        "veryPoor": "Very poor",
+        "unknown": "No index"
+      },
+      "ubaIndex": "UBA air quality index",
+      "officialStation": "Official measuring station",
+      "officialStations": "Official measuring stations (UBA air quality index)",
+      "officialCredit": "Source:",
+      "setting": {
+        "traffic": "Traffic",
+        "background": "Background",
+        "industrial": "Industrial"
+      },
+      "hourEnding": "Hour ending {{time}}",
+      "model": "model",
+      "modelled": "Model forecast (CAMS)",
+      "measuredBackground": "Measured at the official urban background stations, hour ending {{time}}",
+      "measuredAll": "Measured at the official stations, hour ending {{time}}"
     },
     "map": {
       "title": "Map",
@@ -196,6 +224,22 @@
         "ctrlScroll": "Use Ctrl + scroll to zoom the map",
         "cmdScroll": "Use ⌘ + scroll to zoom the map"
       }
+    },
+    "elections": {
+      "tab": "Election",
+      "title": "{{election}}, {{date}}",
+      "kind": {
+        "abgeordnetenhaus": "Abgeordnetenhaus election",
+        "buergerschaft": "Bürgerschaft election",
+        "stadtrat": "City council election"
+      },
+      "vote": {
+        "abgeordnetenhaus": "second votes",
+        "buergerschaft": "party list votes",
+        "stadtrat": "share of all votes"
+      },
+      "others": "Others",
+      "turnout": "Turnout"
     },
     "political": {
       "empty": "No data available",
@@ -207,7 +251,17 @@
       "seats_one": "seat",
       "seats_other": "seats",
       "showMore": "+{{count}} more…",
-      "profileLink": "Profile of {{name}}"
+      "profileLink": "Profile of {{name}}",
+      "votes": {
+        "title": "Latest roll-call votes",
+        "accepted": "Adopted",
+        "rejected": "Rejected",
+        "overall": "Whole parliament: {{yes}} yes, {{no}} no",
+        "cityMembers": "City's members:",
+        "showMembers": "How they voted",
+        "hideMembers": "Hide members",
+        "choice": { "yes": "Yes", "no": "No", "abstain": "Abstained", "no_show": "Absent" }
+      }
     },
     "budget": {
       "title": "City Budget",
@@ -327,6 +381,15 @@
         "low": "Low",
         "moderate": "Moderate",
         "high": "High"
+      },
+      "cases": {
+        "title": "Reported cases",
+        "week": "Week {{week}}",
+        "flu": "Influenza",
+        "rsv": "RSV",
+        "incidence": "{{value}} per 100k",
+        "trendLabel": "{{pathogen}} reported cases trend",
+        "source": "Lab-confirmed cases notified under the Infection Protection Act (RKI)"
       }
     },
     "floodStatus": {
@@ -345,6 +408,77 @@
       "asOf": "As of",
       "empty": "No flood data"
     },
+    "electricity": {
+      "title": "Electricity",
+      "renewableShare": "renewable share of generation in the {{area}} grid area at {{time}}",
+      "mixLabel": "Generation mix in the {{area}} grid area",
+      "kind": {
+        "wind": "Wind",
+        "solar": "Solar",
+        "biomass": "Biomass",
+        "hydro": "Hydro",
+        "gas": "Gas",
+        "coal": "Coal",
+        "other": "Other"
+      },
+      "co2": "CO₂ intensity, Germany",
+      "forecast": "forecast",
+      "signal": "Grid signal, Germany",
+      "signalLevel": {
+        "2": "Green: a good time to use power",
+        "1": "Yellow: average renewable share",
+        "0": "Red: low renewable share",
+        "-1": "Red: grid congestion"
+      },
+      "greenUntil": "Green until {{end}}",
+      "greenWindow": "Green {{start}}–{{end}}",
+      "noGreen": "No green period forecast",
+      "history": "Renewable share in the {{area}} grid area, last 24 hours",
+      "signalTimeline": "Grid signal, Germany, today",
+      "greenestHour": "Greenest hour ahead: {{time}} ({{share}} renewable)",
+      "germanyShare": "Germany now: {{share}} of consumption from renewables",
+      "empty": "No electricity data"
+    },
+    "soilMoisture": {
+      "title": "Soil Moisture",
+      "headline": "of the water the soil can hold for plants, under grass on sandy soil, {{date}}",
+      "level": {
+        "very-dry": "Very dry",
+        "dry": "Dry",
+        "moderate": "Adequate",
+        "moist": "Moist",
+        "wet": "Wet"
+      },
+      "hint": {
+        "very-dry": "Drought stress: plants and young street trees run short of water",
+        "dry": "Plants are starting to run short of water",
+        "moderate": "Plants are well supplied",
+        "moist": "Plenty of water in the soil",
+        "wet": "The soil holds more water than it can keep"
+      },
+      "change": "{{change}} pts in {{days}} days",
+      "history": "Last 90 days",
+      "historyMean": "Last 90 days, mean of {{n}} DWD stations",
+      "historyLabel": "Soil moisture under grass on sandy soil, last 90 days",
+      "loamy": "On loamy soil: {{value}}",
+      "station": "DWD station {{name}}",
+      "explain": "Daily values of the DWD's agrometeorological model for 0–60 cm, in % of usable field capacity (nFK); below 30% plants suffer drought stress.",
+      "watering": {
+        "title": "Street trees watered by residents (Gieß den Kiez)",
+        "teaser": "Gieß den Kiez: residents watered street trees with {{litres}} in the 30 days to {{date}}",
+        "last30": "30 days to {{date}}",
+        "litresValue": "{{n}} litres",
+        "litres": "Litres",
+        "trees": "Trees",
+        "waterings": "Waterings",
+        "season": "{{year}} so far: {{litres}} for {{trees}} trees",
+        "previous": "{{year}}: {{litres}} for {{trees}} trees",
+        "top": "Most watered this year: {{districts}}",
+        "none": "No waterings logged in the 30 days to {{date}}; watering season runs from spring to autumn.",
+        "cadence": "Published about once a month."
+      },
+      "empty": "No soil moisture data"
+    },
     "liftOutages": {
       "title": "Lifts & Escalators",
       "lifts": "Lifts out of service: {{n}}",
@@ -354,6 +488,8 @@
       "allWorking": "All lifts and escalators in service",
       "more": "+{{n}} more",
       "atStations": "Stations affected: {{n}}",
+      "db": "DB",
+      "until": "back {{date}}",
       "asOf": "As of",
       "empty": "No outage data"
     },
@@ -515,10 +651,22 @@
       "noise": "Noise",
       "emergencies": "Emergencies",
       "traffic": "Traffic",
+      "bike-sharing": "Bike Sharing",
+      "parking": "Car Parks",
+      "accidents": "Accidents",
+      "crime": "Crime",
+      "ev-charging": "EV Charging",
+      "heat-relief": "Heat Relief",
       "water": "Water",
       "social": "Social",
       "population": "Population",
-      "political": "Representation"
+      "political": "Representation",
+      "reports": "Citizen Reports",
+      "trees": "Street Trees"
+    },
+    "reports": {
+      "legend": "Status of citizen reports",
+      "window": "Reports of the last {{days}} days"
     },
     "news": {
       "news": "News",
@@ -527,12 +675,19 @@
     "traffic": {
       "public-transport": "Public Transport",
       "incidents": "Incidents",
-      "roadworks": "Roadworks"
+      "congestion": "Congestion (live)",
+      "roadworks": "Roadworks",
+      "car-counts": "Car counts",
+      "bike-counts": "Bicycle counts",
+      "zoomIn": "Zoom in to see the congestion map",
+      "telraam": "Street counts (Telraam)"
     },
     "emergencies": {
       "pharmacies": "Pharmacies",
-      "aeds": "AEDs"
+      "aeds": "AEDs",
+      "hospitals": "Hospitals"
     },
+    "hospitalLegend": "Hospitals by emergency care",
     "noise": {
       "total": "All Sources",
       "road": "Road Traffic",
@@ -541,9 +696,14 @@
       "live": "Live Sensors",
       "zoomIn": "Zoom in to street level to see the noise map."
     },
+    "trees": {
+      "zoomIn": "Zoom in to street level to see the trees.",
+      "hint": "Click a tree for its species, age and size."
+    },
     "water": {
       "levels": "Water Levels",
-      "bathing": "Bathing Water"
+      "bathing": "Bathing Water",
+      "temperature": "Water Temperature"
     },
     "social": {
       "rent": "Rent"
@@ -556,6 +716,96 @@
       "normal": "Normal location",
       "unrated": "Not rated"
     },
+    "heatRelief": {
+      "cool": "Cool Places",
+      "fountains": "Drinking Fountains",
+      "toilets": "Public Toilets"
+    },
+    "telraamLegend": {
+      "title": "Share of bikes among the vehicles counted",
+      "low": "Under 10 % bikes",
+      "some": "10–25 % bikes",
+      "high": "25–50 % bikes",
+      "most": "Half or more bikes",
+      "day": "{{day}} · Sensors: {{segments}}",
+      "citizen": "Citizen-run Telraam sensors (Berlin zählt Mobilität). Most count in daylight only."
+    },
+    "bikeLegend": {
+      "title": "Bikes available at a station",
+      "none": "No bikes",
+      "few": "1–2 bikes",
+      "many": "3 or more bikes"
+    },
+    "parkingLegend": {
+      "title": "Free spaces in a car park",
+      "plenty": "30% or more free",
+      "some": "10–30% free",
+      "few": "Under 10% free",
+      "closed": "Closed or no data"
+    },
+    "accidents": {
+      "all": "All accidents",
+      "bike": "With bicycles",
+      "pedestrian": "With pedestrians"
+    },
+    "electionLegend": {
+      "strongest": "Strongest party per area",
+      "strongest_wahlkreis": "Strongest party per constituency",
+      "strongest_stadtteil": "Strongest party per quarter",
+      "strongest_stadtbezirk": "Strongest party per district"
+    },
+    "crime": {
+      "total": "All offences",
+      "assault": "Assault",
+      "robbery": "Robbery",
+      "burglary": "Domestic burglary",
+      "bikeTheft": "Bicycle theft",
+      "kiez": "Neighbourhood crime (Kieztaten)"
+    },
+    "crimeLegend": {
+      "title": "Rate per 100,000 residents compared with the city average",
+      "year": "Recorded in {{year}} (police crime statistics)",
+      "cityRate": "City average: {{rate}} per 100,000",
+      "muchLower": "Under half the city average",
+      "lower": "Below average (0.5–0.8×)",
+      "average": "Around average (0.8–1.25×)",
+      "higher": "Above average (1.25–2×)",
+      "muchHigher": "Twice the average or more",
+      "note": "Offences are counted where they happened, per resident: areas with few residents and many visitors, such as the city centre, show high rates."
+    },
+    "accidentLegend": {
+      "title": "Accidents with personal injury in {{year}}, by the worst injury",
+      "year": "Injury accidents in {{year}}",
+      "killed": "Someone killed",
+      "serious": "Seriously injured",
+      "slight": "Slightly injured"
+    },
+    "trafficFlowLegend": {
+      "title": "Traffic flow",
+      "flowing": "Flowing",
+      "dense": "Heavy",
+      "slow": "Slow-moving",
+      "jammed": "Jammed"
+    },
+    "trafficCountLegend": {
+      "title": "Last hour compared with the usual for that hour",
+      "wellBelow": "Far less than usual",
+      "below": "Less than usual",
+      "usual": "As usual",
+      "above": "More than usual",
+      "wellAbove": "Far more than usual",
+      "none": "Nothing to compare"
+    },
+    "evLegend": {
+      "title": "Charging power",
+      "normal": "Normal (up to 22 kW)",
+      "fast": "Fast (over 22 kW)",
+      "hpc": "High power (150 kW and up)",
+      "liveTitle": "Live status (ring)",
+      "available": "A point is free",
+      "occupied": "All in use",
+      "outOfOrder": "Out of order"
+    },
     "population": {
       "pop-density": "Population Density",
       "pop-elderly": "Elderly Share",
@@ -565,13 +815,26 @@
       "bezirke": "Districts",
       "mayor": "City Hall",
       "bundestag": "Bundestag",
-      "landesparlament": "State Parliament"
+      "landesparlament": "State Parliament",
+      "elections": "Election results"
     }
   },
   "mapPopup": {
     "readMore": "Read more",
     "details": "Details",
     "directions": "Directions",
+    "heatRelief": {
+      "kind": { "cool": "Cool place", "fountain": "Drinking fountain", "toilet": "Public toilet" },
+      "setting": { "indoor": "Cool indoor space", "air-conditioned": "Air-conditioned", "water": "By the water" },
+      "outOfOrder": "Out of order",
+      "offSeason": "Off season",
+      "hours": "Hours",
+      "season": "Runs from {{from}} to {{to}}",
+      "free": "Free of charge",
+      "fee": "Fee",
+      "accessible": { "yes": "Wheelchair accessible", "partly": "Partly wheelchair accessible", "no": "Not wheelchair accessible" },
+      "changingTable": "Baby changing table"
+    },
     "profile": "Profile",
     "phone": "Tel",
     "today": "Today",
@@ -598,6 +861,27 @@
       "visibility": "Visibility",
       "euClass": "EU: {{value}}"
     },
+    "hospital": {
+      "tier": {
+        "comprehensive": "Comprehensive emergency care",
+        "extended": "Extended emergency care",
+        "basic": "Basic emergency care",
+        "emergency": "Takes part in emergency care",
+        "limited": "Limited emergency care",
+        "specialised": "Specialised emergency care only",
+        "none": "No emergency department"
+      },
+      "unit": {
+        "children": "Children's emergency",
+        "strokeUnit": "Stroke unit",
+        "chestPainUnit": "Chest pain unit",
+        "trauma": "Severe injuries"
+      },
+      "beds": "{{n}} beds",
+      "website": "Website",
+      "sourceAtlas": "Bundes-Klinik-Atlas (G-BA)",
+      "sourceHamburg": "Hamburg hospital register"
+    },
     "aed": {
       "title": "AED / Defibrillator",
       "indoor": "Indoor",
@@ -611,6 +895,16 @@
         "no": "not public"
       }
     },
+    "reports": {
+      "status": {
+        "open": "Open",
+        "in_progress": "In progress",
+        "closed": "Closed"
+      },
+      "reported": "Reported",
+      "updated": "Updated",
+      "viewOnPortal": "View on the city's portal"
+    },
     "noise": {
       "sensor": "Noise Sensor #{{id}}",
       "min": "Min",
@@ -620,6 +914,133 @@
         "moderate": "Moderate",
         "loud": "Loud",
         "veryLoud": "Very Loud"
+      }
+    },
+    "tree": {
+      "planted": "Planted",
+      "age_one": "{{count}} year old",
+      "age_other": "{{count}} years old",
+      "height": "Height",
+      "crown": "Crown diameter",
+      "girth": "Trunk girth"
+    },
+    "telraam": {
+      "unnamed": "Unnamed street",
+      "day": "{{day}} · {{hours}} h counted",
+      "cars": "Cars",
+      "bikes": "Bikes",
+      "pedestrians": "Pedestrians",
+      "heavy": "Buses and lorries",
+      "bikeShare": "Bikes among vehicles",
+      "vsUsual": "Changes against the median of the same weekday in the 4 weeks before",
+      "noUsual": "No usual value to compare with",
+      "citizen": "Citizen sensor"
+    },
+    "bike": {
+      "bikes": "Bikes available",
+      "docks": "Free docks",
+      "updated": "Updated"
+    },
+    "waterTemperature": {
+      "temperature": "Water temperature",
+      "measured": "Measured",
+      "source": "Wasserportal Berlin"
+    },
+    "parking": {
+      "free": "Free spaces",
+      "updated": "Updated",
+      "kind": {
+        "garage": "Multi-storey car park",
+        "underground": "Underground car park",
+        "lot": "Car park"
+      },
+      "trend": {
+        "filling": "Filling up",
+        "emptying": "Emptying",
+        "steady": "Steady"
+      },
+      "status": {
+        "closed": "Closed",
+        "fault": "No current count (fault)"
+      }
+    },
+    "crime": {
+      "year": "Police crime statistics {{year}}",
+      "area": "Area",
+      "city": "City",
+      "ratio": "vs city",
+      "per100k": "Cases per 100,000 residents",
+      "cases": "Cases recorded"
+    },
+    "accident": {
+      "severity": {
+        "1": "Accident with fatalities",
+        "2": "Accident with serious injuries",
+        "3": "Accident with minor injuries"
+      },
+      "type": {
+        "1": "Loss of control",
+        "2": "Turning accident",
+        "3": "Turning-in or crossing accident",
+        "4": "Pedestrian crossing the road",
+        "5": "Accident involving parked vehicles",
+        "6": "Accident in moving traffic",
+        "7": "Other accident"
+      },
+      "kind": {
+        "0": "Other kind of accident",
+        "1": "Collision with a starting, stopping or stationary vehicle",
+        "2": "Collision with a vehicle ahead or waiting",
+        "3": "Collision with a vehicle alongside in the same direction",
+        "4": "Collision with an oncoming vehicle",
+        "5": "Collision with a turning or crossing vehicle",
+        "6": "Collision between a vehicle and a pedestrian",
+        "7": "Impact with an obstacle on the road",
+        "8": "Leaving the road to the right",
+        "9": "Leaving the road to the left"
+      },
+      "participant": {
+        "bike": "bicycle",
+        "car": "car",
+        "pedestrian": "pedestrian",
+        "motorcycle": "motorcycle",
+        "goods": "goods vehicle",
+        "other": "other (bus, tram …)"
+      },
+      "involved": "Involved",
+      "source": "Unfallatlas {{year}}"
+    },
+    "trafficCount": {
+      "car": "Motor vehicles",
+      "bike": "Bicycles",
+      "site": "Counting site {{site}}",
+      "count": "Counted in the hour",
+      "typical": "Usual for this hour",
+      "noTypical": "No usual count yet for this hour",
+      "tooFew": "Too little traffic to compare",
+      "counters_one": "{{count}} counter",
+      "counters_other": "{{count}} counters"
+    },
+    "ev": {
+      "points": "Charge points",
+      "plugs": "Plugs",
+      "upTo": "up to",
+      "live": "Live: {{free}} of {{total}} free",
+      "since": "since",
+      "register": "BNetzA charging register of",
+      "status": {
+        "available": "Available",
+        "occupied": "In use",
+        "outOfOrder": "Out of order",
+        "unknown": "Unknown"
+      },
+      "plug": {
+        "type2": "Type 2",
+        "ccs": "CCS",
+        "chademo": "CHAdeMO",
+        "schuko": "Schuko",
+        "type1": "Type 1",
+        "mcs": "MCS"
       }
     }
   },

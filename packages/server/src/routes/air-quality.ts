@@ -8,6 +8,7 @@ import { AQ_GRID_TTL_SECONDS, ingestCityAirQualityGrid } from '../cron/ingest-ai
 import { loadAirQualityGrid } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { CK } from '../lib/cache-keys.js';
+import { servedGrid, ubaIsFreshInCache } from '../lib/air-quality-sources.js';
 
 /**
  * How long a refill that found nothing is remembered. Shorter than the cache's
@@ -92,7 +93,12 @@ export function createAirQualityRouter(cache: Cache, db: Db | null = null) {
       );
     }
 
-    res.json(cached ?? { data: [], fetchedAt: null });
+    if (!cached) {
+      res.json({ data: [], fetchedAt: null });
+      return;
+    }
+    // WAQI is the fallback for the official stations: none while UBA's readings are fresh
+    res.json({ ...cached, data: servedGrid(cached.data, ubaIsFreshInCache(cache, city.id)) });
   });
 
   return router;

@@ -68,6 +68,12 @@
       "humidity": "Nem",
       "wind": "Rüzgar",
       "feelsLike": "Hissedilen",
+      "heatRelief": {
+        "warning": "Sıcak hava uyarısı yürürlükte",
+        "outlook": "Önümüzdeki günlerde sıcak hava bekleniyor",
+        "onMap": "Haritada: {{places}}",
+        "show": "Haritada göster"
+      },
       "hourly": "Saatlik",
       "daily": "Günlük",
       "high": "Y",
@@ -187,7 +193,29 @@
         "veryUnhealthy": "\u00c7ok Sa\u011fl\u0131ks\u0131z",
         "hazardous": "Tehlikeli"
       },
-      "stationCredit": "\u0130stasyonlar: World Air Quality Index Project ve kaynak kurumlar"
+      "stationCredit": "\u0130stasyonlar: World Air Quality Index Project ve kaynak kurumlar",
+      "ubaLevel": {
+        "veryGood": "\u00c7ok iyi",
+        "good": "\u0130yi",
+        "moderate": "Orta",
+        "poor": "K\u00f6t\u00fc",
+        "veryPoor": "\u00c7ok k\u00f6t\u00fc",
+        "unknown": "Endeks yok"
+      },
+      "ubaIndex": "UBA hava kalitesi endeksi",
+      "officialStation": "Resm\u00ee \u00f6l\u00e7\u00fcm istasyonu",
+      "officialStations": "Resm\u00ee \u00f6l\u00e7\u00fcm istasyonlar\u0131 (UBA hava kalitesi endeksi)",
+      "officialCredit": "Kaynak:",
+      "setting": {
+        "traffic": "Trafik",
+        "background": "Arka plan",
+        "industrial": "Sanayi"
+      },
+      "hourEnding": "{{time}} itibar\u0131yla son bir saat",
+      "model": "model",
+      "modelled": "Model tahmini (CAMS)",
+      "measuredBackground": "Resm\u00ee kentsel arka plan istasyonlar\u0131nda \u00f6l\u00e7\u00fcld\u00fc, {{time}} itibar\u0131yla son bir saat",
+      "measuredAll": "Resm\u00ee \u00f6l\u00e7\u00fcm istasyonlar\u0131nda \u00f6l\u00e7\u00fcld\u00fc, {{time}} itibar\u0131yla son bir saat"
     },
     "map": {
       "title": "Harita",
@@ -197,6 +225,22 @@
         "cmdScroll": "Haritayı yakınlaştırıp uzaklaştırmak için ⌘ + kaydırma kullanın"
       }
     },
+    "elections": {
+      "tab": "Seçim",
+      "title": "{{election}}, {{date}}",
+      "kind": {
+        "abgeordnetenhaus": "Eyalet meclisi seçimi (Abgeordnetenhaus)",
+        "buergerschaft": "Eyalet meclisi seçimi (Bürgerschaft)",
+        "stadtrat": "Belediye meclisi seçimi"
+      },
+      "vote": {
+        "abgeordnetenhaus": "ikinci oylar",
+        "buergerschaft": "parti listesi oyları",
+        "stadtrat": "tüm oyların payı"
+      },
+      "others": "Diğerleri",
+      "turnout": "Katılım"
+    },
     "political": {
       "empty": "Veri bulunamadı",
       "districts": "seçim bölgesi",
@@ -204,7 +248,17 @@
       "districtMayors": "{{count}} ilçe başkanı",
       "seats": "sandalye",
       "showMore": "+{{count}} daha…",
-      "profileLink": "Profil: {{name}}"
+      "profileLink": "Profil: {{name}}",
+      "votes": {
+        "title": "Son açık oylamalar",
+        "accepted": "Kabul edildi",
+        "rejected": "Reddedildi",
+        "overall": "Tüm meclis: {{yes}} evet, {{no}} hayır",
+        "cityMembers": "Şehrin milletvekilleri:",
+        "showMembers": "Kim nasıl oy verdi",
+        "hideMembers": "Milletvekillerini gizle",
+        "choice": { "yes": "Evet", "no": "Hayır", "abstain": "Çekimser", "no_show": "Katılmadı" }
+      }
     },
     "budget": {
       "title": "Kent Bütçesi",
@@ -307,6 +361,15 @@
         "low": "Düşük",
         "moderate": "Orta",
         "high": "Yüksek"
+      },
+      "cases": {
+        "title": "Bildirilen vakalar",
+        "week": "{{week}}. hafta",
+        "flu": "Grip",
+        "rsv": "RSV",
+        "incidence": "100 binde {{value}}",
+        "trendLabel": "{{pathogen}} bildirilen vaka eğilimi",
+        "source": "Enfeksiyondan Korunma Yasası'na göre bildirilen, laboratuvarda doğrulanmış vakalar (RKI)"
       }
     },
     "waterLevels": {
@@ -342,6 +405,77 @@
       "asOf": "Durum:",
       "empty": "Taşkın verisi yok"
     },
+    "electricity": {
+      "title": "Elektrik",
+      "renewableShare": "{{area}} şebeke bölgesinde {{time}} itibarıyla üretimdeki yenilenebilir payı",
+      "mixLabel": "{{area}} şebeke bölgesinde üretim karışımı",
+      "kind": {
+        "wind": "Rüzgâr",
+        "solar": "Güneş",
+        "biomass": "Biyokütle",
+        "hydro": "Hidroelektrik",
+        "gas": "Doğal gaz",
+        "coal": "Kömür",
+        "other": "Diğer"
+      },
+      "co2": "CO₂ yoğunluğu, Almanya",
+      "forecast": "tahmin",
+      "signal": "Şebeke sinyali, Almanya",
+      "signalLevel": {
+        "2": "Yeşil: elektrik kullanmak için iyi bir zaman",
+        "1": "Sarı: ortalama yenilenebilir payı",
+        "0": "Kırmızı: düşük yenilenebilir payı",
+        "-1": "Kırmızı: şebekede darboğaz"
+      },
+      "greenUntil": "{{end}} saatine kadar yeşil",
+      "greenWindow": "Yeşil: {{start}}–{{end}}",
+      "noGreen": "Yeşil dönem öngörülmüyor",
+      "history": "{{area}} şebeke bölgesinde yenilenebilir payı, son 24 saat",
+      "signalTimeline": "Şebeke sinyali, Almanya, bugün",
+      "greenestHour": "Önümüzdeki en yeşil saat: {{time}} ({{share}} yenilenebilir)",
+      "germanyShare": "Almanya şu anda: tüketimin {{share}} kadarı yenilenebilir kaynaklardan",
+      "empty": "Elektrik verisi yok"
+    },
+    "soilMoisture": {
+      "title": "Toprak Nemi",
+      "headline": "bitkilerin kullanabileceği su, kumlu toprakta çim altında, {{date}}",
+      "level": {
+        "very-dry": "Çok kuru",
+        "dry": "Kuru",
+        "moderate": "Yeterli",
+        "moist": "Nemli",
+        "wet": "Islak"
+      },
+      "hint": {
+        "very-dry": "Kuraklık stresi: bitkiler ve genç sokak ağaçları susuz kalıyor",
+        "dry": "Bitkilerin suyu azalmaya başlıyor",
+        "moderate": "Bitkiler yeterince su alıyor",
+        "moist": "Toprakta bol su var",
+        "wet": "Toprak tutabileceğinden fazla su içeriyor"
+      },
+      "change": "{{days}} günde {{change}} puan",
+      "history": "Son 90 gün",
+      "historyMean": "Son 90 gün, {{n}} DWD istasyonunun ortalaması",
+      "historyLabel": "Kumlu toprakta çim altındaki toprak nemi, son 90 gün",
+      "loamy": "Tınlı toprakta: {{value}}",
+      "station": "DWD istasyonu {{name}}",
+      "explain": "DWD'nin tarımsal meteoroloji modelinin 0–60 cm için günlük değerleri, kullanılabilir tarla kapasitesinin yüzdesi (nFK) olarak; %30'un altında bitkiler kuraklık stresi yaşar.",
+      "watering": {
+        "title": "Sakinlerin suladığı sokak ağaçları (Gieß den Kiez)",
+        "teaser": "Gieß den Kiez: {{date}} tarihine kadarki 30 günde sokak ağaçlarına {{litres}} su",
+        "last30": "{{date}} tarihine kadar 30 gün",
+        "litresValue": "{{n}} litre",
+        "litres": "Litre",
+        "trees": "Ağaç",
+        "waterings": "Sulama",
+        "season": "{{year}} şimdiye kadar: {{trees}} ağaca {{litres}}",
+        "previous": "{{year}}: {{trees}} ağaca {{litres}}",
+        "top": "Bu yıl en çok sulanan: {{districts}}",
+        "none": "{{date}} tarihine kadarki 30 günde sulama kaydedilmedi; sulama sezonu ilkbahardan sonbahara kadar sürer.",
+        "cadence": "Yaklaşık ayda bir yayımlanır."
+      },
+      "empty": "Toprak nemi verisi yok"
+    },
     "liftOutages": {
       "title": "Asansörler ve Yürüyen Merdivenler",
       "lifts": "Arızalı asansörler: {{n}}",
@@ -351,6 +485,8 @@
       "allWorking": "Tüm asansörler ve yürüyen merdivenler çalışıyor",
       "more": "+{{n}} daha",
       "atStations": "Etkilenen duraklar: {{n}}",
+      "db": "DB",
+      "until": "{{date}} itibarıyla tekrar",
       "asOf": "Durum:",
       "empty": "Arıza verisi yok"
     },
@@ -511,10 +647,22 @@
       "noise": "G\u00fcr\u00fclt\u00fc",
       "emergencies": "Acil Durum",
       "traffic": "Trafik",
+      "bike-sharing": "Bisiklet Paylaşımı",
+      "parking": "Otoparklar",
+      "accidents": "Kazalar",
+      "crime": "Suç",
+      "ev-charging": "Elektrikli Araç Şarjı",
+      "heat-relief": "Sıcaktan Korunma",
       "water": "Su",
       "social": "Sosyal",
       "population": "Nüfus",
-      "political": "Temsil"
+      "political": "Temsil",
+      "reports": "Vatandaş Bildirimleri",
+      "trees": "Sokak Ağaçları"
+    },
+    "reports": {
+      "legend": "Vatandaş bildirimlerinin durumu",
+      "window": "Son {{days}} günün bildirimleri"
     },
     "news": {
       "news": "Haberler",
@@ -523,12 +671,19 @@
     "traffic": {
       "public-transport": "Toplu Taşıma",
       "incidents": "Trafik Olayları",
-      "roadworks": "Yol Çalışmaları"
+      "congestion": "Trafik Yoğunluğu (canlı)",
+      "roadworks": "Yol Çalışmaları",
+      "car-counts": "Araç Sayımları",
+      "bike-counts": "Bisiklet Sayımları",
+      "zoomIn": "Trafik yoğunluğu haritası için yakınlaştırın",
+      "telraam": "Sokak sayımları (Telraam)"
     },
     "emergencies": {
       "pharmacies": "Eczaneler",
-      "aeds": "Defibrilatörler"
+      "aeds": "Defibrilatörler",
+      "hospitals": "Hastaneler"
     },
+    "hospitalLegend": "Acil bakıma göre hastaneler",
     "noise": {
       "total": "Tüm Kaynaklar",
       "road": "Karayolu Trafiği",
@@ -537,9 +692,14 @@
       "live": "Canlı Sensörler",
       "zoomIn": "Gürültü haritasını görmek için sokak düzeyine yakınlaştırın."
     },
+    "trees": {
+      "zoomIn": "Ağaçları görmek için sokak düzeyine yakınlaştırın.",
+      "hint": "Türünü, yaşını ve boyutunu görmek için bir ağaca tıklayın."
+    },
     "water": {
       "levels": "Su Seviyeleri",
-      "bathing": "Yüzme Suyu"
+      "bathing": "Yüzme Suyu",
+      "temperature": "Su Sıcaklığı"
     },
     "social": {
       "rent": "Kira"
@@ -552,6 +712,96 @@
       "normal": "Normal konum",
       "unrated": "Değerlendirilmedi"
     },
+    "heatRelief": {
+      "cool": "Serin Yerler",
+      "fountains": "İçme Çeşmeleri",
+      "toilets": "Umumi Tuvaletler"
+    },
+    "telraamLegend": {
+      "title": "Sayılan araçlar içinde bisiklet payı",
+      "low": "%10'un altında bisiklet",
+      "some": "%10–25 bisiklet",
+      "high": "%25–50 bisiklet",
+      "most": "Yarısı veya daha fazlası bisiklet",
+      "day": "{{day}} · Sensör: {{segments}}",
+      "citizen": "Vatandaşların işlettiği Telraam sensörleri (Berlin zählt Mobilität). Çoğu yalnızca gün ışığında sayar."
+    },
+    "bikeLegend": {
+      "title": "İstasyondaki kullanılabilir bisikletler",
+      "none": "Bisiklet yok",
+      "few": "1–2 bisiklet",
+      "many": "3 veya daha fazla bisiklet"
+    },
+    "parkingLegend": {
+      "title": "Otoparktaki boş yerler",
+      "plenty": "%30 veya daha fazla boş",
+      "some": "%10–30 boş",
+      "few": "%10'dan az boş",
+      "closed": "Kapalı veya veri yok"
+    },
+    "accidents": {
+      "all": "Tüm kazalar",
+      "bike": "Bisikletli",
+      "pedestrian": "Yayalı"
+    },
+    "electionLegend": {
+      "strongest": "Bölge başına en güçlü parti",
+      "strongest_wahlkreis": "Seçim bölgesi başına en güçlü parti",
+      "strongest_stadtteil": "Semt başına en güçlü parti",
+      "strongest_stadtbezirk": "İlçe başına en güçlü parti"
+    },
+    "crime": {
+      "total": "Tüm suçlar",
+      "assault": "Yaralama",
+      "robbery": "Gasp",
+      "burglary": "Konut hırsızlığı",
+      "bikeTheft": "Bisiklet hırsızlığı",
+      "kiez": "Mahalle suçları (Kieztaten)"
+    },
+    "crimeLegend": {
+      "title": "Şehir ortalamasına göre 100.000 kişi başına oran",
+      "year": "{{year}} yılında kaydedilen (polis suç istatistiği)",
+      "cityRate": "Şehir ortalaması: 100.000 kişi başına {{rate}}",
+      "muchLower": "Şehir ortalamasının yarısından az",
+      "lower": "Ortalamanın altında (0,5–0,8×)",
+      "average": "Ortalama civarında (0,8–1,25×)",
+      "higher": "Ortalamanın üstünde (1,25–2×)",
+      "muchHigher": "Ortalamanın iki katı veya fazlası",
+      "note": "Suçlar işlendikleri yerde ve sakin başına sayılır: şehir merkezi gibi az sakini ve çok ziyaretçisi olan bölgelerde oranlar yüksek çıkar."
+    },
+    "accidentLegend": {
+      "title": "{{year}} yılındaki yaralanmalı kazalar, en ağır sonuca göre",
+      "year": "{{year}} yılındaki yaralanmalı kazalar",
+      "killed": "Ölümlü",
+      "serious": "Ağır yaralı",
+      "slight": "Hafif yaralı"
+    },
+    "trafficFlowLegend": {
+      "title": "Trafik akışı",
+      "flowing": "Akıcı",
+      "dense": "Yoğun",
+      "slow": "Ağır ilerliyor",
+      "jammed": "Sıkışık"
+    },
+    "trafficCountLegend": {
+      "title": "Son saat, o saatin olağan değeriyle karşılaştırmalı",
+      "wellBelow": "Olağandan çok daha az",
+      "below": "Olağandan az",
+      "usual": "Olağan düzeyde",
+      "above": "Olağandan fazla",
+      "wellAbove": "Olağandan çok daha fazla",
+      "none": "Karşılaştırma yapılamıyor"
+    },
+    "evLegend": {
+      "title": "Şarj gücü",
+      "normal": "Normal (22 kW'a kadar)",
+      "fast": "Hızlı (22 kW üzeri)",
+      "hpc": "Ultra hızlı (150 kW ve üzeri)",
+      "liveTitle": "Canlı durum (halka)",
+      "available": "Boş şarj noktası var",
+      "occupied": "Tümü kullanımda",
+      "outOfOrder": "Arızalı"
+    },
     "population": {
       "pop-density": "Nüfus Yoğunluğu",
       "pop-elderly": "Yaşlı Oranı",
@@ -561,13 +811,26 @@
       "bezirke": "Bezirke",
       "mayor": "Belediye",
       "bundestag": "Bundestag",
-      "landesparlament": "Eyalet Parlamentosu"
+      "landesparlament": "Eyalet Parlamentosu",
+      "elections": "Seçim sonuçları"
     }
   },
   "mapPopup": {
     "readMore": "Devamını oku",
     "details": "Ayrıntılar",
     "directions": "Yol tarifi",
+    "heatRelief": {
+      "kind": { "cool": "Serin yer", "fountain": "İçme çeşmesi", "toilet": "Umumi tuvalet" },
+      "setting": { "indoor": "Serin kapalı alan", "air-conditioned": "Klimalı", "water": "Su kenarında" },
+      "outOfOrder": "Arızalı",
+      "offSeason": "Sezon dışı",
+      "hours": "Açılış saatleri",
+      "season": "{{from}} ile {{to}} arasında çalışır",
+      "free": "Ücretsiz",
+      "fee": "Ücret",
+      "accessible": { "yes": "Tekerlekli sandalyeye uygun", "partly": "Tekerlekli sandalyeye kısmen uygun", "no": "Tekerlekli sandalyeye uygun değil" },
+      "changingTable": "Bebek bakım masası"
+    },
     "profile": "Profil",
     "phone": "Tel",
     "today": "Bugün",
@@ -594,6 +857,27 @@
       "visibility": "Görüş derinliği",
       "euClass": "AB: {{value}}"
     },
+    "hospital": {
+      "tier": {
+        "comprehensive": "Kapsamlı acil bakım",
+        "extended": "Genişletilmiş acil bakım",
+        "basic": "Temel acil bakım",
+        "emergency": "Acil bakıma katılıyor",
+        "limited": "Sınırlı acil bakım",
+        "specialised": "Yalnızca özel acil bakım",
+        "none": "Acil servis yok"
+      },
+      "unit": {
+        "children": "Çocuk acil",
+        "strokeUnit": "İnme ünitesi",
+        "chestPainUnit": "Göğüs ağrısı ünitesi",
+        "trauma": "Ağır yaralılar"
+      },
+      "beds": "{{n}} yatak",
+      "website": "Web sitesi",
+      "sourceAtlas": "Bundes-Klinik-Atlas (G-BA)",
+      "sourceHamburg": "Hamburg hastane kaydı"
+    },
     "aed": {
       "title": "OED / Defibrilatör",
       "indoor": "İç mekân",
@@ -607,6 +891,16 @@
         "no": "herkese kapalı"
       }
     },
+    "reports": {
+      "status": {
+        "open": "Açık",
+        "in_progress": "İşlemde",
+        "closed": "Kapatıldı"
+      },
+      "reported": "Bildirildi",
+      "updated": "Güncellendi",
+      "viewOnPortal": "Belediyenin portalında görüntüle"
+    },
     "noise": {
       "sensor": "Gürültü sensörü #{{id}}",
       "min": "Min.",
@@ -616,6 +910,133 @@
         "moderate": "Orta",
         "loud": "Gürültülü",
         "veryLoud": "Çok gürültülü"
+      }
+    },
+    "tree": {
+      "planted": "Dikim yılı",
+      "age_one": "{{count}} yaşında",
+      "age_other": "{{count}} yaşında",
+      "height": "Boy",
+      "crown": "Taç çapı",
+      "girth": "Gövde çevresi"
+    },
+    "telraam": {
+      "unnamed": "Adsız sokak",
+      "day": "{{day}} · {{hours}} sa sayıldı",
+      "cars": "Otomobil",
+      "bikes": "Bisiklet",
+      "pedestrians": "Yaya",
+      "heavy": "Otobüs ve kamyon",
+      "bikeShare": "Araçlar içinde bisiklet payı",
+      "vsUsual": "Değişim: önceki 4 haftada aynı haftanın gününün medyanına göre",
+      "noUsual": "Karşılaştırılacak olağan değer yok",
+      "citizen": "Vatandaş sensörü"
+    },
+    "bike": {
+      "bikes": "Kullanılabilir bisiklet",
+      "docks": "Boş park yeri",
+      "updated": "Güncelleme"
+    },
+    "waterTemperature": {
+      "temperature": "Su sıcaklığı",
+      "measured": "Ölçüm",
+      "source": "Wasserportal Berlin"
+    },
+    "parking": {
+      "free": "Boş yerler",
+      "updated": "Güncelleme",
+      "kind": {
+        "garage": "Katlı otopark",
+        "underground": "Yeraltı otoparkı",
+        "lot": "Açık otopark"
+      },
+      "trend": {
+        "filling": "Doluyor",
+        "emptying": "Boşalıyor",
+        "steady": "Sabit"
+      },
+      "status": {
+        "closed": "Kapalı",
+        "fault": "Güncel sayım yok (arıza)"
+      }
+    },
+    "crime": {
+      "year": "Polis suç istatistiği {{year}}",
+      "area": "Bölge",
+      "city": "Şehir",
+      "ratio": "Şehre göre",
+      "per100k": "100.000 kişi başına vaka",
+      "cases": "Kaydedilen vakalar"
+    },
+    "accident": {
+      "severity": {
+        "1": "Ölümlü kaza",
+        "2": "Ağır yaralanmalı kaza",
+        "3": "Hafif yaralanmalı kaza"
+      },
+      "type": {
+        "1": "Kontrol kaybı",
+        "2": "Dönüş kazası",
+        "3": "Yola çıkma veya kavşakta kesişme kazası",
+        "4": "Karşıya geçen yaya kazası",
+        "5": "Park halindeki araçlardan kaynaklanan kaza",
+        "6": "Aynı yolda seyir halindeki araçlar arasında kaza",
+        "7": "Diğer kaza"
+      },
+      "kind": {
+        "0": "Başka türde kaza",
+        "1": "Kalkan, duran veya park halindeki araçla çarpışma",
+        "2": "Öndeki veya bekleyen araçla çarpışma",
+        "3": "Aynı yönde yandan giden araçla çarpışma",
+        "4": "Karşıdan gelen araçla çarpışma",
+        "5": "Dönen veya kesişen araçla çarpışma",
+        "6": "Araç ile yaya arasında çarpışma",
+        "7": "Yoldaki bir engele çarpma",
+        "8": "Yoldan sağa çıkma",
+        "9": "Yoldan sola çıkma"
+      },
+      "participant": {
+        "bike": "bisiklet",
+        "car": "otomobil",
+        "pedestrian": "yaya",
+        "motorcycle": "motosiklet",
+        "goods": "yük aracı",
+        "other": "diğer (otobüs, tramvay …)"
+      },
+      "involved": "Karışanlar",
+      "source": "Unfallatlas {{year}}"
+    },
+    "trafficCount": {
+      "car": "Motorlu taşıtlar",
+      "bike": "Bisikletler",
+      "site": "Sayım noktası {{site}}",
+      "count": "Bu saatte sayılan",
+      "typical": "Bu saat için olağan",
+      "noTypical": "Bu saat için henüz olağan değer yok",
+      "tooFew": "Karşılaştırma için trafik çok az",
+      "counters_one": "{{count}} sayaç",
+      "counters_other": "{{count}} sayaç"
+    },
+    "ev": {
+      "points": "Şarj noktaları",
+      "plugs": "Fişler",
+      "upTo": "en fazla",
+      "live": "Canlı: {{total}} noktadan {{free}} tanesi boş",
+      "since": "son değişiklik",
+      "register": "BNetzA şarj istasyonu kaydı, tarih:",
+      "status": {
+        "available": "Boş",
+        "occupied": "Kullanımda",
+        "outOfOrder": "Arızalı",
+        "unknown": "Bilinmiyor"
+      },
+      "plug": {
+        "type2": "Tip 2",
+        "ccs": "CCS",
+        "chademo": "CHAdeMO",
+        "schuko": "Schuko",
+        "type1": "Tip 1",
+        "mcs": "MCS"
       }
     }
   },

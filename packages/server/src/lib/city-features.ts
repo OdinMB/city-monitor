@@ -1,4 +1,4 @@
-import type { CityConfig, CityFeature } from '@city-monitor/shared';
+import type { CityConfig, CityFeature, HeatReliefKind } from '@city-monitor/shared';
 import { groupsStateMembersByBezirk, hasDistrictMayors, hasMayor, hasParliamentConfig } from '../cron/ingest-political.js';
 import { hasPharmacySearch } from '../cron/ingest-pharmacies.js';
 import { hasTransitSource } from '../cron/ingest-transit.js';
@@ -9,6 +9,11 @@ import { hasTransitSource } from '../cron/ingest-transit.js';
  * check in each job).
  */
 export const BERLIN_OWN_SOURCES: readonly CityFeature[] = ['feuerwehr'];
+
+/** Whether the city has a heat-relief list of this kind (ingest-heat-relief.ts reads every listed one). */
+function hasHeatRelief(city: CityConfig, kind: HeatReliefKind): boolean {
+  return city.dataSources.heatRelief?.some((s) => s.kind === kind) ?? false;
+}
 
 /**
  * Each feature the server ingests, with the condition its job checks before
@@ -21,6 +26,7 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['pollen', (c) => c.dataSources.pollen !== undefined],
   ['waterLevels', (c) => (c.dataSources.waterLevels?.stations.length ?? 0) > 0],
   ['floodStatus', (c) => (c.dataSources.floodStatus?.stations.length ?? 0) > 0],
+  ['waterTemperature', (c) => (c.dataSources.waterTemperature?.stations.length ?? 0) > 0],
   // Config alone, like appointments without FIRECRAWL_API_KEY: Geofox (Hamburg) also needs
   // GEOFOX_USER and GEOFOX_PASSWORD at run time, and without them the job skips the city and
   // the tile says "No transit data available" (ingestsTransit).
@@ -31,13 +37,39 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   ['roadworks', (c) => c.dataSources.roadworks !== undefined],
   ['bathing', (c) => c.dataSources.bathing !== undefined],
   ['liftOutages', (c) => c.dataSources.liftOutages !== undefined],
+  // Config alone, like Geofox: the job also needs DB_API_CLIENT_ID and DB_API_KEY, and
+  // without them stores nothing for a city with no other lift source, whose tile then
+  // hides itself (ingestsLiftOutages; LiftOutagesTile in CommandLayout).
+  ['stationLifts', (c) => c.dataSources.stationLifts !== undefined],
+  ['bikeSharing', (c) => c.dataSources.bikeSharing !== undefined],
+  ['parking', (c) => c.dataSources.parking !== undefined],
+  ['electricity', (c) => c.dataSources.electricity !== undefined],
+  ['airQualityStations', (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0],
+  ['citizenReports', (c) => c.dataSources.citizenReports !== undefined],
+  ['trafficAccidents', (c) => c.dataSources.trafficAccidents !== undefined],
+  ['crimeAtlas', (c) => c.dataSources.crimeAtlas !== undefined],
+  ['carCounts', (c) => c.dataSources.trafficCounts?.modes.includes('car') === true],
+  ['bikeCounts', (c) => c.dataSources.trafficCounts?.modes.includes('bike') === true],
+  ['evCharging', (c) => c.dataSources.evCharging !== undefined],
+  ['evChargingLive', (c) => c.dataSources.evCharging?.liveStatus !== undefined],
+  ['coolPlaces', (c) => hasHeatRelief(c, 'cool')],
+  ['drinkingFountains', (c) => hasHeatRelief(c, 'fountain')],
+  ['publicToilets', (c) => hasHeatRelief(c, 'toilet')],
+  ['soilMoisture', (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0],
+  ['treeWatering', (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0 && c.dataSources.soilMoisture?.treeWatering !== undefined],
+  ['telraamCounts', (c) => c.dataSources.telraamCounts !== undefined],
+  ['electionResults', (c) => c.dataSources.electionResults !== undefined],
   ['socialAtlas', (c) => c.dataSources.socialAtlas !== undefined],
   ['population', (c) => c.dataSources.population !== undefined],
   ['laborMarket', (c) => c.dataSources.laborMarket !== undefined],
   ['wastewater', (c) => c.dataSources.wastewater !== undefined],
+  ['respiratoryCases', (c) => c.dataSources.respiratoryCases !== undefined],
   ['noiseSensors', (c) => c.dataSources.noiseSensors !== undefined],
   ['councilMeetings', (c) => c.dataSources.councilMeetings !== undefined],
   ['pharmacies', hasPharmacySearch],
+  // Config alone: with KLINIK_ATLAS=false, Berlin, Köln and München (Klinik-Atlas only) get no
+  // hospitals from the API, and the sidebar leaves out the toggle (withoutEmptyHospitals on the web).
+  ['hospitals', (c) => (c.dataSources.hospitals?.length ?? 0) > 0],
   // A German city without dataSources.aeds is asked for at the state level (ingest-aeds.ts).
   ['aeds', (c) => c.country === 'DE'],
   ['political', hasParliamentConfig],

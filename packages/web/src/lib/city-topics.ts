@@ -16,9 +16,13 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   appointments: 'panel.appointments.title',
   bathing: 'panel.bathing.title',
   liftOutages: 'panel.liftOutages.title',
+  // DB stations join the lift tile only once the DB API key is set, so they name no topic
+  stationLifts: null,
   pollen: 'panel.pollen.title',
   nina: 'sidebar.layers.warnings',
   wastewater: 'panel.wastewater.title',
+  electricity: 'panel.electricity.title',
+  soilMoisture: 'panel.soilMoisture.title',
   councilMeetings: 'panel.councilMeetings.title',
   budget: 'panel.budget.title',
   laborMarket: 'panel.laborMarket.title',
@@ -28,12 +32,39 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   political: 'sidebar.layers.political',
   socialAtlas: 'sidebar.layers.social',
   noiseMap: 'sidebar.layers.noise',
-  // Refinements: road works and noise sensors are layers of traffic and noise,
+  bikeSharing: 'sidebar.layers.bike-sharing',
+  parking: 'sidebar.layers.parking',
+  citizenReports: 'sidebar.layers.reports',
+  trafficAccidents: 'sidebar.layers.accidents',
+  crimeAtlas: 'sidebar.layers.crime',
+  streetTrees: 'sidebar.layers.trees',
+  evCharging: 'sidebar.layers.ev-charging',
+  // Every city with a heat-relief layer has fountains; cool places and toilets
+  // are its other sub-layers, so the layer counts once.
+  drinkingFountains: 'sidebar.layers.heat-relief',
+  // Refinements: live charging status is part of the charging layer;
+  // road works, street counts and noise sensors are layers of traffic and noise,
   // pharmacies and defibrillators of the emergencies layer, the rent map a
-  // social layer, the rest parts of the political tile.
+  // social layer, official air stations part of air quality (every city's topic),
+  // cool places and toilets heat-relief sub-layers, the rest parts of the
+  // political tile. Tree watering is a section of the soil-moisture tile.
+  airQualityStations: null,
+  coolPlaces: null,
+  publicToilets: null,
+  treeWatering: null,
+  respiratoryCases: null, // shown in the wastewater tile
+  // A sub-layer of the water layer, whose topic is the water levels
+  waterTemperature: null,
   roadworks: null,
+  // The congestion map and the counters refine the traffic layer every city has
+  trafficFlowMap: null,
+  carCounts: null,
+  bikeCounts: null,
+  evChargingLive: null,
+  telraamCounts: null,
   pharmacies: null,
   aeds: null,
+  hospitals: null,
   noiseSensors: null,
   noiseTotal: null,
   rentMap: null,
@@ -42,6 +73,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   stateByDistrict: null,
   politicalMap: null,
   bundestagByDistrict: null,
+  electionResults: null,
 };
 
 /** Topics every city's dashboard has, whatever its features. */

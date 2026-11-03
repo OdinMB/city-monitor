@@ -21,35 +21,61 @@ import { useSafety } from '../../hooks/useSafety.js';
 import { useNina } from '../../hooks/useNina.js';
 import { usePharmacies } from '../../hooks/usePharmacies.js';
 import { useAeds } from '../../hooks/useAeds.js';
+import { useCityLayers, useHospitals } from '../../hooks/useHospitals.js';
 import { useTrafficIncidents } from '../../hooks/useTraffic.js';
 import { useConstruction } from '../../hooks/useConstruction.js';
 import { usePolitical } from '../../hooks/usePolitical.js';
+import { useElectionGeojson, useElectionResults } from '../../hooks/useElectionResults.js';
 import { useAirQualityGrid } from '../../hooks/useAirQualityGrid.js';
+import { useAirQualityStations } from '../../hooks/useAirQualityStations.js';
 import { useWaterLevels } from '../../hooks/useWaterLevels.js';
 import { useBathing } from '../../hooks/useBathing.js';
+import { useWaterTemperature } from '../../hooks/useWaterTemperature.js';
 import { useSocialAtlas } from '../../hooks/useSocialAtlas.js';
 import { usePopulation } from '../../hooks/usePopulation.js';
 import { useNoiseSensors } from '../../hooks/useNoiseSensors.js';
+import { useBikeSharing } from '../../hooks/useBikeSharing.js';
+import { useCitizenReports } from '../../hooks/useCitizenReports.js';
+import { useTrafficAccidents } from '../../hooks/useTrafficAccidents.js';
+import { useCrimeAtlas } from '../../hooks/useCrimeAtlas.js';
+import { useTrafficCounts } from '../../hooks/useTrafficCounts.js';
+import { useHeatRelief } from '../../hooks/useHeatRelief.js';
+import { useTelraamCounts } from '../../hooks/useTelraamCounts.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
+import type { TrafficCountMode } from '../../lib/api.js';
 import { useIsDesktop, useIsTouchPhone } from '../../hooks/useMediaQuery.js';
-import { cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
+import { effectiveChoice, effectiveNoiseLayer, effectiveSubLayers } from '../../lib/map-layers.js';
 import { registerAllMapIcons } from '../../lib/map-icons.js';
 
-import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
-import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, loadStyle, zoomedInBounds } from './base.js';
+import { DARK_STYLE, LIGHT_STYLE, EMPTY_AQ, EMPTY_UBA, EMPTY_WL, DISTRICT_URLS, POLITICAL_MARKER_LAYER, TRAFFIC_FLOW_REFRESH_MS, STREET_TREES_MIN_ZOOM, type SocialAtlasMetric, type PopulationMetric } from './constants.js';
+import { simplifyMap, setTrafficRoadVisibility, setWaterAreaVisibility, setWeatherOverlay, setNoiseOverlay, setRentMapOverlay, setTrafficFlowOverlay, setStreetTreesOverlay, loadStyle, zoomedInBounds } from './base.js';
+import { fetchStreetTree } from '../../lib/street-trees.js';
+import { streetTreePopupHtml, STREET_TREE_REGISTERS } from './layers/street-trees.js';
 import { showMapPopup, scheduleHoverClose } from './popups.js';
 import { gestureHintLocale, setCooperativeGestures } from './gestures.js';
 import { addDistrictLayer, addDistrictSource, removeDistrictLayers, ensureDistrictLabelsBelow, applyPoliticalStyling, setupDistrictHover, updatePoliticalMarkers, removePoliticalMarkers, buildPoliticalPopupHtml } from './layers/political.js';
 import { filterNewsForMap, updateNewsMarkers, updateSafetyMarkers } from './layers/news-safety.js';
 import { updateTransitMarkers } from './layers/transit.js';
 import { updateWarningPolygons } from './layers/warnings.js';
-import { updatePharmacyMarkers, updateAedMarkers } from './layers/emergencies.js';
+import { updatePharmacyMarkers, updateAedMarkers, updateHospitalMarkers } from './layers/emergencies.js';
 import { updateTrafficLayers, updateConstructionLayers } from './layers/traffic.js';
-import { updateAqGridLayer } from './layers/air-quality.js';
-import { updateWaterLevelMarkers, updateBathingMarkers } from './layers/water.js';
+import { updateAqGridLayer, updateUbaStationLayer } from './layers/air-quality.js';
+import { updateWaterLevelMarkers, updateBathingMarkers, updateWaterTemperatureMarkers } from './layers/water.js';
 import { updateSocialAtlasLayer, updatePopulationLayer } from './layers/choropleth.js';
 import { socialAtlasOf } from '../../lib/social-atlas.js';
 import { updateNoiseSensorMarkers } from './layers/noise-sensors.js';
+import { updateBikeSharingMarkers } from './layers/bike-sharing.js';
+import { updateParkingMarkers } from './layers/parking.js';
+import { useParking } from '../../hooks/useParking.js';
+import { updateCitizenReportMarkers } from './layers/citizen-reports.js';
+import { updateTrafficAccidentLayer } from './layers/traffic-accidents.js';
+import { updateCrimeAtlasLayer } from './layers/crime-atlas.js';
+import { updateTrafficCountMarkers } from './layers/traffic-counts.js';
+import { updateEvChargingMarkers } from './layers/ev-charging.js';
+import { useEvCharging } from '../../hooks/useEvCharging.js';
+import { updateHeatReliefMarkers } from './layers/heat-relief.js';
+import { updateTelraamMarkers } from './layers/telraam-counts.js';
+import { updateElectionLayer } from './layers/elections.js';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -60,7 +86,9 @@ const MARKER_LAYERS = [
   'safety-marker-icon',
   'wl-marker-icon',
   'bathing-marker-icon',
+  'wt-marker-icon',
   'aq-marker-icon',
+  'aq-uba-icon',
   'noise-sensor-icon',
   'pharmacy-marker-icon',
   'aed-marker-icon',
@@ -141,7 +169,7 @@ function asError(err: unknown): Error {
 export function CityMap() {
   const city = useCityConfig();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isTouchPhone = useIsTouchPhone();
   // Read once when the map is created; a later resize keeps the user's view.
   const isPhoneLayoutRef = useRef(!useIsDesktop());
@@ -151,16 +179,18 @@ export function CityMap() {
   const catLabel = useCallback((cat: string) => t(`category.${cat}`, cat), [t]);
   // The layer state is shared and outlives a switch to another city, so the
   // map draws only what this city has, and asks the API for nothing else.
-  const available = useMemo(() => cityLayers(city), [city]);
+  const available = useCityLayers(city);
   const { data: transitAlerts } = useTransit(city.id, available.traffic.includes('public-transport'));
   const { data: newsDigest } = useNewsDigest(city.id, available.news.includes('news'));
   const { data: safetyReports } = useSafety(city.id, available.news.includes('police'));
   const { data: ninaWarnings } = useNina(city.id);
   const { data: pharmacyList } = usePharmacies(city.id, available.emergencies.includes('pharmacies'));
   const { data: aedList } = useAeds(city.id, available.emergencies.includes('aeds'));
+  const { data: hospitalData } = useHospitals(city.id, available.emergencies.includes('hospitals'));
   const { data: trafficIncidents } = useTrafficIncidents(city.id);
   const { data: constructionSites } = useConstruction(city.id, available.traffic.includes('roadworks'));
   const { data: aqGrid } = useAirQualityGrid(city.id);
+  const { data: ubaStations } = useAirQualityStations(city.id, city.features.includes('airQualityStations'));
   const { data: noiseSensorData } = useNoiseSensors(city.id, available.noiseLive);
   const { data: waterLevelData } = useWaterLevels(city.id);
   const { data: bathingData } = useBathing(city.id, available.water.includes('bathing'));
@@ -169,18 +199,41 @@ export function CityMap() {
     () => new Set([...selectedLayers].filter((layer) => available.layers.has(layer))),
     [selectedLayers, available],
   );
+  // Lazy: fetched only while the layer is on (a fortnight of reports is too large for bootstrap)
+  const reportsActive = activeLayers.has('reports');
+  const { data: citizenReportData } = useCitizenReports(city.id, reportsActive);
   const selectedNews = useCommandCenter((s) => s.newsSubLayers);
   const newsSubLayers = useMemo(() => effectiveSubLayers(selectedNews, available.news), [selectedNews, available]);
   const selectedEmergencies = useCommandCenter((s) => s.emergencySubLayers);
   const emergencySubLayers = useMemo(() => effectiveSubLayers(selectedEmergencies, available.emergencies), [selectedEmergencies, available]);
-  const politicalActive = activeLayers.has('political');
   // Falls back to 'bundestag' for a layer only political cities have; unused while the layer is off.
   const politicalLayer = effectiveChoice(useCommandCenter((s) => s.politicalLayer), available.political) ?? 'bundestag';
+  // The representatives' views colour the district outlines; the election view draws its own areas.
+  const electionsActive = activeLayers.has('political') && politicalLayer === 'elections';
+  const politicalActive = activeLayers.has('political') && !electionsActive;
   const selectedTraffic = useCommandCenter((s) => s.trafficSubLayers);
   const trafficSubLayers = useMemo(() => effectiveSubLayers(selectedTraffic, available.traffic), [selectedTraffic, available]);
   const trafficActive = activeLayers.has('traffic') && trafficSubLayers.has('incidents');
   const constructionActive = activeLayers.has('traffic') && trafficSubLayers.has('roadworks');
   const roadsActive = trafficActive || constructionActive;
+  const trafficFlowActive = activeLayers.has('traffic') && trafficSubLayers.has('congestion');
+  // A new value every few minutes while the congestion map is shown, so its tiles are asked for again
+  const [trafficFlowRefresh, setTrafficFlowRefresh] = useState(() => Math.floor(Date.now() / TRAFFIC_FLOW_REFRESH_MS));
+  useEffect(() => {
+    if (!trafficFlowActive) return;
+    const tick = () => setTrafficFlowRefresh(Math.floor(Date.now() / TRAFFIC_FLOW_REFRESH_MS));
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, [trafficFlowActive]);
+  const trafficCountModes = useMemo(() => {
+    const modes = new Set<TrafficCountMode>();
+    if (activeLayers.has('traffic') && trafficSubLayers.has('car-counts')) modes.add('car');
+    if (activeLayers.has('traffic') && trafficSubLayers.has('bike-counts')) modes.add('bike');
+    return modes;
+  }, [activeLayers, trafficSubLayers]);
+  // Lazy: Hamburg's sites are about 50 KB, fetched only while a counts sub-layer is on
+  const { data: trafficCountData } = useTrafficCounts(city.id, trafficCountModes.size > 0);
   const weatherActive = activeLayers.has('weather');
   const noiseLayerSel = effectiveNoiseLayer(useCommandCenter((s) => s.noiseLayer), available);
   const noiseLiveData = useCommandCenter((s) => s.noiseLiveData) && available.noiseLive;
@@ -192,6 +245,8 @@ export function CityMap() {
   const socialActive = activeLayers.has('social');
   const rentMapActive = socialActive && socialLayer === 'rent';
   const socialAtlasActive = socialActive && socialLayer !== undefined && socialLayer !== 'rent';
+  // Frontend only: the city's tree register WMS, nothing from the API
+  const treesActive = activeLayers.has('trees');
   const socialAtlasMetric: SocialAtlasMetric =
     socialLayer === 'single-parent' ? 'singleParent'
     : socialLayer === 'welfare' ? 'welfare'
@@ -208,8 +263,39 @@ export function CityMap() {
   const waterActive = activeLayers.has('water');
   const selectedWater = useCommandCenter((s) => s.waterSubLayers);
   const waterSubLayers = useMemo(() => effectiveSubLayers(selectedWater, available.water), [selectedWater, available]);
+  const { data: waterTemperatureData } = useWaterTemperature(city.id, activeLayers.has('water') && waterSubLayers.has('temperature'));
   const { data: socialAtlasData } = useSocialAtlas(city.id, socialAtlasActive);
   const { data: populationData } = usePopulation(city.id, populationActive);
+  // Lazy: Berlin's stations are about 150 KB, fetched only while the layer is on
+  const bikeSharingActive = activeLayers.has('bike-sharing');
+  const { data: bikeSharingData } = useBikeSharing(city.id, bikeSharingActive);
+  // Lazy: fetched only while the parking layer is on
+  const parkingActive = activeLayers.has('parking');
+  const { data: parkingData } = useParking(city.id, parkingActive);
+  // Lazy: Berlin's year of accidents is about 470 KB, fetched only while the layer is on
+  const accidentsActive = activeLayers.has('accidents');
+  const accidentFilter = useCommandCenter((s) => s.accidentFilter);
+  const { data: accidentData } = useTrafficAccidents(city.id, accidentsActive);
+  // Lazy: Berlin's 143 Bezirksregionen with outlines are about 200 KB
+  const crimeActive = activeLayers.has('crime');
+  const crimeLayer = useCommandCenter((s) => s.crimeLayer);
+  const { data: crimeData } = useCrimeAtlas(city.id, crimeActive);
+  // Lazy as well: Berlin's ~3,500 charging stations are about 600 KB
+  const evChargingActive = activeLayers.has('ev-charging');
+  const { data: evChargingData } = useEvCharging(city.id, evChargingActive, city.features.includes('evChargingLive'));
+  // Lazy as well: Berlin's three lists are about 165 KB
+  const heatReliefActive = activeLayers.has('heat-relief');
+  const { data: heatReliefData } = useHeatRelief(city.id, heatReliefActive);
+  const selectedHeatRelief = useCommandCenter((s) => s.heatReliefSubLayers);
+  const heatReliefSubLayers = useMemo(() => effectiveSubLayers(selectedHeatRelief, available.heatRelief), [selectedHeatRelief, available]);
+  // Lazy: yesterday's Telraam counts, fetched only while their traffic sub-layer is on
+  const telraamActive = activeLayers.has('traffic') && trafficSubLayers.has('telraam');
+  const { data: telraamData } = useTelraamCounts(city.id, telraamActive);
+  // Lazy: the polygons (Berlin ~110 KB) and results only while the election view is on
+  const { data: electionGeoJsonResp } = useElectionGeojson(city.id, electionsActive);
+  const { data: electionResultsResp } = useElectionResults(city.id, electionsActive);
+  const electionGeoJson = electionsActive ? (electionGeoJsonResp?.data ?? null) : null;
+  const electionResults = electionResultsResp?.data ?? null;
   const { data: bezirkeData } = usePolitical(city.id, 'bezirke', available.political.includes('bezirke'));
   const { data: bundestagData } = usePolitical(city.id, 'bundestag', available.political.includes('bundestag'));
   const { data: stateBezirkeData } = usePolitical(city.id, 'state-bezirke', available.political.includes('landesparlament'));
@@ -246,6 +332,11 @@ export function CityMap() {
     () => (emergencyActive && emergencySubLayers.has('aeds')) ? (aedList ?? []) : [],
     [emergencyActive, emergencySubLayers, aedList],
   );
+  const hospitalItems = useMemo(
+    () => (emergencyActive && emergencySubLayers.has('hospitals')) ? (hospitalData?.hospitals ?? []) : [],
+    [emergencyActive, emergencySubLayers, hospitalData],
+  );
+  const atlasDate = hospitalData?.atlasDate ?? null;
   const trafficItems = useMemo(
     () => trafficActive ? (trafficIncidents ?? []) : [],
     [trafficActive, trafficIncidents],
@@ -254,7 +345,11 @@ export function CityMap() {
     () => constructionActive ? (constructionSites ?? []) : [],
     [constructionActive, constructionSites],
   );
-  const aqGridItems = activeLayers.has('air-quality') ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
+  const aqActive = activeLayers.has('air-quality');
+  const ubaItems = aqActive ? (ubaStations ?? EMPTY_UBA) : EMPTY_UBA;
+  // The server sends WAQI points only while the city has no fresh UBA readings, so the two never overlap
+  const aqGridItems = aqActive ? (aqGrid ?? EMPTY_AQ) : EMPTY_AQ;
+  const lang = i18n.language;
   const noiseSensorItems = useMemo(
     () => (noiseActive && noiseLiveData) ? (noiseSensorData?.data ?? []) : [],
     [noiseActive, noiseLiveData, noiseSensorData?.data],
@@ -264,8 +359,24 @@ export function CityMap() {
     () => (waterActive && waterSubLayers.has('bathing')) ? (bathingData ?? []) : [],
     [waterActive, waterSubLayers, bathingData],
   );
+  const waterTemperatureItems = useMemo(
+    () => (waterActive && waterSubLayers.has('temperature')) ? (waterTemperatureData?.data?.stations ?? []) : [],
+    [waterActive, waterSubLayers, waterTemperatureData?.data?.stations],
+  );
+  const citizenReportItems = useMemo(
+    () => reportsActive ? (citizenReportData?.data?.reports ?? []) : [],
+    [reportsActive, citizenReportData?.data?.reports],
+  );
   const socialAtlasGeoJson = socialAtlasActive ? (socialAtlasData ?? null) : null;
   const populationGeoJson = populationActive ? (populationData ?? null) : null;
+  const bikeSharingItems = bikeSharingActive ? (bikeSharingData?.data ?? null) : null;
+  const parkingItems = parkingActive ? (parkingData?.data ?? null) : null;
+  const accidentItems = accidentsActive ? (accidentData?.data ?? null) : null;
+  const crimeAtlas = crimeActive ? (crimeData?.data ?? null) : null;
+  const trafficCountItems = trafficCountModes.size > 0 ? (trafficCountData?.data ?? null) : null;
+  const evChargingItems = evChargingActive ? (evChargingData?.data ?? null) : null;
+  const heatReliefItems = heatReliefActive ? (heatReliefData?.data ?? null) : null;
+  const telraamItems = telraamActive ? (telraamData?.data ?? null) : null;
 
   // Keep current values in refs so the style.load handler always reads fresh values
   const isDarkRef = useRef(isDark);
@@ -292,18 +403,56 @@ export function CityMap() {
   pharmacyItemsRef.current = pharmacyItems;
   const aedItemsRef = useRef(aedItems);
   aedItemsRef.current = aedItems;
+  const hospitalItemsRef = useRef(hospitalItems);
+  hospitalItemsRef.current = hospitalItems;
+  const atlasDateRef = useRef(atlasDate);
+  atlasDateRef.current = atlasDate;
   const trafficItemsRef = useRef(trafficItems);
   trafficItemsRef.current = trafficItems;
   const constructionItemsRef = useRef(constructionItems);
   constructionItemsRef.current = constructionItems;
   const aqGridItemsRef = useRef(aqGridItems);
   aqGridItemsRef.current = aqGridItems;
+  const ubaItemsRef = useRef(ubaItems);
+  ubaItemsRef.current = ubaItems;
+  const langRef = useRef(lang);
+  langRef.current = lang;
+  const timeZoneRef = useRef(city.timezone);
+  timeZoneRef.current = city.timezone;
   const noiseSensorItemsRef = useRef(noiseSensorItems);
   noiseSensorItemsRef.current = noiseSensorItems;
+  const bikeSharingItemsRef = useRef(bikeSharingItems);
+  bikeSharingItemsRef.current = bikeSharingItems;
+  const parkingItemsRef = useRef(parkingItems);
+  parkingItemsRef.current = parkingItems;
+  const accidentItemsRef = useRef(accidentItems);
+  accidentItemsRef.current = accidentItems;
+  const accidentFilterRef = useRef(accidentFilter);
+  accidentFilterRef.current = accidentFilter;
+  const crimeAtlasRef = useRef(crimeAtlas);
+  crimeAtlasRef.current = crimeAtlas;
+  const crimeLayerRef = useRef(crimeLayer);
+  crimeLayerRef.current = crimeLayer;
+  const trafficCountItemsRef = useRef(trafficCountItems);
+  trafficCountItemsRef.current = trafficCountItems;
+  const trafficCountModesRef = useRef(trafficCountModes);
+  trafficCountModesRef.current = trafficCountModes;
+  const evChargingItemsRef = useRef(evChargingItems);
+  evChargingItemsRef.current = evChargingItems;
+  const heatReliefItemsRef = useRef(heatReliefItems);
+  heatReliefItemsRef.current = heatReliefItems;
+  const heatReliefSubLayersRef = useRef(heatReliefSubLayers);
+  heatReliefSubLayersRef.current = heatReliefSubLayers;
+  const telraamItemsRef = useRef(telraamItems);
+  telraamItemsRef.current = telraamItems;
   const waterLevelItemsRef = useRef(waterLevelItems);
   waterLevelItemsRef.current = waterLevelItems;
   const bathingItemsRef = useRef(bathingItems);
   bathingItemsRef.current = bathingItems;
+  const waterTemperatureItemsRef = useRef(waterTemperatureItems);
+  waterTemperatureItemsRef.current = waterTemperatureItems;
+  const citizenReportItemsRef = useRef(citizenReportItems);
+  citizenReportItemsRef.current = citizenReportItems;
   const socialAtlasGeoJsonRef = useRef(socialAtlasGeoJson);
   socialAtlasGeoJsonRef.current = socialAtlasGeoJson;
   const socialAtlasMetricRef = useRef(socialAtlasMetric);
@@ -312,6 +461,10 @@ export function CityMap() {
   socialAtlasRef.current = socialAtlas;
   const populationGeoJsonRef = useRef(populationGeoJson);
   populationGeoJsonRef.current = populationGeoJson;
+  const electionGeoJsonRef = useRef(electionGeoJson);
+  electionGeoJsonRef.current = electionGeoJson;
+  const electionResultsRef = useRef(electionResults);
+  electionResultsRef.current = electionResults;
   const populationMetricRef = useRef(populationMetric);
   populationMetricRef.current = populationMetric;
   const roadsActiveRef = useRef(roadsActive);
@@ -324,6 +477,13 @@ export function CityMap() {
   effectiveNoiseLayerRef.current = noiseWmsLayer;
   const rentMapActiveRef = useRef(rentMapActive);
   rentMapActiveRef.current = rentMapActive;
+  const trafficFlowActiveRef = useRef(trafficFlowActive);
+  trafficFlowActiveRef.current = trafficFlowActive;
+  const trafficFlowRefreshRef = useRef(trafficFlowRefresh);
+  trafficFlowRefreshRef.current = trafficFlowRefresh;
+  const treesActiveRef = useRef(treesActive);
+  treesActiveRef.current = treesActive;
+  const treeQueryRef = useRef<AbortController | null>(null);
   const waterActiveRef = useRef(waterActive);
   waterActiveRef.current = waterActive;
   const politicalActiveRef = useRef(politicalActive);
@@ -381,15 +541,30 @@ export function CityMap() {
         updateWarningPolygons(map, warningItemsRef.current, isDarkRef.current);
         updatePharmacyMarkers(map, pharmacyItemsRef.current, isDarkRef.current);
         updateAedMarkers(map, aedItemsRef.current, isDarkRef.current);
+        updateHospitalMarkers(map, hospitalItemsRef.current, atlasDateRef.current, isDarkRef.current);
         updateAqGridLayer(map, aqGridItemsRef.current, isDarkRef.current, cityIdRef.current);
+        updateUbaStationLayer(map, ubaItemsRef.current, isDarkRef.current, langRef.current, timeZoneRef.current);
         updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDarkRef.current);
+        updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDarkRef.current);
+        updateParkingMarkers(map, parkingItemsRef.current, isDarkRef.current);
+        updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDarkRef.current);
+        updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDarkRef.current);
+        updateEvChargingMarkers(map, evChargingItemsRef.current, isDarkRef.current);
+        updateHeatReliefMarkers(map, heatReliefItemsRef.current, heatReliefSubLayersRef.current, isDarkRef.current);
+        updateTelraamMarkers(map, telraamItemsRef.current, isDarkRef.current);
         updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDarkRef.current);
         updateBathingMarkers(map, bathingItemsRef.current, isDarkRef.current);
+        updateWaterTemperatureMarkers(map, waterTemperatureItemsRef.current, isDarkRef.current);
+        updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDarkRef.current, cityIdRef.current);
         updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDarkRef.current, socialAtlasRef.current);
         updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDarkRef.current);
+        updateElectionLayer(map, electionGeoJsonRef.current, electionResultsRef.current, isDarkRef.current);
+        updateCrimeAtlasLayer(map, crimeAtlasRef.current, crimeLayerRef.current, isDarkRef.current);
         setWeatherOverlay(map, weatherActiveRef.current);
         setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
         setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
+        setTrafficFlowOverlay(map, trafficFlowActiveRef.current, cityIdRef.current, trafficFlowRefreshRef.current);
+        setStreetTreesOverlay(map, treesActiveRef.current, cityIdRef.current);
 
         // Ensure district labels render below all marker icons
         ensureDistrictLabelsBelow(map);
@@ -401,6 +576,26 @@ export function CityMap() {
         containerRef.current
           ?.querySelector('.maplibregl-ctrl-attrib')
           ?.classList.remove('maplibregl-compact-show');
+      });
+
+      // A click on the trees layer at street zoom asks the city's register for
+      // the tree there (GetFeatureInfo), unless it lands on a marker of another
+      // layer, which opens its own popup. No tree there: nothing opens.
+      map.on('click', (e) => {
+        if (!treesActiveRef.current || map.getZoom() < STREET_TREES_MIN_ZOOM) return;
+        const onMarker = map.queryRenderedFeatures(e.point).some((f) =>
+          map.getSource(f.source)?.type === 'geojson' && (!f.layer.id.startsWith('district-') || politicalActiveRef.current));
+        if (onMarker) return;
+        treeQueryRef.current?.abort();
+        const controller = new AbortController();
+        treeQueryRef.current = controller;
+        const cityId = cityIdRef.current;
+        fetchStreetTree(cityId, e.lngLat.lng, e.lngLat.lat, map.getZoom(), controller.signal)
+          .then((tree) => {
+            if (!tree || controller.signal.aborted) return;
+            showMapPopup(map, e.lngLat, streetTreePopupHtml(tree, isDarkRef.current, STREET_TREE_REGISTERS[cityId] ?? ''), { sticky: true });
+          })
+          .catch(() => { /* register unreachable, or the query was dropped: no popup */ });
       });
 
       mapRef.current = map;
@@ -469,15 +664,30 @@ export function CityMap() {
       updateWarningPolygons(map, warningItemsRef.current, isDark);
       updatePharmacyMarkers(map, pharmacyItemsRef.current, isDark);
       updateAedMarkers(map, aedItemsRef.current, isDark);
+      updateHospitalMarkers(map, hospitalItemsRef.current, atlasDateRef.current, isDark);
       updateAqGridLayer(map, aqGridItemsRef.current, isDark, cityIdRef.current);
+      updateUbaStationLayer(map, ubaItemsRef.current, isDark, langRef.current, timeZoneRef.current);
       updateNoiseSensorMarkers(map, noiseSensorItemsRef.current, isDark);
+      updateBikeSharingMarkers(map, bikeSharingItemsRef.current, isDark);
+      updateParkingMarkers(map, parkingItemsRef.current, isDark);
+      updateTrafficAccidentLayer(map, accidentItemsRef.current, accidentFilterRef.current, isDark);
+      updateTrafficCountMarkers(map, trafficCountItemsRef.current, trafficCountModesRef.current, isDark);
+      updateEvChargingMarkers(map, evChargingItemsRef.current, isDark);
+      updateHeatReliefMarkers(map, heatReliefItemsRef.current, heatReliefSubLayersRef.current, isDark);
+      updateTelraamMarkers(map, telraamItemsRef.current, isDark);
       updateWaterLevelMarkers(map, waterLevelItemsRef.current, isDark);
       updateBathingMarkers(map, bathingItemsRef.current, isDark);
+      updateWaterTemperatureMarkers(map, waterTemperatureItemsRef.current, isDark);
+      updateCitizenReportMarkers(map, citizenReportItemsRef.current, isDark, cityIdRef.current);
       updateSocialAtlasLayer(map, socialAtlasGeoJsonRef.current, socialAtlasMetricRef.current, isDark, socialAtlasRef.current);
       updatePopulationLayer(map, populationGeoJsonRef.current, populationMetricRef.current, isDark);
+      updateElectionLayer(map, electionGeoJsonRef.current, electionResultsRef.current, isDark);
+      updateCrimeAtlasLayer(map, crimeAtlasRef.current, crimeLayerRef.current, isDark);
       setWeatherOverlay(map, weatherActiveRef.current);
       setNoiseOverlay(map, noiseWmsActiveRef.current, cityIdRef.current, effectiveNoiseLayerRef.current);
       setRentMapOverlay(map, rentMapActiveRef.current, cityIdRef.current);
+      setTrafficFlowOverlay(map, trafficFlowActiveRef.current, cityIdRef.current, trafficFlowRefreshRef.current);
+      setStreetTreesOverlay(map, treesActiveRef.current, cityIdRef.current);
       ensureDistrictLabelsBelow(map);
     });
   }, [isDark, city.id]);
@@ -516,6 +726,23 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [rentMapActive, city.id]);
 
+  // Show/hide the city's street-tree register when the layer is toggled
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setStreetTreesOverlay(map, treesActive, city.id);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [treesActive, city.id]);
+
+  // A pending tree query belongs to the layer as it was: switching it off or
+  // changing city drops it.
+  useEffect(() => () => { treeQueryRef.current?.abort(); }, [treesActive, city.id]);
+
   // Show/hide noise WMS overlay when layer or sub-layer changes
   useEffect(() => {
     const map = mapRef.current;
@@ -529,6 +756,29 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [noiseWmsActive, noiseWmsLayer, city.id]);
 
+  // Show/hide the live congestion map, and ask for fresh tiles as it is recomputed
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => setTrafficFlowOverlay(map, trafficFlowActive, city.id, trafficFlowRefresh);
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [trafficFlowActive, trafficFlowRefresh, city.id]);
+
+  // Update traffic counting sites (lazy: data only while a counts sub-layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateTrafficCountMarkers(map, trafficCountItems, trafficCountModes, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [trafficCountItems, trafficCountModes]);
+
   // Keep district labels below marker layers whenever marker data changes
   useEffect(() => {
     const map = mapRef.current;
@@ -537,7 +787,7 @@ export function CityMap() {
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
-  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, waterLevelItems, bathingItems]);
+  }, [transitItems, newsItems, safetyItems, warningItems, pharmacyItems, aedItems, hospitalItems, trafficItems, constructionItems, aqGridItems, noiseSensorItems, bikeSharingItems, parkingItems, accidentItems, trafficCountItems, evChargingItems, heatReliefItems, heatReliefSubLayers, telraamItems, waterLevelItems, bathingItems, waterTemperatureItems, citizenReportItems]);
 
   // Update transit markers when alerts or layer toggle changes
   useEffect(() => {
@@ -579,20 +829,21 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [warningItems]);
 
-  // Update emergency markers (pharmacies + AEDs) — combined into a single effect
-  // to ensure both update atomically when the emergency layer toggles on.
+  // Update emergency markers (pharmacies, AEDs, hospitals) — combined into a single effect
+  // to ensure they update atomically when the emergency layer toggles on.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const apply = () => {
       updatePharmacyMarkers(map, pharmacyItems, isDarkRef.current);
       updateAedMarkers(map, aedItems, isDarkRef.current);
+      updateHospitalMarkers(map, hospitalItems, atlasDate, isDarkRef.current);
     };
     if (map.isStyleLoaded()) { apply(); return; }
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emergencyActive, emergencySubLayers, pharmacyList, aedList]);
+  }, [emergencyActive, emergencySubLayers, pharmacyList, aedList, hospitalData]);
 
   // Update traffic incident layers
   useEffect(() => {
@@ -652,6 +903,16 @@ export function CityMap() {
 
   }, [aqGridItems]);
 
+  // Update the official (UBA) station badges; they spell out the class name, so also on a language change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateUbaStationLayer(map, ubaItems, isDarkRef.current, lang, timeZoneRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [ubaItems, lang]);
+
   // Update noise sensor markers (Berlin only — backend returns empty for cities without config)
   useEffect(() => {
     const map = mapRef.current;
@@ -661,6 +922,66 @@ export function CityMap() {
     map.once('idle', apply);
     return () => { map.off('idle', apply); };
   }, [noiseSensorItems]);
+
+  // Update bike-sharing stations (lazy: data only while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateBikeSharingMarkers(map, bikeSharingItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [bikeSharingItems]);
+
+  // Update car parks (lazy: data only while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateParkingMarkers(map, parkingItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [parkingItems]);
+
+  // Update the accident layer (lazy: data only while the layer is on) and its filter
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateTrafficAccidentLayer(map, accidentItems, accidentFilter, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [accidentItems, accidentFilter]);
+
+  // Update EV charging stations (lazy: data only while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateEvChargingMarkers(map, evChargingItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [evChargingItems]);
+
+  // Update heat-relief places (lazy: data only while the layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateHeatReliefMarkers(map, heatReliefItems, heatReliefSubLayers, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [heatReliefItems, heatReliefSubLayers]);
+
+  // Update the Telraam street counts (lazy: data only while their sub-layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateTelraamMarkers(map, telraamItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [telraamItems]);
 
   // Update water level markers
   useEffect(() => {
@@ -683,6 +1004,26 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
   }, [bathingItems]);
 
+  // Update water temperature markers (lazy: fetched only while the sub-layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateWaterTemperatureMarkers(map, waterTemperatureItems, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [waterTemperatureItems]);
+
+  // Update citizen report markers (lazy — fetched only while the reports layer is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateCitizenReportMarkers(map, citizenReportItems, isDarkRef.current, cityIdRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [citizenReportItems]);
+
   // Update social atlas choropleth (lazy — geojson only available when layer is toggled on)
   useEffect(() => {
     const map = mapRef.current;
@@ -704,6 +1045,25 @@ export function CityMap() {
     return () => { map.off('idle', apply); };
 
   }, [populationGeoJson, populationMetric]);
+
+  // Update the election view's areas (lazy — polygons only while the view is on)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateElectionLayer(map, electionGeoJson, electionResults, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [electionGeoJson, electionResults]);
+  // Update the crime choropleth (lazy: data only while the layer is on) and its offence group
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => updateCrimeAtlasLayer(map, crimeAtlas, crimeLayer, isDarkRef.current);
+    if (map.isStyleLoaded()) { apply(); return; }
+    map.once('idle', apply);
+    return () => { map.off('idle', apply); };
+  }, [crimeAtlas, crimeLayer]);
 
   // Political layer: swap GeoJSON source + apply/reset styling
   const politicalData = politicalLayer === 'bundestag'
@@ -782,7 +1142,7 @@ export function CityMap() {
   // Effect 2: apply party colors + markers when political data arrives/changes
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded() || !politicalActive || !politicalData) return;
+    if (!map || !map.isStyleLoaded() || !politicalActive || !politicalData || politicalLayer === 'elections') return;
     applyPoliticalStyling(map, politicalData, politicalGeoFeaturesRef.current, isDarkRef.current, activeNameFieldRef.current);
     if (politicalGeoFeaturesRef.current.length) {
       updatePoliticalMarkers(map, politicalData, politicalGeoFeaturesRef.current, politicalLayer, activeNameFieldRef.current, isDarkRef.current);

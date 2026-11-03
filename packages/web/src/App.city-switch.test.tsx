@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import * as maplibregl from 'maplibre-gl';
@@ -41,6 +41,13 @@ function LocationProbe() {
 describe('App city switch', () => {
   // Restore only this spy, not every mock: test-setup.ts's ResizeObserver stays.
   let fetchSpy: { mockRestore: () => void };
+
+  // The map is lazy-loaded with every map layer module behind it. Transforming
+  // that graph cold takes longer than waitFor's one second, so load it up front
+  // and let the assertions time the switch, not the first import.
+  beforeAll(async () => {
+    await import('./components/map/CityMap.js');
+  }, 30_000);
 
   beforeEach(() => {
     // The tiles' data hooks get no data; a fresh Response per call, since a body reads once.

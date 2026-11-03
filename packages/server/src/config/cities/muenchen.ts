@@ -46,16 +46,47 @@ export const muenchen: CityConfig = {
     // 109184000; dwd:Warngebiete_Kreise 909184999, checked 2026-11-01). The older
     // cap_warncellids_csv.csv still lists a "Stadt München" (109162000) DWD no longer uses.
     weather: { provider: 'brightsky', lat: 48.1374, lon: 11.5755, dwdWarnRegion: 'Kreis und Stadt München' },
+    // The five LÜB stations (Bayerisches Landesamt für Umwelt) in the city, from the UBA station list (checked 2026-11-03)
+    airQuality: { ubaStations: ['DEBY037', 'DEBY039', 'DEBY089', 'DEBY115', 'DEBY189'] },
     nina: { ars: '091620000000' }, // kreisfreie Stadt München, AGS 09162000
+    // BNetzA Ladesäulenregister (CC BY 4.0): ~2,390 devices, ~970 places; not "Landkreis München"
+    evCharging: { provider: 'bnetza', kreis: 'Kreisfreie Stadt München' },
     aeds: { adminLevel: 6 },       // OSM boundary "München" of the kreisfreie Stadt
     pollen: {
       provider: 'dwd',
       regionId: 120,        // Bayern
       partregionId: 121,    // Allgäu/Oberbayern/Bay. Wald
     },
+    // Heat relief from the GeodatenService, dl-de/by-2.0 (opendata.muenchen.de, checked
+    // 2026-11-03): the Baureferat's 115 fountains and ~210 toilets (323 rooms). No cool-places list.
+    heatRelief: [
+      { kind: 'fountain', provider: 'muenchen-fountains', url: 'https://geoportal.muenchen.de/geoserver/baug_wfs/ows' },
+      { kind: 'toilet', provider: 'muenchen-toilets', url: 'https://geoportal.muenchen.de/geoserver/gsm_wfs/ows' },
+    ],
     // The Kreis table of the kreisfreie Stadt; AA München's district is wider than the city
     laborMarket: { provider: 'ba', scope: 'kreis', name: 'München, Landeshauptstadt' },
+    electricity: { provider: 'smard', controlArea: 'TenneT' },
+    // DWD soil moisture (CC BY 4.0); the airport station (1262) lies outside the city
+    soilMoisture: { provider: 'dwd', stations: [{ id: '3379', name: 'München-Stadt' }] },
     wastewater: { provider: 'amelag', sites: ['München'] }, // RKI AMELAG (CC BY 4.0), about 1.24 million people
+    // nextbike's MyRadl system (GBFS, CC0-1.0) covers the city and its Landkreis: ~800
+    // virtual stations, ~630 of them inside the bounding box, which the job keeps
+    // Lifts and escalators at DB stations (FaSta, CC BY 4.0); fetched only with DB_API_CLIENT_ID and DB_API_KEY
+    stationLifts: { provider: 'db-fasta' },
+    // Hospitals by G-BA emergency tier; on unless KLINIK_ATLAS=false (reuse terms not stated)
+    hospitals: [{ provider: 'klinik-atlas', places: ['München'] }],
+    bikeSharing: { provider: 'gbfs', url: 'https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_ml/gbfs.json', system: 'MyRadl', operator: 'nextbike' },
+    // Unfallatlas (dl-de/by-2.0): the kreisfreie Stadt, ~5,300 injury accidents in 2025
+    trafficAccidents: { provider: 'unfallatlas', ags: '09162000' },
+    // Stadtrat 2026, final result per Stadtbezirk (KVR – Wahlamt, dl-de/by-2.0 on
+    // opendata.muenchen.de "Stadtratswahl 2026 - Ergebnisse München")
+    electionResults: {
+      provider: 'muenchen-stadtrat-zip',
+      url: 'https://www.wahlen-muenchen.de/ergebnisse/20260308oberbuergermeisterwahl/endergebnis_stadtratswahl.zip',
+      election: 'stadtrat',
+      date: '2026-03-08',
+      outlines: 'muenchen-stadtbezirke.geojson',
+    },
     // The Isar's flood class (Meldestufe) from the LHP public API (CC BY 4.0): the HND gauge
     // München (16005701, Meldestufen at 240/300/380 cm and a 4th) and Puppling, the last
     // gauge upstream, about 25 km south. LHP gives no water levels (checked 2026-11-01).
@@ -66,6 +97,13 @@ export const muenchen: CityConfig = {
         { id: 'BY_16005701', name: 'München', waterBody: 'Isar' },
         { id: 'BY_16004403', name: 'Puppling', waterBody: 'Isar', upstream: true },
       ],
+    },
+    // "Mach München besser" citizen reports, Open311 on Mark-a-Spot (CC0 1.0, IT-Referat).
+    // The CKAN dataset's URLs without /api answer 404; the /api prefix works (2026-11-03).
+    citizenReports: {
+      provider: 'open311',
+      baseUrl: 'https://machmuenchenbesser.de/api/georeport/v2',
+      requestUrl: 'https://machmuenchenbesser.de/requests/{id}',
     },
     // Roadworks and no-parking zones of the coming four weeks (dl-de/by-2.0); the job adds a
     // CQL filter for works on the carriageway (lib/roadworks-parsers.ts).

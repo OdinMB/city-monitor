@@ -20,11 +20,11 @@ describe('useCommandCenter enterCity', () => {
     expect([...useCommandCenter.getState().waterSubLayers]).toEqual(['levels']);
   });
 
-  it('opens Berlin without the water layer, and with both water sub-layers ready', () => {
+  it('opens Berlin without the water layer, and with every water sub-layer ready', () => {
     useCommandCenter.getState().enterCity('hamburg');
     useCommandCenter.getState().enterCity('berlin');
     expect(useCommandCenter.getState().activeLayers.has('water')).toBe(false);
-    expect([...useCommandCenter.getState().waterSubLayers].sort()).toEqual(['bathing', 'levels']);
+    expect([...useCommandCenter.getState().waterSubLayers].sort()).toEqual(['bathing', 'levels', 'temperature']);
   });
 
   it('keeps the visitor’s layers when the same city is entered again', () => {

@@ -1,15 +1,23 @@
 import { create } from 'zustand';
+import type { CrimeIndicator } from '../lib/api.js';
 
-export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'water' | 'social' | 'population' | 'political';
-export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament';
+export type DataLayer = 'weather' | 'news' | 'warnings' | 'air-quality' | 'noise' | 'emergencies' | 'traffic' | 'bike-sharing' | 'parking' | 'ev-charging' | 'heat-relief' | 'accidents' | 'crime' | 'water' | 'social' | 'population' | 'political' | 'reports' | 'trees';
+/** Which accidents the accident layer shows: all, or those with a bicycle or a pedestrian involved. */
+export type AccidentFilter = 'all' | 'bike' | 'pedestrian';
+/** The offence group the crime map colours its areas by. */
+export type CrimeLayer = CrimeIndicator;
+/** The political map's views: who represents each area, or how it voted in the latest election (`elections`). */
+export type PoliticalLayer = 'bezirke' | 'bundestag' | 'landesparlament' | 'elections';
 export type SocialLayer = 'unemployment' | 'single-parent' | 'welfare' | 'child-poverty' | 'rent';
 export type PopulationLayer = 'pop-density' | 'pop-elderly' | 'pop-foreign';
 export type NoiseLayer = 'total' | 'road' | 'rail' | 'air';
 export type NoiseWmsLayer = NoiseLayer | null;
 export type NewsSubLayer = 'news' | 'police';
-export type EmergencySubLayer = 'pharmacies' | 'aeds';
-export type WaterSubLayer = 'levels' | 'bathing';
-export type TrafficSubLayer = 'public-transport' | 'incidents' | 'roadworks';
+export type EmergencySubLayer = 'pharmacies' | 'aeds' | 'hospitals';
+export type WaterSubLayer = 'levels' | 'bathing' | 'temperature';
+/** `telraam`: yesterday's citizen street counts (Berlin), off until chosen (not in DEFAULT_TRAFFIC_SUBS). */
+export type TrafficSubLayer = 'public-transport' | 'incidents' | 'congestion' | 'roadworks' | 'car-counts' | 'bike-counts' | 'telraam';
+export type HeatReliefSubLayer = 'cool' | 'fountains' | 'toilets';
 
 interface CommandCenterState {
   singleView: boolean;
@@ -23,6 +31,9 @@ interface CommandCenterState {
   emergencySubLayers: Set<EmergencySubLayer>;
   waterSubLayers: Set<WaterSubLayer>;
   trafficSubLayers: Set<TrafficSubLayer>;
+  accidentFilter: AccidentFilter;
+  crimeLayer: CrimeLayer;
+  heatReliefSubLayers: Set<HeatReliefSubLayer>;
   toggleSingleView: () => void;
   toggleLayer: (layer: DataLayer) => void;
   setPoliticalLayer: (layer: PoliticalLayer) => void;
@@ -34,6 +45,11 @@ interface CommandCenterState {
   toggleEmergencySubLayer: (sub: EmergencySubLayer) => void;
   toggleWaterSubLayer: (sub: WaterSubLayer) => void;
   toggleTrafficSubLayer: (sub: TrafficSubLayer) => void;
+  setAccidentFilter: (filter: AccidentFilter) => void;
+  setCrimeLayer: (layer: CrimeLayer) => void;
+  toggleHeatReliefSubLayer: (sub: HeatReliefSubLayer) => void;
+  /** Turns the heat-relief layer on with all its sub-layers (the weather tile's heat hint); in single view it replaces the shown layer. */
+  showHeatRelief: () => void;
   setActiveLayers: (layers: Set<DataLayer>) => void;
   /** The city whose dashboard the layer choice was last made for. */
   layersCityId: string | null;
@@ -62,8 +78,14 @@ export function defaultLayersFor(cityId: string): Set<DataLayer> {
 }
 const ALL_NEWS_SUBS: Set<NewsSubLayer> = new Set(['news']);
 const ALL_EMERGENCY_SUBS: Set<EmergencySubLayer> = new Set(['pharmacies']);
-const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing']);
-const ALL_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
+const ALL_WATER_SUBS: Set<WaterSubLayer> = new Set(['levels', 'bathing', 'temperature']);
+/**
+ * The traffic sub-layers shown when the layer is switched on. The congestion
+ * map and the counting sites are opt-in: they would crowd the incidents, and
+ * the counts are fetched only once asked for.
+ */
+const DEFAULT_TRAFFIC_SUBS: Set<TrafficSubLayer> = new Set(['public-transport', 'incidents', 'roadworks']);
+const ALL_HEAT_RELIEF_SUBS: Set<HeatReliefSubLayer> = new Set(['cool', 'fountains', 'toilets']);
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
   singleView: false,
@@ -76,7 +98,10 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
   newsSubLayers: new Set(ALL_NEWS_SUBS),
   emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
   waterSubLayers: new Set(ALL_WATER_SUBS),
-  trafficSubLayers: new Set(ALL_TRAFFIC_SUBS),
+  trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS),
+  accidentFilter: 'all',
+  crimeLayer: 'total',
+  heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS),
   toggleSingleView: () =>
     set((state) => {
       const singleView = !state.singleView;
@@ -93,7 +118,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
           return { activeLayers: new Set<DataLayer>() };
         }
         const extra: Partial<CommandCenterState> = {};
-        if (layer === 'traffic') extra.trafficSubLayers = new Set(ALL_TRAFFIC_SUBS);
+        if (layer === 'traffic') extra.trafficSubLayers = new Set(DEFAULT_TRAFFIC_SUBS);
         return { activeLayers: new Set<DataLayer>([layer]), ...extra };
       }
       const next = new Set(state.activeLayers);
@@ -101,8 +126,8 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
         next.delete(layer);
       } else {
         next.add(layer);
-        // Re-activate all sub-layers when turning the traffic category back on
-        if (layer === 'traffic') return { activeLayers: next, trafficSubLayers: new Set(ALL_TRAFFIC_SUBS) };
+        // Back to the default sub-layers when turning the traffic category back on
+        if (layer === 'traffic') return { activeLayers: next, trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS) };
       }
       return { activeLayers: next };
     }),
@@ -151,6 +176,23 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
         next.add(sub);
       }
       return { trafficSubLayers: next };
+    }),
+  setAccidentFilter: (filter) => set({ accidentFilter: filter }),
+  setCrimeLayer: (layer) => set({ crimeLayer: layer }),
+  toggleHeatReliefSubLayer: (sub) =>
+    set((state) => {
+      const next = new Set(state.heatReliefSubLayers);
+      if (next.has(sub)) {
+        if (next.size > 1) next.delete(sub);
+      } else {
+        next.add(sub);
+      }
+      return { heatReliefSubLayers: next };
+    }),
+  showHeatRelief: () =>
+    set((state) => {
+      const activeLayers = state.singleView ? new Set<DataLayer>(['heat-relief']) : new Set([...state.activeLayers, 'heat-relief' as const]);
+      return { activeLayers, heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS) };
     }),
   setActiveLayers: (layers) => set({ activeLayers: layers }),
   layersCityId: null,

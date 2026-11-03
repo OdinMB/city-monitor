@@ -44,6 +44,12 @@ const dwdUviFixture = {
   ],
 };
 
+// Shape of DWD's hwtrend_YYYYMMDD.json (8-day heat status per warn region), invented values.
+const dwdHeatTrendFixture = {
+  HHX: { Name: 'Hansestadt Hamburg', Bundesland: '5', Trend: [0, 0, 0, 0, 0, 0, 0, 0] },
+  BXX: { Name: 'Land Berlin', Bundesland: '8', Trend: [0, 1, 3, 0, 0, 0, 0, 0] },
+};
+
 // Shape of DWD's warnings.json (JSONP, warnings keyed by warncell id), invented values.
 // lib/dwd-warnings.test.ts covers the level mapping and the edge cases.
 const dwdWarningsJsonp = `warnWetter.loadWarnings(${JSON.stringify({
@@ -88,6 +94,9 @@ function brightSkyMock(input: RequestInfo | URL): Response {
   if (url.includes('uvi.json')) {
     return new Response(JSON.stringify(dwdUviFixture), { status: 200 });
   }
+  if (url.includes('/health/forecasts/heat/hwtrend_')) {
+    return new Response(JSON.stringify(dwdHeatTrendFixture), { status: 200 });
+  }
   // Open-Meteo air-quality
   if (url.includes('air-quality-api.open-meteo.com')) {
     return new Response(JSON.stringify({
@@ -122,6 +131,25 @@ describe('ingest-weather', () => {
     // First three hourlies have null precipitation_probability — must be coerced to 0.
     expect(data!.hourly[0]!.precipProb).toBe(0);
     expect(data!.dwdUv).toEqual({ today: 5, tomorrow: 6, dayAfter: 4, forecastDay: '2026-05-01' });
+    expect(data!.dwdHeatTrend).toEqual({ issued: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), days: [0, 1, 3, 0, 0, 0, 0, 0] });
+  });
+
+  it("falls back to yesterday's heat-trend file before today's is out", async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('hwtrend_') && fetchSpy.mock.calls.filter(([u]) => String(u).includes('hwtrend_')).length === 1) {
+        return new Response('not found', { status: 404 });
+      }
+      return brightSkyMock(input);
+    });
+
+    const cache = createCache();
+    await createWeatherIngestion(cache)();
+
+    const trendUrls = fetchSpy.mock.calls.map(([u]) => String(u)).filter((u) => u.includes('hwtrend_'));
+    expect(trendUrls).toHaveLength(2);
+    expect(trendUrls[0]).not.toBe(trendUrls[1]);
+    expect(cache.get<WeatherData>('berlin:weather')!.dwdHeatTrend?.days).toEqual([0, 1, 3, 0, 0, 0, 0, 0]);
   });
 
   it("puts the city's DWD warnings into the weather", async () => {

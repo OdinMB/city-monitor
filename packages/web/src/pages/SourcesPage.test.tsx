@@ -5,7 +5,7 @@ import i18n from 'i18next';
 import type { CityConfig, CityFeature, WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../hooks/CityProvider.js';
 import { CityContext } from '../hooks/CityContext.js';
-import { getNoiseWmsUrl } from '../components/map/constants.js';
+import { getNoiseWmsUrl, getStreetTreesWmsUrl } from '../components/map/constants.js';
 import { SourcesPage } from './SourcesPage.js';
 import { AI_COPY_LANGS, APPROVED_AI_COPY } from '../test-fixtures/approved-ai-copy.js';
 
@@ -54,6 +54,7 @@ function creditedCards(): Array<{ name: string; host: string; text: string; sect
 }
 
 const usesEvents = (c: CityConfig, source: string) => c.dataSources.events?.some((e) => e.source === source) ?? false;
+const usesHeatRelief = (c: CityConfig, provider: string) => c.dataSources.heatRelief?.some((s) => s.provider === provider) ?? false;
 const berlinOnly = (c: CityConfig) => c.id === 'berlin';
 
 /**
@@ -72,6 +73,8 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['WAQI (World Air Quality Index Project)', () => true],
   ['Sensor.Community', (c) => (c.dataSources.airQuality?.sensorCommunityStations?.length ?? 0) > 0],
   ['Sensor.Community DNMS', (c) => c.dataSources.noiseSensors !== undefined],
+  // ingest-uba-air-quality: the state-network stations a city lists
+  ['Umweltbundesamt Air Data API', (c) => (c.dataSources.airQuality?.ubaStations?.length ?? 0) > 0],
   ['NINA (BBK)', (c) => c.country === 'DE' && c.dataSources.nina !== undefined],
   ['OpenStreetMap', (c) => c.country === 'DE'],
   ['TomTom Traffic', () => true],
@@ -79,6 +82,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   // ingest-transit: Geofox when its credentials are set; credited wherever the config names it
   ['HVV / Hamburger Hochbahn, Geofox GTI', (c) => c.dataSources.transit?.provider === 'geofox'],
   ['VIZ Berlin', (c) => c.dataSources.roadworks?.provider === 'viz-berlin'],
+  ['Berlin zählt Mobilität (Telraam)', (c) => c.dataSources.telraamCounts?.provider === 'berlin-zaehlt'],
   ['Baustellen Hamburg (Bauweiser)', (c) => c.dataSources.roadworks?.provider === 'hamburg-ogc'],
   ['Baustellen Köln (Offene Daten Köln)', (c) => c.dataSources.roadworks?.provider === 'koeln-wfs'],
   ['Baustellen München (Geoportal)', (c) => c.dataSources.roadworks?.provider === 'muenchen-wfs'],
@@ -101,15 +105,53 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['München RIS', (c) => c.dataSources.councilMeetings?.muenchenRis !== undefined],
   ['Hamburgische Bürgerschaft (Termine)', (c) => c.dataSources.councilMeetings?.hamburgBuergerschaft !== undefined],
   ['LAGeSo Bathing Water', (c) => c.dataSources.bathing?.provider === 'lageso'],
+  ['Wasserportal Berlin', (c) => c.dataSources.waterTemperature?.provider === 'wasserportal'],
   ['Badegewässer Hamburg (Geodienste)', (c) => c.dataSources.bathing?.provider === 'hamburg-wfs'],
   ['KVB Open Data (Aufzüge, Fahrtreppen)', (c) => c.dataSources.liftOutages?.provider === 'kvb'],
+  // ingest-lift-outages: DB FaSta when DB_API_CLIENT_ID and DB_API_KEY are set; credited wherever the config names it
+  ['DB FaSta (Deutsche Bahn)', (c) => c.dataSources.stationLifts?.provider === 'db-fasta'],
+  // ingest-hospitals: Hamburg's WFS, and the Klinik-Atlas unless KLINIK_ATLAS=false; credited wherever the config names it
+  ['Krankenhäuser Hamburg (Geodienste)', (c) => c.dataSources.hospitals?.some((s) => s.provider === 'hamburg-wfs') ?? false],
+  ['Bundes-Klinik-Atlas (G-BA)', (c) => c.dataSources.hospitals?.some((s) => s.provider === 'klinik-atlas') ?? false],
+  ['nextbike (GBFS)', (c) => c.dataSources.bikeSharing?.provider === 'gbfs'],
+  ['Unfallatlas (Statistische Ämter des Bundes und der Länder)', (c) => c.dataSources.trafficAccidents?.provider === 'unfallatlas'],
+  ['Kriminalitätsatlas Berlin (Polizei Berlin)', (c) => c.dataSources.crimeAtlas?.provider === 'polizei-berlin'],
+  ['StadtRAD Hamburg (Urban Data Platform)', (c) => c.dataSources.bikeSharing?.provider === 'hamburg-sta'],
+  ['Parkhäuser Hamburg (Urban Data Platform)', (c) => c.dataSources.parking?.provider === 'hamburg-wfs'],
+  // ingest-electricity: SMARD for the city's control area, Energy-Charts for Germany
+  ['SMARD (Bundesnetzagentur)', (c) => c.dataSources.electricity !== undefined],
+  ['Energy-Charts (Fraunhofer ISE)', (c) => c.dataSources.electricity !== undefined],
+  // ingest-citizen-reports: each city's Open311 server, credited by its host
+  ['Sag’s uns (Offene Daten Köln)', (c) => c.dataSources.citizenReports?.baseUrl.startsWith('https://sags-uns.stadt-koeln.de/') === true],
+  ['Mach München besser', (c) => c.dataSources.citizenReports?.baseUrl.startsWith('https://machmuenchenbesser.de/') === true],
+  ['Verkehrsdaten Hamburg (Infrarotdetektoren)', (c) => c.dataSources.trafficCounts?.provider === 'hamburg-sta'],
+  ['Ladesäulenregister (Bundesnetzagentur)', (c) => c.dataSources.evCharging?.provider === 'bnetza'],
+  ['E-Ladestationen Hamburg (Urban Data Platform)', (c) => c.dataSources.evCharging?.liveStatus?.provider === 'hamburg-sta'],
+  // ingest-heat-relief: one credit per list a city's config names
+  ['Kühle Räume Berlin (Geoportal)', (c) => usesHeatRelief(c, 'berlin-cool-rooms')],
+  ['Trinkbrunnen Berlin (Geoportal)', (c) => usesHeatRelief(c, 'berlin-fountains')],
+  ['Öffentliche Toiletten Berlin (Geoportal)', (c) => usesHeatRelief(c, 'berlin-toilets')],
+  ['Trinkwasserbrunnen Hamburg (Geodienste)', (c) => usesHeatRelief(c, 'hamburg-fountains')],
+  ['Kühle Orte Köln (Geoportal)', (c) => usesHeatRelief(c, 'koeln-cool-places')],
+  ['Trinkwasserbrunnen Köln (Geoportal)', (c) => usesHeatRelief(c, 'koeln-fountains')],
+  ['Öffentliche Toiletten Köln (AWB)', (c) => usesHeatRelief(c, 'koeln-toilets')],
+  ['Trinkbrunnen München (Geoportal)', (c) => usesHeatRelief(c, 'muenchen-fountains')],
+  ['Öffentliche Toiletten München (GeodatenService)', (c) => usesHeatRelief(c, 'muenchen-toilets')],
+  // ingest-soil-moisture: the DWD stations a city lists, and Gieß den Kiez where it has treeWatering
+  ['DWD Soil Moisture (Climate Data Center)', (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0],
+  ['Gieß den Kiez (Open Data)', (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0 && c.dataSources.soilMoisture?.treeWatering !== undefined],
   ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
   // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
+  ['RKI IfSG Influenza and RSV Cases', (c) => c.dataSources.respiratoryCases !== undefined],
   ['Bundesagentur für Arbeit', (c) => c.dataSources.laborMarket !== undefined],
   ['Amt für Statistik Berlin-Brandenburg', (c) => c.dataSources.population?.provider === 'afstat-ewr-xlsx'],
   ['Indikatorenatlas München', (c) => c.dataSources.socialAtlas?.provider === 'muenchen-indikatorenatlas' || c.dataSources.population?.provider === 'muenchen-indikatorenatlas'],
   ['Berliner Feuerwehr Open Data', berlinOnly],
+  // ingest-election-results: one provider per city's results file
+  ['Wahlen Berlin (Abgeordnetenhauswahl 2026)', (c) => c.dataSources.electionResults?.provider === 'berlin-agh-xlsx'],
+  ['Statistikamt Nord (Bürgerschaftswahl 2025)', (c) => c.dataSources.electionResults?.provider === 'hamburg-stadtteile-xlsx'],
+  ['Wahlamt München (Stadtratswahl 2026)', (c) => c.dataSources.electionResults?.provider === 'muenchen-stadtrat-zip'],
   // ingest-feeds classifies news items and ingest-safety places police reports with the LLM
   ['OpenAI', (c) => c.feeds.length > 0 || c.dataSources.police !== undefined],
 ];
@@ -135,6 +177,7 @@ describe('SourcesPage credits per city', () => {
    */
   const FEATURE_BOUND: ReadonlyArray<[credit: string, feature: CityFeature]> = [
     ['abgeordnetenwatch.de', 'political'],
+    ['Verkehrslage Hamburg (Geodienste)', 'trafficFlowMap'],
     ['aponet.de', 'pharmacies'],
   ];
 
@@ -167,6 +210,14 @@ describe('SourcesPage credits per city', () => {
     if (wms) expect(creditedCards().map((card) => card.host)).toContain(new URL(wms).hostname);
   });
 
+  it.each(CITIES.map((c) => [c.id] as const))('credits the host of the street-tree map on %s, if it has one', (id) => {
+    renderCity(id);
+    const wms = getStreetTreesWmsUrl(id);
+    const hosts = creditedCards().map((card) => card.host);
+    if (wms) expect(hosts).toContain(new URL(wms).hostname);
+    else expect(creditedCards().some((card) => /Baum/.test(card.name))).toBe(false);
+  });
+
   it('leaves the events and Sensor.Community sources off Hamburg, which has none', () => {
     renderCity('hamburg');
     expect(screen.queryByRole('link', { name: 'Ticketmaster' })).toBeNull();
@@ -183,10 +234,23 @@ describe('SourcesPage licence credits', () => {
    * contributors, ODbL".
    */
   const LICENCE_CREDITS: Record<string, string> = {
+    // CC BY-SA: the credit, and the share-alike licence of the derived map data
+    'Kriminalitätsatlas Berlin (Polizei Berlin)': 'Source: Polizei Berlin, Kriminalitätsatlas, CC BY-SA. The map\'s derived data is shared under the same licence (CC BY-SA).',
     'OpenStreetMap': '© OpenStreetMap contributors, ODbL.',
     'Sensor.Community': '© Sensor.Community contributors, ODbL.',
     'Sensor.Community DNMS': '© Sensor.Community contributors, ODbL.',
+    // The source line the UBA Air Data API's OpenAPI spec asks for, dl-de/by-2-0
+    'Umweltbundesamt Air Data API': 'Source: Umweltbundesamt mit Daten der Messnetze der Länder und des Bundes, dl-de/by-2-0.',
     'RKI AMELAG Wastewater Surveillance': 'Source: Robert Koch-Institut, CC BY 4.0.',
+    // dwd.de/DE/service/rechtliche_hinweise: CC BY 4.0, the DWD named as the source
+    'DWD Soil Moisture (Climate Data Center)': 'Source: Deutscher Wetterdienst, CC BY 4.0.',
+    // Both datasets' Readme: CC BY 4.0, "unter Bedingung der Namensnennung des Robert Koch-Instituts als Quelle"
+    'RKI IfSG Influenza and RSV Cases': 'Source: Robert Koch-Institut, CC BY 4.0.',
+    'Wasserportal Berlin': 'Source: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt Berlin – Wasserportal Berlin, dl-de/by-2-0.',
+    // smard.de/home/datennutzung names the credit "Bundesnetzagentur | SMARD.de"
+    'SMARD (Bundesnetzagentur)': 'Source: Bundesnetzagentur | SMARD.de, CC BY 4.0.',
+    // The Energy-Charts API description: "Proper attribution to Energy-Charts.info as the source is required."
+    'Energy-Charts (Fraunhofer ISE)': 'Source: Energy-Charts.info (Fraunhofer ISE), CC BY 4.0.',
     'LAGeSo Wastewater Monitoring': 'Source: Lageso Berlin and Berliner Wasserbetriebe, dl-de/by-2-0.',
     // The BA CSV footer: pass on with the source named and a link to statistik.arbeitsagentur.de
     'Bundesagentur für Arbeit': '© Statistik der Bundesagentur für Arbeit.',
@@ -198,6 +262,10 @@ describe('SourcesPage licence credits', () => {
     'Berlin Budget (Doppelhaushalt)': 'Licensed CC BY.',
     'ALLRIS OParl (BVV)': 'Licensed CC BY 3.0 DE.',
     'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/zero-2-0.',
+    // The tree registers' GetCapabilities licences (checked 2026-11-03); Zero asks for no credit, given anyway
+    'Baumbestand Berlin (Geoportal Berlin)': 'Source: Geoportal Berlin / Baumbestand Berlin, dl-de/zero-2-0.',
+    'Straßenbaumkataster Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft, dl-de/by-2-0.',
+    'Baumkataster Köln (Geoportal Stadt Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
     'Stadt Köln Open Data (Events)': 'Licensed dl-de/zero-2-0.',
     'Länderübergreifendes Hochwasserportal (LHP)': 'Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.',
     'Sozialmonitoring Hamburg (Social Atlas)': 'Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.',
@@ -207,8 +275,43 @@ describe('SourcesPage licence credits', () => {
     'Hamburger Wohnlagenverzeichnis (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.',
     'Badegewässer Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Umwelt und Energie, dl-de/by-2-0.',
     'KVB Open Data (Aufzüge, Fahrtreppen)': 'Source: Kölner Verkehrs-Betriebe AG, dl-de/zero-2-0.',
+    // The FaSta product page: CC BY 4.0, Deutsche Bahn named
+    'DB FaSta (Deutsche Bahn)': 'Source: Deutsche Bahn AG, CC BY 4.0.',
+    // HH_WFS_Krankenhaeuser GetCapabilities <ows:Fees> (checked 2026-11-03)
+    'Krankenhäuser Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Gesundheit und Verbraucherschutz, dl-de/by-2-0.',
+    // CC0 asks for no credit; the feed's operator is named anyway
+    'nextbike (GBFS)': 'Data: nextbike GmbH, CC0 1.0.',
+    // The attribution berlin-zaehlt.de's CC BY 4.0 data names
+    'Berlin zählt Mobilität (Telraam)': 'Source: Berlin zählt Mobilität / Telraam, CC BY 4.0.',
+    'Unfallatlas (Statistische Ämter des Bundes und der Länder)':'Source: Statistische Ämter des Bundes und der Länder, Unfallatlas, dl-de/by-2-0.',
+    'StadtRAD Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    'Parkhäuser Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    'Sag’s uns (Offene Daten Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
+    'Mach München besser': 'Source: Landeshauptstadt München, IT-Referat, CC0 1.0.',
+    // WMS GetCapabilities <Fees> and the Transparenzportal datasets (checked 2026-11-03)
+    'Verkehrslage Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    'Verkehrsdaten Hamburg (Infrarotdetektoren)': 'Source: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0.',
+    // The landing page: "Als Namensnennung für Daten dieser Internetseite ist Bundesnetzagentur.de zu verwenden."
+    'Ladesäulenregister (Bundesnetzagentur)': 'Source: Bundesnetzagentur.de, CC BY 4.0.',
+    // Transparenzportal "Elektro Ladestandorte Hamburg": dl-de-by-2.0, author BWAI
+    'E-Ladestationen Hamburg (Urban Data Platform)': 'Source: Freie und Hansestadt Hamburg, Behörde für Wirtschaft, Arbeit und Innovation, dl-de/by-2-0.',
+    'Trinkwasserbrunnen Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft, dl-de/by-2-0.',
+    'Trinkbrunnen München (Geoportal)': 'Source: Landeshauptstadt München – Baureferat, dl-de/by-2-0.',
+    'Öffentliche Toiletten München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
+    // dl-de/zero asks for no credit; the publisher is named anyway
+    'Kühle Räume Berlin (Geoportal)': 'Source: Senatsverwaltung für Wissenschaft, Gesundheit und Pflege, dl-de/zero-2-0.',
+    'Trinkbrunnen Berlin (Geoportal)': 'Source: Berliner Wasserbetriebe, dl-de/zero-2-0.',
+    'Öffentliche Toiletten Berlin (Geoportal)': 'Source: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt, dl-de/zero-2-0.',
+    'Kühle Orte Köln (Geoportal)': 'Source: Stadt Köln, dl-de/zero-2-0.',
+    'Trinkwasserbrunnen Köln (Geoportal)': 'Source: Stadt Köln – Amt für Landschaftspflege und Grünflächen, dl-de/zero-2-0.',
+    'Öffentliche Toiletten Köln (AWB)': 'Source: Abfallwirtschaftsbetriebe Köln, dl-de/zero-2-0.',
     'Indikatorenatlas München': 'Source: Landeshauptstadt München, Statistisches Amt, dl-de/by-2-0.',
     'Stadtbezirke München (GeodatenService)': 'Source: Landeshauptstadt München – GeodatenService, dl-de/by-2-0.',
+    // The XLSX's Impressum sheet and the WFS's Quellenvermerk, both CC BY 3.0 DE
+    'Wahlen Berlin (Abgeordnetenhauswahl 2026)': 'Source: Amt für Statistik Berlin-Brandenburg, CC BY 3.0 DE.',
+    // Uncatalogued file; Statistikamt Nord's imprint allows passing it on with the source named
+    'Statistikamt Nord (Bürgerschaftswahl 2025)': 'Source: Statistisches Amt für Hamburg und Schleswig-Holstein',
+    'Wahlamt München (Stadtratswahl 2026)': 'Source: Landeshauptstadt München – Kreisverwaltungsreferat, Wahlamt, dl-de/by-2-0.',
   };
 
   it('finds every listed source on some city page', () => {
