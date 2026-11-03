@@ -51,6 +51,11 @@ const CITY_EXTRA_DEFAULT_LAYERS: Partial<Record<string, readonly DataLayer[]>> =
   hamburg: ['water'],
 };
 
+/** Water sub-layers a city's map opens with, where not all of them. */
+const CITY_DEFAULT_WATER_SUBS: Partial<Record<string, readonly WaterSubLayer[]>> = {
+  hamburg: ['levels'],
+};
+
 /** The layers a city's map opens with. */
 export function defaultLayersFor(cityId: string): Set<DataLayer> {
   return new Set([...DEFAULT_LAYERS, ...(CITY_EXTRA_DEFAULT_LAYERS[cityId] ?? [])]);
@@ -153,10 +158,11 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
     set((state) => {
       if (state.layersCityId === cityId) return {};
       const layers = defaultLayersFor(cityId);
+      const waterSubLayers = new Set<WaterSubLayer>(CITY_DEFAULT_WATER_SUBS[cityId] ?? ALL_WATER_SUBS);
       if (state.singleView) {
         const first = layers.values().next().value as DataLayer;
-        return { layersCityId: cityId, activeLayers: new Set<DataLayer>([first]) };
+        return { layersCityId: cityId, activeLayers: new Set<DataLayer>([first]), waterSubLayers };
       }
-      return { layersCityId: cityId, activeLayers: layers };
+      return { layersCityId: cityId, activeLayers: layers, waterSubLayers };
     }),
 }));

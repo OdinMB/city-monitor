@@ -15,9 +15,16 @@ describe('useCommandCenter enterCity', () => {
     );
   });
 
-  it('opens Berlin without the water layer', () => {
+  it('opens Hamburg’s water layer with river gauges only, not bathing quality', () => {
+    useCommandCenter.getState().enterCity('hamburg');
+    expect([...useCommandCenter.getState().waterSubLayers]).toEqual(['levels']);
+  });
+
+  it('opens Berlin without the water layer, and with both water sub-layers ready', () => {
+    useCommandCenter.getState().enterCity('hamburg');
     useCommandCenter.getState().enterCity('berlin');
     expect(useCommandCenter.getState().activeLayers.has('water')).toBe(false);
+    expect([...useCommandCenter.getState().waterSubLayers].sort()).toEqual(['bathing', 'levels']);
   });
 
   it('keeps the visitor’s layers when the same city is entered again', () => {
