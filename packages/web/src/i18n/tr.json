@@ -335,6 +335,15 @@
         "low": "Düşük",
         "moderate": "Orta",
         "high": "Yüksek"
+      },
+      "cases": {
+        "title": "Bildirilen vakalar",
+        "week": "{{week}}. hafta",
+        "flu": "Grip",
+        "rsv": "RSV",
+        "incidence": "100 binde {{value}}",
+        "trendLabel": "{{pathogen}} bildirilen vaka eğilimi",
+        "source": "Enfeksiyondan Korunma Yasası'na göre bildirilen, laboratuvarda doğrulanmış vakalar (RKI)"
       }
     },
     "waterLevels": {

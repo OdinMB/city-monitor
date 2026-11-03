@@ -37,6 +37,7 @@ import { createEvChargingRouter } from './routes/ev-charging.js';
 import { createSoilMoistureRouter } from './routes/soil-moisture.js';
 import { createTelraamCountsRouter } from './routes/telraam-counts.js';
 import { createWastewaterRouter } from './routes/wastewater.js';
+import { createRespiratoryCasesRouter } from './routes/respiratory-cases.js';
 import { createLaborMarketRouter } from './routes/labor-market.js';
 import { createPopulationRouter } from './routes/population.js';
 import { createFeuerwehrRouter } from './routes/feuerwehr.js';
@@ -76,6 +77,7 @@ import { createEvChargingIngestion, createEvChargingStatusIngestion } from './cr
 import { createSoilMoistureIngestion } from './cron/ingest-soil-moisture.js';
 import { createTelraamCountsIngestion } from './cron/ingest-telraam-counts.js';
 import { createWastewaterIngestion } from './cron/ingest-wastewater.js';
+import { createRespiratoryCasesIngestion } from './cron/ingest-respiratory-cases.js';
 import { createLaborMarketIngestion } from './cron/ingest-labor-market.js';
 import { createPopulationIngestion } from './cron/ingest-population.js';
 import { createFeuerwehrIngestion } from './cron/ingest-feuerwehr.js';
@@ -212,6 +214,7 @@ export async function createApp(options?: {
     { jobName: 'ingest-traffic-counts', tableName: 'snapshots', maxAgeSeconds: 7200,  filter: { column: 'type', value: 'traffic-counts' }, serves: (c) => !!c.dataSources.trafficCounts },
     // Weekly job on a monthly register. No spec for ingest-ev-charging-status: cache only, it runs on every start
     { jobName: 'ingest-ev-charging',  tableName: 'snapshots', maxAgeSeconds: 604800,  filter: { column: 'type', value: 'bnetza-charging' }, serves: (c) => !!c.dataSources.evCharging },
+    { jobName: 'ingest-respiratory-cases', tableName: 'snapshots', maxAgeSeconds: 86400, filter: { column: 'type', value: 'rki-ifsg-cases' }, serves: (c) => !!c.dataSources.respiratoryCases },
     { jobName: 'ingest-labor-market', tableName: 'snapshots', maxAgeSeconds: 86400,   filter: { column: 'type', value: 'ba-labor-market' }, serves: (c) => !!c.dataSources.laborMarket },
     { jobName: 'ingest-population',   tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'afstat-population' }, serves: (c) => !!c.dataSources.population },
     { jobName: 'ingest-traffic-accidents', tableName: 'snapshots', maxAgeSeconds: 2592000, filter: { column: 'type', value: 'unfallatlas-accidents' }, serves: (c) => !!c.dataSources.trafficAccidents },
@@ -267,6 +270,7 @@ export async function createApp(options?: {
   const ingestSoilMoisture = createSoilMoistureIngestion(cache, db);
   const ingestTelraamCounts = createTelraamCountsIngestion(cache, db);
   const ingestWastewater = createWastewaterIngestion(cache, db);
+  const ingestRespiratoryCases = createRespiratoryCasesIngestion(cache, db);
   const ingestLaborMarket = createLaborMarketIngestion(cache, db);
   const ingestPopulation = createPopulationIngestion(cache, db);
   const ingestFeuerwehr = createFeuerwehrIngestion(cache, db);
@@ -323,6 +327,8 @@ export async function createApp(options?: {
     // The DWD regenerates its soil files once a day, around 09:00 UTC; the afternoon run catches a late one
     { name: 'ingest-soil-moisture', schedule: '30 10,16 * * *', handler: ingestSoilMoisture, runOnStart: s('ingest-soil-moisture') },
     { name: 'ingest-wastewater', schedule: '0 6 * * *', handler: ingestWastewater, runOnStart: s('ingest-wastewater') },
+    // The RKI overwrites both files once a week (data cut Wednesday 0:00); a daily run picks them up within a day
+    { name: 'ingest-respiratory-cases', schedule: '15 6 * * *', handler: ingestRespiratoryCases, runOnStart: s('ingest-respiratory-cases') },
     { name: 'ingest-labor-market', schedule: '0 7 * * *', handler: ingestLaborMarket, runOnStart: s('ingest-labor-market') },
     { name: 'ingest-population', schedule: '0 6 1 * *', handler: ingestPopulation, runOnStart: s('ingest-population'), dependsOn: ['ingest-social-atlas'] },
     // The Unfallatlas publishes one year each July: a monthly run picks it up within weeks
@@ -400,6 +406,7 @@ export async function createApp(options?: {
   app.use('/api', cacheFor(120), createEvChargingRouter(cache, db));
   app.use('/api', cacheFor(3600), createSoilMoistureRouter(cache, db));
   app.use('/api', cacheFor(43200), createWastewaterRouter(cache, db));
+  app.use('/api', cacheFor(43200), createRespiratoryCasesRouter(cache, db));
   app.use('/api', cacheFor(3600), createLaborMarketRouter(cache, db));
   app.use('/api', cacheFor(43200), createPopulationRouter(cache, db));
   app.use('/api', cacheFor(43200), createTrafficAccidentsRouter(cache, db));

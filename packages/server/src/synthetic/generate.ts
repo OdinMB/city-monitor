@@ -21,7 +21,7 @@ import type {
   LiftOutageData, NinaWarning,
   NoiseSensor, PoliticalDistrict, PollenForecast, PollenIntensity, PollenType, PollenTypeForecast,
   PopulationFeatureProps, PopulationSummary, Representative, SafetyReport, SocialAtlasFeatureProps,
-  TelraamCountsData, TelraamSegmentCount, TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
+  TelraamCountsData, TelraamSegmentCount, TrafficAccident, TrafficAccidentData, TrafficCountData, TrafficCountSite, TrafficIncident, TransitAlert, RespiratoryCases, WastewaterSummary, WaterLevelData, WaterLevelStation, WeatherData,
 } from '@city-monitor/shared';
 import type { HeatReliefData, HeatReliefPlace } from '@city-monitor/shared';
 import { berlin } from '../config/cities/berlin.js';
@@ -37,6 +37,7 @@ import {
   PARLIAMENT_CONFIG, groupsStateMembersByBezirk, handKeptAreas, hasDistrictMayors, hasMayor, hasParliamentConfig,
 } from '../cron/ingest-political.js';
 import { computeLevel, computeTrend } from '../cron/ingest-wastewater.js';
+import { isoWeekLabel, isoWeekMonday } from '../cron/ingest-respiratory-cases.js';
 import { REPORT_WINDOW_DAYS, buildCitizenReportData, reportGroup, reportStatus, requestPageUrl } from '../cron/ingest-citizen-reports.js';
 import { hashString } from '../lib/hash.js';
 import { SOCIAL_ATLAS_HAS_STATUS_INDEX, SOCIAL_ATLAS_METRICS } from '../lib/social-atlas-parsers.js';
@@ -76,6 +77,8 @@ export interface SyntheticData {
   socialAtlas: PolygonFeatureCollection<SocialAtlasFeatureProps>;
   population: { geojson: PolygonFeatureCollection<PopulationFeatureProps>; summary: PopulationSummary };
   wastewater: WastewaterSummary;
+  /** RKI IfSG flu and RSV cases: only a city-state has them. */
+  respiratoryCases?: RespiratoryCases;
   bathing: BathingSpot[];
   laborMarket: LaborMarketSummary;
   feuerwehr: FeuerwehrSummary;
@@ -168,6 +171,7 @@ const COVERED: Record<SyntheticDataSet, (city: CityConfig) => boolean> = {
   heatRelief: (c) => (c.dataSources.heatRelief?.length ?? 0) > 0,
   soilMoisture: (c) => (c.dataSources.soilMoisture?.stations.length ?? 0) > 0,
   telraamCounts: (c) => c.dataSources.telraamCounts !== undefined,
+  respiratoryCases: (c) => c.dataSources.respiratoryCases !== undefined,
 };
 
 /** Data sets whose source Berlin's config does not have, so Berlin's data set lacks them. */
@@ -289,6 +293,7 @@ export function generateSyntheticCityData(options: { now: Date; seed?: number; c
   if (has.has('heatRelief')) sets.heatRelief = generateHeatRelief(rng, city, place);
   if (has.has('soilMoisture')) sets.soilMoisture = generateSoilMoisture(rng, now, city, place);
   if (has.has('telraamCounts')) sets.telraamCounts = generateTelraamCounts(rng, now, place);
+  if (has.has('respiratoryCases')) sets.respiratoryCases = generateRespiratoryCases(rng, now);
   return { cityId: city.id, ...sets, history };
 }
 
@@ -1341,6 +1346,37 @@ function generateWastewater(rng: Rng, now: Date, source: NonNullable<CityConfig[
         history,
         // AMELAG publishes SARS-CoV-2 about a week after Lageso's sample date
         ...(lageso && p.name === 'SARS-CoV-2' ? { sampleDate: shiftDate(today, -9) } : {}),
+      };
+    }),
+  };
+}
+
+/**
+ * Made-up weekly flu and RSV case counts for the Land, as the RKI publishes
+ * them: the Meldewoche before last (data cut on Wednesday), incidence per
+ * 100,000 for about 3.8 million people.
+ */
+function generateRespiratoryCases(rng: Rng, now: Date): RespiratoryCases {
+  const lastWeek = new Date(now);
+  lastWeek.setUTCDate(now.getUTCDate() - 10);
+  const week = isoWeekLabel(lastWeek);
+  return {
+    week,
+    weekStart: isoWeekMonday(week).toISOString().slice(0, 10),
+    pathogens: (['Influenza', 'RSV'] as const).map((name) => {
+      const peak = name === 'Influenza' ? 40 : 6;
+      const phase = rng.float(0, 2 * Math.PI);
+      const history = Array.from({ length: 12 }, (_, w) =>
+        Math.round(peak * (0.5 + 0.5 * Math.sin(phase + w / 2)) * rng.float(0.7, 1.3)));
+      const cases = history[11]!;
+      const previousCases = history[10]!;
+      return {
+        name,
+        cases,
+        incidence: Math.round((cases / 38) * 100) / 100,
+        previousCases,
+        trend: computeTrend(cases, previousCases),
+        history,
       };
     }),
   };

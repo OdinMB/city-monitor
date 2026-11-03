@@ -48,6 +48,7 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   coolPlaces: null,
   publicToilets: null,
   treeWatering: null,
+  respiratoryCases: null, // shown in the wastewater tile
   roadworks: null,
   // The congestion map and the counters refine the traffic layer every city has
   trafficFlowMap: null,

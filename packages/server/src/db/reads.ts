@@ -9,14 +9,14 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, HistoryPoint, AirQualityGridPoint, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, RespiratoryCases, SoilMoistureData } from '@city-monitor/shared';
 import {
   WeatherDataSchema, WaterLevelDataSchema, BuergeramtDataSchema, BudgetSummarySchema,
   PoliticalDistrictSchema, WastewaterSummarySchema, LaborMarketSummarySchema,
   BathingSpotSchema, AedLocationSchema, EmergencyPharmacySchema,
   TrafficIncidentSchema, ConstructionSiteSchema, PopulationSummarySchema,
   FeuerwehrSummarySchema, PollenForecastSchema, NoiseSensorSchema, CouncilMeetingSchema,
-  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema, SoilMoistureDataSchema,
+  TransitAlertSchema, NinaWarningSchema, FloodStatusSchema, LiftOutageDataSchema, CitizenReportDataSchema, AirQualityStationsSchema, BikeSharingDataSchema, TrafficCountDataSchema, TrafficAccidentDataSchema, ElectricityDataSchema, RespiratoryCasesSchema, SoilMoistureDataSchema,
 } from '@city-monitor/shared/schemas.js';
 import type { HeatReliefData } from '@city-monitor/shared';
 import { HeatReliefDataSchema } from '@city-monitor/shared/schemas.js';
@@ -160,6 +160,10 @@ export async function loadSocialAtlas(db: Db, cityId: string): Promise<DbResult<
 
 export async function loadWastewater(db: Db, cityId: string): Promise<DbResult<WastewaterSummary>> {
   return loadSnapshot(db, cityId, 'lageso-wastewater', { schema: WastewaterSummarySchema });
+}
+
+export async function loadRespiratoryCases(db: Db, cityId: string): Promise<DbResult<RespiratoryCases>> {
+  return loadSnapshot(db, cityId, 'rki-ifsg-cases', { schema: RespiratoryCasesSchema });
 }
 
 export async function loadBathingSpots(db: Db, cityId: string): Promise<DbResult<BathingSpot[]>> {

@@ -266,6 +266,21 @@ export const WastewaterSummarySchema = z.object({
   plantCount: z.number(),
 });
 
+// --- Respiratory cases (RKI IfSG notifications) ---
+
+export const RespiratoryCasesSchema = z.object({
+  week: z.string(),
+  weekStart: z.string(),
+  pathogens: z.array(z.object({
+    name: z.enum(['Influenza', 'RSV']),
+    cases: z.number(),
+    incidence: z.number(),
+    previousCases: z.number(),
+    trend: z.enum(['rising', 'falling', 'stable', 'new', 'gone']),
+    history: z.array(z.number()),
+  })),
+});
+
 // --- Labor Market ---
 
 export const LaborMarketSummarySchema = z.object({

@@ -53,6 +53,7 @@ Applied via middleware per route tier:
 | `/api/:city/appointments` | 3600s (1h) | Appointments update every 12h |
 | `/api/:city/bathing` | 43200s (12h) | Bathing quality updates daily |
 | `/api/:city/wastewater` | 43200s (12h) | Wastewater updates daily |
+| `/api/:city/respiratory-cases` | 43200s (12h) | RKI IfSG files change weekly, checked daily |
 | `/api/:city/labor-market` | 3600s (1h) | Labor market updates daily |
 | `/api/:city/political/:level` | 3600s (1h) | Political data updates weekly |
 | `/api/:city/population`, `/population/summary` | 43200s (12h) | Population updates monthly |
@@ -108,6 +109,7 @@ Wrapper around `node-cron` with job metadata tracking. Supports `dependsOn?: str
 | `ingest-soil-moisture` | `30 10,16 * * *` | DWD daily soil moisture per station (one gzip file each), for cities with `dataSources.soilMoisture`, plus the Gieß den Kiez watering CSV (~8 MB) where `treeWatering` is set (Berlin; [soil-moisture.md](soil-moisture.md)) |
 | `ingest-telraam-counts` | `25 4,11 * * *` | Yesterday's street counts of citizen Telraam sensors, for cities with `dataSources.telraamCounts` (Berlin zählt Mobilität): the segment GeoJSON and the one or two monthly CSVs covering the day and the four weeks before ([telraam-counts.md](telraam-counts.md)) (twice daily) |
 | `ingest-wastewater` | `0 6 * * *` | Wastewater viral loads: RKI AMELAG for every city with `dataSources.wastewater` (one download), plus LAGeSo for Berlin (daily) |
+| `ingest-respiratory-cases` | `15 6 * * *` | RKI lab-confirmed influenza and RSV cases (IfSG) for cities with `dataSources.respiratoryCases` (Berlin, Hamburg): two nationwide TSVs, one download each ([wastewater.md](wastewater.md#reported-cases-rki-ifsg)) (daily; the files change weekly) |
 | `ingest-labor-market` | `0 7 * * *` | BA unemployment statistics, the Land or Kreis table in `dataSources.laborMarket` (daily) |
 | `ingest-political` | `0 4 * * 1` | abgeordnetenwatch.de representatives (weekly; skips the API only when the stored data is under 6 days old, so every weekly run refreshes) |
 | `ingest-population` | `0 6 1 * *` | Population per small area by provider, for cities with `dataSources.population`: EWR XLSX (Berlin), Stadtteil OGC API (Hamburg), Datenkatalog CSV (Köln), Indikatorenatlas CSVs via CKAN (München) (monthly; [population.md](population.md)) |
@@ -161,7 +163,7 @@ Every server source file uses the logger — no raw `console.*` calls outside `l
 
 ## Bootstrap Endpoint
 
-`GET /api/:city/bootstrap` (in `routes/bootstrap.ts`) returns these data slots in one response for fast initial page load: news, weather, transit, events, safety, nina, airQuality, airQualityStations, pharmacies, aeds, traffic, construction, waterLevels, floodStatus, liftOutages, electricity, soilMoisture, budget, appointments, laborMarket, wastewater, populationSummary, feuerwehr, pollen, noiseSensors, councilMeetings. It is cache-only (`cache.getBatchWithMeta(CK.bootstrapKeys(cityId))`, no DB fallback), so a cold slot is `null`.
+`GET /api/:city/bootstrap` (in `routes/bootstrap.ts`) returns these data slots in one response for fast initial page load: news, weather, transit, events, safety, nina, airQuality, airQualityStations, pharmacies, aeds, traffic, construction, waterLevels, floodStatus, liftOutages, electricity, soilMoisture, budget, appointments, laborMarket, wastewater, respiratoryCases, populationSummary, feuerwehr, pollen, noiseSensors, councilMeetings. It is cache-only (`cache.getBatchWithMeta(CK.bootstrapKeys(cityId))`, no DB fallback), so a cold slot is `null`.
 
 ## City Configuration (`packages/server/src/config/`)
 

@@ -4,7 +4,7 @@ import type { Cache } from '../lib/cache.js';
 import { getActiveCities } from '../config/index.js';
 import { loadEvChargingRegister } from './reads.js';
 import { EV_CHARGING_REGISTER_TTL_SECONDS } from '../cron/ingest-ev-charging.js';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficCounts, loadTrafficAccidents, loadElectricity, loadSoilMoisture } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadNewsItems, loadSummary, loadNinaWarnings, loadAirQualityGrid, loadPoliticalDistricts, loadAllGeocodeLookups, loadWaterLevels, loadAppointments, loadBudget, loadConstructionSites, loadTrafficIncidents, loadPharmacies, loadAeds, loadSocialAtlas, loadWastewater, loadBathingSpots, loadLaborMarket, loadPopulationGeojson, loadPopulationSummary, loadFeuerwehr, loadPollen, loadNoiseSensors, loadCouncilMeetings, loadFloodStatus, loadLiftOutages, loadCitizenReports, loadAirQualityStations, loadBikeSharing, loadTrafficCounts, loadTrafficAccidents, loadElectricity, loadSoilMoisture, loadRespiratoryCases } from './reads.js';
 import { setGeocodeCacheEntry } from '../lib/geocode.js';
 import { applyDropLogic, type NewsDigest, type NewsItem } from '../cron/ingest-feeds.js';
 import { POPULATION_TTL_SECONDS } from '../cron/ingest-population.js';
@@ -219,6 +219,11 @@ async function warmCity(db: Db, cache: Cache, cityId: string): Promise<void> {
       const r = await loadWastewater(db, cityId);
       if (r) cache.set(CK.wastewaterSummary(cityId), r.data, 604800, r.fetchedAt);
     })().catch((err) => log.error(`${cityId} wastewater failed`, err)),
+
+    (async () => {
+      const r = await loadRespiratoryCases(db, cityId);
+      if (r) cache.set(CK.respiratoryCases(cityId), r.data, 604800, r.fetchedAt); // RESPIRATORY_CASES_TTL_SECONDS
+    })().catch((err) => log.error(`${cityId} respiratory cases failed`, err)),
 
     (async () => {
       const r = await loadLaborMarket(db, cityId);

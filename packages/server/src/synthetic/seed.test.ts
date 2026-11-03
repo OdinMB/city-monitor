@@ -148,8 +148,9 @@ describe('seedDatabase', () => {
       'open-meteo', 'vbb-disruptions', 'aqi-grid', 'bbk-nina', 'pegelonline', 'tomtom-traffic', 'viz-roadworks', 'aponet', 'osm-aeds',
       'lageso-bathing', 'lageso-wastewater', 'ba-labor-market', 'dwd-pollen', 'abgwatch-bundestag', 'abgwatch-state', 'oparl-meetings',
       'mss-social-atlas', 'afstat-population', 'bike-sharing', 'smard-electricity', 'uba-airquality', 'unfallatlas-accidents', 'traffic-counts', 'bnetza-charging', 'heat-relief', 'dwd-soil-moisture',
+      'rki-ifsg-cases',
     ]));
-    expect(current).toHaveLength(26);
+    expect(current).toHaveLength(27);
     expect(snapshots.length - current.length).toBe(data.history.length);
     expect(rows.events).toBeUndefined();
     expect(rows.news_items).toHaveLength(data.news!.length);

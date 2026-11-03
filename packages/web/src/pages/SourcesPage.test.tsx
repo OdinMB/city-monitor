@@ -135,6 +135,7 @@ const CONFIG_DRIVEN: ReadonlyArray<[credit: string, runs: (city: CityConfig) => 
   ['LAGeSo Wastewater Monitoring', (c) => c.dataSources.wastewater?.provider === 'lageso'],
   // ingest-wastewater: AMELAG's plants for every city with wastewater (SARS-CoV-2 alone for a LAGeSo city)
   ['RKI AMELAG Wastewater Surveillance', (c) => (c.dataSources.wastewater?.sites.length ?? 0) > 0],
+  ['RKI IfSG Influenza and RSV Cases', (c) => c.dataSources.respiratoryCases !== undefined],
   ['Bundesagentur für Arbeit', (c) => c.dataSources.laborMarket !== undefined],
   ['Amt für Statistik Berlin-Brandenburg', (c) => c.dataSources.population?.provider === 'afstat-ewr-xlsx'],
   ['Indikatorenatlas München', (c) => c.dataSources.socialAtlas?.provider === 'muenchen-indikatorenatlas' || c.dataSources.population?.provider === 'muenchen-indikatorenatlas'],
@@ -229,6 +230,8 @@ describe('SourcesPage licence credits', () => {
     'RKI AMELAG Wastewater Surveillance': 'Source: Robert Koch-Institut, CC BY 4.0.',
     // dwd.de/DE/service/rechtliche_hinweise: CC BY 4.0, the DWD named as the source
     'DWD Soil Moisture (Climate Data Center)': 'Source: Deutscher Wetterdienst, CC BY 4.0.',
+    // Both datasets' Readme: CC BY 4.0, "unter Bedingung der Namensnennung des Robert Koch-Instituts als Quelle"
+    'RKI IfSG Influenza and RSV Cases': 'Source: Robert Koch-Institut, CC BY 4.0.',
     // smard.de/home/datennutzung names the credit "Bundesnetzagentur | SMARD.de"
     'SMARD (Bundesnetzagentur)': 'Source: Bundesnetzagentur | SMARD.de, CC BY 4.0.',
     // The Energy-Charts API description: "Proper attribution to Energy-Charts.info as the source is required."

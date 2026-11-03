@@ -355,6 +355,15 @@
         "low": "Low",
         "moderate": "Moderate",
         "high": "High"
+      },
+      "cases": {
+        "title": "Reported cases",
+        "week": "Week {{week}}",
+        "flu": "Influenza",
+        "rsv": "RSV",
+        "incidence": "{{value}} per 100k",
+        "trendLabel": "{{pathogen}} reported cases trend",
+        "source": "Lab-confirmed cases notified under the Infection Protection Act (RKI)"
       }
     },
     "floodStatus": {

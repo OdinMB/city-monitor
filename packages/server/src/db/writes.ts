@@ -16,7 +16,7 @@ import {
   geocodeLookups,
 } from './schema.js';
 import type { SnapshotType } from './schema.js';
-import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData } from '@city-monitor/shared';
+import type { NinaWarning, PoliticalDistrict, WaterLevelData, BuergeramtData, BudgetSummary, ConstructionSite, TrafficIncident, EmergencyPharmacy, AedLocation, WastewaterSummary, BathingSpot, LaborMarketSummary, PopulationSummary, FeuerwehrSummary, PollenForecast, NoiseSensor, CouncilMeeting, TransitAlert, FloodStatus, LiftOutageData, CitizenReportData, AirQualityStation, BikeSharingData, TrafficCountData, TrafficAccidentData, ElectricityData, SoilMoistureData, RespiratoryCases } from '@city-monitor/shared';
 import type { HeatReliefData } from '@city-monitor/shared';
 import type { TelraamCountsData } from '@city-monitor/shared';
 import type { GeocodeResult } from '../lib/geocode.js';
@@ -92,6 +92,10 @@ export async function saveSocialAtlas(db: Db, cityId: string, geojson: unknown):
 
 export async function saveWastewater(db: Db, cityId: string, data: WastewaterSummary): Promise<void> {
   await saveSnapshot(db, cityId, 'lageso-wastewater', data);
+}
+
+export async function saveRespiratoryCases(db: Db, cityId: string, data: RespiratoryCases): Promise<void> {
+  await saveSnapshot(db, cityId, 'rki-ifsg-cases', data);
 }
 
 export async function saveBathingSpots(db: Db, cityId: string, spots: BathingSpot[]): Promise<void> {
