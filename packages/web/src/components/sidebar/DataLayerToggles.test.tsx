@@ -227,6 +227,18 @@ describe('DataLayerToggles per city', () => {
     fetchSpy.mockRestore();
   });
 
+  it('lists street trees where a city has a tree register, with the zoom and click hints once on', () => {
+    renderFor(muenchen);
+    expect(shown(i18n.t('sidebar.layers.trees'))).toBe(false);
+    cleanup();
+    renderFor(koeln);
+    expect(shown(i18n.t('sidebar.trees.zoomIn'))).toBe(false);
+    fireEvent.click(layerButton('trees'));
+    expect(layerButton('trees').getAttribute('aria-pressed')).toBe('true');
+    expect(shown(i18n.t('sidebar.trees.zoomIn'))).toBe(true);
+    expect(shown(i18n.t('sidebar.trees.hint'))).toBe(true);
+  });
+
   it('marks the noise map shown where the selected one is missing', () => {
     useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['noise']), noiseLayer: 'total' });
     renderFor(hamburg);

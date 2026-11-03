@@ -1,6 +1,6 @@
 import { createElement, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints } from 'lucide';
+import { TrainFront, Wind, Newspaper, TriangleAlert, HeartPulse, Pill, Car, Construction, Landmark, Building2, Building, CloudRain, Droplets, Waves, Home, BarChart3, Siren, Users, UserRound, Globe, Briefcase, Baby, HandCoins, Heart, Volume2, TrainTrack, Plane, Activity, Megaphone, Bike, CarFront, Footprints, TreeDeciduous } from 'lucide';
 import { useCommandCenter, type AccidentFilter, type DataLayer, type PoliticalLayer, type SocialLayer, type PopulationLayer, type NoiseLayer, type NewsSubLayer, type EmergencySubLayer, type WaterSubLayer, type TrafficSubLayer } from '../../hooks/useCommandCenter.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useShortcutSettings } from '../../hooks/useShortcutSettings.js';
@@ -31,6 +31,7 @@ const LAYER_META: { layer: DataLayer; icon: IconNode; color: string }[] = [
   { layer: 'population', icon: Users as IconNode, color: '#3b82f6' },
   { layer: 'political', icon: Landmark as IconNode, color: '#64748b' },
   { layer: 'reports', icon: Megaphone as IconNode, color: '#e11d48' },
+  { layer: 'trees', icon: TreeDeciduous as IconNode, color: '#15803d' },
 ];
 
 const INACTIVE_COLOR = '#9ca3af';
@@ -404,6 +405,14 @@ export function DataLayerToggles() {
             );
           } else if (layer === 'reports' && active) {
             subItems = <CitizenReportLegend cityId={city.id} />;
+          } else if (layer === 'trees' && active) {
+            // The registers draw from street zoom only (STREET_TREES_MIN_ZOOM)
+            subItems = (
+              <div className="ps-9 pe-2 py-1 space-y-0.5 text-[12px] text-muted">
+                <p>{t('sidebar.trees.zoomIn')}</p>
+                <p>{t('sidebar.trees.hint')}</p>
+              </div>
+            );
           } else if (layer === 'political' && active) {
             // The state parliament has its own name per city (the `_<city id>` keys).
             subItems = (

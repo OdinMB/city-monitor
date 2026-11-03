@@ -570,7 +570,8 @@
       "social": "Sosyal",
       "population": "Nüfus",
       "political": "Temsil",
-      "reports": "Vatandaş Bildirimleri"
+      "reports": "Vatandaş Bildirimleri",
+      "trees": "Sokak Ağaçları"
     },
     "reports": {
       "legend": "Vatandaş bildirimlerinin durumu",
@@ -596,6 +597,10 @@
       "air": "Hava Trafiği",
       "live": "Canlı Sensörler",
       "zoomIn": "Gürültü haritasını görmek için sokak düzeyine yakınlaştırın."
+    },
+    "trees": {
+      "zoomIn": "Ağaçları görmek için sokak düzeyine yakınlaştırın.",
+      "hint": "Türünü, yaşını ve boyutunu görmek için bir ağaca tıklayın."
     },
     "water": {
       "levels": "Su Seviyeleri",
@@ -705,6 +710,14 @@
         "loud": "Gürültülü",
         "veryLoud": "Çok gürültülü"
       }
+    },
+    "tree": {
+      "planted": "Dikim yılı",
+      "age_one": "{{count}} yaşında",
+      "age_other": "{{count}} yaşında",
+      "height": "Boy",
+      "crown": "Taç çapı",
+      "girth": "Gövde çevresi"
     },
     "bike": {
       "bikes": "Kullanılabilir bisiklet",

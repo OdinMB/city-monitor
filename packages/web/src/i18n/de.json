@@ -576,7 +576,8 @@
       "social": "Soziales",
       "population": "Bevölkerung",
       "political": "Vertretung",
-      "reports": "Bürgermeldungen"
+      "reports": "Bürgermeldungen",
+      "trees": "Straßenbäume"
     },
     "reports": {
       "legend": "Stand der Bürgermeldungen",
@@ -602,6 +603,10 @@
       "air": "Flugverkehr",
       "live": "Live-Sensoren",
       "zoomIn": "Zum Anzeigen der Lärmkarte bis auf Straßenebene hineinzoomen."
+    },
+    "trees": {
+      "zoomIn": "Zum Anzeigen der Bäume bis auf Straßenebene hineinzoomen.",
+      "hint": "Einen Baum anklicken für Art, Alter und Größe."
     },
     "water": {
       "levels": "Pegelstände",
@@ -715,6 +720,14 @@
         "loud": "Laut",
         "veryLoud": "Sehr laut"
       }
+    },
+    "tree": {
+      "planted": "Gepflanzt",
+      "age_one": "{{count}} Jahr alt",
+      "age_other": "{{count}} Jahre alt",
+      "height": "Höhe",
+      "crown": "Kronendurchmesser",
+      "girth": "Stammumfang"
     },
     "bike": {
       "bikes": "Verfügbare Räder",

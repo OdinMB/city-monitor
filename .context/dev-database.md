@@ -82,7 +82,7 @@ After that those tiles go empty. Run `npm run db:seed` again and restart `dev:sy
 ## Not covered
 
 - **Rain radar:** the RainViewer router is not mounted, so the map's rain layer gets 404 for each tile it asks `/api/weather-tiles/…` for.
-- **Browser-side layers:** the web app still loads the CARTO base map tiles and the gdi.berlin.de, geodienste.hamburg.de and www.wms.nrw.de WMS overlays (noise, rent) from the internet.
+- **Browser-side layers:** the web app still loads the CARTO base map tiles and the gdi.berlin.de, geodienste.hamburg.de, www.wms.nrw.de and geoportal.stadt-koeln.de WMS overlays (noise, rent, street trees) from the internet.
 - **Another city in the web dev server:** `npm run dev --workspace=packages/web` shows only the cities `ACTIVE_CITY_IDS` in `packages/web/src/config/index.ts` lists (Berlin). The guarded browser run below makes its seeded city the active one in its own build.
 - **Local times:** the generator works out local dates and hours (today's date, the weather's daily rhythm, event and meeting times) in Europe/Berlin, whatever the city's time zone. Every configured city uses that zone.
 

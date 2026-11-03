@@ -5,7 +5,7 @@ import i18n from 'i18next';
 import type { CityConfig, CityFeature, WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../hooks/CityProvider.js';
 import { CityContext } from '../hooks/CityContext.js';
-import { getNoiseWmsUrl } from '../components/map/constants.js';
+import { getNoiseWmsUrl, getStreetTreesWmsUrl } from '../components/map/constants.js';
 import { SourcesPage } from './SourcesPage.js';
 import { AI_COPY_LANGS, APPROVED_AI_COPY } from '../test-fixtures/approved-ai-copy.js';
 
@@ -178,6 +178,14 @@ describe('SourcesPage credits per city', () => {
     if (wms) expect(creditedCards().map((card) => card.host)).toContain(new URL(wms).hostname);
   });
 
+  it.each(CITIES.map((c) => [c.id] as const))('credits the host of the street-tree map on %s, if it has one', (id) => {
+    renderCity(id);
+    const wms = getStreetTreesWmsUrl(id);
+    const hosts = creditedCards().map((card) => card.host);
+    if (wms) expect(hosts).toContain(new URL(wms).hostname);
+    else expect(creditedCards().some((card) => /Baum/.test(card.name))).toBe(false);
+  });
+
   it('leaves the events and Sensor.Community sources off Hamburg, which has none', () => {
     renderCity('hamburg');
     expect(screen.queryByRole('link', { name: 'Ticketmaster' })).toBeNull();
@@ -215,6 +223,10 @@ describe('SourcesPage licence credits', () => {
     'Berlin Budget (Doppelhaushalt)': 'Licensed CC BY.',
     'ALLRIS OParl (BVV)': 'Licensed CC BY 3.0 DE.',
     'Hamburg Noise Map (Geodienste)': 'Licensed dl-de/zero-2-0.',
+    // The tree registers' GetCapabilities licences (checked 2026-11-03); Zero asks for no credit, given anyway
+    'Baumbestand Berlin (Geoportal Berlin)': 'Source: Geoportal Berlin / Baumbestand Berlin, dl-de/zero-2-0.',
+    'Straßenbaumkataster Hamburg (Geodienste)': 'Source: Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft, dl-de/by-2-0.',
+    'Baumkataster Köln (Geoportal Stadt Köln)': 'Source: Stadt Köln, dl-de/zero-2-0.',
     'Stadt Köln Open Data (Events)': 'Licensed dl-de/zero-2-0.',
     'Länderübergreifendes Hochwasserportal (LHP)': 'Source: Länderübergreifendes Hochwasserportal (LHP), CC BY 4.0.',
     'Sozialmonitoring Hamburg (Social Atlas)': 'Source: Freie und Hansestadt Hamburg, Behörde für Stadtentwicklung und Wohnen, dl-de/by-2-0.',

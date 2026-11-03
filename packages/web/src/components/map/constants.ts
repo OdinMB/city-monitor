@@ -238,6 +238,107 @@ export function getNoiseWmsUrl(cityId: string, noiseLayer: string): string | nul
     `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}`;
 }
 
+export const STREET_TREES_SOURCE = 'street-trees-wms';
+export const STREET_TREES_LAYER = 'street-trees-wms-layer';
+
+/**
+ * From this zoom the trees layer requests tiles. The registers hold one dot per
+ * tree (Berlin about 900,000), which merge into a green carpet further out, and
+ * Köln's service draws nothing beyond about 1:50,000.
+ */
+export const STREET_TREES_MIN_ZOOM = 15;
+
+/** How a register's GetFeatureInfo answers: GeoServer's GeoJSON, or a GML feature collection. */
+export type StreetTreeInfoFormat = 'application/json' | 'text/xml';
+
+interface StreetTreesWms {
+  base: string;
+  /** The WMS layers to draw and query, comma-separated. */
+  layers: string;
+  infoFormat: StreetTreeInfoFormat;
+  attribution: string;
+}
+
+/**
+ * Each city's street-tree register as a WMS, drawn from STREET_TREES_MIN_ZOOM
+ * and queried for one tree on a click (lib/street-trees.ts). A city lists the
+ * `streetTrees` feature exactly when it has an entry here (config/index.test.ts).
+ * München publishes no tree register (.context/street-trees.md).
+ */
+const STREET_TREES_WMS: Record<string, StreetTreesWms> = {
+  // Street and park trees (Straßen- und Anlagenbäume). GetCapabilities <Fees>:
+  // dl-de/zero-2.0 (checked 2026-11-03); Zero asks for no credit, kept as a courtesy.
+  berlin: {
+    base: 'https://gdi.berlin.de/services/wms/baumbestand',
+    layers: 'strassenbaeume,anlagenbaeume',
+    infoFormat: 'application/json',
+    attribution:
+      '<a href="https://gdi.berlin.de/services/wms/baumbestand?REQUEST=GetCapabilities&amp;SERVICE=WMS" target="_blank">Baumbestand Berlin</a>, ' +
+      '<a href="https://www.govdata.de/dl-de/zero-2-0" target="_blank">dl-de/zero-2-0</a>',
+  },
+  // GetCapabilities <Fees>: dl-de/by-2.0 with this source line (checked 2026-11-03).
+  hamburg: {
+    base: 'https://geodienste.hamburg.de/HH_WMS_Strassenbaumkataster',
+    layers: 'strassenbaumkataster',
+    infoFormat: 'text/xml',
+    attribution:
+      '<a href="https://geodienste.hamburg.de/HH_WMS_Strassenbaumkataster?REQUEST=GetCapabilities&amp;SERVICE=WMS" target="_blank">Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft</a>, ' +
+      '<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank">dl-de/by-2-0</a>',
+  },
+  // GetCapabilities <AccessConstraints>: dl-de/zero-2.0 (checked 2026-11-03).
+  koeln: {
+    base: 'https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wms/guest',
+    layers: 'baumkataster',
+    infoFormat: 'text/xml',
+    attribution:
+      '<a href="https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wms/guest?REQUEST=GetCapabilities&amp;SERVICE=WMS" target="_blank">Stadt Köln</a>, ' +
+      '<a href="https://www.govdata.de/dl-de/zero-2-0" target="_blank">dl-de/zero-2-0</a>',
+  },
+};
+
+/** The city's street-tree tile URL template, or null when it has no tree register. */
+export function getStreetTreesWmsUrl(cityId: string): string | null {
+  const wms = STREET_TREES_WMS[cityId];
+  if (!wms) return null;
+  return `${wms.base}?service=WMS&version=1.1.1&request=GetMap` +
+    `&layers=${wms.layers}&styles=&format=image/png&transparent=true` +
+    `&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}`;
+}
+
+export function getStreetTreesAttribution(cityId: string): string | undefined {
+  return STREET_TREES_WMS[cityId]?.attribution;
+}
+
+/**
+ * Half the side of the window a tree query asks about, in screen pixels: a dot
+ * is about 8 px across. Each service then applies its own pixel tolerance; all
+ * three found a tree 8 px off its centre (checked 2026-11-03).
+ */
+const TREE_QUERY_HALF = 6;
+
+/**
+ * A GetFeatureInfo request for the tree under a point, as its format, or null
+ * for a city without a register. `x`/`y` are web-mercator metres, `metresPerPixel`
+ * the map's scale there: the request covers a small window around the point and
+ * asks about its centre pixel.
+ */
+export function getStreetTreeInfoRequest(
+  cityId: string, x: number, y: number, metresPerPixel: number,
+): { url: string; format: StreetTreeInfoFormat } | null {
+  const wms = STREET_TREES_WMS[cityId];
+  if (!wms) return null;
+  const size = TREE_QUERY_HALF * 2 + 1;
+  const half = (size / 2) * metresPerPixel;
+  const bbox = [x - half, y - half, x + half, y + half].map((v) => v.toFixed(2)).join(',');
+  // WMS 1.3.0: Berlin's GeoServer JSON template fails without its CRS parameter.
+  // EPSG:3857 keeps easting-northing axis order in 1.3.0 too.
+  const url = `${wms.base}?service=WMS&version=1.3.0&request=GetFeatureInfo` +
+    `&layers=${wms.layers}&query_layers=${wms.layers}&styles=&crs=EPSG:3857` +
+    `&bbox=${bbox}&width=${size}&height=${size}&i=${TREE_QUERY_HALF}&j=${TREE_QUERY_HALF}` +
+    `&info_format=${encodeURIComponent(wms.infoFormat)}&feature_count=1`;
+  return { url, format: wms.infoFormat };
+}
+
 export const POLITICAL_MARKER_LAYER = 'political-marker-icon';
 export const POLITICAL_MARKER_SOURCE = 'political-markers';
 

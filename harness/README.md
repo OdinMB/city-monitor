@@ -206,7 +206,7 @@ On that background the app's own map layers draw on the synthetic data: the dist
 What the map still can't show:
 
 - the base map itself: no streets, water, parks, boundaries or place names, so markers sit on a plain background, and the roads and water areas the traffic and water layers highlight are not there to highlight;
-- the WMS overlays (rent map and noise map, from gdi.berlin.de, geodienste.hamburg.de and www.wms.nrw.de), which stay blocked;
+- the WMS overlays (rent map, noise map and street trees, from gdi.berlin.de, geodienste.hamburg.de, www.wms.nrw.de and geoportal.stadt-koeln.de), which stay blocked;
 - the rain radar, which is not mounted in synthetic mode ([dev-database.md](../.context/dev-database.md)). Its map layer is on by default and still asks the run's own API for `/api/weather-tiles/<z>/<x>/<y>.png`, which answers 404, so about ten failed requests to the run's own server per page are expected; the report lists them with the page's failed requests.
 
 ### Blocked, as expected
