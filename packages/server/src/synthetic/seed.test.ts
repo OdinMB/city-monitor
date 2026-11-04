@@ -142,7 +142,7 @@ describe('seedDatabase', () => {
 
     const snapshots = rows.snapshots ?? [];
     const current = snapshots.filter((r) => !('fetchedAt' in r));
-    // One row per snapshot type it holds; none for events, budget or the Berlin-only sources.
+    // One row per snapshot type it holds; none for budget or the Berlin-only sources.
     // Transit (Geofox) is stored under the historical type vbb-disruptions.
     expect(new Set(current.map((r) => r.type))).toEqual(new Set([
       'open-meteo', 'vbb-disruptions', 'aqi-grid', 'bbk-nina', 'pegelonline', 'tomtom-traffic', 'viz-roadworks', 'aponet', 'osm-aeds',
@@ -152,7 +152,8 @@ describe('seedDatabase', () => {
     ]));
     expect(current).toHaveLength(32);
     expect(snapshots.length - current.length).toBe(data.history.length);
-    expect(rows.events).toBeUndefined();
+    // HHT's events, in their own table
+    expect(rows.events).toHaveLength(data.events!.length);
     expect(rows.news_items).toHaveLength(data.news!.length);
     expect(rows.safety_reports).toHaveLength(data.safety!.length);
     expect((rows.ai_summaries ?? []).map((r) => r.lang).sort()).toEqual(['de', 'en']);

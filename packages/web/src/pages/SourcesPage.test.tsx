@@ -1,21 +1,31 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from 'i18next';
-import type { CityConfig, CityFeature, WebCityConfig } from '@city-monitor/shared';
+import type { CityConfig, CityEvent, CityFeature, WebCityConfig } from '@city-monitor/shared';
 import { CityProvider } from '../hooks/CityProvider.js';
 import { CityContext } from '../hooks/CityContext.js';
 import { getNoiseWmsUrl, getStreetTreesWmsUrl } from '../components/map/constants.js';
 import { SourcesPage } from './SourcesPage.js';
 import { AI_COPY_LANGS, APPROVED_AI_COPY } from '../test-fixtures/approved-ai-copy.js';
 
+/** A query cache already holding the city's events, so the page asks the API nothing. */
+function queryClientWith(cityId: string, events: CityEvent[] = []): QueryClient {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client.setQueryData(['events', cityId], { data: events, fetchedAt: null });
+  return client;
+}
+
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <CityProvider cityId="berlin">
-        <SourcesPage />
-      </CityProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClientWith('berlin')}>
+      <MemoryRouter>
+        <CityProvider cityId="berlin">
+          <SourcesPage />
+        </CityProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -33,13 +43,15 @@ const SERVER_CITIES = citiesIn(import.meta.glob<Record<string, CityConfig>>('../
 const WEB_CITIES = new Map(citiesIn(import.meta.glob<Record<string, WebCityConfig>>('../config/cities/*.ts', { eager: true })).map((c) => [c.id, c]));
 const CITIES = SERVER_CITIES.filter((c) => WEB_CITIES.has(c.id));
 
-function renderCity(cityId: string) {
+function renderCity(cityId: string, events: CityEvent[] = []) {
   return render(
-    <MemoryRouter>
-      <CityContext.Provider value={WEB_CITIES.get(cityId)!}>
-        <SourcesPage />
-      </CityContext.Provider>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClientWith(cityId, events)}>
+      <MemoryRouter>
+        <CityContext.Provider value={WEB_CITIES.get(cityId)!}>
+          <SourcesPage />
+        </CityContext.Provider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -218,12 +230,21 @@ describe('SourcesPage credits per city', () => {
     else expect(creditedCards().some((card) => /Baum/.test(card.name))).toBe(false);
   });
 
-  it('leaves the events and Sensor.Community sources off Hamburg, which has none', () => {
+  it('leaves the events and Sensor.Community sources off Hamburg while its HHT events are hidden', () => {
     renderCity('hamburg');
     expect(screen.queryByRole('link', { name: 'Ticketmaster' })).toBeNull();
     expect(screen.queryByRole('heading', { level: 2, name: 'Events' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Hamburg Tourismus/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Sensor\.Community/ })).toBeNull();
     expect(screen.getByRole('link', { name: 'abgeordnetenwatch.de' })).toBeTruthy();
+  });
+
+  it("credits Hamburg Tourismus once the API returns HHT's events", () => {
+    renderCity('hamburg', [
+      { id: 'hht-1', title: 'Markt', date: '2030-05-11T08:00:00', category: 'market', url: '', source: 'hht' },
+    ]);
+    expect(screen.getByRole('heading', { level: 2, name: 'Events' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Veranstaltungsdatenbank Hamburg Tourismus' })).toBeTruthy();
   });
 });
 

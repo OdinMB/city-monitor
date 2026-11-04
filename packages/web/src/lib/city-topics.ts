@@ -11,6 +11,8 @@ const FEATURE_TOPIC: Record<CityFeature, string | null> = {
   transit: 'panel.transit.title',
   police: 'sidebar.news.police',
   events: 'panel.events.title',
+  // Hidden behind HHT's preview gate until HHT approves, so the picker does not promise it
+  hhtEvents: null,
   waterLevels: 'panel.waterLevels.title',
   floodStatus: 'panel.floodStatus.title',
   appointments: 'panel.appointments.title',

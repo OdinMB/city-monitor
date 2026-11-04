@@ -42,6 +42,23 @@ services:
         sync: false
       - key: DB_API_KEY
         sync: false
+      # Hamburg events (Hamburg Tourismus' Veranstaltungsdatenbank, FTPS): the login HHT issued to
+      # City Monitor under its contract; a fork needs its own contract and login
+      - key: HHT_FTP_USER
+        sync: false
+      - key: HHT_FTP_PASSWORD
+        sync: false
+      # Optional: another host or file than the config's ftp.infomaxnet.de/hamburg25.xml.zip
+      - key: HHT_FTP_HOST
+        sync: false
+      - key: HHT_FTP_FILE
+        sync: false
+      # HHT events are served only when this is true (once HHT approves), or to requests with
+      # the preview token (16+ characters); unset, no preview is possible
+      - key: HHT_EVENTS_PUBLIC
+        sync: false
+      - key: HHT_EVENTS_PREVIEW_TOKEN
+        sync: false
       # Optional opt-out: false hides the Bundes-Klinik-Atlas hospitals (on when unset)
       - key: KLINIK_ATLAS
         sync: false

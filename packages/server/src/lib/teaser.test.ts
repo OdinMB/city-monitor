@@ -11,6 +11,10 @@ describe('toTeaser', () => {
     expect(toTeaser('Bau&nbsp;&amp;&nbsp;Verkehr &quot;neu&quot; &#228;&#x20AC;', 300)).toBe('Bau & Verkehr "neu" ä€');
   });
 
+  it('decodes every named HTML entity', () => {
+    expect(toTeaser('Gr&uuml;&szlig;e &ndash; &bdquo;hier&ldquo; &unknown;', 300)).toBe('Grüße – „hier“ &unknown;');
+  });
+
   it('leaves a short text as it is', () => {
     expect(toTeaser('Kurzer Text.', 300)).toBe('Kurzer Text.');
   });

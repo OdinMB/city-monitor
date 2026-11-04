@@ -51,6 +51,8 @@ export const events = pgTable('events', {
   hash: text('hash').notNull(),
   source: text('source').notNull().default('kulturdaten'),
   price: text('price'),
+  /** A ticket link apart from `url` (HHT) */
+  bookingUrl: text('booking_url'),
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 }, (table) => [
   index('events_city_date_idx').on(table.cityId, table.date),

@@ -97,6 +97,24 @@ describe('DB writes', () => {
     expect(onConflictDoUpdate).toHaveBeenCalledOnce();
   });
 
+  it('saveEvents writes the booking link and updates every corrected field on conflict', async () => {
+    const items: CityEvent[] = [
+      { id: 'hht-1', title: 'Markt', date: '2030-05-11T08:00:00', category: 'market', url: '', source: 'hht', bookingUrl: 'https://example.org/buchen' },
+    ];
+    await saveEvents(db, 'hamburg', 'hht', items);
+    expect(values.mock.calls[0]![0]).toEqual([expect.objectContaining({ hash: 'hht-1', bookingUrl: 'https://example.org/buchen' })]);
+    expect(Object.keys(onConflictDoUpdate.mock.calls[0]![0].set)).toEqual(expect.arrayContaining(['title', 'venue', 'url', 'free', 'bookingUrl', 'fetchedAt']));
+  });
+
+  it('saveEvents inserts a large batch in chunks', async () => {
+    const items: CityEvent[] = Array.from({ length: 1201 }, (_, i) => ({
+      id: `hht-${i}`, title: `Event ${i}`, date: '2030-05-11T08:00:00', category: 'other', url: '', source: 'hht',
+    }));
+    await saveEvents(db, 'hamburg', 'hht', items);
+    expect(insert).toHaveBeenCalledTimes(3);
+    expect(values.mock.calls.map((c) => (c[0] as unknown[]).length)).toEqual([500, 500, 201]);
+  });
+
   it('saveSafetyReports upserts reports', async () => {
     const reports = [
       { id: '1', title: 'Report', description: 'Test', publishedAt: '2026-03-01T00:00:00Z', url: 'https://example.com' },

@@ -331,12 +331,12 @@ describe('generateSyntheticCityData', () => {
       expect(data.cityId).toBe('hamburg');
       const held = Object.keys(data).filter((key) => key !== 'cityId' && key !== 'history');
       expect(held).toEqual(syntheticCoverage(hamburg));
-      // No events, budget, appointments, or noise config; fire brigade is a
+      // No budget, appointments, or noise config; fire brigade is a
       // Berlin-only source. Transit from Geofox (production has its
-      // credentials), bathing water from its own WFS, social atlas from the
-      // Sozialmonitoring.
+      // credentials), events from HHT, bathing water from its own WFS, social
+      // atlas from the Sozialmonitoring.
       expect([...held].sort()).toEqual([
-        'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electionResults', 'electricity', 'evCharging', 'heatRelief', 'hospitals', 'laborMarket', 'liftOutages', 'news', 'nina',
+        'aeds', 'airQuality', 'airQualityGrid', 'airQualityStations', 'bathing', 'bikeSharing', 'construction', 'councilMeetings', 'electionResults', 'electricity', 'evCharging', 'events', 'heatRelief', 'hospitals', 'laborMarket', 'liftOutages', 'news', 'nina',
         'parking', 'pharmacies', 'political', 'politicalVotes', 'pollen', 'population', 'respiratoryCases', 'safety', 'socialAtlas', 'soilMoisture', 'summary', 'traffic', 'trafficAccidents', 'trafficCounts', 'transit',
         'wastewater', 'waterLevels', 'weather',
       ]);
@@ -356,6 +356,9 @@ describe('generateSyntheticCityData', () => {
       expect(data.wastewater!.pathogens.map((p) => p.name)).toEqual(['Influenza A', 'Influenza B', 'RSV', 'SARS-CoV-2']);
       expect(data.wastewater!.pathogens.every((p) => p.sampleDate === undefined)).toBe(true);
       expect(Object.keys(data.summary!.briefings).sort()).toEqual([...hamburg.languages].sort());
+      // HHT's events, some with a booking link apart from the event link
+      expect(data.events!.every((e) => e.source === 'hht')).toBe(true);
+      expect(data.events!.some((e) => e.bookingUrl?.startsWith('https://'))).toBe(true);
     });
 
     it('is the same for the same seed and different for another', () => {

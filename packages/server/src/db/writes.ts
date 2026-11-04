@@ -297,35 +297,48 @@ export async function saveNewsItems(db: Db, cityId: string, items: PersistedNews
   });
 }
 
+/** Rows per INSERT: HHT alone brings about 2,200 events, and each row is 14 parameters. */
+const EVENTS_PER_INSERT = 500;
+
 export async function saveEvents(db: Db, cityId: string, _source: string, items: CityEvent[]): Promise<void> {
   if (items.length === 0) return;
   // Deduplicate by event id to avoid ON CONFLICT hitting the same row twice
   const unique = [...new Map(items.map((e) => [e.id, e])).values()];
-  await db.insert(events).values(
-    unique.map((e) => ({
-      cityId,
-      title: e.title,
-      venue: e.venue ?? null,
-      date: new Date(e.date),
-      endDate: e.endDate ? new Date(e.endDate) : null,
-      category: e.category,
-      url: e.url,
-      description: e.description ?? null,
-      free: e.free ?? null,
-      hash: e.id,
-      source: e.source,
-      price: e.price ?? null,
-    })),
-  ).onConflictDoUpdate({
-    target: [events.cityId, events.hash],
-    set: {
-      date: sql`excluded.date`,
-      endDate: sql`excluded.end_date`,
-      description: sql`excluded.description`,
-      price: sql`excluded.price`,
-      fetchedAt: sql`now()`,
-    },
-  });
+  for (let i = 0; i < unique.length; i += EVENTS_PER_INSERT) {
+    await db.insert(events).values(
+      unique.slice(i, i + EVENTS_PER_INSERT).map((e) => ({
+        cityId,
+        title: e.title,
+        venue: e.venue ?? null,
+        date: new Date(e.date),
+        endDate: e.endDate ? new Date(e.endDate) : null,
+        category: e.category,
+        url: e.url,
+        description: e.description ?? null,
+        free: e.free ?? null,
+        hash: e.id,
+        source: e.source,
+        price: e.price ?? null,
+        bookingUrl: e.bookingUrl ?? null,
+      })),
+    ).onConflictDoUpdate({
+      target: [events.cityId, events.hash],
+      // Everything a source may correct between fetches
+      set: {
+        title: sql`excluded.title`,
+        venue: sql`excluded.venue`,
+        date: sql`excluded.date`,
+        endDate: sql`excluded.end_date`,
+        category: sql`excluded.category`,
+        url: sql`excluded.url`,
+        description: sql`excluded.description`,
+        free: sql`excluded.free`,
+        price: sql`excluded.price`,
+        bookingUrl: sql`excluded.booking_url`,
+        fetchedAt: sql`now()`,
+      },
+    });
+  }
 }
 
 /**

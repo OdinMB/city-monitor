@@ -308,7 +308,8 @@ export async function createApp(options?: {
     { name: 'summarize-news', schedule: '5 */6 * * *', handler: summarizeNews, runOnStart: s('summarize-news'), dependsOn: ['ingest-feeds'] },
     { name: 'ingest-weather', schedule: '0 * * * *', handler: ingestWeather, runOnStart: s('ingest-weather') },
     { name: 'ingest-transit', schedule: '*/15 * * * *', handler: ingestTransit, runOnStart: s('ingest-transit') },
-    { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: s('ingest-events') },
+    // Heavy: Hamburg's HHT export is a 68 MB XML, parsed as a stream once a day
+    { name: 'ingest-events', schedule: '0 */6 * * *', handler: ingestEvents, runOnStart: s('ingest-events'), heavy: true },
     { name: 'ingest-safety', schedule: '*/10 * * * *', handler: ingestSafety, runOnStart: s('ingest-safety') },
     { name: 'ingest-nina', schedule: '*/5 * * * *', handler: ingestNina, runOnStart: s('ingest-nina') },
     { name: 'ingest-pharmacies', schedule: '0 */6 * * *', handler: ingestPharmacies, runOnStart: s('ingest-pharmacies') },

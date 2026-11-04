@@ -171,6 +171,12 @@
         "city": "City"
       },
       "moreInfo": "More info",
+      "tickets": "Tickets",
+      "hht": {
+        "credit": "Source: Veranstaltungsdatenbank Hamburg Tourismus",
+        "suggest": "Suggest an event",
+        "report": "Report an error"
+      },
       "showMore": "{{count}} more"
     },
     "airQuality": {
