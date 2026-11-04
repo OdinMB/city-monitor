@@ -35,10 +35,14 @@ export const muenchen: CityConfig = {
   theme: { accent: '#A16207' },
   feeds: [
     // Licence verdicts: .context/news.md, "Köln and München feed status". Süddeutsche
-    // and tz forbid automated access; Abendzeitung and Rathaus Umschau await permission.
+    // and tz forbid automated access; Abendzeitung awaits permission.
     // BR24 Oberbayern is RSS 1.0 (RDF) and covers all of Oberbayern; the classifier
     // drops what isn't about München.
     { name: 'BR24 Oberbayern', url: 'https://nachrichtenfeeds.br.de/rdf/boards/UZlJdUE', tier: 1, type: 'mainstream', lang: 'de' },
+    // Rathaus Umschau: the Presse- und Informationsamt allowed headline and teaser with
+    // credit and link, AI classification and the briefing (2026-11-04). The feed carries
+    // each release's full text as HTML, so it is cut to a teaser as it is fetched.
+    { name: 'Rathaus Umschau', url: 'https://ru.muenchen.de/rss', tier: 2, type: 'gov', lang: 'de', teaserChars: 300 },
     { name: 'Feuerwehr München', url: 'https://www.presseportal.de/rss/dienststelle_131419.rss2', tier: 2, type: 'gov', lang: 'de' },
   ],
   dataSources: {

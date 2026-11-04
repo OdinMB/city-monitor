@@ -253,7 +253,9 @@ describe('München config', () => {
 
   it('has its licence-checked feeds, roadworks and Isar flood gauges, and no river levels, police or other city-specific source', () => {
     const config = getCityConfig('muenchen')!;
-    expect(config.feeds.map((f) => f.name)).toEqual(['BR24 Oberbayern', 'Feuerwehr München']);
+    expect(config.feeds.map((f) => f.name)).toEqual(['BR24 Oberbayern', 'Rathaus Umschau', 'Feuerwehr München']);
+    // The press office allowed headline and teaser (2026-11-04); the feed carries full texts
+    expect(config.feeds.find((f) => f.name === 'Rathaus Umschau')?.teaserChars).toBe(300);
     // polizei.bayern.de's robots.txt disallows all; the Polizeipräsidium is not on presseportal
     expect(config.dataSources.police).toBeUndefined();
     expect(config.dataSources.roadworks?.provider).toBe('muenchen-wfs');

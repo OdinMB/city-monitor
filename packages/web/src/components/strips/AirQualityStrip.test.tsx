@@ -32,6 +32,7 @@ vi.mock('../../hooks/useAirQualityGrid.js', () => ({
 
 afterEach(async () => {
   cleanup(); // unmount first, so switching back to English re-renders nothing
+  vi.useRealTimers();
   await i18n.changeLanguage('en');
 });
 
@@ -152,6 +153,9 @@ describe('AirQualityStrip official stations', () => {
   const WAQI: AirQualityGridPoint = { lat: 52.52, lon: 13.4, europeanAqi: 85, station: 'Berlin Mitte, Germany', url: 'https://aqicn.org/station/@6132/' };
 
   beforeEach(() => {
+    // The clock time drops its date only on the reading's own day, so pin "now" to it
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-03T00:30:00Z'));
     hooks.airQuality = { data: AIR_QUALITY, fetchedAt: null, isLoading: false, isError: false, refetch: vi.fn() };
     hooks.grid = [WAQI];
     hooks.stationsEnabled = [];

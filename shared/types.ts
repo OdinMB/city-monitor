@@ -132,6 +132,13 @@ export interface FeedConfig {
    * Postgres keeps only the title and link. Default true.
    */
   storeText?: boolean;
+  /**
+   * For a feed whose permission covers headline and teaser only while the
+   * feed carries the full text: each description is cut to a plain-text
+   * teaser of at most this many characters as it is fetched, so nothing
+   * downstream (classifier, digest, API, Postgres) sees more.
+   */
+  teaserChars?: number;
 }
 
 export interface CityMapLayer {

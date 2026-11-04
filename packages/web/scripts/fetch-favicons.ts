@@ -25,6 +25,7 @@ const FAVICON_SOURCES: Record<string, string> = {
   'stadt-koeln': 'stadt-koeln.de',
   // München
   'br24-oberbayern': 'www.br.de',
+  'rathaus-umschau': 'www.muenchen.de',
   'feuerwehr-muenchen': 'www.presseportal.de',
 };
 
