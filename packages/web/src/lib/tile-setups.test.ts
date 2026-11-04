@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { CityFeature } from '@city-monitor/shared';
 import {
-  PRESET_GROUPS, PRESET_IDS, PRESET_SECTIONS, STANDARD_SECTION_KEYS, SUPPORT_TILE, TILE_IDS, cityTiles, isPreset, isTileId, presetSections,
+  PRESET_GROUPS, PRESET_IDS, PRESET_SECTIONS, STANDARD_SECTION_KEYS, SUPPORT_TILE, TILE_IDS, cityTiles, isPreset, isTileId, presetSections, sectionWidth,
   type TileId,
 } from './tile-setups.js';
 import { berlin } from '../config/cities/berlin.js';
@@ -128,5 +128,18 @@ describe('presetSections', () => {
     first[0].tiles.pop();
     const again = presetSections('commute', 'berlin', cityTiles(berlin.features));
     expect(again[0].tiles.length).toBe(first[0].tiles.length + 1);
+  });
+});
+
+describe('sectionWidth', () => {
+  it('is the columns its tiles fill, at most four', () => {
+    expect(sectionWidth(['weather'])).toBe(1);
+    expect(sectionWidth(['transit', 'liftOutages'])).toBe(2);
+    expect(sectionWidth(['news', 'weather'])).toBe(3);
+    expect(sectionWidth(['briefing', 'news', 'events'])).toBe(4);
+  });
+
+  it('is one column for an empty section', () => {
+    expect(sectionWidth([])).toBe(1);
   });
 });

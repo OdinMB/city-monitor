@@ -108,6 +108,7 @@ function SupportTile({ title }: TileProps) {
   );
 }
 
+// Each Tile's `span` below must match TILE_SPANS (lib/tile-setups.ts), which sizes its section.
 const TILES: Record<TileId, (props: TileProps) => ReactNode> = {
   briefing: ({ title }) => (
     <Tile title={title} titleBadge={<AiLabel />} span={2} rowSpan={2}>

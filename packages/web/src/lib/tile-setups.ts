@@ -44,6 +44,23 @@ export type TileId = keyof typeof TILE_GATES;
 
 export const TILE_IDS = Object.keys(TILE_GATES) as TileId[];
 
+/**
+ * The grid columns each tile takes (its Tile's `span` in DashboardTile.tsx).
+ * A section is as wide as its tiles need, so small sections share a row.
+ */
+export const TILE_SPANS: Record<TileId, 1 | 2> = {
+  briefing: 2, news: 2, events: 2, councilMeetings: 2, budget: 2,
+  weather: 1, airQuality: 1, transit: 1, liftOutages: 1, pollen: 1, floodStatus: 1, appointments: 1, bathing: 1,
+  crisis: 1, wastewater: 1, electricity: 1, waterLevels: 1, support: 1, political: 1, laborMarket: 1, population: 1,
+  feuerwehr: 1, soilMoisture: 1,
+};
+
+/** The grid columns a section's tiles fill side by side, at most the grid's four. */
+export function sectionWidth(tiles: readonly TileId[]): 1 | 2 | 3 | 4 {
+  const columns = tiles.reduce((sum, tile) => sum + TILE_SPANS[tile], 0);
+  return Math.min(4, Math.max(1, columns)) as 1 | 2 | 3 | 4;
+}
+
 /** The tile that can be moved but never removed from a setup. */
 export const SUPPORT_TILE: TileId = 'support';
 

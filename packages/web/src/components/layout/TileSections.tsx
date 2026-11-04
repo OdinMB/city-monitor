@@ -6,7 +6,7 @@ import { useLiftTileShown } from '../../hooks/useLiftTileShown.js';
 import { sectionLabel } from '../../lib/setup-labels.js';
 import { defaultView, shownCustom, shownSections } from '../../lib/setup-state.js';
 import type { CustomSetup } from '../../lib/custom-setup.js';
-import { cityTiles, type ResolvedSection, type TileId } from '../../lib/tile-setups.js';
+import { cityTiles, sectionWidth, type ResolvedSection, type TileId } from '../../lib/tile-setups.js';
 import { SourceText } from '../SourceText.js';
 import { DashboardGrid } from './DashboardGrid.js';
 import { DashboardTile } from './DashboardTile.js';
@@ -22,6 +22,16 @@ import { TileSlotContext } from './tile-slot.js';
  */
 
 const DEFAULT_VIEW = defaultView();
+
+type Width = ReturnType<typeof sectionWidth>;
+
+/** A section's place in the page grid: its width from xl up, at most both columns from sm. */
+const SECTION_WIDTH: Record<Width, string> = {
+  1: 'col-span-1',
+  2: 'col-span-1 sm:col-span-2',
+  3: 'col-span-1 sm:col-span-2 xl:col-span-3',
+  4: 'col-span-1 sm:col-span-2 xl:col-span-4',
+};
 
 interface SectionProps {
   section: ResolvedSection;
@@ -61,8 +71,10 @@ function TileSection({ section, collapsed, editing, onScreen }: SectionProps) {
   const headingId = `tile-section-${section.id}`;
   const gridId = `${headingId}-tiles`;
   const open = Boolean(editing) || !collapsed;
+  // As wide as its tiles need, so small sections share a row (setup mode keeps every section full width)
+  const width = editing ? 4 : sectionWidth(tiles);
   return (
-    <section aria-labelledby={headingId} className="space-y-3">
+    <section aria-labelledby={headingId} className={`min-w-0 space-y-3 ${SECTION_WIDTH[width]}`}>
       {editing ? (
         <SectionEditor setup={editing} section={section} headingId={headingId} />
       ) : (
@@ -70,7 +82,7 @@ function TileSection({ section, collapsed, editing, onScreen }: SectionProps) {
       )}
       {open && tiles.length === 0 && <p className="text-sm text-muted">{t('setup.emptySection')}</p>}
       {open && tiles.length > 0 && (
-        <DashboardGrid id={gridId}>
+        <DashboardGrid id={gridId} columns={width}>
           {tiles.map((tile, index) => (
             <TileSlotContext.Provider
               key={tile}
@@ -103,12 +115,20 @@ export function TileSections() {
   const onScreen = (tile: TileId) => tile !== 'liftOutages' || liftShown;
 
   return (
-    <div className="space-y-6 p-4">
-      <SetupBar view={view} editing={editing} shown={sections} shared={loaded && shared} />
+    // Sections flow in order through a four-column grid (two from sm), each as
+    // wide as its tiles: small ones share a row instead of leaving it half empty.
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 items-start gap-x-4 gap-y-6 p-4">
+      <div className="col-span-full">
+        <SetupBar view={view} editing={editing} shown={sections} shared={loaded && shared} />
+      </div>
       {sections.map((section) => (
         <TileSection key={section.id} section={section} collapsed={collapsed.includes(section.id)} editing={editing} onScreen={onScreen} />
       ))}
-      {editing && <HiddenTilesTray setup={editing} />}
+      {editing && (
+        <div className="col-span-full">
+          <HiddenTilesTray setup={editing} />
+        </div>
+      )}
     </div>
   );
 }
