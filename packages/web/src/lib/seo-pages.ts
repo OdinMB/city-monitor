@@ -77,12 +77,12 @@ export function seoPages(activeCities: readonly WebCityConfig[], hasImage: (file
     {
       path: '/privacy',
       title: 'Privacy Policy — City Monitor',
-      description: 'Privacy policy for City Monitor. No cookies, no user tracking, privacy-friendly analytics.',
+      description: 'Privacy policy for City Monitor. No tracking cookies, no user tracking, privacy-friendly analytics.',
     },
     {
       path: '/no-ads-no-tracking',
       title: 'No Ads, No Tracking — City Monitor',
-      description: 'City Monitor is free, open source, and respects your privacy. No ads, no tracking, no cookies.',
+      description: 'City Monitor is free, open source, and respects your privacy. No ads, no tracking, no tracking cookies.',
     },
     ...cities.map((city) => ({
       path: `/${city.id}`,

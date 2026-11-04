@@ -28,10 +28,32 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
+/** The value of `const <name> = '…'` in the same file. */
+function constantIn(src: string, name: string): string | undefined {
+  return src.match(new RegExp(`const ${name}\\s*=\\s*(['"\`])([^'"\`]+)\\1`))?.[2];
+}
+
+/**
+ * Cookie names in a file that touches `document.cookie`: a literal assigned
+ * to it (`document.cookie = 'name=…'`) or the start of a template the file
+ * builds the assignment from (`${NAME}=…`, NAME a `const` in the same file).
+ * A file that touches the cookie but names none fails the test.
+ */
+function cookieNames(file: string, src: string): string[] {
+  if (!/\bdocument\.cookie\b/.test(src)) return [];
+  const names = [
+    ...[...src.matchAll(/document\.cookie\s*=\s*(['"`])([A-Za-z0-9_-]+)=/g)].map((m) => m[2]),
+    ...[...src.matchAll(/`\$\{([A-Za-z_$][\w$]*)\}=/g)].map((m) => constantIn(src, m[1])),
+  ].filter((name): name is string => name !== undefined);
+  if (names.length === 0) throw new Error(`${file}: uses document.cookie but no cookie name could be resolved`);
+  return names;
+}
+
 /**
  * Keys passed to localStorage/sessionStorage getItem/setItem/removeItem, as a
- * string literal or a `const` in the same file, plus the i18next language
- * detector's storage key. A key the scan cannot resolve fails the test.
+ * string literal or a `const` in the same file, the i18next language
+ * detector's storage key, and the names of cookies the app sets. A key the
+ * scan cannot resolve fails the test.
  */
 function storageKeys(): string[] {
   const keys = new Set<string>();
@@ -41,14 +63,13 @@ function storageKeys(): string[] {
     for (const m of src.matchAll(/\b(?:local|session)Storage\.(?:getItem|setItem|removeItem)\(\s*([^,)]+)/g)) {
       const arg = m[1].trim();
       const literal = arg.match(/^(['"`])([^'"`]+)\1$/);
-      const constant = /^[A-Za-z_$][\w$]*$/.test(arg)
-        ? src.match(new RegExp(`const ${arg}\\s*=\\s*(['"\`])([^'"\`]+)\\1`))
-        : null;
-      const key = literal?.[2] ?? constant?.[2];
+      const constant = /^[A-Za-z_$][\w$]*$/.test(arg) ? constantIn(src, arg) : undefined;
+      const key = literal?.[2] ?? constant;
       if (!key) throw new Error(`${file}: cannot resolve storage key ${arg}`);
       keys.add(key);
     }
     for (const m of src.matchAll(/lookup(?:Local|Session)Storage:\s*(['"])([^'"]+)\1/g)) keys.add(m[2]);
+    for (const name of cookieNames(file, src)) keys.add(name);
   }
   return [...keys];
 }
@@ -108,7 +129,7 @@ describe('PrivacyPage third-party hosts', () => {
 describe('PrivacyPage stored values', () => {
   it('lists exactly the browser storage keys the app uses', () => {
     const keys = storageKeys();
-    expect(keys).toEqual(expect.arrayContaining(['theme', 'language']));
+    expect(keys).toEqual(expect.arrayContaining(['theme', 'language', 'cm_setup']));
 
     const heading = within(renderPage()).getByRole('heading', { level: 2, name: 'What We Store on Your Device' });
     const listed = [...heading.closest('section')!.querySelectorAll('.font-mono')]

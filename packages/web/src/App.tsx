@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect } from 'react';
+import { useEffect } from 'react';
 import { Routes, Route, useParams, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
@@ -7,7 +7,7 @@ import { CityProvider } from './hooks/CityProvider.js';
 import { useCityConfig } from './hooks/useCityConfig.js';
 import { useTheme } from './hooks/useTheme.js';
 import { useBootstrap } from './hooks/useBootstrap.js';
-import { useCommandCenter } from './hooks/useCommandCenter.js';
+import { useSetupSession } from './hooks/useSetupSession.js';
 import { Shell } from './components/layout/Shell.js';
 import { CommandLayout } from './components/layout/CommandLayout.js';
 import { getAllCities, getCityConfig, getDefaultCityId } from './config/index.js';
@@ -33,9 +33,9 @@ const queryClient = new QueryClient({
 function Dashboard() {
   const city = useCityConfig();
   useBootstrap(city.id);
-  // Before the map's first paint, so a city's default layers draw at once.
-  const enterCity = useCommandCenter((s) => s.enterCity);
-  useLayoutEffect(() => enterCity(city.id), [enterCity, city.id]);
+  // The setup and map state from a shared link or the setup cookie, before
+  // the map's first paint, so the city's layers draw at once.
+  useSetupSession(city.id, city.features);
 
   useEffect(() => {
     document.title = `City Monitor — ${city.name}`;

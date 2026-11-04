@@ -81,9 +81,9 @@ export function LiftOutagesStrip({ expanded = false }: { expanded?: boolean }) {
         ) : (
           <>
             <section>
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1.5">
+              <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1.5">
                 {t('panel.liftOutages.lifts', { n: lifts.length })}
-              </h3>
+              </h4>
               {lifts.length === 0 ? (
                 <p className="text-xs text-muted">{t('panel.liftOutages.noLifts')}</p>
               ) : (
@@ -96,9 +96,9 @@ export function LiftOutagesStrip({ expanded = false }: { expanded?: boolean }) {
               )}
             </section>
             <section>
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1.5">
+              <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1.5">
                 {t('panel.liftOutages.escalators', { n: escalatorCount })}
-              </h3>
+              </h4>
               {escalatorCount === 0 ? (
                 <p className="text-xs text-muted">{t('panel.liftOutages.noEscalators')}</p>
               ) : expanded ? (

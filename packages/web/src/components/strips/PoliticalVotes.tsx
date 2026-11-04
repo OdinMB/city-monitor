@@ -106,7 +106,7 @@ export function PoliticalVotes({ votes, expanded, onExpand }: { votes: Political
   const remaining = votes.length - shown.length;
   return (
     <section className="mt-2 border-t border-gray-100 dark:border-gray-800 pt-1.5" aria-label={t('panel.political.votes.title')}>
-      <h3 className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 px-1.5">{t('panel.political.votes.title')}</h3>
+      <h4 className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 px-1.5">{t('panel.political.votes.title')}</h4>
       <ul className="divide-y divide-gray-100 dark:divide-gray-800">
         {shown.map((v) => <PollRow key={v.id} vote={v} />)}
       </ul>

@@ -22,7 +22,32 @@ type Blocked = 'property' | 'methods';
 
 const securityError = () => new DOMException('The operation is insecure.', 'SecurityError');
 
+/** Blocking site data blocks cookies too: `document.cookie` throws both ways. */
+function blockCookies(): () => void {
+  Object.defineProperty(document, 'cookie', {
+    configurable: true,
+    get: () => {
+      throw securityError();
+    },
+    set: () => {
+      throw securityError();
+    },
+  });
+  return () => {
+    Reflect.deleteProperty(document, 'cookie');
+  };
+}
+
 function blockStorage(how: Blocked): () => void {
+  const unblockCookies = blockCookies();
+  const unblock = blockStorageOnly(how);
+  return () => {
+    unblock();
+    unblockCookies();
+  };
+}
+
+function blockStorageOnly(how: Blocked): () => void {
   if (how === 'property') {
     const saved = (['localStorage', 'sessionStorage'] as const).map(
       (name) => [name, Object.getOwnPropertyDescriptor(window, name)] as const,
@@ -152,6 +177,23 @@ describe.each(['property', 'methods'] as const)('with browser storage blocked (%
 
     expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeTruthy();
     expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(screen.queryByText(/something went wrong/i)).toBeNull();
+  }, 30_000);
+
+  it('switches the tile setup for the current page view without the setup cookie', async () => {
+    vi.resetModules();
+    const { App } = await import('./App.js');
+    render(
+      <MemoryRouter initialEntries={['/berlin']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    const topics = await screen.findByRole('button', { name: 'Topics' }, { timeout: 10_000 });
+    fireEvent.click(topics);
+
+    expect(topics.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('heading', { level: 2, name: 'Health & safety' })).toBeTruthy();
     expect(screen.queryByText(/something went wrong/i)).toBeNull();
   }, 30_000);
 

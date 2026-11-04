@@ -1,5 +1,6 @@
-import { type ReactNode, useState, useRef, useEffect } from 'react';
+import { type ReactNode, useContext, useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { TileSlotContext } from './tile-slot.js';
 
 type TileSpan = 1 | 2 | 'full';
 type TileRowSpan = 1 | 2;
@@ -15,7 +16,7 @@ interface TileProps {
   defaultExpanded?: boolean;
   children: ReactNode | ((expanded: boolean, setExpanded: (v: boolean) => void) => ReactNode);
   className?: string;
-  /** Stagger index for reveal animation (set by DashboardGrid) */
+  /** Stagger index for the reveal animation; by default the tile's place in its section (TileSlotContext). */
   revealIndex?: number;
 }
 
@@ -37,8 +38,9 @@ const ROW_SPAN_CLASSES: Record<TileRowSpan, string> = {
   2: 'xl:row-span-2',
 };
 
-export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto', expandable, defaultExpanded, children, className, revealIndex = 0 }: TileProps) {
+export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto', expandable, defaultExpanded, children, className, revealIndex }: TileProps) {
   const { t } = useTranslation();
+  const slot = useContext(TileSlotContext);
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
   const ref = useRef<HTMLDivElement>(null);
   const skipAnimation =
@@ -65,7 +67,7 @@ export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto'
     return () => observer.disconnect();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- runs once on mount; revealed guard is intentional
 
-  const delay = Math.min(revealIndex * 50, 400);
+  const delay = Math.min((revealIndex ?? slot?.revealIndex ?? 0) * 50, 400);
 
   return (
     <div
@@ -81,9 +83,9 @@ export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto'
           aria-expanded={expanded}
           aria-label={`${title} — ${expanded ? t('tile.collapse') : t('tile.expand')}`}
         >
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             {title}{titleBadge}
-          </h2>
+          </h3>
           <svg
             width={20}
             height={20}
@@ -101,11 +103,12 @@ export function Tile({ title, titleBadge, span = 1, rowSpan = 1, height = 'auto'
         </button>
       ) : (
         <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             {title}{titleBadge}
-          </h2>
+          </h3>
         </div>
       )}
+      {slot?.controls}
       <div className={`@container p-4 flex-1 flex flex-col ${HEIGHT_CLASSES[height]}`}>
         {typeof children === 'function' ? children(expanded, setExpanded) : children}
       </div>

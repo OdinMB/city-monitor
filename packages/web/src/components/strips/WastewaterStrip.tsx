@@ -107,7 +107,7 @@ function ReportedCases({ data, locale }: { data: RespiratoryCases; locale: strin
   return (
     <section className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
       <div className="flex items-baseline justify-between mb-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{t('panel.wastewater.cases.title')}</h3>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">{t('panel.wastewater.cases.title')}</h4>
         <span className="text-[10px] text-muted">{t('panel.wastewater.cases.week', { week: Number(data.week.slice(-2)) })}</span>
       </div>
       <div className="space-y-3">
