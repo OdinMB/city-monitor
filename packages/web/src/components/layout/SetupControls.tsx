@@ -9,7 +9,7 @@ import { sectionLabel, tileTitle } from '../../lib/setup-labels.js';
 import { SUPPORT_TILE, type ResolvedSection, type TileId } from '../../lib/tile-setups.js';
 
 /**
- * Setup mode's controls for My setup: per section (rename, move, delete), per
+ * Setup mode's controls for the visitor's setup: per section (rename, move, delete), per
  * tile (move, move to another section, hide), the hidden tiles and adding a
  * section. Buttons and selects rather than drag and drop, so they work by
  * keyboard, touch and screen reader alike; each is at least 24 px (WCAG 2.5.8).
@@ -101,7 +101,7 @@ export function TileControls({ setup, sectionId, tile, visible }: { setup: Custo
   );
 }
 
-/** The city's tiles My setup does not place, each with a section to add it to; and adding a section. */
+/** The city's tiles the setup does not place, each with a section to add it to; and adding a section. */
 export function HiddenTilesTray({ setup }: { setup: CustomSetup }) {
   const { t } = useTranslation();
   const { id: cityId } = useCityConfig();

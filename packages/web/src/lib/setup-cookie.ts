@@ -1,14 +1,16 @@
 import { decodeJson, encodeJson } from './compact-json.js';
-import { compactView, parseView, type SetupView } from './setup-state.js';
+import { compactView, parseView } from './setup-codec.js';
+import type { SetupView } from './setup-state.js';
 import { compactMapState, parseMapState } from './map-state.js';
 import type { MapState } from '../hooks/useCommandCenter.js';
 
 /**
  * The one cookie the site sets: the visitor's own display preferences per
- * city (tile setup, collapsed sections, map state), first party, never sent
- * anywhere but back to the site. Versioned (`v: 1`); a value of another
- * version, shape or size is ignored. Written only after the visitor changes
- * something (hooks/useSetupSession.ts). The privacy page lists it.
+ * city (the setup shown, their own setups, collapsed sections, map state),
+ * first party, never sent anywhere but back to the site. Versioned (`v: 2`);
+ * a value of another version (v1 held one "My setup" per city), shape or size
+ * is ignored. Written only after the visitor changes something
+ * (hooks/useSetupSession.ts). The privacy page lists it.
  *
  * Browsers that block site data throw on `document.cookie`, so each access
  * sits in its own try/catch, as with localStorage (frontend.md → Browser Storage).
@@ -20,7 +22,7 @@ export const SETUP_COOKIE = SETUP_COOKIE_NAME;
 /** Well under the 4 KB browsers allow per cookie, name and value together. */
 export const MAX_COOKIE_LENGTH = 3800;
 const MAX_AGE = 365 * 24 * 60 * 60;
-const VERSION = 1;
+const VERSION = 2;
 const CITY_KEY = /^[a-z][a-z0-9-]{0,31}$/;
 
 export interface CityPrefs {
@@ -92,9 +94,16 @@ export function readPrefs(): SetupPrefs {
   return decodePrefs(pair?.slice(SETUP_COOKIE_NAME.length + 1));
 }
 
+/**
+ * Writes the preferences, the cities touched longest ago dropped as needed.
+ * Should even the newest city not fit on its own (names longer than the caps
+ * allow), the cookie stays as it was: that change goes unsaved, nothing is lost.
+ */
 export function writePrefs(prefs: SetupPrefs): void {
+  const value = encodePrefs(prefs);
+  if (value === null) return;
   try {
-    document.cookie = cookieString(encodePrefs(prefs), window.location.protocol === 'https:');
+    document.cookie = cookieString(value, window.location.protocol === 'https:');
   } catch {
     // Cookies blocked: the setup holds for this visit only.
   }

@@ -1,26 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTileSetup } from '../../hooks/useTileSetup.js';
-import type { SetupView } from '../../lib/setup-state.js';
-import { cityTiles, standardSections, type ResolvedSection, type SetupChoice, type StandardSetup } from '../../lib/tile-setups.js';
+import { isolate } from '../../lib/bidi.js';
+import { setupLabel } from '../../lib/setup-labels.js';
+import { MAX_SETUP_NAME, type NamedSetup, type SetupView } from '../../lib/setup-state.js';
+import { cityTiles, standardSections, type ResolvedSection, type StandardSetup } from '../../lib/tile-setups.js';
 import { BAR_BUTTON } from './SetupControls.js';
-import { ShareSetupButton } from './ShareSetupButton.js';
+import { SetupMenu } from './SetupMenu.js';
+import { SharedSetupNotice } from './SharedSetupNotice.js';
 
 /**
- * The bar above the sections: the switch between Functional, Topics and My
- * setup (once there is one), always one click away; Customize, or Done and
- * Reset in setup mode; and Share.
+ * The bar above the sections: the setup menu, and in setup mode the setup's
+ * name, Done and Reset. While a shared link's setup is previewed, the notice
+ * that offers to keep it takes the bar's place.
  */
 
-function ResetMenu() {
+/** Starts the setup being edited afresh from a standard setup, after a confirm. */
+function ResetMenu({ setup }: { setup: NamedSetup }) {
   const { t } = useTranslation();
   const { id: cityId, features } = useCityConfig();
   const resetCustom = useTileSetup((s) => s.resetCustom);
   const [open, setOpen] = useState(false);
-  const startFrom = (setup: StandardSetup) => {
-    if (!window.confirm(t('setup.resetConfirm', { setup: t(`setup.${setup}`) }))) return;
-    resetCustom(standardSections(setup, cityId, cityTiles(features)));
+  const startFrom = (standard: StandardSetup) => {
+    if (!window.confirm(t('setup.resetConfirm', { name: isolate(setupLabel(t, setup)), setup: t(`setup.${standard}`) }))) return;
+    resetCustom(standardSections(standard, cityId, cityTiles(features)));
     setOpen(false);
   };
   return (
@@ -38,46 +42,84 @@ function ResetMenu() {
   );
 }
 
-export function SetupBar({ view, editing, shown }: { view: SetupView; editing: boolean; shown: readonly ResolvedSection[] }) {
+/**
+ * The name of the setup being edited. Setup mode opens from the menu, which
+ * hands focus back to its button as it closes (in a microtask); focus then
+ * moves on to this field, its text selected, so typing names the setup.
+ */
+function SetupNameField({ setup }: { setup: NamedSetup }) {
   const { t } = useTranslation();
-  const choose = useTileSetup((s) => s.choose);
-  const customize = useTileSetup((s) => s.customize);
-  const finishEditing = useTileSetup((s) => s.finishEditing);
-  const choices: SetupChoice[] = view.custom ? ['functional', 'topics', 'custom'] : ['functional', 'topics'];
+  const rename = useTileSetup((s) => s.renameCustom);
+  const input = useRef<HTMLInputElement>(null);
+  const id = useId();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      input.current?.focus();
+      input.current?.select();
+    });
+    return () => clearTimeout(timer);
+  }, [setup.id]);
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <label htmlFor={id} className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('setup.setupName')}</label>
+      <input
+        ref={input}
+        id={id}
+        type="text"
+        value={setup.name}
+        placeholder={t('setup.custom')}
+        maxLength={MAX_SETUP_NAME}
+        onChange={(e) => rename(e.target.value)}
+        className="min-h-8 min-w-0 flex-1 sm:flex-none sm:w-64 rounded border border-border bg-surface-1 px-2 text-base font-semibold text-gray-900 dark:text-gray-100"
+      />
+    </div>
+  );
+}
 
-  const startCustomizing = () => {
-    // A standard setup is copied into My setup, so an existing one would go.
-    if (view.choice !== 'custom' && view.custom && !window.confirm(t('setup.replaceConfirm', { setup: t(`setup.${view.choice}`) }))) return;
-    customize(shown);
+export function SetupBar({ view, editing, shown, shared }: {
+  view: SetupView;
+  /** The visitor's setup in setup mode, if any. */
+  editing: NamedSetup | null;
+  shown: readonly ResolvedSection[];
+  /** A shared link's setup is previewed. */
+  shared: boolean;
+}) {
+  const { t } = useTranslation();
+  const finishEditing = useTileSetup((s) => s.finishEditing);
+  const triggerId = useId();
+  const focusMenu = useRef(false);
+
+  // Once the shared-setup notice has given way, focus goes to the menu button in its place.
+  useEffect(() => {
+    if (shared || !focusMenu.current) return;
+    focusMenu.current = false;
+    document.getElementById(triggerId)?.focus();
+  }, [shared, triggerId]);
+
+  if (shared) return <SharedSetupNotice onDone={() => { focusMenu.current = true; }} />;
+
+  const done = () => {
+    finishEditing();
+    document.getElementById(triggerId)?.focus();
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div role="group" aria-label={t('setup.label')} className="inline-flex rounded-lg border border-border overflow-hidden bg-surface-1">
-        {choices.map((choice) => (
-          <button
-            key={choice}
-            type="button"
-            aria-pressed={view.choice === choice}
-            onClick={() => choose(choice)}
-            className={`min-h-8 px-3 text-sm cursor-pointer ${
-              view.choice === choice ? 'bg-gray-200 dark:bg-gray-700 font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
-          >
-            {t(`setup.${choice}`)}
-          </button>
-        ))}
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <SetupMenu view={view} shown={shown} triggerId={triggerId} />
+        {editing && (
+          <>
+            <button type="button" className={BAR_BUTTON} onClick={done}>{t('setup.done')}</button>
+            <ResetMenu setup={editing} />
+          </>
+        )}
       </div>
-      {editing ? (
+      {editing && (
         <>
-          <button type="button" className={BAR_BUTTON} onClick={finishEditing}>{t('setup.done')}</button>
-          <ResetMenu />
+          <SetupNameField setup={editing} />
+          <p className="text-sm text-muted">{t('setup.editing')}</p>
         </>
-      ) : (
-        <button type="button" className={BAR_BUTTON} onClick={startCustomizing}>{t('setup.customize')}</button>
       )}
-      <ShareSetupButton view={view} />
-      {editing && <p className="basis-full text-sm text-muted">{t('setup.editing')}</p>}
     </div>
   );
 }

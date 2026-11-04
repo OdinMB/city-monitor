@@ -4,18 +4,20 @@ import type { CityFeature } from '@city-monitor/shared';
 import { useTileSetup } from './useTileSetup.js';
 import { defaultMapState, useCommandCenter } from './useCommandCenter.js';
 import { readPrefs, writePrefs } from '../lib/setup-cookie.js';
-import { hasSharedParams, readSharedParams, withoutSharedParams, type SharedSetup } from '../lib/setup-link.js';
+import { hasSharedParams, readSharedParams, withoutSharedParams } from '../lib/setup-link.js';
 import { pickMapState, sameMapState } from '../lib/map-state.js';
-import { defaultView, type SetupView } from '../lib/setup-state.js';
+import { defaultView, previewView, type SetupView } from '../lib/setup-state.js';
 import { fitToCity } from '../lib/custom-setup.js';
 import { cityTiles, type TileId } from '../lib/tile-setups.js';
 
 /**
  * Where the tile setup and the map state come from and go to: on opening a
- * city, a shared link's parameters over the setup cookie over the defaults;
+ * city, a shared link's preview over the setup cookie over the defaults;
  * after each change the visitor makes, the cookie. Opening a city, and going
  * back from a shared setup, are not the visitor's changes, so they run
- * `quietly` and write nothing: a visit without a change sets no cookie.
+ * `quietly` and write nothing: a visit without a change sets no cookie. A
+ * preview writes nothing either, map changes included, until the visitor
+ * keeps it.
  */
 
 let quiet = 0;
@@ -29,22 +31,16 @@ function quietly(run: () => void) {
   }
 }
 
+/** The view with each of its setups fitted to the city's tiles. */
 function fitView(view: SetupView, available: readonly TileId[]): SetupView {
-  return view.custom ? { ...view, custom: fitToCity(view.custom, available) } : view;
-}
-
-/** A shared link's setup shown over the visitor's own, which keeps My setup unless the link brings one. */
-function sharedOver(own: SetupView, shared: SharedSetup): SetupView {
-  if (shared.choice === 'custom' && shared.custom) {
-    return { ...own, choice: 'custom', custom: shared.custom, collapsed: { ...own.collapsed, custom: [] } };
-  }
-  return { ...own, choice: shared.choice };
+  if (view.customSetups.length === 0) return view;
+  return { ...view, customSetups: view.customSetups.map((setup) => ({ ...setup, ...fitToCity(setup, available) })) };
 }
 
 /**
  * Opens a city's dashboard with the setup and map state from `search` (a
- * shared link), else the cookie's. The same city again without a link keeps
- * what is on screen.
+ * shared link) previewed, else the cookie's. The same city again without a
+ * link keeps what is on screen.
  */
 export function openCity(cityId: string, features: readonly CityFeature[], search: string): void {
   const available = cityTiles(features);
@@ -53,10 +49,10 @@ export function openCity(cityId: string, features: readonly CityFeature[], searc
   const saved = readPrefs()[cityId];
   const sameCity = store.cityId === cityId;
   const own = sameCity ? store.own : fitView(saved?.view ?? defaultView(), available);
-  const shared = link.setup || link.map ? fitView(link.setup ? sharedOver(own, link.setup) : own, available) : null;
+  const preview = link.setup || link.map ? fitView(previewView(own, link.setup), available) : null;
 
   quietly(() => {
-    if (shared) store.load(cityId, own, shared);
+    if (preview) store.load(cityId, own, preview);
     else if (!sameCity) store.load(cityId, own);
     if (link.map) useCommandCenter.getState().applyMapState(cityId, link.map);
     else useCommandCenter.getState().enterCity(cityId, saved?.map);
@@ -93,10 +89,8 @@ export function startPersisting(): () => void {
   const offMap = useCommandCenter.subscribe((state, prev) => {
     const cityId = state.layersCityId;
     if (quiet > 0 || cityId === null || cityId !== prev.layersCityId || sameMapState(state, prev)) return;
-    // A change to a shared map keeps the shared setup, which saves both.
-    const setup = useTileSetup.getState();
-    if (setup.shared) setup.keepShared();
-    else persist(cityId);
+    // A preview's map is saved with its setup once kept, or not at all.
+    if (!useTileSetup.getState().shared) persist(cityId);
   });
   return () => {
     offSetup();

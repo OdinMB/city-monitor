@@ -189,10 +189,10 @@ describe.each(['property', 'methods'] as const)('with browser storage blocked (%
       </MemoryRouter>,
     );
 
-    const topics = await screen.findByRole('button', { name: 'Topics' }, { timeout: 10_000 });
-    fireEvent.click(topics);
+    fireEvent.click(await screen.findByRole('button', { name: /^Customize/ }, { timeout: 10_000 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Topics' }));
 
-    expect(topics.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: /^Customize/ }).textContent).toMatch(/^Customize · Topics/);
     expect(screen.getByRole('heading', { level: 2, name: 'Health & safety' })).toBeTruthy();
     expect(screen.queryByText(/something went wrong/i)).toBeNull();
   }, 30_000);

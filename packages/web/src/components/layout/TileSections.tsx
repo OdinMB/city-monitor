@@ -4,14 +4,13 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTileSetup } from '../../hooks/useTileSetup.js';
 import { useLiftTileShown } from '../../hooks/useLiftTileShown.js';
 import { sectionLabel } from '../../lib/setup-labels.js';
-import { defaultView, shownSections } from '../../lib/setup-state.js';
+import { defaultView, shownCustom, shownSections } from '../../lib/setup-state.js';
 import type { CustomSetup } from '../../lib/custom-setup.js';
 import { cityTiles, type ResolvedSection, type TileId } from '../../lib/tile-setups.js';
 import { SourceText } from '../SourceText.js';
 import { DashboardGrid } from './DashboardGrid.js';
 import { DashboardTile } from './DashboardTile.js';
 import { SetupBar } from './SetupBar.js';
-import { SharedSetupNotice } from './SharedSetupNotice.js';
 import { HiddenTilesTray, SectionEditor, TileControls } from './SetupControls.js';
 import { TileSlotContext } from './tile-slot.js';
 
@@ -19,7 +18,7 @@ import { TileSlotContext } from './tile-slot.js';
  * The dashboard below the map: the setup bar and the setup's sections, each
  * with a heading that collapses it and its own grid of tiles. A section with
  * nothing on screen is left out, except in setup mode, which shows every
- * section of My setup with its controls and the hidden tiles.
+ * section of the visitor's setup with its controls and the hidden tiles.
  */
 
 const DEFAULT_VIEW = defaultView();
@@ -27,7 +26,7 @@ const DEFAULT_VIEW = defaultView();
 interface SectionProps {
   section: ResolvedSection;
   collapsed: boolean;
-  /** My setup while in setup mode. */
+  /** The visitor's setup while in setup mode. */
   editing: CustomSetup | null;
   onScreen: (tile: TileId) => boolean;
 }
@@ -97,16 +96,15 @@ export function TileSections() {
   // Until the city is loaded (useSetupSession), its defaults.
   const loaded = storeCity === cityId;
   const view = loaded ? storeView : DEFAULT_VIEW;
-  const editing = loaded && storeEditing && view.choice === 'custom' ? view.custom : null;
+  const editing = (loaded && storeEditing && shownCustom(view)) || null;
   const available = useMemo(() => cityTiles(features), [features]);
   const sections = useMemo(() => shownSections(view, cityId, available), [view, cityId, available]);
-  const collapsed = view.collapsed[view.choice];
+  const collapsed = view.collapsed[view.choice] ?? [];
   const onScreen = (tile: TileId) => tile !== 'liftOutages' || liftShown;
 
   return (
     <div className="space-y-6 p-4">
-      {loaded && shared && <SharedSetupNotice />}
-      <SetupBar view={view} editing={editing !== null} shown={sections} />
+      <SetupBar view={view} editing={editing} shown={sections} shared={loaded && shared} />
       {sections.map((section) => (
         <TileSection key={section.id} section={section} collapsed={collapsed.includes(section.id)} editing={editing} onScreen={onScreen} />
       ))}

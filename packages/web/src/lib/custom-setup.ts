@@ -1,7 +1,8 @@
 import { SUPPORT_TILE, type ResolvedSection, type TileId } from './tile-setups.js';
 
 /**
- * A visitor's own setup ("My setup") and the edits setup mode makes to it.
+ * A visitor's own setup's sections and tiles, and the edits setup mode makes
+ * to them (its name and id are in setup-state.ts).
  * Every operation returns a new setup and leaves its input alone; one that
  * cannot apply (an unknown section, the last section, the support tile's
  * removal) returns the setup unchanged.
@@ -21,9 +22,14 @@ export interface CustomSetup {
   hidden: TileId[];
 }
 
-/** Caps that keep the largest possible setup of one city inside the cookie (setup-cookie.test.ts). */
-export const MAX_SECTION_NAME = 40;
-export const MAX_SECTIONS = 12;
+/**
+ * Caps that keep a city's MAX_CUSTOM_SETUPS setups inside the cookie, each as
+ * large as it can get (setup-cookie.test.ts). A name holds the longest
+ * standard section name in any language ("Gesundheit & Sicherheit"), and
+ * there is room for one section more than Topics has.
+ */
+export const MAX_SECTION_NAME = 24;
+export const MAX_SECTIONS = 8;
 
 /** A copy of a setup's sections as the visitor's own, nothing hidden. */
 export function customFrom(sections: readonly ResolvedSection[]): CustomSetup {

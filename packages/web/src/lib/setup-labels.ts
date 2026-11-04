@@ -1,7 +1,14 @@
 import type { TFunction } from 'i18next';
-import { isStandardSectionKey, type ResolvedSection, type TileId } from './tile-setups.js';
+import { isStandardSectionKey, type ResolvedSection, type StandardSetup, type TileId } from './tile-setups.js';
+import type { NamedSetup } from './setup-state.js';
 
-/** The words a setup shows: each tile's title (its heading, the hidden tray, the move controls) and each section's name. */
+/** The words a setup shows: its name, each tile's title (its heading, the hidden tray, the move controls) and each section's name. */
+
+/** A standard setup's name, or the visitor's name for theirs ("My setup" when they left it blank). */
+export function setupLabel(t: TFunction, setup: StandardSetup | Pick<NamedSetup, 'name'>): string {
+  if (typeof setup === 'string') return t(`setup.${setup}`);
+  return setup.name.trim() || t('setup.custom');
+}
 
 const TILE_TITLE_KEYS: Record<TileId, string> = {
   briefing: 'panel.news.briefing',

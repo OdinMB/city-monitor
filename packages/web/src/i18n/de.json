@@ -1143,14 +1143,29 @@
     "topics": "Themen",
     "custom": "Meine Ansicht",
     "customize": "Anpassen",
+    "description": {
+      "functional": "Sortiert nach dem, was Sie heute betrifft: Nachrichten, Ihre Umgebung, Störungen, Krisen, dann Hintergrundzahlen.",
+      "topics": "Sortiert nach Thema: Wetter, Umwelt, Verkehr, Gesundheit, Rathaus, Gesellschaft."
+    },
+    "yourSetups": "Ihre Ansichten",
+    "edit": "Bearbeiten",
+    "editSetup": "{{name}} bearbeiten",
+    "delete": "Löschen",
+    "deleteSetup": "{{name}} löschen",
+    "deleteConfirm": "„{{name}}“ löschen? Das lässt sich nicht rückgängig machen.",
+    "newSetup": "Neue Ansicht",
+    "newSetupHint": "Beginnt als Kopie dessen, was Sie gerade sehen.",
+    "setupLimit": "Sie können bis zu {{max}} Ansichten behalten. Löschen Sie eine, um eine neue anzulegen.",
+    "setupName": "Name der Ansicht",
+    "cookieNote": "Ihre Anordnung und Kartenebenen werden auf diesem Gerät gespeichert (Cookie).",
+    "privacy": "Datenschutz",
     "done": "Fertig",
     "reset": "Zurücksetzen",
     "startFromFunctional": "Neu aus „Funktional“",
     "startFromTopics": "Neu aus „Themen“",
-    "resetConfirm": "„Meine Ansicht“ durch „{{setup}}“ ersetzen? Ihre Änderungen daran gehen verloren.",
-    "replaceConfirm": "„Meine Ansicht“ durch eine Kopie von „{{setup}}“ ersetzen? Ihre Änderungen daran gehen verloren.",
+    "resetConfirm": "„{{name}}“ durch eine Kopie von „{{setup}}“ ersetzen? Ihre Änderungen daran gehen verloren.",
     "editing": "Anpassen: Abschnitte und Kacheln umbenennen, verschieben, hinzufügen oder ausblenden.",
-    "share": "Teilen",
+    "share": "Diese Ansicht teilen",
     "shareTitle": "City Monitor {{city}}",
     "copied": "Link kopiert",
     "copyFailed": "Diesen Link kopieren",
@@ -1185,7 +1200,10 @@
     "shared": {
       "notice": "Sie sehen eine geteilte Ansicht.",
       "keep": "Übernehmen",
-      "back": "Zurück zu meiner"
+      "back": "Zurück zu meiner",
+      "replaceQuestion": "Sie haben schon {{max}} Ansichten. Welche soll die geteilte ersetzen?",
+      "replace": "„{{name}}“ ersetzen",
+      "cancel": "Abbrechen"
     }
   }
 }

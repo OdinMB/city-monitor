@@ -5,17 +5,17 @@ import { useIsDesktop } from '../../hooks/useMediaQuery.js';
 import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { pickMapState } from '../../lib/map-state.js';
 import { shareUrl } from '../../lib/setup-link.js';
-import type { SetupView } from '../../lib/setup-state.js';
-import { BAR_BUTTON } from './SetupControls.js';
+import { sharedOf, type SetupView } from '../../lib/setup-state.js';
 
 type ShareNotice = { kind: 'copied' } | { kind: 'failed'; url: string } | null;
 
 /**
- * Share: a link to the city's dashboard with the setup shown and the map
- * state in it. The share sheet on phones that have one, else the clipboard
- * with a short "Link copied"; where neither works, the link to copy by hand.
+ * "Share this view": a link to the city's dashboard with the setup shown and
+ * the map state in it. The share sheet on phones that have one, else the
+ * clipboard with a short "Link copied"; where neither works, the link to copy
+ * by hand.
  */
-export function ShareSetupButton({ view }: { view: SetupView }) {
+export function ShareSetupButton({ view, className }: { view: SetupView; className: string }) {
   const { t } = useTranslation();
   const city = useCityConfig();
   const isPhone = !useIsDesktop();
@@ -28,7 +28,7 @@ export function ShareSetupButton({ view }: { view: SetupView }) {
   }, [notice]);
 
   const share = async () => {
-    const url = shareUrl(window.location.origin, city.id, { choice: view.choice, custom: view.custom }, pickMapState(useCommandCenter.getState()));
+    const url = shareUrl(window.location.origin, city.id, sharedOf(view), pickMapState(useCommandCenter.getState()));
     if (isPhone && typeof navigator.share === 'function') {
       try {
         await navigator.share({ title: t('setup.shareTitle', { city: city.name }), url });
@@ -47,25 +47,25 @@ export function ShareSetupButton({ view }: { view: SetupView }) {
   };
 
   return (
-    <>
-      <button type="button" className={BAR_BUTTON} onClick={() => void share()}>
+    <div>
+      <button type="button" className={className} onClick={() => void share()}>
         {t('setup.share')}
       </button>
-      <span role="status" className="text-sm text-muted">
+      <p role="status" className="px-2 text-xs text-muted">
         {notice?.kind === 'copied' && t('setup.copied')}
         {notice?.kind === 'failed' && (
-          <label className="inline-flex items-center gap-2">
+          <label className="flex flex-wrap items-center gap-2 py-1">
             {t('setup.copyFailed')}
             <input
               type="text"
               readOnly
               value={notice.url}
               onFocus={(e) => e.target.select()}
-              className="min-h-6 w-48 rounded border border-border bg-surface-1 px-1 text-xs"
+              className="min-h-6 w-full rounded border border-border bg-surface-1 px-1 text-xs"
             />
           </label>
         )}
-      </span>
-    </>
+      </p>
+    </div>
   );
 }

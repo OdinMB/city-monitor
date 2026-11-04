@@ -46,11 +46,11 @@ describe('opening a dashboard', { timeout: 30_000 }, () => {
 
   it('applies a shared link’s setup and map, then takes its parameters out of the address', async () => {
     const map = { ...defaultMapState('berlin'), activeLayers: new Set<DataLayer>(['crime']) };
-    const link = new URL(shareUrl('https://citymonitor.app', 'berlin', { choice: 'topics', custom: null }, map));
+    const link = new URL(shareUrl('https://citymonitor.app', 'berlin', 'topics', map));
     renderAt(`/berlin${link.search}&utm_source=x`);
 
     expect(await screen.findByRole('region', { name: "You're viewing a shared setup." }, { timeout: 10_000 })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Topics' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('heading', { level: 2, name: 'Health & safety' })).toBeTruthy();
     expect([...useCommandCenter.getState().activeLayers]).toEqual(['crime']);
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/berlin?utm_source=x'));
     // Still the shared setup: the address change is no visit of its own
@@ -61,12 +61,19 @@ describe('opening a dashboard', { timeout: 30_000 }, () => {
   it('opens with the setup saved in the cookie', async () => {
     writePrefs({
       berlin: {
-        view: { ...defaultView(), choice: 'custom', custom: { sections: [{ id: 'c1', name: 'Mein Kiez', tiles: ['weather', 'support'] }], hidden: [] } },
+        view: {
+          ...defaultView(),
+          choice: 'm2',
+          customSetups: [
+            { id: 'm1', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'support'] }], hidden: [] },
+            { id: 'm2', name: 'Kiez', sections: [{ id: 'c1', name: 'Mein Kiez', tiles: ['weather', 'support'] }], hidden: [] },
+          ],
+        },
         touched: 1,
       },
     });
     renderAt('/berlin');
     expect(await screen.findByRole('heading', { level: 2, name: 'Mein Kiez' }, { timeout: 10_000 })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'My setup' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: /^Customize/ }).textContent).toMatch(/^Customize · Kiez/);
   });
 });

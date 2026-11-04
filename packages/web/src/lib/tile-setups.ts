@@ -4,7 +4,8 @@ import type { CityFeature } from '@city-monitor/shared';
  * The dashboard's tiles and the two standard setups that arrange them into
  * sections: which tiles a city has (from its features) and where Functional
  * and Topics put each of them. How a tile renders is in
- * components/layout/tile-registry.tsx; a visitor's own setup in custom-setup.ts.
+ * components/layout/DashboardTile.tsx; the visitor's own setups in
+ * setup-state.ts and custom-setup.ts.
  */
 
 type Has = (feature: CityFeature) => boolean;
@@ -56,9 +57,8 @@ export function cityTiles(features: readonly CityFeature[]): TileId[] {
   return TILE_IDS.filter((id) => TILE_GATES[id](has));
 }
 
+/** The two setups every city has; the visitor's own are in setup-state.ts. */
 export type StandardSetup = 'functional' | 'topics';
-/** What the dashboard shows: a standard setup or the visitor's own ("My setup"). */
-export type SetupChoice = StandardSetup | 'custom';
 
 /** The standard sections; each has its name under `setup.section.<key>`. */
 export type StandardSectionKey =

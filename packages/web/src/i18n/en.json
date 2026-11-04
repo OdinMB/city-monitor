@@ -1137,14 +1137,29 @@
     "topics": "Topics",
     "custom": "My setup",
     "customize": "Customize",
+    "description": {
+      "functional": "Sorted by what affects you today: news, your surroundings, disruptions, crises, then background figures.",
+      "topics": "Sorted by subject: weather, environment, transport, health, city hall, society."
+    },
+    "yourSetups": "Your setups",
+    "edit": "Edit",
+    "editSetup": "Edit {{name}}",
+    "delete": "Delete",
+    "deleteSetup": "Delete {{name}}",
+    "deleteConfirm": "Delete “{{name}}”? This cannot be undone.",
+    "newSetup": "New setup",
+    "newSetupHint": "Starts as a copy of what you see now.",
+    "setupLimit": "You can keep up to {{max}} setups. Delete one to make another.",
+    "setupName": "Setup name",
+    "cookieNote": "Your layout and map layers are saved on this device (cookie).",
+    "privacy": "Privacy",
     "done": "Done",
     "reset": "Reset",
     "startFromFunctional": "Start from Functional",
     "startFromTopics": "Start from Topics",
-    "resetConfirm": "Replace My setup with {{setup}}? Your changes to it will be lost.",
-    "replaceConfirm": "Replace My setup with a copy of {{setup}}? Your changes to it will be lost.",
+    "resetConfirm": "Replace “{{name}}” with a copy of {{setup}}? Your changes to it will be lost.",
     "editing": "Setup mode: rename, move, add or hide sections and tiles.",
-    "share": "Share",
+    "share": "Share this view",
     "shareTitle": "City Monitor {{city}}",
     "copied": "Link copied",
     "copyFailed": "Copy this link",
@@ -1179,7 +1194,10 @@
     "shared": {
       "notice": "You're viewing a shared setup.",
       "keep": "Keep it",
-      "back": "Back to mine"
+      "back": "Back to mine",
+      "replaceQuestion": "You already have {{max}} setups. Which one should this one replace?",
+      "replace": "Replace “{{name}}”",
+      "cancel": "Cancel"
     }
   }
 }

@@ -1133,14 +1133,29 @@
     "topics": "Konular",
     "custom": "Benim düzenim",
     "customize": "Özelleştir",
+    "description": {
+      "functional": "Bugün sizi etkileyenlere göre sıralı: haberler, çevreniz, aksaklıklar, krizler, ardından arka plan verileri.",
+      "topics": "Konuya göre sıralı: hava, çevre, ulaşım, sağlık, belediye, toplum."
+    },
+    "yourSetups": "Düzenleriniz",
+    "edit": "Düzenle",
+    "editSetup": "Düzenle: {{name}}",
+    "delete": "Sil",
+    "deleteSetup": "Sil: {{name}}",
+    "deleteConfirm": "“{{name}}” silinsin mi? Bu geri alınamaz.",
+    "newSetup": "Yeni düzen",
+    "newSetupHint": "Şu an gördüğünüzün bir kopyası olarak başlar.",
+    "setupLimit": "En fazla {{max}} düzen saklayabilirsiniz. Yenisi için birini silin.",
+    "setupName": "Düzen adı",
+    "cookieNote": "Düzeniniz ve harita katmanlarınız bu cihazda saklanır (çerez).",
+    "privacy": "Gizlilik",
     "done": "Bitti",
     "reset": "Sıfırla",
     "startFromFunctional": "İşlevsel ile başla",
     "startFromTopics": "Konular ile başla",
-    "resetConfirm": "“Benim düzenim” yerine “{{setup}}” kullanılsın mı? Yaptığınız değişiklikler kaybolur.",
-    "replaceConfirm": "“Benim düzenim” yerine “{{setup}}” kopyası kullanılsın mı? Yaptığınız değişiklikler kaybolur.",
+    "resetConfirm": "“{{name}}” yerine “{{setup}}” kopyası kullanılsın mı? Yaptığınız değişiklikler kaybolur.",
     "editing": "Düzenleme modu: bölümleri ve kutucukları yeniden adlandırın, taşıyın, ekleyin veya gizleyin.",
-    "share": "Paylaş",
+    "share": "Bu görünümü paylaş",
     "shareTitle": "City Monitor {{city}}",
     "copied": "Bağlantı kopyalandı",
     "copyFailed": "Bu bağlantıyı kopyalayın",
@@ -1175,7 +1190,10 @@
     "shared": {
       "notice": "Paylaşılan bir düzeni görüntülüyorsunuz.",
       "keep": "Bunu tut",
-      "back": "Benimkine dön"
+      "back": "Benimkine dön",
+      "replaceQuestion": "Zaten {{max}} düzeniniz var. Paylaşılan düzen hangisinin yerini alsın?",
+      "replace": "Değiştir: {{name}}",
+      "cancel": "İptal"
     }
   }
 }

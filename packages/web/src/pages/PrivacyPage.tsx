@@ -87,7 +87,7 @@ const STORED_COOKIES = [
   {
     key: 'cm_setup',
     title: 'Dashboard layout and map settings (cookie)',
-    description: 'Set only once you change something: per city, the tile arrangement you chose (Functional, Topics or your own, with your section names), the sections you collapsed, and the map layers and options you picked. A first-party cookie, kept for one year. Your browser sends it along when it loads this site’s pages, as with any cookie, but nothing on our side reads it: the dashboard reads it in your browser. It never goes to our data API or to any third party.',
+    description: 'Set only once you change something: per city, the tile arrangement you chose (Functional, Topics or one of up to three of your own, with the names you gave them and their sections), the sections you collapsed, and the map layers and options you picked. A first-party cookie, kept for one year. Your browser sends it along when it loads this site’s pages, as with any cookie, but nothing on our side reads it: the dashboard reads it in your browser. It never goes to our data API or to any third party.',
   },
 ];
 
@@ -163,10 +163,10 @@ export function PrivacyPage() {
             your browser settings.
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            The dashboard&apos;s Share button puts your current tile layout and map settings, your
-            section names included, into the address of the link it copies, so whoever opens that
-            link sees them. Opening a shared link changes nothing stored on your device until you
-            choose to keep its layout or change something.
+            The dashboard&apos;s &ldquo;Share this view&rdquo; puts the tile layout on screen and your
+            map settings, the layout&apos;s name and section names included, into the address of
+            the link it copies, so whoever opens that link sees them. Opening a shared link changes
+            nothing stored on your device unless you choose to keep its layout.
           </p>
         </section>
 

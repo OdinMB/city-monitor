@@ -1,41 +1,33 @@
 import { decodeJson, encodeJson } from './compact-json.js';
-import { compactCustom, parseCustom } from './setup-state.js';
+import { compactNamed, parseNamed } from './setup-codec.js';
 import { compactMapState, parseMapState } from './map-state.js';
-import type { CustomSetup } from './custom-setup.js';
-import type { SetupChoice } from './tile-setups.js';
+import type { SharedSetup } from './setup-state.js';
 import type { MapState } from '../hooks/useCommandCenter.js';
 
 /**
- * A link to a city's dashboard with a setup and map state in it:
- * `setup=functional|topics`, or `setup=c.<compact My setup>`, and
- * `map=<compact map state>`. The dashboard applies them for the visit and
- * then takes them out of the address (hooks/useSetupSession.ts).
+ * A link to a city's dashboard with the setup shown and the map state in it:
+ * `setup=functional|topics`, or `setup=c.<compact setup, its name included>`,
+ * and `map=<compact map state>`. The dashboard previews them and then takes
+ * them out of the address (hooks/useSetupSession.ts).
  */
 
 const SETUP = 'setup';
 const MAP = 'map';
 const CUSTOM_PREFIX = 'c.';
 
-export interface SharedSetup {
-  choice: SetupChoice;
-  custom: CustomSetup | null;
-}
-
 export interface SharedParams {
   setup: SharedSetup | null;
   map: Partial<MapState> | null;
 }
 
-function setupParam({ choice, custom }: SharedSetup): string {
-  if (choice === 'custom' && custom) return CUSTOM_PREFIX + encodeJson(compactCustom(custom));
-  return choice === 'topics' ? 'topics' : 'functional';
+function setupParam(setup: SharedSetup): string {
+  return typeof setup === 'string' ? setup : CUSTOM_PREFIX + encodeJson(compactNamed(setup));
 }
 
 function parseSetupParam(value: string | null): SharedSetup | null {
-  if (value === 'functional' || value === 'topics') return { choice: value, custom: null };
+  if (value === 'functional' || value === 'topics') return value;
   if (!value?.startsWith(CUSTOM_PREFIX)) return null;
-  const custom = parseCustom(decodeJson(value.slice(CUSTOM_PREFIX.length)));
-  return custom ? { choice: 'custom', custom } : null;
+  return parseNamed(decodeJson(value.slice(CUSTOM_PREFIX.length)));
 }
 
 export function shareUrl(origin: string, cityId: string, setup: SharedSetup, map: MapState): string {
