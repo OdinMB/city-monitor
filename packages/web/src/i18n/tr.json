@@ -407,7 +407,10 @@
     },
     "electricity": {
       "title": "Elektrik",
-      "renewableShare": "{{area}} şebeke bölgesinde {{time}} itibarıyla üretimdeki yenilenebilir payı",
+      "renewableWord": "yenilenebilir",
+      "renewableCaption": "üretilen elektrikteki pay · {{area}} şebeke bölgesi · {{time}}",
+      "renewables": "Yenilenebilir",
+      "conventional": "Fosil ve diğer",
       "mixLabel": "{{area}} şebeke bölgesinde üretim karışımı",
       "kind": {
         "wind": "Rüzgâr",
@@ -418,7 +421,6 @@
         "coal": "Kömür",
         "other": "Diğer"
       },
-      "co2": "CO₂ yoğunluğu, Almanya",
       "forecast": "tahmin",
       "signal": "Şebeke sinyali, Almanya",
       "signalLevel": {
@@ -438,7 +440,7 @@
     },
     "soilMoisture": {
       "title": "Toprak Nemi",
-      "headline": "bitkilerin kullanabileceği su, kumlu toprakta çim altında, {{date}}",
+      "caption": "Bitkilerin kullanabileceği su, çim altında kumlu toprak · {{date}}",
       "level": {
         "very-dry": "Çok kuru",
         "dry": "Kuru",

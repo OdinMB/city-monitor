@@ -408,7 +408,10 @@
     },
     "electricity": {
       "title": "Strom",
-      "renewableShare": "Erneuerbaren-Anteil an der Erzeugung im Netzgebiet {{area}} um {{time}}",
+      "renewableWord": "erneuerbar",
+      "renewableCaption": "Anteil am erzeugten Strom · Netzgebiet {{area}} · {{time}}",
+      "renewables": "Erneuerbar",
+      "conventional": "Fossil & Sonstige",
       "mixLabel": "Strommix im Netzgebiet {{area}}",
       "kind": {
         "wind": "Wind",
@@ -419,7 +422,6 @@
         "coal": "Kohle",
         "other": "Sonstige"
       },
-      "co2": "CO₂-Intensität, Deutschland",
       "forecast": "Prognose",
       "signal": "Stromampel, Deutschland",
       "signalLevel": {
@@ -439,7 +441,7 @@
     },
     "soilMoisture": {
       "title": "Bodenfeuchte",
-      "headline": "des pflanzenverfügbaren Wassers unter Gras auf Sandboden, {{date}}",
+      "caption": "Pflanzenverfügbares Wasser, Sandboden unter Gras · {{date}}",
       "level": {
         "very-dry": "Sehr trocken",
         "dry": "Trocken",

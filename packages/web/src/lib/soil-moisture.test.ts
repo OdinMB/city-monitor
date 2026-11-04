@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { changeOver, soilMoistureLevel } from './soil-moisture.js';
+import { changeOver, scalePosition, soilMoistureLevel } from './soil-moisture.js';
 
 describe('soilMoistureLevel', () => {
   it.each([
@@ -25,5 +25,13 @@ describe('changeOver', () => {
   it('is null without that day or without data', () => {
     expect(changeOver(history, 31)).toBeNull();
     expect(changeOver([], 7)).toBeNull();
+  });
+});
+
+describe('scalePosition', () => {
+  it.each([
+    [0, 0], [15, 10], [30, 20], [40, 30], [50, 40], [65, 50], [80, 60], [100, 80], [110, 90], [120, 100], [150, 100], [-5, 0],
+  ] as const)('%s %% nFK sits at %s %% of the scale', (pct, pos) => {
+    expect(scalePosition(pct)).toBeCloseTo(pos);
   });
 });

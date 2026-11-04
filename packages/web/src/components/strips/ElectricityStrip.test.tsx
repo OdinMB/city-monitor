@@ -52,12 +52,15 @@ describe('ElectricityStrip', () => {
     const { container } = render(<ElectricityStrip />);
     const text = plain(container.textContent);
     expect(text).toContain('45%');
-    expect(text).toContain('renewable share of generation in the 50Hertz grid area at 05:15');
+    expect(text).toContain('45%renewable');
+    expect(text).toContain('share of power generated · 50Hertz grid area · 05:15');
+    expect(text).toContain('Renewable45%');
+    expect(text).toContain('Fossil & other55%');
     expect(screen.getByRole('img', { name: 'Generation mix in the 50Hertz grid area' })).toBeTruthy();
     expect(text).toContain('Wind35%');
     expect(text).toContain('Coal45%');
     expect(text).not.toContain('Solar');
-    expect(text).toContain('412 g/kWh');
+    expect(text).toContain('412 g CO₂/kWh');
     expect(text).toContain('Red: low renewable share');
     expect(text).toContain('Green 08:00–09:30');
     expect(screen.getByRole('link', { name: 'Bundesnetzagentur | SMARD.de' }).getAttribute('href')).toBe('https://www.smard.de/');
@@ -74,7 +77,7 @@ describe('ElectricityStrip', () => {
     expect(screen.getByRole('img', { name: 'Grid signal, Germany, today' })).toBeTruthy();
     expect(text).toContain('Greenest hour ahead: 09:00 (57% renewable)');
     expect(text).toContain('Germany now: 30% of consumption from renewables');
-    expect(text).toContain('(3.5 GW)');
+    expect(text).toContain('3.5 GW');
   });
 
   it('marks CO₂ as a forecast when no recent measurement exists, and says when green is now', () => {
@@ -83,7 +86,7 @@ describe('ElectricityStrip', () => {
     const text = plain(container.textContent);
     expect(text).toContain('Green: a good time to use power');
     expect(text).toContain('Green until 09:30');
-    expect(text).toContain('411 g/kWh (forecast)');
+    expect(text).toContain('411 g CO₂/kWh (forecast)');
   });
 
   it('says there is no data without any', () => {

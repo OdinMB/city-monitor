@@ -38,6 +38,29 @@ export const LEVEL_STROKE: Record<SoilMoistureLevel, string> = {
   wet: '#2563eb',
 };
 
+/**
+ * The tile's scale: one equal segment per level, driest first, each with its
+ * range in % nFK (the wet one ends at 120 %, beyond which the marker stays at
+ * the end).
+ */
+export const SCALE: ReadonlyArray<{ level: SoilMoistureLevel; from: number; to: number }> = [
+  { level: 'very-dry', from: 0, to: 30 },
+  { level: 'dry', from: 30, to: 50 },
+  { level: 'moderate', from: 50, to: 80 },
+  { level: 'moist', from: 80, to: 100 },
+  { level: 'wet', from: 100, to: 120 },
+];
+
+/** Where a value sits on the scale, 0–100 % of its length. */
+export function scalePosition(pct: number): number {
+  const last = SCALE.length - 1;
+  const i = SCALE.findIndex((s) => pct < s.to);
+  if (i < 0) return 100;
+  const { from, to } = SCALE[i]!;
+  const within = Math.max(0, Math.min(1, (pct - from) / (to - from)));
+  return ((i + within) / (last + 1)) * 100;
+}
+
 const DAY_MS = 86_400_000;
 
 /**

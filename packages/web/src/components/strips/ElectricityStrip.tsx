@@ -35,30 +35,54 @@ function useNow(): number {
   return now;
 }
 
-/** The control area's generation as one stacked bar. */
+/** The control area's generation as one stacked bar, renewables and the rest split by a gap. */
 function MixBar({ groups, label }: { groups: MixShare[]; label: string }) {
+  const sides = [groups.filter((g) => g.renewable), groups.filter((g) => !g.renewable)].filter((s) => s.length > 0);
   return (
-    <div role="img" aria-label={label} className="flex h-3 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-      {groups.map((g) => (
-        <div key={g.group} style={{ width: `${g.share}%`, backgroundColor: g.color }} />
+    <div role="img" aria-label={label} className="flex h-2.5 w-full gap-0.5">
+      {sides.map((side, i) => (
+        <div
+          key={i}
+          className="flex h-full overflow-hidden rounded-full"
+          style={{ width: `${side.reduce((s, g) => s + g.share, 0)}%` }}
+        >
+          {side.map((g) => (
+            <div key={g.group} className="h-full" style={{ flexGrow: g.share, backgroundColor: g.color }} />
+          ))}
+        </div>
       ))}
     </div>
   );
 }
 
+/** The groups in two columns, renewables and the rest, each under its total. */
 function MixLegend({ groups, withPower }: { groups: MixShare[]; withPower: boolean }) {
   const { t } = useTranslation();
+  const columns = [
+    { key: 'renewables', items: groups.filter((g) => g.renewable) },
+    { key: 'conventional', items: groups.filter((g) => !g.renewable) },
+  ].filter((c) => c.items.length > 0);
   return (
-    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted">
-      {groups.map((g) => (
-        <li key={g.group} className="flex items-center gap-1">
-          <span aria-hidden="true" className="inline-block w-2 h-2 rounded-sm" style={{ backgroundColor: g.color }} />
-          <span>{t(`panel.electricity.kind.${g.group}`)}</span>
-          <span className="tabular-nums text-gray-700 dark:text-gray-300">{formatPercent(Math.round(g.share))}</span>
-          {withPower && <span className="tabular-nums">({withUnit(formatDecimal(g.mw / 1000, 1), 'GW')})</span>}
-        </li>
+    <div className="grid grid-cols-2 gap-x-4">
+      {columns.map(({ key, items }) => (
+        <div key={key}>
+          <div className="flex justify-between text-[11px] font-semibold text-gray-900 dark:text-gray-100">
+            <span>{t(`panel.electricity.${key}`)}</span>
+            <span className="tabular-nums">{formatPercent(Math.round(items.reduce((s, g) => s + g.share, 0)))}</span>
+          </div>
+          <ul className="mt-0.5 space-y-0.5 text-[11px] text-muted">
+            {items.map((g) => (
+              <li key={g.group} className="flex items-center gap-1.5">
+                <span aria-hidden="true" className="inline-block w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: g.color }} />
+                <span className="flex-1 min-w-0 truncate">{t(`panel.electricity.kind.${g.group}`)}</span>
+                {withPower && <span className="tabular-nums">{withUnit(formatDecimal(g.mw / 1000, 1), 'GW')}</span>}
+                <span className="tabular-nums text-gray-700 dark:text-gray-300 w-8 text-end">{formatPercent(Math.round(g.share))}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }
 
@@ -95,15 +119,23 @@ const ShareSparkline = memo(function ShareSparkline({ history, label, lang, time
 function SignalTimeline({ grid, now, label, lang, timeZone }: { grid: GridPoint[]; now: number; label: string; lang: string; timeZone: string }) {
   const points = grid.filter((p) => p.signal !== null);
   if (points.length < 2) return null;
+  const first = Date.parse(points[0]!.t);
+  const last = Date.parse(points.at(-1)!.t) + 15 * 60_000;
+  const nowAt = now > first && now < last ? ((now - first) / (last - first)) * 100 : null;
   return (
     <div>
-      <div role="img" aria-label={label} className="flex h-3 w-full gap-px" dir="ltr">
-        {points.map((p) => (
-          <div
-            key={p.t}
-            className={`flex-1 ${SIGNAL_COLORS[p.signal!]} ${Date.parse(p.t) + 15 * 60_000 <= now ? 'opacity-30' : ''}`}
-          />
-        ))}
+      <div className="relative" dir="ltr">
+        <div role="img" aria-label={label} className="flex h-3 w-full gap-px overflow-hidden rounded-sm">
+          {points.map((p) => (
+            <div
+              key={p.t}
+              className={`flex-1 ${SIGNAL_COLORS[p.signal!]} ${Date.parse(p.t) + 15 * 60_000 <= now ? 'opacity-30' : ''}`}
+            />
+          ))}
+        </div>
+        {nowAt !== null && (
+          <div aria-hidden="true" className="absolute -top-1 -bottom-1 w-0.5 -ms-px rounded bg-gray-900 dark:bg-gray-100" style={{ insetInlineStart: `${nowAt}%` }} />
+        )}
       </div>
       <div className="flex justify-between mt-0.5 text-[10px] text-muted" dir="ltr">
         <span>{formatClockTime(points[0]!.t, lang, timeZone)}</span>
@@ -142,18 +174,19 @@ export function ElectricityStrip({ expanded = false }: { expanded?: boolean }) {
 
   return (
     <>
-      <div className="flex flex-col gap-3 py-1">
+      <div className={`flex flex-col gap-4 py-1 ${expanded ? '' : 'flex-1 justify-center'}`}>
         {data.mix && (
           <div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold tabular-nums leading-none text-green-600 dark:text-green-400">
-                {formatPercent(Math.round(data.mix.renewableShare))}
-              </span>
-              <span className="text-xs text-muted leading-tight">
-                {t('panel.electricity.renewableShare', { area: data.controlArea, time: clock(data.mix.at) })}
-              </span>
+            <div className="text-center">
+              <div className="flex items-baseline justify-center gap-2 text-green-600 dark:text-green-400">
+                <span className="text-4xl font-extrabold tabular-nums leading-none">{formatPercent(Math.round(data.mix.renewableShare))}</span>
+                <span className="text-lg font-bold">{t('panel.electricity.renewableWord')}</span>
+              </div>
+              <div className="mt-1 text-[11px] text-muted">
+                {t('panel.electricity.renewableCaption', { area: data.controlArea, time: clock(data.mix.at) })}
+              </div>
             </div>
-            <div className="mt-2 space-y-1.5">
+            <div className="mt-3 space-y-2">
               <MixBar groups={groups} label={t('panel.electricity.mixLabel', { area: data.controlArea })} />
               <MixLegend groups={groups} withPower={expanded} />
             </div>
@@ -161,35 +194,28 @@ export function ElectricityStrip({ expanded = false }: { expanded?: boolean }) {
         )}
 
         {data.grid.length > 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="text-[11px] text-muted">{t('panel.electricity.co2')}</div>
-              {co2 ? (
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
-                  {withUnit(formatDecimal(co2.value), 'g/kWh')}
-                  {co2.forecast && <>{' '}<span className="text-[11px] font-normal text-muted">({t('panel.electricity.forecast')})</span></>}
-                </div>
-              ) : (
-                <div className="text-sm text-muted">–</div>
+          <div className="rounded-md px-3 py-2 bg-gray-50 dark:bg-gray-800/60 border border-border-subtle text-gray-900 dark:text-gray-100">
+            <div className="flex items-baseline justify-between gap-2 text-[10px] font-medium uppercase tracking-wide text-muted">
+              <span>{t('panel.electricity.signal')}</span>
+              {co2 && (
+                <span className="normal-case tracking-normal tabular-nums">
+                  {withUnit(formatDecimal(co2.value), 'g CO₂/kWh')}
+                  {co2.forecast && ` (${t('panel.electricity.forecast')})`}
+                </span>
               )}
             </div>
-            <div>
-              <div className="text-[11px] text-muted">{t('panel.electricity.signal')}</div>
-              {current?.signal != null ? (
-                <div className="flex items-start gap-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  <span aria-hidden="true" className={`mt-1.5 shrink-0 w-2 h-2 rounded-full ${SIGNAL_COLORS[current.signal]}`} />
-                  <span className="leading-snug">{t(`panel.electricity.signalLevel.${current.signal}`)}</span>
-                </div>
-              ) : (
-                <div className="text-sm text-muted">–</div>
-              )}
-              <div className="text-[11px] text-muted mt-0.5">
-                {green
-                  ? Date.parse(green.start) <= now
-                    ? t('panel.electricity.greenUntil', { end: clock(green.end) })
-                    : t('panel.electricity.greenWindow', { start: clock(green.start), end: clock(green.end) })
-                  : t('panel.electricity.noGreen')}
+            {current?.signal != null && (
+              <div className="mt-1 flex items-center gap-1.5 text-sm font-semibold">
+                <span aria-hidden="true" className={`shrink-0 w-2.5 h-2.5 rounded-full ${SIGNAL_COLORS[current.signal]}`} />
+                <span className="leading-snug">{t(`panel.electricity.signalLevel.${current.signal}`)}</span>
               </div>
+            )}
+            <div className="text-[11px] mt-0.5 text-muted">
+              {green
+                ? Date.parse(green.start) <= now
+                  ? t('panel.electricity.greenUntil', { end: clock(green.end) })
+                  : t('panel.electricity.greenWindow', { start: clock(green.start), end: clock(green.end) })
+                : t('panel.electricity.noGreen')}
             </div>
           </div>
         )}

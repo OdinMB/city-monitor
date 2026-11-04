@@ -160,14 +160,16 @@ export function CommandLayout() {
       {/* Lower zone: dashboard tiles, from tablet width up with 1rem above them. */}
       <div ref={dashboardRef} className={`bg-surface-0 ${isPhone ? '' : 'pt-4'}`}>
         <DashboardGrid>
-          {/* Row 1-2: Hero briefing + Weather + AQI + Transit */}
+          {/* Tiles in order of practical relevance, everyday first: the
+              briefing, news, weather, air quality and transit lead; reference
+              figures (statistics, budget, fire brigade, soil moisture) close. */}
           {has('news') && (
             <Tile title={t('panel.news.briefing')} titleBadge={<AiLabel />} span={2} rowSpan={2}>
               <BriefingStrip />
             </Tile>
           )}
           {has('news') && (
-            <Tile title={t('panel.news.title')} span={2} className="sm:hidden">
+            <Tile title={t('panel.news.title')} span={2}>
               <NewsStrip />
             </Tile>
           )}
@@ -184,6 +186,47 @@ export function CommandLayout() {
           )}
           {/* Beside transit: where a city has no transit tile (Köln), the station information it has */}
           {(has('liftOutages') || has('stationLifts')) && <LiftOutagesTile />}
+          {has('pollen') && (
+            <Tile title={t('panel.pollen.title')} span={1} expandable>
+              {(expanded) => <PollenStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {has('floodStatus') && (
+            <Tile title={t('panel.floodStatus.title')} span={1}>
+              <FloodStatusStrip />
+            </Tile>
+          )}
+          {has('events') && (
+            <Tile title={t('panel.events.title')} span={2}>
+              <EventsStrip />
+            </Tile>
+          )}
+          {has('appointments') && (
+            <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+            </Tile>
+          )}
+          {has('bathing') && <BathingTile />}
+          {has('crisis') && (
+            <Tile title={t('panel.crisis.title')} span={1} expandable defaultExpanded={isDesktop}>
+              {(expanded, setExpanded) => <CrisisStrip cityId={cityId} expanded={expanded} onExpand={() => setExpanded(true)} />}
+            </Tile>
+          )}
+          {has('wastewater') && (
+            <Tile title={t('panel.wastewater.title')} span={1} expandable>
+              {(expanded) => <WastewaterStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {has('electricity') && (
+            <Tile title={t('panel.electricity.title')} span={1} expandable>
+              {(expanded) => <ElectricityStrip expanded={expanded} />}
+            </Tile>
+          )}
+          {has('waterLevels') && (
+            <Tile title={t('panel.waterLevels.title')} span={1}>
+              <WaterLevelStrip />
+            </Tile>
+          )}
           <Tile title={t('support.title')} span={1}>
             <>
               <div className="flex flex-col items-center justify-center gap-6 h-full pb-4">
@@ -214,50 +257,15 @@ export function CommandLayout() {
             </>
           </Tile>
 
-          {/* Row 3: Environment */}
-          {has('pollen') && (
-            <Tile title={t('panel.pollen.title')} span={1} expandable>
-              {(expanded) => <PollenStrip expanded={expanded} />}
+          {/* Civic and reference figures */}
+          {has('councilMeetings') && (
+            <Tile title={t('panel.councilMeetings.title', { context: cityId })} span={2}>
+              <CouncilMeetingsStrip />
             </Tile>
           )}
-          {has('wastewater') && (
-            <Tile title={t('panel.wastewater.title')} span={1} expandable>
-              {(expanded) => <WastewaterStrip expanded={expanded} />}
-            </Tile>
-          )}
-          {has('electricity') && (
-            <Tile title={t('panel.electricity.title')} span={1} expandable>
-              {(expanded) => <ElectricityStrip expanded={expanded} />}
-            </Tile>
-          )}
-          {has('soilMoisture') && (
-            <Tile title={t('panel.soilMoisture.title')} span={1} expandable>
-              {(expanded) => <SoilMoistureStrip expanded={expanded} />}
-            </Tile>
-          )}
-          {has('feuerwehr') && (
-            <Tile title={t('panel.feuerwehr.title')} span={1} expandable>
-              {(expanded) => <FeuerwehrStrip expanded={expanded} />}
-            </Tile>
-          )}
-          {has('bathing') && <BathingTile />}
-
-          {/* Row 4: Information */}
-          {has('news') && (
-            <Tile title={t('panel.news.title')} span={2} className="hidden sm:block">
-              <NewsStrip />
-            </Tile>
-          )}
-          {has('events') && (
-            <Tile title={t('panel.events.title')} span={2}>
-              <EventsStrip />
-            </Tile>
-          )}
-
-          {/* Row 5: Services */}
-          {has('appointments') && (
-            <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
+          {has('political') && (
+            <Tile title={t('sidebar.layers.political')} expandable>
+              {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
             </Tile>
           )}
           {has('laborMarket') && (
@@ -270,38 +278,19 @@ export function CommandLayout() {
               <PopulationStrip />
             </Tile>
           )}
-          {has('crisis') && (
-            <Tile title={t('panel.crisis.title')} span={1} expandable defaultExpanded={isDesktop}>
-              {(expanded, setExpanded) => <CrisisStrip cityId={cityId} expanded={expanded} onExpand={() => setExpanded(true)} />}
-            </Tile>
-          )}
-
-          {/* Row 6: Governance */}
           {has('budget') && (
             <Tile title={t('panel.budget.title')} span={2}>
               <BudgetStrip />
             </Tile>
           )}
-          {has('councilMeetings') && (
-            <Tile title={t('panel.councilMeetings.title', { context: cityId })} span={2}>
-              <CouncilMeetingsStrip />
+          {has('feuerwehr') && (
+            <Tile title={t('panel.feuerwehr.title')} span={1} expandable>
+              {(expanded) => <FeuerwehrStrip expanded={expanded} />}
             </Tile>
           )}
-
-          {/* Row 7: Safety & Infrastructure */}
-          {has('political') && (
-            <Tile title={t('sidebar.layers.political')} expandable>
-              {(expanded, setExpanded) => <PoliticalStrip expanded={expanded} onExpand={() => setExpanded(true)} />}
-            </Tile>
-          )}
-          {has('waterLevels') && (
-            <Tile title={t('panel.waterLevels.title')} span={1}>
-              <WaterLevelStrip />
-            </Tile>
-          )}
-          {has('floodStatus') && (
-            <Tile title={t('panel.floodStatus.title')} span={1}>
-              <FloodStatusStrip />
+          {has('soilMoisture') && (
+            <Tile title={t('panel.soilMoisture.title')} span={1} expandable>
+              {(expanded) => <SoilMoistureStrip expanded={expanded} />}
             </Tile>
           )}
         </DashboardGrid>

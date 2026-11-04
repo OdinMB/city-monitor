@@ -104,6 +104,7 @@ export interface MixShare {
   mw: number;
   /** % of the area's generation. */
   share: number;
+  renewable: boolean;
 }
 
 /** The mix in the bar's groups, leaving out a group with no output. */
@@ -111,9 +112,9 @@ export function groupMix(mix: ElectricityMix): MixShare[] {
   const total = Object.values(mix.mw).reduce((s, v) => s + (v ?? 0), 0);
   if (total <= 0) return [];
   return MIX_GROUPS
-    .map(({ group, kinds, color }) => {
+    .map(({ group, kinds, color, renewable }) => {
       const mw = kinds.reduce((s, k) => s + (mix.mw[k] ?? 0), 0);
-      return { group, color, mw, share: (mw / total) * 100 };
+      return { group, color, mw, share: (mw / total) * 100, renewable };
     })
     .filter((g) => g.mw > 0);
 }
