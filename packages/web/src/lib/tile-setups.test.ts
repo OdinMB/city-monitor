@@ -1,28 +1,54 @@
 import { describe, it, expect } from 'vitest';
 import type { CityFeature } from '@city-monitor/shared';
-import { STANDARD_SETUPS, TILE_IDS, cityTiles, isTileId, standardSections, type StandardSetup, type TileId } from './tile-setups.js';
+import {
+  PRESET_GROUPS, PRESET_IDS, PRESET_SECTIONS, STANDARD_SECTION_KEYS, SUPPORT_TILE, TILE_IDS, cityTiles, isPreset, isTileId, presetSections,
+  type TileId,
+} from './tile-setups.js';
 import { berlin } from '../config/cities/berlin.js';
 import { hamburg } from '../config/cities/hamburg.js';
 import { koeln } from '../config/cities/koeln.js';
 import { muenchen } from '../config/cities/muenchen.js';
 
-const SETUPS = Object.keys(STANDARD_SETUPS) as StandardSetup[];
 const CITIES = [berlin, hamburg, koeln, muenchen];
 
-const placed = (sections: { tiles: readonly TileId[] }[]) => sections.flatMap((s) => s.tiles);
+const placed = (sections: readonly { tiles: readonly TileId[] }[]) => sections.flatMap((s) => s.tiles);
 
-describe('standard setups', () => {
-  it.each(SETUPS)('%s places every tile exactly once, so a new tile cannot go missing', (setup) => {
-    const tiles = placed(STANDARD_SETUPS[setup].map((s) => ({ tiles: s.tiles })));
-    expect([...tiles].sort()).toEqual([...TILE_IDS].sort());
+describe('presets', () => {
+  it('come in two groups, everyday ones first, Everyday leading', () => {
+    expect(PRESET_GROUPS.map((g) => g.key)).toEqual(['daily', 'special']);
+    expect(PRESET_GROUPS[0].presets).toEqual(['everyday', 'commute', 'dayOut', 'health', 'storm']);
+    expect(PRESET_GROUPS[1].presets).toEqual(['cityHall', 'movingHere', 'visitors', 'newsroom', 'cycling', 'heatwave']);
+    expect(PRESET_IDS).toEqual(PRESET_GROUPS.flatMap((g) => g.presets));
   });
 
-  it.each(SETUPS)('%s places every tile of every city exactly once, city placements included', (setup) => {
+  it('Everyday places every tile exactly once, so a new tile cannot go missing', () => {
+    expect([...placed(PRESET_SECTIONS.everyday)].sort()).toEqual([...TILE_IDS].sort());
     for (const city of CITIES) {
       const available = cityTiles(city.features);
-      const tiles = placed(standardSections(setup, city.id, available));
-      expect([...tiles].sort(), city.id).toEqual([...available].sort());
+      expect([...placed(presetSections('everyday', city.id, available))].sort(), city.id).toEqual([...available].sort());
     }
+  });
+
+  it.each(PRESET_IDS.filter((p) => p !== 'everyday'))('%s places a tile at most once and ends with the support tile, in every city', (preset) => {
+    const tiles = placed(PRESET_SECTIONS[preset]);
+    expect(new Set(tiles).size).toBe(tiles.length);
+    for (const city of CITIES) {
+      const sections = presetSections(preset, city.id, cityTiles(city.features));
+      expect(placed(sections).at(-1), city.id).toBe(SUPPORT_TILE);
+      expect(sections.every((s) => s.tiles.length > 0), city.id).toBe(true);
+    }
+  });
+
+  it('use only section keys that have a name, and every such key is used', () => {
+    const used = new Set(PRESET_IDS.flatMap((p) => PRESET_SECTIONS[p].map((s) => s.key)));
+    expect([...used].sort()).toEqual([...STANDARD_SECTION_KEYS].sort());
+  });
+
+  it('tells preset ids from anything else', () => {
+    expect(isPreset('commute')).toBe(true);
+    expect(isPreset('topics')).toBe(false);
+    expect(isPreset('m1')).toBe(false);
+    expect(isPreset('toString')).toBe(false);
   });
 });
 
@@ -52,21 +78,31 @@ describe('isTileId', () => {
   });
 });
 
-describe('standardSections', () => {
+describe('presetSections', () => {
   it('drops the tiles a city lacks and the sections left without any', () => {
-    const sections = standardSections('functional', 'nowhere', ['weather', 'support']);
+    const sections = presetSections('everyday', 'nowhere', ['weather', 'crisis', 'support']);
     expect(sections.map((s) => s.id)).toEqual(['environment', 'crises']);
-    expect(sections.map((s) => s.tiles)).toEqual([['weather'], ['support']]);
+    expect(sections.map((s) => s.tiles)).toEqual([['weather'], ['crisis', 'support']]);
   });
 
-  it('closes the crises section with the support tile in Functional and health & safety in Topics', () => {
-    const last = (setup: StandardSetup, id: string) => standardSections(setup, 'berlin', cityTiles(berlin.features)).find((s) => s.id === id)!.tiles.at(-1);
-    expect(last('functional', 'crises')).toBe('support');
-    expect(last('topics', 'health')).toBe('support');
+  it('gives the support tile to the section before when it would stand alone in its own', () => {
+    expect(presetSections('health', 'nowhere', ['airQuality', 'wastewater', 'support'])).toEqual([
+      { id: 'airAllergies', tiles: ['airQuality'] },
+      { id: 'infections', tiles: ['wastewater', 'support'] },
+    ]);
   });
 
-  it('moves Hamburg’s water levels (storm surge) into the crises section, before the support tile', () => {
-    const sections = standardSections('functional', 'hamburg', cityTiles(hamburg.features));
+  it('keeps the support tile in a section of its own when no section comes before', () => {
+    expect(presetSections('movingHere', 'nowhere', ['support'])).toEqual([{ id: 'cityFigures', tiles: ['support'] }]);
+  });
+
+  it('closes Everyday’s crises section with the support tile', () => {
+    const crises = presetSections('everyday', 'berlin', cityTiles(berlin.features)).find((s) => s.id === 'crises')!;
+    expect(crises.tiles.at(-1)).toBe('support');
+  });
+
+  it('moves Hamburg’s water levels (storm surge) into Everyday’s crises section, before the support tile', () => {
+    const sections = presetSections('everyday', 'hamburg', cityTiles(hamburg.features));
     const crises = sections.find((s) => s.id === 'crises')!;
     expect(crises.tiles).toContain('waterLevels');
     expect(crises.tiles.at(-1)).toBe('support');
@@ -74,15 +110,23 @@ describe('standardSections', () => {
   });
 
   it('keeps the water levels in the background elsewhere', () => {
-    const sections = standardSections('functional', 'koeln', cityTiles(koeln.features));
+    const sections = presetSections('everyday', 'koeln', cityTiles(koeln.features));
     expect(sections.find((s) => s.id === 'background')!.tiles).toContain('waterLevels');
     expect(sections.find((s) => s.id === 'crises')!.tiles).not.toContain('waterLevels');
   });
 
-  it('returns fresh arrays, so an edit of a copy leaves the standard setup alone', () => {
-    const first = standardSections('topics', 'berlin', cityTiles(berlin.features));
+  it('shows Commute in Köln without the transit tile it lacks', () => {
+    expect(presetSections('commute', 'koeln', cityTiles(koeln.features))).toEqual([
+      { id: 'gettingAround', tiles: ['liftOutages'] },
+      { id: 'conditions', tiles: ['weather', 'airQuality'] },
+      { id: 'news', tiles: ['news', 'support'] },
+    ]);
+  });
+
+  it('returns fresh arrays, so an edit of a copy leaves the preset alone', () => {
+    const first = presetSections('commute', 'berlin', cityTiles(berlin.features));
     first[0].tiles.pop();
-    const again = standardSections('topics', 'berlin', cityTiles(berlin.features));
+    const again = presetSections('commute', 'berlin', cityTiles(berlin.features));
     expect(again[0].tiles.length).toBe(first[0].tiles.length + 1);
   });
 });

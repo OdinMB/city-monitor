@@ -56,7 +56,7 @@ export type WaterSubLayer = 'levels' | 'bathing' | 'temperature';
 export type TrafficSubLayer = 'public-transport' | 'incidents' | 'congestion' | 'roadworks' | 'car-counts' | 'bike-counts' | 'telraam';
 export type HeatReliefSubLayer = 'cool' | 'fountains' | 'toilets';
 
-/** What the map shows: the part of the store saved per city and carried by a shared link (lib/map-state.ts). */
+/** What the map shows: the part of the store each setup keeps (lib/setup-maps.ts) and a shared link carries (lib/map-state.ts). */
 export interface MapState {
   singleView: boolean;
   activeLayers: Set<DataLayer>;
@@ -113,11 +113,15 @@ interface CommandCenterState extends MapState {
   layersCityId: string | null;
   /**
    * Opens a city's dashboard: a different city than last time starts from the
-   * visitor's saved state for it, over that city's defaults (defaultMapState);
+   * map of the setup it shows, over that city's defaults (defaultMapState);
    * the same city (back from its Sources page) keeps the visitor's choice.
    */
   enterCity: (cityId: string, saved?: Partial<MapState>) => void;
-  /** Shows `state` over the city's defaults (single view included) whatever was shown before: a shared link, or back to the visitor's own. */
+  /**
+   * Shows `state` over the city's defaults (single view included) whatever was
+   * shown before: a shared link, the map of a setup chosen, or back to the
+   * visitor's own.
+   */
   applyMapState: (cityId: string, state: Partial<MapState>) => void;
 }
 

@@ -87,7 +87,7 @@ const STORED_COOKIES = [
   {
     key: 'cm_setup',
     title: 'Dashboard layout and map settings (cookie)',
-    description: 'Set only once you change something: per city, the tile arrangement you chose (Functional, Topics or one of up to three of your own, with the names you gave them and their sections), the sections you collapsed, and the map layers and options you picked. A first-party cookie, kept for one year. Your browser sends it along when it loads this site’s pages, as with any cookie, but nothing on our side reads it: the dashboard reads it in your browser. It never goes to our data API or to any third party.',
+    description: 'Set only once you change something: per city, the setup you chose (one of the ready-made setups such as Everyday or Commute, or one of up to three of your own, with the names you gave them and their sections), the sections you collapsed, and the map layers and options of each setup: for each of your own setups the map you gave it, and for a ready-made setup only what you changed in its map, with when you changed it, so that the oldest such changes can be dropped first when the cookie runs out of room. A first-party cookie, kept for one year. Your browser sends it along when it loads this site’s pages, as with any cookie, but nothing on our side reads it: the dashboard reads it in your browser. It never goes to our data API or to any third party.',
   },
 ];
 

@@ -26,7 +26,7 @@ const tilesIn = (name: string) =>
   within(screen.getByRole('region', { name })).queryAllByRole('heading', { level: 3 }).map((h) => h.textContent);
 
 const menuButton = () => screen.getByRole('button', { name: /^Customize/ });
-const menu = () => screen.getByRole('dialog', { name: 'Tile arrangement' });
+const menu = () => screen.getByRole('dialog', { name: 'Tiles and map' });
 const openMenu = () => fireEvent.click(menuButton());
 const inMenu = (name: string | RegExp) => within(menu()).getByRole('button', { name });
 const isCurrent = (name: string | RegExp) => inMenu(name).getAttribute('aria-current') === 'true';
@@ -37,7 +37,7 @@ const commute: NamedSetup = { id: 'm2', name: 'Pendeln', sections: [{ id: 'c1', 
 const withSetups = (choice: SetupView['choice'], ...customSetups: NamedSetup[]): SetupView => ({ ...defaultView(), choice, customSetups });
 
 function renderSections(city: WebCityConfig = berlin, own: SetupView = defaultView(), shared?: SharedSetup) {
-  useTileSetup.getState().load(city.id, own, shared ? previewView(own, shared) : null);
+  useTileSetup.getState().load(city, own, shared ? previewView(own, shared) : null);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
@@ -66,38 +66,61 @@ describe('TileSections', () => {
   });
 
   describe('the setup menu', () => {
-    it('opens with Functional, named on the menu button, its sections in order', () => {
+    const presetsIn = (group: string) =>
+      within(within(menu()).getByRole('list', { name: group })).getAllByRole('listitem').map((item) => within(item).getAllByRole('button')[0].getAttribute('aria-labelledby'))
+        .map((id) => document.getElementById(id!)!.textContent);
+
+    it('opens with Everyday, named on the menu button, its sections in order', () => {
       renderSections();
-      expect(menuButton().textContent).toMatch(/^Customize · Functional/);
+      expect(menuButton().textContent).toMatch(/^Customize · Everyday/);
       expect(sectionHeadings()).toEqual(['News', 'Environment', 'Disruptions', 'Crises', 'Background']);
       expect(tilesIn('Crises').at(-1)).toBe('support');
     });
 
-    it('offers both standard setups with what each is for, a new setup, sharing, and where it is all kept', () => {
+    it('offers the presets in two labelled groups, each with what it is for, a new setup, sharing, and where it is all kept', () => {
       renderSections();
       openMenu();
       expect(menuButton().getAttribute('aria-expanded')).toBe('true');
-      expect(isCurrent('Functional')).toBe(true);
-      expect(isCurrent('Topics')).toBe(false);
-      expect(inMenu('Topics').getAttribute('aria-describedby')).toBeTruthy();
-      expect(within(menu()).getByText(/^Sorted by subject/)).toBeTruthy();
+      expect(presetsIn('Day to day')).toEqual(['Everyday', 'Commute', 'Day out', 'Health', 'Storm & emergencies']);
+      expect(presetsIn('Special interest')).toEqual(['City hall', 'Moving here', 'Visitors', 'Newsroom', 'Cycling', 'Heatwave']);
+      expect(isCurrent('Everyday')).toBe(true);
+      expect(isCurrent('Commute')).toBe(false);
+      expect(inMenu('Commute').getAttribute('aria-describedby')).toBeTruthy();
+      expect(within(menu()).getByText(/^Transit, lifts and the traffic map/)).toBeTruthy();
       expect(within(menu()).queryByText('Your setups')).toBeNull();
+      expect(within(menu()).queryByRole('button', { name: /^Reset the map/ })).toBeNull();
       expect(inMenu('New setup').getAttribute('aria-describedby')).toBeTruthy();
       expect(inMenu('Share this view')).toBeTruthy();
       expect(within(menu()).getByText(/saved on this device \(cookie\)/)).toBeTruthy();
       expect(within(menu()).getByRole('link', { name: 'Privacy' }).getAttribute('href')).toBe('/privacy');
     });
 
+    it('leaves out the presets a city has neither tiles nor map layers for', () => {
+      renderSections({ ...berlin, features: [] });
+      openMenu();
+      expect(presetsIn('Special interest')).toEqual(['Visitors', 'Cycling', 'Heatwave']);
+    });
+
     it('moves focus into the menu, and shows a setup chosen there, closing it with focus back on its button', async () => {
       renderSections();
       openMenu();
       await waitFor(() => expect(menu().contains(document.activeElement)).toBe(true));
-      fireEvent.click(inMenu('Topics'));
+      fireEvent.click(inMenu('Commute'));
       expect(screen.queryByRole('dialog')).toBeNull();
-      expect(menuButton().textContent).toMatch(/^Customize · Topics/);
-      expect(sectionHeadings()).toContain('City hall');
-      expect(tilesIn('Health & safety').at(-1)).toBe('support');
+      expect(menuButton().textContent).toMatch(/^Customize · Commute/);
+      expect(sectionHeadings()).toEqual(['Getting around', 'Conditions', 'News']);
+      expect(tilesIn('News')).toEqual(['news', 'support']);
       await waitFor(() => expect(document.activeElement).toBe(menuButton()));
+    });
+
+    it('resets a preset’s map the visitor changed from its row, focus staying on the preset', () => {
+      renderSections(berlin, { ...defaultView(), presetMaps: { commute: { map: { crimeLayer: 'kiez' }, touched: 1 } } });
+      openMenu();
+      expect(within(menu()).getAllByRole('button', { name: /^Reset the map/ })).toHaveLength(1);
+      fireEvent.click(inMenu('Reset the map of Commute'));
+      expect(useTileSetup.getState().own.presetMaps).toEqual({});
+      expect(within(menu()).queryByRole('button', { name: /^Reset the map/ })).toBeNull();
+      expect(document.activeElement).toBe(inMenu('Commute'));
     });
 
     it('closes on Escape, with focus back on its button', async () => {
@@ -116,14 +139,14 @@ describe('TileSections', () => {
       const yours = within(menu()).getByRole('list', { name: 'Your setups' });
       expect(within(yours).getAllByRole('listitem')).toHaveLength(2);
       expect(isCurrent('Mein Kiez')).toBe(true);
-      expect(isCurrent('Functional')).toBe(false);
+      expect(isCurrent('Everyday')).toBe(false);
       fireEvent.click(inMenu('Pendeln'));
       expect(sectionHeadings()).toEqual(['Untitled section']);
     });
 
-    it('leaves out a section with nothing on screen (München’s transport: DB lifts only, no data yet)', () => {
-      renderSections(muenchen, { ...defaultView(), choice: 'topics' });
-      expect(sectionHeadings()).not.toContain('Traffic & transport');
+    it('leaves out a section with nothing on screen (München’s getting around: DB lifts only, no data yet)', () => {
+      renderSections(muenchen, { ...defaultView(), choice: 'commute' });
+      expect(sectionHeadings()).toEqual(['Conditions', 'News']);
     });
   });
 
@@ -184,8 +207,15 @@ describe('TileSections', () => {
       expect(within(create).getByText('You can keep up to 3 setups. Delete one to make another.')).toBeTruthy();
     });
 
+    it('copies a preset that leaves tiles out with those tiles hidden', () => {
+      renderSections(berlin, { ...defaultView(), choice: 'commute' });
+      newSetup();
+      expect(screen.getAllByRole('textbox', { name: 'Section name' }).map((i) => (i as HTMLInputElement).value)).toEqual(['Getting around', 'Conditions', 'News']);
+      expect(within(screen.getByRole('region', { name: 'Hidden tiles' })).getByText('Briefing')).toBeTruthy();
+    });
+
     it('edits one of the visitor’s setups from the menu', () => {
-      renderSections(berlin, withSetups('functional', kiez));
+      renderSections(berlin, withSetups('everyday', kiez));
       openMenu();
       fireEvent.click(inMenu('Edit Mein Kiez'));
       expect(setupName().value).toBe('Mein Kiez');
@@ -202,7 +232,7 @@ describe('TileSections', () => {
       confirm.mockReturnValue(true);
       fireEvent.click(inMenu('Delete Mein Kiez'));
       expect(useTileSetup.getState().own.customSetups.map((s) => s.name)).toEqual(['Pendeln']);
-      expect(menuButton().textContent).toMatch(/^Customize · Functional/);
+      expect(menuButton().textContent).toMatch(/^Customize · Everyday/);
       // Focus stays in the open menu
       expect(menu().contains(document.activeElement)).toBe(true);
     });
@@ -250,20 +280,24 @@ describe('TileSections', () => {
       expect(screen.getAllByRole('textbox', { name: 'Section name' }).map((i) => (i as HTMLInputElement).value).at(-1)).toBe('New section');
     });
 
-    it('starts the setup afresh from Topics after a confirm, keeping its name', () => {
+    it('starts the setup’s tiles afresh from a preset after a confirm, keeping its name', () => {
       renderSections();
       newSetup();
       fireEvent.click(screen.getByRole('button', { name: 'Delete section News' }));
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
       fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Start from Topics' }));
-      expect(screen.getAllByRole('textbox', { name: 'Section name' }).map((i) => (i as HTMLInputElement).value)[1]).toBe('Weather');
+      const presets = screen.getByRole('group', { name: 'Start afresh from' });
+      expect(within(presets).getAllByRole('button')).toHaveLength(11);
+      fireEvent.click(within(presets).getByRole('button', { name: 'Commute' }));
+      expect(confirm).toHaveBeenCalledWith(`Arrange the tiles of “${isolate('My setup')}” as in Commute? Your changes to its tiles will be lost; its map stays as it is.`);
+      expect(screen.getAllByRole('textbox', { name: 'Section name' }).map((i) => (i as HTMLInputElement).value)).toEqual(['Getting around', 'Conditions', 'News']);
+      expect(within(screen.getByRole('region', { name: 'Hidden tiles' })).getByText('Briefing')).toBeTruthy();
       expect(setupName().value).toBe('My setup');
     });
   });
 
   describe('a shared setup', () => {
-    const own = withSetups('topics', kiez);
+    const own = withSetups('storm', kiez);
     const shared: SharedSetup = { name: 'Geteilt', sections: [{ id: 'c1', name: 'Draußen', tiles: ['weather', 'support'] }], hidden: [] };
     const notice = () => screen.getByRole('region', { name: "You're viewing a shared setup." });
 
@@ -273,7 +307,7 @@ describe('TileSections', () => {
       expect(sectionHeadings()).toEqual(['Draußen']);
       fireEvent.click(within(notice()).getByRole('button', { name: 'Back to mine' }));
       expect(screen.queryByRole('region', { name: "You're viewing a shared setup." })).toBeNull();
-      expect(menuButton().textContent).toMatch(/^Customize · Topics/);
+      expect(menuButton().textContent).toMatch(/^Customize · Storm & emergencies/);
       await waitFor(() => expect(document.activeElement).toBe(menuButton()));
     });
 
@@ -286,7 +320,7 @@ describe('TileSections', () => {
     });
 
     it('asks which setup it replaces once the visitor has three, or lets them cancel', () => {
-      const full = withSetups('topics', kiez, commute, { ...commute, id: 'm3', name: 'Drei' });
+      const full = withSetups('storm', kiez, commute, { ...commute, id: 'm3', name: 'Drei' });
       renderSections(berlin, full, shared);
       fireEvent.click(screen.getByRole('button', { name: 'Keep it' }));
       const choices = within(notice()).getByRole('group', { name: 'You already have 3 setups. Which one should this one replace?' });
@@ -334,7 +368,7 @@ describe('TileSections', () => {
       renderSections();
       share();
       const field = await screen.findByRole('textbox', { name: 'Copy this link' });
-      expect((field as HTMLInputElement).value).toContain('/berlin?setup=functional');
+      expect((field as HTMLInputElement).value).toContain('/berlin?setup=everyday');
     });
   });
 });

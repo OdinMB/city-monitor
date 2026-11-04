@@ -18,11 +18,17 @@ const tilesOf = (s: CustomSetup) => s.sections.map((x) => x.tiles);
 
 describe('customFrom', () => {
   it('copies the sections, so editing the copy leaves the original alone', () => {
-    const original = [{ id: 'news', tiles: ['briefing', 'news'] as TileId[] }];
-    const copy = customFrom(original);
+    const original = [{ id: 'news', tiles: ['briefing', 'news', 'support'] as TileId[] }];
+    const copy = customFrom(original, ['briefing', 'news', 'support']);
     copy.sections[0].tiles.push('weather');
-    expect(original[0].tiles).toEqual(['briefing', 'news']);
+    expect(original[0].tiles).toEqual(['briefing', 'news', 'support']);
     expect(copy.hidden).toEqual([]);
+  });
+
+  it('hides the city’s tiles the sections do not show, so they stay out when the setup is next fitted to the city', () => {
+    const copy = customFrom([{ id: 'news', tiles: ['news', 'support'] }], ['briefing', 'news', 'weather', 'support']);
+    expect(copy.hidden).toEqual(['briefing', 'weather']);
+    expect(tilesOf(fitToCity(copy, ['briefing', 'news', 'weather', 'support']))).toEqual([['news', 'support']]);
   });
 });
 

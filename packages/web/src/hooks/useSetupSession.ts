@@ -2,22 +2,25 @@ import { useEffect, useLayoutEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { CityFeature } from '@city-monitor/shared';
 import { useTileSetup } from './useTileSetup.js';
-import { defaultMapState, useCommandCenter } from './useCommandCenter.js';
+import { useCommandCenter } from './useCommandCenter.js';
 import { readPrefs, writePrefs } from '../lib/setup-cookie.js';
 import { hasSharedParams, readSharedParams, withoutSharedParams } from '../lib/setup-link.js';
 import { pickMapState, sameMapState } from '../lib/map-state.js';
 import { defaultView, previewView, type SetupView } from '../lib/setup-state.js';
+import { setupMap } from '../lib/setup-maps.js';
 import { fitToCity } from '../lib/custom-setup.js';
 import { cityTiles, type TileId } from '../lib/tile-setups.js';
 
 /**
- * Where the tile setup and the map state come from and go to: on opening a
- * city, a shared link's preview over the setup cookie over the defaults;
- * after each change the visitor makes, the cookie. Opening a city, and going
- * back from a shared setup, are not the visitor's changes, so they run
- * `quietly` and write nothing: a visit without a change sets no cookie. A
- * preview writes nothing either, map changes included, until the visitor
- * keeps it.
+ * Where the tile setup and the map come from and go to: on opening a city, a
+ * shared link's preview over the setup cookie over the defaults. The map
+ * belongs to the setup shown: choosing a setup shows its map, and each change
+ * to the map is kept as that setup's (useTileSetup's recordMap). After each
+ * change the visitor makes, the cookie. Opening a city, showing a setup's
+ * map, and going back from a shared setup are not the visitor's changes, so
+ * they run `quietly` and write nothing: a visit without a change sets no
+ * cookie. A preview writes nothing either, map changes included, until the
+ * visitor keeps it.
  */
 
 let quiet = 0;
@@ -39,10 +42,11 @@ function fitView(view: SetupView, available: readonly TileId[]): SetupView {
 
 /**
  * Opens a city's dashboard with the setup and map state from `search` (a
- * shared link) previewed, else the cookie's. The same city again without a
- * link keeps what is on screen.
+ * shared link) previewed, else the cookie's setup with its map. The same city
+ * again without a link keeps what is on screen.
  */
 export function openCity(cityId: string, features: readonly CityFeature[], search: string): void {
+  const city = { id: cityId, features };
   const available = cityTiles(features);
   const link = readSharedParams(search);
   const store = useTileSetup.getState();
@@ -52,45 +56,57 @@ export function openCity(cityId: string, features: readonly CityFeature[], searc
   const preview = link.setup || link.map ? fitView(previewView(own, link.setup), available) : null;
 
   quietly(() => {
-    if (preview) store.load(cityId, own, preview);
-    else if (!sameCity) store.load(cityId, own);
-    if (link.map) useCommandCenter.getState().applyMapState(cityId, link.map);
-    else useCommandCenter.getState().enterCity(cityId, saved?.map);
+    if (preview) store.load(city, own, preview);
+    else if (!sameCity) store.load(city, own);
+    const map = useCommandCenter.getState();
+    if (link.map) map.applyMapState(cityId, link.map);
+    else if (preview) map.applyMapState(cityId, setupMap(preview, preview.choice, city));
+    else map.enterCity(cityId, setupMap(own, own.choice, city));
   });
 }
 
-/** "Back to mine": the visitor's own setup and saved map state (or the city's defaults) in place of a shared link's. */
+/** "Back to mine": the visitor's own setup with its map in place of a shared link's. */
 export function restoreOwnSetup(cityId: string): void {
   quietly(() => {
     useTileSetup.getState().backToOwn();
-    useCommandCenter.getState().applyMapState(cityId, readPrefs()[cityId]?.map ?? {});
+    const { own, features } = useTileSetup.getState();
+    useCommandCenter.getState().applyMapState(cityId, setupMap(own, own.choice, { id: cityId, features }));
   });
 }
 
-/** Writes the city's own setup, and its map state unless that is the city's default, to the cookie. */
+/** Shows the map of the setup shown, unless the map shows it already. */
+function showSetupMap() {
+  const { cityId, features, view } = useTileSetup.getState();
+  const map = useCommandCenter.getState();
+  if (cityId === null || map.layersCityId !== cityId) return;
+  const target = setupMap(view, view.choice, { id: cityId, features });
+  if (!sameMapState(target, map)) quietly(() => map.applyMapState(cityId, target));
+}
+
+/** Writes the city's own setups, their maps included, to the cookie. */
 function persist(cityId: string) {
-  const map = pickMapState(useCommandCenter.getState());
   const prefs = readPrefs();
   const setup = useTileSetup.getState();
   prefs[cityId] = {
     view: setup.cityId === cityId ? setup.own : prefs[cityId]?.view ?? defaultView(),
-    ...(sameMapState(map, defaultMapState(cityId)) ? {} : { map }),
     touched: Math.floor(Date.now() / 1000),
   };
   writePrefs(prefs);
 }
 
-/** Saves each change the visitor makes to the setup or the map; returns the unsubscribe. */
+/** Shows each setup the visitor chooses with its map, and saves each change they make to a setup or a map; returns the unsubscribe. */
 export function startPersisting(): () => void {
   const offSetup = useTileSetup.subscribe((state, prev) => {
-    if (quiet > 0 || state.cityId === null || state.own === prev.own) return;
-    persist(state.cityId);
+    if (quiet > 0 || state.cityId === null) return;
+    if (!state.shared) showSetupMap();
+    if (state.own !== prev.own) persist(state.cityId);
   });
   const offMap = useCommandCenter.subscribe((state, prev) => {
     const cityId = state.layersCityId;
     if (quiet > 0 || cityId === null || cityId !== prev.layersCityId || sameMapState(state, prev)) return;
-    // A preview's map is saved with its setup once kept, or not at all.
-    if (!useTileSetup.getState().shared) persist(cityId);
+    // Kept as the map of the setup shown; a preview's only once the visitor keeps it.
+    const setup = useTileSetup.getState();
+    if (setup.cityId === cityId) setup.recordMap(pickMapState(state));
   });
   return () => {
     offSetup();

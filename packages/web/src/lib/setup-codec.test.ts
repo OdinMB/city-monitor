@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { SECTION_CODES, TILE_CODES, compactCustom, compactNamed, compactView, parseCustom, parseNamed, parseView } from './setup-codec.js';
+import {
+  PRESET_CODES, RETIRED_PRESET_CODES, RETIRED_SECTION_CODES, SECTION_CODES, TILE_CODES, compactCustom, compactNamed, compactView, parseCustom,
+  parseNamed, parseView,
+} from './setup-codec.js';
 import { defaultView, type NamedSetup, type SetupView } from './setup-state.js';
 import { MAX_SECTIONS, MAX_SECTION_NAME, type CustomSetup } from './custom-setup.js';
-import { STANDARD_SECTION_KEYS, TILE_IDS } from './tile-setups.js';
+import { PRESET_IDS, STANDARD_SECTION_KEYS, TILE_IDS } from './tile-setups.js';
+import type { DataLayer } from '../hooks/useCommandCenter.js';
 
 const custom: CustomSetup = {
   sections: [
@@ -23,10 +27,18 @@ describe('codes', () => {
     expect(new Set(codes).size).toBe(TILE_IDS.length);
   });
 
-  it('give every standard section a capital letter of its own, never a visitor’s section id', () => {
+  it('give every preset section a letter of its own, never a visitor’s section id nor a retired code', () => {
     const codes = STANDARD_SECTION_KEYS.map((key) => SECTION_CODES[key]);
-    expect(codes.every((c) => /^[A-Z]$/.test(c))).toBe(true);
+    expect(codes.every((c) => /^[A-Za-z]$/.test(c))).toBe(true);
     expect(new Set(codes).size).toBe(STANDARD_SECTION_KEYS.length);
+    expect(codes.filter((c) => RETIRED_SECTION_CODES.includes(c))).toEqual([]);
+  });
+
+  it('give every preset a letter of its own, never a retired code', () => {
+    const codes = PRESET_IDS.map((id) => PRESET_CODES[id]);
+    expect(codes.every((c) => /^[a-z]$/.test(c))).toBe(true);
+    expect(new Set(codes).size).toBe(PRESET_IDS.length);
+    expect(codes.filter((c) => RETIRED_PRESET_CODES.includes(c))).toEqual([]);
   });
 });
 
@@ -68,25 +80,39 @@ describe('a custom setup, compact', () => {
 describe('a setup view, compact', () => {
   const view: SetupView = {
     choice: 'm3',
-    customSetups: [kiez, commute],
-    collapsed: { functional: ['background'], m1: ['c1'] },
+    customSetups: [{ ...kiez, map: { crimeLayer: 'kiez' } }, commute],
+    collapsed: { everyday: ['background'], heatwave: ['coolingOff'], m1: ['c1'] },
+    presetMaps: { commute: { map: { activeLayers: new Set<DataLayer>(['parking']) }, touched: 42 } },
   };
 
-  it('round-trips the choice, the visitor’s setups and the collapsed sections of each setup', () => {
+  it('round-trips the choice, the visitor’s setups, the collapsed sections and the map of each setup', () => {
     expect(parseView(viaJson(compactView(view)))).toEqual(view);
-    const topics: SetupView = { ...defaultView(), choice: 'topics' };
-    expect(parseView(viaJson(compactView(topics)))).toEqual(topics);
+    const storm: SetupView = { ...defaultView(), choice: 'storm' };
+    expect(parseView(viaJson(compactView(storm)))).toEqual(storm);
     expect(compactView(defaultView())).toEqual({ s: 'f' });
-    expect(compactView(view).x).toEqual({ f: ['B'], m1: ['c1'] });
+    expect(compactView(view).x).toEqual({ f: ['B'], w: ['k'], m1: ['c1'] });
+    expect(compactView(view).p).toEqual({ c: { m: { a: 'p' }, u: 42 } });
+    expect((compactView(view).c as { m?: unknown }[]).map((s) => s.m)).toEqual([{ cr: 'z' }, undefined]);
   });
 
-  it('falls back to Functional, collapsing nothing, for anything it cannot read', () => {
+  it('falls back to Everyday, collapsing nothing, for anything it cannot read', () => {
     expect(parseView(undefined)).toEqual(defaultView());
-    expect(parseView({ s: 'q', x: { f: [1, 'news'], m7: ['c1'], zz: ['news'] } })).toEqual({ ...defaultView(), collapsed: { functional: ['news'] } });
+    expect(parseView({ s: 'q', x: { f: [1, 'news'], m7: ['c1'], zz: ['news'] } })).toEqual({ ...defaultView(), collapsed: { everyday: ['news'] } });
   });
 
-  it('shows Functional when the setup chosen cannot be read', () => {
-    expect(parseView({ s: 'm1', c: [{ i: 'm1', n: 'x', s: [] }] }).choice).toBe('functional');
+  it('shows Everyday when the setup chosen cannot be read, a retired one included', () => {
+    expect(parseView({ s: 'm1', c: [{ i: 'm1', n: 'x', s: [] }] }).choice).toBe('everyday');
+    expect(parseView({ s: 't' }).choice).toBe('everyday');
+  });
+
+  it('skips a map change it cannot read, or one that changes nothing', () => {
+    const parsed = parseView({
+      s: 'f',
+      c: [{ i: 'm1', n: 'x', s: [['c1', 's']], m: 'zz' }, { i: 'm2', n: 'y', s: [['c1', 's']], m: {} }],
+      p: { c: { m: { a: 'p' } }, h: { m: {}, u: 3 }, q: { m: { a: 'p' }, u: 3 }, s: 'x', w: { m: { a: 'p' }, u: -1 } },
+    });
+    expect(parsed.customSetups.map((s) => s.map)).toEqual([undefined, undefined]);
+    expect(parsed.presetMaps).toEqual({});
   });
 
   it('keeps no more than three setups, each id once, never the preview’s', () => {

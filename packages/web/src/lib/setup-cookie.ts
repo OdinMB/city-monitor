@@ -1,16 +1,16 @@
 import { decodeJson, encodeJson } from './compact-json.js';
 import { compactView, parseView } from './setup-codec.js';
-import type { SetupView } from './setup-state.js';
-import { compactMapState, parseMapState } from './map-state.js';
-import type { MapState } from '../hooks/useCommandCenter.js';
+import { withSetupMap, type SetupView } from './setup-state.js';
+import type { PresetId } from './tile-setups.js';
 
 /**
  * The one cookie the site sets: the visitor's own display preferences per
- * city (the setup shown, their own setups, collapsed sections, map state),
- * first party, never sent anywhere but back to the site. Versioned (`v: 2`);
- * a value of another version (v1 held one "My setup" per city), shape or size
- * is ignored. Written only after the visitor changes something
- * (hooks/useSetupSession.ts). The privacy page lists it.
+ * city (the setup shown, their own setups with their maps, collapsed
+ * sections, their changes to the presets' maps), first party, never sent
+ * anywhere but back to the site. Versioned (`v: 3`); a value of another
+ * version (v2 kept one map per city), shape or size is ignored. Written only
+ * after the visitor changes something (hooks/useSetupSession.ts). The privacy
+ * page lists it.
  *
  * Browsers that block site data throw on `document.cookie`, so each access
  * sits in its own try/catch, as with localStorage (frontend.md → Browser Storage).
@@ -22,13 +22,11 @@ export const SETUP_COOKIE = SETUP_COOKIE_NAME;
 /** Well under the 4 KB browsers allow per cookie, name and value together. */
 export const MAX_COOKIE_LENGTH = 3800;
 const MAX_AGE = 365 * 24 * 60 * 60;
-const VERSION = 2;
+const VERSION = 3;
 const CITY_KEY = /^[a-z][a-z0-9-]{0,31}$/;
 
 export interface CityPrefs {
   view: SetupView;
-  /** The map state, once the visitor changed the map or kept a shared one. */
-  map?: Partial<MapState>;
   /** When the visitor last changed something in this city (seconds); the size guard drops the oldest first. */
   touched: number;
 }
@@ -37,29 +35,46 @@ export type SetupPrefs = Record<string, CityPrefs>;
 
 function encodeAll(prefs: SetupPrefs): string {
   const cities: Record<string, unknown> = {};
-  for (const [city, entry] of Object.entries(prefs)) {
-    cities[city] = { ...compactView(entry.view), ...(entry.map ? { m: compactMapState(entry.map) } : {}), u: entry.touched };
-  }
+  for (const [city, entry] of Object.entries(prefs)) cities[city] = { ...compactView(entry.view), u: entry.touched };
   return encodeJson({ v: VERSION, c: cities });
 }
 
-/** The cookie value, cities touched longest ago dropped until it fits; null when no city is left. */
+const fitting = (value: string) => `${SETUP_COOKIE_NAME}=${value}`.length <= MAX_COOKIE_LENGTH;
+
+function withoutPresetMap(prefs: SetupPrefs, city: string, preset: PresetId): SetupPrefs {
+  return { ...prefs, [city]: { ...prefs[city], view: withSetupMap(prefs[city].view, preset, {}, 0) } };
+}
+
+/**
+ * The cookie value. What does not fit goes in this order: the changes to the
+ * presets' maps, made longest ago first, in any city; then the cities touched
+ * longest ago. A city's own setups always fit (setup-cookie.test.ts). Null
+ * when no city is left.
+ */
 export function encodePrefs(prefs: SetupPrefs): string | null {
-  const oldestFirst = Object.keys(prefs).sort((a, b) => prefs[a].touched - prefs[b].touched);
-  for (let dropped = 0; dropped < oldestFirst.length; dropped++) {
-    const kept = oldestFirst.slice(dropped);
-    const value = encodeAll(Object.fromEntries(kept.map((city) => [city, prefs[city]])));
-    if (`${SETUP_COOKIE_NAME}=${value}`.length <= MAX_COOKIE_LENGTH) return value;
+  if (Object.keys(prefs).length === 0) return null;
+  let kept = prefs;
+  const presetMaps = Object.entries(prefs)
+    .flatMap(([city, entry]) => Object.entries(entry.view.presetMaps).map(([preset, change]) => ({ city, preset: preset as PresetId, touched: change?.touched ?? 0 })))
+    .sort((a, b) => a.touched - b.touched);
+  for (let dropped = 0; dropped <= presetMaps.length; dropped++) {
+    if (dropped > 0) kept = withoutPresetMap(kept, presetMaps[dropped - 1].city, presetMaps[dropped - 1].preset);
+    const value = encodeAll(kept);
+    if (fitting(value)) return value;
+  }
+  const oldestFirst = Object.keys(kept).sort((a, b) => kept[a].touched - kept[b].touched);
+  for (let dropped = 1; dropped < oldestFirst.length; dropped++) {
+    const value = encodeAll(Object.fromEntries(oldestFirst.slice(dropped).map((city) => [city, kept[city]])));
+    if (fitting(value)) return value;
   }
   return null;
 }
 
 function parseCity(raw: unknown): CityPrefs | null {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null;
-  const { m, u } = raw as Record<string, unknown>;
+  const { u } = raw as Record<string, unknown>;
   if (typeof u !== 'number' || !Number.isFinite(u) || u < 0) return null;
-  const map = parseMapState(m);
-  return { view: parseView(raw), ...(map ? { map } : {}), touched: u };
+  return { view: parseView(raw), touched: u };
 }
 
 /** The preferences in a cookie value; none for a value this version did not write. */

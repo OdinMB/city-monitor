@@ -190,10 +190,10 @@ describe.each(['property', 'methods'] as const)('with browser storage blocked (%
     );
 
     fireEvent.click(await screen.findByRole('button', { name: /^Customize/ }, { timeout: 10_000 }));
-    fireEvent.click(screen.getByRole('button', { name: 'Topics' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Health' }));
 
-    expect(screen.getByRole('button', { name: /^Customize/ }).textContent).toMatch(/^Customize · Topics/);
-    expect(screen.getByRole('heading', { level: 2, name: 'Health & safety' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Customize/ }).textContent).toMatch(/^Customize · Health/);
+    expect(screen.getByRole('heading', { level: 2, name: 'Air and allergies' })).toBeTruthy();
     expect(screen.queryByText(/something went wrong/i)).toBeNull();
   }, 30_000);
 

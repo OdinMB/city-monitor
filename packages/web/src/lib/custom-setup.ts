@@ -25,17 +25,22 @@ export interface CustomSetup {
 /**
  * Caps that keep a city's MAX_CUSTOM_SETUPS setups inside the cookie, each as
  * large as it can get (setup-cookie.test.ts). A name holds the longest
- * standard section name in any language ("Gesundheit & Sicherheit"), and
- * there is room for one section more than Topics has.
+ * preset section name in any language, and a setup can have more sections
+ * than any preset has.
  */
 export const MAX_SECTION_NAME = 24;
 export const MAX_SECTIONS = 8;
 
-/** A copy of a setup's sections as the visitor's own, nothing hidden. */
-export function customFrom(sections: readonly ResolvedSection[]): CustomSetup {
+/**
+ * A copy of a setup's sections as the visitor's own, with the city's other
+ * tiles (`available`) hidden, so a copy of a preset that leaves tiles out
+ * keeps them out.
+ */
+export function customFrom(sections: readonly ResolvedSection[], available: readonly TileId[]): CustomSetup {
+  const placed = new Set(sections.flatMap((s) => s.tiles));
   return {
     sections: sections.map((s) => ({ id: s.id, ...(s.name !== undefined ? { name: s.name } : {}), tiles: [...s.tiles] })),
-    hidden: [],
+    hidden: available.filter((t) => t !== SUPPORT_TILE && !placed.has(t)),
   };
 }
 

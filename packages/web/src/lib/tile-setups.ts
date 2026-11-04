@@ -1,11 +1,11 @@
 import type { CityFeature } from '@city-monitor/shared';
 
 /**
- * The dashboard's tiles and the two standard setups that arrange them into
- * sections: which tiles a city has (from its features) and where Functional
- * and Topics put each of them. How a tile renders is in
- * components/layout/DashboardTile.tsx; the visitor's own setups in
- * setup-state.ts and custom-setup.ts.
+ * The dashboard's tiles and the presets that arrange them into sections:
+ * which tiles a city has (from its features) and where each preset puts
+ * them. How a tile renders is in components/layout/DashboardTile.tsx; the
+ * presets' maps in setup-maps.ts; the visitor's own setups in setup-state.ts
+ * and custom-setup.ts.
  */
 
 type Has = (feature: CityFeature) => boolean;
@@ -57,16 +57,37 @@ export function cityTiles(features: readonly CityFeature[]): TileId[] {
   return TILE_IDS.filter((id) => TILE_GATES[id](has));
 }
 
-/** The two setups every city has; the visitor's own are in setup-state.ts. */
-export type StandardSetup = 'functional' | 'topics';
+/**
+ * The fixed setups every city offers, each for a situation: which tiles it
+ * shows and in which sections (here), and which map layers (setup-maps.ts).
+ * The visitor's own setups are in setup-state.ts.
+ */
+export type PresetId =
+  | 'everyday' | 'commute' | 'dayOut' | 'health' | 'storm'
+  | 'cityHall' | 'movingHere' | 'visitors' | 'newsroom' | 'cycling' | 'heatwave';
 
-/** The standard sections; each has its name under `setup.section.<key>`. */
+/** The presets as the menu groups them: for every day, then for a special interest. */
+export const PRESET_GROUPS: readonly { key: 'daily' | 'special'; presets: readonly PresetId[] }[] = [
+  { key: 'daily', presets: ['everyday', 'commute', 'dayOut', 'health', 'storm'] },
+  { key: 'special', presets: ['cityHall', 'movingHere', 'visitors', 'newsroom', 'cycling', 'heatwave'] },
+];
+
+export const PRESET_IDS: readonly PresetId[] = PRESET_GROUPS.flatMap((g) => g.presets);
+
+export function isPreset(value: string): value is PresetId {
+  return (PRESET_IDS as readonly string[]).includes(value);
+}
+
+/** The presets' sections; each has its name under `setup.section.<key>`. */
 export type StandardSectionKey =
   | 'news' | 'environment' | 'disturbances' | 'crises' | 'background'
-  | 'weather' | 'traffic' | 'health' | 'cityHall' | 'social';
+  | 'gettingAround' | 'conditions' | 'today' | 'thingsToDo' | 'water' | 'airAllergies' | 'infections' | 'help' | 'warnings'
+  | 'services' | 'politics' | 'people' | 'cityFigures' | 'whatsOn' | 'inBrief' | 'figures' | 'heat' | 'coolingOff' | 'drought';
 
 export const STANDARD_SECTION_KEYS: readonly StandardSectionKey[] = [
-  'news', 'environment', 'disturbances', 'crises', 'background', 'weather', 'traffic', 'health', 'cityHall', 'social',
+  'news', 'environment', 'disturbances', 'crises', 'background',
+  'gettingAround', 'conditions', 'today', 'thingsToDo', 'water', 'airAllergies', 'infections', 'help', 'warnings',
+  'services', 'politics', 'people', 'cityFigures', 'whatsOn', 'inBrief', 'figures', 'heat', 'coolingOff', 'drought',
 ];
 
 export function isStandardSectionKey(value: string): value is StandardSectionKey {
@@ -79,12 +100,14 @@ interface SectionDef {
 }
 
 /**
- * Functional groups by what a tile does for the visitor (what hits me now,
- * what is disrupted, what to do in a crisis, background figures); Topics by
- * subject. Each places every tile once (tile-setups.test.ts).
+ * Everyday groups every tile by what it does for the visitor (what hits me
+ * now, what is disrupted, what to do in a crisis, background figures) and
+ * places each once (tile-setups.test.ts); it is what a city opens with. The
+ * others show only the tiles their situation needs, the support tile last;
+ * a tile a preset leaves out is not shown in it.
  */
-export const STANDARD_SETUPS: Record<StandardSetup, readonly SectionDef[]> = {
-  functional: [
+export const PRESET_SECTIONS: Record<PresetId, readonly SectionDef[]> = {
+  everyday: [
     { key: 'news', tiles: ['briefing', 'news', 'events'] },
     { key: 'environment', tiles: ['weather', 'airQuality', 'pollen', 'wastewater', 'bathing'] },
     { key: 'disturbances', tiles: ['transit', 'liftOutages', 'appointments'] },
@@ -94,27 +117,66 @@ export const STANDARD_SETUPS: Record<StandardSetup, readonly SectionDef[]> = {
       tiles: ['councilMeetings', 'political', 'laborMarket', 'population', 'budget', 'electricity', 'soilMoisture', 'feuerwehr', 'waterLevels'],
     },
   ],
-  topics: [
-    { key: 'news', tiles: ['briefing', 'news', 'events'] },
-    { key: 'weather', tiles: ['weather', 'pollen'] },
-    { key: 'environment', tiles: ['airQuality', 'waterLevels', 'floodStatus', 'bathing', 'electricity', 'soilMoisture'] },
-    { key: 'traffic', tiles: ['transit', 'liftOutages'] },
-    { key: 'health', tiles: ['crisis', 'wastewater', 'feuerwehr', 'support'] },
-    { key: 'cityHall', tiles: ['appointments', 'councilMeetings', 'political', 'budget'] },
-    { key: 'social', tiles: ['laborMarket', 'population'] },
+  commute: [
+    { key: 'gettingAround', tiles: ['transit', 'liftOutages'] },
+    { key: 'conditions', tiles: ['weather', 'airQuality'] },
+    { key: 'news', tiles: ['news', 'support'] },
+  ],
+  dayOut: [
+    { key: 'today', tiles: ['weather', 'airQuality', 'pollen'] },
+    { key: 'thingsToDo', tiles: ['events'] },
+    { key: 'water', tiles: ['bathing', 'waterLevels', 'support'] },
+  ],
+  health: [
+    { key: 'airAllergies', tiles: ['airQuality', 'pollen', 'weather'] },
+    { key: 'infections', tiles: ['wastewater'] },
+    { key: 'help', tiles: ['crisis', 'support'] },
+  ],
+  storm: [
+    { key: 'warnings', tiles: ['weather', 'floodStatus', 'waterLevels'] },
+    { key: 'help', tiles: ['crisis'] },
+    { key: 'news', tiles: ['news', 'support'] },
+  ],
+  cityHall: [
+    { key: 'services', tiles: ['appointments'] },
+    { key: 'politics', tiles: ['councilMeetings', 'political', 'budget'] },
+    { key: 'news', tiles: ['briefing', 'support'] },
+  ],
+  movingHere: [
+    { key: 'people', tiles: ['population', 'laborMarket'] },
+    { key: 'cityFigures', tiles: ['budget', 'electricity', 'soilMoisture', 'feuerwehr', 'support'] },
+  ],
+  visitors: [
+    { key: 'today', tiles: ['weather', 'airQuality'] },
+    { key: 'gettingAround', tiles: ['transit', 'liftOutages'] },
+    { key: 'whatsOn', tiles: ['events'] },
+    { key: 'inBrief', tiles: ['briefing', 'support'] },
+  ],
+  newsroom: [
+    { key: 'news', tiles: ['briefing', 'news'] },
+    { key: 'politics', tiles: ['councilMeetings', 'political', 'budget'] },
+    { key: 'figures', tiles: ['feuerwehr', 'laborMarket', 'population', 'support'] },
+  ],
+  cycling: [
+    { key: 'conditions', tiles: ['weather', 'airQuality', 'pollen', 'support'] },
+  ],
+  heatwave: [
+    { key: 'heat', tiles: ['weather', 'airQuality'] },
+    { key: 'coolingOff', tiles: ['bathing', 'waterLevels'] },
+    { key: 'drought', tiles: ['soilMoisture', 'support'] },
   ],
 };
 
-/** A tile a city places elsewhere than the standard setup does: into `section`, before `before` or at its end. */
+/** A tile a city places elsewhere than the preset does: into `section`, before `before` or at its end. */
 interface Placement {
   tile: TileId;
   section: StandardSectionKey;
   before?: TileId;
 }
 
-const CITY_PLACEMENTS: Partial<Record<string, Partial<Record<StandardSetup, readonly Placement[]>>>> = {
+const CITY_PLACEMENTS: Partial<Record<string, Partial<Record<PresetId, readonly Placement[]>>>> = {
   // Hamburg's gauges are its storm-surge warning: a crisis tile there, ahead of the numbers to call.
-  hamburg: { functional: [{ tile: 'waterLevels', section: 'crises', before: 'crisis' }] },
+  hamburg: { everyday: [{ tile: 'waterLevels', section: 'crises', before: 'crisis' }] },
 };
 
 /** A section as the dashboard shows it. `name` is a visitor's own; without one the section shows its standard name. */
@@ -134,11 +196,21 @@ function place(sections: SectionDef[], { tile, section, before }: Placement): Se
   });
 }
 
-/** A standard setup in a city: its placements applied, the tiles it lacks left out, and no section left empty. */
-export function standardSections(setup: StandardSetup, cityId: string, available: readonly TileId[]): ResolvedSection[] {
-  const placements = CITY_PLACEMENTS[cityId]?.[setup] ?? [];
-  const sections = placements.reduce(place, [...STANDARD_SETUPS[setup]]);
-  return sections
-    .map((s) => ({ id: s.key, tiles: s.tiles.filter((t) => available.includes(t)) }))
+/**
+ * A preset in a city: its placements applied, the tiles it lacks left out and
+ * no section left empty. The support tile, left alone in a section, joins the
+ * section before, so no section shows it alone.
+ */
+export function presetSections(preset: PresetId, cityId: string, available: readonly TileId[]): ResolvedSection[] {
+  const placements = CITY_PLACEMENTS[cityId]?.[preset] ?? [];
+  const sections = placements.reduce(place, [...PRESET_SECTIONS[preset]])
+    .map((s) => ({ id: s.key as string, tiles: s.tiles.filter((t) => available.includes(t)) }))
     .filter((s) => s.tiles.length > 0);
+  return sections.flatMap((s, i) => {
+    const alone = s.tiles.length === 1 && s.tiles[0] === SUPPORT_TILE;
+    if (alone && i > 0) return [];
+    const next = sections[i + 1];
+    const takesSupport = next && next.tiles.length === 1 && next.tiles[0] === SUPPORT_TILE;
+    return [takesSupport ? { ...s, tiles: [...s.tiles, SUPPORT_TILE] } : s];
+  });
 }

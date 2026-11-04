@@ -1,28 +1,32 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useCityConfig } from '../../hooks/useCityConfig.js';
+import { useCommandCenter } from '../../hooks/useCommandCenter.js';
 import { useTileSetup } from '../../hooks/useTileSetup.js';
 import { isolate } from '../../lib/bidi.js';
+import { pickMapState } from '../../lib/map-state.js';
 import { setupLabel } from '../../lib/setup-labels.js';
+import { offeredPresets } from '../../lib/setup-maps.js';
 import {
-  MAX_CUSTOM_SETUPS, canAddSetup, isStandardSetup, nextSetupName, shownCustom, type NamedSetup, type SetupId, type SetupView,
+  MAX_CUSTOM_SETUPS, canAddSetup, nextSetupName, shownCustom, type NamedSetup, type SetupId, type SetupView,
 } from '../../lib/setup-state.js';
-import type { ResolvedSection, StandardSetup } from '../../lib/tile-setups.js';
+import { PRESET_GROUPS, isPreset, type PresetId, type ResolvedSection } from '../../lib/tile-setups.js';
 import { SourceText } from '../SourceText.js';
 import { Popover } from './Popover.js';
 import { BAR_BUTTON } from './SetupControls.js';
 import { ShareSetupButton } from './ShareSetupButton.js';
 
 /**
- * The one way into the tile setups: a button naming the setup shown
- * ("Customize · Functional") that opens a menu with the two standard setups
- * and what each is for, the visitor's own setups (show, edit, delete), a new
- * setup, sharing the view, and a line on where all this is kept. The menu is
- * a non-modal dialog (`Popover`): focus moves into it, and Escape closes it
- * and returns focus to the button. A full-width panel on phones.
+ * The one way into the setups: a button naming the setup shown
+ * ("Customize · Everyday") that opens a menu with the presets the city
+ * offers, in two groups, each with what it is for (choosing one sets the
+ * tiles and the map; one whose map the visitor changed can have it reset),
+ * the visitor's own setups (show, edit, delete), a new setup, sharing the
+ * view, and a line on where all this is kept. The menu is a non-modal dialog
+ * (`Popover`): focus moves into it, and Escape closes it and returns focus to
+ * the button. A full-width panel on phones.
  */
-
-const STANDARD: readonly StandardSetup[] = ['functional', 'topics'];
 
 const ITEM =
   'w-full min-h-8 rounded px-2 py-1.5 text-start text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed';
@@ -43,33 +47,65 @@ function OwnName({ setup }: { setup: Pick<NamedSetup, 'name'> }) {
   return setup.name.trim() ? <SourceText>{setup.name}</SourceText> : <>{t('setup.custom')}</>;
 }
 
-function StandardItem({ id, current, onPick }: { id: StandardSetup; current: boolean; onPick: (id: SetupId) => void }) {
+interface PresetItemProps {
+  id: PresetId;
+  current: boolean;
+  /** The visitor changed its map: it can be reset. */
+  mapChanged: boolean;
+  onPick: (id: SetupId) => void;
+}
+
+/** A preset, what it is for, and once the visitor changed its map, a button that resets it (focus then stays on the preset). */
+function PresetItem({ id, current, mapChanged, onPick }: PresetItemProps) {
   const { t } = useTranslation();
+  const resetPresetMap = useTileSetup((s) => s.resetPresetMap);
+  const button = useRef<HTMLButtonElement>(null);
   const nameId = useId();
   const descriptionId = useId();
+  const resetMap = () => {
+    resetPresetMap(id);
+    button.current?.focus();
+  };
   return (
-    <li>
-      <button type="button" className={ITEM} aria-current={current ? 'true' : undefined} aria-labelledby={nameId} aria-describedby={descriptionId} onClick={() => onPick(id)}>
+    <li className="flex items-start gap-1">
+      <button
+        ref={button}
+        type="button"
+        className={`${ITEM} min-w-0 flex-1`}
+        aria-current={current ? 'true' : undefined}
+        aria-labelledby={nameId}
+        aria-describedby={descriptionId}
+        onClick={() => onPick(id)}
+      >
         <span className="flex items-center gap-1.5 font-medium">
-          <span id={nameId}>{t(`setup.${id}`)}</span>
+          <span id={nameId}>{setupLabel(t, id)}</span>
           {current && <Check />}
         </span>
         <span id={descriptionId} className="block text-xs text-muted">{t(`setup.description.${id}`)}</span>
       </button>
+      {mapChanged && (
+        <button type="button" className={`${ROW_BUTTON} mt-1.5`} aria-label={t('setup.resetMapOf', { name: setupLabel(t, id) })} onClick={resetMap}>
+          {t('setup.resetMap')}
+        </button>
+      )}
     </li>
   );
 }
 
 function MenuContent({ view, shown, close }: { view: SetupView; shown: readonly ResolvedSection[]; close: () => void }) {
   const { t } = useTranslation();
+  const city = useCityConfig();
   const choose = useTileSetup((s) => s.choose);
   const startEditing = useTileSetup((s) => s.startEditing);
   const deleteSetup = useTileSetup((s) => s.deleteSetup);
   const newSetup = useTileSetup((s) => s.newSetup);
-  const firstItem = useRef<HTMLUListElement>(null);
+  const firstItem = useRef<HTMLDivElement>(null);
+  const groupId = useId();
   const yoursId = useId();
   const newId = useId();
   const canAdd = canAddSetup(view);
+  const offered = useMemo(() => offeredPresets(city), [city]);
+  const groups = PRESET_GROUPS.map((group) => ({ ...group, presets: group.presets.filter((p) => offered.includes(p)) })).filter((g) => g.presets.length > 0);
 
   const pick = (id: SetupId) => {
     choose(id);
@@ -86,17 +122,24 @@ function MenuContent({ view, shown, close }: { view: SetupView; shown: readonly 
     firstItem.current?.querySelector('button')?.focus();
   };
   const create = () => {
-    newSetup(shown, nextSetupName(view, t('setup.custom')));
+    newSetup(shown, nextSetupName(view, t('setup.custom')), pickMapState(useCommandCenter.getState()));
     close();
   };
 
   return (
     <div className="space-y-2 p-2 text-sm">
-      <ul ref={firstItem} className="space-y-0.5">
-        {STANDARD.map((id) => (
-          <StandardItem key={id} id={id} current={view.choice === id} onPick={pick} />
+      <div ref={firstItem} className="space-y-2">
+        {groups.map((group, index) => (
+          <div key={group.key} className={index > 0 ? 'border-t border-border-subtle pt-2' : undefined}>
+            <p id={`${groupId}-${group.key}`} className="px-2 pb-1 text-xs font-semibold text-muted">{t(`setup.group.${group.key}`)}</p>
+            <ul aria-labelledby={`${groupId}-${group.key}`} className="space-y-0.5">
+              {group.presets.map((id) => (
+                <PresetItem key={id} id={id} current={view.choice === id} mapChanged={view.presetMaps[id] !== undefined} onPick={pick} />
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
       {view.customSetups.length > 0 && (
         <div className="border-t border-border-subtle pt-2">
           <p id={yoursId} className="px-2 pb-1 text-xs font-semibold text-muted">{t('setup.yourSetups')}</p>
@@ -154,7 +197,7 @@ export function SetupMenu({ view, shown, triggerId }: { view: SetupView; shown: 
           {t('setup.customize')}{' '}
           <span aria-hidden="true">·</span>{' '}
           <span className="min-w-0 truncate font-semibold">
-            {custom ? <OwnName setup={custom} /> : setupLabel(t, isStandardSetup(view.choice) ? view.choice : 'functional')}
+            {custom ? <OwnName setup={custom} /> : setupLabel(t, isPreset(view.choice) ? view.choice : 'everyday')}
           </span>
           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true">
             <polyline points="6 9 12 15 18 9" />

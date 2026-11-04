@@ -2,13 +2,14 @@ import { decodeJson, encodeJson } from './compact-json.js';
 import { compactNamed, parseNamed } from './setup-codec.js';
 import { compactMapState, parseMapState } from './map-state.js';
 import type { SharedSetup } from './setup-state.js';
+import { isPreset } from './tile-setups.js';
 import type { MapState } from '../hooks/useCommandCenter.js';
 
 /**
  * A link to a city's dashboard with the setup shown and the map state in it:
- * `setup=functional|topics`, or `setup=c.<compact setup, its name included>`,
- * and `map=<compact map state>`. The dashboard previews them and then takes
- * them out of the address (hooks/useSetupSession.ts).
+ * `setup=<preset id>`, or `setup=c.<compact setup, its name included>`, and
+ * `map=<compact map state>`. The dashboard previews them and then takes them
+ * out of the address (hooks/useSetupSession.ts).
  */
 
 const SETUP = 'setup';
@@ -25,7 +26,7 @@ function setupParam(setup: SharedSetup): string {
 }
 
 function parseSetupParam(value: string | null): SharedSetup | null {
-  if (value === 'functional' || value === 'topics') return value;
+  if (value !== null && isPreset(value)) return value;
   if (!value?.startsWith(CUSTOM_PREFIX)) return null;
   return parseNamed(decodeJson(value.slice(CUSTOM_PREFIX.length)));
 }

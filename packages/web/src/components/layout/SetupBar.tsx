@@ -1,11 +1,12 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTileSetup } from '../../hooks/useTileSetup.js';
 import { isolate } from '../../lib/bidi.js';
 import { setupLabel } from '../../lib/setup-labels.js';
+import { offeredPresets } from '../../lib/setup-maps.js';
 import { MAX_SETUP_NAME, type NamedSetup, type SetupView } from '../../lib/setup-state.js';
-import { cityTiles, standardSections, type ResolvedSection, type StandardSetup } from '../../lib/tile-setups.js';
+import { cityTiles, presetSections, type PresetId, type ResolvedSection } from '../../lib/tile-setups.js';
 import { BAR_BUTTON } from './SetupControls.js';
 import { SetupMenu } from './SetupMenu.js';
 import { SharedSetupNotice } from './SharedSetupNotice.js';
@@ -16,15 +17,17 @@ import { SharedSetupNotice } from './SharedSetupNotice.js';
  * that offers to keep it takes the bar's place.
  */
 
-/** Starts the setup being edited afresh from a standard setup, after a confirm. */
+/** Starts the tiles of the setup being edited afresh from a preset the city offers, after a confirm; its map stays. */
 function ResetMenu({ setup }: { setup: NamedSetup }) {
   const { t } = useTranslation();
-  const { id: cityId, features } = useCityConfig();
+  const city = useCityConfig();
   const resetCustom = useTileSetup((s) => s.resetCustom);
   const [open, setOpen] = useState(false);
-  const startFrom = (standard: StandardSetup) => {
-    if (!window.confirm(t('setup.resetConfirm', { name: isolate(setupLabel(t, setup)), setup: t(`setup.${standard}`) }))) return;
-    resetCustom(standardSections(standard, cityId, cityTiles(features)));
+  const labelId = useId();
+  const presets = useMemo(() => offeredPresets(city), [city]);
+  const startFrom = (preset: PresetId) => {
+    if (!window.confirm(t('setup.resetConfirm', { name: isolate(setupLabel(t, setup)), setup: setupLabel(t, preset) }))) return;
+    resetCustom(presetSections(preset, city.id, cityTiles(city.features)));
     setOpen(false);
   };
   return (
@@ -33,10 +36,12 @@ function ResetMenu({ setup }: { setup: NamedSetup }) {
         {t('setup.reset')}
       </button>
       {open && (
-        <>
-          <button type="button" className={BAR_BUTTON} onClick={() => startFrom('functional')}>{t('setup.startFromFunctional')}</button>
-          <button type="button" className={BAR_BUTTON} onClick={() => startFrom('topics')}>{t('setup.startFromTopics')}</button>
-        </>
+        <div role="group" aria-labelledby={labelId} className="flex basis-full flex-wrap items-center gap-2">
+          <span id={labelId} className="text-sm text-muted">{t('setup.startFrom')}</span>
+          {presets.map((preset) => (
+            <button key={preset} type="button" className={BAR_BUTTON} onClick={() => startFrom(preset)}>{setupLabel(t, preset)}</button>
+          ))}
+        </div>
       )}
     </div>
   );
