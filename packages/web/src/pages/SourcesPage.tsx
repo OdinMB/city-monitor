@@ -537,6 +537,7 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
     category: 'News',
     sources: [
       { name: 'BR24 Oberbayern', url: 'https://www.br.de/nachrichten/themen/oberbayern,UZlJdUE', description: 'Regional public broadcaster for Bavaria, Oberbayern edition.' },
+      { name: 'Rathaus Umschau', url: 'https://ru.muenchen.de/', description: 'Daily news service of the City of München — press releases, announcements and answers to council questions. Headlines and short teasers, each linked to the release, used with the permission of the Presse- und Informationsamt der Landeshauptstadt München.' },
       { name: 'Feuerwehr München (Presseportal)', url: 'https://www.presseportal.de/blaulicht/nr/131419', description: 'München fire brigade press releases.' },
     ],
   },

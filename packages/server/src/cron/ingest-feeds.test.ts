@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createCache } from '../lib/cache.js';
 import { createFeedIngestion, type NewsDigest } from './ingest-feeds.js';
 import { hashString } from '../lib/hash.js';
 import { berlin } from '../config/cities/berlin.js';
+import { muenchen } from '../config/cities/muenchen.js';
 
 vi.mock('../lib/openai.js', () => ({
   filterAndGeolocateNews: vi.fn().mockResolvedValue(null),
@@ -374,6 +375,58 @@ describe('ingest-feeds — feeds whose text is not stored', () => {
     const { stored } = await ingestRbb24AndTagesspiegel();
 
     expect(stored.find((item) => item.sourceName === 'Tagesspiegel')?.description).toBe('Teaser vom Tagesspiegel');
+  });
+});
+
+describe('ingest-feeds — feeds cut to a teaser', () => {
+  const rathausUmschau = muenchen.feeds.find((f) => f.name === 'Rathaus Umschau')!;
+  const fullText = `<p>Das Bauzentrum München lädt am Montag zum <em><a href="https://t1p.de/x">Info@Lunch</a></em> ein.<br />\n${'Weiterer Text der Meldung. '.repeat(40)}</p>`;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv('ACTIVE_CITIES', 'muenchen');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('classifies, caches and stores only a plain-text teaser of a Rathaus Umschau item', async () => {
+    const { filterAndGeolocateNews } = await import('../lib/openai.js');
+    const { saveNewsItems } = await import('../db/writes.js');
+    const { loadAllNewsAssessments } = await import('../db/reads.js');
+
+    vi.mocked(loadAllNewsAssessments).mockResolvedValue(null);
+    vi.mocked(filterAndGeolocateNews).mockImplementation(async (_cityId, _cityName, items) =>
+      items.map((_item, index) => ({ index, relevant_to_city: true, category: 'local', importance: 0.6 })),
+    );
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      if (input !== rathausUmschau.url) return new Response('', { status: 404 });
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>muenchen.de Rathaus Umschau</title>
+  <item>
+    <title>Meldungen: Bauzentrum lädt zum Info@Lunch</title>
+    <link>https://ru.muenchen.de/2026/212/Bauzentrum-126874</link>
+    <pubDate>Wed, 04 Nov 2026 10:46:59 +0000</pubDate>
+    <description><![CDATA[${fullText}]]></description>
+  </item>
+</channel></rss>`, { status: 200 });
+    });
+
+    const cache = createCache();
+    const mockDb = {} as Parameters<typeof createFeedIngestion>[1];
+    await createFeedIngestion(cache, mockDb)();
+
+    const classified = vi.mocked(filterAndGeolocateNews).mock.calls[0]![2][0]!.description!;
+    const stored = vi.mocked(saveNewsItems).mock.calls[0]![2][0]!.description!;
+    const cached = cache.get<NewsDigest>('muenchen:news:digest')!.items[0]!.description!;
+
+    for (const description of [classified, stored, cached]) {
+      expect(description.startsWith('Das Bauzentrum München lädt am Montag zum Info@Lunch ein. Weiterer Text')).toBe(true);
+      expect(description).not.toContain('<');
+      expect(description.length).toBeLessThanOrEqual(rathausUmschau.teaserChars!);
+      expect(description.endsWith('…')).toBe(true);
+    }
   });
 });
 
