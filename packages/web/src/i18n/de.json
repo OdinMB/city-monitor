@@ -1115,8 +1115,7 @@
     "ads": "Werbung",
     "tracking": "Tracking",
     "donate": "Spende 5 $",
-    "cta": "damit das so bleibt",
-    "footer": "Immer eine gute Idee"
+    "cta": "damit das so bleibt"
   },
   "footer": {
     "sourceCode": "Quellcode",
@@ -1146,7 +1145,7 @@
   "setup": {
     "label": "Kacheln und Karte",
     "custom": "Meine Ansicht",
-    "customize": "Anpassen",
+    "openMenu": "Kacheln und Karte anpassen · {{name}}",
     "preset": {
       "everyday": "Alltag",
       "commute": "Pendeln",
@@ -1196,6 +1195,13 @@
     "startFrom": "Neu beginnen aus",
     "resetConfirm": "Die Kacheln von „{{name}}“ wie in „{{setup}}“ anordnen? Ihre Änderungen an den Kacheln gehen verloren; die Karte bleibt, wie sie ist.",
     "editing": "Anpassen: Abschnitte und Kacheln umbenennen, verschieben, hinzufügen oder ausblenden.",
+    "mapSaved": "Kartenebenen, die Sie ein- oder ausschalten, werden mit dieser Ansicht gespeichert.",
+    "map": {
+      "label": "Karte",
+      "layers": "Ebenen auf der Karte",
+      "none": "Keine Kartenebene eingeschaltet.",
+      "change": "Kartenebenen ändern"
+    },
     "share": "Diese Ansicht teilen",
     "shareTitle": "City Monitor {{city}}",
     "copied": "Link kopiert",
@@ -1233,7 +1239,7 @@
     "moveSectionDown": "Abschnitt {{name}} nach unten",
     "deleteSection": "Abschnitt {{name}} löschen",
     "addSection": "Abschnitt hinzufügen",
-    "emptySection": "Noch keine Kacheln: Verschieben Sie eine hierher oder fügen Sie eine ausgeblendete hinzu.",
+    "emptySection": "Noch keine Kacheln: Fügen Sie eine mit der Schaltfläche + hinzu.",
     "moveTileUp": "{{title}} nach oben",
     "moveTileDown": "{{title}} nach unten",
     "moveTileTo": "{{title}} in Abschnitt verschieben",
@@ -1241,6 +1247,11 @@
     "hiddenTiles": "Ausgeblendete Kacheln",
     "noHiddenTiles": "Keine ausgeblendeten Kacheln.",
     "addTileTo": "{{title}} zu Abschnitt hinzufügen",
+    "addTile": {
+      "label": "Kachel zu {{name}} hinzufügen",
+      "fromOther": "Aus anderen Abschnitten",
+      "none": "Alle Kacheln sind schon in diesem Abschnitt."
+    },
     "chooseSection": "Abschnitt …",
     "shared": {
       "notice": "Sie sehen eine geteilte Ansicht.",

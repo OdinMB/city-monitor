@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  PRESET_CODES, RETIRED_PRESET_CODES, RETIRED_SECTION_CODES, SECTION_CODES, TILE_CODES, compactCustom, compactNamed, compactView, parseCustom,
+  PRESET_CODES, RETIRED_PRESET_CODES, RETIRED_SECTION_CODES, RETIRED_TILE_CODES, SECTION_CODES, TILE_CODES, compactCustom, compactNamed, compactView, parseCustom,
   parseNamed, parseView,
 } from './setup-codec.js';
 import { defaultView, type NamedSetup, type SetupView } from './setup-state.js';
@@ -11,20 +11,23 @@ import type { DataLayer } from '../hooks/useCommandCenter.js';
 const custom: CustomSetup = {
   sections: [
     { id: 'news', tiles: ['briefing', 'news'] },
-    { id: 'c1', name: 'Mein Kiez – حيّي', tiles: ['weather', 'support'] },
+    { id: 'c1', name: 'Mein Kiez – حيّي', tiles: ['weather', 'crisis'] },
   ],
   hidden: ['budget', 'feuerwehr'],
 };
 const kiez: NamedSetup = { id: 'm1', name: 'Kiez', ...custom };
-const commute: NamedSetup = { id: 'm3', name: '', sections: [{ id: 'c1', tiles: ['transit', 'support'] }], hidden: [] };
+const commute: NamedSetup = { id: 'm3', name: '', sections: [{ id: 'c1', tiles: ['transit', 'crisis'] }], hidden: [] };
 
 const viaJson = (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown;
 
 describe('codes', () => {
-  it('give every tile one character of its own', () => {
+  it('give every tile one character of its own, never a retired code', () => {
     const codes = TILE_IDS.map((id) => TILE_CODES[id]);
     expect(codes.every((c) => /^[A-Za-z0-9]$/.test(c))).toBe(true);
     expect(new Set(codes).size).toBe(TILE_IDS.length);
+    expect(codes.filter((c) => RETIRED_TILE_CODES.includes(c))).toEqual([]);
+    // The support tile's, now the strip every setup shows
+    expect(RETIRED_TILE_CODES).toContain('s');
   });
 
   it('give every preset section a letter of its own, never a visitor’s section id nor a retired code', () => {
@@ -45,18 +48,25 @@ describe('codes', () => {
 describe('a custom setup, compact', () => {
   it('round-trips sections, names and hidden tiles, a tile a character', () => {
     const compact = compactCustom(custom);
-    expect(compact).toEqual({ s: [['N', 'bn'], ['c1', 'ws', 'Mein Kiez – حيّي']], h: 'dh' });
+    expect(compact).toEqual({ s: [['N', 'bn'], ['c1', 'wc', 'Mein Kiez – حيّي']], h: 'dh' });
     expect(parseCustom(viaJson(compact))).toEqual(custom);
   });
 
   it('drops unknown and repeated tiles, and sections with a bad or repeated id', () => {
     const parsed = parseCustom({
-      s: [['a', 'n?n'], ['a', 'w'], ['<script>', 'd'], ['b', 'ns', 42], 'x', ['c', ['news']]],
-      h: 'sh!',
+      s: [['a', 'n?n'], ['a', 'w'], ['<script>', 'd'], ['b', 'nc', 42], 'x', ['c', ['news']]],
+      h: 'ch!',
     });
     expect(parsed).toEqual({
-      sections: [{ id: 'a', tiles: ['news'] }, { id: 'b', tiles: ['support'] }, { id: 'c', tiles: [] }],
+      sections: [{ id: 'a', tiles: ['news'] }, { id: 'b', tiles: ['crisis'] }, { id: 'c', tiles: [] }],
       hidden: ['feuerwehr'],
+    });
+  });
+
+  it('loads a setup stored with the support tile (code s) without it, wherever it stood', () => {
+    expect(parseCustom({ s: [['N', 'bsn'], ['C', 's'], ['c1', 'ws', 'Mine']], h: 'sd' })).toEqual({
+      sections: [{ id: 'news', tiles: ['briefing', 'news'] }, { id: 'crises', tiles: [] }, { id: 'c1', name: 'Mine', tiles: ['weather'] }],
+      hidden: ['budget'],
     });
   });
 
@@ -73,7 +83,7 @@ describe('a custom setup, compact', () => {
   it('carries its name in a link', () => {
     const { id: _id, ...shared } = kiez;
     expect(parseNamed(viaJson(compactNamed(shared)))).toEqual(shared);
-    expect(parseNamed({ s: [['c1', 's']] })).toEqual({ name: '', sections: [{ id: 'c1', tiles: ['support'] }], hidden: [] });
+    expect(parseNamed({ s: [['c1', 'w']] })).toEqual({ name: '', sections: [{ id: 'c1', tiles: ['weather'] }], hidden: [] });
   });
 });
 
@@ -108,7 +118,7 @@ describe('a setup view, compact', () => {
   it('skips a map change it cannot read, or one that changes nothing', () => {
     const parsed = parseView({
       s: 'f',
-      c: [{ i: 'm1', n: 'x', s: [['c1', 's']], m: 'zz' }, { i: 'm2', n: 'y', s: [['c1', 's']], m: {} }],
+      c: [{ i: 'm1', n: 'x', s: [['c1', 'w']], m: 'zz' }, { i: 'm2', n: 'y', s: [['c1', 'w']], m: {} }],
       p: { c: { m: { a: 'p' } }, h: { m: {}, u: 3 }, q: { m: { a: 'p' }, u: 3 }, s: 'x', w: { m: { a: 'p' }, u: -1 } },
     });
     expect(parsed.customSetups.map((s) => s.map)).toEqual([undefined, undefined]);
@@ -116,7 +126,7 @@ describe('a setup view, compact', () => {
   });
 
   it('keeps no more than three setups, each id once, never the preview’s', () => {
-    const entry = (i: string) => ({ i, n: i, s: [['c1', 's']] });
+    const entry = (i: string) => ({ i, n: i, s: [['c1', 'w']] });
     const parsed = parseView({ s: 'm1', c: [entry('m0'), entry('m1'), entry('m1'), entry('m2'), entry('m4'), entry('m5'), entry('x')] });
     expect(parsed.customSetups.map((s) => s.id)).toEqual(['m1', 'm2', 'm4']);
   });

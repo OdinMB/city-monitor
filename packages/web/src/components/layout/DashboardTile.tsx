@@ -5,11 +5,9 @@ import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBathingOffSeason } from '../../hooks/useBathingOffSeason.js';
 import { useLiftTileShown } from '../../hooks/useLiftTileShown.js';
 import { useEventsTileShown } from '../../hooks/useEventsTileShown.js';
-import { SUPPORT_URL } from '../../lib/constants.js';
 import { tileTitle } from '../../lib/setup-labels.js';
 import type { TileId } from '../../lib/tile-setups.js';
 import { Tile } from './Tile.js';
-import { TileFooter } from './TileFooter.js';
 import { AiLabel } from '../AiLabel.js';
 import { BriefingStrip } from '../strips/BriefingStrip.js';
 import { NewsStrip } from '../strips/NewsStrip.js';
@@ -37,7 +35,8 @@ import { PopulationStrip } from '../strips/PopulationStrip.js';
 /**
  * How each dashboard tile renders, by id: its card (title, span, expand
  * behaviour) and its strip. Which tiles a city has and where they go is
- * lib/tile-setups.ts; this is only what one looks like.
+ * lib/tile-setups.ts; this is only what one looks like. The support strip is
+ * no tile (SupportStrip.tsx).
  */
 
 interface TileProps {
@@ -81,41 +80,6 @@ export function EventsTile() {
   return (
     <Tile title={t('panel.events.title')} span={2}>
       <EventsStrip />
-    </Tile>
-  );
-}
-
-function SupportTile({ title }: TileProps) {
-  const { t } = useTranslation();
-  return (
-    <Tile title={title} span={1}>
-      <>
-        <div className="flex flex-col items-center justify-center gap-6 h-full pb-4">
-          <div className="grid grid-cols-3 gap-4 text-center w-full">
-            {(['cost', 'ads', 'tracking'] as const).map((key) => (
-              <div key={key}>
-                <div className="text-4xl font-extrabold tabular-nums text-green-600 dark:text-green-400">0</div>
-                <div className="text-sm font-medium text-muted mt-1">{t(`support.${key}`)}</div>
-              </div>
-            ))}
-          </div>
-          <a
-            href={SUPPORT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <span className="inline-flex items-center gap-2 text-xl font-bold text-gray-700 dark:text-gray-200">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="text-red-400" aria-hidden="true">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
-              {t('support.donate')}
-            </span>
-            <span className="text-lg text-muted mt-0.5">{t('support.cta')}</span>
-          </a>
-        </div>
-        <TileFooter>{t('support.footer')}</TileFooter>
-      </>
     </Tile>
   );
 }
@@ -185,7 +149,6 @@ const TILES: Record<TileId, (props: TileProps) => ReactNode> = {
       <WaterLevelStrip />
     </Tile>
   ),
-  support: (props) => <SupportTile {...props} />,
   councilMeetings: ({ title }) => (
     <Tile title={title} span={2}>
       <CouncilMeetingsStrip />

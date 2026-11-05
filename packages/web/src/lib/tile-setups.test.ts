@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { CityFeature } from '@city-monitor/shared';
 import {
-  PRESET_GROUPS, PRESET_IDS, PRESET_SECTIONS, STANDARD_SECTION_KEYS, SUPPORT_TILE, TILE_IDS, cityTiles, isPreset, isTileId, presetSections, sectionWidth,
+  PRESET_GROUPS, PRESET_IDS, PRESET_SECTIONS, STANDARD_SECTION_KEYS, TILE_IDS, cityTiles, isPreset, isTileId, presetSections, sectionWidth,
   type TileId,
 } from './tile-setups.js';
 import { berlin } from '../config/cities/berlin.js';
@@ -29,14 +29,19 @@ describe('presets', () => {
     }
   });
 
-  it.each(PRESET_IDS.filter((p) => p !== 'everyday'))('%s places a tile at most once and ends with the support tile, in every city', (preset) => {
+  it.each(PRESET_IDS.filter((p) => p !== 'everyday'))('%s places a tile at most once and leaves no section empty, in every city', (preset) => {
     const tiles = placed(PRESET_SECTIONS[preset]);
     expect(new Set(tiles).size).toBe(tiles.length);
     for (const city of CITIES) {
       const sections = presetSections(preset, city.id, cityTiles(city.features));
-      expect(placed(sections).at(-1), city.id).toBe(SUPPORT_TILE);
       expect(sections.every((s) => s.tiles.length > 0), city.id).toBe(true);
     }
+  });
+
+  it('carry no support tile: the support strip is no tile, and every setup shows it (TileSections)', () => {
+    expect(TILE_IDS).not.toContain('support');
+    expect(isTileId('support')).toBe(false);
+    for (const preset of PRESET_IDS) expect(placed(PRESET_SECTIONS[preset]) as string[], preset).not.toContain('support');
   });
 
   it('use only section keys that have a name, and every such key is used', () => {
@@ -54,7 +59,7 @@ describe('presets', () => {
 
 describe('cityTiles', () => {
   it('lists only the tiles whose features the city has, plus those every city has', () => {
-    expect(cityTiles([])).toEqual(['weather', 'airQuality', 'support']);
+    expect(cityTiles([])).toEqual(['weather', 'airQuality']);
   });
 
   it('shows the lift tile for KVB lists or DB stations', () => {
@@ -80,32 +85,19 @@ describe('isTileId', () => {
 
 describe('presetSections', () => {
   it('drops the tiles a city lacks and the sections left without any', () => {
-    const sections = presetSections('everyday', 'nowhere', ['weather', 'crisis', 'support']);
+    const sections = presetSections('everyday', 'nowhere', ['weather', 'crisis']);
     expect(sections.map((s) => s.id)).toEqual(['environment', 'crises']);
-    expect(sections.map((s) => s.tiles)).toEqual([['weather'], ['crisis', 'support']]);
+    expect(sections.map((s) => s.tiles)).toEqual([['weather'], ['crisis']]);
   });
 
-  it('gives the support tile to the section before when it would stand alone in its own', () => {
-    expect(presetSections('health', 'nowhere', ['airQuality', 'wastewater', 'support'])).toEqual([
-      { id: 'airAllergies', tiles: ['airQuality'] },
-      { id: 'infections', tiles: ['wastewater', 'support'] },
-    ]);
+  it('is empty for a city with none of a preset’s tiles', () => {
+    expect(presetSections('movingHere', 'nowhere', ['weather'])).toEqual([]);
   });
 
-  it('keeps the support tile in a section of its own when no section comes before', () => {
-    expect(presetSections('movingHere', 'nowhere', ['support'])).toEqual([{ id: 'cityFigures', tiles: ['support'] }]);
-  });
-
-  it('closes Everyday’s crises section with the support tile', () => {
-    const crises = presetSections('everyday', 'berlin', cityTiles(berlin.features)).find((s) => s.id === 'crises')!;
-    expect(crises.tiles.at(-1)).toBe('support');
-  });
-
-  it('moves Hamburg’s water levels (storm surge) into Everyday’s crises section, before the support tile', () => {
+  it('moves Hamburg’s water levels (storm surge) into Everyday’s crises section, ahead of the numbers to call', () => {
     const sections = presetSections('everyday', 'hamburg', cityTiles(hamburg.features));
     const crises = sections.find((s) => s.id === 'crises')!;
-    expect(crises.tiles).toContain('waterLevels');
-    expect(crises.tiles.at(-1)).toBe('support');
+    expect(crises.tiles.indexOf('waterLevels')).toBe(crises.tiles.indexOf('crisis') - 1);
     expect(sections.find((s) => s.id === 'background')!.tiles).not.toContain('waterLevels');
   });
 
@@ -119,7 +111,7 @@ describe('presetSections', () => {
     expect(presetSections('commute', 'koeln', cityTiles(koeln.features))).toEqual([
       { id: 'gettingAround', tiles: ['liftOutages'] },
       { id: 'conditions', tiles: ['weather', 'airQuality'] },
-      { id: 'news', tiles: ['news', 'support'] },
+      { id: 'news', tiles: ['news'] },
     ]);
   });
 

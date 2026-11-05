@@ -9,6 +9,7 @@ import { cookieString, writePrefs } from './lib/setup-cookie.js';
 import { defaultView } from './lib/setup-state.js';
 import { presetMap } from './lib/setup-maps.js';
 import { berlin } from './config/cities/berlin.js';
+import { isolate } from './lib/bidi.js';
 
 // The map itself is not under test.
 vi.mock('./components/map/CityMap.js', () => ({ CityMap: () => <div /> }));
@@ -67,8 +68,8 @@ describe('opening a dashboard', { timeout: 30_000 }, () => {
           ...defaultView(),
           choice: 'm2',
           customSetups: [
-            { id: 'm1', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'support'] }], hidden: [] },
-            { id: 'm2', name: 'Kiez', sections: [{ id: 'c1', name: 'Mein Kiez', tiles: ['weather', 'support'] }], hidden: [] },
+            { id: 'm1', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'crisis'] }], hidden: [] },
+            { id: 'm2', name: 'Kiez', sections: [{ id: 'c1', name: 'Mein Kiez', tiles: ['weather', 'crisis'] }], hidden: [] },
           ],
         },
         touched: 1,
@@ -76,12 +77,15 @@ describe('opening a dashboard', { timeout: 30_000 }, () => {
     });
     renderAt('/berlin');
     expect(await screen.findByRole('heading', { level: 2, name: 'Mein Kiez' }, { timeout: 10_000 })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Customize/ }).textContent).toMatch(/^Customize · Kiez/);
+    // Each setup menu icon on the page (top bar, sidebar, map corner) names it
+    const icons = screen.getAllByRole('button', { name: /^Customize tiles and map/ });
+    expect(icons.map((icon) => icon.id)).toEqual(['setup-menu-topbar', 'setup-menu-sidebar', 'setup-menu-map']);
+    for (const icon of icons) expect(icon.getAttribute('aria-label')).toBe(`Customize tiles and map · ${isolate('Kiez')}`);
   });
 
   it('shows the map of the preset chosen in the menu, and keeps the choice', async () => {
     renderAt('/berlin');
-    fireEvent.click(await screen.findByRole('button', { name: /^Customize/ }, { timeout: 10_000 }));
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Customize tiles and map/ }, { timeout: 10_000 }))[0]);
     fireEvent.click(screen.getByRole('button', { name: 'Day out' }));
     expect([...useCommandCenter.getState().activeLayers].sort()).toEqual([...presetMap('dayOut', berlin).activeLayers].sort());
     expect(document.cookie).toContain('cm_setup=');

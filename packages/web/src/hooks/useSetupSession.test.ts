@@ -105,7 +105,7 @@ describe('setup session', () => {
     openCity('berlin', berlin.features, '');
     setup().choose('cycling');
     map().setAccidentFilter('pedestrian');
-    setup().newSetup([{ id: 'c1', tiles: ['weather', 'support'] }], 'Mine', pickMapState(map()));
+    setup().newSetup([{ id: 'c1', tiles: ['weather', 'crisis'] }], 'Mine', pickMapState(map()));
     setup().choose('everyday');
     setup().choose('m1');
     expect(layers()).toEqual(layersOf('cycling'));
@@ -118,25 +118,25 @@ describe('setup session', () => {
   it('shows Everyday’s map once the setup shown is deleted', () => {
     openCity('berlin', berlin.features, '');
     setup().choose('health');
-    setup().newSetup([{ id: 'c1', tiles: ['weather', 'support'] }], 'Mine', pickMapState(map()));
+    setup().newSetup([{ id: 'c1', tiles: ['weather', 'crisis'] }], 'Mine', pickMapState(map()));
     setup().deleteSetup('m1');
     expect(layers()).toEqual(layersOf('everyday'));
   });
 
   it('fits each of the visitor’s setups to the city: a tile it neither places nor hides joins the last section', () => {
-    const setups = [1, 2].map((n) => ({ id: `m${n}` as const, name: `S${n}`, sections: [{ id: 'c1', tiles: ['weather' as const, 'support' as const] }], hidden: ['budget' as const] }));
+    const setups = [1, 2].map((n) => ({ id: `m${n}` as const, name: `S${n}`, sections: [{ id: 'c1', tiles: ['weather' as const, 'crisis' as const] }], hidden: ['budget' as const] }));
     writePrefs({ berlin: { view: { ...defaultView(), choice: 'm2', customSetups: setups }, touched: 1 } });
     openCity('berlin', berlin.features, '');
     for (const { name, sections } of setup().view.customSetups) {
       expect(name).toMatch(/^S\d$/);
-      expect(sections[0].tiles.slice(0, 2)).toEqual(['weather', 'support']);
+      expect(sections[0].tiles.slice(0, 2)).toEqual(['weather', 'crisis']);
       expect(sections[0].tiles).toContain('news');
       expect(sections[0].tiles).not.toContain('budget');
     }
   });
 
   describe('a shared link', () => {
-    const sharedSetup = { name: 'Geteilt', sections: [{ id: 'c1', tiles: ['weather' as const, 'support' as const] }], hidden: [] };
+    const sharedSetup = { name: 'Geteilt', sections: [{ id: 'c1', tiles: ['weather' as const, 'crisis' as const] }], hidden: [] };
     const sharedMap = { ...defaultMapState('berlin'), activeLayers: new Set<DataLayer>(['crime']) };
     const search = linkSearch(shareUrl('https://citymonitor.app', 'berlin', sharedSetup, sharedMap));
 

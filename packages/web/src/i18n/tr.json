@@ -1105,8 +1105,7 @@
     "ads": "Reklam",
     "tracking": "Takip",
     "donate": "5 $ bağış yap",
-    "cta": "böyle kalsın diye",
-    "footer": "Her zaman iyi bir fikir"
+    "cta": "böyle kalsın diye"
   },
   "footer": {
     "sourceCode": "Kaynak Kodu",
@@ -1136,7 +1135,7 @@
   "setup": {
     "label": "Kutucuklar ve harita",
     "custom": "Benim düzenim",
-    "customize": "Özelleştir",
+    "openMenu": "Kutucukları ve haritayı özelleştir · {{name}}",
     "preset": {
       "everyday": "Günlük",
       "commute": "İşe gidiş geliş",
@@ -1186,6 +1185,13 @@
     "startFrom": "Şununla yeniden başla",
     "resetConfirm": "“{{name}}” kutucukları “{{setup}}” düzenindeki gibi yerleştirilsin mi? Kutucuklarda yaptığınız değişiklikler kaybolur; harita olduğu gibi kalır.",
     "editing": "Düzenleme modu: bölümleri ve kutucukları yeniden adlandırın, taşıyın, ekleyin veya gizleyin.",
+    "mapSaved": "Açıp kapattığınız harita katmanları bu düzenle birlikte kaydedilir.",
+    "map": {
+      "label": "Harita",
+      "layers": "Haritadaki katmanlar",
+      "none": "Açık harita katmanı yok.",
+      "change": "Harita katmanlarını değiştir"
+    },
     "share": "Bu görünümü paylaş",
     "shareTitle": "City Monitor {{city}}",
     "copied": "Bağlantı kopyalandı",
@@ -1223,7 +1229,7 @@
     "moveSectionDown": "Bölümü aşağı taşı: {{name}}",
     "deleteSection": "Bölümü sil: {{name}}",
     "addSection": "Bölüm ekle",
-    "emptySection": "Henüz kutucuk yok: buraya bir kutucuk taşıyın veya gizli kutucuklardan ekleyin.",
+    "emptySection": "Henüz kutucuk yok: + düğmesiyle bir tane ekleyin.",
     "moveTileUp": "Yukarı taşı: {{title}}",
     "moveTileDown": "Aşağı taşı: {{title}}",
     "moveTileTo": "Bölüme taşı: {{title}}",
@@ -1231,6 +1237,11 @@
     "hiddenTiles": "Gizli kutucuklar",
     "noHiddenTiles": "Gizli kutucuk yok.",
     "addTileTo": "Bölüme ekle: {{title}}",
+    "addTile": {
+      "label": "Kutucuk ekle: {{name}}",
+      "fromOther": "Diğer bölümlerden",
+      "none": "Tüm kutucuklar zaten bu bölümde."
+    },
     "chooseSection": "Bölüm…",
     "shared": {
       "notice": "Paylaşılan bir düzeni görüntülüyorsunuz.",

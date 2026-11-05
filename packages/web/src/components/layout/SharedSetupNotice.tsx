@@ -16,7 +16,8 @@ import { BAR_BUTTON } from './SetupControls.js';
  * with the map as it shows, or go back to the visitor's own. Keeping
  * someone's setup when the visitor already has as many as they can keep asks
  * which one it replaces, or lets them cancel. `onDone` runs once the preview
- * has ended, so focus can go to what replaces this bar.
+ * has ended, while this notice still holds focus, so focus can move on (to
+ * the top bar's setup menu icon) before it goes.
  */
 export function SharedSetupNotice({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation();

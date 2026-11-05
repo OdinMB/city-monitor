@@ -11,9 +11,9 @@ const initial = useTileSetup.getState();
 const state = () => useTileSetup.getState();
 const shown = () => shownCustom(state().view);
 
-const everyday: ResolvedSection[] = [{ id: 'news', tiles: ['briefing', 'news'] }, { id: 'crises', tiles: ['support'] }];
-const commute: ResolvedSection[] = [{ id: 'conditions', tiles: ['weather'] }, { id: 'news', tiles: ['news', 'support'] }];
-const kiez: NamedSetup = { id: 'm1', name: 'Kiez', sections: [{ id: 'c1', tiles: ['weather', 'support'] }], hidden: [] };
+const everyday: ResolvedSection[] = [{ id: 'news', tiles: ['briefing', 'news'] }, { id: 'crises', tiles: ['crisis'] }];
+const commute: ResolvedSection[] = [{ id: 'conditions', tiles: ['weather'] }, { id: 'news', tiles: ['news', 'crisis'] }];
+const kiez: NamedSetup = { id: 'm1', name: 'Kiez', sections: [{ id: 'c1', tiles: ['weather', 'crisis'] }], hidden: [] };
 const mine: SetupView = { ...defaultView(), choice: 'm1', customSetups: [kiez] };
 const everydayMap = () => defaultMapState('berlin');
 const withLayers = (map: MapState, ...layers: DataLayer[]): MapState => ({ ...map, activeLayers: new Set([...map.activeLayers, ...layers]) });
@@ -49,7 +49,7 @@ describe('useTileSetup', () => {
     state().choose('commute');
     state().newSetup(commute, 'Mine', presetMap('commute', berlin));
     expect(shown()!.hidden).toEqual(expect.arrayContaining(['briefing', 'budget', 'transit']));
-    expect(shown()!.hidden).not.toContain('support');
+    expect(shown()!.hidden).not.toContain('news');
   });
 
   it('makes no setup past the limit', () => {
@@ -77,7 +77,7 @@ describe('useTileSetup', () => {
   it('leaves the state alone for an edit that changes nothing', () => {
     state().load(berlin, mine);
     const before = state().own;
-    state().editCustom((c) => removeTile(c, 'support'));
+    state().editCustom((c) => removeTile(c, 'budget'));
     expect(state().own).toBe(before);
   });
 
@@ -145,7 +145,7 @@ describe('useTileSetup', () => {
   });
 
   describe('a shared setup', () => {
-    const shared = { name: 'Geteilt', sections: [{ id: 'c1', tiles: ['weather' as const, 'support' as const] }], hidden: [] };
+    const shared = { name: 'Geteilt', sections: [{ id: 'c1', tiles: ['weather' as const, 'crisis' as const] }], hidden: [] };
 
     beforeEach(() => {
       state().load(berlin, mine, previewView(mine, shared));

@@ -60,7 +60,7 @@ describe('offeredPresets', () => {
     for (const city of CITIES) expect(offeredPresets(city), city.id).toEqual(PRESET_IDS);
   });
 
-  it('leaves out a preset with neither a tile beyond the support tile nor a map layer in the city', () => {
+  it('leaves out a preset with neither a tile nor a map layer in the city', () => {
     const offered = offeredPresets({ id: 'nowhere', features: [] });
     expect(offered).toContain('everyday');
     expect(offered).not.toContain('cityHall');
@@ -84,7 +84,7 @@ describe('setupMap', () => {
   });
 
   it('is Everyday’s map with the visitor’s change for a setup of theirs', () => {
-    const mine: NamedSetup = { id: 'm1', name: 'Mine', sections: [{ id: 'c1', tiles: ['support'] }], hidden: [], map: { crimeLayer: 'kiez' } };
+    const mine: NamedSetup = { id: 'm1', name: 'Mine', sections: [{ id: 'c1', tiles: ['crisis'] }], hidden: [], map: { crimeLayer: 'kiez' } };
     const view = { ...defaultView(), customSetups: [mine] };
     expect(setupMap(view, 'm1', berlin)).toEqual({ ...defaultMapState('berlin'), crimeLayer: 'kiez' });
   });

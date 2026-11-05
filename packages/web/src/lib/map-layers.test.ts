@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { CityFeature } from '@city-monitor/shared';
 import {
-  categoryDefaults, categoryLayers, cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers, withoutEmptyHospitals, withoutEmptyLifts,
+  categoryDefaults, categoryLayers, cityLayers, effectiveChoice, effectiveNoiseLayer, effectiveSubLayers, layersOn, withoutEmptyHospitals, withoutEmptyLifts,
 } from './map-layers.js';
 import { CATEGORY_LAYERS, CATEGORY_ORDER, type DataLayer } from '../hooks/useCommandCenter.js';
 import { berlin } from '../config/cities/berlin.js';
@@ -172,6 +172,15 @@ describe('cityLayers', () => {
     const layers = withFeatures('political', 'districtMayors', 'mayor');
     expect(layers.layers.has('political')).toBe(false);
     expect(layers.political).toEqual([]);
+  });
+});
+
+describe('layersOn', () => {
+  it('lists the layers switched on that the city has, in sidebar order', () => {
+    const active = new Set<DataLayer>(['crime', 'weather', 'parking', 'traffic', 'warnings']);
+    // Hamburg has car parks but no crime atlas
+    expect(layersOn(active, cityLayers(hamburg).layers)).toEqual(['warnings', 'traffic', 'parking', 'weather']);
+    expect(layersOn(new Set(), cityLayers(berlin).layers)).toEqual([]);
   });
 });
 

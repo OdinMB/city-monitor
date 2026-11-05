@@ -5,16 +5,18 @@ import { useTileSetup } from '../../hooks/useTileSetup.js';
 import { isolate } from '../../lib/bidi.js';
 import { setupLabel } from '../../lib/setup-labels.js';
 import { offeredPresets } from '../../lib/setup-maps.js';
-import { MAX_SETUP_NAME, type NamedSetup, type SetupView } from '../../lib/setup-state.js';
-import { cityTiles, presetSections, type PresetId, type ResolvedSection } from '../../lib/tile-setups.js';
+import { MAX_SETUP_NAME, type NamedSetup } from '../../lib/setup-state.js';
+import { cityTiles, presetSections, type PresetId } from '../../lib/tile-setups.js';
 import { BAR_BUTTON } from './SetupControls.js';
-import { SetupMenu } from './SetupMenu.js';
+import { SetupMapRow } from './SetupMapRow.js';
 import { SharedSetupNotice } from './SharedSetupNotice.js';
+import { focusSetupMenu } from './setup-focus.js';
 
 /**
- * The bar above the sections: the setup menu, and in setup mode the setup's
- * name, Done and Reset. While a shared link's setup is previewed, the notice
- * that offers to keep it takes the bar's place.
+ * The bar above the sections, while there is something to say there: in
+ * setup mode the setup's name, Done and Reset, and its map; while a shared
+ * link's setup is previewed, the notice that offers to keep it. The setup
+ * menu itself is in the top bar (SetupMenu).
  */
 
 /** Starts the tiles of the setup being edited afresh from a preset the city offers, after a confirm; its map stays. */
@@ -49,8 +51,9 @@ function ResetMenu({ setup }: { setup: NamedSetup }) {
 
 /**
  * The name of the setup being edited. Setup mode opens from the menu, which
- * hands focus back to its button as it closes (in a microtask); focus then
- * moves on to this field, its text selected, so typing names the setup.
+ * hands focus back to the icon it was opened from as it closes (in a
+ * microtask); focus then moves on to this field, its text selected, so typing
+ * names the setup.
  */
 function SetupNameField({ setup }: { setup: NamedSetup }) {
   const { t } = useTranslation();
@@ -81,50 +84,37 @@ function SetupNameField({ setup }: { setup: NamedSetup }) {
   );
 }
 
-export function SetupBar({ view, editing, shown, shared }: {
-  view: SetupView;
+/**
+ * Renders nothing while neither applies. When Done or the notice's choice
+ * takes away the control that had focus, focus goes to the top bar's setup
+ * menu icon, which names the setup now shown.
+ */
+export function SetupBar({ editing, shared }: {
   /** The visitor's setup in setup mode, if any. */
   editing: NamedSetup | null;
-  shown: readonly ResolvedSection[];
   /** A shared link's setup is previewed. */
   shared: boolean;
 }) {
   const { t } = useTranslation();
   const finishEditing = useTileSetup((s) => s.finishEditing);
-  const triggerId = useId();
-  const focusMenu = useRef(false);
 
-  // Once the shared-setup notice has given way, focus goes to the menu button in its place.
-  useEffect(() => {
-    if (shared || !focusMenu.current) return;
-    focusMenu.current = false;
-    document.getElementById(triggerId)?.focus();
-  }, [shared, triggerId]);
-
-  if (shared) return <SharedSetupNotice onDone={() => { focusMenu.current = true; }} />;
+  if (shared) return <SharedSetupNotice onDone={focusSetupMenu} />;
+  if (!editing) return null;
 
   const done = () => {
     finishEditing();
-    document.getElementById(triggerId)?.focus();
+    focusSetupMenu();
   };
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <SetupMenu view={view} shown={shown} triggerId={triggerId} />
-        {editing && (
-          <>
-            <button type="button" className={BAR_BUTTON} onClick={done}>{t('setup.done')}</button>
-            <ResetMenu setup={editing} />
-          </>
-        )}
+        <SetupNameField setup={editing} />
+        <button type="button" className={BAR_BUTTON} onClick={done}>{t('setup.done')}</button>
+        <ResetMenu setup={editing} />
       </div>
-      {editing && (
-        <>
-          <SetupNameField setup={editing} />
-          <p className="text-sm text-muted">{t('setup.editing')}</p>
-        </>
-      )}
+      <p className="text-sm text-muted">{t('setup.editing')}</p>
+      <SetupMapRow />
     </div>
   );
 }

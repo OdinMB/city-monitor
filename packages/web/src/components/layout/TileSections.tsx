@@ -1,28 +1,28 @@
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCityConfig } from '../../hooks/useCityConfig.js';
+import { useShownSetup } from '../../hooks/useShownSetup.js';
 import { useTileSetup } from '../../hooks/useTileSetup.js';
 import { useLiftTileShown } from '../../hooks/useLiftTileShown.js';
 import { useEventsTileShown } from '../../hooks/useEventsTileShown.js';
 import { sectionLabel } from '../../lib/setup-labels.js';
-import { defaultView, shownCustom, shownSections } from '../../lib/setup-state.js';
 import type { CustomSetup } from '../../lib/custom-setup.js';
-import { cityTiles, sectionWidth, type ResolvedSection, type TileId } from '../../lib/tile-setups.js';
+import { sectionWidth, type ResolvedSection, type TileId } from '../../lib/tile-setups.js';
 import { SourceText } from '../SourceText.js';
 import { DashboardGrid } from './DashboardGrid.js';
 import { DashboardTile } from './DashboardTile.js';
 import { SetupBar } from './SetupBar.js';
 import { HiddenTilesTray, SectionEditor, TileControls } from './SetupControls.js';
+import { SupportStrip } from './SupportStrip.js';
 import { TileSlotContext } from './tile-slot.js';
 
 /**
- * The dashboard below the map: the setup bar and the setup's sections, each
- * with a heading that collapses it and its own grid of tiles. A section with
- * nothing on screen is left out, except in setup mode, which shows every
- * section of the visitor's setup with its controls and the hidden tiles.
+ * The dashboard below the map: the setup bar (in setup mode, or while a
+ * shared link's setup is previewed) and the setup's sections, each with a
+ * heading that collapses it and its own grid of tiles. A section with nothing
+ * on screen is left out, except in setup mode, which shows every section of
+ * the visitor's setup with its controls and the hidden tiles. The support
+ * strip follows the first section shown (at the top when there is none), in
+ * every setup and mode. The setup menu is in the top bar (SetupMenu).
  */
-
-const DEFAULT_VIEW = defaultView();
 
 type Width = ReturnType<typeof sectionWidth>;
 
@@ -68,7 +68,6 @@ function SectionHeading({ section, collapsed, headingId, gridId }: { section: Re
 function TileSection({ section, collapsed, editing, onScreen }: SectionProps) {
   const { t } = useTranslation();
   const tiles = section.tiles.filter(onScreen);
-  if (!editing && tiles.length === 0) return null;
   const headingId = `tile-section-${section.id}`;
   const gridId = `${headingId}-tiles`;
   const open = Boolean(editing) || !collapsed;
@@ -77,7 +76,7 @@ function TileSection({ section, collapsed, editing, onScreen }: SectionProps) {
   return (
     <section aria-labelledby={headingId} className={`min-w-0 space-y-3 ${SECTION_WIDTH[width]}`}>
       {editing ? (
-        <SectionEditor setup={editing} section={section} headingId={headingId} />
+        <SectionEditor setup={editing} section={section} headingId={headingId} onScreen={onScreen} />
       ) : (
         <SectionHeading section={section} collapsed={collapsed} headingId={headingId} gridId={gridId} />
       )}
@@ -99,33 +98,29 @@ function TileSection({ section, collapsed, editing, onScreen }: SectionProps) {
 }
 
 export function TileSections() {
-  const { id: cityId, features } = useCityConfig();
-  const storeCity = useTileSetup((s) => s.cityId);
-  const storeView = useTileSetup((s) => s.view);
-  const storeEditing = useTileSetup((s) => s.editing);
-  const shared = useTileSetup((s) => s.shared);
+  const { view, editing, sections, shared } = useShownSetup();
   const liftShown = useLiftTileShown();
-
-  // Until the city is loaded (useSetupSession), its defaults.
-  const loaded = storeCity === cityId;
-  const view = loaded ? storeView : DEFAULT_VIEW;
-  const editing = (loaded && storeEditing && shownCustom(view)) || null;
-  const available = useMemo(() => cityTiles(features), [features]);
-  const sections = useMemo(() => shownSections(view, cityId, available), [view, cityId, available]);
   const collapsed = view.collapsed[view.choice] ?? [];
   const eventsShown = useEventsTileShown();
   const onScreen = (tile: TileId) => (tile !== 'liftOutages' || liftShown) && (tile !== 'events' || eventsShown);
+  const shown = editing ? sections : sections.filter((section) => section.tiles.some(onScreen));
+  const strip = <SupportStrip key="support-strip" />;
+  // One keyed list, so a section that becomes the first (moved up in setup mode) is moved, not mounted afresh
+  const items = shown.length === 0 ? [strip] : shown.flatMap((section, index) => {
+    const element = <TileSection key={section.id} section={section} collapsed={collapsed.includes(section.id)} editing={editing} onScreen={onScreen} />;
+    return index === 0 ? [element, strip] : [element];
+  });
 
   return (
     // Sections flow in order through a four-column grid (two from sm), each as
     // wide as its tiles: small ones share a row instead of leaving it half empty.
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 items-start gap-x-4 gap-y-6 p-4">
-      <div className="col-span-full">
-        <SetupBar view={view} editing={editing} shown={sections} shared={loaded && shared} />
-      </div>
-      {sections.map((section) => (
-        <TileSection key={section.id} section={section} collapsed={collapsed.includes(section.id)} editing={editing} onScreen={onScreen} />
-      ))}
+      {(editing || shared) && (
+        <div className="col-span-full">
+          <SetupBar editing={editing} shared={shared} />
+        </div>
+      )}
+      {items}
       {editing && (
         <div className="col-span-full">
           <HiddenTilesTray setup={editing} />

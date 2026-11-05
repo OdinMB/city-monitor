@@ -9,7 +9,7 @@ const setup = (): CustomSetup => ({
   sections: [
     { id: 'news', tiles: ['briefing', 'news'] },
     { id: 'environment', tiles: ['weather', 'airQuality', 'pollen'] },
-    { id: 'c1', name: 'Mine', tiles: ['support'] },
+    { id: 'c1', name: 'Mine', tiles: ['crisis'] },
   ],
   hidden: ['budget'],
 });
@@ -18,45 +18,45 @@ const tilesOf = (s: CustomSetup) => s.sections.map((x) => x.tiles);
 
 describe('customFrom', () => {
   it('copies the sections, so editing the copy leaves the original alone', () => {
-    const original = [{ id: 'news', tiles: ['briefing', 'news', 'support'] as TileId[] }];
-    const copy = customFrom(original, ['briefing', 'news', 'support']);
+    const original = [{ id: 'news', tiles: ['briefing', 'news', 'crisis'] as TileId[] }];
+    const copy = customFrom(original, ['briefing', 'news', 'crisis']);
     copy.sections[0].tiles.push('weather');
-    expect(original[0].tiles).toEqual(['briefing', 'news', 'support']);
+    expect(original[0].tiles).toEqual(['briefing', 'news', 'crisis']);
     expect(copy.hidden).toEqual([]);
   });
 
   it('hides the city’s tiles the sections do not show, so they stay out when the setup is next fitted to the city', () => {
-    const copy = customFrom([{ id: 'news', tiles: ['news', 'support'] }], ['briefing', 'news', 'weather', 'support']);
+    const copy = customFrom([{ id: 'news', tiles: ['news', 'crisis'] }], ['briefing', 'news', 'weather', 'crisis']);
     expect(copy.hidden).toEqual(['briefing', 'weather']);
-    expect(tilesOf(fitToCity(copy, ['briefing', 'news', 'weather', 'support']))).toEqual([['news', 'support']]);
+    expect(tilesOf(fitToCity(copy, ['briefing', 'news', 'weather', 'crisis']))).toEqual([['news', 'crisis']]);
   });
 });
 
 describe('fitToCity', () => {
   it('drops tiles the city does not have', () => {
-    const fitted = fitToCity(setup(), ['briefing', 'news', 'weather', 'support', 'budget']);
-    expect(tilesOf(fitted)).toEqual([['briefing', 'news'], ['weather'], ['support']]);
+    const fitted = fitToCity(setup(), ['briefing', 'news', 'weather', 'crisis', 'budget']);
+    expect(tilesOf(fitted)).toEqual([['briefing', 'news'], ['weather'], ['crisis']]);
   });
 
   it('puts a tile neither placed nor hidden (a new source) at the end of the last section', () => {
-    const fitted = fitToCity(setup(), ['briefing', 'news', 'weather', 'airQuality', 'pollen', 'support', 'budget', 'electricity']);
-    expect(fitted.sections.at(-1)!.tiles).toEqual(['support', 'electricity']);
+    const fitted = fitToCity(setup(), ['briefing', 'news', 'weather', 'airQuality', 'pollen', 'crisis', 'budget', 'electricity']);
+    expect(fitted.sections.at(-1)!.tiles).toEqual(['crisis', 'electricity']);
     expect(fitted.hidden).toEqual(['budget']);
   });
 
-  it('keeps hidden only what the city has and what is not placed, and never the support tile', () => {
-    const fitted = fitToCity({ sections: [{ id: 'news', tiles: ['news'] }], hidden: ['news', 'budget', 'support', 'feuerwehr'] }, ['news', 'budget', 'support']);
+  it('keeps hidden only what the city has and what is not placed', () => {
+    const fitted = fitToCity({ sections: [{ id: 'news', tiles: ['news'] }], hidden: ['news', 'budget', 'feuerwehr'] }, ['news', 'budget']);
     expect(fitted.hidden).toEqual(['budget']);
-    expect(fitted.sections[0].tiles).toEqual(['news', 'support']);
+    expect(fitted.sections[0].tiles).toEqual(['news']);
   });
 
   it('places a tile once even when two sections list it', () => {
-    const fitted = fitToCity({ sections: [{ id: 'a', tiles: ['news', 'weather'] }, { id: 'b', tiles: ['weather', 'support'] }], hidden: [] }, ['news', 'weather', 'support']);
-    expect(tilesOf(fitted)).toEqual([['news', 'weather'], ['support']]);
+    const fitted = fitToCity({ sections: [{ id: 'a', tiles: ['news', 'weather'] }, { id: 'b', tiles: ['weather', 'crisis'] }], hidden: [] }, ['news', 'weather', 'crisis']);
+    expect(tilesOf(fitted)).toEqual([['news', 'weather'], ['crisis']]);
   });
 
   it('keeps empty sections, which setup mode shows so tiles can be added', () => {
-    const fitted = fitToCity({ sections: [{ id: 'a', tiles: ['support'] }, { id: 'c1', name: 'Later', tiles: [] }], hidden: [] }, ['support']);
+    const fitted = fitToCity({ sections: [{ id: 'a', tiles: ['crisis'] }, { id: 'c1', name: 'Later', tiles: [] }], hidden: [] }, ['crisis']);
     expect(fitted.sections.map((s) => s.id)).toEqual(['a', 'c1']);
   });
 });
@@ -78,18 +78,12 @@ describe('section operations', () => {
     const next = deleteSection(setup(), 'environment');
     expect(next.sections.map((s) => s.id)).toEqual(['news', 'c1']);
     expect(next.hidden).toEqual(['budget', 'weather', 'airQuality', 'pollen']);
-  });
-
-  it('moves the support tile to the section before when its section goes, or the one after for the first', () => {
-    expect(tilesOf(deleteSection(setup(), 'c1'))).toEqual([['briefing', 'news'], ['weather', 'airQuality', 'pollen', 'support']]);
-    const first: CustomSetup = { sections: [{ id: 'a', tiles: ['support', 'news'] }, { id: 'b', tiles: ['weather'] }], hidden: [] };
-    const next = deleteSection(first, 'a');
-    expect(tilesOf(next)).toEqual([['weather', 'support']]);
-    expect(next.hidden).toEqual(['news']);
+    expect(tilesOf(deleteSection(setup(), 'c1'))).toEqual([['briefing', 'news'], ['weather', 'airQuality', 'pollen']]);
+    expect(deleteSection(setup(), 'nowhere')).toEqual(setup());
   });
 
   it('keeps the last section', () => {
-    const one: CustomSetup = { sections: [{ id: 'a', tiles: ['support'] }], hidden: [] };
+    const one: CustomSetup = { sections: [{ id: 'a', tiles: ['crisis'] }], hidden: [] };
     expect(canDeleteSection(one)).toBe(false);
     expect(deleteSection(one, 'a')).toEqual(one);
     expect(canDeleteSection(setup())).toBe(true);
@@ -125,15 +119,16 @@ describe('tile operations', () => {
 
   it('moves a tile to the end of another section', () => {
     const next = placeTile(setup(), 'news', 'environment');
-    expect(tilesOf(next)).toEqual([['briefing'], ['weather', 'airQuality', 'pollen', 'news'], ['support']]);
+    expect(tilesOf(next)).toEqual([['briefing'], ['weather', 'airQuality', 'pollen', 'news'], ['crisis']]);
     expect(placeTile(setup(), 'news', 'nowhere')).toEqual(setup());
   });
 
-  it('removes a tile to the hidden tray, but never the support tile', () => {
+  it('removes a tile to the hidden tray, any tile', () => {
     const next = removeTile(setup(), 'pollen');
     expect(next.sections[1].tiles).toEqual(['weather', 'airQuality']);
     expect(next.hidden).toEqual(['budget', 'pollen']);
-    expect(removeTile(setup(), 'support')).toEqual(setup());
+    expect(tilesOf(removeTile(setup(), 'crisis')).at(-1)).toEqual([]);
+    expect(removeTile(setup(), 'budget')).toEqual(setup());
   });
 
   it('adds a hidden tile to the end of a section', () => {

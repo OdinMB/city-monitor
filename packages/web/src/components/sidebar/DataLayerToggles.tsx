@@ -635,7 +635,8 @@ export function DataLayerToggles() {
           </span>
         </button>
       </div>
-      <div className="space-y-0.5">
+      {/* data-layer-switches: where the sidebar puts focus for setup mode's "Change map layers" */}
+      <div className="space-y-0.5" data-layer-switches="">
         {CATEGORY_ORDER.map((category, index) => {
           const members = categoryLayers(category, available.layers);
           if (members.length === 0) return null;

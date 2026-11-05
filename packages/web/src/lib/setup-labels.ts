@@ -26,7 +26,6 @@ const TILE_TITLE_KEYS: Record<TileId, string> = {
   wastewater: 'panel.wastewater.title',
   electricity: 'panel.electricity.title',
   waterLevels: 'panel.waterLevels.title',
-  support: 'support.title',
   councilMeetings: 'panel.councilMeetings.title',
   political: 'sidebar.layers.political',
   laborMarket: 'panel.laborMarket.title',

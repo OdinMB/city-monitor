@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { readSharedParams, shareUrl, withoutSharedParams } from './setup-link.js';
+import { encodeJson } from './compact-json.js';
 import { defaultMapState, type DataLayer, type MapState } from '../hooks/useCommandCenter.js';
 import type { SharedSetup } from './setup-state.js';
 import { PRESET_IDS } from './tile-setups.js';
 
 const custom: SharedSetup = {
   name: 'Pendeln & mehr',
-  sections: [{ id: 'news', tiles: ['briefing', 'news'] }, { id: 'c1', name: 'Mein Kiez & mehr', tiles: ['weather', 'support'] }],
+  sections: [{ id: 'news', tiles: ['briefing', 'news'] }, { id: 'c1', name: 'Mein Kiez & mehr', tiles: ['weather', 'crisis'] }],
   hidden: ['budget'],
 };
 const map: MapState = { ...defaultMapState('berlin'), activeLayers: new Set<DataLayer>(['crime', 'parking']), crimeLayer: 'burglary' };
@@ -29,6 +30,15 @@ describe('shared setup links', () => {
     const url = shareUrl('https://citymonitor.app', 'koeln', custom, map);
     expect(new URL(url).searchParams.get('setup')).toMatch(/^c\.[A-Za-z0-9_-]+$/);
     expect(readSharedParams(searchOf(url)).setup).toEqual(custom);
+  });
+
+  it('opens a link made while the support tile was a tile, without it', () => {
+    const old = `?setup=c.${encodeJson({ n: 'Alt', s: [['c1', 'ws'], ['C', 'cs']] })}`;
+    expect(readSharedParams(old).setup).toEqual({
+      name: 'Alt',
+      sections: [{ id: 'c1', tiles: ['weather'] }, { id: 'crises', tiles: ['crisis'] }],
+      hidden: [],
+    });
   });
 
   it('stays short: codes, not labels', () => {

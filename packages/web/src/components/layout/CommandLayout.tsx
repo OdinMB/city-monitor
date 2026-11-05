@@ -14,6 +14,8 @@ import { MapErrorFallback } from '../ErrorFallback.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { getAllCities } from '../../config/index.js';
 import { CitySwitcher } from './CitySwitcher.js';
+import { SetupMenu } from './SetupMenu.js';
+import { MAP_HERO_ID } from '../../hooks/useShowMapLayers.js';
 
 const CityMap = lazy(() =>
   import('../map/CityMap.js').then((m) => ({ default: m.CityMap })),
@@ -21,6 +23,7 @@ const CityMap = lazy(() =>
 
 export function CommandLayout() {
   const { id: cityId } = useCityConfig();
+  const cities = getAllCities();
   const isDesktop = useIsDesktop();
   const isPhone = !isDesktop;
 
@@ -46,7 +49,7 @@ export function CommandLayout() {
           Phones get a shorter band so the first tiles show under it; vh is safe
           there because nothing is anchored to the bottom of the screen. The
           300px floor matches CityMap's min-height, which the hero would clip. */}
-      <div className="relative flex h-hero max-sm:h-[max(40vh,300px)] overflow-hidden">
+      <div id={MAP_HERO_ID} className="relative flex h-hero max-sm:h-[max(40vh,300px)] overflow-hidden">
         <Sidebar />
         <div ref={mapColumnRef} className="flex-1 min-w-0 flex flex-col">
           {/* From tablet width up, warnings open the map column, under the
@@ -62,17 +65,23 @@ export function CommandLayout() {
             </div>
           )}
           <div className="flex-1 min-h-0 relative">
-            {/* From sm to lg, where there is no sidebar, the city switcher sits
-                on the map's top corner, so it is on the first screen while the
-                top bar is off screen (Sidebar has it from lg up). Below the
-                ticker, or at the map's edge when warnings push the map down
-                (globals.css); under the layer drawer when that is open. */}
-            <CitySwitcher
-              cities={getAllCities()}
-              placement="map"
-              hideWhenAlone
-              className="hero-city-switcher absolute top-12 start-3 z-30 hidden sm:block lg:hidden p-0.5 rounded-lg border border-border bg-surface-1/90 backdrop-blur-sm shadow-lg"
-            />
+            {/* From sm to lg, where there is no sidebar, the city switcher and
+                the setup menu sit on the map's top corner, so they are on the
+                first screen while the top bar is off screen (Sidebar has them
+                from lg up). Below the ticker, or at the map's edge when
+                warnings push the map down (globals.css); under the layer
+                drawer when that is open. With one city the menu alone keeps
+                clear of the drawer's edge strip (its button's 2.25rem), which
+                takes presses there. */}
+            <div className="hero-corner absolute top-12 start-3 z-30 hidden sm:flex lg:hidden items-center gap-2">
+              <CitySwitcher
+                cities={cities}
+                placement="map"
+                hideWhenAlone
+                className="relative p-0.5 rounded-lg border border-border bg-surface-1/90 backdrop-blur-sm shadow-lg"
+              />
+              <SetupMenu placement="map" className={cities.length < 2 ? 'ms-7' : ''} />
+            </div>
             <ErrorBoundary FallbackComponent={MapErrorFallback}>
               <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Skeleton lines={4} /></div>}>
                 <CityMap />
