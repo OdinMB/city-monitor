@@ -628,10 +628,14 @@ select:focus-visible,
   }
 }
 
-/* Keep any remaining bottom controls above the skyline separator */
-.maplibregl-ctrl-bottom-right,
-.maplibregl-ctrl-bottom-left {
-  bottom: 5rem;
+/* Keep any remaining bottom controls above the skyline separator, which shows
+   from sm (640px) up; phones have no skyline, so the controls keep their place
+   at the map's edge there. */
+@media (min-width: 640px) {
+  .maplibregl-ctrl-bottom-right,
+  .maplibregl-ctrl-bottom-left {
+    bottom: 5rem;
+  }
 }
 
 /* Touch phones' gesture hint (map/gestures.ts): white text on MapLibre's 40%
