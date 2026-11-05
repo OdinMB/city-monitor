@@ -149,10 +149,10 @@ const PHONE_OPENING_ZOOM = 11;
 
 /**
  * How far past the fitted whole-city view a desktop map opens. Fitting the
- * bounds shows the city's empty outskirts at the edges; half a zoom step in
- * keeps the built-up city filling the map.
+ * bounds shows the city's empty outskirts at the edges; a full zoom step in
+ * opens on the built-up city at a scale where streets and markers read.
  */
-const FITTED_OPENING_ZOOM_IN = 0.5;
+const FITTED_OPENING_ZOOM_IN = 1;
 
 /** Opening view for a new map: the city centre on phones, the whole city otherwise. */
 function initialMapView(
