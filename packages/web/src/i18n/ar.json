@@ -175,6 +175,12 @@
         "city": "البلدية"
       },
       "moreInfo": "المزيد",
+      "tickets": "التذاكر",
+      "hht": {
+        "credit": "المصدر: Veranstaltungsdatenbank Hamburg Tourismus",
+        "suggest": "اقترح فعالية",
+        "report": "أبلغ عن خطأ"
+      },
       "showMore": "{{count}} أخرى"
     },
     "airQuality": {

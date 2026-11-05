@@ -258,7 +258,7 @@ describe('createApp startup runs per active city', () => {
     await createApp();
 
     expect(startupRuns()).toEqual([
-      'ingest-feeds', 'summarize-news', 'ingest-weather', 'ingest-safety', 'ingest-nina',
+      'ingest-feeds', 'summarize-news', 'ingest-weather', 'ingest-events', 'ingest-safety', 'ingest-nina',
       'ingest-pharmacies', 'ingest-traffic', 'ingest-political', 'ingest-aq-grid', 'ingest-uba-air-quality', 'ingest-construction', 'ingest-aeds',
       'ingest-social-atlas', 'ingest-heat-relief', 'ingest-hospitals', 'ingest-water-levels', 'ingest-bathing', 'ingest-bike-sharing', 'ingest-parking', 'ingest-electricity', 'ingest-traffic-counts', 'ingest-ev-charging', 'ingest-ev-charging-status', 'ingest-soil-moisture', 'ingest-wastewater', 'ingest-respiratory-cases', 'ingest-labor-market',
       'ingest-population', 'ingest-traffic-accidents', 'ingest-election-results', 'ingest-pollen', 'ingest-council-meetings',

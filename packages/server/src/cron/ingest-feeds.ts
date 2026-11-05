@@ -9,6 +9,7 @@ import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 import { filterAndGeolocateNews } from '../lib/openai.js';
+import { toTeaser } from '../lib/teaser.js';
 
 const log = createLogger('ingest-feeds');
 
@@ -187,7 +188,7 @@ async function fetchOneFeed(
         publishedAt: fi.publishedAt,
         sourceName: feed.name,
         sourceUrl: feed.url,
-        description: fi.description,
+        description: feed.teaserChars ? toTeaser(fi.description, feed.teaserChars) : fi.description,
         category: feed.category || 'local',
         tier: feed.tier,
         lang: feed.lang,

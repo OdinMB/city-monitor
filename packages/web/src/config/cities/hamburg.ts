@@ -20,8 +20,10 @@ export const hamburg: WebCityConfig = {
   },
   theme: { accent: '#004B93' },
   // Transit from HVV's Geofox GTI, which the server fetches only with its
-  // credentials set (otherwise the tile says there is no transit data). No
-  // events, appointments, budget, noise sensors, district mayors or Berlin's
+  // credentials set (otherwise the tile says there is no transit data). Events
+  // from Hamburg Tourismus ('hhtEvents'): the tile shows only while the API
+  // returns some, which until HHT approves needs the preview token. No
+  // appointments, budget, noise sensors, district mayors or Berlin's
   // own sources. Council meetings are the
   // Bürgerschaft's only; no Bezirksversammlung source. Bathing water from the
   // city's WFS, the rent map from its Wohnlagenverzeichnis WMS. The social
@@ -31,5 +33,5 @@ export const hamburg: WebCityConfig = {
   // constituencies are named after them, so the political map has a Bundestag view.
   // The traffic layer adds the Verkehrslage congestion map (WMS) and the city's
   // car and bicycle counters.
-  features: ['news', 'police', 'nina', 'evCharging', 'evChargingLive', 'pollen', 'waterLevels', 'transit', 'roadworks', 'bathing', 'socialAtlas', 'population', 'councilMeetings', 'laborMarket', 'wastewater', 'respiratoryCases', 'airQualityStations', 'bikeSharing', 'stationLifts', 'parking', 'carCounts', 'bikeCounts', 'trafficAccidents', 'electricity', 'electionResults', 'soilMoisture', 'drinkingFountains', 'pharmacies', 'aeds', 'hospitals', 'political', 'noiseMap', 'rentMap', 'trafficFlowMap', 'crisis', 'politicalMap', 'bundestagByDistrict', 'streetTrees'],
+  features: ['news', 'police', 'nina', 'evCharging', 'evChargingLive', 'pollen', 'waterLevels', 'transit', 'hhtEvents', 'roadworks', 'bathing', 'socialAtlas', 'population', 'councilMeetings', 'laborMarket', 'wastewater', 'respiratoryCases', 'airQualityStations', 'bikeSharing', 'stationLifts', 'parking', 'carCounts', 'bikeCounts', 'trafficAccidents', 'electricity', 'electionResults', 'soilMoisture', 'drinkingFountains', 'pharmacies', 'aeds', 'hospitals', 'political', 'noiseMap', 'rentMap', 'trafficFlowMap', 'crisis', 'politicalMap', 'bundestagByDistrict', 'streetTrees'],
 };

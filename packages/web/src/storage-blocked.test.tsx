@@ -265,6 +265,15 @@ describe.each(['property', 'methods'] as const)('with browser storage blocked (%
     });
     expect(screen.queryByRole('button')).toBeNull();
   });
+
+  it("keeps a review link's preview token for the page view", async () => {
+    vi.resetModules();
+    const { capturePreviewToken, previewHeaders } = await import('./lib/preview-token.js');
+    const history = { state: null, replaceState: vi.fn() } as unknown as History;
+    const location = { search: '?preview=abc123', pathname: '/hamburg', hash: '' } as Location;
+    expect(() => capturePreviewToken(location, history)).not.toThrow();
+    expect(previewHeaders()).toEqual({ 'X-Preview-Token': 'abc123' });
+  });
 });
 
 describe('with browser storage available', () => {

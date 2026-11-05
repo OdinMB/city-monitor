@@ -23,6 +23,7 @@ export const FAVICON_SLUGS: Record<string, string> = {
   'Stadt Köln': 'stadt-koeln',
   // München
   'BR24 Oberbayern': 'br24-oberbayern',
+  'Rathaus Umschau': 'rathaus-umschau',
   'Feuerwehr München': 'feuerwehr-muenchen',
 };
 

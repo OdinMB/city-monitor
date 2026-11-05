@@ -728,6 +728,9 @@ function generateEvents(rng: Rng, now: Date, place: Place): CityEvent[] {
       free: (kind.source === 'kulturdaten' && rng.chance(0.4)) || undefined,
       source: kind.source,
       price: kind.source === 'ticketmaster' ? `${rng.int(10, 25)}–${rng.int(30, 60)} €` : undefined,
+      // HHT (Hamburg) lists a booking link apart from the event link; drawn for it alone, so
+      // the other cities' data stays as it was for a seed
+      bookingUrl: kind.source === 'hht' && rng.chance(0.6) ? `${EXAMPLE}/events/${i + 1}/tickets` : undefined,
     };
   });
   return events.sort((a, b) => a.date.localeCompare(b.date));

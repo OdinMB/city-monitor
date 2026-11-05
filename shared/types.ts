@@ -55,7 +55,8 @@ export type CityFeature =
   | 'waterLevels'
   | 'floodStatus'     // dataSources.floodStatus: flood class of state gauges (LHP)
   | 'transit'
-  | 'events'
+  | 'events'          // dataSources.events with a source served to everyone: the events tile
+  | 'hhtEvents'       // dataSources.events with Hamburg Tourismus ('hht'), hidden until HHT approves: the events tile only while it has events
   | 'appointments'
   | 'budget'
   | 'roadworks'
@@ -132,6 +133,13 @@ export interface FeedConfig {
    * Postgres keeps only the title and link. Default true.
    */
   storeText?: boolean;
+  /**
+   * For a feed whose permission covers headline and teaser only while the
+   * feed carries the full text: each description is cut to a plain-text
+   * teaser of at most this many characters as it is fetched, so nothing
+   * downstream (classifier, digest, API, Postgres) sees more.
+   */
+  teaserChars?: number;
 }
 
 export interface CityMapLayer {
@@ -143,6 +151,10 @@ export interface CityMapLayer {
 
 export interface EventSourceConfig {
   source: CityEvent['source'];
+  /**
+   * The endpoint. For 'hht' the export's FTP location, `ftp://<host>/<file>`, always
+   * fetched with explicit TLS; HHT_FTP_HOST and HHT_FTP_FILE override its parts.
+   */
   url: string;
   lookaheadDays?: number; // Default: 14
 }
@@ -1703,7 +1715,8 @@ export interface NewsDigest {
   updatedAt: string;
 }
 
-// City events (kulturdaten.berlin, Ticketmaster, go~mus, Stadt Köln open data)
+// City events (kulturdaten.berlin, Ticketmaster, go~mus, Stadt Köln open data,
+// Hamburg Tourismus' Veranstaltungsdatenbank)
 export interface CityEvent {
   id: string;
   title: string;
@@ -1714,8 +1727,11 @@ export interface CityEvent {
   url: string;
   description?: string;
   free?: boolean;
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus' | 'stadt-koeln';
+  /** 'hht' events are served only with the preview token while HHT_PREVIEW_ONLY is true, and never with HHT_EVENTS=false (packages/server/src/lib/hht-gate.ts). */
+  source: 'kulturdaten' | 'ticketmaster' | 'gomus' | 'stadt-koeln' | 'hht';
   price?: string;
+  /** A ticket link apart from `url` (HHT: the date's booking link, else the event's) */
+  bookingUrl?: string;
 }
 
 // Safety / police reports

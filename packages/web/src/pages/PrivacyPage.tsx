@@ -80,6 +80,11 @@ const STORED_VALUES = [
     title: 'Single-key shortcuts setting',
     description: '"off" or "on" — set only when you switch the single-key shortcuts off (or back on), so the choice stays.',
   },
+  {
+    key: 'hht-preview',
+    title: 'Preview token',
+    description: 'Set only when you open a review link we gave a partner (with "?preview=" in it): the token that shows events not yet public. Kept in sessionStorage, so it is gone when you close the tab.',
+  },
 ];
 
 // The one cookie the app sets (lib/setup-cookie.ts); the same scan finds its name.
@@ -109,8 +114,9 @@ export function PrivacyPage() {
             any other data collection that identifies you. When you visit this site, nothing is
             stored on your device except your theme, language and keyboard shortcut settings, three
             small flags that remember which warnings you dismissed and which tips you have already
-            seen, and, once you change the dashboard&apos;s tile layout or map, one first-party
-            cookie that remembers those display preferences.
+            seen, once you change the dashboard&apos;s tile layout or map, one first-party cookie
+            that remembers those display preferences, and, only if you open a partner&apos;s review
+            link, a preview token for that tab.
           </p>
         </header>
 
@@ -157,10 +163,11 @@ export function PrivacyPage() {
             ))}
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            None of these values identifies you, and none is sent to any third party. The only one
-            our server uses is your language: the dashboard includes it when it asks for the daily
-            briefing, so the briefing comes back in your language. You can clear them at any time in
-            your browser settings.
+            None of these values identifies you, and none is sent to any third party. Our server sees
+            only two: your language, which the dashboard includes when it asks for the daily
+            briefing, so the briefing comes back in your language; and a preview token, if you have
+            one, which the dashboard sends with its requests for events. You can clear them at any
+            time in your browser settings.
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             The dashboard&apos;s &ldquo;Share this view&rdquo; puts the tile layout on screen and your

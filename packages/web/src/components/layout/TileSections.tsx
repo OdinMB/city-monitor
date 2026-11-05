@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useTileSetup } from '../../hooks/useTileSetup.js';
 import { useLiftTileShown } from '../../hooks/useLiftTileShown.js';
+import { useEventsTileShown } from '../../hooks/useEventsTileShown.js';
 import { sectionLabel } from '../../lib/setup-labels.js';
 import { defaultView, shownCustom, shownSections } from '../../lib/setup-state.js';
 import type { CustomSetup } from '../../lib/custom-setup.js';
@@ -112,7 +113,8 @@ export function TileSections() {
   const available = useMemo(() => cityTiles(features), [features]);
   const sections = useMemo(() => shownSections(view, cityId, available), [view, cityId, available]);
   const collapsed = view.collapsed[view.choice] ?? [];
-  const onScreen = (tile: TileId) => tile !== 'liftOutages' || liftShown;
+  const eventsShown = useEventsTileShown();
+  const onScreen = (tile: TileId) => (tile !== 'liftOutages' || liftShown) && (tile !== 'events' || eventsShown);
 
   return (
     // Sections flow in order through a four-column grid (two from sm), each as

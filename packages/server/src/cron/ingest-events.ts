@@ -5,6 +5,7 @@ import { saveEvents } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { createHhtSource } from './events-hht.js';
 
 const log = createLogger('ingest-events');
 
@@ -105,12 +106,14 @@ interface GomusResponse {
 // ---------------------------------------------------------------------------
 
 export function createEventsIngestion(cache: Cache, db: Db | null = null) {
+  // Holds the last HHT download between runs
+  const hht = createHhtSource();
   return async function ingestEvents(): Promise<void> {
     const cities = getActiveCities();
     for (const city of cities) {
       if (!city.dataSources.events || city.dataSources.events.length === 0) continue;
       try {
-        await ingestCityEvents(city.id, city.name, city.country, city.dataSources.events, cache, db);
+        await ingestCityEvents(city.id, city.name, city.country, city.dataSources.events, cache, db, hht);
       } catch (err) {
         log.error(`${city.id} failed`, err);
       }
@@ -125,6 +128,7 @@ async function ingestCityEvents(
   sources: EventSourceConfig[],
   cache: Cache,
   db: Db | null,
+  hht: ReturnType<typeof createHhtSource>,
 ): Promise<void> {
   const nowIso = new Date().toISOString();
   const allEvents: CityEvent[] = [];
@@ -132,6 +136,7 @@ async function ingestCityEvents(
   for (const config of sources) {
     try {
       let fetched: CityEvent[] = [];
+      let save = true;
 
       switch (config.source) {
         case 'kulturdaten':
@@ -146,13 +151,16 @@ async function ingestCityEvents(
         case 'stadt-koeln':
           fetched = await fetchKoelnEvents(config.url, config.lookaheadDays ?? 14);
           break;
+        case 'hht':
+          ({ events: fetched, save } = await hht.fetch(cityId, config, db));
+          break;
       }
 
       // Filter to future events only
       fetched = fetched.filter((e) => e.date >= nowIso);
 
       // Per-source DB write
-      if (db && fetched.length > 0) {
+      if (db && save && fetched.length > 0) {
         try {
           await saveEvents(db, cityId, config.source, fetched);
         } catch (err) {

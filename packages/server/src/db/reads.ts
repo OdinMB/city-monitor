@@ -365,11 +365,30 @@ export async function loadPoliticalFetchedAt(
 // Non-snapshot tables (unchanged)
 // ---------------------------------------------------------------------------
 
+function eventFromRow(row: typeof events.$inferSelect): CityEvent {
+  return {
+    id: row.hash,
+    title: row.title,
+    venue: row.venue ?? undefined,
+    date: row.date.toISOString(),
+    endDate: row.endDate?.toISOString(),
+    category: (row.category as CityEvent['category']) ?? 'other',
+    url: row.url ?? '',
+    description: row.description ?? undefined,
+    free: row.free ?? undefined,
+    source: (row.source as CityEvent['source']) ?? 'kulturdaten',
+    price: row.price ?? undefined,
+    bookingUrl: row.bookingUrl ?? undefined,
+  };
+}
+
 export async function loadEvents(db: Db, cityId: string): Promise<DbResult<CityEvent[]>> {
+  // Upcoming only: past rows linger until data retention removes them, and
+  // Hamburg's ~2,200 HHT rows a day would otherwise fill the limit with them
   const rows = await db
     .select()
     .from(events)
-    .where(eq(events.cityId, cityId))
+    .where(and(eq(events.cityId, cityId), gte(events.date, new Date())))
     .orderBy(events.date)
     .limit(500);
 
@@ -379,22 +398,29 @@ export async function loadEvents(db: Db, cityId: string): Promise<DbResult<CityE
   // Safety net: discard data older than 48h (events cron runs every 6h)
   if (Date.now() - newest.getTime() > 48 * 60 * 60 * 1000) return null;
 
-  return {
-    data: rows.map((row) => ({
-      id: row.hash,
-      title: row.title,
-      venue: row.venue ?? undefined,
-      date: row.date.toISOString(),
-      endDate: row.endDate?.toISOString(),
-      category: (row.category as CityEvent['category']) ?? 'other',
-      url: row.url ?? '',
-      description: row.description ?? undefined,
-      free: row.free ?? undefined,
-      source: (row.source as CityEvent['source']) ?? 'kulturdaten',
-      price: row.price ?? undefined,
-    })),
-    fetchedAt: newest,
-  };
+  return { data: rows.map(eventFromRow), fetchedAt: newest };
+}
+
+/**
+ * One source's upcoming events and when it was last fetched (the newest row's
+ * fetchedAt), so a source fetched less often than the job runs (HHT, daily)
+ * can serve its saved rows in between.
+ */
+export async function loadLatestEventBatch(db: Db, cityId: string, source: CityEvent['source']): Promise<DbResult<CityEvent[]>> {
+  const [latest] = await db
+    .select({ fetchedAt: events.fetchedAt })
+    .from(events)
+    .where(and(eq(events.cityId, cityId), eq(events.source, source)))
+    .orderBy(desc(events.fetchedAt))
+    .limit(1);
+  if (!latest) return null;
+
+  const rows = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.cityId, cityId), eq(events.source, source), gte(events.date, new Date())))
+    .orderBy(events.date);
+  return { data: rows.map(eventFromRow), fetchedAt: latest.fetchedAt };
 }
 
 export interface SafetyGeoState {

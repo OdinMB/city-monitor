@@ -14,7 +14,7 @@ import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
 import { muenchen } from '../../config/cities/muenchen.js';
 import { CommandLayout } from './CommandLayout.js';
-import { LiftOutagesTile } from './DashboardTile.js';
+import { EventsTile, LiftOutagesTile } from './DashboardTile.js';
 
 // Only where the warnings sit matters here, not the map itself.
 vi.mock('../map/CityMap.js', () => ({ CityMap: () => <div /> }));
@@ -273,5 +273,37 @@ describe('LiftOutagesTile', () => {
     renderTile({ ...hamburg, id: 'koeln', features: ['liftOutages', 'stationLifts'] }, null);
     expect(title()).not.toBeNull();
     expect(screen.getByText(i18n.t('panel.liftOutages.empty'))).toBeTruthy();
+  });
+});
+
+describe('EventsTile', () => {
+  function renderTile(city: WebCityConfig, data: unknown[]) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    queryClient.setQueryData(['events', city.id], { data, fetchedAt: data.length ? new Date().toISOString() : null });
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <CityContext.Provider value={city}>
+          <EventsTile />
+        </CityContext.Provider>
+      </QueryClientProvider>,
+    );
+  }
+  const title = () => screen.queryByRole('heading', { level: 3, name: i18n.t('panel.events.title') });
+  const hhtEvent = { id: 'hht-1', title: 'Wochenmarkt am Platzhalterplatz', date: '2099-01-01T08:00:00', category: 'market', url: '', source: 'hht' };
+
+  it("leaves Hamburg's public page as it was while HHT's events are hidden", () => {
+    renderTile(hamburg, []);
+    expect(title()).toBeNull();
+  });
+
+  it('shows Hamburg the tile once the API returns HHT events (a preview, or once public)', () => {
+    renderTile(hamburg, [hhtEvent]);
+    expect(title()).not.toBeNull();
+    expect(screen.getByText('Wochenmarkt am Platzhalterplatz')).toBeTruthy();
+  });
+
+  it('keeps the tile of a city with public events, which says when there are none', () => {
+    renderTile(berlin, []);
+    expect(title()).not.toBeNull();
   });
 });

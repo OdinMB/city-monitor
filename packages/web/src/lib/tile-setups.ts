@@ -22,7 +22,8 @@ const TILE_GATES = {
   liftOutages: (has: Has) => has('liftOutages') || has('stationLifts'),
   pollen: (has: Has) => has('pollen'),
   floodStatus: (has: Has) => has('floodStatus'),
-  events: (has: Has) => has('events'),
+  // Hamburg Tourismus' events show only while the API returns some (useEventsTileShown)
+  events: (has: Has) => has('events') || has('hhtEvents'),
   appointments: (has: Has) => has('appointments'),
   bathing: (has: Has) => has('bathing'),
   crisis: (has: Has) => has('crisis'),

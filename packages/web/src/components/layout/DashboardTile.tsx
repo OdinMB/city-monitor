@@ -4,6 +4,7 @@ import { useIsDesktop } from '../../hooks/useMediaQuery.js';
 import { useCityConfig } from '../../hooks/useCityConfig.js';
 import { useBathingOffSeason } from '../../hooks/useBathingOffSeason.js';
 import { useLiftTileShown } from '../../hooks/useLiftTileShown.js';
+import { useEventsTileShown } from '../../hooks/useEventsTileShown.js';
 import { SUPPORT_URL } from '../../lib/constants.js';
 import { tileTitle } from '../../lib/setup-labels.js';
 import type { TileId } from '../../lib/tile-setups.js';
@@ -69,6 +70,17 @@ export function LiftOutagesTile() {
   return (
     <Tile title={t('panel.liftOutages.title')} span={1} expandable>
       {(expanded) => <LiftOutagesStrip expanded={expanded} />}
+    </Tile>
+  );
+}
+
+/** Public events; Hamburg Tourismus' only while the API returns some (useEventsTileShown). */
+export function EventsTile() {
+  const { t } = useTranslation();
+  if (!useEventsTileShown()) return null;
+  return (
+    <Tile title={t('panel.events.title')} span={2}>
+      <EventsStrip />
     </Tile>
   );
 }
@@ -146,11 +158,7 @@ const TILES: Record<TileId, (props: TileProps) => ReactNode> = {
       <FloodStatusStrip />
     </Tile>
   ),
-  events: ({ title }) => (
-    <Tile title={title} span={2}>
-      <EventsStrip />
-    </Tile>
-  ),
+  events: () => <EventsTile />,
   appointments: ({ title, isDesktop }) => (
     <Tile title={title} span={1} expandable defaultExpanded={isDesktop}>
       {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}

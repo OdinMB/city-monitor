@@ -32,6 +32,7 @@ vi.mock('../../hooks/useAirQualityGrid.js', () => ({
 
 afterEach(async () => {
   cleanup(); // unmount first, so switching back to English re-renders nothing
+  vi.useRealTimers();
   await i18n.changeLanguage('en');
 });
 
@@ -152,10 +153,9 @@ describe('AirQualityStrip official stations', () => {
   const WAQI: AirQualityGridPoint = { lat: 52.52, lon: 13.4, europeanAqi: 85, station: 'Berlin Mitte, Germany', url: 'https://aqicn.org/station/@6132/' };
 
   beforeEach(() => {
-    // The readings are from the night of 2 to 3 November; the hour shows as a
-    // bare clock time only on the day it ends, so the test runs on that day.
+    // The clock time drops its date only on the reading's own day, so pin "now" to it
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-11-03T08:00:00Z'));
+    vi.setSystemTime(new Date('2026-11-03T00:30:00Z'));
     hooks.airQuality = { data: AIR_QUALITY, fetchedAt: null, isLoading: false, isError: false, refetch: vi.fn() };
     hooks.grid = [WAQI];
     hooks.stationsEnabled = [];
@@ -164,10 +164,6 @@ describe('AirQualityStrip official stations', () => {
       station({ code: 'DEBE068', name: 'Berlin Mitte', index: 2, no2: 31, pm10: 19, pm25: 14 }),
       station({ code: 'DEBE065', name: 'Berlin Frankfurter Allee', setting: 'traffic', index: 3, no2: 80, pm10: 25, pm25: 18 }),
     ];
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('asks for the stations because the city has them', () => {

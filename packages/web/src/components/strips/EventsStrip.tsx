@@ -41,10 +41,22 @@ const MAX_VISIBLE = 25;
 
 const FRESH_MAX_AGE = staleAfter('events');
 
+/** Where Hamburg Tourismus asks readers of its events to suggest one or report an error */
+export const HHT_SUGGEST_URL = 'https://eingabe.hamburg.events/';
+export const HHT_REPORT_URL = 'mailto:veranstaltungsdatenbank@hamburg-tourismus.de';
+
+/**
+ * Event times are the city's wall-clock time. Sources send them without an
+ * offset ("2030-05-11T20:00:00") or, once stored, marked UTC; both are read as
+ * UTC and shown in UTC, so the browser's own time zone never shifts them.
+ */
+function wallTime(dateStr: string): Date {
+  return new Date(/(Z|[+-]\d{2}:?\d{2})$/.test(dateStr) ? dateStr : `${dateStr}Z`);
+}
+
 function formatEventTime(dateStr: string, lang: string): string {
   try {
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
+    return wallTime(dateStr).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
   } catch {
     return dateStr;
   }
@@ -52,8 +64,7 @@ function formatEventTime(dateStr: string, lang: string): string {
 
 function formatEventDay(dateStr: string, lang: string): string {
   try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(lang, { weekday: 'short', day: 'numeric', timeZone: 'UTC' });
+    return wallTime(dateStr).toLocaleDateString(lang, { weekday: 'short', day: 'numeric', timeZone: 'UTC' });
   } catch {
     return '';
   }
@@ -61,11 +72,14 @@ function formatEventDay(dateStr: string, lang: string): string {
 
 function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key: string) => string }) {
   const [expanded, setExpanded] = useState(false);
-  const hasDetail = !!(event.venue || event.description || event.price || event.url);
+  const hasDetail = !!(event.venue || event.description || event.price || event.url || event.bookingUrl);
   const time = formatEventTime(event.date, lang);
   const day = formatEventDay(event.date, lang);
   const showTime = time !== '00:00';
   const arrow = forwardArrow(lang);
+  // HHT's text is German, and only German may be shown
+  const textLang = event.source === 'hht' ? 'de' : undefined;
+  const linkClass = 'inline-flex items-center min-h-6 -my-1 text-link hover:underline';
 
   const content = (
     <>
@@ -76,7 +90,7 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
         </span>
         {/* A German or English title keeps its own direction in Arabic, so
             truncate cuts it at its end. */}
-        <SourceText as="span" className="font-medium text-gray-900 dark:text-gray-100 truncate">
+        <SourceText as="span" lang={textLang} className="font-medium text-gray-900 dark:text-gray-100 truncate">
           {event.title}
         </SourceText>
         <span className="shrink-0 text-muted ms-auto whitespace-nowrap">
@@ -92,22 +106,25 @@ function EventCard({ event, lang, t }: { event: CityEvent; lang: string; t: (key
       {/* Expanded detail */}
       {expanded && (
         <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700 space-y-1 text-[11px] text-muted text-start">
-          {event.venue && <div><SourceText>{event.venue}</SourceText></div>}
-          {event.description && <SourceText as="div" className="line-clamp-3">{event.description}</SourceText>}
+          {event.venue && <div><SourceText lang={textLang}>{event.venue}</SourceText></div>}
+          {event.description && <SourceText as="div" lang={textLang} className="line-clamp-3">{event.description}</SourceText>}
           {event.endDate && (
             <div>{arrow} {formatEventDay(event.endDate, lang)} {formatEventTime(event.endDate, lang)}</div>
           )}
           {event.price && <div>{event.price}</div>}
-          {event.url && (
-            <a
-              href={safeUrl(event.url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center min-h-6 -my-1 text-link hover:underline"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {t('panel.events.moreInfo')} {arrow}
-            </a>
+          {(event.url || event.bookingUrl) && (
+            <div className="flex flex-wrap gap-x-3">
+              {event.url && (
+                <a href={safeUrl(event.url)} target="_blank" rel="noopener noreferrer" className={linkClass} onClick={(e) => e.stopPropagation()}>
+                  {t('panel.events.moreInfo')} {arrow}
+                </a>
+              )}
+              {event.bookingUrl && (
+                <a href={safeUrl(event.bookingUrl)} target="_blank" rel="noopener noreferrer" className={linkClass} onClick={(e) => e.stopPropagation()}>
+                  {t('panel.events.tickets')} {arrow}
+                </a>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -275,6 +292,18 @@ export function EventsStrip() {
           </div>
         )}
       </div>
+      {/* Hamburg Tourismus asks for both links wherever its events are shown */}
+      {presentSources.has('hht') && (
+        <p className="flex flex-wrap gap-x-3 pt-1.5 text-[11px] text-muted">
+          <span>{t('panel.events.hht.credit')}</span>
+          <a href={HHT_SUGGEST_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-6 -my-1 text-link hover:underline">
+            {t('panel.events.hht.suggest')}
+          </a>
+          <a href={HHT_REPORT_URL} className="inline-flex items-center min-h-6 -my-1 text-link hover:underline">
+            {t('panel.events.hht.report')}
+          </a>
+        </p>
+      )}
       {agoText && <TileFooter stale={isStale}>{t('stale.updated', { time: agoText })}</TileFooter>}
     </>
   );
