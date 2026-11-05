@@ -41,7 +41,7 @@ export const hamburg: CityConfig = {
     transit: { provider: 'geofox', endpoint: 'https://gti.geofox.de' },
     // Hamburg Tourismus' Veranstaltungsdatenbank: a daily XML export over FTPS, under a contract
     // with HHT. Fetched only with HHT_FTP_USER and HHT_FTP_PASSWORD (a fork needs its own contract
-    // and credentials), and served only with the preview token until HHT approves (HHT_PREVIEW_ONLY).
+    // and credentials), and public since HHT approved on 2026-11-05 (HHT_PREVIEW_ONLY is false).
     // The contract's display rules and the gate: .context/events-safety.md#hamburg-tourismus
     events: [{ source: 'hht', url: 'ftp://ftp.infomaxnet.de/hamburg25.xml.zip' }],
     police: {

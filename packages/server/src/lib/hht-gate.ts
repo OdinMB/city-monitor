@@ -16,8 +16,8 @@ import { isSourceEnabled } from './source-switch.js';
 export const PREVIEW_TOKEN_HEADER = 'X-Preview-Token';
 /** A shorter configured token admits no one, so a typo like "1" cannot open the gate. */
 const MIN_TOKEN_LENGTH = 16;
-/** True until HHT approves the integration; then false, in a one-line change. */
-export const HHT_PREVIEW_ONLY = true;
+/** False since HHT approved the integration in writing on 2026-11-05; true would hide their events behind the preview token again. */
+export const HHT_PREVIEW_ONLY = false;
 /** Source opt-out: HHT_EVENTS=false hides HHT's events everywhere. */
 export const HHT_EVENTS_SWITCH = 'HHT_EVENTS';
 

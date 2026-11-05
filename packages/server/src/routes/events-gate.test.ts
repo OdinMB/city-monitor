@@ -68,33 +68,15 @@ describe('HHT preview gate on every read path', () => {
     },
   };
 
+  it('is public since HHT approved on 2026-11-05', () => {
+    expect(HHT_PREVIEW_ONLY).toBe(false);
+  });
+
   describe.each(Object.entries(paths))('%s', (_name, read) => {
-    it('leaves HHT events out without a token, and varies on the token header', async () => {
-      vi.stubEnv('HHT_EVENTS_PREVIEW_TOKEN', TOKEN);
+    it('serves HHT events to everyone, cacheably', async () => {
       const { res, ids } = await read({});
-      expect(ids).toEqual(['k-1']);
-      expect(res.headers.get('vary')).toMatch(/X-Preview-Token/i);
-      expect(res.headers.get('cache-control')).toBe('public, max-age=1800');
-    });
-
-    it('leaves them out for a wrong token', async () => {
-      vi.stubEnv('HHT_EVENTS_PREVIEW_TOKEN', TOKEN);
-      const { ids } = await read({ 'X-Preview-Token': `${TOKEN}x` });
-      expect(ids).toEqual(['k-1']);
-    });
-
-    it('leaves them out when no token is configured, whatever is sent', async () => {
-      const { ids } = await read({ 'X-Preview-Token': '' });
-      expect(ids).toEqual(['k-1']);
-      const again = await read({ 'X-Preview-Token': 'undefined' });
-      expect(again.ids).toEqual(['k-1']);
-    });
-
-    it('includes them for the right token, in a response no cache may keep', async () => {
-      vi.stubEnv('HHT_EVENTS_PREVIEW_TOKEN', TOKEN);
-      const { res, ids } = await read({ 'X-Preview-Token': TOKEN });
       expect(ids).toEqual(['k-1', 'hht-1']);
-      expect(res.headers.get('cache-control')).toBe('private, no-store');
+      expect(res.headers.get('cache-control')).toBe('public, max-age=1800');
     });
 
     it('leaves them out for everyone, token or not, when HHT_EVENTS is false', async () => {
@@ -105,35 +87,32 @@ describe('HHT preview gate on every read path', () => {
     });
   });
 
-  it('is in preview until HHT approves (going public is a code change)', () => {
-    expect(HHT_PREVIEW_ONLY).toBe(true);
-  });
-
-  describe('servedEvents once public', () => {
+  /** The preview mode, kept for a later source that needs one: HHT_PREVIEW_ONLY = true */
+  describe('servedEvents in preview mode', () => {
     function fakeRes() {
       const headers: Record<string, string> = {};
       const res = { vary: () => res, set: (k: string, v: string) => { headers[k] = v; return res; } };
       return { res: res as unknown as Response, headers };
     }
-    const req = { get: () => undefined } as unknown as Request;
+    const reqWith = (token?: string) => ({ get: () => token }) as unknown as Request;
+    const ids = (events: CityEvent[]) => events.map((e) => e.id);
 
-    it('serves HHT events to everyone, cacheably', () => {
+    it('leaves HHT events out without a token, or with a wrong one', () => {
+      expect(ids(servedEvents(EVENTS, reqWith(), fakeRes().res, { HHT_EVENTS_PREVIEW_TOKEN: TOKEN }, true))).toEqual(['k-1']);
+      expect(ids(servedEvents(EVENTS, reqWith(`${TOKEN}x`), fakeRes().res, { HHT_EVENTS_PREVIEW_TOKEN: TOKEN }, true))).toEqual(['k-1']);
+    });
+
+    it('leaves them out when no token, or one shorter than 16 characters, is configured', () => {
+      expect(ids(servedEvents(EVENTS, reqWith(''), fakeRes().res, {}, true))).toEqual(['k-1']);
+      const short = 'p'.repeat(8);
+      expect(ids(servedEvents(EVENTS, reqWith(short), fakeRes().res, { HHT_EVENTS_PREVIEW_TOKEN: short }, true))).toEqual(['k-1']);
+    });
+
+    it('includes them for the right token, in a response no cache may keep', () => {
       const { res, headers } = fakeRes();
-      expect(servedEvents(EVENTS, req, res, {}, false).map((e) => e.id)).toEqual(['k-1', 'hht-1']);
-      expect(headers['Cache-Control']).toBeUndefined();
+      expect(ids(servedEvents(EVENTS, reqWith(TOKEN), res, { HHT_EVENTS_PREVIEW_TOKEN: TOKEN }, true))).toEqual(['k-1', 'hht-1']);
+      expect(headers['Cache-Control']).toBe('private, no-store');
     });
-
-    it('still honours HHT_EVENTS=false', () => {
-      const { res } = fakeRes();
-      expect(servedEvents(EVENTS, req, res, { HHT_EVENTS: 'false' }, false).map((e) => e.id)).toEqual(['k-1']);
-    });
-  });
-
-  it('ignores a configured token shorter than 16 characters', async () => {
-    const short = 'p'.repeat(8);
-    vi.stubEnv('HHT_EVENTS_PREVIEW_TOKEN', short);
-    const { ids } = await paths['events (memory cache)']({ 'X-Preview-Token': short });
-    expect(ids).toEqual(['k-1']);
   });
 });
 
