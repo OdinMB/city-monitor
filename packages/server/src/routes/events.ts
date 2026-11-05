@@ -5,6 +5,7 @@ import { loadEvents } from '../db/reads.js';
 import { getCityConfig } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
+import { servedEvents } from '../lib/hht-gate.js';
 import type { CityEvent } from '../cron/ingest-events.js';
 
 const log = createLogger('route:events');
@@ -20,11 +21,12 @@ export function createEventsRouter(cache: Cache, db: Db | null = null) {
     }
 
     const nowIso = new Date().toISOString();
-    const filterFuture = (items: CityEvent[]) => items.filter((e) => e.date >= nowIso);
+    // Every response with events passes the HHT preview gate
+    const served = (items: CityEvent[]) => servedEvents(items.filter((e) => e.date >= nowIso), req, res);
 
     const cached = cache.getWithMeta<CityEvent[]>(CK.eventsUpcoming(city.id));
     if (cached) {
-      res.json({ data: filterFuture(cached.data), fetchedAt: cached.fetchedAt });
+      res.json({ data: served(cached.data), fetchedAt: cached.fetchedAt });
       return;
     }
 
@@ -33,7 +35,7 @@ export function createEventsRouter(cache: Cache, db: Db | null = null) {
         const result = await loadEvents(db, city.id);
         if (result) {
           cache.set(CK.eventsUpcoming(city.id), result.data, 21600, result.fetchedAt);
-          res.json({ data: filterFuture(result.data), fetchedAt: result.fetchedAt.toISOString() });
+          res.json({ data: served(result.data), fetchedAt: result.fetchedAt.toISOString() });
           return;
         }
       } catch (err) {

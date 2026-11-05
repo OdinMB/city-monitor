@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { loadWeather, loadTransitAlerts, loadEvents, loadSafetyReports, loadSafetyGeoState, loadSummary, loadAirQualityGrid, loadPollen, loadNoiseSensors } from './reads.js';
+import { loadWeather, loadTransitAlerts, loadEvents, loadLatestEventBatch, loadSafetyReports, loadSafetyGeoState, loadSummary, loadAirQualityGrid, loadPollen, loadNoiseSensors } from './reads.js';
 import type { Db } from './index.js';
 
 /**
@@ -147,6 +147,28 @@ describe('DB reads', () => {
     expect(result!.data[0].id).toBe('h1');
     expect(result!.data[0].source).toBe('ticketmaster');
     expect(result!.data[0].price).toBe('29–89 EUR');
+  });
+
+  it('loadEvents carries the booking link', async () => {
+    const db = createMockDb([
+      { hash: 'hht-1', title: 'Markt', venue: null, date: new Date('2030-05-11T08:00:00Z'), endDate: null, category: 'market', url: '', description: null, free: true, source: 'hht', price: null, bookingUrl: 'https://example.org/buchen', fetchedAt: new Date() },
+    ]);
+    const result = await loadEvents(db, 'hamburg');
+    expect(result!.data[0]).toMatchObject({ source: 'hht', bookingUrl: 'https://example.org/buchen', date: '2030-05-11T08:00:00.000Z' });
+  });
+
+  it('loadLatestEventBatch returns null for a source never fetched', async () => {
+    expect(await loadLatestEventBatch(createMockDb([]), 'hamburg', 'hht')).toBeNull();
+  });
+
+  it("loadLatestEventBatch returns a source's events with its last fetch time", async () => {
+    const fetchedAt = new Date('2030-05-10T08:00:00Z');
+    const db = createMockDb([
+      { hash: 'hht-1', title: 'Markt', venue: null, date: new Date('2030-05-11T08:00:00Z'), endDate: null, category: 'market', url: '', description: null, free: null, source: 'hht', price: null, bookingUrl: null, fetchedAt },
+    ]);
+    const result = await loadLatestEventBatch(db, 'hamburg', 'hht');
+    expect(result!.fetchedAt).toBe(fetchedAt);
+    expect(result!.data.map((e) => e.id)).toEqual(['hht-1']);
   });
 
   it('loadSafetyReports returns null when no rows', async () => {

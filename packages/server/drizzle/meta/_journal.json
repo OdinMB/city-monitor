@@ -50,6 +50,13 @@
       "when": 1790213816790,
       "tag": "0006_safety_geo_attempted",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793826993128,
+      "tag": "0007_events_booking_url",
+      "breakpoints": true
     }
   ]
 }

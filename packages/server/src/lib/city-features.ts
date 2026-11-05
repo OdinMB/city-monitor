@@ -31,7 +31,10 @@ const INGESTED: ReadonlyArray<[CityFeature, (city: CityConfig) => boolean]> = [
   // GEOFOX_USER and GEOFOX_PASSWORD at run time, and without them the job skips the city and
   // the tile says "No transit data available" (ingestsTransit).
   ['transit', hasTransitSource],
-  ['events', (c) => (c.dataSources.events?.length ?? 0) > 0],
+  // HHT's events (Hamburg) are their own feature: hidden behind the preview gate until HHT
+  // approves (lib/hht-gate.ts), so the tile shows only while the response has events.
+  ['events', (c) => c.dataSources.events?.some((s) => s.source !== 'hht') ?? false],
+  ['hhtEvents', (c) => c.dataSources.events?.some((s) => s.source === 'hht') ?? false],
   ['appointments', (c) => c.dataSources.appointments !== undefined],
   ['budget', (c) => c.dataSources.budget !== undefined],
   ['roadworks', (c) => c.dataSources.roadworks !== undefined],

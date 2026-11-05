@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import type { AirQualityStation, NinaWarning } from '@city-monitor/shared';
+import type { AirQualityStation, CityEvent, NinaWarning } from '@city-monitor/shared';
 import type { Cache } from '../lib/cache.js';
 import { servedUbaStations } from '../lib/air-quality-sources.js';
+import { servedEvents } from '../lib/hht-gate.js';
 import { getCityConfig } from '../config/index.js';
 import { CK } from '../lib/cache-keys.js';
 import { currentWarnings } from '../cron/ingest-nina.js';
@@ -25,12 +26,14 @@ export function createBootstrapRouter(cache: Cache) {
     // Stale UBA readings are left out, as in the stations route: WAQI then takes their place
     const uba = data[CK.airQualityStations(city.id)] as { data: AirQualityStation[]; fetchedAt: string } | undefined;
     const ubaStations = servedUbaStations(uba?.data);
+    // HHT events only past the preview gate, as in the events route
+    const events = data[CK.eventsUpcoming(city.id)] as { data: CityEvent[]; fetchedAt: string } | undefined;
 
     res.json({
       news: data[CK.newsDigest(city.id)] ?? null,
       weather: data[CK.weather(city.id)] ?? null,
       transit: data[CK.transitAlerts(city.id)] ?? null,
-      events: data[CK.eventsUpcoming(city.id)] ?? null,
+      events: events ? { data: servedEvents(events.data, req, res), fetchedAt: events.fetchedAt } : null,
       safety: data[CK.safetyRecent(city.id)] ?? null,
       nina: nina ? { data: currentWarnings(nina.data), fetchedAt: nina.fetchedAt } : null,
       airQuality: data[CK.airQuality(city.id)] ?? null,

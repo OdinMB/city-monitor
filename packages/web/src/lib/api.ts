@@ -1,10 +1,11 @@
 import { resolveApiBase } from './api-base.js';
+import { previewHeaders } from './preview-token.js';
 
 /** Every API request starts here: '/api', or VITE_API_BASE in a production build (lib/api-base.ts). */
 export const API_BASE = resolveApiBase(import.meta.env.VITE_API_BASE);
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { cache: 'no-store' });
+async function fetchJson<T>(url: string, headers: Record<string, string> = {}): Promise<T> {
+  const response = await fetch(url, { cache: 'no-store', headers });
   if (!response.ok) {
     throw new Error(`API error: ${response.status} ${response.statusText}`);
   }
@@ -67,12 +68,13 @@ import type { HospitalData } from '@city-monitor/shared';
 export type PoliticalLevel = 'bundestag' | 'state' | 'bezirke' | 'mayor' | 'state-bezirke';
 
 export const api = {
-  getBootstrap: (city: string) => fetchJson<BootstrapData>(`${API_BASE}/${city}/bootstrap`),
+  // The two requests that return events carry the HHT preview token, if the tab has one
+  getBootstrap: (city: string) => fetchJson<BootstrapData>(`${API_BASE}/${city}/bootstrap`, previewHeaders()),
   getNewsDigest: (city: string) => fetchJson<ApiResponse<NewsDigest>>(`${API_BASE}/${city}/news/digest`),
   getNewsSummary: (city: string, lang?: string) => fetchJson<ApiResponse<NewsSummaryData>>(`${API_BASE}/${city}/news/summary${lang ? `?lang=${lang}` : ''}`),
   getWeather: (city: string) => fetchJson<ApiResponse<WeatherData>>(`${API_BASE}/${city}/weather`),
   getTransit: (city: string) => fetchJson<ApiResponse<TransitAlert[]>>(`${API_BASE}/${city}/transit`),
-  getEvents: (city: string) => fetchJson<ApiResponse<CityEvent[]>>(`${API_BASE}/${city}/events`),
+  getEvents: (city: string) => fetchJson<ApiResponse<CityEvent[]>>(`${API_BASE}/${city}/events`, previewHeaders()),
   getSafety: (city: string) => fetchJson<ApiResponse<SafetyReport[]>>(`${API_BASE}/${city}/safety`),
   getNina: (city: string) => fetchJson<ApiResponse<NinaWarning[]>>(`${API_BASE}/${city}/nina`),
   getAirQuality: (city: string) => fetchJson<ApiResponse<AirQuality | null>>(`${API_BASE}/${city}/air-quality`),

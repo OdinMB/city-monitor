@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Invented records in the shape of Hamburg Tourismus' Veranstaltungsdatenbank
+     export (hamburg25.xml). No real event, venue, id or link: real HHT records
+     must never be committed. Dates are fixed; tests pass "now" as 2030-05-10. -->
+<data>
+  <categories amount="2">
+    <Category id="19">
+      <i18nName>
+        <I18n id="1">
+          <de><![CDATA[Konzerte]]></de>
+          <en><![CDATA[Concerts]]></en>
+        </I18n>
+      </i18nName>
+      <parent/>
+    </Category>
+    <Category id="57">
+      <i18nName>
+        <I18n id="2">
+          <de><![CDATA[Wochenmärkte]]></de>
+          <en><![CDATA[Farmer's Markets]]></en>
+        </I18n>
+      </i18nName>
+      <parent>
+        <Category id="96">
+          <i18nName>
+            <I18n id="3">
+              <de><![CDATA[Märkte]]></de>
+            </I18n>
+          </i18nName>
+        </Category>
+      </parent>
+    </Category>
+  </categories>
+  <criteria amount="1">
+    <Criterion id="1">
+      <i18nName>
+        <I18n id="4">
+          <de><![CDATA[Testkriterium]]></de>
+        </I18n>
+      </i18nName>
+    </Criterion>
+  </criteria>
+  <eventDateTags amount="1">
+    <EventDateTag id="1">
+      <i18nName>
+        <I18n id="5">
+          <de><![CDATA[Premiere]]></de>
+        </I18n>
+      </i18nName>
+    </EventDateTag>
+  </eventDateTags>
+  <pois amount="3">
+    <HhtAddressPoi id="5001" originalType="Addressbase">
+      <title>
+        <I18n id="10">
+          <de><![CDATA[Testhalle am Beispielkanal]]></de>
+          <en><![CDATA[Test Hall]]></en>
+        </I18n>
+      </title>
+      <description>
+        <I18n id="11">
+          <de><![CDATA[<p>Eine Ortsbeschreibung, die nie gezeigt werden darf.</p>]]></de>
+        </I18n>
+      </description>
+      <contact1 type="ContactData">
+        <contactName>Testhalle GmbH</contactName>
+        <address type="AddressComponent">
+          <street>Beispielweg</street>
+          <streetNo>1</streetNo>
+          <zipcode>20000</zipcode>
+          <city>Hamburg</city>
+          <homepage>
+            <I18n id="12">
+              <de><![CDATA[https://example.org/testhalle]]></de>
+            </I18n>
+          </homepage>
+        </address>
+      </contact1>
+      <geoInfo>
+        <GeoInfo id="13">
+          <coordinates type="Coordinates">
+            <latitude>53.55</latitude>
+            <longitude>10.0</longitude>
+          </coordinates>
+          <city>Hamburg</city>
+        </GeoInfo>
+      </geoInfo>
+      <media multiple="true"/>
+    </HhtAddressPoi>
+    <HhtAddressPoi id="5002" originalType="Addressbase">
+      <title>
+        <I18n id="20">
+          <de><![CDATA[Platzhalter-Markt]]></de>
+        </I18n>
+      </title>
+      <contact1 type="ContactData">
+        <address type="AddressComponent">
+          <city> HAMBURG </city>
+        </address>
+      </contact1>
+    </HhtAddressPoi>
+    <HhtAddressPoi id="5003" originalType="Addressbase">
+      <title>
+        <I18n id="30">
+          <de><![CDATA[Musterbühne Umland]]></de>
+        </I18n>
+      </title>
+      <contact1 type="ContactData">
+        <address type="AddressComponent">
+          <city>Norderstedt</city>
+        </address>
+      </contact1>
+    </HhtAddressPoi>
+  </pois>
+  <events amount="7">
+    <Event id="900001">
+      <entityState>PUBLISHED</entityState>
+      <client>
+        <Client id="725">
+          <name>Testveranstalter</name>
+        </Client>
+      </client>
+      <title>
+        <I18n id="100">
+          <de><![CDATA[Konzert der Platzhalter]]></de>
+          <en><![CDATA[Concert of the Placeholders]]></en>
+        </I18n>
+      </title>
+      <shortDescription>
+        <I18n id="101">
+          <de><![CDATA[<p>Ein Abend f&uuml;r Stra&szlig;enmusik &ndash; mit &bdquo;Liedern&ldquo; &amp; mehr.</p>]]></de>
+          <en><![CDATA[<p>An evening of street music.</p>]]></en>
+        </I18n>
+      </shortDescription>
+      <link>
+        <I18n id="102">
+          <de><![CDATA[https://example.org/konzert]]></de>
+          <en><![CDATA[https://example.org/en/concert]]></en>
+        </I18n>
+      </link>
+      <bookingLink>
+        <I18n id="103">
+          <de><![CDATA[https://example.org/konzert/tickets]]></de>
+        </I18n>
+      </bookingLink>
+      <location>
+        <Addressbase id="5001"/>
+      </location>
+      <contributor>
+        <Addressbase id="5003"/>
+      </contributor>
+      <media multiple="true">
+        <EventImage id="104">
+          <link><![CDATA[https://example.org/image-link]]></link>
+          <title>
+            <I18n id="105">
+              <de><![CDATA[Bildtitel, kein Veranstaltungstitel]]></de>
+            </I18n>
+          </title>
+          <deeplink>https://example.org/bild.jpg</deeplink>
+        </EventImage>
+      </media>
+      <categories multiple="true">
+        <Category id="19">
+          <i18nName>
+            <I18n id="106">
+              <de><![CDATA[Konzerte]]></de>
+              <en><![CDATA[Concerts]]></en>
+            </I18n>
+          </i18nName>
+        </Category>
+      </categories>
+      <pricing type="Pricing">
+        <fromPrice>12.0</fromPrice>
+        <toPrice>24.5</toPrice>
+        <absolutePrice/>
+        <priceBasis/>
+        <priceDescription/>
+        <priceUnit/>
+        <freeOfCharge>false</freeOfCharge>
+      </pricing>
+      <series>
+        <EventSeries id="107">
+          <i18nName>
+            <I18n id="108">
+              <de><![CDATA[Testreihe]]></de>
+            </I18n>
+          </i18nName>
+        </EventSeries>
+      </series>
+      <autoTranslated>true</autoTranslated>
+      <eventDates multiple="true">
+        <EventDate id="1001">
+          <date>2030-05-09</date>
+          <startTime>20:00:00</startTime>
+          <duration>120</duration>
+          <bookingLink/>
+          <cancelled>false</cancelled>
+          <tags multiple="true"/>
+        </EventDate>
+        <EventDate id="1002">
+          <date>2030-05-12</date>
+          <startTime>19:30:00</startTime>
+          <duration>150</duration>
+          <bookingLink>https://example.org/tickets?date=1002&amp;ref=test</bookingLink>
+          <cancelled>true</cancelled>
+          <tags multiple="true"/>
+        </EventDate>
+        <EventDate id="1003">
+          <date>2030-05-11</date>
+          <startTime>20:00:00</startTime>
+          <duration>150</duration>
+          <bookingLink>https://example.org/tickets?date=1003&amp;ref=test</bookingLink>
+          <cancelled>false</cancelled>
+          <tags multiple="true"/>
+        </EventDate>
+      </eventDates>
+    </Event>
+    <Event id="900002">
+      <entityState>PUBLISHED</entityState>
+      <client>
+        <EventmanagerClient id="77">
+          <name>Testticketing (S)</name>
+        </EventmanagerClient>
+      </client>
+      <title>
+        <I18n id="200">
+          <de><![CDATA[Show mit Ticketpreis]]></de>
+        </I18n>
+      </title>
+      <shortDescription/>
+      <link/>
+      <bookingLink/>
+      <location>
+        <Addressbase id="5001"/>
+      </location>
+      <categories multiple="true">
+        <Category id="30">
+          <i18nName>
+            <I18n id="201">
+              <de><![CDATA[Shows]]></de>
+            </I18n>
+          </i18nName>
+        </Category>
+      </categories>
+      <pricing type="Pricing">
+        <fromPrice/>
+        <toPrice/>
+        <absolutePrice>49.9</absolutePrice>
+        <priceBasis/>
+        <priceDescription>
+          <I18n id="202">
+            <de><![CDATA[<p>Zzgl. Gebühren</p>]]></de>
+          </I18n>
+        </priceDescription>
+        <priceUnit/>
+        <freeOfCharge>true</freeOfCharge>
+      </pricing>
+      <eventDates multiple="true">
+        <EventDate id="2001">
+          <date>2030-05-10</date>
+          <startTime>18:00:00</startTime>
+          <duration/>
+          <bookingLink>https://example.org/ticketing/2001</bookingLink>
+          <cancelled>false</cancelled>
+        </EventDate>
+      </eventDates>
+    </Event>
+    <Event id="900003">
+      <entityState>PUBLISHED</entityState>
+      <client>
+        <Client id="725"/>
+      </client>
+      <title>
+        <I18n id="300">
+          <de><![CDATA[Konzert im Umland]]></de>
+        </I18n>
+      </title>
+      <link/>
+      <bookingLink/>
+      <location>
+        <Addressbase id="5003"/>
+      </location>
+      <eventDates multiple="true">
+        <EventDate id="3001">
+          <date>2030-05-11</date>
+          <startTime>19:00:00</startTime>
+          <cancelled>false</cancelled>
+        </EventDate>
+      </eventDates>
+    </Event>
+    <Event id="900004">
+      <entityState>PUBLISHED</entityState>
+      <client>
+        <Client id="725"/>
+      </client>
+      <title>
+        <I18n id="400">
+          <de><![CDATA[Wochenmarkt am Platzhalterplatz]]></de>
+        </I18n>
+      </title>
+      <shortDescription>
+        <I18n id="401">
+          <de/>
+        </I18n>
+      </shortDescription>
+      <description>
+        <I18n id="402">
+          <de><![CDATA[<p>Obst &amp; Gem&uuml;se aus der Region.</p>]]></de>
+        </I18n>
+      </description>
+      <link>
+        <I18n id="403">
+          <en><![CDATA[https://example.org/en/market]]></en>
+        </I18n>
+      </link>
+      <bookingLink>
+        <I18n id="404">
+          <de><![CDATA[https://example.org/markt/buchen]]></de>
+        </I18n>
+      </bookingLink>
+      <location>
+        <Addressbase id="5002"/>
+      </location>
+      <categories multiple="true">
+        <Category id="96">
+          <i18nName>
+            <I18n id="405">
+              <de><![CDATA[Märkte]]></de>
+            </I18n>
+          </i18nName>
+        </Category>
+        <Category id="57">
+          <i18nName>
+            <I18n id="406">
+              <de><![CDATA[Wochenmärkte]]></de>
+            </I18n>
+          </i18nName>
+        </Category>
+      </categories>
+      <pricing type="Pricing">
+        <fromPrice/>
+        <toPrice/>
+        <absolutePrice/>
+        <priceBasis/>
+        <priceDescription/>
+        <priceUnit/>
+        <freeOfCharge>true</freeOfCharge>
+      </pricing>
+      <eventDates multiple="true">
+        <EventDate id="4001">
+          <date>2030-05-13</date>
+          <startTime>08:00:00</startTime>
+          <duration>300</duration>
+          <bookingLink/>
+          <cancelled>false</cancelled>
+        </EventDate>
+      </eventDates>
+    </Event>
+    <Event id="900005">
+      <entityState>PUBLISHED</entityState>
+      <client>
+        <Client id="725"/>
+      </client>
+      <title>
+        <I18n id="500">
+          <de><![CDATA[Abgesagtes Fest]]></de>
+        </I18n>
+      </title>
+      <location>
+        <Addressbase id="5001"/>
+      </location>
+      <eventDates multiple="true">
+        <EventDate id="5001">
+          <date>2030-05-11</date>
+          <startTime>12:00:00</startTime>
+          <cancelled>true</cancelled>
+        </EventDate>
+      </eventDates>
+    </Event>
+    <Event id="900006">
+      <entityState>PUBLISHED</entityState>
+      <client>
+        <Client id="725"/>
+      </client>
+      <title>
+        <I18n id="600">
+          <de><![CDATA[Ausstellung im Spätsommer]]></de>
+        </I18n>
+      </title>
+      <location>
+        <Addressbase id="5001"/>
+      </location>
+      <eventDates multiple="true">
+        <EventDate id="6001">
+          <date>2030-06-20</date>
+          <startTime>10:00:00</startTime>
+          <cancelled>false</cancelled>
+        </EventDate>
+      </eventDates>
+    </Event>
+    <Event id="900007">
+      <entityState>PUBLISHED</entityState>
+      <client>
+        <Client id="725"/>
+      </client>
+      <title>
+        <I18n id="700">
+          <en><![CDATA[English title only]]></en>
+        </I18n>
+      </title>
+      <location>
+        <Addressbase id="5001"/>
+      </location>
+      <eventDates multiple="true">
+        <EventDate id="7001">
+          <date>2030-05-11</date>
+          <startTime>10:00:00</startTime>
+          <cancelled>false</cancelled>
+        </EventDate>
+      </eventDates>
+    </Event>
+  </events>
+</data>

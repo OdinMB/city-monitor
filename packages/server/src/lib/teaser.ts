@@ -2,31 +2,15 @@
  * A feed description cut down to a plain-text teaser. For feeds whose
  * permission covers headline and teaser only, while the feed itself carries
  * the full text as HTML (München's Rathaus Umschau): the classifier, the
- * digest, the API and Postgres then never see more than the teaser.
+ * digest, the API and Postgres then never see more than the teaser. Also
+ * HHT's event descriptions (hht-events.ts), whose HTML uses named entities
+ * such as &uuml; and &bdquo;.
  */
-
-const NAMED_ENTITIES: Record<string, string> = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
-  apos: "'",
-  nbsp: ' ',
-};
-
-function decodeEntities(text: string): string {
-  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, ref: string) => {
-    if (ref[0] === '#') {
-      const code = ref[1] === 'x' || ref[1] === 'X' ? parseInt(ref.slice(2), 16) : parseInt(ref.slice(1), 10);
-      return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : match;
-    }
-    return NAMED_ENTITIES[ref.toLowerCase()] ?? match;
-  });
-}
+import { decodeHTML } from 'entities';
 
 export function toTeaser(html: string | undefined, maxChars: number): string | undefined {
   if (!html) return undefined;
-  const text = decodeEntities(html.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+  const text = decodeHTML(html.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
   if (!text) return undefined;
   if (text.length <= maxChars) return text;
 

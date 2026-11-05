@@ -39,6 +39,11 @@ export const hamburg: CityConfig = {
     // HVV's Geofox GTI announcements; runs only with GEOFOX_USER and GEOFOX_PASSWORD set
     // (Hochbahn issues them per operator; a fork requests its own). .context/transit.md#hamburg
     transit: { provider: 'geofox', endpoint: 'https://gti.geofox.de' },
+    // Hamburg Tourismus' Veranstaltungsdatenbank: a daily XML export over FTPS, under a contract
+    // with HHT. Fetched only with HHT_FTP_USER and HHT_FTP_PASSWORD (a fork needs its own contract
+    // and credentials), and served only with the preview token until HHT approves (HHT_PREVIEW_ONLY).
+    // The contract's display rules and the gate: .context/events-safety.md#hamburg-tourismus
+    events: [{ source: 'hht', url: 'ftp://ftp.infomaxnet.de/hamburg25.xml.zip' }],
     police: {
       provider: 'rss',
       // Polizei Hamburg's presseportal newsroom (6013, used until 2026-11-01, is Polizeipräsidium Mittelfranken)

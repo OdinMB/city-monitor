@@ -22,6 +22,7 @@ import { WaterLevelStrip } from '../strips/WaterLevelStrip.js';
 import { FloodStatusStrip } from '../strips/FloodStatusStrip.js';
 import { LiftOutagesStrip } from '../strips/LiftOutagesStrip.js';
 import { useLiftOutages } from '../../hooks/useLiftOutages.js';
+import { useEvents } from '../../hooks/useEvents.js';
 import { ElectricityStrip } from '../strips/ElectricityStrip.js';
 import { SoilMoistureStrip } from '../strips/SoilMoistureStrip.js';
 import { BathingStrip } from '../strips/BathingStrip.js';
@@ -78,6 +79,24 @@ export function LiftOutagesTile() {
   return (
     <Tile title={t('panel.liftOutages.title')} span={1} expandable>
       {(expanded) => <LiftOutagesStrip expanded={expanded} />}
+    </Tile>
+  );
+}
+
+/**
+ * The events tile. A city whose only events come from Hamburg Tourismus
+ * ('hhtEvents') shows it only while the API returns events: until HHT approves,
+ * they reach only requests with the preview token (lib/preview-token.ts), so
+ * the public page has no empty tile.
+ */
+export function EventsTile() {
+  const { t } = useTranslation();
+  const { id: cityId, features } = useCityConfig();
+  const { data } = useEvents(cityId);
+  if (!features.includes('events') && !(data && data.length > 0)) return null;
+  return (
+    <Tile title={t('panel.events.title')} span={2}>
+      <EventsStrip />
     </Tile>
   );
 }
@@ -196,11 +215,7 @@ export function CommandLayout() {
               <FloodStatusStrip />
             </Tile>
           )}
-          {has('events') && (
-            <Tile title={t('panel.events.title')} span={2}>
-              <EventsStrip />
-            </Tile>
-          )}
+          {(has('events') || has('hhtEvents')) && <EventsTile />}
           {has('appointments') && (
             <Tile title={t('panel.appointments.title')} span={1} expandable defaultExpanded={isDesktop}>
               {(expanded, setExpanded) => <AppointmentsStrip expanded={expanded} onExpand={() => setExpanded(true)} />}

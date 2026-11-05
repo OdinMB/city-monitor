@@ -47,11 +47,11 @@ Source URL configured per city in `dataSources.police.url`.
 
 ### Data Flow
 
-1. **Ingestion** (`packages/server/src/cron/ingest-events.ts`) — Runs every 6 hours. For each city with `dataSources.events` (Berlin and Köln), fetches every configured source in turn (kulturdaten.berlin, Ticketmaster, go~mus for Berlin; Stadt Köln open data for Köln), keeps future events, and saves each source's events to the DB (`saveEvents`). Then merges all sources, sorts by date, caps at 200 (`MAX_FUTURE_EVENTS`) and writes `CityEvent[]` to cache key `{cityId}:events:upcoming` (TTL 6h); an empty merge leaves the cache as it was. A failing source is logged and skipped.
+1. **Ingestion** (`packages/server/src/cron/ingest-events.ts`) — Runs every 6 hours, as a heavy job (HHT's export). For each city with `dataSources.events` (Berlin, Hamburg and Köln), fetches every configured source in turn (kulturdaten.berlin, Ticketmaster, go~mus for Berlin; Hamburg Tourismus for Hamburg; Stadt Köln open data for Köln), keeps future events, and saves each source's events to the DB (`saveEvents`, 500 rows per insert, every corrected field updated on conflict). Then merges all sources, sorts by date, caps at 200 (`MAX_FUTURE_EVENTS`) and writes `CityEvent[]` to cache key `{cityId}:events:upcoming` (TTL 6h); an empty merge leaves the cache as it was. A failing source is logged and skipped.
 
-2. **API** (`packages/server/src/routes/events.ts`) — `GET /api/:city/events` returns cached events, falls back to the DB (`loadEvents`), then `[]`. Past events are filtered out on every read.
+2. **API** (`packages/server/src/routes/events.ts`) — `GET /api/:city/events` returns cached events, falls back to the DB (`loadEvents`, upcoming rows only), then `[]`. Past events are filtered out on every read. Every response with events, bootstrap's too, passes the HHT gate (`servedEvents`, below).
 
-3. **Frontend** (`packages/web/src/components/strips/EventsStrip.tsx`) — `useEvents()` (refetch 30 min). Source filter (All / Community / Tickets / Museums / City), shown when at least two sources have events (so never for Köln, which has one); category filter pills for categories present; up to 25 events (`MAX_VISIBLE`). Each row shows category icon, title, day and time, and a "Free" badge; rows with detail expand to venue, description, end date, price and a link.
+3. **Frontend** (`packages/web/src/components/strips/EventsStrip.tsx`) — `useEvents()` (refetch 30 min). Source filter (All / Community / Tickets / Museums / City), shown when at least two sources have events (so never for Köln, which has one); category filter pills for categories present; up to 25 events (`MAX_VISIBLE`). Each row shows category icon, title, day and time, and a "Free" badge; rows with detail expand to venue, description, end date, price, the event link and a separate booking link (`bookingUrl`). Times are the city's wall-clock time: an offset-less date is read as UTC and shown in UTC, like a stored one, so the browser's zone never shifts it.
 
 ### Data Sources
 
@@ -61,23 +61,47 @@ Configured per city as `EventSourceConfig[]` (`source`, `url`, optional `lookahe
 - **Ticketmaster Discovery API**: `https://app.ticketmaster.com/discovery/v2/events.json`, queried by city name and country, 100 events. Skipped without `TICKETMASTER_CONSUMER_KEY` (see `deployment.md`).
 - **go~mus** (Berlin state museums): `https://smb.gomus.de/api/v4/events`, bookable events; the date is the first upcoming booking time.
 - **Stadt Köln open data** (`source: 'stadt-koeln'`, Köln): `https://www.stadt-koeln.de/externe-dienste/open-data/events-od.php?ndays=<lookaheadDays>&nobrs=1`, JSON `{ count, items, success }`. Only events the city runs itself (libraries, museums, town hall, district offices), ~110 in 14 days. Licence dl-de/zero-2.0 ([dataset](https://www.offenedaten-koeln.de/dataset/veranstaltungen-der-stadt-koeln)), credited on the Sources page anyway. Each item has `title`, `description`, `beginndatum`/`endedatum` (dates), a free-text `uhrzeit` ("von 18:30 bis 19:30", "15 bis 16:30 Uhr"; `koelnStartTime` takes the first hour, else midnight = no time shown), `veranstaltungsort` + `stadtteil` (joined as venue), `preis` (free when it says kostenlos/Eintritt frei, else kept as the price) and `link` (rewritten to https; its numeric id becomes `stadt-koeln-<id>`). Dates are offset-less local time, like kulturdaten. An exhibition that began before today is dropped by the future-only filter, as for every source. The http URL answers 403; use https.
+- **Hamburg Tourismus** (`source: 'hht'`, Hamburg): see the next section.
 - **München:** no open events feed (opendata.muenchen.de has only historic CSVs; muenchen.de's event pages are private-use only), so no events source.
+
+### Hamburg Tourismus
+
+Hamburg's events come from Hamburg Tourismus' Veranstaltungsdatenbank under a contract between HHT and City Monitor. **A fork needs its own contract with HHT and its own FTP login**; without `HHT_FTP_USER` and `HHT_FTP_PASSWORD` the source is skipped with one warning. **Never commit a real HHT record** (event, venue, id or link): the fixture `lib/hht-fixtures/export-sample.xml` and the synthetic seed are invented in the export's shape.
+
+- **Export:** a ZIP holding `hamburg25.xml` (about 68 MB, ~9,500 events, ~1,300 venues), refreshed daily, on `ftp.infomaxnet.de` over FTPS, explicit TLS on port 21 (`lib/hht-ftp.ts`, basic-ftp; `HHT_FTP_HOST` and `HHT_FTP_FILE` override the config URL's parts). Only the compressed archive is held (capped at 64 MB); the XML member is unpacked and read as a stream (`lib/hht-xml.ts`, saxes), so neither the document nor a DOM is ever in memory. From the venues (`<pois>`) it keeps the German title and the city only.
+- **Download cadence** (`cron/events-hht.ts`): at most once in 20 hours. In between, the job serves the last download from memory, or after a restart from its saved rows (`loadLatestEventBatch`: the newest row's `fetchedAt` is the last download, so those rows are not saved again). A failed download serves the saved rows if there are any.
+- **Mapping** (`lib/hht-events.ts`): published events (`entityState`) whose venue's city is Hamburg (case-insensitive) with a non-cancelled date starting in the next 14 days (Hamburg wall-clock time), one `CityEvent` per event on its next such date, id `hht-<event id>`. German title (no German title, no event); description from the German short description, else the description, HTML stripped and entities decoded (`toTeaser`, 500 characters); venue = the venue's German title; `url` = the German link, else the English; `bookingUrl` = the date's booking link, else the event's (left out when it equals `url`); `free` = `freeOfCharge`; `price` from `absolutePrice`, else `fromPrice`/`toPrice` ("49,90 €", "12–24,50 €", "ab 8 €"). About 2,100 events from a real export.
+- **Contract rules:** German text only (the strip marks it `lang="de"`); no images (`<media>` is never read) and no venue descriptions; the event link and the booking link shown apart; **no price or free flag for CTS EVENTIM's events, client id 77** (contract 2.11; tested with a fixture). Wherever HHT events are shown, the strip links HHT's "suggest an event" form (`https://eingabe.hamburg.events/`) and its error address (`mailto:veranstaltungsdatenbank@hamburg-tourismus.de`), translated in all four languages, and the Sources page credits "Veranstaltungsdatenbank Hamburg Tourismus" — both only while the API returns HHT events. HHT data must never reach an export or embed path; none exists.
+- **Categories:** `HHT_CATEGORIES` maps all 97 German category names of the export (Konzerte and its genres, Party -> music; Ausstellungen, Film, Lesungen -> art; Ausstellungen & Museen, Dauerausstellungen -> museum; Theater & Bühne, Musicals & Shows -> theater; Märkte, Jahrmärkte -> market; Sport & Bewegung -> sport; Feste, Bildung, Bürgerangebote, Vorträge -> community; tours, trade fairs, Sonstige -> other). An event takes the first of its categories that maps to more than other. A name missing from the map counts as other: add it when HHT adds one.
+
+#### The preview gate
+
+Until HHT approves the integration, its events are ingested and stored but not served to the public (`lib/hht-gate.ts`, `servedEvents`, the one filter on every read path: the events route, its DB fallback and bootstrap):
+
+- The gate is the code constant `HHT_PREVIEW_ONLY` (true), not a variable: the owner's rule is that no environment variable ever has to be set to `true` ([deployment.md](deployment.md#source-opt-outs)).
+- `HHT_EVENTS=false` on the API service (a source opt-out) hides them from everyone, token or not, also after they go public: the quick takedown HHT may ask for (contract 2.9).
+- While in preview, only a request whose `X-Preview-Token` header equals `HHT_EVENTS_PREVIEW_TOKEN` gets them (compared in constant time; a token unset or shorter than 16 characters admits no one). Such a response is `Cache-Control: private, no-store`, and every events response sends `Vary: X-Preview-Token`, so no CDN, shared cache or browser cache keeps preview data. The in-process cache holds all events; the gate filters on the way out. CORS reflects the requested headers, so the web app may send it (`routes/events-gate.test.ts`).
+- The web app takes a review link's `?preview=<token>` (`lib/preview-token.ts`), keeps it in sessionStorage as `hht-preview` (in memory where storage is blocked), removes it from the address bar and sends it with the events and bootstrap requests only. `?preview=` with no value ends the preview.
+- Hamburg's web feature is `hhtEvents`, not `events`: its tile (`EventsTile` in `CommandLayout.tsx`) shows only while the API returns events, so the public page looks as before. A city with any other events source has `events` and keeps its tile, empty or not.
+
+To open the gate for everyone once HHT approves in writing: set `HHT_PREVIEW_ONLY` to `false` in `lib/hht-gate.ts` (flip the test that pins it), deploy, then remove `HHT_EVENTS_PREVIEW_TOKEN`.
 
 ### Key Types
 
 ```typescript
 interface CityEvent {
-  id: string;           // source id (go~mus ids are prefixed "gomus-", Köln ids "stadt-koeln-")
+  id: string;           // source id (go~mus ids are prefixed "gomus-", Köln ids "stadt-koeln-", HHT ids "hht-")
   title: string;
   venue?: string;
   date: string;         // ISO date+time
   endDate?: string;
   category: 'music' | 'art' | 'theater' | 'food' | 'market' | 'sport' | 'community' | 'museum' | 'other';
   url: string;          // empty for kulturdaten and go~mus
-  description?: string; // go~mus (HTML stripped) and Stadt Köln, 500 chars
+  description?: string; // go~mus (HTML stripped), Stadt Köln and HHT, 500 chars
   free?: boolean;
-  source: 'kulturdaten' | 'ticketmaster' | 'gomus' | 'stadt-koeln';
-  price?: string;       // Ticketmaster price range, Stadt Köln `preis` text
+  source: 'kulturdaten' | 'ticketmaster' | 'gomus' | 'stadt-koeln' | 'hht';
+  price?: string;       // Ticketmaster price range, Stadt Köln `preis` text, HHT pricing
+  bookingUrl?: string;  // HHT: the date's booking link, else the event's
 }
 ```
 
@@ -86,6 +110,7 @@ interface CityEvent {
 - **kulturdaten and Stadt Köln:** keywords in the title (German and English): Konzert/Musik -> music, Ausstellung/Galerie -> art, Theater/Bühne -> theater, Markt/Flohmarkt -> market, Food/Essen -> food, Sport/Lauf -> sport, Workshop/Treff -> community, Museum -> museum, default -> other.
 - **Ticketmaster:** the segment name: Music -> music, Sports -> sport, Arts & Theatre -> theater, default -> other.
 - **go~mus:** Bühne/Musik/Film/Konzert -> music, Workshop/Kurs/Führung -> community, default -> museum.
+- **HHT:** the export's own categories (`HHT_CATEGORIES`, above).
 
 ## NINA Civil-Protection Warnings
 
@@ -106,5 +131,5 @@ interface CityEvent {
 
 ## DB Schema
 
-- `events` table — cityId, title, venue, date, endDate, category, url, description, free, hash, source, price. Indexed by `events_city_date_idx(cityId, date)` and `events_city_source_idx(cityId, source, date)`, unique on (cityId, hash). Persisted via `saveEvents()` (UPSERT) per source on every ingestion run. Data retention: rows not refreshed (`fetchedAt`) for 3 days are pruned nightly.
+- `events` table — cityId, title, venue, date, endDate, category, url, description, free, hash, source, price, bookingUrl (`booking_url`, migration 0007). Indexed by `events_city_date_idx(cityId, date)` and `events_city_source_idx(cityId, source, date)`, unique on (cityId, hash). Persisted via `saveEvents()` (UPSERT) per source on every ingestion run, except HHT's between its daily downloads. Data retention: rows not refreshed (`fetchedAt`) for 3 days are pruned nightly.
 - `safetyReports` table — cityId, title, description, publishedAt, url, district, lat, lon, locationLabel, geoAttempted, hash. Indexed by `safety_city_published_idx(cityId, publishedAt)`, unique on (cityId, hash). Persisted via `saveSafetyReports(db, cityId, reports, geoAttempted)` (UPSERT). Data retention: rows not refreshed (`fetchedAt`) for 3 days are pruned nightly.

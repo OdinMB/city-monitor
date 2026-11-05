@@ -171,6 +171,12 @@
         "city": "Belediye"
       },
       "moreInfo": "Daha fazla",
+      "tickets": "Biletler",
+      "hht": {
+        "credit": "Kaynak: Veranstaltungsdatenbank Hamburg Tourismus",
+        "suggest": "Etkinlik öner",
+        "report": "Hata bildir"
+      },
       "showMore": "{{count}} daha"
     },
     "airQuality": {

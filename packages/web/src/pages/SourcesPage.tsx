@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
+import type { CityEvent, CityFeature, WebCityConfig } from '@city-monitor/shared';
 import { useCityConfig } from '../hooks/useCityConfig.js';
+import { useEvents } from '../hooks/useEvents.js';
 import { PageShell } from '../components/layout/PageShell.js';
 import { CitySwitcher } from '../components/layout/CitySwitcher.js';
 import { getAllCities } from '../config/index.js';
@@ -21,6 +22,11 @@ interface Source {
   cities?: readonly string[];
   /** A shared source credited only where the city has this feature, or one of these features. */
   requires?: CityFeature | readonly CityFeature[];
+  /**
+   * An events source credited only while the events the API returns include
+   * its events: HHT's reach only preview requests until HHT approves.
+   */
+  eventsSource?: CityEvent['source'];
 }
 
 interface SourceGroup {
@@ -370,6 +376,17 @@ const BERLIN_SOURCES: SourceGroup[] = [
 
 const HAMBURG_SOURCES: SourceGroup[] = [
   {
+    category: 'Events',
+    sources: [
+      {
+        name: 'Veranstaltungsdatenbank Hamburg Tourismus',
+        url: 'https://www.hamburg-tourismus.de/',
+        description: 'Events in Hamburg — concerts, stage, exhibitions, markets, sport — from the daily export of Hamburg Tourismus’ events database, under a contract with Hamburg Tourismus. Shown in German only, without images or venue descriptions.',
+        eventsSource: 'hht',
+      },
+    ],
+  },
+  {
     category: 'Council Meetings',
     sources: [
       { name: 'Hamburgische Bürgerschaft (Termine)', url: 'https://www.hamburgische-buergerschaft.de/aktuelles/termine', description: 'Public committee and plenary sessions of the state parliament, read from its website calendar. Official public records; the site states no licence.' },
@@ -634,10 +651,11 @@ function mergeGroups(shared: SourceGroup[], city: SourceGroup[]): SourceGroup[] 
 }
 
 /** The groups with only the sources credited for `city`, leaving out a group that has none. */
-function forCity(groups: SourceGroup[], city: WebCityConfig): SourceGroup[] {
+function forCity(groups: SourceGroup[], city: WebCityConfig, eventSources: ReadonlySet<CityEvent['source']>): SourceGroup[] {
   const hasAny = (required: CityFeature | readonly CityFeature[]) =>
     (typeof required === 'string' ? [required] : required).some((f) => city.features.includes(f));
-  const credited = (s: Source) => (!s.cities || s.cities.includes(city.id)) && (!s.requires || hasAny(s.requires));
+  const credited = (s: Source) => (!s.cities || s.cities.includes(city.id)) && (!s.requires || hasAny(s.requires))
+    && (!s.eventsSource || eventSources.has(s.eventsSource));
   return groups
     .map((group) => ({ ...group, sources: group.sources.filter(credited) }))
     .filter((group) => group.sources.length > 0);
@@ -646,10 +664,13 @@ function forCity(groups: SourceGroup[], city: WebCityConfig): SourceGroup[] {
 export function SourcesPage() {
   const city = useCityConfig();
   const { t } = useTranslation();
+  // Asked only where a source is credited by the events it returns
+  const { data: events } = useEvents(city.id, city.features.includes('hhtEvents'));
   const citySources = CITY_SOURCES[city.id] ?? [];
   const groups = forCity(
     mergeGroups([...SHARED_SOURCES, aiProcessingGroup(t)], [waqiGroup(city.id), ...citySources]),
     city,
+    new Set((events ?? []).map((e) => e.source)),
   );
 
   const sourceCount = groups.reduce((n, g) => n + g.sources.length, 0);
