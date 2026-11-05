@@ -174,8 +174,11 @@ The map's political layer colours Bezirk outlines, so each view needs members th
 Factory: `createLogger(tag)` returns `{ info, warn, error, fetch }`.
 
 - **Format:** `2026-03-02T14:30:05Z [tag] message` (no milliseconds)
-- `info` → `console.log`, `warn` → `console.warn` with `WARN:` prefix, `error` → `console.error` with `ERROR:` prefix (optional error object on next line)
-- `fetch(url, init?)` — wraps `globalThis.fetch`, logs `FETCH {url} -> {status} ({ms}ms)`. Non-ok responses logged at warn level, network errors at error level (re-thrown). URLs truncated at 80 chars.
+- `info` → `console.log`, `warn` → `console.warn` with `WARN:` prefix, `error` → `console.error` with `ERROR:` prefix and, given an error, ` — {reason}`; the error object (with its stack) follows on the next line unless it is a timeout, an abort or a bare `fetch failed`, whose stacks say nothing
+- `fetch(url, init?)` — wraps `globalThis.fetch`, logs `FETCH {url} -> {status} ({ms}ms)`. Non-ok responses logged at warn level, network errors at error level as `→ ERROR ({ms}ms): {reason}` (re-thrown). URLs truncated at 80 chars.
+- `describeError(err)` — the one-line reason both use: walks `cause` and spells out an AggregateError's members, so a failed connect reads `fetch failed: connect ETIMEDOUT 1.2.3.4:443, connect ENETUNREACH …` instead of `[errors]: [ [Error], [Error] ]`; a timeout reads `timed out`.
+
+**Connection attempts:** `index.ts` raises Node's per-address connect attempt (happy eyeballs) from 250 ms to 2.5 s, because a burst of jobs could hold the event loop long enough for a working connect to be dropped in favour of an unreachable next address.
 
 Every server source file uses the logger — no raw `console.*` calls outside `logger.ts` itself.
 
