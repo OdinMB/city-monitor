@@ -56,7 +56,7 @@ export type CityFeature =
   | 'floodStatus'     // dataSources.floodStatus: flood class of state gauges (LHP)
   | 'transit'
   | 'events'          // dataSources.events with a source served to everyone: the events tile
-  | 'hhtEvents'       // dataSources.events with Hamburg Tourismus ('hht'), hidden until HHT approves: the events tile only while it has events
+  | 'hhtEvents'       // dataSources.events with Hamburg Tourismus ('hht'), which the API may withhold (preview gate, HHT_EVENTS=false): the events tile only while it has events
   | 'appointments'
   | 'budget'
   | 'roadworks'
