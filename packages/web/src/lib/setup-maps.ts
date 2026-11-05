@@ -4,7 +4,7 @@ import type {
   DataLayer, EmergencySubLayer, HeatReliefSubLayer, MapState, NewsSubLayer, TrafficSubLayer, WaterSubLayer,
 } from '../hooks/useCommandCenter.js';
 import { cityLayers } from './map-layers.js';
-import { PRESET_IDS, SUPPORT_TILE, cityTiles, isPreset, presetSections, type PresetId } from './tile-setups.js';
+import { PRESET_IDS, cityTiles, isPreset, presetSections, type PresetId } from './tile-setups.js';
 import { setupMapDiff, type SetupId, type SetupView } from './setup-state.js';
 
 /**
@@ -90,12 +90,12 @@ export function setupMap(view: SetupView, id: SetupId, city: SetupCity): MapStat
 }
 
 /**
- * The presets a city's menu offers, in menu order: those with a tile beyond
- * the support tile or a map layer in the city. Everyday always has one.
+ * The presets a city's menu offers, in menu order: those with a tile or a
+ * map layer in the city. Everyday always has one.
  */
 export function offeredPresets(city: SetupCity): PresetId[] {
   const tiles = cityTiles(city.features);
   return PRESET_IDS.filter((preset) =>
-    presetSections(preset, city.id, tiles).some((s) => s.tiles.some((t) => t !== SUPPORT_TILE))
+    presetSections(preset, city.id, tiles).length > 0
     || presetMap(preset, city).activeLayers.size > 0);
 }

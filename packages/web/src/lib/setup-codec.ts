@@ -1,4 +1,4 @@
-import { SUPPORT_TILE, isPreset, isStandardSectionKey, type PresetId, type StandardSectionKey, type TileId } from './tile-setups.js';
+import { isPreset, isStandardSectionKey, type PresetId, type StandardSectionKey, type TileId } from './tile-setups.js';
 import { MAX_SECTIONS, MAX_SECTION_NAME, type CustomSection, type CustomSetup } from './custom-setup.js';
 import {
   MAX_CUSTOM_SETUPS, MAX_SETUP_NAME, chooseSetup, defaultView, type MapChange, type NamedSetup, type SetupId, type SetupView,
@@ -18,9 +18,15 @@ import { compactMapState, parseMapState } from './map-state.js';
  */
 export const TILE_CODES: Record<TileId, string> = {
   briefing: 'b', news: 'n', weather: 'w', airQuality: 'a', transit: 't', liftOutages: 'l', pollen: 'p', floodStatus: 'f',
-  events: 'e', appointments: 'o', bathing: 'k', crisis: 'c', wastewater: 'v', electricity: 'y', waterLevels: 'g', support: 's',
+  events: 'e', appointments: 'o', bathing: 'k', crisis: 'c', wastewater: 'v', electricity: 'y', waterLevels: 'g',
   councilMeetings: 'm', political: 'r', laborMarket: 'j', population: 'i', budget: 'd', feuerwehr: 'h', soilMoisture: 'q',
 };
+
+/**
+ * Codes of tiles that are gone (support, now a strip every setup shows):
+ * never to be given again. A stored setup that still has one loads without it.
+ */
+export const RETIRED_TILE_CODES: readonly string[] = ['s'];
 
 const TILE_OF = new Map(Object.entries(TILE_CODES).map(([tile, code]) => [code, tile as TileId]));
 
@@ -108,7 +114,7 @@ export function parseCustom(raw: unknown): CustomSetup | null {
     sections.push({ id, ...(typeof name === 'string' ? { name: name.slice(0, MAX_SECTION_NAME) } : {}), tiles });
   }
   if (sections.length === 0) return null;
-  const hidden = tilesOf(raw.h).filter((tile) => tile !== SUPPORT_TILE && !placed.has(tile));
+  const hidden = tilesOf(raw.h).filter((tile) => !placed.has(tile));
   return { sections, hidden: [...new Set(hidden)] };
 }
 

@@ -11,13 +11,13 @@ import type { DataLayer } from '../hooks/useCommandCenter.js';
 const kiez: NamedSetup = {
   id: 'm1',
   name: 'Mein Kiez',
-  sections: [{ id: 'news', tiles: ['briefing', 'news'] }, { id: 'c1', name: 'Draußen', tiles: ['weather', 'support'] }],
+  sections: [{ id: 'news', tiles: ['briefing', 'news'] }, { id: 'c1', name: 'Draußen', tiles: ['weather', 'crisis'] }],
   hidden: ['budget'],
 };
-const commute: NamedSetup = { id: 'm2', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'support'] }], hidden: [] };
+const commute: NamedSetup = { id: 'm2', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'crisis'] }], hidden: [] };
 const withSetups = (...customSetups: NamedSetup[]): SetupView => ({ ...defaultView(), customSetups });
-const everyday: ResolvedSection[] = [{ id: 'news', tiles: ['briefing', 'news'] }, { id: 'crises', tiles: ['support'] }];
-const AVAILABLE: TileId[] = ['briefing', 'news', 'weather', 'transit', 'budget', 'support'];
+const everyday: ResolvedSection[] = [{ id: 'news', tiles: ['briefing', 'news'] }, { id: 'crises', tiles: ['crisis'] }];
+const AVAILABLE: TileId[] = ['briefing', 'news', 'weather', 'transit', 'budget', 'crisis'];
 
 describe('the setup shown', () => {
   it('is Everyday to begin with', () => {
@@ -27,8 +27,8 @@ describe('the setup shown', () => {
   it('is a visitor’s setup as it is, or a preset as the city resolves it', () => {
     const view = chooseSetup(withSetups(kiez), 'm1');
     expect(shownCustom(view)).toBe(kiez);
-    expect(shownSections(view, 'berlin', ['weather', 'support'])).toBe(kiez.sections);
-    expect(shownSections(chooseSetup(view, 'commute'), 'berlin', ['weather', 'support']).map((s) => s.id)).toEqual(['conditions']);
+    expect(shownSections(view, 'berlin', ['weather', 'crisis'])).toBe(kiez.sections);
+    expect(shownSections(chooseSetup(view, 'commute'), 'berlin', ['weather', 'crisis']).map((s) => s.id)).toEqual(['conditions']);
   });
 
   it('cannot be a setup the visitor does not have', () => {
@@ -45,7 +45,7 @@ describe('the setup shown', () => {
 
 describe('the visitor’s setups', () => {
   it('start as a copy of the setup shown, named, shown, and alone in their collapse', () => {
-    const view = addSetup(toggleCollapsed(defaultView(), 'news'), everyday, 'My setup', ['briefing', 'news', 'support']);
+    const view = addSetup(toggleCollapsed(defaultView(), 'news'), everyday, 'My setup', ['briefing', 'news', 'crisis']);
     const added = shownCustom(view)!;
     expect(added).toEqual({ id: 'm1', name: 'My setup', sections: everyday, hidden: [] });
     expect(added.sections[0].tiles).not.toBe(everyday[0].tiles);
@@ -53,13 +53,13 @@ describe('the visitor’s setups', () => {
   });
 
   it('hide the city’s tiles that the setup copied does not show', () => {
-    const view = addSetup(chooseSetup(defaultView(), 'commute'), [{ id: 'c1', tiles: ['transit', 'support'] }], 'Mine', AVAILABLE);
+    const view = addSetup(chooseSetup(defaultView(), 'commute'), [{ id: 'c1', tiles: ['transit', 'crisis'] }], 'Mine', AVAILABLE);
     expect(shownCustom(view)!.hidden).toEqual(['briefing', 'news', 'weather', 'budget']);
   });
 
   it('copy a visitor’s setup with its hidden tiles', () => {
     const view = chooseSetup(withSetups(kiez), 'm1');
-    const copy = shownCustom(addSetup(view, kiez.sections, 'Copy', ['briefing', 'news', 'weather', 'budget', 'support']))!;
+    const copy = shownCustom(addSetup(view, kiez.sections, 'Copy', ['briefing', 'news', 'weather', 'budget', 'crisis']))!;
     expect(copy.id).toBe('m2');
     expect(copy.hidden).toEqual(['budget']);
   });
@@ -91,7 +91,7 @@ describe('the visitor’s setups', () => {
 
   it('are edited one at a time, the others left alone', () => {
     const view = editSetup(withSetups(kiez, commute), 'm1', (s) => removeTile(s, 'weather'));
-    expect(view.customSetups[0]).toEqual({ ...kiez, sections: [kiez.sections[0], { ...kiez.sections[1], tiles: ['support'] }], hidden: ['budget', 'weather'] });
+    expect(view.customSetups[0]).toEqual({ ...kiez, sections: [kiez.sections[0], { ...kiez.sections[1], tiles: ['crisis'] }], hidden: ['budget', 'weather'] });
     expect(view.customSetups[1]).toBe(commute);
   });
 
@@ -102,7 +102,7 @@ describe('the visitor’s setups', () => {
 
   it('stay as they are for an edit that changes nothing', () => {
     const view = withSetups(kiez);
-    expect(editSetup(view, 'm1', (s) => removeTile(s, 'support'))).toBe(view);
+    expect(editSetup(view, 'm1', (s) => removeTile(s, 'budget'))).toBe(view);
   });
 
   it('forget a deleted section’s collapse, so a new section with its id opens', () => {
@@ -164,7 +164,7 @@ describe('a setup’s map', () => {
 
 describe('a shared link’s setup', () => {
   const own = chooseSetup(withSetups(kiez), 'storm');
-  const shared = { name: 'Geteilt', sections: [{ id: 'c1', tiles: ['weather' as const, 'support' as const] }], hidden: [] };
+  const shared = { name: 'Geteilt', sections: [{ id: 'c1', tiles: ['weather' as const, 'crisis' as const] }], hidden: [] };
 
   it('is previewed over the visitor’s own: a preset chosen, someone’s setup as a setup of its own', () => {
     expect(previewView(own, 'commute')).toEqual({ ...own, choice: 'commute' });

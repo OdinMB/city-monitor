@@ -13,7 +13,7 @@ const prefs = (): SetupPrefs => ({
   berlin: {
     view: {
       choice: 'm1',
-      customSetups: [{ id: 'm1', name: 'Kiez', sections: [{ id: 'c1', name: 'Draußen', tiles: ['news', 'support'] }], hidden: ['budget'], map: { crimeLayer: 'kiez' } }],
+      customSetups: [{ id: 'm1', name: 'Kiez', sections: [{ id: 'c1', name: 'Draußen', tiles: ['news', 'crisis'] }], hidden: ['budget'], map: { crimeLayer: 'kiez' } }],
       collapsed: { m1: ['c1'] },
       presetMaps: { commute: { map: { activeLayers: new Set<DataLayer>(['traffic', 'parking']) }, touched: 150 } },
     },
@@ -104,6 +104,14 @@ describe('setup cookie value', () => {
     for (const value of [undefined, '', 'garbage!', v2, encodeJson({ v: 4, c: {} }), encodeJson({ v: 3, c: [] }), encodeJson(null)]) {
       expect(decodePrefs(value)).toEqual({});
     }
+  });
+
+  it('reads a value written while the support tile was a tile, the setups without it', () => {
+    const old = encodeJson({ v: 3, c: { berlin: { s: 'm1', c: [{ i: 'm1', n: 'Kiez', s: [['c1', 'nsc', 'Draußen']], h: 'sd' }], u: 5 } } });
+    expect(decodePrefs(old).berlin.view.customSetups).toEqual([
+      { id: 'm1', name: 'Kiez', sections: [{ id: 'c1', name: 'Draußen', tiles: ['news', 'crisis'] }], hidden: ['budget'] },
+    ]);
+    expect(decodePrefs(old).berlin.view.choice).toBe('m1');
   });
 
   it('skips a city entry it cannot read and keeps the others', () => {

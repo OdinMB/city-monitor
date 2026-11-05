@@ -7,7 +7,7 @@ import {
   type CustomSetup,
 } from '../../lib/custom-setup.js';
 import { sectionLabel, tileTitle } from '../../lib/setup-labels.js';
-import { SUPPORT_TILE, type ResolvedSection, type TileId } from '../../lib/tile-setups.js';
+import type { ResolvedSection, TileId } from '../../lib/tile-setups.js';
 import { SourceText } from '../SourceText.js';
 import { Popover } from './Popover.js';
 import { focusTileControls } from './setup-focus.js';
@@ -198,11 +198,9 @@ export function TileControls({ setup, sectionId, tile, visible }: { setup: Custo
       {setup.sections.length > 1 && (
         <SectionSelect setup={setup} exceptId={sectionId} label={t('setup.moveTileTo', { title })} onPick={(to) => edit((s) => placeTile(s, tile, to))} />
       )}
-      {tile !== SUPPORT_TILE && (
-        <button type="button" className={`${CONTROL_BUTTON} ms-auto`} onClick={() => edit((s) => removeTile(s, tile))} aria-label={t('setup.removeTile', { title })}>
-          <span aria-hidden="true">✕</span>
-        </button>
-      )}
+      <button type="button" className={`${CONTROL_BUTTON} ms-auto`} onClick={() => edit((s) => removeTile(s, tile))} aria-label={t('setup.removeTile', { title })}>
+        <span aria-hidden="true">✕</span>
+      </button>
     </div>
   );
 }

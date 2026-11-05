@@ -10,6 +10,8 @@ import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.j
 import { isolate } from '../../lib/bidi.js';
 import { defaultView, previewView, shownCustom, type NamedSetup, type SetupView, type SharedSetup } from '../../lib/setup-state.js';
 import { readSharedParams } from '../../lib/setup-link.js';
+import { PRESET_IDS, cityTiles } from '../../lib/tile-setups.js';
+import { SUPPORT_URL } from '../../lib/constants.js';
 import { berlin } from '../../config/cities/berlin.js';
 import { muenchen } from '../../config/cities/muenchen.js';
 import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
@@ -38,10 +40,16 @@ const openMenu = () => fireEvent.click(menuButton());
 const inMenu = (name: string | RegExp) => within(menu()).getByRole('button', { name });
 const isCurrent = (name: string | RegExp) => inMenu(name).getAttribute('aria-current') === 'true';
 const setupName = () => screen.getByRole('textbox', { name: 'Setup name' }) as HTMLInputElement;
+const strip = () => screen.getByRole('region', { name: 'Support Us' });
+/** The section the support strip follows, by its heading; null when nothing comes before it in the sections' grid. */
+const stripAfter = () => {
+  const before = strip().previousElementSibling;
+  return before?.tagName === 'SECTION' ? within(before as HTMLElement).getAllByRole('heading', { level: 2 })[0].textContent : null;
+};
 const MAP_SAVED = 'Map layers you switch on or off are saved with this setup.';
 
-const kiez: NamedSetup = { id: 'm1', name: 'Mein Kiez', sections: [{ id: 'c1', name: 'Draußen', tiles: ['weather', 'support'] }], hidden: [] };
-const commute: NamedSetup = { id: 'm2', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'support'] }], hidden: [] };
+const kiez: NamedSetup = { id: 'm1', name: 'Mein Kiez', sections: [{ id: 'c1', name: 'Draußen', tiles: ['weather', 'crisis'] }], hidden: [] };
+const commute: NamedSetup = { id: 'm2', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'crisis'] }], hidden: [] };
 const withSetups = (choice: SetupView['choice'], ...customSetups: NamedSetup[]): SetupView => ({ ...defaultView(), choice, customSetups });
 
 /** The sections with the top bar's setup menu (where the menu is now), and `extra` beside them (a layer list). */
@@ -87,7 +95,8 @@ describe('TileSections', () => {
       expect(menuName()).toBe('Customize tiles and map · Everyday');
       expect(menuButton().getAttribute('title')).toBe(menuName());
       expect(sectionHeadings()).toEqual(['News', 'Environment', 'Disruptions', 'Crises', 'Background']);
-      expect(tilesIn('Crises').at(-1)).toBe('support');
+      // Berlin has no flood-status tile (München only)
+      expect(tilesIn('Crises')).toEqual(['crisis']);
       // The setup bar has nothing to say outside setup mode: the first section opens the grid
       const grid = container.querySelector('.grid')!;
       expect(grid.firstElementChild!.tagName).toBe('SECTION');
@@ -138,7 +147,7 @@ describe('TileSections', () => {
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(menuName()).toBe('Customize tiles and map · Commute');
       expect(sectionHeadings()).toEqual(['Getting around', 'Conditions', 'News']);
-      expect(tilesIn('News')).toEqual(['news', 'support']);
+      expect(tilesIn('News')).toEqual(['news']);
       await waitFor(() => expect(document.activeElement).toBe(menuButton()));
     });
 
@@ -180,6 +189,37 @@ describe('TileSections', () => {
     });
   });
 
+  describe('the support strip', () => {
+    it.each(PRESET_IDS)('follows the first section of %s, once, with no heading of its own and the donation link', (preset) => {
+      renderSections(berlin, { ...defaultView(), choice: preset });
+      expect(screen.getAllByRole('region', { name: 'Support Us' })).toHaveLength(1);
+      expect(stripAfter()).toBe(sectionHeadings()[0]);
+      expect(within(strip()).queryByRole('heading')).toBeNull();
+      expect(within(strip()).getByRole('link', { name: 'Donate $5 to keep it that way' }).getAttribute('href')).toBe(SUPPORT_URL);
+      expect(within(strip()).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['0 Cost', '0 Ads', '0 Tracking']);
+    });
+
+    it('follows the first section shown, not one left out for having nothing on screen', () => {
+      renderSections(muenchen, { ...defaultView(), choice: 'commute' });
+      expect(stripAfter()).toBe('Conditions');
+    });
+
+    it('stays after the first section when that one is collapsed', () => {
+      renderSections();
+      fireEvent.click(within(screen.getByRole('heading', { level: 2, name: 'News' })).getByRole('button'));
+      expect(tilesIn('News')).toEqual([]);
+      expect(stripAfter()).toBe('News');
+    });
+
+    it('shows when no section has anything on screen', () => {
+      const others = cityTiles(muenchen.features).filter((tile) => tile !== 'liftOutages');
+      const lifts: NamedSetup = { id: 'm1', name: 'Lifts', sections: [{ id: 'c1', tiles: ['liftOutages'] }], hidden: others };
+      renderSections(muenchen, withSetups('m1', lifts));
+      expect(screen.queryAllByRole('heading', { level: 2 })).toEqual([]);
+      expect(stripAfter()).toBeNull();
+    });
+  });
+
   describe('collapsing', () => {
     it('collapses a section from its heading and opens it again', () => {
       renderSections();
@@ -209,9 +249,20 @@ describe('TileSections', () => {
       expect(screen.getAllByRole('textbox', { name: 'Section name' }).map((i) => (i as HTMLInputElement).value))
         .toEqual(['News', 'Environment', 'Disruptions', 'Crises', 'Background']);
       expect(screen.getByRole('button', { name: 'Move Weather up' })).toBeTruthy();
-      // The support tile moves but never goes
-      expect(screen.getByRole('button', { name: 'Move Support Us down' })).toBeTruthy();
-      expect(screen.queryByRole('button', { name: 'Hide Support Us' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Hide Crisis Services' })).toBeTruthy();
+    });
+
+    it('keeps the support strip after the first section, without controls, and after the new first one when sections move', () => {
+      renderSections();
+      newSetup();
+      expect(stripAfter()).toBe('News');
+      expect(within(strip()).queryAllByRole('button')).toEqual([]);
+      expect(within(strip()).queryAllByRole('combobox')).toEqual([]);
+      const environment = screen.getByRole('region', { name: 'Environment' });
+      fireEvent.click(screen.getByRole('button', { name: 'Move section Environment up' }));
+      expect(stripAfter()).toBe('Environment');
+      // Moved in the page, not drawn afresh, so focus on its button stays
+      expect(screen.getByRole('region', { name: 'Environment' })).toBe(environment);
     });
 
     it('names the setup, and on Done hands focus to the top bar’s menu icon, which names it too', async () => {
@@ -306,7 +357,7 @@ describe('TileSections', () => {
       const listIn = (section: string, list: string) =>
         within(within(picker(section)).getByRole('list', { name: list })).getAllByRole('button').map((b) => b.getAttribute('aria-labelledby') ? document.getElementById(b.getAttribute('aria-labelledby')!)!.textContent : b.textContent);
 
-      it('lists the hidden tiles, then those of the other sections with where they are, the support tile among them', async () => {
+      it('lists the hidden tiles, then those of the other sections with where they are, never the support strip', async () => {
         renderSections();
         newSetup();
         fireEvent.click(screen.getByRole('button', { name: 'Hide Pollen Forecast' }));
@@ -317,7 +368,8 @@ describe('TileSections', () => {
         expect(listIn('News', 'Hidden tiles')).toEqual(['Pollen Forecast']);
         const others = listIn('News', 'From other sections');
         expect(others).toContain('Weather');
-        expect(others).toContain('Support Us');
+        expect(others).toContain('Crisis Services');
+        expect(others).not.toContain('Support Us');
         expect(others).not.toContain('Briefing');
         const weather = within(picker('News')).getByRole('button', { name: 'Weather' });
         expect(document.getElementById(weather.getAttribute('aria-describedby')!)!.textContent).toBe('Environment');
@@ -450,13 +502,15 @@ describe('TileSections', () => {
 
   describe('a shared setup', () => {
     const own = withSetups('storm', kiez);
-    const shared: SharedSetup = { name: 'Geteilt', sections: [{ id: 'c1', name: 'Draußen', tiles: ['weather', 'support'] }], hidden: [] };
+    const shared: SharedSetup = { name: 'Geteilt', sections: [{ id: 'c1', name: 'Draußen', tiles: ['weather', 'crisis'] }], hidden: [] };
     const notice = () => screen.getByRole('region', { name: "You're viewing a shared setup." });
 
     it('says so above the sections, the menu icon naming it, and goes back to the visitor’s own, focus on the icon', async () => {
       renderSections(berlin, own, shared);
       expect(menuName()).toBe(`Customize tiles and map · ${isolate('Geteilt')}`);
       expect(sectionHeadings()).toEqual(['Draußen']);
+      // The support strip follows its first section, as in the visitor's own
+      expect(stripAfter()).toBe('Draußen');
       fireEvent.click(within(notice()).getByRole('button', { name: 'Back to mine' }));
       expect(screen.queryByRole('region', { name: "You're viewing a shared setup." })).toBeNull();
       expect(menuName()).toBe('Customize tiles and map · Storm & emergencies');

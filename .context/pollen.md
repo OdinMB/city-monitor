@@ -44,7 +44,7 @@ Standard data source pattern:
 ## Frontend
 
 - **Hook:** `usePollen.ts` — 1h refetch, 30min stale
-- **Component:** `PollenStrip.tsx` — expandable tile, first of the environment row (after the Transit and support tiles)
+- **Component:** `PollenStrip.tsx` — expandable tile, in Everyday's Environment section after Weather and Air Quality (`lib/tile-setups.ts`)
   - **Collapsed:** Active pollen type badges with intensity colors
   - **Expanded:** 8-row × 3-column forecast table (today/tomorrow/dayAfter)
   - **Off-season:** Centered gray message

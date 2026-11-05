@@ -11,6 +11,7 @@ import { DashboardGrid } from './DashboardGrid.js';
 import { DashboardTile } from './DashboardTile.js';
 import { SetupBar } from './SetupBar.js';
 import { HiddenTilesTray, SectionEditor, TileControls } from './SetupControls.js';
+import { SupportStrip } from './SupportStrip.js';
 import { TileSlotContext } from './tile-slot.js';
 
 /**
@@ -18,8 +19,9 @@ import { TileSlotContext } from './tile-slot.js';
  * shared link's setup is previewed) and the setup's sections, each with a
  * heading that collapses it and its own grid of tiles. A section with nothing
  * on screen is left out, except in setup mode, which shows every section of
- * the visitor's setup with its controls and the hidden tiles. The setup menu
- * is in the top bar (SetupMenu).
+ * the visitor's setup with its controls and the hidden tiles. The support
+ * strip follows the first section shown (at the top when there is none), in
+ * every setup and mode. The setup menu is in the top bar (SetupMenu).
  */
 
 type Width = ReturnType<typeof sectionWidth>;
@@ -66,7 +68,6 @@ function SectionHeading({ section, collapsed, headingId, gridId }: { section: Re
 function TileSection({ section, collapsed, editing, onScreen }: SectionProps) {
   const { t } = useTranslation();
   const tiles = section.tiles.filter(onScreen);
-  if (!editing && tiles.length === 0) return null;
   const headingId = `tile-section-${section.id}`;
   const gridId = `${headingId}-tiles`;
   const open = Boolean(editing) || !collapsed;
@@ -102,6 +103,13 @@ export function TileSections() {
   const collapsed = view.collapsed[view.choice] ?? [];
   const eventsShown = useEventsTileShown();
   const onScreen = (tile: TileId) => (tile !== 'liftOutages' || liftShown) && (tile !== 'events' || eventsShown);
+  const shown = editing ? sections : sections.filter((section) => section.tiles.some(onScreen));
+  const strip = <SupportStrip key="support-strip" />;
+  // One keyed list, so a section that becomes the first (moved up in setup mode) is moved, not mounted afresh
+  const items = shown.length === 0 ? [strip] : shown.flatMap((section, index) => {
+    const element = <TileSection key={section.id} section={section} collapsed={collapsed.includes(section.id)} editing={editing} onScreen={onScreen} />;
+    return index === 0 ? [element, strip] : [element];
+  });
 
   return (
     // Sections flow in order through a four-column grid (two from sm), each as
@@ -112,9 +120,7 @@ export function TileSections() {
           <SetupBar editing={editing} shared={shared} />
         </div>
       )}
-      {sections.map((section) => (
-        <TileSection key={section.id} section={section} collapsed={collapsed.includes(section.id)} editing={editing} onScreen={onScreen} />
-      ))}
+      {items}
       {editing && (
         <div className="col-span-full">
           <HiddenTilesTray setup={editing} />

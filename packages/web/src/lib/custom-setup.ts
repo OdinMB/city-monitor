@@ -1,11 +1,11 @@
-import { SUPPORT_TILE, type ResolvedSection, type TileId } from './tile-setups.js';
+import type { ResolvedSection, TileId } from './tile-setups.js';
 
 /**
  * A visitor's own setup's sections and tiles, and the edits setup mode makes
  * to them (its name and id are in setup-state.ts).
  * Every operation returns a new setup and leaves its input alone; one that
- * cannot apply (an unknown section, the last section, the support tile's
- * removal) returns the setup unchanged.
+ * cannot apply (an unknown section, the last section's deletion) returns the
+ * setup unchanged.
  */
 
 export interface CustomSection {
@@ -40,15 +40,15 @@ export function customFrom(sections: readonly ResolvedSection[], available: read
   const placed = new Set(sections.flatMap((s) => s.tiles));
   return {
     sections: sections.map((s) => ({ id: s.id, ...(s.name !== undefined ? { name: s.name } : {}), tiles: [...s.tiles] })),
-    hidden: available.filter((t) => t !== SUPPORT_TILE && !placed.has(t)),
+    hidden: available.filter((t) => !placed.has(t)),
   };
 }
 
 /**
  * The setup in a city with `available` tiles: tiles it lacks dropped, each
- * placed once, the hidden list kept to tiles that are neither placed nor the
- * support tile, and every other tile of the city (a source added since) at
- * the end of the last section, so no tile is silently lost.
+ * placed once, the hidden list kept to tiles that are not placed, and every
+ * other tile of the city (a source added since) at the end of the last
+ * section, so no tile is silently lost.
  */
 export function fitToCity(setup: CustomSetup, available: readonly TileId[]): CustomSetup {
   const placed = new Set<TileId>();
@@ -58,7 +58,7 @@ export function fitToCity(setup: CustomSetup, available: readonly TileId[]): Cus
     return true;
   };
   const sections = setup.sections.map((s) => ({ ...s, tiles: s.tiles.filter(keep) }));
-  const hidden = [...new Set(setup.hidden)].filter((t) => t !== SUPPORT_TILE && available.includes(t) && !placed.has(t));
+  const hidden = [...new Set(setup.hidden)].filter((t) => available.includes(t) && !placed.has(t));
   const unplaced = available.filter((t) => !placed.has(t) && !hidden.includes(t));
   if (unplaced.length > 0) {
     if (sections.length === 0) sections.push({ id: nextSectionId([]), tiles: [] });
@@ -91,26 +91,16 @@ export function moveSection(setup: CustomSetup, id: string, delta: -1 | 1): Cust
   return withSections(setup, sections);
 }
 
-/** The last section stays: the support tile always needs one. */
+/** The last section stays: a setup always has one, where a city's new tiles land. */
 export function canDeleteSection(setup: CustomSetup): boolean {
   return setup.sections.length > 1;
 }
 
-/**
- * Deletes a section: its tiles go to the hidden tray, except the support
- * tile, which joins the end of the section before (the one after, for the
- * first section).
- */
+/** Deletes a section: its tiles go to the hidden tray. */
 export function deleteSection(setup: CustomSetup, id: string): CustomSetup {
-  const index = setup.sections.findIndex((s) => s.id === id);
-  if (index < 0 || !canDeleteSection(setup)) return setup;
-  const gone = setup.sections[index];
-  const keepsSupport = gone.tiles.includes(SUPPORT_TILE);
-  const heir = setup.sections[index > 0 ? index - 1 : 1].id;
-  const sections = setup.sections
-    .filter((s) => s.id !== id)
-    .map((s) => (keepsSupport && s.id === heir ? { ...s, tiles: [...s.tiles, SUPPORT_TILE] } : s));
-  return withSections(setup, sections, [...setup.hidden, ...gone.tiles.filter((t) => t !== SUPPORT_TILE)]);
+  const gone = setup.sections.find((s) => s.id === id);
+  if (!gone || !canDeleteSection(setup)) return setup;
+  return withSections(setup, setup.sections.filter((s) => s.id !== id), [...setup.hidden, ...gone.tiles]);
 }
 
 /** Adds an empty section at the end, up to MAX_SECTIONS. */
@@ -148,9 +138,9 @@ export function placeTile(setup: CustomSetup, tile: TileId, sectionId: string): 
   return withSections(setup, sections, setup.hidden.filter((t) => t !== tile));
 }
 
-/** Moves a tile to the hidden tray; the support tile stays. */
+/** Moves a tile to the hidden tray. */
 export function removeTile(setup: CustomSetup, tile: TileId): CustomSetup {
-  if (tile === SUPPORT_TILE || !setup.sections.some((s) => s.tiles.includes(tile))) return setup;
+  if (!setup.sections.some((s) => s.tiles.includes(tile))) return setup;
   const sections = setup.sections.map((s) => ({ ...s, tiles: s.tiles.filter((t) => t !== tile) }));
   return withSections(setup, sections, [...setup.hidden, tile]);
 }

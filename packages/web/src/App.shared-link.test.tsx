@@ -68,8 +68,8 @@ describe('opening a dashboard', { timeout: 30_000 }, () => {
           ...defaultView(),
           choice: 'm2',
           customSetups: [
-            { id: 'm1', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'support'] }], hidden: [] },
-            { id: 'm2', name: 'Kiez', sections: [{ id: 'c1', name: 'Mein Kiez', tiles: ['weather', 'support'] }], hidden: [] },
+            { id: 'm1', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'crisis'] }], hidden: [] },
+            { id: 'm2', name: 'Kiez', sections: [{ id: 'c1', name: 'Mein Kiez', tiles: ['weather', 'crisis'] }], hidden: [] },
           ],
         },
         touched: 1,

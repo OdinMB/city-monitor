@@ -57,6 +57,29 @@ describe('the setup menu icon', () => {
     expect(between.nextElementSibling!.contains(screen.getByRole('button', { name: 'Menu' }))).toBe(true);
   });
 
+  it('stays in the top bar from lg up, beside the desktop controls, so the bar that slides in on scrolling carries it', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: /min-width/.test(query),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+    try {
+      renderWith(<TopBar />);
+      const icon = document.getElementById('setup-menu-topbar')!;
+      const header = screen.getByRole('banner');
+      // Nothing between it and the header hides it at any width
+      for (let el: Element | null = icon; el && el !== header; el = el.parentElement) {
+        expect(el.className.split(/\s+/), el.tagName).not.toEqual(expect.arrayContaining(['hidden']));
+        expect(el.className, el.tagName).not.toMatch(/(^|\s)(lg|xl|max-\w+):hidden/);
+      }
+      expect(icon.nextElementSibling!.className.split(/\s+/)).toContain('lg:flex');
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+
   it('keeps the sliding top bar on screen while its menu is open', () => {
     renderWith(<TopBar />);
     const icon = document.getElementById('setup-menu-topbar')!;

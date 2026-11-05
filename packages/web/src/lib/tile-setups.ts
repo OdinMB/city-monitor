@@ -30,7 +30,6 @@ const TILE_GATES = {
   wastewater: (has: Has) => has('wastewater'),
   electricity: (has: Has) => has('electricity'),
   waterLevels: (has: Has) => has('waterLevels'),
-  support: () => true,
   councilMeetings: (has: Has) => has('councilMeetings'),
   political: (has: Has) => has('political'),
   laborMarket: (has: Has) => has('laborMarket'),
@@ -52,7 +51,7 @@ export const TILE_IDS = Object.keys(TILE_GATES) as TileId[];
 export const TILE_SPANS: Record<TileId, 1 | 2> = {
   briefing: 2, news: 2, events: 2, councilMeetings: 2, budget: 2,
   weather: 1, airQuality: 1, transit: 1, liftOutages: 1, pollen: 1, floodStatus: 1, appointments: 1, bathing: 1,
-  crisis: 1, wastewater: 1, electricity: 1, waterLevels: 1, support: 1, political: 1, laborMarket: 1, population: 1,
+  crisis: 1, wastewater: 1, electricity: 1, waterLevels: 1, political: 1, laborMarket: 1, population: 1,
   feuerwehr: 1, soilMoisture: 1,
 };
 
@@ -61,9 +60,6 @@ export function sectionWidth(tiles: readonly TileId[]): 1 | 2 | 3 | 4 {
   const columns = tiles.reduce((sum, tile) => sum + TILE_SPANS[tile], 0);
   return Math.min(4, Math.max(1, columns)) as 1 | 2 | 3 | 4;
 }
-
-/** The tile that can be moved but never removed from a setup. */
-export const SUPPORT_TILE: TileId = 'support';
 
 export function isTileId(value: unknown): value is TileId {
   return typeof value === 'string' && Object.hasOwn(TILE_GATES, value);
@@ -121,15 +117,16 @@ interface SectionDef {
  * Everyday groups every tile by what it does for the visitor (what hits me
  * now, what is disrupted, what to do in a crisis, background figures) and
  * places each once (tile-setups.test.ts); it is what a city opens with. The
- * others show only the tiles their situation needs, the support tile last;
- * a tile a preset leaves out is not shown in it.
+ * others show only the tiles their situation needs; a tile a preset leaves
+ * out is not shown in it. The support strip is no tile: every setup shows it
+ * after its first section (TileSections).
  */
 export const PRESET_SECTIONS: Record<PresetId, readonly SectionDef[]> = {
   everyday: [
     { key: 'news', tiles: ['briefing', 'news', 'events'] },
     { key: 'environment', tiles: ['weather', 'airQuality', 'pollen', 'wastewater', 'bathing'] },
     { key: 'disturbances', tiles: ['transit', 'liftOutages', 'appointments'] },
-    { key: 'crises', tiles: ['floodStatus', 'crisis', 'support'] },
+    { key: 'crises', tiles: ['floodStatus', 'crisis'] },
     {
       key: 'background',
       tiles: ['councilMeetings', 'political', 'laborMarket', 'population', 'budget', 'electricity', 'soilMoisture', 'feuerwehr', 'waterLevels'],
@@ -138,50 +135,50 @@ export const PRESET_SECTIONS: Record<PresetId, readonly SectionDef[]> = {
   commute: [
     { key: 'gettingAround', tiles: ['transit', 'liftOutages'] },
     { key: 'conditions', tiles: ['weather', 'airQuality'] },
-    { key: 'news', tiles: ['news', 'support'] },
+    { key: 'news', tiles: ['news'] },
   ],
   dayOut: [
     { key: 'today', tiles: ['weather', 'airQuality', 'pollen'] },
     { key: 'thingsToDo', tiles: ['events'] },
-    { key: 'water', tiles: ['bathing', 'waterLevels', 'support'] },
+    { key: 'water', tiles: ['bathing', 'waterLevels'] },
   ],
   health: [
     { key: 'airAllergies', tiles: ['airQuality', 'pollen', 'weather'] },
     { key: 'infections', tiles: ['wastewater'] },
-    { key: 'help', tiles: ['crisis', 'support'] },
+    { key: 'help', tiles: ['crisis'] },
   ],
   storm: [
     { key: 'warnings', tiles: ['weather', 'floodStatus', 'waterLevels'] },
     { key: 'help', tiles: ['crisis'] },
-    { key: 'news', tiles: ['news', 'support'] },
+    { key: 'news', tiles: ['news'] },
   ],
   cityHall: [
     { key: 'services', tiles: ['appointments'] },
     { key: 'politics', tiles: ['councilMeetings', 'political', 'budget'] },
-    { key: 'news', tiles: ['briefing', 'support'] },
+    { key: 'news', tiles: ['briefing'] },
   ],
   movingHere: [
     { key: 'people', tiles: ['population', 'laborMarket'] },
-    { key: 'cityFigures', tiles: ['budget', 'electricity', 'soilMoisture', 'feuerwehr', 'support'] },
+    { key: 'cityFigures', tiles: ['budget', 'electricity', 'soilMoisture', 'feuerwehr'] },
   ],
   visitors: [
     { key: 'today', tiles: ['weather', 'airQuality'] },
     { key: 'gettingAround', tiles: ['transit', 'liftOutages'] },
     { key: 'whatsOn', tiles: ['events'] },
-    { key: 'inBrief', tiles: ['briefing', 'support'] },
+    { key: 'inBrief', tiles: ['briefing'] },
   ],
   newsroom: [
     { key: 'news', tiles: ['briefing', 'news'] },
     { key: 'politics', tiles: ['councilMeetings', 'political', 'budget'] },
-    { key: 'figures', tiles: ['feuerwehr', 'laborMarket', 'population', 'support'] },
+    { key: 'figures', tiles: ['feuerwehr', 'laborMarket', 'population'] },
   ],
   cycling: [
-    { key: 'conditions', tiles: ['weather', 'airQuality', 'pollen', 'support'] },
+    { key: 'conditions', tiles: ['weather', 'airQuality', 'pollen'] },
   ],
   heatwave: [
     { key: 'heat', tiles: ['weather', 'airQuality'] },
     { key: 'coolingOff', tiles: ['bathing', 'waterLevels'] },
-    { key: 'drought', tiles: ['soilMoisture', 'support'] },
+    { key: 'drought', tiles: ['soilMoisture'] },
   ],
 };
 
@@ -214,21 +211,10 @@ function place(sections: SectionDef[], { tile, section, before }: Placement): Se
   });
 }
 
-/**
- * A preset in a city: its placements applied, the tiles it lacks left out and
- * no section left empty. The support tile, left alone in a section, joins the
- * section before, so no section shows it alone.
- */
+/** A preset in a city: its placements applied, the tiles it lacks left out and no section left empty. */
 export function presetSections(preset: PresetId, cityId: string, available: readonly TileId[]): ResolvedSection[] {
   const placements = CITY_PLACEMENTS[cityId]?.[preset] ?? [];
-  const sections = placements.reduce(place, [...PRESET_SECTIONS[preset]])
+  return placements.reduce(place, [...PRESET_SECTIONS[preset]])
     .map((s) => ({ id: s.key as string, tiles: s.tiles.filter((t) => available.includes(t)) }))
     .filter((s) => s.tiles.length > 0);
-  return sections.flatMap((s, i) => {
-    const alone = s.tiles.length === 1 && s.tiles[0] === SUPPORT_TILE;
-    if (alone && i > 0) return [];
-    const next = sections[i + 1];
-    const takesSupport = next && next.tiles.length === 1 && next.tiles[0] === SUPPORT_TILE;
-    return [takesSupport ? { ...s, tiles: [...s.tiles, SUPPORT_TILE] } : s];
-  });
 }
