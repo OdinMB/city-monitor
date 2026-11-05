@@ -56,7 +56,8 @@ export type WaterSubLayer = 'levels' | 'bathing' | 'temperature';
 export type TrafficSubLayer = 'public-transport' | 'incidents' | 'congestion' | 'roadworks' | 'car-counts' | 'bike-counts' | 'telraam';
 export type HeatReliefSubLayer = 'cool' | 'fountains' | 'toilets';
 
-interface CommandCenterState {
+/** What the map shows: the part of the store each setup keeps (lib/setup-maps.ts) and a shared link carries (lib/map-state.ts). */
+export interface MapState {
   singleView: boolean;
   activeLayers: Set<DataLayer>;
   /**
@@ -79,6 +80,9 @@ interface CommandCenterState {
   heatReliefSubLayers: Set<HeatReliefSubLayer>;
   /** The citizen reports drawn, by status: open and in progress unless closed ones are asked for too. */
   reportStatuses: Set<CitizenReportStatus>;
+}
+
+interface CommandCenterState extends MapState {
   toggleSingleView: () => void;
   /** Switches a layer inside its category; in single view, layers of another category go. */
   toggleLayer: (layer: DataLayer) => void;
@@ -108,11 +112,17 @@ interface CommandCenterState {
   /** The city whose dashboard the layer choice was last made for. */
   layersCityId: string | null;
   /**
-   * Opens a city's dashboard: a different city than last time starts from that
-   * city's default layers; the same city (back from its Sources page) keeps
-   * the visitor's choice.
+   * Opens a city's dashboard: a different city than last time starts from the
+   * map of the setup it shows, over that city's defaults (defaultMapState);
+   * the same city (back from its Sources page) keeps the visitor's choice.
    */
-  enterCity: (cityId: string) => void;
+  enterCity: (cityId: string, saved?: Partial<MapState>) => void;
+  /**
+   * Shows `state` over the city's defaults (single view included) whatever was
+   * shown before: a shared link, the map of a setup chosen, or back to the
+   * visitor's own.
+   */
+  applyMapState: (cityId: string, state: Partial<MapState>) => void;
 }
 
 const DEFAULT_LAYERS: Set<DataLayer> = new Set(['traffic', 'weather', 'warnings']);
@@ -150,6 +160,44 @@ function sameCategory(layers: Iterable<DataLayer>, layer: DataLayer): DataLayer[
 }
 
 /**
+ * Single view shows one category: the first one shown keeps its layers, or
+ * the first group left on without any keeps its backdrop.
+ */
+function singleCategory({ activeLayers, openEmpty }: Pick<MapState, 'activeLayers' | 'openEmpty'>): Pick<MapState, 'activeLayers' | 'openEmpty'> {
+  const first = activeLayers.values().next().value;
+  if (first !== undefined) return { activeLayers: new Set<DataLayer>(sameCategory(activeLayers, first)), openEmpty: new Set<MapCategory>() };
+  return { activeLayers, openEmpty: new Set<MapCategory>([...openEmpty].slice(0, 1)) };
+}
+
+/** What a city's map opens with before the visitor changes anything. */
+export function defaultMapState(cityId?: string): MapState {
+  return {
+    singleView: false,
+    activeLayers: cityId === undefined ? new Set(DEFAULT_LAYERS) : defaultLayersFor(cityId),
+    openEmpty: new Set(),
+    politicalLayer: 'bezirke',
+    socialLayer: 'unemployment',
+    populationLayer: 'pop-density',
+    noiseLayer: 'total',
+    noiseLiveData: true,
+    newsSubLayers: new Set(ALL_NEWS_SUBS),
+    emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
+    waterSubLayers: new Set<WaterSubLayer>((cityId !== undefined ? CITY_DEFAULT_WATER_SUBS[cityId] : undefined) ?? ALL_WATER_SUBS),
+    trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS),
+    accidentFilter: 'all',
+    crimeLayer: 'total',
+    heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS),
+    reportStatuses: new Set(DEFAULT_REPORT_STATUSES),
+  };
+}
+
+/** A city's map as it opens: `saved` over its defaults, in the single view the visitor is in unless `saved` says otherwise. */
+function cityStart(cityId: string, singleView: boolean, saved: Partial<MapState>): Partial<CommandCenterState> {
+  const state: MapState = { ...defaultMapState(cityId), singleView, ...saved };
+  return { ...state, ...(state.singleView ? singleCategory(state) : {}), layersCityId: cityId };
+}
+
+/**
  * The groups left on without layers once `activeLayers` is what is shown:
  * `category` joins them when it is a group none of whose layers is left
  * (its last one just went), and leaves them when one of its layers is on.
@@ -164,33 +212,12 @@ function openEmptyAfter(state: Pick<CommandCenterState, 'openEmpty' | 'singleVie
 }
 
 export const useCommandCenter = create<CommandCenterState>((set) => ({
-  singleView: false,
-  activeLayers: new Set(DEFAULT_LAYERS),
-  openEmpty: new Set(),
-  politicalLayer: 'bezirke',
-  socialLayer: 'unemployment',
-  populationLayer: 'pop-density',
-  noiseLayer: 'total',
-  noiseLiveData: true,
-  newsSubLayers: new Set(ALL_NEWS_SUBS),
-  emergencySubLayers: new Set(ALL_EMERGENCY_SUBS),
-  waterSubLayers: new Set(ALL_WATER_SUBS),
-  trafficSubLayers: new Set(DEFAULT_TRAFFIC_SUBS),
-  accidentFilter: 'all',
-  crimeLayer: 'total',
-  heatReliefSubLayers: new Set(ALL_HEAT_RELIEF_SUBS),
-  reportStatuses: new Set(DEFAULT_REPORT_STATUSES),
+  ...defaultMapState(),
   toggleSingleView: () =>
     set((state) => {
       const singleView = !state.singleView;
       if (!singleView) return { singleView };
-      // Single view shows one category: the first one shown keeps its layers,
-      // or the first group left on without any keeps its backdrop.
-      const first = state.activeLayers.values().next().value;
-      if (first !== undefined) {
-        return { singleView, activeLayers: new Set<DataLayer>(sameCategory(state.activeLayers, first)), openEmpty: new Set<MapCategory>() };
-      }
-      return { singleView, openEmpty: new Set<MapCategory>([...state.openEmpty].slice(0, 1)) };
+      return { singleView, ...singleCategory(state) };
     }),
   toggleLayer: (layer) =>
     set((state) => {
@@ -309,15 +336,7 @@ export const useCommandCenter = create<CommandCenterState>((set) => ({
     }),
   setActiveLayers: (layers) => set({ activeLayers: layers, openEmpty: new Set() }),
   layersCityId: null,
-  enterCity: (cityId) =>
-    set((state) => {
-      if (state.layersCityId === cityId) return {};
-      const layers = defaultLayersFor(cityId);
-      const waterSubLayers = new Set<WaterSubLayer>(CITY_DEFAULT_WATER_SUBS[cityId] ?? ALL_WATER_SUBS);
-      if (state.singleView) {
-        const first = layers.values().next().value as DataLayer;
-        return { layersCityId: cityId, activeLayers: new Set<DataLayer>(sameCategory(layers, first)), openEmpty: new Set<MapCategory>(), waterSubLayers };
-      }
-      return { layersCityId: cityId, activeLayers: layers, openEmpty: new Set<MapCategory>(), waterSubLayers };
-    }),
+  enterCity: (cityId, saved = {}) =>
+    set((state) => (state.layersCityId === cityId ? {} : cityStart(cityId, state.singleView, saved))),
+  applyMapState: (cityId, saved) => set(cityStart(cityId, false, saved)),
 }));

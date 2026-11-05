@@ -18,15 +18,15 @@ const CROSS = (
 const ROWS = [
   { label: 'Ads', ours: 'None', theirs: 'Display, native, and sponsored' },
   { label: 'Tracking', ours: 'None (cookie-free analytics)', theirs: 'Analytics, cookies, third-party trackers' },
-  { label: 'Cookies', ours: 'None', theirs: 'Session, analytics, and ad cookies' },
+  { label: 'Cookies', ours: 'One, for your display settings only', theirs: 'Session, analytics, and ad cookies' },
   { label: 'Funding', ours: 'Donations', theirs: 'Advertising / government budgets' },
   { label: 'Source code', ours: 'Open (AGPL-3.0)', theirs: 'Proprietary' },
 ];
 
 const CARDS = [
   { title: 'No Ads', icon: '🚫', body: 'Not now, not ever. No display ads, sponsored content, or "recommended" links.' },
-  { title: 'No Tracking', icon: '👤', body: "No cookies, no pixels, no fingerprinting. We use Simple Analytics for privacy-friendly page views — they don't track you either." },
-  { title: 'No Cookies', icon: '🍪', body: "Zero cookies. Your theme and language, plus three flags for warnings you dismissed and tips you've seen, live in localStorage only." },
+  { title: 'No Tracking', icon: '👤', body: "No tracking cookies, no pixels, no fingerprinting. We use Simple Analytics for privacy-friendly page views — they don't track you either." },
+  { title: 'No Tracking Cookies', icon: '🍪', body: "No tracking or advertising cookies. Your theme and language, plus three flags for warnings you dismissed and tips you've seen, live in localStorage. Once you rearrange the tiles or change the map, one first-party cookie remembers that layout for you, and nothing else." },
   { title: 'No Paywalls', icon: '🔓', body: 'Everything is free. The dashboard, the API, the source code. No premium tiers.' },
 ];
 
@@ -35,15 +35,15 @@ export function NoTrackingPage() {
     <PageShell>
       <Helmet>
         <title>No Ads, No Tracking — City Monitor</title>
-        <meta name="description" content="City Monitor is free, open source, and respects your privacy. No ads, no tracking, no cookies." />
+        <meta name="description" content="City Monitor is free, open source, and respects your privacy. No ads, no tracking, no tracking cookies." />
         <meta property="og:title" content="No Ads, No Tracking — City Monitor" />
-        <meta property="og:description" content="City Monitor is free, open source, and respects your privacy. No ads, no tracking, no cookies." />
+        <meta property="og:description" content="City Monitor is free, open source, and respects your privacy. No ads, no tracking, no tracking cookies." />
       </Helmet>
 
       <article className="space-y-10">
         <header>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            No Ads. No Tracking. No Cookies.
+            No Ads. No Tracking. No Tracking Cookies.
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400 text-base">
             Most free web services make money from your data. City Monitor is different.

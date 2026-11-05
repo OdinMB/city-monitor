@@ -13,7 +13,8 @@ import { CityContext } from '../../hooks/CityContext.js';
 import { berlin } from '../../config/cities/berlin.js';
 import { hamburg } from '../../config/cities/hamburg.js';
 import { muenchen } from '../../config/cities/muenchen.js';
-import { CommandLayout, EventsTile, LiftOutagesTile } from './CommandLayout.js';
+import { CommandLayout } from './CommandLayout.js';
+import { EventsTile, LiftOutagesTile } from './DashboardTile.js';
 
 // Only where the warnings sit matters here, not the map itself.
 vi.mock('../map/CityMap.js', () => ({ CityMap: () => <div /> }));
@@ -220,7 +221,7 @@ describe('CommandLayout tiles', { timeout: 30_000 }, () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    return screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent ?? '');
+    return screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent ?? '');
   }
 
   const cities: ReadonlyArray<[string, WebCityConfig]> = [
@@ -254,7 +255,7 @@ describe('LiftOutagesTile', () => {
       </QueryClientProvider>,
     );
   }
-  const title = () => screen.queryByRole('heading', { level: 2, name: i18n.t('panel.liftOutages.title') });
+  const title = () => screen.queryByRole('heading', { level: 3, name: i18n.t('panel.liftOutages.title') });
   const dbOutage = { id: 'db-1', kind: 'lift', station: 'Berlin Hbf', unit: '', lat: null, lon: null, info: null, operator: 'db' };
 
   it('stays hidden in a city with DB stations only while the server has no data (no DB key)', () => {
@@ -287,7 +288,7 @@ describe('EventsTile', () => {
       </QueryClientProvider>,
     );
   }
-  const title = () => screen.queryByRole('heading', { level: 2, name: i18n.t('panel.events.title') });
+  const title = () => screen.queryByRole('heading', { level: 3, name: i18n.t('panel.events.title') });
   const hhtEvent = { id: 'hht-1', title: 'Wochenmarkt am Platzhalterplatz', date: '2099-01-01T08:00:00', category: 'market', url: '', source: 'hht' };
 
   it("leaves Hamburg's public page as it was while HHT's events are hidden", () => {

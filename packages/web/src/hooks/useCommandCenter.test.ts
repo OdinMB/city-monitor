@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { isCategoryOn, useCommandCenter, type DataLayer } from './useCommandCenter.js';
+import { defaultMapState, isCategoryOn, useCommandCenter, type DataLayer } from './useCommandCenter.js';
 
 const initial = useCommandCenter.getState();
 
@@ -46,6 +46,50 @@ describe('useCommandCenter enterCity', () => {
     useCommandCenter.setState({ singleView: true });
     useCommandCenter.getState().enterCity('hamburg');
     expect(useCommandCenter.getState().activeLayers.size).toBe(1);
+  });
+});
+
+describe('useCommandCenter saved map state', () => {
+  beforeEach(() => {
+    useCommandCenter.setState(initial, true);
+  });
+  const state = () => useCommandCenter.getState();
+
+  it('opens a city with its saved state in place of the city’s defaults', () => {
+    state().enterCity('berlin');
+    state().enterCity('hamburg', { activeLayers: new Set<DataLayer>(['noise']), politicalLayer: 'elections', noiseLayer: null });
+    expect([...state().activeLayers]).toEqual(['noise']);
+    expect(state().politicalLayer).toBe('elections');
+    expect(state().noiseLayer).toBeNull();
+    // What the saved state leaves out comes from the city's defaults
+    expect([...state().waterSubLayers]).toEqual(['levels']);
+  });
+
+  it('starts a city without a saved state from its defaults, not the last city’s choices', () => {
+    state().enterCity('berlin');
+    state().setPoliticalLayer('elections');
+    state().enterCity('hamburg');
+    expect(state().politicalLayer).toBe(defaultMapState('hamburg').politicalLayer);
+  });
+
+  it('keeps the visitor’s state when the same city is entered again, saved state or not', () => {
+    state().enterCity('hamburg');
+    state().setPoliticalLayer('elections');
+    state().enterCity('hamburg', { politicalLayer: 'bundestag' });
+    expect(state().politicalLayer).toBe('elections');
+  });
+
+  it('applies a state on the same city too (a shared link, back to the visitor’s own)', () => {
+    state().enterCity('hamburg');
+    state().applyMapState('hamburg', { activeLayers: new Set<DataLayer>(['crime']) });
+    expect([...state().activeLayers]).toEqual(['crime']);
+    state().applyMapState('hamburg', {});
+    expect(state().activeLayers).toEqual(defaultMapState('hamburg').activeLayers);
+  });
+
+  it('keeps single view to one category whatever the saved layers', () => {
+    state().applyMapState('berlin', { singleView: true, activeLayers: new Set<DataLayer>(['parking', 'traffic', 'weather']) });
+    expect([...state().activeLayers].sort()).toEqual(['parking', 'traffic']);
   });
 });
 

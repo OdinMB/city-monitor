@@ -40,7 +40,7 @@ describe('App', () => {
         <App />
       </MemoryRouter>,
     );
-    const heading = (await screen.findByText('Briefing')).closest('h2')!;
+    const heading = (await screen.findByText('Briefing')).closest('h3')!;
     const tag = within(heading).getByRole('img', {
       name: APPROVED_AI_COPY.en.generated,
       description: APPROVED_AI_COPY.en.tooltip,

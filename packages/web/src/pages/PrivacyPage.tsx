@@ -87,25 +87,36 @@ const STORED_VALUES = [
   },
 ];
 
+// The one cookie the app sets (lib/setup-cookie.ts); the same scan finds its name.
+const STORED_COOKIES = [
+  {
+    key: 'cm_setup',
+    title: 'Dashboard layout and map settings (cookie)',
+    description: 'Set only once you change something: per city, the setup you chose (one of the ready-made setups such as Everyday or Commute, or one of up to three of your own, with the names you gave them and their sections), the sections you collapsed, and the map layers and options of each setup: for each of your own setups the map you gave it, and for a ready-made setup only what you changed in its map, with when you changed it, so that the oldest such changes can be dropped first when the cookie runs out of room. A first-party cookie, kept for one year. Your browser sends it along when it loads this site’s pages, as with any cookie, but nothing on our side reads it: the dashboard reads it in your browser. It never goes to our data API or to any third party.',
+  },
+];
+
 export function PrivacyPage() {
   return (
     <PageShell>
       <Helmet>
         <title>Privacy Policy — City Monitor</title>
-        <meta name="description" content="Privacy policy for City Monitor. No cookies, no user tracking, privacy-friendly analytics." />
+        <meta name="description" content="Privacy policy for City Monitor. No tracking cookies, no user tracking, privacy-friendly analytics." />
         <meta property="og:title" content="Privacy Policy — City Monitor" />
-        <meta property="og:description" content="Privacy policy for City Monitor. No cookies, no user tracking, privacy-friendly analytics." />
+        <meta property="og:description" content="Privacy policy for City Monitor. No tracking cookies, no user tracking, privacy-friendly analytics." />
       </Helmet>
 
       <article className="space-y-10">
         <header>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Privacy Policy</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400 text-base">
-            We do not use cookies, tracking pixels, advertising scripts, or any other data
-            collection that identifies you. When you visit this site, nothing is stored on your
-            device except your theme, language and keyboard shortcut settings and three small flags
-            that remember which warnings you dismissed and which tips you have already seen (and,
-            only if you open a partner&apos;s review link, a preview token for that tab).
+            We do not use tracking or advertising cookies, tracking pixels, advertising scripts, or
+            any other data collection that identifies you. When you visit this site, nothing is
+            stored on your device except your theme, language and keyboard shortcut settings, three
+            small flags that remember which warnings you dismissed and which tips you have already
+            seen, once you change the dashboard&apos;s tile layout or map, one first-party cookie
+            that remembers those display preferences, and, only if you open a partner&apos;s review
+            link, a preview token for that tab.
           </p>
         </header>
 
@@ -140,10 +151,10 @@ export function PrivacyPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">What We Store on Your Device</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            We store these values in <code className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs font-mono">localStorage</code>, all under your control:
+            We store these values in <code className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs font-mono">localStorage</code>, and the last one in a cookie, all under your control:
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
-            {STORED_VALUES.map((v) => (
+            {[...STORED_VALUES, ...STORED_COOKIES].map((v) => (
               <div key={v.key} className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
                 <p className="text-xs font-mono text-muted mb-1">{v.key}</p>
                 <p className="text-sm font-medium">{v.title}</p>
@@ -157,6 +168,12 @@ export function PrivacyPage() {
             briefing, so the briefing comes back in your language; and a preview token, if you have
             one, which the dashboard sends with its requests for events. You can clear them at any
             time in your browser settings.
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            The dashboard&apos;s &ldquo;Share this view&rdquo; puts the tile layout on screen and your
+            map settings, the layout&apos;s name and section names included, into the address of
+            the link it copies, so whoever opens that link sees them. Opening a shared link changes
+            nothing stored on your device unless you choose to keep its layout.
           </p>
         </section>
 

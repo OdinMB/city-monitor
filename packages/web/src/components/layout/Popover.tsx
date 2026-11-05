@@ -5,6 +5,7 @@ import {
   offset,
   flip,
   shift,
+  size,
   useClick,
   useHover,
   useDismiss,
@@ -52,7 +53,20 @@ export function Popover({
       onOpenChange(nextOpen);
     },
     placement,
-    middleware: [offset(4), flip(), shift({ padding: 8 })],
+    // size: a popover taller than the room left on screen (the setup menu
+    // under the map) scrolls inside itself, so every row stays reachable.
+    middleware: [
+      offset(4),
+      flip(),
+      shift({ padding: 8 }),
+      size({
+        padding: 8,
+        apply({ availableHeight, elements }) {
+          elements.floating.style.maxHeight = `${Math.max(160, availableHeight)}px`;
+          elements.floating.style.overflowY = 'auto';
+        },
+      }),
+    ],
     whileElementsMounted: autoUpdate,
   });
 
