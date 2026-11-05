@@ -10,12 +10,11 @@ describe('SkylineSeparator', () => {
     expect(wrapper.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('draws the city in its phone and its wider-screen svg', () => {
+  it('draws the city in one svg', () => {
     const { container } = render(<SkylineSeparator cityId="koeln" />);
 
     const svgs = [...container.querySelectorAll('svg')];
-    expect(svgs).toHaveLength(2);
-    expect(svgs[0]!.innerHTML).toBe(svgs[1]!.innerHTML);
+    expect(svgs).toHaveLength(1);
     expect(svgs[0]!.querySelector('path')).not.toBeNull();
   });
 });

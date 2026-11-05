@@ -81,12 +81,16 @@ export function CommandLayout() {
             <MobileLayerDrawer />
           </div>
         </div>
-        {/* Skyline + scroll indicator overlaid at bottom of hero. Phones see the
-            tiles below the shorter map already, so they get no indicator. */}
-        <div className="absolute bottom-0 inset-x-0 z-10 pointer-events-none">
-          {!isPhone && <ScrollIndicator targetRef={dashboardRef} />}
-          <SkylineSeparator cityId={cityId} />
-        </div>
+        {/* Skyline + scroll indicator overlaid at bottom of hero, from tablet
+            width up. Phones see the tiles below the shorter map already, and
+            the skyline would only cover part of that small map, so they get
+            neither. */}
+        {!isPhone && (
+          <div className="absolute bottom-0 inset-x-0 z-10 pointer-events-none">
+            <ScrollIndicator targetRef={dashboardRef} />
+            <SkylineSeparator cityId={cityId} />
+          </div>
+        )}
       </div>
 
       {/* Lower zone: the tile sections, from tablet width up with 1rem above them. */}

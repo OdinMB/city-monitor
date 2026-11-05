@@ -41,19 +41,12 @@ export function SkylineSeparator({ cityId }: SkylineSeparatorProps) {
     >
       {/* Gradient backdrop so the silhouette contrasts against the map above */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent dark:from-white/15 dark:to-transparent" />
-      {/* Mobile: slice preserves aspect ratio, crops from top */}
-      <svg
-        viewBox="0 0 1200 120"
-        preserveAspectRatio="xMidYMax slice"
-        className="relative w-full h-16 sm:hidden"
-      >
-        <CitySkyline cityId={cityId} />
-      </svg>
-      {/* Desktop: stretch to fill — shorter without cropping buildings */}
+      {/* Stretch to fill — shorter without cropping buildings. Phones show no
+          skyline (CommandLayout leaves it out below sm). */}
       <svg
         viewBox="0 30 1200 90"
         preserveAspectRatio="none"
-        className="relative w-full hidden sm:block sm:h-10 lg:h-12"
+        className="relative w-full h-10 lg:h-12"
       >
         <CitySkyline cityId={cityId} />
       </svg>
