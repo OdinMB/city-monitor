@@ -8,7 +8,7 @@
 
 2. **API** (`packages/server/src/routes/safety.ts`) — `GET /api/:city/safety` returns cached reports or `[]`.
 
-3. **Frontend** — There is no police-report tile. `useSafety()` (refetch 10 min) feeds the map: with the news layer's `police` sub-layer on, `CityMap.tsx` passes the reports to `updateSafetyMarkers()` in `packages/web/src/components/map/layers/news-safety.ts`, which pins reports that have coordinates; the popup (`safetyPopupHtml`) shows title, district, the AI-estimated place and a link to the full report. Separately, Berlin's police press releases are also a news feed (`Polizei Berlin`, feed `category: 'crime'`), so they appear in the news strip, normally under the Crime tab. The feed category is only the starting value: the LLM classifier's category replaces it (`ingest-feeds.ts`).
+3. **Frontend** — `useSafety()` (refetch 10 min) feeds the Police Reports tile (`PoliceStrip`, tile id `police`, in Everyday's and Newsroom's news sections: the five newest, fifteen expanded, each with district, the AI place marker and a link) and the map: with the news layer's `police` sub-layer on, `CityMap.tsx` passes the reports to `updateSafetyMarkers()` in `packages/web/src/components/map/layers/news-safety.ts`, which pins reports that have coordinates; the popup (`safetyPopupHtml`) shows title, district, the AI-estimated place and a link to the full report. Separately, Berlin's police press releases are also a news feed (`Polizei Berlin`, feed `category: 'crime'`), so they appear in the news strip, normally under the Crime tab. The feed category is only the starting value: the LLM classifier's category replaces it (`ingest-feeds.ts`).
 
 ### Key Types
 

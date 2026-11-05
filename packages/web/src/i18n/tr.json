@@ -484,6 +484,10 @@
       },
       "empty": "Toprak nemi verisi yok"
     },
+    "police": {
+      "title": "Polis Bildirimleri",
+      "empty": "Polis bildirimi yok"
+    },
     "liftOutages": {
       "title": "Asansörler ve Yürüyen Merdivenler",
       "lifts": "Arızalı asansörler: {{n}}",

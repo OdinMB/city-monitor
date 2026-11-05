@@ -485,6 +485,10 @@
       },
       "empty": "Keine Bodenfeuchte-Daten"
     },
+    "police": {
+      "title": "Polizeimeldungen",
+      "empty": "Keine Polizeimeldungen"
+    },
     "liftOutages": {
       "title": "Aufzüge & Fahrtreppen",
       "lifts": "Aufzüge außer Betrieb: {{n}}",

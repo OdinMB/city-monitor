@@ -20,6 +20,7 @@ export const TILE_CODES: Record<TileId, string> = {
   briefing: 'b', news: 'n', weather: 'w', airQuality: 'a', transit: 't', liftOutages: 'l', pollen: 'p', floodStatus: 'f',
   events: 'e', appointments: 'o', bathing: 'k', crisis: 'c', wastewater: 'v', electricity: 'y', waterLevels: 'g',
   councilMeetings: 'm', political: 'r', laborMarket: 'j', population: 'i', budget: 'd', feuerwehr: 'h', soilMoisture: 'q',
+  police: 'x',
 };
 
 /**

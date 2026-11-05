@@ -31,6 +31,7 @@ import { FeuerwehrStrip } from '../strips/FeuerwehrStrip.js';
 import { PollenStrip } from '../strips/PollenStrip.js';
 import { CouncilMeetingsStrip } from '../strips/CouncilMeetingsStrip.js';
 import { PopulationStrip } from '../strips/PopulationStrip.js';
+import { PoliceStrip } from '../strips/PoliceStrip.js';
 
 /**
  * How each dashboard tile renders, by id: its card (title, span, expand
@@ -94,6 +95,11 @@ const TILES: Record<TileId, (props: TileProps) => ReactNode> = {
   news: ({ title }) => (
     <Tile title={title} span={2}>
       <NewsStrip />
+    </Tile>
+  ),
+  police: ({ title }) => (
+    <Tile title={title} span={1} expandable>
+      {(expanded) => <PoliceStrip expanded={expanded} />}
     </Tile>
   ),
   weather: ({ title, isDesktop }) => (

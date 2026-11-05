@@ -29,6 +29,8 @@ export const FEED_TIMINGS = {
   // summarize-news runs every 6 h but keeps the previous briefing while the top
   // headlines are unchanged, so one run can pass without a new one.
   briefing:        { job: 12 * HOUR, refetch: HOUR,     httpMaxAge: 5 * MIN },
+  // ingest-safety */10, but München's bulletins at most every 15 min, so every 20
+  police:          { job: 20 * MIN,  refetch: 10 * MIN, httpMaxAge: 5 * MIN },
   weather:         { job: HOUR,      refetch: 15 * MIN, httpMaxAge: 5 * MIN },  // ingest-weather hourly
   airQuality:      { job: HOUR,      refetch: 30 * MIN, httpMaxAge: 10 * MIN }, // written by ingest-weather
   transit:         { job: 15 * MIN,  refetch: 5 * MIN,  httpMaxAge: 2 * MIN },  // ingest-transit */15
