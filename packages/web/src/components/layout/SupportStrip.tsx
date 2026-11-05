@@ -18,7 +18,7 @@ export function SupportStrip() {
       aria-label={t('support.title')}
       className="col-span-full -mx-4 sm:mx-0 border-y sm:border border-border sm:rounded-lg bg-surface-1 px-3 sm:px-6 py-2 sm:py-3"
     >
-      <div className="flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-10 gap-y-1">
+      <div className="flex flex-wrap items-center sm:items-baseline justify-center gap-x-6 sm:gap-x-10 gap-y-1">
         <ul className="flex items-baseline gap-3 sm:gap-6">
           {FIGURES.map((key) => (
             <li key={key} className="flex items-baseline gap-1 sm:gap-1.5">
