@@ -13,6 +13,7 @@ const DAY = 24 * HOUR;
 // the bug these tests guard against.
 const CRON_INTERVAL: Record<Feed, number> = {
   news: 10 * MIN,         // ingest-feeds          */10 * * * *
+  police: 20 * MIN,       // ingest-safety         */10 * * * *, München skips every other run (15-min limit)
   briefing: 6 * HOUR,     // summarize-news        5 */6 * * *
   weather: HOUR,          // ingest-weather        0 * * * *
   airQuality: HOUR,       // ingest-weather        0 * * * *

@@ -14,6 +14,7 @@ type Has = (feature: CityFeature) => boolean;
 const TILE_GATES = {
   briefing: (has: Has) => has('news'),
   news: (has: Has) => has('news'),
+  police: (has: Has) => has('police'),
   weather: () => true,
   airQuality: () => true,
   transit: (has: Has) => has('transit'),
@@ -52,7 +53,7 @@ export const TILE_SPANS: Record<TileId, 1 | 2> = {
   briefing: 2, news: 2, events: 2, councilMeetings: 2, budget: 2,
   weather: 1, airQuality: 1, transit: 1, liftOutages: 1, pollen: 1, floodStatus: 1, appointments: 1, bathing: 1,
   crisis: 1, wastewater: 1, electricity: 1, waterLevels: 1, political: 1, laborMarket: 1, population: 1,
-  feuerwehr: 1, soilMoisture: 1,
+  feuerwehr: 1, soilMoisture: 1, police: 1,
 };
 
 /** The grid columns a section's tiles fill side by side, at most the grid's four. */
@@ -123,7 +124,7 @@ interface SectionDef {
  */
 export const PRESET_SECTIONS: Record<PresetId, readonly SectionDef[]> = {
   everyday: [
-    { key: 'news', tiles: ['briefing', 'news', 'events'] },
+    { key: 'news', tiles: ['briefing', 'news', 'police', 'events'] },
     { key: 'environment', tiles: ['weather', 'airQuality', 'pollen', 'wastewater', 'bathing'] },
     { key: 'disturbances', tiles: ['transit', 'liftOutages', 'appointments'] },
     { key: 'crises', tiles: ['floodStatus', 'crisis'] },
@@ -168,7 +169,7 @@ export const PRESET_SECTIONS: Record<PresetId, readonly SectionDef[]> = {
     { key: 'inBrief', tiles: ['briefing'] },
   ],
   newsroom: [
-    { key: 'news', tiles: ['briefing', 'news'] },
+    { key: 'news', tiles: ['briefing', 'news', 'police'] },
     { key: 'politics', tiles: ['councilMeetings', 'political', 'budget'] },
     { key: 'figures', tiles: ['feuerwehr', 'laborMarket', 'population'] },
   ],

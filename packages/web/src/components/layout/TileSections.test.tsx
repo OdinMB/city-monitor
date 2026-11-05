@@ -229,7 +229,7 @@ describe('TileSections', () => {
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
       expect(tilesIn('News')).toEqual([]);
       fireEvent.click(toggle);
-      expect(tilesIn('News')).toEqual(['briefing', 'news', 'events']);
+      expect(tilesIn('News')).toEqual(['briefing', 'news', 'police', 'events']);
     });
   });
 
@@ -332,7 +332,7 @@ describe('TileSections', () => {
       renderSections();
       newSetup();
       fireEvent.click(screen.getByRole('button', { name: 'Move News up' }));
-      expect(tilesIn('News')).toEqual(['news', 'briefing', 'events']);
+      expect(tilesIn('News')).toEqual(['news', 'briefing', 'police', 'events']);
       fireEvent.change(screen.getByRole('combobox', { name: 'Move Events to section' }), { target: { value: 'crises' } });
       expect(tilesIn('Crises').at(-1)).toBe('events');
       // The first and last tile go no further

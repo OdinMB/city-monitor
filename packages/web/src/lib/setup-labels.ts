@@ -13,6 +13,7 @@ export function setupLabel(t: TFunction, setup: PresetId | Pick<NamedSetup, 'nam
 const TILE_TITLE_KEYS: Record<TileId, string> = {
   briefing: 'panel.news.briefing',
   news: 'panel.news.title',
+  police: 'panel.police.title',
   weather: 'panel.weather.title',
   airQuality: 'panel.airQuality.title',
   transit: 'panel.transit.title',

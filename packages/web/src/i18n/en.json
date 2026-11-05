@@ -487,6 +487,10 @@
       },
       "empty": "No soil moisture data"
     },
+    "police": {
+      "title": "Police Reports",
+      "empty": "No police reports"
+    },
     "liftOutages": {
       "title": "Lifts & Escalators",
       "lifts": "Lifts out of service: {{n}}",
