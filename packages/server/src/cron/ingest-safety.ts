@@ -1,6 +1,8 @@
 import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
-import type { SafetyReport } from '@city-monitor/shared';
+import type { PoliceSource, SafetyReport } from '@city-monitor/shared';
+import type { FeedItem } from '../lib/rss-parser.js';
+import { isSearch, parseBayernPubDate, parseBulletin } from '../lib/polizei-bayern.js';
 import { saveSafetyReports } from '../db/writes.js';
 import { loadSafetyGeoState, type SafetyGeoState } from '../db/reads.js';
 import { parseFeed } from '../lib/rss-parser.js';
@@ -16,12 +18,29 @@ export type { SafetyReport };
 
 const SAFETY_TIMEOUT_MS = 10_000;
 
+/** Per ingestion instance: when each city's source was last fetched, and bulletins already split. */
+interface SafetyState {
+  lastFetchAt: Map<string, number>;
+  /** Bulletin URL → its reports, for `polizei-bayern`: each page is read once. */
+  bulletins: Map<string, SafetyReport[]>;
+}
+
 export function createSafetyIngestion(cache: Cache, db: Db | null = null) {
+  const state: SafetyState = { lastFetchAt: new Map(), bulletins: new Map() };
   return async function ingestSafety(): Promise<void> {
-    const eligible = getActiveCities().filter((city) => city.dataSources.police);
+    const now = Date.now();
+    const eligible = getActiveCities().filter((city) => {
+      const police = city.dataSources.police;
+      if (!police) return false;
+      const last = state.lastFetchAt.get(city.id);
+      // A minute's slack so a 10-minute schedule with a 15-minute limit fetches every 20 minutes, never sooner.
+      if (police.minIntervalMinutes && last !== undefined && now - last < (police.minIntervalMinutes - 1) * 60_000) return false;
+      return true;
+    });
+    for (const city of eligible) state.lastFetchAt.set(city.id, now);
     const results = await Promise.allSettled(
       eligible.map((city) =>
-        ingestCitySafety(city.id, city.name, city.dataSources.police!, cache, db),
+        ingestCitySafety(city.id, city.name, city.dataSources.police!, cache, db, state),
       ),
     );
     for (let i = 0; i < results.length; i++) {
@@ -33,7 +52,7 @@ export function createSafetyIngestion(cache: Cache, db: Db | null = null) {
   };
 }
 
-async function ingestCitySafety(cityId: string, cityName: string, policeConfig: { url: string; districts?: string[] }, cache: Cache, db: Db | null): Promise<void> {
+async function ingestCitySafety(cityId: string, cityName: string, policeConfig: PoliceSource, cache: Cache, db: Db | null, state: SafetyState): Promise<void> {
   const response = await log.fetch(policeConfig.url, {
     signal: AbortSignal.timeout(SAFETY_TIMEOUT_MS),
     headers: { 'User-Agent': 'CityMonitor/1.0' },
@@ -44,14 +63,18 @@ async function ingestCitySafety(cityId: string, cityName: string, policeConfig: 
   const xml = await response.text();
   const items = parseFeed(xml);
 
-  const reports: SafetyReport[] = items.map((item) => ({
-    id: hashString(item.url + item.title),
-    title: item.title,
-    description: item.description || '',
-    publishedAt: item.publishedAt,
-    url: item.url,
-    district: extractDistrict(item.title, policeConfig.districts),
-  }));
+  const reports: SafetyReport[] = policeConfig.provider === 'polizei-bayern'
+    ? await bulletinReports(cityId, items, state.bulletins)
+    : items.map((item) => ({
+      id: hashString(item.url + item.title),
+      title: item.title,
+      description: item.description || '',
+      publishedAt: item.publishedAt,
+      url: item.url,
+      district: extractDistrict(item.title, policeConfig.districts),
+    }));
+  // The cache entry must outlive the gap between fetches of a rate-limited source.
+  const ttlSeconds = Math.max(900, (policeConfig.minIntervalMinutes ?? 0) * 2 * 60);
 
   // Carry over coordinates and the attempted marker from DB
   let stored: SafetyGeoState = { coords: new Map(), attempted: new Set() };
@@ -75,7 +98,7 @@ async function ingestCitySafety(cityId: string, cityName: string, policeConfig: 
     new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
   );
 
-  cache.set(CK.safetyRecent(cityId), reports, 900);
+  cache.set(CK.safetyRecent(cityId), reports, ttlSeconds);
 
   if (db) {
     try {
@@ -125,6 +148,43 @@ async function geolocateNewReports(
     log.warn(`${cityId} geolocation failed, continuing without`);
   }
   return attempted;
+}
+
+/**
+ * The reports of every bulletin in a Polizei Bayern feed. A bulletin page is
+ * fetched only the first time its item appears (one to three a day), one at a
+ * time; its reports are then kept in `known` while the item stays in the feed.
+ * A page that fails to load is tried again on the next run. Feed items under
+ * /fahndung are skipped: the police asked that searches not be spread.
+ */
+async function bulletinReports(cityId: string, items: FeedItem[], known: Map<string, SafetyReport[]>): Promise<SafetyReport[]> {
+  const bulletins = items.filter((item) => !isSearch(item.url));
+  const reports: SafetyReport[] = [];
+  const seen = new Set<string>();
+  for (const item of bulletins) {
+    seen.add(item.url);
+    let parsed = known.get(item.url);
+    if (!parsed) {
+      try {
+        const page = await log.fetch(item.url, {
+          signal: AbortSignal.timeout(SAFETY_TIMEOUT_MS),
+          headers: { 'User-Agent': 'CityMonitor/1.0' },
+        });
+        if (!page.ok) continue;
+        parsed = parseBulletin(await page.text(), { url: item.url, publishedAt: parseBayernPubDate(item.publishedAt) });
+        if (parsed.length === 0) log.warn(`${cityId}: no numbered reports in ${item.url}`);
+        known.set(item.url, parsed);
+      } catch {
+        log.warn(`${cityId}: bulletin ${item.url} failed`);
+        continue;
+      }
+    }
+    reports.push(...parsed);
+  }
+  for (const url of known.keys()) {
+    if (!seen.has(url)) known.delete(url);
+  }
+  return reports;
 }
 
 function extractDistrict(title: string, districts?: string[]): string | undefined {

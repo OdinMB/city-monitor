@@ -1,6 +1,6 @@
 # AI transparency record (EU AI Act, Art. 50)
 
-_Last assessed: 2026-09-25 · by: agent run (ai-act-disclosure skill, improvement mode) · labels implemented 2026-09-25 from the owner-approved copy, pending deploy · Briefing label changed by the owner 2026-09-26 to one tag with a tooltip, notice line removed, pending deploy · feature inventory updated 2026-11-01 (Köln and München feeds, Polizei Köln: §2) · skill facts verified: 2026-09-25 · next re-test: 2026-11-15_
+_Last assessed: 2026-09-25 · by: agent run (ai-act-disclosure skill, improvement mode) · labels implemented 2026-09-25 from the owner-approved copy, pending deploy · Briefing label changed by the owner 2026-09-26 to one tag with a tooltip, notice line removed, pending deploy · feature inventory updated 2026-11-01 (Köln and München feeds, Polizei Köln: §2) and 2026-11-05 (Polizei München: §2) · skill facts verified: 2026-09-25 · next re-test: 2026-11-15_
 
 <!-- Next re-test 2026-11-15: the briefing's text-marking gap waits on OpenAI, and the latest deadline under any reading is 2026-12-02.
      Also re-test whenever a feature, model or label changes. -->
@@ -30,7 +30,7 @@ All four run server-side on cron, through OpenAI via LangChain. Model defaults l
 | 3 | Place labels and map pins for news (the prompt lets the model infer places) | same call as #2 (`locationLabel`) | OpenAI · `gpt-6-luna` @ `medium` | short text | 1–5 words | cron | map popup `📍 label`, News tile pin | none | ~Mar 2026 |
 | 4 | Place extraction for police reports | `lib/openai.ts` geo pipeline | OpenAI · `gpt-6-luna` @ `none` (`OPENAI_GEO_MODEL`, then `OPENAI_FILTER_MODEL`) | short text (extracted) | 1–5 words | cron, every 10 min | map popup, police sub-layer (off by default) | none | ~Mar 2026 |
 
-Which cities make which calls (since 2026-11-01): every city with feeds gets #1–#3 (Berlin, Hamburg, Köln, München); #4 runs for a city with a police feed (Berlin, Hamburg, Köln; München has none). Köln and München started making LLM calls on 2026-11-01, once their feeds were wired and `ACTIVE_CITIES` names them. The classifier prompt's place examples are still Berlin's (`lib/llm-prompts.ts`); changing them waits on a model-eval run (`.context/model-eval.md`).
+Which cities make which calls (since 2026-11-01): every city with feeds gets #1–#3 (Berlin, Hamburg, Köln, München); #4 runs for a city with a police feed (Berlin, Hamburg, Köln, and München since 2026-11-05, on the reports split out of the Polizeipräsidium's daily bulletins). Köln and München started making LLM calls on 2026-11-01, once their feeds were wired and `ACTIVE_CITIES` names them. The classifier prompt's place examples are still Berlin's (`lib/llm-prompts.ts`); changing them waits on a model-eval run (`.context/model-eval.md`).
 
 Not AI: OG images, favicons, Firecrawl (scrape only), transit/event/police-district tags (keyword rules). No chatbot, no image/audio/video generation, no outbound feeds, newsletters, social posts or exports. The model-eval harness (`npm run eval:models`) is developer-only and not a feature.
 

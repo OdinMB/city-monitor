@@ -561,6 +561,7 @@ const MUENCHEN_SOURCES: SourceGroup[] = [
   {
     category: 'Safety',
     sources: [
+      { name: 'München Police (Polizeipräsidium München)', url: 'https://www.polizei.bayern.de/muenchen', description: 'Press releases from the daily bulletins (Medieninformationen) of the Polizeipräsidium München, read from its RSS feed with its permission. Each report is shown with its headline and a short teaser, linked to the bulletin. Searches for missing or wanted people are not shown, as the police ask, because they are often withdrawn.' },
       { name: 'Krisendienst Psychiatrie Oberbayern', url: 'https://www.bezirk-oberbayern.de/Soziales/Psychiatrie/Krisendienst-Psychiatrie', description: '24/7 psychiatric crisis line and nationwide hotlines in the Crisis Services tile.' },
     ],
   },

@@ -4,9 +4,9 @@ import type { CityConfig } from '@city-monitor/shared';
  * München, wired only to the Germany-wide sources (DWD, Open-Meteo, NINA,
  * OpenStreetMap, aponet.de). No PEGELONLINE gauge: the Isar through München
  * is a Bavarian water, not a federal waterway, so the city has no water
- * levels; its flood class comes from the LHP instead (floodStatus). News feeds, roadworks and council meetings (RIS RSS feeds) are
- * configured; police has no usable source (polizei.bayern.de's robots.txt
- * disallows all, and the Polizeipräsidium is not on presseportal). The other
+ * levels; its flood class comes from the LHP instead (floodStatus). News feeds, roadworks, council meetings (RIS RSS feeds) and
+ * the Polizeipräsidium's press releases (its RSS feed, allowed 2026-11-05) are
+ * configured. The other
  * city-specific sources (transit, events) are not configured yet, so their
  * jobs fetch nothing for München. Its Stadtbezirk outlines ship with the web
  * app (packages/web/src/data/districts), and again with each district's area
@@ -46,6 +46,15 @@ export const muenchen: CityConfig = {
     { name: 'Feuerwehr München', url: 'https://www.presseportal.de/rss/dienststelle_131419.rss2', tier: 2, type: 'gov', lang: 'de' },
   ],
   dataSources: {
+    // Polizeipräsidium München (not on presseportal). Its Social-Media-Team allowed the
+    // RSS feed, polled every 15 minutes at most, for list and map (2026-11-05); robots.txt
+    // otherwise shuts out crawlers. Searches (/fahndung) are often withdrawn and must not
+    // be shown. Each feed item is a daily bulletin, split into its reports as it is read.
+    police: {
+      provider: 'polizei-bayern',
+      url: 'https://www.polizei.bayern.de/rss/polizeiprasidium-munchen.xml',
+      minIntervalMinutes: 15,
+    },
     // DWD warns for city and Landkreis together, in one region (warnings.json cell
     // 109184000; dwd:Warngebiete_Kreise 909184999, checked 2026-11-01). The older
     // cap_warncellids_csv.csv still lists a "Stadt München" (109162000) DWD no longer uses.
