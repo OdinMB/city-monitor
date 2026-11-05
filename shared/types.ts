@@ -1727,7 +1727,7 @@ export interface CityEvent {
   url: string;
   description?: string;
   free?: boolean;
-  /** 'hht' events are served only once HHT_EVENTS_PUBLIC is true, or with the preview token (packages/server/src/lib/hht-gate.ts). */
+  /** 'hht' events are served only with the preview token while HHT_PREVIEW_ONLY is true, and never with HHT_EVENTS=false (packages/server/src/lib/hht-gate.ts). */
   source: 'kulturdaten' | 'ticketmaster' | 'gomus' | 'stadt-koeln' | 'hht';
   price?: string;
   /** A ticket link apart from `url` (HHT: the date's booking link, else the event's) */

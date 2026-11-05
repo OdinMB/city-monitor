@@ -53,10 +53,11 @@ services:
         sync: false
       - key: HHT_FTP_FILE
         sync: false
-      # HHT events are served only when this is true (once HHT approves), or to requests with
-      # the preview token (16+ characters); unset, no preview is possible
-      - key: HHT_EVENTS_PUBLIC
+      # Optional opt-out: false hides Hamburg Tourismus' events everywhere (on when unset)
+      - key: HHT_EVENTS
         sync: false
+      # While HHT's events are in preview (HHT_PREVIEW_ONLY in lib/hht-gate.ts), only requests
+      # with this token (16+ characters) see them; unset, no preview is possible
       - key: HHT_EVENTS_PREVIEW_TOKEN
         sync: false
       # Optional opt-out: false hides the Bundes-Klinik-Atlas hospitals (on when unset)

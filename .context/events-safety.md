@@ -78,12 +78,13 @@ Hamburg's events come from Hamburg Tourismus' Veranstaltungsdatenbank under a co
 
 Until HHT approves the integration, its events are ingested and stored but not served to the public (`lib/hht-gate.ts`, `servedEvents`, the one filter on every read path: the events route, its DB fallback and bootstrap):
 
-- `HHT_EVENTS_PUBLIC=true` serves them to everyone.
-- Otherwise only a request whose `X-Preview-Token` header equals `HHT_EVENTS_PREVIEW_TOKEN` gets them (compared in constant time; a token unset or shorter than 16 characters admits no one). Such a response is `Cache-Control: private, no-store`, and every events response sends `Vary: X-Preview-Token`, so no CDN, shared cache or browser cache keeps preview data. The in-process cache holds all events; the gate filters on the way out. CORS reflects the requested headers, so the web app may send it (`routes/events-gate.test.ts`).
+- The gate is the code constant `HHT_PREVIEW_ONLY` (true), not a variable: the owner's rule is that no environment variable ever has to be set to `true` ([deployment.md](deployment.md#source-opt-outs)).
+- `HHT_EVENTS=false` on the API service (a source opt-out) hides them from everyone, token or not, also after they go public: the quick takedown HHT may ask for (contract 2.9).
+- While in preview, only a request whose `X-Preview-Token` header equals `HHT_EVENTS_PREVIEW_TOKEN` gets them (compared in constant time; a token unset or shorter than 16 characters admits no one). Such a response is `Cache-Control: private, no-store`, and every events response sends `Vary: X-Preview-Token`, so no CDN, shared cache or browser cache keeps preview data. The in-process cache holds all events; the gate filters on the way out. CORS reflects the requested headers, so the web app may send it (`routes/events-gate.test.ts`).
 - The web app takes a review link's `?preview=<token>` (`lib/preview-token.ts`), keeps it in sessionStorage as `hht-preview` (in memory where storage is blocked), removes it from the address bar and sends it with the events and bootstrap requests only. `?preview=` with no value ends the preview.
 - Hamburg's web feature is `hhtEvents`, not `events`: its tile (`EventsTile` in `CommandLayout.tsx`) shows only while the API returns events, so the public page looks as before. A city with any other events source has `events` and keeps its tile, empty or not.
 
-To open the gate for everyone once HHT approves: set `HHT_EVENTS_PUBLIC=true` on the API service.
+To open the gate for everyone once HHT approves in writing: set `HHT_PREVIEW_ONLY` to `false` in `lib/hht-gate.ts` (flip the test that pins it), deploy, then remove `HHT_EVENTS_PREVIEW_TOKEN`.
 
 ### Key Types
 

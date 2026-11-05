@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import type { Server } from 'node:http';
-import express from 'express';
+import express, { type Request, type Response } from 'express';
 import type { CityEvent } from '@city-monitor/shared';
 import type { Db } from '../db/index.js';
 import { createCache } from '../lib/cache.js';
@@ -8,6 +8,7 @@ import { CK } from '../lib/cache-keys.js';
 import { createEventsRouter } from './events.js';
 import { createBootstrapRouter } from './bootstrap.js';
 import { createApp } from '../app.js';
+import { HHT_PREVIEW_ONLY, servedEvents } from '../lib/hht-gate.js';
 
 const loadEvents = vi.hoisted(() => vi.fn());
 vi.mock('../db/reads.js', async (importOriginal) => ({ ...(await importOriginal<object>()), loadEvents }));
@@ -96,11 +97,35 @@ describe('HHT preview gate on every read path', () => {
       expect(res.headers.get('cache-control')).toBe('private, no-store');
     });
 
-    it('includes them for everyone once HHT_EVENTS_PUBLIC is true', async () => {
-      vi.stubEnv('HHT_EVENTS_PUBLIC', 'true');
-      const { res, ids } = await read({});
-      expect(ids).toEqual(['k-1', 'hht-1']);
-      expect(res.headers.get('cache-control')).toBe('public, max-age=1800');
+    it('leaves them out for everyone, token or not, when HHT_EVENTS is false', async () => {
+      vi.stubEnv('HHT_EVENTS_PREVIEW_TOKEN', TOKEN);
+      vi.stubEnv('HHT_EVENTS', 'false');
+      const { ids } = await read({ 'X-Preview-Token': TOKEN });
+      expect(ids).toEqual(['k-1']);
+    });
+  });
+
+  it('is in preview until HHT approves (going public is a code change)', () => {
+    expect(HHT_PREVIEW_ONLY).toBe(true);
+  });
+
+  describe('servedEvents once public', () => {
+    function fakeRes() {
+      const headers: Record<string, string> = {};
+      const res = { vary: () => res, set: (k: string, v: string) => { headers[k] = v; return res; } };
+      return { res: res as unknown as Response, headers };
+    }
+    const req = { get: () => undefined } as unknown as Request;
+
+    it('serves HHT events to everyone, cacheably', () => {
+      const { res, headers } = fakeRes();
+      expect(servedEvents(EVENTS, req, res, {}, false).map((e) => e.id)).toEqual(['k-1', 'hht-1']);
+      expect(headers['Cache-Control']).toBeUndefined();
+    });
+
+    it('still honours HHT_EVENTS=false', () => {
+      const { res } = fakeRes();
+      expect(servedEvents(EVENTS, req, res, { HHT_EVENTS: 'false' }, false).map((e) => e.id)).toEqual(['k-1']);
     });
   });
 

@@ -42,7 +42,8 @@ The repo includes a `render.yaml` blueprint that creates all three services auto
    - `GEOFOX_USER`, `GEOFOX_PASSWORD` — the Geofox GTI credentials Hochbahn issued to you, or leave blank (Hamburg's transit tile then has no data). A fork requests its own; never reuse another operator's
    - `DB_API_CLIENT_ID`, `DB_API_KEY` — a DB API Marketplace application's client id and API key, subscribed to FaSta's free plan, or leave blank (no DB station lifts; [lift-outages.md](lift-outages.md#switching-db-stations-on))
    - `HHT_FTP_USER`, `HHT_FTP_PASSWORD` — the FTPS login Hamburg Tourismus issued to you under its contract, or leave blank (no Hamburg events). A fork needs its own contract and login; `HHT_FTP_HOST` and `HHT_FTP_FILE` stay blank unless HHT moves the export
-   - `HHT_EVENTS_PUBLIC`, `HHT_EVENTS_PREVIEW_TOKEN` — leave `HHT_EVENTS_PUBLIC` blank until HHT approves the integration (its events then reach only review links with the preview token, 16+ characters), then set it to `true` ([events-safety.md](events-safety.md#the-preview-gate))
+   - `HHT_EVENTS_PREVIEW_TOKEN` — until HHT approves the integration, its events reach only review links with this token (16+ characters); going public is a code change, not a variable ([events-safety.md](events-safety.md#the-preview-gate))
+   - `HHT_EVENTS` — optional opt-out: leave blank, or set `false` to hide Hamburg Tourismus' events at once
    - `KLINIK_ATLAS` — optional opt-out: leave blank to show the Bundes-Klinik-Atlas hospitals, or set `false` to hide them (the owner sets it until the G-BA agrees to reuse; [hospitals.md](hospitals.md#the-klinik-atlas-opt-out))
    - `SENTRY_DSN` — leave blank: `render.yaml` declares it, but no code reads it
 6. Click **Apply**
@@ -106,7 +107,7 @@ After the blueprint deploys, skip to [Post-Deploy Verification](#post-deploy-ver
 | `DB_API_CLIENT_ID`, `DB_API_KEY` | *(your DB API Marketplace credentials)* | Optional — enables lifts and escalators at DB stations (FaSta) |
 | `HHT_FTP_USER`, `HHT_FTP_PASSWORD` | *(your Hamburg Tourismus FTPS login)* | Optional — enables Hamburg events; needs your own contract with HHT |
 | `HHT_FTP_HOST`, `HHT_FTP_FILE` | *(blank)* | Optional — override the export's host and file |
-| `HHT_EVENTS_PUBLIC` | *(blank)*, later `true` | Opt-in — `true` shows HHT's events to everyone, once HHT approves |
+| `HHT_EVENTS` | *(blank)* | Optional opt-out — `false` hides HHT's events from everyone |
 | `HHT_EVENTS_PREVIEW_TOKEN` | *(a random string, 16+ characters)* | Optional — the token of a review link (`?preview=<token>`) that shows HHT's events before they are public |
 | `KLINIK_ATLAS` | *(blank)*, or `false` | Optional opt-out — `false` hides the Bundes-Klinik-Atlas hospitals (Hamburg keeps its own WFS); blank shows them |
 | `LOCATIONIQ_TOKEN` | *(your token)* | Optional — geocoding fallback |
