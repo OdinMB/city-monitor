@@ -251,13 +251,17 @@ describe('München config', () => {
     expect(dataSources.population).toMatchObject({ provider: 'muenchen-indikatorenatlas', ckanApi: 'https://opendata.muenchen.de/api/3/action', outlines: 'muenchen-stadtbezirke.geojson' });
   });
 
-  it('has its licence-checked feeds, roadworks and Isar flood gauges, and no river levels, police or other city-specific source', () => {
+  it('has its licence-checked feeds, police bulletins, roadworks and Isar flood gauges, and no river levels or other city-specific source', () => {
     const config = getCityConfig('muenchen')!;
     expect(config.feeds.map((f) => f.name)).toEqual(['BR24 Oberbayern', 'Rathaus Umschau', 'Feuerwehr München']);
     // The press office allowed headline and teaser (2026-11-04); the feed carries full texts
     expect(config.feeds.find((f) => f.name === 'Rathaus Umschau')?.teaserChars).toBe(300);
-    // polizei.bayern.de's robots.txt disallows all; the Polizeipräsidium is not on presseportal
-    expect(config.dataSources.police).toBeUndefined();
+    // The Polizeipräsidium allowed its RSS feed at most every 15 minutes (2026-11-05)
+    expect(config.dataSources.police).toEqual({
+      provider: 'polizei-bayern',
+      url: 'https://www.polizei.bayern.de/rss/polizeiprasidium-munchen.xml',
+      minIntervalMinutes: 15,
+    });
     expect(config.dataSources.roadworks?.provider).toBe('muenchen-wfs');
     // The Isar is not on PEGELONLINE: flood class from the LHP instead, the city's gauge first
     expect(config.dataSources.floodStatus?.stations.map((s) => s.id)).toEqual(['BY_16005701', 'BY_16004403']);
@@ -276,7 +280,7 @@ describe('München config', () => {
       weather: _weather, nina: _nina, aeds: _aeds, pollen: _pollen, heatRelief: _heat, roadworks: _roadworks, councilMeetings: _council,
       airQuality: _airQuality, floodStatus: _flood, laborMarket: _labor, wastewater: _wastewater, socialAtlas: _socialAtlas, population: _population,
       bikeSharing: _bikes, trafficAccidents: _accidents, electricity: _electricity, citizenReports: _reports, soilMoisture: _soil, evCharging: _ev,
-      electionResults: _elections, stationLifts: _dbLifts, hospitals: _hospitals, ...rest
+      electionResults: _elections, stationLifts: _dbLifts, hospitals: _hospitals, police: _police, ...rest
     } = config.dataSources;
     expect(rest).toEqual({});
   });

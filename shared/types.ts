@@ -455,6 +455,20 @@ export type ElectionResultSource = {
   outlines: string;
 };
 
+/**
+ * Police press releases. `rss`: one report per feed item, its district matched
+ * from `districts` in the title. `polizei-bayern`: each feed item is a daily
+ * bulletin whose page is read once and split into its numbered reports, and
+ * searches (Fahndung) are left out (lib/polizei-bayern.ts).
+ */
+export interface PoliceSource {
+  provider: 'rss' | 'polizei-bayern';
+  url: string;
+  districts?: string[];
+  /** Fetch no more often than this, when the source asked for a limit. */
+  minIntervalMinutes?: number;
+}
+
 export interface CityDataSources {
   weather: {
     provider: 'open-meteo' | 'brightsky';
@@ -494,7 +508,7 @@ export interface CityDataSources {
       endpoint?: string;
     };
   events?: EventSourceConfig[];
-  police?: { provider: 'rss'; url: string; districts?: string[] };
+  police?: PoliceSource;
   nina?: { ars: string }; // Amtlicher Regionalschlüssel for NINA warnings
   /**
    * Defibrillators from OpenStreetMap: the Overpass query takes the nodes inside the boundary
