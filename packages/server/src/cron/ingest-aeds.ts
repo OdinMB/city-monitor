@@ -3,7 +3,7 @@ import type { Cache } from '../lib/cache.js';
 import type { Db } from '../db/index.js';
 import { saveAeds } from '../db/writes.js';
 import { getActiveCities } from '../config/index.js';
-import { createLogger } from '../lib/logger.js';
+import { createLogger, describeError } from '../lib/logger.js';
 import { CK } from '../lib/cache-keys.js';
 
 const log = createLogger('ingest-aeds');
@@ -13,7 +13,16 @@ export type { AedLocation };
 const FETCH_TIMEOUT_MS = 30_000;
 const AED_TTL_SECONDS = 86400; // 24 hours
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+/**
+ * The main Overpass instance first, then a public one run by another operator
+ * on the same OSM data. On 2026-11-04 overpass-api.de refused every
+ * connection from the server within 40 ms, all day; the second instance keeps
+ * the AEDs current when the first turns the server away.
+ */
+const OVERPASS_URLS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
 
 interface OverpassNode {
   type: string;
@@ -62,9 +71,30 @@ export function createAedIngestion(cache: Cache, db: Db | null = null, wait: (ms
   };
 }
 
+/**
+ * Each instance in turn: the next one is asked when an instance cannot be
+ * reached or still answers an error after its retries. The last instance's
+ * answer or error is the result.
+ */
 async function askOverpass(cityId: string, query: string, wait: (ms: number) => Promise<void>): Promise<Response> {
+  let lastError: unknown;
+  for (const [i, url] of OVERPASS_URLS.entries()) {
+    const next = OVERPASS_URLS[i + 1];
+    try {
+      const response = await askInstance(cityId, url, query, wait);
+      if (response.ok || !next) return response;
+      log.warn(`${cityId}: ${new URL(url).hostname} answered ${response.status}, asking ${new URL(next).hostname}`);
+    } catch (err) {
+      lastError = err;
+      if (next) log.warn(`${cityId}: ${new URL(url).hostname} failed (${describeError(err)}), asking ${new URL(next).hostname}`);
+    }
+  }
+  throw lastError;
+}
+
+async function askInstance(cityId: string, url: string, query: string, wait: (ms: number) => Promise<void>): Promise<Response> {
   for (let attempt = 0; ; attempt++) {
-    const response = await log.fetch(OVERPASS_URL, {
+    const response = await log.fetch(url, {
       method: 'POST',
       body: `data=${encodeURIComponent(query)}`,
       headers: {

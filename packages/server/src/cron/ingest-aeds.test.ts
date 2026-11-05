@@ -69,13 +69,17 @@ describe('ingest-aeds', () => {
       expect(cache.get<AedLocation[]>('berlin:aed:locations')).toHaveLength(3);
     });
 
-    it('gives up after two retries and leaves the cache as it was', async () => {
+    it('gives up after two retries on each instance and leaves the cache as it was', async () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('', { status: 504 }));
 
       const cache = createCache();
       await createAedIngestion(cache, null, noWait)();
 
-      expect(fetchSpy).toHaveBeenCalledTimes(3);
+      const hosts = fetchSpy.mock.calls.map(([url]) => new URL(String(url)).hostname);
+      expect(hosts).toEqual([
+        'overpass-api.de', 'overpass-api.de', 'overpass-api.de',
+        'overpass.private.coffee', 'overpass.private.coffee', 'overpass.private.coffee',
+      ]);
       expect(cache.get<AedLocation[]>('berlin:aed:locations')).toBeNull();
     });
 
@@ -100,6 +104,30 @@ describe('ingest-aeds', () => {
       await createAedIngestion(cache, null, noWait)();
 
       expect(cache.get<AedLocation[]>('berlin:aed:locations')).toBeNull();
+    });
+  });
+
+  describe('when the main Overpass instance turns the server away', () => {
+    it('asks the second instance and keeps its answer', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch')
+        .mockRejectedValueOnce(new TypeError('fetch failed', { cause: Object.assign(new Error('connect ECONNREFUSED 162.55.144.139:443'), { code: 'ECONNREFUSED' }) }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(mockOverpassResponse), { status: 200 }));
+
+      const cache = createCache();
+      await createAedIngestion(cache, null, noWait)();
+
+      expect(fetchSpy.mock.calls.map(([url]) => new URL(String(url)).hostname)).toEqual(['overpass-api.de', 'overpass.private.coffee']);
+      expect(cache.get<AedLocation[]>('berlin:aed:locations')).toHaveLength(3);
+    });
+
+    it('keeps the cache as it was when neither instance can be reached', async () => {
+      const cache = createCache();
+      cache.set('berlin:aed:locations', [{ id: 'aed-stale' }], 86400);
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
+
+      await createAedIngestion(cache, null, noWait)();
+
+      expect(cache.get<unknown[]>('berlin:aed:locations')).toEqual([{ id: 'aed-stale' }]);
     });
   });
 

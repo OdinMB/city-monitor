@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createLogger } from './logger.js';
+import { createLogger, describeError } from './logger.js';
 
 describe('createLogger', () => {
   beforeEach(() => {
@@ -39,14 +39,52 @@ describe('createLogger', () => {
     );
   });
 
-  it('error logs the error object on a separate line', () => {
+  it('error names the reason and logs the error object on a separate line', () => {
     const log = createLogger('test');
     const err = new Error('details');
     log.error('it broke', err);
     expect(console.error).toHaveBeenCalledWith(
-      '2026-03-02T14:30:05Z [test] ERROR: it broke',
+      '2026-03-02T14:30:05Z [test] ERROR: it broke — details',
     );
     expect(console.error).toHaveBeenCalledWith(err);
+  });
+
+  it('error leaves out the stack of a fetch that never got an answer', () => {
+    const log = createLogger('test');
+    log.error('hamburg failed', new DOMException('The operation was aborted due to timeout', 'TimeoutError'));
+    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(console.error).toHaveBeenCalledWith('2026-03-02T14:30:05Z [test] ERROR: hamburg failed — timed out');
+  });
+
+  describe('describeError', () => {
+    /** What undici throws when every address of a host refused or timed out. */
+    function connectFailure(): Error {
+      const attempts = [
+        Object.assign(new Error('connect ETIMEDOUT 141.30.1.1:443'), { code: 'ETIMEDOUT' }),
+        Object.assign(new Error('connect ENETUNREACH 2a01:4f8::1:443 - Local (:::0)'), { code: 'ENETUNREACH' }),
+      ];
+      const cause = Object.assign(new AggregateError(attempts, ''), { code: 'ETIMEDOUT' });
+      return new TypeError('fetch failed', { cause });
+    }
+
+    it('spells out each address a fetch tried', () => {
+      expect(describeError(connectFailure())).toBe(
+        'fetch failed: connect ETIMEDOUT 141.30.1.1:443, connect ENETUNREACH 2a01:4f8::1:443 - Local (:::0)',
+      );
+    });
+
+    it('adds a code the message does not carry', () => {
+      const err = new TypeError('fetch failed', { cause: Object.assign(new Error('other side closed'), { code: 'UND_ERR_SOCKET' }) });
+      expect(describeError(err)).toBe('fetch failed: UND_ERR_SOCKET other side closed');
+    });
+
+    it('calls a timeout a timeout', () => {
+      expect(describeError(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))).toBe('timed out');
+    });
+
+    it('prints a thrown non-error as it is', () => {
+      expect(describeError('plain string')).toBe('plain string');
+    });
   });
 
   describe('fetch', () => {
@@ -88,7 +126,7 @@ describe('createLogger', () => {
       await expect(log.fetch('https://example.com/api')).rejects.toThrow('network down');
 
       expect(console.error).toHaveBeenCalledWith(
-        '2026-03-02T14:30:05Z [test] FETCH https://example.com/api → ERROR (8001ms)',
+        '2026-03-02T14:30:05Z [test] FETCH https://example.com/api → ERROR (8001ms): network down',
       );
     });
 
