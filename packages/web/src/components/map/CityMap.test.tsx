@@ -198,7 +198,7 @@ describe('CityMap', () => {
       await waitFor(() => expect(MapMock).toHaveBeenCalledOnce());
 
       const max = lastOptions().maxBounds as [[number, number], [number, number]];
-      expect(lastOptions().bounds).toEqual(zoomedInBounds(max, 0.5));
+      expect(lastOptions().bounds).toEqual(zoomedInBounds(max, 1));
       expect(lastOptions().zoom).toBeUndefined();
     });
 
