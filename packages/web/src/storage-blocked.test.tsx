@@ -189,10 +189,10 @@ describe.each(['property', 'methods'] as const)('with browser storage blocked (%
       </MemoryRouter>,
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /^Customize/ }, { timeout: 10_000 }));
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Customize tiles and map/ }, { timeout: 10_000 }))[0]);
     fireEvent.click(screen.getByRole('button', { name: 'Health' }));
 
-    expect(screen.getByRole('button', { name: /^Customize/ }).textContent).toMatch(/^Customize · Health/);
+    expect(screen.getAllByRole('button', { name: /^Customize tiles and map/ })[0].getAttribute('aria-label')).toBe('Customize tiles and map · Health');
     expect(screen.getByRole('heading', { level: 2, name: 'Air and allergies' })).toBeTruthy();
     expect(screen.queryByText(/something went wrong/i)).toBeNull();
   }, 30_000);

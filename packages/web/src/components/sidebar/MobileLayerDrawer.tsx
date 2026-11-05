@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShowMapLayers } from '../../hooks/useShowMapLayers.js';
 import { DataLayerToggles } from './DataLayerToggles.js';
 
 const PANEL_W = 200;
@@ -15,7 +16,8 @@ const MID = (CLOSED_X + OPEN_X) / 2;
  * start: the left edge, or the right edge in a right-to-left language.
  * Closed, the panel is off screen and inert, so it is out of the Tab order
  * and the accessibility tree. Opening moves focus into it; closing it with
- * focus inside hands focus back to the layers button.
+ * focus inside hands focus back to the layers button. Setup mode's "Change
+ * map layers" opens it too, below `lg` (useShowMapLayers).
  */
 export function MobileLayerDrawer() {
   const { t, i18n } = useTranslation();
@@ -29,6 +31,17 @@ export function MobileLayerDrawer() {
   const panelRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
+
+  const markSeen = useCallback(() => {
+    setHasBeenOpened(true);
+    try { localStorage.setItem('cm-drawer-seen', '1'); } catch { /* noop */ }
+  }, []);
+
+  const openForSetup = useCallback(() => {
+    setOpen(true);
+    markSeen();
+  }, [markSeen]);
+  useShowMapLayers(false, openForSetup);
 
   const baseX = open ? OPEN_X : CLOSED_X;
   const x = dragX ?? baseX;
@@ -143,10 +156,7 @@ export function MobileLayerDrawer() {
           className={`self-center shrink-0 flex items-center justify-center w-9 h-20 bg-surface-1/90 backdrop-blur-sm border border-s-0 border-border rounded-e-xl shadow-lg cursor-pointer ${!hasBeenOpened ? 'animate-drawer-breathe' : ''}`}
           onClick={() => {
             setOpen((v) => !v);
-            if (!hasBeenOpened) {
-              setHasBeenOpened(true);
-              try { localStorage.setItem('cm-drawer-seen', '1'); } catch { /* noop */ }
-            }
+            if (!hasBeenOpened) markSeen();
           }}
           aria-label={t('sidebar.toggleLayers')}
           aria-expanded={open}

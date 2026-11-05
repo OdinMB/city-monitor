@@ -15,6 +15,7 @@ import { WeatherPopover } from './WeatherPopover.js';
 import { AqiTooltip } from './AqiTooltip.js';
 import { HeaderControls } from './HeaderControls.js';
 import { CitySwitcher } from './CitySwitcher.js';
+import { SetupMenu } from './SetupMenu.js';
 
 export function TopBar() {
   const city = useCityConfig();
@@ -103,7 +104,12 @@ export function TopBar() {
         )}
       </div>
 
-      <HeaderControls />
+      {/* The setup menu comes first here: on phones and tablets it sits right
+          beside the menu button (the desktop controls between them show from lg). */}
+      <div className="flex shrink-0 items-center gap-1 lg:gap-2">
+        <SetupMenu placement="topbar" />
+        <HeaderControls />
+      </div>
     </header>
   );
 }

@@ -35,11 +35,12 @@ function renderSidebar() {
 afterEach(cleanup);
 
 describe('Sidebar city switcher', () => {
-  it('is not there with one active city: a fork with one city sees no change', () => {
+  it('is not there with one active city, while the setup menu is', () => {
     active.ids = ['berlin'];
     renderSidebar();
     expect(screen.queryByText('BERLIN')).toBeNull();
     expect(screen.queryByRole('navigation')).toBeNull();
+    expect(screen.getByRole('complementary').querySelector('button')!.id).toBe('setup-menu-sidebar');
   });
 
   it('opens the sidebar with the city switcher when several cities are active', () => {

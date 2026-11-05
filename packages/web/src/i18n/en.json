@@ -1140,7 +1140,7 @@
   "setup": {
     "label": "Tiles and map",
     "custom": "My setup",
-    "customize": "Customize",
+    "openMenu": "Customize tiles and map · {{name}}",
     "preset": {
       "everyday": "Everyday",
       "commute": "Commute",
@@ -1190,6 +1190,13 @@
     "startFrom": "Start afresh from",
     "resetConfirm": "Arrange the tiles of “{{name}}” as in {{setup}}? Your changes to its tiles will be lost; its map stays as it is.",
     "editing": "Setup mode: rename, move, add or hide sections and tiles.",
+    "mapSaved": "Map layers you switch on or off are saved with this setup.",
+    "map": {
+      "label": "Map",
+      "layers": "Layers on the map",
+      "none": "No map layers on.",
+      "change": "Change map layers"
+    },
     "share": "Share this view",
     "shareTitle": "City Monitor {{city}}",
     "copied": "Link copied",
@@ -1227,7 +1234,7 @@
     "moveSectionDown": "Move section {{name}} down",
     "deleteSection": "Delete section {{name}}",
     "addSection": "Add section",
-    "emptySection": "No tiles here yet: move one here or add one from the hidden tiles.",
+    "emptySection": "No tiles here yet: add one with the + button.",
     "moveTileUp": "Move {{title}} up",
     "moveTileDown": "Move {{title}} down",
     "moveTileTo": "Move {{title}} to section",
@@ -1235,6 +1242,11 @@
     "hiddenTiles": "Hidden tiles",
     "noHiddenTiles": "No hidden tiles.",
     "addTileTo": "Add {{title}} to section",
+    "addTile": {
+      "label": "Add a tile to {{name}}",
+      "fromOther": "From other sections",
+      "none": "Every tile is in this section already."
+    },
     "chooseSection": "Section…",
     "shared": {
       "notice": "You're viewing a shared setup.",

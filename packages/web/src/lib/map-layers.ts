@@ -1,5 +1,5 @@
 import type { CityFeature, WebCityConfig } from '@city-monitor/shared';
-import { CATEGORY_LAYERS } from '../hooks/useCommandCenter.js';
+import { CATEGORY_LAYERS, CATEGORY_ORDER } from '../hooks/useCommandCenter.js';
 import type {
   DataLayer, MapCategory, EmergencySubLayer, HeatReliefSubLayer, NewsSubLayer, NoiseLayer, NoiseWmsLayer, PoliticalLayer, SocialLayer, TrafficSubLayer, WaterSubLayer,
 } from '../hooks/useCommandCenter.js';
@@ -126,6 +126,11 @@ export function withoutEmptyLifts(layers: CityLayers, features: readonly CityFea
 /** The category's layers the city has, in sidebar order. */
 export function categoryLayers(category: MapCategory, layers: ReadonlySet<DataLayer>): DataLayer[] {
   return CATEGORY_LAYERS[category].filter((l) => layers.has(l));
+}
+
+/** The layers switched on (`active`) that the city has (`layers`), in sidebar order. */
+export function layersOn(active: ReadonlySet<DataLayer>, layers: ReadonlySet<DataLayer>): DataLayer[] {
+  return CATEGORY_ORDER.flatMap((category) => categoryLayers(category, layers)).filter((layer) => active.has(layer));
 }
 
 /** What a category opens with: traffic, air quality, the social atlas; otherwise its first layer the city has. */

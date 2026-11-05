@@ -1,16 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { WebCityConfig } from '@city-monitor/shared';
 import { CityContext } from '../../hooks/CityContext.js';
 import { useTileSetup } from '../../hooks/useTileSetup.js';
-import { useCommandCenter } from '../../hooks/useCommandCenter.js';
+import { useCommandCenter, type DataLayer } from '../../hooks/useCommandCenter.js';
 import { isolate } from '../../lib/bidi.js';
 import { defaultView, previewView, shownCustom, type NamedSetup, type SetupView, type SharedSetup } from '../../lib/setup-state.js';
 import { readSharedParams } from '../../lib/setup-link.js';
 import { berlin } from '../../config/cities/berlin.js';
 import { muenchen } from '../../config/cities/muenchen.js';
+import { MobileLayerDrawer } from '../sidebar/MobileLayerDrawer.js';
+import { Sidebar } from '../sidebar/Sidebar.js';
+import { SetupMenu } from './SetupMenu.js';
 import { TileSections } from './TileSections.js';
 
 // The sections and their controls are under test, not what each tile shows:
@@ -21,28 +25,35 @@ vi.mock('./DashboardTile.js', async () => {
 });
 
 const setupInitial = useTileSetup.getState();
+const mapInitial = useCommandCenter.getState();
 const sectionHeadings = () => screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
 const tilesIn = (name: string) =>
   within(screen.getByRole('region', { name })).queryAllByRole('heading', { level: 3 }).map((h) => h.textContent);
 
-const menuButton = () => screen.getByRole('button', { name: /^Customize/ });
+/** The top bar's setup menu icon, named after the setup shown. */
+const menuButton = () => document.getElementById('setup-menu-topbar')!;
+const menuName = () => menuButton().getAttribute('aria-label');
 const menu = () => screen.getByRole('dialog', { name: 'Tiles and map' });
 const openMenu = () => fireEvent.click(menuButton());
 const inMenu = (name: string | RegExp) => within(menu()).getByRole('button', { name });
 const isCurrent = (name: string | RegExp) => inMenu(name).getAttribute('aria-current') === 'true';
 const setupName = () => screen.getByRole('textbox', { name: 'Setup name' }) as HTMLInputElement;
+const MAP_SAVED = 'Map layers you switch on or off are saved with this setup.';
 
 const kiez: NamedSetup = { id: 'm1', name: 'Mein Kiez', sections: [{ id: 'c1', name: 'Draußen', tiles: ['weather', 'support'] }], hidden: [] };
 const commute: NamedSetup = { id: 'm2', name: 'Pendeln', sections: [{ id: 'c1', tiles: ['transit', 'support'] }], hidden: [] };
 const withSetups = (choice: SetupView['choice'], ...customSetups: NamedSetup[]): SetupView => ({ ...defaultView(), choice, customSetups });
 
-function renderSections(city: WebCityConfig = berlin, own: SetupView = defaultView(), shared?: SharedSetup) {
+/** The sections with the top bar's setup menu (where the menu is now), and `extra` beside them (a layer list). */
+function renderSections(city: WebCityConfig = berlin, own: SetupView = defaultView(), shared?: SharedSetup, extra?: ReactNode) {
   useTileSetup.getState().load(city, own, shared ? previewView(own, shared) : null);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <CityContext.Provider value={city}>
+          <SetupMenu placement="topbar" />
+          {extra}
           <TileSections />
         </CityContext.Provider>
       </MemoryRouter>
@@ -55,6 +66,7 @@ describe('TileSections', () => {
 
   beforeEach(() => {
     useTileSetup.setState(setupInitial, true);
+    useCommandCenter.setState(mapInitial, true);
     // No lift data arrives, so Berlin's DB-only lift tile stays hidden.
     fetchSpy = vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
   });
@@ -70,11 +82,15 @@ describe('TileSections', () => {
       within(within(menu()).getByRole('list', { name: group })).getAllByRole('listitem').map((item) => within(item).getAllByRole('button')[0].getAttribute('aria-labelledby'))
         .map((id) => document.getElementById(id!)!.textContent);
 
-    it('opens with Everyday, named on the menu button, its sections in order', () => {
-      renderSections();
-      expect(menuButton().textContent).toMatch(/^Customize · Everyday/);
+    it('opens with Everyday, named on the menu icon and its tooltip, its sections in order, nothing above them', () => {
+      const { container } = renderSections();
+      expect(menuName()).toBe('Customize tiles and map · Everyday');
+      expect(menuButton().getAttribute('title')).toBe(menuName());
       expect(sectionHeadings()).toEqual(['News', 'Environment', 'Disruptions', 'Crises', 'Background']);
       expect(tilesIn('Crises').at(-1)).toBe('support');
+      // The setup bar has nothing to say outside setup mode: the first section opens the grid
+      const grid = container.querySelector('.grid')!;
+      expect(grid.firstElementChild!.tagName).toBe('SECTION');
     });
 
     it('offers the presets in two labelled groups, each with what it is for, a new setup, sharing, and where it is all kept', () => {
@@ -95,6 +111,19 @@ describe('TileSections', () => {
       expect(within(menu()).getByRole('link', { name: 'Privacy' }).getAttribute('href')).toBe('/privacy');
     });
 
+    it('says on the row of the setup shown that its map changes are kept with it', () => {
+      renderSections(berlin, withSetups('everyday', kiez));
+      openMenu();
+      const notes = within(menu()).getAllByText(MAP_SAVED);
+      expect(notes).toHaveLength(1);
+      expect(inMenu('Everyday').getAttribute('aria-describedby')).toContain(notes[0].id);
+      fireEvent.click(inMenu('Mein Kiez'));
+      openMenu();
+      expect(within(menu()).getAllByText(MAP_SAVED)).toHaveLength(1);
+      expect(inMenu('Mein Kiez').getAttribute('aria-describedby')).toBe(within(menu()).getByText(MAP_SAVED).id);
+      expect(inMenu('Everyday').getAttribute('aria-describedby')).not.toContain(within(menu()).getByText(MAP_SAVED).id);
+    });
+
     it('leaves out the presets a city has neither tiles nor map layers for', () => {
       renderSections({ ...berlin, features: [] });
       openMenu();
@@ -107,7 +136,7 @@ describe('TileSections', () => {
       await waitFor(() => expect(menu().contains(document.activeElement)).toBe(true));
       fireEvent.click(inMenu('Commute'));
       expect(screen.queryByRole('dialog')).toBeNull();
-      expect(menuButton().textContent).toMatch(/^Customize · Commute/);
+      expect(menuName()).toBe('Customize tiles and map · Commute');
       expect(sectionHeadings()).toEqual(['Getting around', 'Conditions', 'News']);
       expect(tilesIn('News')).toEqual(['news', 'support']);
       await waitFor(() => expect(document.activeElement).toBe(menuButton()));
@@ -134,7 +163,8 @@ describe('TileSections', () => {
 
     it('lists the visitor’s setups, the one shown marked, and shows another', () => {
       renderSections(berlin, withSetups('m1', kiez, commute));
-      expect(menuButton().textContent).toMatch(/^Customize · Mein Kiez/);
+      // A visitor's name runs in its own direction, as it may be in any script
+      expect(menuName()).toBe(`Customize tiles and map · ${isolate('Mein Kiez')}`);
       openMenu();
       const yours = within(menu()).getByRole('list', { name: 'Your setups' });
       expect(within(yours).getAllByRole('listitem')).toHaveLength(2);
@@ -184,13 +214,15 @@ describe('TileSections', () => {
       expect(screen.queryByRole('button', { name: 'Hide Support Us' })).toBeNull();
     });
 
-    it('names the setup, and on Done hands focus back to the menu button, which names it too', async () => {
+    it('names the setup, and on Done hands focus to the top bar’s menu icon, which names it too', async () => {
       renderSections();
       newSetup();
+      await waitFor(() => expect(document.activeElement).toBe(setupName()));
       fireEvent.change(setupName(), { target: { value: 'Morgens' } });
       done();
       expect(screen.queryByRole('textbox', { name: 'Section name' })).toBeNull();
-      expect(menuButton().textContent).toMatch(/^Customize · Morgens/);
+      expect(screen.queryByRole('group', { name: 'Map' })).toBeNull();
+      expect(menuName()).toBe(`Customize tiles and map · ${isolate('Morgens')}`);
       await waitFor(() => expect(document.activeElement).toBe(menuButton()));
     });
 
@@ -232,7 +264,7 @@ describe('TileSections', () => {
       confirm.mockReturnValue(true);
       fireEvent.click(inMenu('Delete Mein Kiez'));
       expect(useTileSetup.getState().own.customSetups.map((s) => s.name)).toEqual(['Pendeln']);
-      expect(menuButton().textContent).toMatch(/^Customize · Everyday/);
+      expect(menuName()).toBe('Customize tiles and map · Everyday');
       // Focus stays in the open menu
       expect(menu().contains(document.activeElement)).toBe(true);
     });
@@ -268,6 +300,126 @@ describe('TileSections', () => {
       expect(within(screen.getByRole('region', { name: 'Hidden tiles' })).getByText('No hidden tiles.')).toBeTruthy();
     });
 
+    describe('a section’s add-tile button', () => {
+      const addTo = (section: string) => screen.getByRole('button', { name: `Add a tile to ${section}` });
+      const picker = (section: string) => screen.getByRole('dialog', { name: `Add a tile to ${section}` });
+      const listIn = (section: string, list: string) =>
+        within(within(picker(section)).getByRole('list', { name: list })).getAllByRole('button').map((b) => b.getAttribute('aria-labelledby') ? document.getElementById(b.getAttribute('aria-labelledby')!)!.textContent : b.textContent);
+
+      it('lists the hidden tiles, then those of the other sections with where they are, the support tile among them', async () => {
+        renderSections();
+        newSetup();
+        fireEvent.click(screen.getByRole('button', { name: 'Hide Pollen Forecast' }));
+        const plus = addTo('News');
+        expect(plus.getAttribute('title')).toBe('Add a tile to News');
+        fireEvent.click(plus);
+        await waitFor(() => expect(picker('News').contains(document.activeElement)).toBe(true));
+        expect(listIn('News', 'Hidden tiles')).toEqual(['Pollen Forecast']);
+        const others = listIn('News', 'From other sections');
+        expect(others).toContain('Weather');
+        expect(others).toContain('Support Us');
+        expect(others).not.toContain('Briefing');
+        const weather = within(picker('News')).getByRole('button', { name: 'Weather' });
+        expect(document.getElementById(weather.getAttribute('aria-describedby')!)!.textContent).toBe('Environment');
+      });
+
+      it('adds a hidden tile to the end of the section, closing, with focus on the tile’s controls', async () => {
+        renderSections();
+        newSetup();
+        fireEvent.click(screen.getByRole('button', { name: 'Hide Pollen Forecast' }));
+        fireEvent.click(addTo('News'));
+        fireEvent.click(within(picker('News')).getByRole('button', { name: 'Pollen Forecast' }));
+        expect(screen.queryByRole('dialog', { name: 'Add a tile to News' })).toBeNull();
+        expect(tilesIn('News').at(-1)).toBe('pollen');
+        expect(within(screen.getByRole('region', { name: 'Hidden tiles' })).getByText('No hidden tiles.')).toBeTruthy();
+        await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Move Pollen Forecast up' })));
+      });
+
+      it('moves a tile from another section', async () => {
+        renderSections();
+        newSetup();
+        fireEvent.click(addTo('Background'));
+        fireEvent.click(within(picker('Background')).getByRole('button', { name: 'Weather' }));
+        expect(tilesIn('Environment')).not.toContain('weather');
+        expect(tilesIn('Background').at(-1)).toBe('weather');
+        await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Move Weather up' })));
+      });
+
+      it('closes on Escape with focus back on the button, and says so when every tile is there already', async () => {
+        renderSections(berlin, withSetups('m1', kiez));
+        openMenu();
+        fireEvent.click(inMenu('Edit Mein Kiez'));
+        fireEvent.click(addTo('Draußen'));
+        await waitFor(() => expect(picker('Draußen').contains(document.activeElement)).toBe(true));
+        // One section, nothing hidden: nothing to add
+        expect(within(picker('Draußen')).queryByRole('list')).toBeNull();
+        expect(within(picker('Draußen')).getByText('Every tile is in this section already.')).toBeTruthy();
+        fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+        expect(screen.queryByRole('dialog', { name: 'Add a tile to Draußen' })).toBeNull();
+        await waitFor(() => expect(document.activeElement).toBe(addTo('Draußen')));
+      });
+    });
+
+    describe('the map row', () => {
+      const mapRow = () => screen.getByRole('group', { name: 'Map' });
+      const chips = () => within(within(mapRow()).getByRole('list', { name: 'Layers on the map' })).getAllByRole('listitem').map((li) => li.textContent);
+      let scrollIntoView: ReturnType<typeof vi.fn>;
+      const originalMatchMedia = window.matchMedia;
+
+      beforeEach(() => {
+        scrollIntoView = vi.fn();
+        Element.prototype.scrollIntoView = scrollIntoView as unknown as typeof Element.prototype.scrollIntoView;
+      });
+
+      afterEach(() => {
+        delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+        window.matchMedia = originalMatchMedia;
+      });
+
+      /** The width from which the sidebar lists the layers (lg); every other query stays false. */
+      const sidebarWidth = (wide: boolean) => {
+        window.matchMedia = ((query: string) => ({
+          matches: wide && query === '(min-width: 1024px)',
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        })) as unknown as typeof window.matchMedia;
+      };
+
+      it('names the layers the setup shows, in the layer list’s order and words, and follows the map', () => {
+        useCommandCenter.setState({ activeLayers: new Set<DataLayer>(['crime', 'weather', 'traffic']) });
+        renderSections();
+        newSetup();
+        expect(chips()).toEqual(['Traffic', 'Rain Radar', 'Crime']);
+        expect(within(mapRow()).getByText(MAP_SAVED).id).toBe(mapRow().getAttribute('aria-describedby'));
+        act(() => useCommandCenter.setState({ activeLayers: new Set<DataLayer>() }));
+        expect(within(mapRow()).queryByRole('list')).toBeNull();
+        expect(within(mapRow()).getByText('No map layers on.')).toBeTruthy();
+      });
+
+      it('below lg, scrolls the map into view and opens the layer drawer, focus inside', () => {
+        sidebarWidth(false);
+        renderSections(berlin, defaultView(), undefined, <div id="map-hero"><MobileLayerDrawer /></div>);
+        newSetup();
+        const handle = screen.getByRole('button', { name: 'Toggle layers panel' });
+        fireEvent.click(within(mapRow()).getByRole('button', { name: 'Change map layers' }));
+        expect(scrollIntoView).toHaveBeenCalledWith({ block: 'end' });
+        expect(handle.getAttribute('aria-expanded')).toBe('true');
+        expect(document.getElementById(handle.getAttribute('aria-controls')!)!.contains(document.activeElement)).toBe(true);
+      });
+
+      it('from lg, scrolls the map into view and moves focus to the sidebar’s first layer', () => {
+        sidebarWidth(true);
+        renderSections(berlin, defaultView(), undefined, <div id="map-hero"><Sidebar /><MobileLayerDrawer /></div>);
+        newSetup();
+        fireEvent.click(within(mapRow()).getByRole('button', { name: 'Change map layers' }));
+        expect(scrollIntoView).toHaveBeenCalledWith({ block: 'end' });
+        const sidebar = screen.getByRole('complementary');
+        expect(document.activeElement).toBe(sidebar.querySelector('[data-layer-switches] button'));
+        expect(screen.getByRole('button', { name: 'Toggle layers panel' }).getAttribute('aria-expanded')).toBe('false');
+      });
+    });
+
     it('moves, deletes and adds sections; a deleted section’s tiles go to the tray', () => {
       renderSections();
       newSetup();
@@ -301,22 +453,37 @@ describe('TileSections', () => {
     const shared: SharedSetup = { name: 'Geteilt', sections: [{ id: 'c1', name: 'Draußen', tiles: ['weather', 'support'] }], hidden: [] };
     const notice = () => screen.getByRole('region', { name: "You're viewing a shared setup." });
 
-    it('says so in place of the menu, and goes back to the visitor’s own, focus on the menu button', async () => {
+    it('says so above the sections, the menu icon naming it, and goes back to the visitor’s own, focus on the icon', async () => {
       renderSections(berlin, own, shared);
-      expect(screen.queryByRole('button', { name: /^Customize/ })).toBeNull();
+      expect(menuName()).toBe(`Customize tiles and map · ${isolate('Geteilt')}`);
       expect(sectionHeadings()).toEqual(['Draußen']);
       fireEvent.click(within(notice()).getByRole('button', { name: 'Back to mine' }));
       expect(screen.queryByRole('region', { name: "You're viewing a shared setup." })).toBeNull();
-      expect(menuButton().textContent).toMatch(/^Customize · Storm & emergencies/);
+      expect(menuName()).toBe('Customize tiles and map · Storm & emergencies');
       await waitFor(() => expect(document.activeElement).toBe(menuButton()));
     });
 
-    it('becomes a new setup of the visitor’s when kept', () => {
+    it('becomes a new setup of the visitor’s when kept, focus on the menu icon', async () => {
       renderSections(berlin, own, shared);
       fireEvent.click(screen.getByRole('button', { name: 'Keep it' }));
       expect(screen.queryByRole('region', { name: "You're viewing a shared setup." })).toBeNull();
-      expect(menuButton().textContent).toMatch(/^Customize · Geteilt/);
+      expect(menuName()).toBe(`Customize tiles and map · ${isolate('Geteilt')}`);
       expect(useTileSetup.getState().own.customSetups.map((s) => s.name)).toEqual(['Mein Kiez', 'Geteilt']);
+      await waitFor(() => expect(document.activeElement).toBe(menuButton()));
+    });
+
+    it('lists only the visitor’s own setups in the menu meanwhile, keeps nothing there, and ends the preview with a choice', () => {
+      renderSections(berlin, { ...own, presetMaps: { commute: { map: { crimeLayer: 'kiez' }, touched: 1 } } }, shared);
+      openMenu();
+      const yours = within(menu()).getByRole('list', { name: 'Your setups' });
+      expect(within(yours).getAllByRole('listitem')).toHaveLength(1);
+      expect(within(menu()).queryByRole('button', { name: 'Geteilt' })).toBeNull();
+      expect(within(menu()).queryByText(MAP_SAVED)).toBeNull();
+      expect(within(menu()).queryByRole('button', { name: /^Reset the map/ })).toBeNull();
+      fireEvent.click(inMenu('Mein Kiez'));
+      expect(screen.queryByRole('region', { name: "You're viewing a shared setup." })).toBeNull();
+      expect(useTileSetup.getState().shared).toBe(false);
+      expect(useTileSetup.getState().own.customSetups.map((s) => s.name)).toEqual(['Mein Kiez']);
     });
 
     it('asks which setup it replaces once the visitor has three, or lets them cancel', () => {

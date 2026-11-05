@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -151,6 +151,23 @@ describe('CommandLayout warnings', { timeout: 30_000 }, () => {
 
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../globals.css'), 'utf8');
     expect(css).toMatch(/\.hero-warnings:not\(:empty\) \+ \* \.layer-drawer-panel \{\s*padding-top: 0\.75rem;\s*\}/);
+  });
+
+  it('puts the setup menu on the map’s corner from sm to lg, after the city switcher, and moves both up with warnings', () => {
+    // jsdom applies no stylesheet: check the classes and the rule on them.
+    setViewport('tablet');
+    const { container } = render(<CommandLayout />, { wrapper: createWrapper([severe]) });
+    const corner = container.querySelector<HTMLElement>('.hero-corner')!;
+    expect(corner.className.split(/\s+/)).toEqual(expect.arrayContaining(['hidden', 'sm:flex', 'lg:hidden', 'top-12', 'start-3']));
+    expect(container.querySelector('.hero-warnings')!.nextElementSibling!.contains(corner)).toBe(true);
+    const icon = within(corner).getByRole('button', { name: /^Customize tiles and map/ });
+    expect(icon.id).toBe('setup-menu-map');
+    expect(follows(within(corner).getByRole('navigation'), icon)).toBe(true);
+    // Four cities: the switcher keeps the icon clear of the layer drawer's edge strip
+    expect(icon.classList.contains('ms-7')).toBe(false);
+
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../globals.css'), 'utf8');
+    expect(css).toMatch(/\.hero-warnings:not\(:empty\) \+ \* \.hero-corner \{\s*top: 0\.75rem;\s*\}/);
   });
 
   it('keeps the phone warnings above the news ticker', () => {
