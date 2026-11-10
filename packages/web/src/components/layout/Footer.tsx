@@ -2,6 +2,30 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getCityConfig } from '../../config/index.js';
 import { SUPPORT_URL } from '../../lib/constants.js';
+import wordmarkSvg from '../../assets/simple-analytics-wordmark.svg?raw';
+
+// Simple Analytics' free plan asks for its badge on pages people visit, checked
+// about monthly; a missing badge locks the dashboard. This is their self-hosted
+// text link (https://www.simpleanalytics.com/badges), styled like the other
+// footer links: no third-party request, no CSP change, and the footer's font,
+// size, line height and colour, so it follows dark mode. Keep the href exactly
+// as it is (utm_source and utm_content=badge are how they detect it) and the
+// wordmark unedited; its sizing is `.sa-wordmark` in globals.css.
+export const SIMPLE_ANALYTICS_BADGE_URL =
+  'https://www.simpleanalytics.com/?utm_source=citymonitor.app&utm_content=badge';
+
+// English and untranslated, so lang="en". The inner span is isolated as LTR:
+// otherwise an Arabic page moves the "by" and the wordmark to the far side.
+function SimpleAnalyticsCredit() {
+  return (
+    <a href={SIMPLE_ANALYTICS_BADGE_URL} referrerPolicy="origin" target="_blank" lang="en" className="hover:underline">
+      <span dir="ltr">
+        Privacy-first analytics by{' '}
+        <span className="sa-wordmark" dangerouslySetInnerHTML={{ __html: wordmarkSvg }} />
+      </span>
+    </a>
+  );
+}
 
 export function Footer() {
   const { t } = useTranslation();
@@ -39,6 +63,7 @@ export function Footer() {
         <Link to="/no-ads-no-tracking" className="hover:underline">
           {t('footer.noTracking')}
         </Link>
+        <SimpleAnalyticsCredit />
       </nav>
     </footer>
   );

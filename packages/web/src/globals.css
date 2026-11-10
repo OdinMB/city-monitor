@@ -675,3 +675,17 @@ select:focus-visible,
   }
 }
 
+/* Simple Analytics' wordmark in the footer credit, sized as their text-link
+   badge sizes it (https://www.simpleanalytics.com/badges): as tall as the
+   surrounding capitals and sitting on the text's baseline, in the text colour.
+   The link itself is styled like the footer's other links. */
+.sa-wordmark { white-space: nowrap; }
+.sa-wordmark svg {
+  display: inline-block;
+  height: 0.914em; vertical-align: -0.2em;
+  fill: currentColor;
+}
+@supports (height: 1cap) {
+  .sa-wordmark svg { height: 1.305714cap; vertical-align: -0.285714cap; }
+}
+
