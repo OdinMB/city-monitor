@@ -14,7 +14,7 @@ describe('Footer', () => {
         <Footer />
       </MemoryRouter>,
     );
-    const link = screen.getByRole('link', { name: /privacy-first analytics/i });
+    const link = screen.getByRole('link', { name: /^privacy-first analytics by/i });
     expect(link.getAttribute('href')).toBe(
       'https://www.simpleanalytics.com/?utm_source=citymonitor.app&utm_content=badge',
     );

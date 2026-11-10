@@ -6,25 +6,22 @@ import wordmarkSvg from '../../assets/simple-analytics-wordmark.svg?raw';
 
 // Simple Analytics' free plan asks for its badge on pages people visit, checked
 // about monthly; a missing badge locks the dashboard. This is their self-hosted
-// text-link variant (https://www.simpleanalytics.com/badges): no third-party
-// request, no CSP change, and it takes the footer's own font and colour, so it
-// follows dark mode. Keep the href exactly as it is (utm_source and
-// utm_content=badge are how they detect it), the caption in their wording and
-// the wordmark unedited; the `sa-credit` styles are in globals.css.
+// text link (https://www.simpleanalytics.com/badges), styled like the other
+// footer links: no third-party request, no CSP change, and the footer's font,
+// size, line height and colour, so it follows dark mode. Keep the href exactly
+// as it is (utm_source and utm_content=badge are how they detect it) and the
+// wordmark unedited; its sizing is `.sa-wordmark` in globals.css.
 export const SIMPLE_ANALYTICS_BADGE_URL =
   'https://www.simpleanalytics.com/?utm_source=citymonitor.app&utm_content=badge';
 
-// Their English caption, verbatim and untranslated, so lang="en" below. It is
-// fixed vendor copy, not a formatted value. Each span is isolated as LTR:
-// otherwise an Arabic page moves the "100%" and the "by" to the far side.
-const SIMPLE_ANALYTICS_CAPTION = '100% privacy-first analytics';
-
+// English and untranslated, so lang="en". The inner span is isolated as LTR:
+// otherwise an Arabic page moves the "by" and the wordmark to the far side.
 function SimpleAnalyticsCredit() {
   return (
-    <a className="sa-credit" href={SIMPLE_ANALYTICS_BADGE_URL} referrerPolicy="origin" target="_blank" lang="en">
-      <span className="sa-credit__caption" dir="ltr">{SIMPLE_ANALYTICS_CAPTION}</span>{' '}
-      <span className="sa-credit__byline" dir="ltr">
-        by <span dangerouslySetInnerHTML={{ __html: wordmarkSvg }} />
+    <a href={SIMPLE_ANALYTICS_BADGE_URL} referrerPolicy="origin" target="_blank" lang="en" className="hover:underline">
+      <span dir="ltr">
+        privacy-first analytics by{' '}
+        <span className="sa-wordmark" dangerouslySetInnerHTML={{ __html: wordmarkSvg }} />
       </span>
     </a>
   );
