@@ -20,7 +20,7 @@ function SimpleAnalyticsCredit() {
   return (
     <a href={SIMPLE_ANALYTICS_BADGE_URL} referrerPolicy="origin" target="_blank" lang="en" className="hover:underline">
       <span dir="ltr">
-        privacy-first analytics by{' '}
+        Privacy-first analytics by{' '}
         <span className="sa-wordmark" dangerouslySetInnerHTML={{ __html: wordmarkSvg }} />
       </span>
     </a>
