@@ -2,7 +2,7 @@
 //
 // The Render API service sets NODE_ENV=production, which makes npm omit
 // devDependencies. The builds need them (the pinned TypeScript, @types/*, Vite),
-// and so does the API start command's db:migrate (drizzle-kit). If any direct
+// and so does the API start command's db:migrate (tsx). If any direct
 // devDependency of the root or a workspace is missing, this installs them at the
 // repo root from package-lock.json. If none is missing (every local, CI and
 // `npm ci --include=dev` build) it runs nothing, which also keeps turbo's

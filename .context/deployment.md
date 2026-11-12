@@ -18,7 +18,7 @@ Infrastructure defined in `render.yaml` (Blueprint spec).
 - **Start:** `npm run db:migrate --workspace=packages/server && node packages/server/dist/index.js`
 - **Health check:** `GET /api/health`
 - **Auto-deploy:** On push to `main`
-- Migrations run automatically on each deploy (in start command)
+- Migrations run automatically on each deploy (in start command). `db:migrate` is `src/scripts/migrate.ts` (drizzle-orm's migrator, same `drizzle.__drizzle_migrations` journal as drizzle-kit), not `drizzle-kit migrate`: drizzle-kit's spinner swallowed the error, so the failed deploy of 2026-11-10 logged only "applying migrations..." and exit 1. The script logs `migrate: applied N migrations` or `migrate: failed …` with the Postgres code, detail and statement. An unreachable database (10 s connect timeout per attempt) is retried 5 times over about 30 s before it gives up; a failing migration is not retried. Each statement waits at most 30 s for a table lock (`lock_timeout`), so an `ALTER TABLE` queued behind the running instance fails with `55P03` instead of stalling every query on that table; Render then restarts the start command
 - **Heap size: no `--max-old-space-size` on purpose.** On the 512 MB starter plan V8 sizes the heap to about 256 MB, and the process's RSS runs about 110–220 MB above its heap (measured 2026-11 under tsx: 379 MB RSS at a 135 MB heap peak during a full cold start). A 384 MB heap could push RSS past 512 MB, and Render would then kill the container without V8's heap report. The cold-start fix (heavy jobs one at a time, streamed XLSX and CSV parsing, at most 4 startup runs: [server.md](server.md#memory-at-startup)) keeps the heap peak near half the limit; re-measure there before adding a heavy source rather than raising the limit
 
 ### Client address and `trust proxy`
@@ -53,7 +53,7 @@ The API service sets `NODE_ENV=production`, which makes `npm ci` omit devDepende
 - A dashboard build command can drift from `render.yaml`, so every workspace `build` script (`shared`, `packages/server`, `packages/web`) also starts with `scripts/ensure-dev-deps.mjs`. If any direct devDependency of the root or a workspace is missing, it runs `npm install --include=dev --no-save` at the repo root, which installs the lockfile's versions and leaves the lockfile alone. If none is missing (every local, CI and `--include=dev` build), it runs nothing. That no-op is also what lets turbo build `server` and `web` in parallel without two npm installs racing.
 - The build scripts call `node …/node_modules/typescript/bin/tsc` and `…/vite/bin/vite.js`, never a bare `tsc` or `vite`, and print the compiler version first. A good Render log shows `Version 5.9.3`, plus `vite v6.4.5 building for production...` for the static site.
 
-The start command's `db:migrate` runs drizzle-kit, so the API also needs its devDependencies at runtime. The build leaves them installed. Upgrade TypeScript or Vite through the lockfile, not the platform's PATH.
+The start command's `db:migrate` runs under tsx, so the API also needs its devDependencies at runtime. The build leaves them installed. Upgrade TypeScript or Vite through the lockfile, not the platform's PATH.
 
 ## CI Pipeline
 
@@ -69,7 +69,7 @@ The workflow declares `permissions: contents: read`. This repo is public and CI 
 
 ## Dependency Advisories
 
-`npm audit` sits at **4 moderate, deliberately**. They are one dead chain: two deprecated `@esbuild-kit` packages, `drizzle-kit`, and an old esbuild beneath them. drizzle-kit's current release still declares it, only an unreleased 1.0 preview drops it, and that tool runs `db:migrate` on every deploy. `esbuild-kit` appears in drizzle-kit's `package.json` only — no source file loads it. Revisit when drizzle-kit 1.0 ships stable.
+`npm audit` sits at **4 moderate, deliberately**. They are one dead chain: two deprecated `@esbuild-kit` packages, `drizzle-kit`, and an old esbuild beneath them. drizzle-kit's current release still declares it, only an unreleased 1.0 preview drops it, and that tool generates every migration. `esbuild-kit` appears in drizzle-kit's `package.json` only — no source file loads it. Revisit when drizzle-kit 1.0 ships stable.
 
 **Never run `npm audit fix --force` here.** It "fixes" those rows by downgrading drizzle-kit several major versions and exceljs by about five years, to patch code that never executes.
 

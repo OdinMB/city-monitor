@@ -33,7 +33,7 @@ Both root scripts build `shared` first, because the server imports its compiled 
   - `wipeDatabase` truncates every table in the Drizzle schema, but not Drizzle's migrations journal.
   - `seedDatabase` writes through the `save*` functions in `db/writes.ts`, each data set the city's data holds.
   - For the history endpoints it also writes a week of hourly weather and water-level snapshots and 23 months of labour-market snapshots. The air-quality grid gets the current snapshot only, as in production.
-- `scripts/seed-synthetic.ts` — `db:seed`: `--city` (default `berlin`) and `--seed`, the guard, then the `drizzle-orm` migrator (the same journal table `drizzle-kit migrate` uses), then wipe and seed. It refuses a city `config/index.ts` does not register.
+- `scripts/seed-synthetic.ts` — `db:seed`: `--city` (default `berlin`) and `--seed`, the guard, then the `drizzle-orm` migrator (the same journal table `npm run db:migrate` uses), then wipe and seed. It refuses a city `config/index.ts` does not register.
 - `dev-synthetic.ts` — `dev:synthetic`:
   - runs the guard and sets `DATABASE_URL` and `ACTIVE_CITIES=<--city, default berlin>` in code, refusing a city the config does not register;
   - blocks outbound `fetch`;
