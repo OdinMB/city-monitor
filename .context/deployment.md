@@ -69,11 +69,13 @@ The workflow declares `permissions: contents: read`. This repo is public and CI 
 
 ## Dependency Advisories
 
-`npm audit` sits at **4 moderate, deliberately**. They are one dead chain: two deprecated `@esbuild-kit` packages, `drizzle-kit`, and an old esbuild beneath them. drizzle-kit's current release still declares it, only an unreleased 1.0 preview drops it, and that tool generates every migration. `esbuild-kit` appears in drizzle-kit's `package.json` only — no source file loads it. Revisit when drizzle-kit 1.0 ships stable.
+The two deprecated `@esbuild-kit` packages under `drizzle-kit` are a dead chain: drizzle-kit's current release still declares them, only an unreleased 1.0 preview drops them, and that tool generates every migration. `esbuild-kit` appears in drizzle-kit's `package.json` only — no source file loads it. The `@esbuild-kit/core-utils` override lifts the old esbuild beneath them past its advisory. Revisit when drizzle-kit 1.0 ships stable.
 
 **Never run `npm audit fix --force` here.** It "fixes" those rows by downgrading drizzle-kit several major versions and exceljs by about five years, to patch code that never executes.
 
 The root `package.json` carries `"overrides": { "uuid": "^11.1.1" }` because `node-cron` pinned `uuid` to exactly `8.3.2` and `exceljs` trails it, so no range bump reaches the patched version. 11.1.1 is the highest 11.x and the advisory's fix floor; 14.x drops the CommonJS entry point exceljs needs. Note that adding an override alone does not re-resolve an existing lockfile entry — `npm update uuid` is what actually moves it.
+
+It also carries `"@typescript-eslint/typescript-estree": { "minimatch": "^11.0.1" }` for GHSA-g3hv-75wg-m249 (pattern-amplification DoS, fixed in 11.0.1). Every typescript-estree release up to 8.72.2 still declares `^10.2.2`, so Dependabot cannot resolve a fix and reports `security_update_not_possible`. The advisory was unreachable here anyway: typescript-estree calls only `minimatch(path, pattern, { dot: true })`, on `allowDefaultProject` patterns from our own ESLint config (which sets none), at the default optimization level, while the bug needs an attacker-supplied pattern at level 2. Version 11 dropped `makeRe()`, `AST` and other APIs, but not the `minimatch()` function typescript-estree uses. Remove the override once typescript-estree declares `^11.0.1` or later. The other minimatch copies (3.x under ESLint, 5.x under exceljs's archiver) are below the advisory's range.
 
 ### Node version and the CA trust store
 
