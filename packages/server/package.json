@@ -24,7 +24,7 @@
   "dependencies": {
     "@city-monitor/shared": "*",
     "@langchain/openai": "^1.2.11",
-    "basic-ftp": "^6.2.3",
+    "basic-ftp": "^6.2.4",
     "compression": "^1.8.2",
     "cors": "^2.8.5",
     "drizzle-orm": "^0.45.2",
